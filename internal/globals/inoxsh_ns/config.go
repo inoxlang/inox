@@ -68,9 +68,10 @@ func MakeREPLConfiguration(obj *core.Object) (REPLConfiguration, error) {
 				return config, errors.New(GLOBALS_ERR)
 			}
 
-			for k, v := range obj.EntryMap(nil) {
+			obj.ForEachEntry(func(k string, v core.Serializable) error {
 				config.additionalGlobals[k] = v
-			}
+				return nil
+			})
 		case "prompt":
 			const PROMPT_CONFIG_ERR = "invalid configuration: prompt should be a list"
 

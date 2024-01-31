@@ -215,7 +215,7 @@ func TestSymbolicEval(t *testing.T) {
 			}
 			panic(ErrUnreachable)
 		}
-		extData.ToSymbolicValue = func(v any, wide bool) (Value, error) {
+		extData.ToSymbolicValue = func(_ ConcreteContext, v any, wide bool) (Value, error) {
 			return v.(Value), nil
 		}
 
@@ -3133,7 +3133,7 @@ func TestSymbolicEval(t *testing.T) {
 				}
 				panic(ErrUnreachable)
 			}
-			extData.ToSymbolicValue = func(v any, wide bool) (Value, error) {
+			extData.ToSymbolicValue = func(_ ConcreteContext, v any, wide bool) (Value, error) {
 				return v.(Value), nil
 			}
 

@@ -137,6 +137,7 @@ func EvalCheck(input EvalCheckInput) (*Data, error) {
 	state.shellTrustedCommands = input.ShellTrustedCommands
 	state.projectFilesystem = input.ProjectFilesystem
 
+	startingConcreteContext := input.Context.startingConcreteContext
 	if input.UseBaseGlobals {
 		if input.Globals != nil {
 			return nil, errors.New(".Globals should not be set")
@@ -149,7 +150,7 @@ func EvalCheck(input EvalCheckInput) (*Data, error) {
 		}
 	} else {
 		for k, concreteGlobal := range input.Globals {
-			symbolicVal, err := extData.ToSymbolicValue(concreteGlobal.Value, false)
+			symbolicVal, err := extData.ToSymbolicValue(startingConcreteContext, concreteGlobal.Value, false)
 			if err != nil {
 				return nil, fmt.Errorf("cannot convert global %s: %s", k, err)
 			}
@@ -168,7 +169,7 @@ func EvalCheck(input EvalCheckInput) (*Data, error) {
 		}
 
 		for k, v := range input.ShellLocalVars {
-			symbolicVal, err := extData.ToSymbolicValue(v, false)
+			symbolicVal, err := extData.ToSymbolicValue(startingConcreteContext, v, false)
 			if err != nil {
 				return nil, fmt.Errorf("cannot convert global %s: %s", k, err)
 			}
@@ -298,7 +299,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 			state.addError(makeSymbolicEvalError(node, state, err.Error()))
 			return ANY, nil
 		}
-		return extData.ToSymbolicValue(v, false)
+		return extData.ToSymbolicValue(state.ctx.startingConcreteContext, v, false)
 	case *parse.YearLiteral:
 		return NewYear(n.Value), nil
 	case *parse.DateLiteral:
@@ -311,7 +312,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 			state.addError(makeSymbolicEvalError(node, state, err.Error()))
 			return ANY, nil
 		}
-		return extData.ToSymbolicValue(v, false)
+		return extData.ToSymbolicValue(state.ctx.startingConcreteContext, v, false)
 	case *parse.QuotedStringLiteral:
 		return NewString(n.Value), nil
 	case *parse.UnquotedStringLiteral:

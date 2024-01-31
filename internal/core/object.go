@@ -583,9 +583,8 @@ func (obj *Object) EntryMap(ctx *Context) map[string]Serializable {
 		closestState := ctx.GetClosestState()
 		obj.Lock(closestState)
 		defer obj.Unlock(closestState)
-	} else {
-		obj.Lock(nil)
-		defer obj.Unlock(nil)
+	} else if obj.IsShared() {
+		panic(errors.New("nil context"))
 	}
 
 	isShared := obj.IsShared()
@@ -611,9 +610,8 @@ func (obj *Object) ValueEntryMap(ctx *Context) map[string]Value {
 		closestState := ctx.GetClosestState()
 		obj.Lock(closestState)
 		defer obj.Unlock(closestState)
-	} else {
-		obj.Lock(nil)
-		defer obj.Unlock(nil)
+	} else if obj.IsShared() {
+		panic(errors.New("nil context"))
 	}
 
 	isShared := obj.IsShared()

@@ -62,7 +62,7 @@ var (
 )
 
 type ExternalData struct {
-	ToSymbolicValue                        func(v any, wide bool) (Value, error)
+	ToSymbolicValue                        func(concreteContext ConcreteContext, v any, wide bool) (Value, error)
 	SymbolicToPattern                      func(v Value) (any, bool)
 	GetQuantity                            func(values []float64, units []string) (any, error)
 	GetRate                                func(values []float64, units []string, divUnit string) (any, error)

@@ -112,7 +112,7 @@ func TestSpawnLThread(t *testing.T) {
 		}
 		obj := res.(*Object)
 		assert.True(t, obj.IsShared())
-		assert.Equal(t, map[string]Serializable{"a": Int(1)}, obj.EntryMap(nil))
+		assert.Equal(t, map[string]Serializable{"a": Int(1)}, obj.EntryMap(state.Ctx))
 	})
 
 	t.Run("the context of the lthread should be done when .WaitResult() returns", func(t *testing.T) {
@@ -198,7 +198,7 @@ func TestSpawnLThread(t *testing.T) {
 		}
 		obj := res.(*Object)
 		assert.True(t, obj.IsShared())
-		assert.Equal(t, map[string]Serializable{"a": Int(1)}, obj.EntryMap(nil))
+		assert.Equal(t, map[string]Serializable{"a": Int(1)}, obj.EntryMap(state.Ctx))
 	})
 
 }

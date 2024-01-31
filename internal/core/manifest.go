@@ -49,6 +49,10 @@ const (
 	MANIFEST_INVOCATION__ON_ADDED_ELEM_PROP_NAME = "on-added-element"
 	MANIFEST_INVOCATION__ASYNC_PROP_NAME         = "async"
 
+	//permissions section
+	INVALID_COMMANDS_PREFIX = "invalid manifest, use: commands: "
+	ERR                     = INVALID_COMMANDS_PREFIX + "a command (or subcommand) name should be followed by object literals with the next subcommands as keys (or empty)"
+
 	// --------------------------------
 	INITIAL_WORKING_DIR_VARNAME        = "IWD"
 	INITIAL_WORKING_DIR_PREFIX_VARNAME = "IWD_PREFIX"
@@ -754,70 +758,70 @@ func (m *Module) createManifest(ctx *Context, object *Object, config manifestObj
 	actualModuleKind := m.ModuleKind
 	manifestModuleKind := UnspecifiedModuleKind
 
-	for k, v := range object.EntryMap(nil) {
+	err := object.ForEachEntry(func(k string, v Serializable) error {
 		switch k {
 		case MANIFEST_KIND_SECTION_NAME:
 			kindName, ok := v.(StringLike)
 			if !ok {
-				return nil, fmt.Errorf("invalid manifest, the " + k + " section should have a value of type string")
+				return fmt.Errorf("invalid manifest, the " + k + " section should have a value of type string")
 			}
 
 			var err error
 			parsedKind, err := ParseModuleKind(kindName.GetOrBuildString())
 			if err != nil {
-				return nil, err
+				return err
 			}
 			if actualModuleKind != UnspecifiedModuleKind && actualModuleKind != parsedKind {
-				return nil, errors.New("unexpected state: module kind not equal to the kind determined during parsing")
+				return errors.New("unexpected state: module kind not equal to the kind determined during parsing")
 			}
 			if actualModuleKind.IsEmbedded() {
-				return nil, errors.New(INVALID_KIND_SECTION_EMBEDDED_MOD_KINDS_NOT_ALLOWED)
+				return errors.New(INVALID_KIND_SECTION_EMBEDDED_MOD_KINDS_NOT_ALLOWED)
 			}
 			manifestModuleKind = parsedKind
 		case MANIFEST_LIMITS_SECTION_NAME:
 			l, err := getLimits(v)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			maps.Copy(limits, l)
 		case MANIFEST_HOST_RESOLUTION_SECTION_NAME:
 			resolutions, err := getHostResolutions(v)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			hostResolutions = resolutions
 		case MANIFEST_PERMS_SECTION_NAME:
 			listing, ok := v.(*Object)
 			if !ok {
-				return nil, fmt.Errorf("invalid manifest, the " + MANIFEST_PERMS_SECTION_NAME + " section should have a value of type object")
+				return fmt.Errorf("invalid manifest, the " + MANIFEST_PERMS_SECTION_NAME + " section should have a value of type object")
 			}
 			permListing = listing
 		case MANIFEST_ENV_SECTION_NAME:
 			envPattern = config.envPattern
 			if envPattern == nil {
-				return nil, fmt.Errorf("missing pre-evaluated environment pattern")
+				return fmt.Errorf("missing pre-evaluated environment pattern")
 			}
 		case MANIFEST_PARAMS_SECTION_NAME:
 			params, err := getModuleParameters(ctx, v)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			moduleParams = params
 		case MANIFEST_PREINIT_FILES_SECTION_NAME:
 			configs := config.preinitFileConfigs
 			if configs == nil {
-				return nil, fmt.Errorf("missing pre-evaluated description of %s", MANIFEST_PREINIT_FILES_SECTION_NAME)
+				return fmt.Errorf("missing pre-evaluated description of %s", MANIFEST_PREINIT_FILES_SECTION_NAME)
 			}
 		case MANIFEST_DATABASES_SECTION_NAME:
 			configs, err := getDatabaseConfigurations(v, config.parentState)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			dbConfigs = configs
 		case MANIFEST_INVOCATION_SECTION_NAME:
 			description, ok := v.(*Object)
 			if !ok {
-				return nil, fmt.Errorf("invalid manifest, the '%s' section should have a value of type object", MANIFEST_INVOCATION_SECTION_NAME)
+				return fmt.Errorf("invalid manifest, the '%s' section should have a value of type object", MANIFEST_INVOCATION_SECTION_NAME)
 			}
 			autoInvocation = &AutoInvocationConfig{}
 
@@ -833,10 +837,15 @@ func (m *Module) createManifest(ctx *Context, object *Object, config manifestObj
 
 		default:
 			if config.ignoreUnkownSections {
-				continue
+				break
 			}
-			return nil, fmt.Errorf("invalid manifest, unknown section '%s'", k)
+			return fmt.Errorf("invalid manifest, unknown section '%s'", k)
 		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
 	}
 
 	//add default limits
@@ -882,7 +891,7 @@ func (m *Module) createManifest(ctx *Context, object *Object, config manifestObj
 	}
 
 	//finalize the permission list
-	perms, err := getPermissionsFromListing(ctx, permListing, specifiedGlobalPermKinds, config.handleCustomType, config.addDefaultPermissions)
+	perms, err = getPermissionsFromListing(ctx, permListing, specifiedGlobalPermKinds, config.handleCustomType, config.addDefaultPermissions)
 	if err != nil {
 		return nil, fmt.Errorf("invalid manifest: %w", err)
 	}
@@ -976,17 +985,24 @@ func getPermissionsFromListing(
 		specifiedGlobalPermKinds = make(map[PermissionKind]bool)
 	}
 
-	for propName, propValue := range permDescriptions.EntryMap(nil) {
-		permKind, ok := permkind.PermissionKindFromString(propName)
+	if permDescriptions != nil {
+		err := permDescriptions.ForEachEntry(func(propName string, propValue Serializable) error {
+			permKind, ok := permkind.PermissionKindFromString(propName)
 
-		if ok {
-			p, err := getSingleKindPermissions(permKind, propValue, specifiedGlobalPermKinds, handleCustomType)
-			if err != nil {
-				return nil, err
+			if ok {
+				p, err := getSingleKindPermissions(permKind, propValue, specifiedGlobalPermKinds, handleCustomType)
+				if err != nil {
+					return err
+				}
+				perms = append(perms, p...)
+			} else {
+				return fmt.Errorf("invalid permission kind: %s", propName)
 			}
-			perms = append(perms, p...)
-		} else {
-			return nil, fmt.Errorf("invalid permission kind: %s", propName)
+			return nil
+		})
+
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -1093,12 +1109,12 @@ func getLimits(desc Value) (map[string]Limit, error) {
 
 	//add limits
 
-	for limitName, limitPropValue := range limitObj.EntryMap(nil) {
+	err := limitObj.ForEachEntry(func(limitName string, limitPropValue Serializable) error {
 		var limit Limit
 		limit, err := GetLimit(ctx, limitName, limitPropValue)
 
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		if _, ok := limits[limit.Name]; ok {
@@ -1106,6 +1122,11 @@ func getLimits(desc Value) (map[string]Limit, error) {
 		}
 
 		limits[limit.Name] = limit
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
 	}
 
 	return limits, nil
@@ -1728,9 +1749,6 @@ func getEnvVarPermissions(permKind PermissionKind, desc Value) ([]Permission, er
 // getCommandPermissions gets a list of CommandPermission from an AST node
 func getCommandPermissions(n Value) ([]Permission, error) {
 
-	const ERR_PREFIX = "invalid manifest, use: commands: "
-	const ERR = ERR_PREFIX + "a command (or subcommand) name should be followed by object literals with the next subcommands as keys (or empty)"
-
 	var perms []Permission
 
 	topObject, ok := n.(*Object)
@@ -1738,20 +1756,20 @@ func getCommandPermissions(n Value) ([]Permission, error) {
 		return nil, errors.New(ERR)
 	}
 
-	for name, propValue := range topObject.EntryMap(nil) {
+	err := topObject.ForEachEntry(func(name string, propValue Serializable) error {
 		if name == inoxconsts.IMPLICIT_PROP_NAME {
-			continue
+			return nil
 		}
 
 		var cmdNameKey = name
 		var cmdName WrappedString
 		if strings.HasPrefix(cmdNameKey, "./") || strings.HasPrefix(cmdNameKey, "/") || strings.HasPrefix(cmdNameKey, "%") {
 
-			const PATH_ERR = ERR_PREFIX + "command starting with / or ./ should be valid paths"
+			const PATH_ERR = INVALID_COMMANDS_PREFIX + "command starting with / or ./ should be valid paths"
 
 			chunk, err := parse.ParseChunk(cmdNameKey, "")
 			if err != nil || len(chunk.Statements) != 1 {
-				return nil, errors.New(PATH_ERR)
+				return errors.New(PATH_ERR)
 			}
 			switch pth := chunk.Statements[0].(type) {
 			case *parse.AbsolutePathLiteral:
@@ -1763,11 +1781,11 @@ func getCommandPermissions(n Value) ([]Permission, error) {
 			case *parse.RelativePathPatternLiteral:
 				cmdName = PathPattern(pth.Value)
 			default:
-				return nil, errors.New(PATH_ERR)
+				return errors.New(PATH_ERR)
 			}
 
 			if patt, ok := cmdName.(PathPattern); ok && !patt.IsPrefixPattern() {
-				return nil, errors.New("only prefix path patterns are allowed")
+				return errors.New("only prefix path patterns are allowed")
 			}
 		} else {
 			cmdName = String(cmdNameKey)
@@ -1775,7 +1793,7 @@ func getCommandPermissions(n Value) ([]Permission, error) {
 
 		cmdDesc, ok := propValue.(*Object)
 		if !ok {
-			return nil, errors.New(ERR)
+			return errors.New(ERR)
 		}
 
 		if len(cmdDesc.keys) == 0 {
@@ -1783,55 +1801,67 @@ func getCommandPermissions(n Value) ([]Permission, error) {
 				CommandName: cmdName,
 			}
 			perms = append(perms, cmdPerm)
-			continue
+			return nil
 		}
 
-		for subcmdName, cmdDescPropVal := range cmdDesc.EntryMap(nil) {
-
-			if subcmdName == inoxconsts.IMPLICIT_PROP_NAME {
-				return nil, errors.New(ERR_PREFIX + "elements (values without a key) are not allowed")
-			}
-
-			subCmdDesc, ok := cmdDescPropVal.(*Object)
-			if !ok {
-				return nil, errors.New(ERR)
-			}
-
-			if len(subCmdDesc.keys) == 0 {
-				subcommandPerm := CommandPermission{
-					CommandName:         cmdName,
-					SubcommandNameChain: []string{subcmdName},
-				}
-				perms = append(perms, subcommandPerm)
-				continue
-			}
-
-			for deepSubCmdName, subCmdDescPropVal := range subCmdDesc.EntryMap(nil) {
-
-				if _, err := strconv.Atoi(deepSubCmdName); err == nil {
-					return nil, errors.New(ERR)
-				}
-
-				deepSubCmdDesc, ok := subCmdDescPropVal.(*Object)
-				if !ok {
-					return nil, errors.New(ERR)
-				}
-
-				if len(deepSubCmdDesc.keys) == 0 {
-					subcommandPerm := CommandPermission{
-						CommandName:         cmdName,
-						SubcommandNameChain: []string{subcmdName, deepSubCmdName},
-					}
-					perms = append(perms, subcommandPerm)
-					continue
-				}
-
-				return nil, errors.New(ERR_PREFIX + "the subcommand chain has a maximum length of 2")
-			}
+		err := getSubcommandPermissions(cmdName, cmdDesc, &perms)
+		if err != nil {
+			return err
 		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
 	}
 
 	return perms, nil
+}
+
+func getSubcommandPermissions(cmdName WrappedString, cmdDesc *Object, perms *[]Permission) error {
+	return cmdDesc.ForEachEntry(func(subcmdName string, cmdDescPropVal Serializable) error {
+		if subcmdName == inoxconsts.IMPLICIT_PROP_NAME {
+			return errors.New(INVALID_COMMANDS_PREFIX + "elements (values without a key) are not allowed")
+		}
+
+		subCmdDesc, ok := cmdDescPropVal.(*Object)
+		if !ok {
+			return errors.New(ERR)
+		}
+
+		if len(subCmdDesc.keys) == 0 {
+			subcommandPerm := CommandPermission{
+				CommandName:         cmdName,
+				SubcommandNameChain: []string{subcmdName},
+			}
+			*perms = append(*perms, subcommandPerm)
+			return nil
+		}
+
+		return cmdDesc.ForEachEntry(func(deepSubCmdName string, subCmdDescPropVal Serializable) error {
+
+			if _, err := strconv.Atoi(deepSubCmdName); err == nil {
+				return errors.New(ERR)
+			}
+
+			deepSubCmdDesc, ok := subCmdDescPropVal.(*Object)
+			if !ok {
+				return errors.New(ERR)
+			}
+
+			if len(deepSubCmdDesc.keys) != 0 {
+				return errors.New(INVALID_COMMANDS_PREFIX + "the subcommand chain has a maximum length of 2")
+			}
+
+			subcommandPerm := CommandPermission{
+				CommandName:         cmdName,
+				SubcommandNameChain: []string{subcmdName, deepSubCmdName},
+			}
+			*perms = append(*perms, subcommandPerm)
+			return nil
+		})
+	})
 }
 
 func getVisibilityPerms(desc Value) ([]Permission, error) {

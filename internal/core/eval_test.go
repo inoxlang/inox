@@ -5291,7 +5291,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 					dyn := actual.(*DynamicValue)
 
-					assert.Equal(t, map[string]Serializable{"v": Int(1)}, dyn.value.(*Object).EntryMap(nil))
+					assert.Equal(t, map[string]Serializable{"v": Int(1)}, dyn.value.(*Object).EntryMap(state.Ctx))
 					assert.Equal(t, String("v"), dyn.opData0)
 				},
 			},
@@ -5304,7 +5304,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 					dyn := actual.(*DynamicValue)
 
-					assert.Equal(t, map[string]Serializable{"a": Int(1)}, dyn.value.(*Object).EntryMap(nil))
+					assert.Equal(t, map[string]Serializable{"a": Int(1)}, dyn.value.(*Object).EntryMap(state.Ctx))
 					assert.Equal(t, String("a"), dyn.opData0)
 				},
 			},
@@ -5317,7 +5317,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 					dyn := actual.(*DynamicValue)
 
-					assert.Equal(t, map[string]Serializable{"a": Int(1)}, dyn.value.(*Object).EntryMap(nil))
+					assert.Equal(t, map[string]Serializable{"a": Int(1)}, dyn.value.(*Object).EntryMap(state.Ctx))
 					assert.Equal(t, String("a"), dyn.opData0)
 				},
 			},
@@ -5345,7 +5345,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 					dyn := actual.(*DynamicValue)
 
-					assert.Equal(t, map[string]Serializable{"x": Int(1)}, dyn.value.(*Object).EntryMap(nil))
+					assert.Equal(t, map[string]Serializable{"x": Int(1)}, dyn.value.(*Object).EntryMap(state.Ctx))
 					assert.Equal(t, String("x"), dyn.opData0)
 				},
 			},
@@ -5368,7 +5368,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					innerObj := NewObjectFromMap(nil, state.Ctx)
 					innerObj.Share(state)
 
-					assert.Equal(t, map[string]Serializable{"x": innerObj}, dyn.value.(*Object).EntryMap(nil))
+					assert.Equal(t, map[string]Serializable{"x": innerObj}, dyn.value.(*Object).EntryMap(state.Ctx))
 					assert.Equal(t, String("x"), dyn.opData0)
 				},
 			},

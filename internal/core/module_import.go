@@ -105,7 +105,7 @@ func buildImportConfig(obj *Object, importSource ResourceName, parentState *Glob
 		ParentState: parentState,
 	}
 
-	for k, v := range obj.EntryMap(nil) {
+	err = obj.ForEachEntry(func(k string, v Serializable) error {
 		switch k {
 		case IMPORT_CONFIG__VALIDATION_PROPNAME:
 			config.ValidationString = v.(String)
@@ -114,8 +114,13 @@ func buildImportConfig(obj *Object, importSource ResourceName, parentState *Glob
 		case IMPORT_CONFIG__ALLOW_PROPNAME:
 			config.GrantedPermListing = v.(*Object)
 		default:
-			return ImportConfig{}, fmt.Errorf("invalid import configuration, unknown section '%s'", k)
+			return fmt.Errorf("invalid import configuration, unknown section '%s'", k)
 		}
+		return nil
+	})
+
+	if err != nil {
+		return ImportConfig{}, err
 	}
 
 	return config, nil

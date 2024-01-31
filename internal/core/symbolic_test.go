@@ -11,8 +11,11 @@ import (
 )
 
 func TestSymbolicEvalCheck(t *testing.T) {
+	noPermsCtx := NewContexWithEmptyState(ContextConfig{}, nil)
+	defer noPermsCtx.CancelGracefully()
 
 	t.Run("predefined global variables do not cause an error", func(t *testing.T) {
+
 		code := `return ($$var + 1)`
 		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
 			NameString: "symbolic-core-test",
@@ -27,7 +30,7 @@ func TestSymbolicEvalCheck(t *testing.T) {
 			Globals: map[string]symbolic.ConcreteGlobalValue{
 				"var": {Value: Int(1), IsConstant: false},
 			},
-			Context: symbolic.NewSymbolicContext(nil, nil, nil),
+			Context: symbolic.NewSymbolicContext(noPermsCtx, nil, nil),
 		})
 
 		assert.NoError(t, err)
@@ -48,7 +51,7 @@ func TestSymbolicEvalCheck(t *testing.T) {
 			Globals: map[string]symbolic.ConcreteGlobalValue{
 				"var": {Value: Int(1), IsConstant: false},
 			},
-			Context: symbolic.NewSymbolicContext(nil, nil, nil),
+			Context: symbolic.NewSymbolicContext(noPermsCtx, nil, nil),
 		})
 
 		assert.NoError(t, err)
@@ -63,15 +66,18 @@ func TestSymbolicEvalCheck(t *testing.T) {
 
 		mod := &Module{MainChunk: chunk}
 
+		ctx := NewContext(ContextConfig{
+			Permissions: []Permission{LThreadPermission{Kind_: permkind.Create}},
+		})
+		defer ctx.CancelGracefully()
+
 		data, err := symbolic.EvalCheck(symbolic.EvalCheckInput{
 			Node:   chunk.Node,
 			Module: mod.ToSymbolic(),
 			Globals: map[string]symbolic.ConcreteGlobalValue{
 				"global1": {Value: Int(1), IsConstant: true},
 			},
-			Context: symbolic.NewSymbolicContext(NewContext(ContextConfig{
-				Permissions: []Permission{LThreadPermission{Kind_: permkind.Create}},
-			}), nil, nil),
+			Context: symbolic.NewSymbolicContext(ctx, nil, nil),
 		})
 
 		assert.NoError(t, err)
@@ -94,7 +100,7 @@ func TestSymbolicEvalCheck(t *testing.T) {
 			Globals: map[string]symbolic.ConcreteGlobalValue{
 				"global1": {Value: Int(1), IsConstant: true},
 			},
-			Context: symbolic.NewSymbolicContext(NewContext(ContextConfig{}), nil, nil),
+			Context: symbolic.NewSymbolicContext(noPermsCtx, nil, nil),
 		})
 
 		assert.NoError(t, err)
@@ -116,13 +122,16 @@ func TestSymbolicEvalCheck(t *testing.T) {
 
 		mod := &Module{MainChunk: chunk}
 
+		ctx := NewContext(ContextConfig{
+			Permissions: []Permission{LThreadPermission{Kind_: permkind.Create}},
+		})
+		defer ctx.CancelGracefully()
+
 		data, err := symbolic.EvalCheck(symbolic.EvalCheckInput{
 			Node:    chunk.Node,
 			Module:  mod.ToSymbolic(),
 			Globals: map[string]symbolic.ConcreteGlobalValue{},
-			Context: symbolic.NewSymbolicContext(NewContext(ContextConfig{
-				Permissions: []Permission{LThreadPermission{Kind_: permkind.Create}},
-			}), nil, nil),
+			Context: symbolic.NewSymbolicContext(ctx, nil, nil),
 		})
 
 		assert.NoError(t, err)

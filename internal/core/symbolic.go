@@ -65,8 +65,8 @@ func init() {
 			return result
 		}(),
 
-		ToSymbolicValue: func(v any, wide bool) (symbolic.Value, error) {
-			return ToSymbolicValue(nil, v.(Value), wide)
+		ToSymbolicValue: func(concreteCtx symbolic.ConcreteContext, v any, wide bool) (symbolic.Value, error) {
+			return ToSymbolicValue(concreteCtx.(*Context), v.(Value), wide)
 		},
 		SymbolicToPattern: func(v symbolic.Value) (any, bool) {
 			return symbolicToPattern(v)
@@ -671,8 +671,15 @@ func (obj *Object) ToSymbolicValue(ctx *Context, encountered map[uintptr]symboli
 
 	entries := map[string]symbolic.Serializable{}
 
-	obj.Lock(nil)
-	defer obj.Unlock(nil)
+	if obj.IsShared() {
+		if ctx == nil {
+			panic(errors.New("nil context"))
+		}
+		state := ctx.GetClosestState()
+		obj.Lock(state)
+		defer obj.Unlock(state)
+	}
+
 	for i, v := range obj.values {
 		k := obj.keys[i]
 		symbolicVal, err := _toSymbolicValue(ctx, v, false, encountered)
