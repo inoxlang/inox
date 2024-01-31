@@ -34,6 +34,7 @@ var (
 
 	_ = []GroupPattern{(*NamedSegmentPathPattern)(nil)}
 	_ = []DefaultValuePattern{(*ListPattern)(nil), (*TuplePattern)(nil)}
+	_ = []IPropsPattern{(*ObjectPattern)(nil), (*RecordPattern)(nil)}
 )
 
 func RegisterDefaultPattern(s string, m Pattern) {
@@ -91,6 +92,15 @@ type GroupPattern interface {
 type DefaultValuePattern interface {
 	Pattern
 	DefaultValue(ctx *Context) (Value, error)
+}
+
+type IPropsPattern interface {
+	Value
+	//ValuePropPattern should return the pattern of the property (name).
+	ValuePropPattern(name string) (propPattern Pattern, isOptional bool, ok bool)
+
+	//ValuePropertyNames should return the list of all property names (optional or not) of values matching the pattern.
+	ValuePropertyNames() []string
 }
 
 type NamespaceMemberPatternReprMixin struct {
@@ -531,6 +541,21 @@ func (patt *ObjectPattern) EntryCount() int {
 	return len(patt.entries)
 }
 
+func (patt *ObjectPattern) ValuePropPattern(name string) (propPattern Pattern, isOptional bool, ok bool) {
+	entry, ok := patt.CompleteEntry(name)
+	if !ok {
+		return nil, false, false
+	}
+
+	return entry.Pattern, entry.IsOptional, true
+}
+
+func (patt *ObjectPattern) ValuePropertyNames() []string {
+	return utils.MapSlice(patt.entries, func(e ObjectPatternEntry) string {
+		return e.Name
+	})
+}
+
 type ObjectPatternEntriesHelper []ObjectPatternEntry
 
 func (h ObjectPatternEntriesHelper) Entry(name string) (pattern Pattern, optional bool, yes bool) {
@@ -697,6 +722,21 @@ func (patt *RecordPattern) CompleteEntry(name string) (RecordPatternEntry, bool)
 		return RecordPatternEntry{}, false
 	}
 	return patt.entries[index], true
+}
+
+func (patt *RecordPattern) ValuePropPattern(name string) (propPattern Pattern, isOptional bool, ok bool) {
+	entry, ok := patt.CompleteEntry(name)
+	if !ok {
+		return nil, false, false
+	}
+
+	return entry.Pattern, entry.IsOptional, true
+}
+
+func (patt *RecordPattern) ValuePropertyNames() []string {
+	return utils.MapSlice(patt.entries, func(e RecordPatternEntry) string {
+		return e.Name
+	})
 }
 
 type ComplexPropertyConstraint struct {
