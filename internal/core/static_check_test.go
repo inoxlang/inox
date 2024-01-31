@@ -783,7 +783,7 @@ func TestCheck(t *testing.T) {
 
 	t.Run("dictionary literal", func(t *testing.T) {
 		t.Run("duplicate keys", func(t *testing.T) {
-			n, src := mustParseCode(`:{./a:0, ./a:1}`)
+			n, src := mustParseCode(`:{./a: 0, ./a: 1}`)
 
 			keyNode := parse.FindNodes(n, (*parse.RelativePathLiteral)(nil), nil)[1]
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
