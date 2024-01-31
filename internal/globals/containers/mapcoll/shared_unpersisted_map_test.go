@@ -172,7 +172,7 @@ func TestSharedUnpersistedMapHas(t *testing.T) {
 
 		done := make(chan struct{})
 		go func() {
-			for i := 0; i < 100_000; i++ {
+			for i := 0; i < ADD_COUNT; i++ {
 				m.Set(ctx2, core.Int(i+5), STRING_B)
 			}
 			done <- struct{}{}
