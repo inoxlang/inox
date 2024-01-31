@@ -103,7 +103,7 @@ func TestPreInit(t *testing.T) {
 				manifest {
 					permissions: {
 						read: {
-							%ldb://main
+							%ldb:
 						}
 					}
 				}`,

@@ -455,7 +455,7 @@ func TestCompileModule(t *testing.T) {
 			),
 			nil,
 		)
-		expectBytecode(t, `:{./a:1}`,
+		expectBytecode(t, `:{./a: 1}`,
 			0,
 			instrs(
 				inst(OpPushConstant, 0),
@@ -468,7 +468,7 @@ func TestCompileModule(t *testing.T) {
 				Int(1),
 			},
 		)
-		expectBytecode(t, `:{./a:1,./b:2}`,
+		expectBytecode(t, `:{./a: 1, ./b: 2}`,
 			0,
 			instrs(
 				inst(OpPushConstant, 0),
