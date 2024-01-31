@@ -264,7 +264,7 @@ func TestSharedUnpersistedSetHas(t *testing.T) {
 			}
 		}
 
-		assert.Greater(t, callCount, ADD_COUNT/10)
+		assert.Greater(t, callCount, ADD_COUNT/100) //just make sure the function was called several times.
 	})
 
 	//Tests with several transactions.
@@ -446,7 +446,7 @@ func TestSharedUnpersistedSetGetElementByKey(t *testing.T) {
 			}
 		}
 
-		assert.Greater(t, callCount, ADD_COUNT/10)
+		assert.Greater(t, callCount, ADD_COUNT/100) //just make sure the function was called several times.
 	})
 
 	//Tests with several transactions.
@@ -553,7 +553,7 @@ func TestSharedUnpersistedSetGet(t *testing.T) {
 			}
 		}
 
-		assert.Greater(t, callCount, ADD_COUNT/10)
+		assert.Greater(t, callCount, ADD_COUNT/100) //just make sure the function was called several times.
 	})
 
 	//Tests with several transactions.

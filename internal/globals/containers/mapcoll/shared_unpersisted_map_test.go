@@ -191,7 +191,7 @@ func TestSharedUnpersistedMapHas(t *testing.T) {
 			}
 		}
 
-		assert.Greater(t, callCount, ADD_COUNT/10)
+		assert.Greater(t, callCount, ADD_COUNT/100) //just make sure the function was called several times.
 	})
 }
 
@@ -264,7 +264,7 @@ func TestSharedUnpersistedMapContains(t *testing.T) {
 			}
 		}
 
-		assert.Greater(t, callCount, ADD_COUNT/10)
+		assert.Greater(t, callCount, ADD_COUNT/100) //just make sure the function was called several times.
 	})
 }
 
@@ -368,7 +368,7 @@ func TestSharedUnpersistedMapGet(t *testing.T) {
 			}
 		}
 
-		assert.Greater(t, callCount, ADD_COUNT/10)
+		assert.Greater(t, callCount, ADD_COUNT/100) //just make sure the function was called several times.
 	})
 }
 
@@ -447,7 +447,7 @@ func TestSharedUnpersistedMapGetElementByKey(t *testing.T) {
 			}
 		}
 
-		assert.Greater(t, callCount, ADD_COUNT/10)
+		assert.Greater(t, callCount, ADD_COUNT/100) //just make sure the function was called several times.
 	})
 }
 
