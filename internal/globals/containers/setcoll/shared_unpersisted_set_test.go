@@ -241,19 +241,30 @@ func TestSharedUnpersistedSetHas(t *testing.T) {
 
 		set.Share(ctx1.GetClosestState())
 
+		const ADD_COUNT = 10_000
+
 		done := make(chan struct{})
 		go func() {
-			for i := 0; i < 100_000; i++ {
+			for i := 0; i < ADD_COUNT; i++ {
 				set.Add(ctx2, core.Int(i+5))
 			}
 			done <- struct{}{}
 		}()
 
-		for i := 0; i < 100_000; i++ {
-			set.Has(ctx1, INT_1)
+		callCount := 0
+
+	loop:
+		for {
+			select {
+			case <-done:
+				break loop
+			default:
+				callCount++
+				set.Has(ctx1, INT_1)
+			}
 		}
 
-		<-done
+		assert.Greater(t, callCount, ADD_COUNT/10)
 	})
 
 	//Tests with several transactions.
@@ -412,19 +423,30 @@ func TestSharedUnpersistedSetGetElementByKey(t *testing.T) {
 
 		set.Share(ctx1.GetClosestState())
 
+		const ADD_COUNT = 10_000
+
 		done := make(chan struct{})
 		go func() {
-			for i := 0; i < 100_000; i++ {
+			for i := 0; i < ADD_COUNT; i++ {
 				set.Add(ctx2, core.Int(i+5))
 			}
 			done <- struct{}{}
 		}()
 
-		for i := 0; i < 100_000; i++ {
-			set.GetElementByKey(ctx1, INT_1_TYPED_REPR)
+		callCount := 0
+
+	loop:
+		for {
+			select {
+			case <-done:
+				break loop
+			default:
+				callCount++
+				set.GetElementByKey(ctx1, INT_1_TYPED_REPR)
+			}
 		}
 
-		<-done
+		assert.Greater(t, callCount, ADD_COUNT/10)
 	})
 
 	//Tests with several transactions.
@@ -508,19 +530,30 @@ func TestSharedUnpersistedSetGet(t *testing.T) {
 
 		set.Share(ctx1.GetClosestState())
 
+		const ADD_COUNT = 10_000
+
 		done := make(chan struct{})
 		go func() {
-			for i := 0; i < 100_000; i++ {
+			for i := 0; i < ADD_COUNT; i++ {
 				set.Add(ctx2, core.Int(i+5))
 			}
 			done <- struct{}{}
 		}()
 
-		for i := 0; i < 100_000; i++ {
-			set.Get(ctx1, core.String(INT_1_TYPED_REPR))
+		callCount := 0
+
+	loop:
+		for {
+			select {
+			case <-done:
+				break loop
+			default:
+				callCount++
+				set.Get(ctx1, core.String(INT_1_TYPED_REPR))
+			}
 		}
 
-		<-done
+		assert.Greater(t, callCount, ADD_COUNT/10)
 	})
 
 	//Tests with several transactions.

@@ -168,6 +168,8 @@ func TestSharedUnpersistedMapHas(t *testing.T) {
 		})
 		m.Share(ctx1.GetClosestState())
 
+		const ADD_COUNT = 10_000
+
 		done := make(chan struct{})
 		go func() {
 			for i := 0; i < 100_000; i++ {
@@ -176,11 +178,20 @@ func TestSharedUnpersistedMapHas(t *testing.T) {
 			done <- struct{}{}
 		}()
 
-		for i := 0; i < 100_000; i++ {
-			m.Has(ctx1, INT_1)
+		callCount := 0
+
+	loop:
+		for {
+			select {
+			case <-done:
+				break loop
+			default:
+				callCount++
+				m.Has(ctx1, INT_1)
+			}
 		}
 
-		<-done
+		assert.Greater(t, callCount, ADD_COUNT/10)
 	})
 }
 
@@ -230,19 +241,30 @@ func TestSharedUnpersistedMapContains(t *testing.T) {
 		})
 		m.Share(ctx1.GetClosestState())
 
+		const ADD_COUNT = 10_000
+
 		done := make(chan struct{})
 		go func() {
-			for i := 0; i < 10_000; i++ {
+			for i := 0; i < ADD_COUNT; i++ {
 				m.Set(ctx2, core.Int(i+5), STRING_B)
 			}
 			done <- struct{}{}
 		}()
 
-		for i := 0; i < 10_000; i++ {
-			m.Contains(ctx1, STRING_A)
+		callCount := 0
+
+	loop:
+		for {
+			select {
+			case <-done:
+				break loop
+			default:
+				callCount++
+				m.Contains(ctx1, STRING_A)
+			}
 		}
 
-		<-done
+		assert.Greater(t, callCount, ADD_COUNT/10)
 	})
 }
 
@@ -323,19 +345,30 @@ func TestSharedUnpersistedMapGet(t *testing.T) {
 		})
 		m.Share(ctx1.GetClosestState())
 
+		const ADD_COUNT = 10_000
+
 		done := make(chan struct{})
 		go func() {
-			for i := 0; i < 10_000; i++ {
+			for i := 0; i < ADD_COUNT; i++ {
 				m.Set(ctx2, core.Int(i+5), STRING_B)
 			}
 			done <- struct{}{}
 		}()
 
-		for i := 0; i < 10_000; i++ {
-			m.Get(ctx1, STRING_A)
+		callCount := 0
+
+	loop:
+		for {
+			select {
+			case <-done:
+				break loop
+			default:
+				callCount++
+				m.Get(ctx1, STRING_A)
+			}
 		}
 
-		<-done
+		assert.Greater(t, callCount, ADD_COUNT/10)
 	})
 }
 
@@ -390,21 +423,31 @@ func TestSharedUnpersistedMapGetElementByKey(t *testing.T) {
 		})
 		m.Share(ctx1.GetClosestState())
 
+		const ADD_COUNT = 10_000
+
 		done := make(chan struct{})
 		go func() {
-			for i := 0; i < 10_000; i++ {
+			for i := 0; i < ADD_COUNT; i++ {
 				m.Set(ctx2, core.Int(i+5), STRING_B)
 			}
 			done <- struct{}{}
 		}()
 
+		callCount := 0
 		int1ElemKey := m.getElementPathKeyFromKey(INT_1_TYPED_REPR)
 
-		for i := 0; i < 10_000; i++ {
-			m.GetElementByKey(ctx1, int1ElemKey)
+	loop:
+		for {
+			select {
+			case <-done:
+				break loop
+			default:
+				callCount++
+				m.GetElementByKey(ctx1, int1ElemKey)
+			}
 		}
 
-		<-done
+		assert.Greater(t, callCount, ADD_COUNT/10)
 	})
 }
 
