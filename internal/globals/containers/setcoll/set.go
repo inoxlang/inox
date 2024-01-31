@@ -68,6 +68,14 @@ type Set struct {
 
 	//note: do not use nested map for pending inclusions when optimizations specific to URL-uniqueness
 	//will be implemented.
+
+	//TODO: update watching logic
+
+	//watching
+	watchers              *core.ValueWatchers
+	mutationCallbacks     *core.MutationCallbacks
+	watchingDepth         core.WatchingDepth
+	propMutationCallbacks []core.CallbackHandle
 }
 
 func NewSet(ctx *core.Context, elements core.Iterable, configParam *core.OptionalParam[*core.Object]) *Set {

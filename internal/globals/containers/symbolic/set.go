@@ -26,6 +26,7 @@ var (
 	_ = []symbolic.Serializable{(*Set)(nil)}
 	_ = []symbolic.PotentiallySharable{(*Set)(nil)}
 	_ = []symbolic.UrlHolder{(*Set)(nil)}
+	_ = []symbolic.Watchable{(*Set)(nil)}
 
 	_ = []symbolic.PotentiallyConcretizable{(*SetPattern)(nil)}
 	_ = []symbolic.MigrationInitialValueCapablePattern{(*SetPattern)(nil)}
@@ -115,6 +116,10 @@ func (s *Set) Share(originState *symbolic.State) symbolic.PotentiallySharable {
 
 func (s *Set) IsShared() bool {
 	return s.shared
+}
+
+func (set *Set) WatcherElement() symbolic.Value {
+	return symbolic.ANY
 }
 
 func (s *Set) WithURL(url *symbolic.URL) symbolic.UrlHolder {
