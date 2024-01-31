@@ -55,6 +55,8 @@ const (
 	SESSIONS_DESC_COLLECTION_PROPNAME     = "collection"
 
 	HTTP_SERVER_SRC = "http/server"
+
+	SESSION_ID_PROPNAME = "id"
 )
 
 var (
@@ -70,7 +72,7 @@ var (
 	}, nil)
 
 	SESSIONS_CONFIG_SYMB_OBJ = symbolic.NewInexactObject2(map[string]symbolic.Serializable{
-		SESSIONS_DESC_COLLECTION_PROPNAME: symb_containers.NewSetWithPattern(symbolic.ANY_PATTERN, common.NewPropertyValueUniqueness("id")),
+		SESSIONS_DESC_COLLECTION_PROPNAME: symb_containers.NewSetWithPattern(symbolic.ANY_PATTERN, common.NewPropertyValueUniqueness(SESSION_ID_PROPNAME)),
 	})
 
 	SYMBOLIC_HANDLING_DESC = symbolic.NewInexactObject(map[string]symbolic.Serializable{

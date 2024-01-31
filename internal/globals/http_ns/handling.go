@@ -190,11 +190,33 @@ func respondWithMappingResult(h handlingArguments) {
 		rw.writeHeaders(int(v))
 		return
 	case *Result:
-		maps.Copy(rw.headers(), v.headers)
-		statusIfAccepted = int(v.status)
+		httpResult := v
+		maps.Copy(rw.headers(), httpResult.headers)
+		statusIfAccepted = int(httpResult.status)
 
-		//use the value inside the result
-		value = v.value
+		//Use the value inside the result
+		value = httpResult.value
+
+		//Add the session and session cookie.
+		if httpResult.session != nil {
+			session := httpResult.session
+			if server.sessions == nil {
+				rw.writeHeaders(http.StatusInternalServerError)
+				logger.Print("returned http Result has a session but the server has no collection to store sessions")
+				return
+			}
+			e := state.Ctx.IsDoneSlowCheck()
+			_ = e
+			sessionIDValue := session.Prop(state.Ctx, SESSION_ID_PROPNAME)
+			sessionID := sessionIDValue.(core.StringLike).GetOrBuildString()
+			logger.Print("add cookie")
+
+			addSessionIdCookie(rw, sessionID)
+			defer func() {
+				server.sessions.Add(state.Ctx, session)
+			}()
+		}
+
 	case core.Identifier:
 		switch v {
 		case "notfound":

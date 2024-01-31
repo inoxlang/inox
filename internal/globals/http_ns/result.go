@@ -23,7 +23,7 @@ var (
 			RESULT_INIT_STATUS_PROPNAME:  http_ns_symb.ANY_STATUS_CODE,
 			RESULT_INIT_BODY_PROPNAME:    symbolic.AsSerializableChecked(symbolic.NewMultivalue(html_ns_symb.ANY_HTML_NODE, symbolic.ANY_STR_LIKE)),
 			RESULT_INIT_HEADERS_PROPNAME: symbolic.NewInexactObject2(map[string]symbolic.Serializable{}),
-			RESULT_INIT_SESSION_PROPNAME: symbolic.NewInexactObject2(map[string]symbolic.Serializable{"id": symbolic.STRLIKE_LIST}),
+			RESULT_INIT_SESSION_PROPNAME: symbolic.NewInexactObject2(map[string]symbolic.Serializable{SESSION_ID_PROPNAME: symbolic.ANY_STR_LIKE}),
 		},
 		map[string]struct{}{
 			RESULT_INIT_STATUS_PROPNAME:  {},
@@ -39,7 +39,7 @@ var (
 )
 
 type Result struct {
-	value   core.Serializable
+	value   core.Serializable //can be nil
 	status  StatusCode
 	headers http.Header
 	session *core.Object //can be nil

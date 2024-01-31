@@ -1029,6 +1029,143 @@ func TestFilesystemRouting(t *testing.T) {
 		)
 	})
 
+	t.Run("session in returned result should be stored and a cookie should be sent", func(t *testing.T) {
+
+		runServerTest(t,
+			serverTestCase{
+				input: `
+					manifest {
+						permissions: {
+							read: ldb://main
+							write: ldb://main
+						}
+					}
+					return {
+						routing: {dynamic: /routes/}
+						sessions: {
+							collection: dbs.main.sessions
+						}
+					}
+				`,
+				additionalGlobalConstsForStaticChecks: []string{"dbs"},
+				finalizeState: func(gs *core.GlobalState) error {
+					host := core.Host("ldb://main")
+
+					localDb, err := localdb.OpenDatabase(gs.Ctx, host, false)
+					if err != nil {
+						return err
+					}
+					db, err := core.WrapDatabase(gs.Ctx, core.DatabaseWrappingArgs{
+						Inner:                localDb,
+						OwnerState:           gs,
+						Name:                 "main",
+						ExpectedSchemaUpdate: true,
+					})
+					if err != nil {
+						return err
+					}
+					gs.Databases = map[string]*core.DatabaseIL{
+						"main": db,
+					}
+
+					setPattern, err := setcoll.SET_PATTERN.CallImpl(setcoll.SET_PATTERN, []core.Serializable{
+						core.NewInexactObjectPattern([]core.ObjectPatternEntry{{Name: SESSION_ID_PROPNAME, Pattern: core.STR_PATTERN}}),
+						core.PropertyName(SESSION_ID_PROPNAME),
+					})
+
+					if err != nil {
+						return err
+					}
+
+					schema := core.NewExactObjectPattern([]core.ObjectPatternEntry{
+						{Name: "sessions", Pattern: setPattern},
+					})
+
+					db.UpdateSchema(gs.Ctx, schema, core.NewObjectFromMapNoInit(core.ValMap{
+						"inclusions": core.NewDictionary(core.ValMap{
+							core.GetJSONRepresentation(core.PathPattern("/sessions"), gs.Ctx, nil): core.NewWrappedValueList(),
+						}),
+					}))
+
+					gs.Globals.Set("dbs", core.NewMutableEntriesNamespace("dbs", map[string]core.Value{
+						"main": db,
+					}))
+
+					gs.Manifest = &core.Manifest{
+						Databases: core.DatabaseConfigs{
+							{
+								Name:                 "main",
+								Resource:             host,
+								ResolutionData:       core.Nil,
+								ExpectedSchemaUpdate: false,
+								Owned:                true,
+								Provided:             db,
+							},
+						},
+					}
+
+					return nil
+				},
+				makeFilesystem: func() core.SnapshotableFilesystem {
+					fls := fs_ns.NewMemFilesystem(10_000)
+					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
+					util.WriteFile(fls, "/routes/POST-sessions.ix", []byte(`
+							manifest {
+								databases: /main.ix
+								permissions: {
+									read: ldb://main
+								}
+							}
+
+							return Result{
+								session: {
+									id: "AAA"
+								}
+								body: ""
+							}
+						`), fs_ns.DEFAULT_FILE_FMODE)
+
+					util.WriteFile(fls, "/routes/GET-sessions.ix", []byte(`
+						manifest {
+							databases: /main.ix
+							permissions: {
+								read: ldb://main
+							}
+						}
+						
+						var ids str = ""
+						for session in dbs.main.sessions {
+							ids = concat ids session.id ";"
+						}
+
+						return ids
+					`), fs_ns.DEFAULT_FILE_FMODE)
+
+					return fls
+				},
+				requests: []requestTestInfo{
+					{
+						path:                "/sessions",
+						method:              "POST",
+						contentType:         mimeconsts.PLAIN_TEXT_CTYPE,
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+						expectedCookieValues: map[string]string{
+							DEFAULT_SESSION_ID_KEY: "AAA;",
+						},
+					},
+					{
+						pause:               10 * time.Millisecond,
+						path:                "/sessions",
+						method:              "GET",
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+						result:              "AAA;",
+					},
+				},
+			},
+			createClient,
+		)
+	})
+
 	t.Run("request transaction should be commited or rollbacked after request", func(t *testing.T) {
 
 		testconfig.AllowParallelization(t)

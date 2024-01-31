@@ -913,14 +913,22 @@ func setupTestCase(t *testing.T, testCase serverTestCase) (*core.GlobalState, *c
 	state.Logger = zerolog.New(out)
 	state.Out = out
 
+	if testCase.outWriter != nil {
+		state.LogLevels = core.NewLogLevels(core.LogLevelsInitialization{
+			DefaultLevel:            zerolog.DebugLevel,
+			EnableInternalDebugLogs: true,
+		})
+	}
+
 	staticData, err := core.StaticCheck(core.StaticCheckInput{
-		State:             state,
-		Node:              state.Module.MainChunk.Node,
-		Module:            state.Module,
-		Chunk:             state.Module.MainChunk,
-		Globals:           state.Globals,
-		Patterns:          state.Ctx.GetNamedPatterns(),
-		PatternNamespaces: state.Ctx.GetPatternNamespaces(),
+		State:                  state,
+		Node:                   state.Module.MainChunk.Node,
+		Module:                 state.Module,
+		Chunk:                  state.Module.MainChunk,
+		Globals:                state.Globals,
+		Patterns:               state.Ctx.GetNamedPatterns(),
+		PatternNamespaces:      state.Ctx.GetPatternNamespaces(),
+		AdditionalGlobalConsts: testCase.additionalGlobalConstsForStaticChecks,
 	})
 	if !assert.NoError(t, err) {
 		return nil, nil, nil, "", err
@@ -1135,7 +1143,7 @@ func runAdvancedServerTest(
 				if info.okayIf429 && resp.StatusCode == 429 {
 					goto check_body
 				}
-				if !assert.Equal(t, 200, resp.StatusCode) {
+				if !assert.Equal(t, 200, resp.StatusCode, reqInfo) {
 					return
 				}
 			} else {
@@ -1156,6 +1164,24 @@ func runAdvancedServerTest(
 
 			for headerName, expectedValues := range info.expectedHeaderSubset {
 				assert.Equal(t, expectedValues, resp.Header.Values(headerName))
+			}
+
+			//check cookies
+			{
+				cookies := resp.Cookies()
+			check_cookies:
+				for cookieName, expectedValue := range info.expectedCookieValues {
+					for _, cookie := range cookies {
+						if cookie.Name == cookieName {
+							if !assert.Equal(t, expectedValue, cookie.Value, "cookie "+cookieName) {
+								return
+							}
+							continue check_cookies
+						}
+					}
+					assert.Fail(t, "failed to find cookie "+cookieName)
+					return
+				}
 			}
 
 		check_body:
@@ -1213,6 +1239,7 @@ type requestTestInfo struct {
 	err                           error
 	status                        int //defaults to 200
 	expectedHeaderSubset          http.Header
+	expectedCookieValues          map[string]string
 	okayIf429                     bool
 
 	onStartSending   func()
@@ -1220,13 +1247,14 @@ type requestTestInfo struct {
 }
 
 type serverTestCase struct {
-	input                    string
-	requests                 []requestTestInfo
-	outWriter                io.Writer
-	makeFilesystem           func() core.SnapshotableFilesystem
-	finalizeState            func(*core.GlobalState) error
-	createClientFn           func() func() *http.Client
-	avoidTestParallelization bool
+	input                                 string
+	requests                              []requestTestInfo
+	outWriter                             io.Writer
+	makeFilesystem                        func() core.SnapshotableFilesystem
+	additionalGlobalConstsForStaticChecks []string
+	finalizeState                         func(*core.GlobalState) error
+	createClientFn                        func() func() *http.Client
+	avoidTestParallelization              bool
 }
 
 func createHandlers(t *testing.T, code string) (*core.InoxFunction, *core.InoxFunction, *core.Module) {
