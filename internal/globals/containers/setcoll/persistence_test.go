@@ -290,7 +290,7 @@ func TestPersistLoadSet(t *testing.T) {
 			if strings.Index(serialized, `"a"`) < strings.Index(serialized, `"b"`) {
 				assert.Equal(t, `[{"id":"a"},{"id":"b"}]`, serialized)
 			} else {
-				assert.Equal(t, `[{"id":"b"},{"object__value":{"id":"a"}]`, serialized)
+				assert.Equal(t, `[{"id":"b"},{"id":"a"}]`, serialized)
 			}
 		}
 
