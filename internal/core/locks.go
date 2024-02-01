@@ -106,7 +106,7 @@ func (lock *SmartLock) Lock(state *GlobalState, embedder PotentiallySharable, ig
 					defer lock.lockLock.Unlock()
 					lock.holderState = state
 					lock.takeover = false
-					lock.holdStart = GetRelativeTimeInstant32()
+					lock.holdStart = GetRelativeTimeInstant64()
 					lock.firstEntry = string(debug.Stack())
 				}()
 				return
@@ -118,7 +118,7 @@ func (lock *SmartLock) Lock(state *GlobalState, embedder PotentiallySharable, ig
 					defer lock.lockLock.Unlock()
 					lock.holderState = state
 					lock.takeover = false
-					lock.holdStart = GetRelativeTimeInstant32()
+					lock.holdStart = GetRelativeTimeInstant64()
 					lock.firstEntry = string(debug.Stack())
 				}()
 				return
@@ -138,7 +138,7 @@ func (lock *SmartLock) Lock(state *GlobalState, embedder PotentiallySharable, ig
 
 					lock.takeover = true
 					lock.holderState = state
-					lock.holdStart = GetRelativeTimeInstant32()
+					lock.holdStart = GetRelativeTimeInstant64()
 					lock.firstEntry = string(debug.Stack())
 
 					//Release the internal lock.
@@ -172,7 +172,7 @@ func (lock *SmartLock) tryLockIfNoPressure(state *GlobalState) bool {
 	if lock.holderState == nil && lock.totalWaitPressure == 0 {
 		lock.holderState = state
 		lock.takeover = false
-		lock.holdStart = GetRelativeTimeInstant32()
+		lock.holdStart = GetRelativeTimeInstant64()
 		lock.firstEntry = string(debug.Stack())
 		return true
 	}
