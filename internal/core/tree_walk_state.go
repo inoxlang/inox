@@ -61,7 +61,10 @@ func NewTreeWalkStateWithGlobal(global *GlobalState) *TreeWalkState {
 }
 
 // Reset recycles the state by resetting its fields. Since references to the state may exist somewhere
-// Reset() should only be used for very simple programs, at least for now.
+// Reset() should only be used for very simple programs, at least for now. Calling Reset() with a *GlobalState
+// is almost equivalent as creating a new state with NewTreeWalkStateWithGlobal. It is recommended to call
+// Reset(nil) if the caller is able to know when the previous module has finished executing: this will remove
+// references to the old state and to some values.
 func (state *TreeWalkState) Reset(global *GlobalState) {
 	if !state.Global.Ctx.IsDone() {
 		panic(errors.New("cannot reset a tree-walk state that is still in use"))
@@ -72,9 +75,11 @@ func (state *TreeWalkState) Reset(global *GlobalState) {
 	state.chunkStack = state.chunkStack[:0]
 	state.fullChunkStack = state.fullChunkStack[:0]
 
-	chunk := &parse.ChunkStackItem{Chunk: global.Module.MainChunk}
-	state.chunkStack = append(state.chunkStack, chunk)
-	state.fullChunkStack = append(state.fullChunkStack, chunk)
+	if global != nil {
+		chunk := &parse.ChunkStackItem{Chunk: global.Module.MainChunk}
+		state.chunkStack = append(state.chunkStack, chunk)
+		state.fullChunkStack = append(state.fullChunkStack, chunk)
+	}
 
 	clear(state.constantVars)
 	state.iterationChange = NoIterationChange
