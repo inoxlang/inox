@@ -49,6 +49,14 @@ func (lock *SmartLock) Share(originState *GlobalState, fn func()) {
 	fn()
 }
 
+// IsHeld tells whether the lock is held, regardless of the state of the holder (cancelled or not).
+func (lock *SmartLock) IsHeld() bool {
+	lock.lockLock.Lock()
+	defer lock.lockLock.Unlock()
+
+	return lock.holderState != nil
+}
+
 func (lock *SmartLock) Lock(state *GlobalState, embedder PotentiallySharable, ignoreLockedValues ...bool) {
 	if state == nil {
 		panic(errors.New("cannot lock smart lock: nil state"))

@@ -129,6 +129,12 @@ func TestSmartLock(t *testing.T) {
 			panic(state1.Ctx.Err())
 		}()
 
+		start := time.Now()
+
+		for !lock.IsHeld() {
+			time.Sleep(time.Millisecond)
+		}
+
 		startWaiting := make(chan struct{})
 		go func() {
 			startWaiting <- struct{}{}
@@ -136,8 +142,6 @@ func TestSmartLock(t *testing.T) {
 		}()
 
 		<-startWaiting
-
-		start := time.Now()
 
 		select {
 		case e := <-state1Panic:
