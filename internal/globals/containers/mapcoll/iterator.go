@@ -9,6 +9,10 @@ func (s *Map) Iterator(ctx *core.Context, config core.IteratorConfiguration) cor
 	i := -1
 	var entries []entry
 
+	closestState := ctx.GetClosestState()
+	s._lock(closestState)
+	defer s._unlock(closestState)
+
 add_entries:
 	for serializedKey, entry := range s.entryByKey {
 		for _, removedKey := range s.pendingRemovals {

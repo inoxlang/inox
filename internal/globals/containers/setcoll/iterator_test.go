@@ -206,4 +206,50 @@ func TestSetIteration(t *testing.T) {
 		}
 	})
 
+	t.Run("iteration should be thread safe", func(t *testing.T) {
+		ctx1, ctx2, _ := sharedSetTestSetup2(t)
+		defer ctx1.CancelGracefully()
+		defer ctx2.CancelGracefully()
+
+		core.StartNewReadonlyTransaction(ctx1)
+		//ctx2 has no transaction on purpose.
+
+		elements := core.NewWrappedValueList(INT_1, INT_2)
+
+		set := NewSetWithConfig(ctx1, elements, SetConfig{
+			Uniqueness: common.UniquenessConstraint{
+				Type: common.UniqueRepr,
+			},
+		})
+
+		set.Share(ctx1.GetClosestState())
+
+		const ADD_COUNT = 10_000
+
+		done := make(chan struct{})
+		go func() {
+			for i := 0; i < ADD_COUNT; i++ {
+				set.Add(ctx2, core.Int(i+5))
+			}
+			done <- struct{}{}
+		}()
+
+		callCount := 0
+
+	loop:
+		for {
+			select {
+			case <-done:
+				break loop
+			default:
+				it := set.Iterator(ctx1, core.IteratorConfiguration{})
+
+				for it.Next(ctx1) {
+					callCount++
+				}
+			}
+		}
+
+		assert.Greater(t, callCount, ADD_COUNT/10) //just make sure the function was called several times.
+	})
 }

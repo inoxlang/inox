@@ -134,12 +134,51 @@ func TestThreadIteration(t *testing.T) {
 		assert.False(t, it.Next(ctx))
 
 	})
-	t.Run("iteration in two goroutines", func(t *testing.T) {
-		//TODO
-	})
 
-	t.Run("iteration as another goroutine modifies the Set", func(t *testing.T) {
-		//TODO
+	t.Run("iteration should be thread safe", func(t *testing.T) {
+		ctx1 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx1.CancelGracefully()
+
+		ctx2 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx2.CancelGracefully()
+
+		core.StartNewReadonlyTransaction(ctx1)
+		//ctx2 has no transaction on purpose.
+
+		elem1 := core.NewObjectFromMapNoInit(core.ValMap{"a": core.Int(1)})
+		elem2 := core.NewObjectFromMapNoInit(core.ValMap{"a": core.Int(2)})
+
+		thread := newEmptyThread(ctx2, THREAD_URL, NewThreadPattern(ThreadConfig{}))
+		thread.Add(ctx2, elem1)
+		thread.Add(ctx2, elem2)
+
+		const ADD_COUNT = 10_000
+
+		done := make(chan struct{})
+		go func() {
+			for i := 0; i < ADD_COUNT; i++ {
+				thread.Add(ctx2, core.NewObjectFromMapNoInit(core.ValMap{"a": core.Int(i)}))
+			}
+			done <- struct{}{}
+		}()
+
+		callCount := 0
+
+	loop:
+		for {
+			select {
+			case <-done:
+				break loop
+			default:
+				it := thread.Iterator(ctx1, core.IteratorConfiguration{})
+
+				for it.Next(ctx1) {
+					callCount++
+				}
+			}
+		}
+
+		assert.Greater(t, callCount, ADD_COUNT/10) //just make sure the function was called several times.
 	})
 
 }
