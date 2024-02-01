@@ -63,6 +63,8 @@ func addFilesysteDirEndpoints(
 	fls := ctx.GetFileSystem()
 	entries, err := fls.ReadDir(dir)
 
+	//Normalize the directory and the URL directory.
+
 	dir = core.AppendTrailingSlashIfNotPresent(dir)
 	urlDirPath = core.AppendTrailingSlashIfNotPresent(urlDirPath)
 
@@ -87,9 +89,15 @@ func addFilesysteDirEndpoints(
 		entryName := entry.Name()
 		absEntryPath := filepath.Join(dir, entryName)
 
+		//If the entry is a directory we recursively add the endpoints defined inside it.
 		if entry.IsDir() {
 			subDir := absEntryPath + "/"
-			urlSubDir := filepath.Join(urlDirPath, entryName) + "/"
+			urlSubDir := ""
+			if entryName[0] == ':' {
+				urlSubDir = filepath.Join(urlDirPath, "{"+entryName[1:]+"}") + "/"
+			} else {
+				urlSubDir = filepath.Join(urlDirPath, entryName) + "/"
+			}
 
 			err := addFilesysteDirEndpoints(ctx, config, endpoints, subDir, urlSubDir, preparedModuleCache)
 			if err != nil {
@@ -98,16 +106,17 @@ func addFilesysteDirEndpoints(
 			continue
 		}
 
-		//ignore non-Inox files and .ix files
+		//Ignore non-Inox files and .spec.ix files.
 		if !strings.HasSuffix(entryName, inoxconsts.INOXLANG_FILE_EXTENSION) || strings.HasSuffix(entryName, inoxconsts.INOXLANG_SPEC_FILE_SUFFIX) {
 			continue
 		}
 
 		entryNameNoExt := strings.TrimSuffix(entryName, inoxconsts.INOXLANG_FILE_EXTENSION)
 
+		//Determine the endpoint path and method by 'parsing' the entry name.
 		var endpointPath string
 		var method string //if empty the handler module supports several methods
-		ignoreIfNotModule := false
+		returnErrIfNotModule := true
 
 		if slices.Contains(FS_ROUTING_METHODS, entryNameNoExt) { //GET.ix, POST.ix, ...
 			//add operation
@@ -123,15 +132,16 @@ func addFilesysteDirEndpoints(
 				endpointPath = urlDirPathNoTrailingSlash
 			} else { //example: about.ix
 				endpointPath = filepath.Join(urlDirPath, entryNameNoExt)
-				ignoreIfNotModule = true
+				returnErrIfNotModule = false
 			}
 		}
 
-		//remove trailing slash
+		//Remove trailing slash.
 		if endpointPath != "/" {
 			endpointPath = strings.TrimSuffix(endpointPath, "/")
 		}
 
+		//Determine if the file is an Inox module.
 		chunk, err := core.ParseFileChunk(absEntryPath, fls)
 		if err != nil {
 			if config.IgnoreModulesWithErrors {
@@ -141,13 +151,13 @@ func addFilesysteDirEndpoints(
 		}
 
 		if chunk.Node.Manifest == nil { //not a module
-			if ignoreIfNotModule {
-				continue
+			if returnErrIfNotModule {
+				return fmt.Errorf("%q is not a module", absEntryPath)
 			}
-			return fmt.Errorf("%q is not a module", absEntryPath)
+			continue
 		}
 
-		//add endpoint
+		//Add endpoint.
 		endpt := endpoints[endpointPath]
 		if endpt == nil && endpointPath == "/" {
 			endpt = &ApiEndpoint{
@@ -155,7 +165,7 @@ func addFilesysteDirEndpoints(
 			}
 			endpoints[endpointPath] = endpt
 		} else if endpt == nil {
-			//add endpoint into the API
+			//Add endpoint into the API.
 			endpt = &ApiEndpoint{
 				path: endpointPath,
 			}
@@ -165,7 +175,7 @@ func addFilesysteDirEndpoints(
 			}
 		}
 
-		//check the same operation is not already defined
+		//Check the same operation is not already defined.
 		for _, op := range endpt.operations {
 			if op.httpMethod == method || method == "" {
 				if op.handlerModule != nil {
@@ -189,6 +199,7 @@ func addFilesysteDirEndpoints(
 
 		var parentCtx *core.Context = ctx
 
+		//If the databases are defined in another module we retrieve this module.
 		if path, ok := dbSection.(*parse.AbsolutePathLiteral); ok {
 			if cache, ok := preparedModuleCache[path.Value]; ok {
 				parentCtx = cache.Ctx

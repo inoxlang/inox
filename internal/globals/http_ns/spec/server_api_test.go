@@ -117,9 +117,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			ctx := setup(map[string]string{
 				"/routes/index.ix": `
 					manifest {
-						parameters: {
-	
-						}
+						parameters: {}
 					}
 				`,
 			})
@@ -150,9 +148,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			ctx := setup(map[string]string{
 				"/routes/users/index.ix": `
 					manifest {
-						parameters: {
-	
-						}
+						parameters: {}
 					}
 				`,
 			})
@@ -186,9 +182,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			ctx := setup(map[string]string{
 				"/routes/GET.ix": `
 					manifest {
-						parameters: {
-	
-						}
+						parameters: {}
 					}
 				`,
 			})
@@ -210,9 +204,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			ctx := setup(map[string]string{
 				"/routes/users/GET.ix": `
 					manifest {
-						parameters: {
-	
-						}
+						parameters: {}
 					}
 				`,
 			})
@@ -234,9 +226,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			ctx := setup(map[string]string{
 				"/routes/GET-users.ix": `
 					manifest {
-						parameters: {
-	
-						}
+						parameters: {}
 					}
 				`,
 			})
@@ -258,9 +248,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			ctx := setup(map[string]string{
 				"/routes/GET-users.ix": `
 					manifest {
-						parameters: {
-	
-						}
+						parameters: {}
 					}
 				`,
 			})
@@ -282,9 +270,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			ctx := setup(map[string]string{
 				"/routes/x/users.ix": `
 					manifest {
-						parameters: {
-	
-						}
+						parameters: {}
 					}
 				`,
 			})
@@ -328,34 +314,25 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			ctx := setup(map[string]string{
 				"/routes/a.spec.ix": `
 					manifest {
-						parameters: {
-	
-						}
+						parameters: {}
 					}
 				`,
 				"/routes/b.spec.ix": `
-					manifest {
-					}
+					manifest {}
 				`,
 				"/routes/c.ix": `
 					manifest {
-						parameters: {
-	
-						}
+						parameters: {}
 					}
 				`,
 				"/routes/d/e.ix": `
 					manifest {
-						parameters: {
-	
-						}
+						parameters: {}
 					}
 				`,
 				"/routes/d/f.spec.ix": `
 					manifest {
-						parameters: {
-	
-						}
+						parameters: {}
 					}
 				`,
 			})
@@ -388,6 +365,28 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 
 			assert.NotNil(t, api.tree)
 		})
+
+		t.Run("GET.ix in a parametric directory", func(t *testing.T) {
+			testconfig.AllowParallelization(t)
+
+			ctx := setup(map[string]string{
+				"/routes/users/:user-id/GET.ix": `
+					manifest {
+						parameters: {}
+					}
+				`,
+			})
+			defer ctx.CancelGracefully()
+
+			api, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			if !assert.Contains(t, api.endpoints, "/users/{user-id}") {
+				return
+			}
+		})
 	})
 
 	t.Run("an error is expected if at least two modules handle the same API operation", func(t *testing.T) {
@@ -399,16 +398,12 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			ctx := setup(map[string]string{
 				"/routes/GET.ix": `
 					manifest {
-						parameters: {
-
-						}
+						parameters: {}
 					}
 				`,
 				"/routes/index.ix": `
 					manifest {
-						parameters: {
-
-						}
+						parameters: {}
 					}
 				`,
 			})
@@ -424,16 +419,12 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			ctx := setup(map[string]string{
 				"/routes/GET-users.ix": `
 					manifest {
-						parameters: {
-
-						}
+						parameters: {}
 					}
 				`,
 				"/routes/users/index.ix": `
 					manifest {
-						parameters: {
-
-						}
+						parameters: {}
 					}
 				`,
 			})
@@ -449,16 +440,12 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			ctx := setup(map[string]string{
 				"/routes/GET-users.ix": `
 					manifest {
-						parameters: {
-
-						}
+						parameters: {}
 					}
 				`,
 				"/routes/users/GET.ix": `
 					manifest {
-						parameters: {
-
-						}
+						parameters: {}
 					}
 				`,
 			})
@@ -474,16 +461,12 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			ctx := setup(map[string]string{
 				"/routes/users.ix": `
 					manifest {
-						parameters: {
-	
-						}
+						parameters: {}
 					}
 				`,
 				"/routes/users/GET.ix": `
 					manifest {
-						parameters: {
-	
-						}
+						parameters: {}
 					}
 				`,
 			})

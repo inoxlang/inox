@@ -176,6 +176,35 @@ func TestFilesystemRouting(t *testing.T) {
 		)
 	})
 
+	t.Run("GET /users/0 should return the result of /routes/users/:user-id/index.ix", func(t *testing.T) {
+		runServerTest(t,
+			serverTestCase{
+				input: `return {
+						routing: {dynamic: /routes/}
+					}`,
+				makeFilesystem: func() core.SnapshotableFilesystem {
+					fls := fs_ns.NewMemFilesystem(10_000)
+					fls.MkdirAll("/routes/:user-id", fs_ns.DEFAULT_DIR_FMODE)
+					util.WriteFile(fls, "/routes/users/:user-id/index.ix", []byte(`
+							manifest {}
+	
+							return "hello"
+						`), fs_ns.DEFAULT_FILE_FMODE)
+
+					return fls
+				},
+				requests: []requestTestInfo{
+					{
+						path:                "/users/0",
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+						result:              `hello`,
+					},
+				},
+			},
+			createClient,
+		)
+	})
+
 	t.Run("method-aspecific handler /routes/x.ix with no _method parameter, no _body parameter and no JSON body parameters should only accept GET/HEAD requests", func(t *testing.T) {
 		runServerTest(t,
 			serverTestCase{

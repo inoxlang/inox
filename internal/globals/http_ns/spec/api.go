@@ -118,8 +118,7 @@ type ApiEndpoint struct {
 	path     string //may have parameters
 	catchAll bool
 
-	//Only set if filesystem routing is used.
-	//If it is set .operations is nil.
+	//Only set if filesystem routing is used. If set .operations is nil.
 	catchAllHandler *core.Module
 
 	operations []ApiOperation
