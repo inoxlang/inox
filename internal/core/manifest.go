@@ -1839,18 +1839,18 @@ func getSubcommandPermissions(cmdName WrappedString, cmdDesc *Object, perms *[]P
 			return nil
 		}
 
-		return cmdDesc.ForEachEntry(func(deepSubCmdName string, subCmdDescPropVal Serializable) error {
+		return subCmdDesc.ForEachEntry(func(deepSubCmdName string, subCmdDescPropVal Serializable) error {
 
 			if _, err := strconv.Atoi(deepSubCmdName); err == nil {
 				return errors.New(ERR)
 			}
 
-			deepSubCmdDesc, ok := subCmdDescPropVal.(*Object)
+			nestedSubCmdDesc, ok := subCmdDescPropVal.(*Object)
 			if !ok {
 				return errors.New(ERR)
 			}
 
-			if len(deepSubCmdDesc.keys) != 0 {
+			if len(nestedSubCmdDesc.keys) != 0 {
 				return errors.New(INVALID_COMMANDS_PREFIX + "the subcommand chain has a maximum length of 2")
 			}
 

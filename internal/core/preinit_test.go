@@ -490,6 +490,52 @@ func TestPreInit(t *testing.T) {
 			error: true,
 		},
 		{
+			name: "use a sub command",
+			module: `
+				manifest {
+					permissions: {
+						use: {
+							commands: {
+								"go": {
+									"help": {}
+								}
+							}
+						}
+					}
+				}`,
+			expectedPermissions: []Permission{
+				CommandPermission{
+					CommandName:         String("go"),
+					SubcommandNameChain: []string{"help"},
+				},
+			},
+			expectedLimits: []Limit{minLimitA, minLimitB, threadLimit},
+		},
+		{
+			name: "use a nested sub command",
+			module: `
+				manifest {
+					permissions: {
+						use: {
+							commands: {
+								"go": {
+									"help": {
+										"x": {}
+									}
+								}
+							}
+						}
+					}
+				}`,
+			expectedPermissions: []Permission{
+				CommandPermission{
+					CommandName:         String("go"),
+					SubcommandNameChain: []string{"help", "x"},
+				},
+			},
+			expectedLimits: []Limit{minLimitA, minLimitB, threadLimit},
+		},
+		{
 			name: "invalid node type in preinit block",
 			module: `
 			preinit {
