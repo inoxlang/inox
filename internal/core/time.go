@@ -14,6 +14,8 @@ const (
 )
 
 var (
+	PROGRESS_BEGIN_TIME = time.Now().UTC()
+
 	ErrNegDuration = errors.New("negative duration")
 	ErrInvalidYear = errors.New("invalid year")
 	ErrInvalidDate = errors.New("invalid date")
@@ -60,4 +62,16 @@ type DateTime time.Time
 
 func (t DateTime) AsGoTime() time.Time {
 	return time.Time(t)
+}
+
+// RelativeTimeInstant64 is a number of milliseconds since PROGRESS_BEGIN_TIME.
+type RelativeTimeInstant64 int64
+
+func GetRelativeTimeInstant32() RelativeTimeInstant64 {
+	delta := time.Since(PROGRESS_BEGIN_TIME).Milliseconds()
+	return RelativeTimeInstant64(delta)
+}
+
+func (i RelativeTimeInstant64) Time() time.Time {
+	return PROGRESS_BEGIN_TIME.Add(time.Duration(i) * time.Millisecond).UTC()
 }

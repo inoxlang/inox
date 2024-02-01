@@ -85,8 +85,8 @@ func (t *MessageThread) SetURLOnce(ctx *core.Context, url core.URL) error {
 
 func (t *MessageThread) GetElementByKey(ctx *core.Context, elemKey core.ElementKey) (core.Serializable, error) {
 	closestState := ctx.GetClosestState()
-	t.lock.Lock(closestState, t)
-	defer t.lock.Unlock(closestState, t)
+	t._lock(closestState)
+	defer t._unlock(closestState)
 
 	ulid, err := ulid.Parse(string(elemKey))
 	if err != nil {
@@ -104,8 +104,8 @@ func (t *MessageThread) GetElementByKey(ctx *core.Context, elemKey core.ElementK
 
 func (t *MessageThread) Contains(ctx *core.Context, value core.Serializable) bool {
 	closestState := ctx.GetClosestState()
-	t.lock.Lock(closestState, t)
-	defer t.lock.Unlock(closestState, t)
+	t._lock(closestState)
+	defer t._unlock(closestState)
 
 	obj, ok := value.(*core.Object)
 	if !ok {
@@ -125,8 +125,8 @@ func (t *MessageThread) Contains(ctx *core.Context, value core.Serializable) boo
 
 func (t *MessageThread) Add(ctx *core.Context, elem *core.Object) {
 	closestState := ctx.GetClosestState()
-	t.lock.Lock(closestState, t)
-	defer t.lock.Unlock(closestState, t)
+	t._lock(closestState)
+	defer t._unlock(closestState)
 
 	t.addNoLock(ctx, ctx.GetTx(), elem, false)
 }
@@ -212,8 +212,8 @@ func (t *MessageThread) makeTransactionEndCallback(ctx *core.Context, closestSta
 		//note: closestState is passed instead of being retrieved from ctx because ctx.GetClosestState()
 		//will panic if the context is done.
 
-		t.lock.Lock(closestState, t)
-		defer t.lock.Unlock(closestState, t)
+		t._lock(closestState)
+		defer t._unlock(closestState)
 
 		inclusionsIndex := -1
 
@@ -304,8 +304,8 @@ func (t *MessageThread) getElementsBefore(
 	}
 
 	closestState := ctx.GetClosestState()
-	t.lock.Lock(closestState, t)
-	defer t.lock.Unlock(closestState, t)
+	t._lock(closestState)
+	defer t._unlock(closestState)
 
 	end := exclusiveEnd
 	tx := ctx.GetTx()
@@ -353,8 +353,8 @@ func (t *MessageThread) getElementsBefore(
 
 func (t *MessageThread) GetElementsInTimeRange(ctx *core.Context, start, end core.DateTime) []core.Value {
 	closestState := ctx.GetClosestState()
-	t.lock.Lock(closestState, t)
-	defer t.lock.Unlock(closestState, t)
+	t._lock(closestState)
+	defer t._unlock(closestState)
 
 	//TODO
 	return nil

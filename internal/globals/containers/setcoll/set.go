@@ -196,8 +196,8 @@ func (set *Set) GetElementByKey(ctx *core.Context, pathKey core.ElementKey) (cor
 			panic(err)
 		}
 		closestState := ctx.GetClosestState()
-		set.lock.Lock(closestState, set)
-		defer set.lock.Unlock(closestState, set)
+		set._lock(closestState)
+		defer set._unlock(closestState)
 	}
 
 	set.initPathKeyMap()
@@ -223,8 +223,8 @@ func (set *Set) Has(ctx *core.Context, elem core.Serializable) core.Bool {
 	}
 
 	closestState := ctx.GetClosestState()
-	set.lock.Lock(closestState, set)
-	defer set.lock.Unlock(closestState, set)
+	set._lock(closestState)
+	defer set._unlock(closestState)
 
 	return set.hasNoLock(ctx, elem)
 }
@@ -277,8 +277,8 @@ func (set *Set) Get(ctx *core.Context, keyVal core.StringLike) (core.Value, core
 			panic(err)
 		}
 		closestState := ctx.GetClosestState()
-		set.lock.Lock(closestState, set)
-		defer set.lock.Unlock(closestState, set)
+		set._lock(closestState)
+		defer set._unlock(closestState)
 	}
 
 	key := keyVal.GetOrBuildString()
@@ -345,8 +345,8 @@ func (set *Set) Add(ctx *core.Context, elem core.Serializable) {
 		}
 	} else if _, ok := set.transactionsWithSetEndCallback[tx]; !ok {
 		closestState := ctx.GetClosestState()
-		set.lock.Lock(closestState, set)
-		defer set.lock.Unlock(closestState, set)
+		set._lock(closestState)
+		defer set._unlock(closestState)
 
 		tx.OnEnd(set, set.makeTransactionEndCallback(ctx, closestState))
 		set.transactionsWithSetEndCallback[tx] = struct{}{}
@@ -363,8 +363,8 @@ func (set *Set) addToSharedSetNoPersist(ctx *core.Context, elem core.Serializabl
 
 	set.config.Uniqueness.AddUrlIfNecessary(ctx, set, elem)
 
-	set.lock.Lock(closestState, set)
-	defer set.lock.Unlock(closestState, set)
+	set._lock(closestState)
+	defer set._unlock(closestState)
 
 	key := strings.Clone(set.getUniqueKey(ctx, elem))
 
@@ -450,8 +450,8 @@ func (set *Set) Remove(ctx *core.Context, elem core.Serializable) {
 	key := set.getUniqueKey(ctx, elem)
 	closestState := ctx.GetClosestState()
 
-	set.lock.Lock(closestState, set)
-	defer set.lock.Unlock(closestState, set)
+	set._lock(closestState)
+	defer set._unlock(closestState)
 
 	if tx == nil {
 		presentElem, ok := set.elementByKey[key]
@@ -516,8 +516,8 @@ func (set *Set) makeTransactionEndCallback(ctx *core.Context, closestState *core
 
 		set.lock.AssertValueShared()
 
-		set.lock.Lock(closestState, set)
-		defer set.lock.Unlock(closestState, set)
+		set._lock(closestState)
+		defer set._unlock(closestState)
 
 		defer func() {
 			set.pendingInclusions = set.pendingInclusions[:0]
@@ -554,8 +554,8 @@ func (set *Set) makePersistOnMutationCallback(elem core.Serializable) core.Mutat
 		}
 
 		closestState := ctx.GetClosestState()
-		set.lock.Lock(closestState, set)
-		defer set.lock.Unlock(closestState, set)
+		set._lock(closestState)
+		defer set._unlock(closestState)
 
 		if !set.hasNoLock(ctx, elem) {
 			registerAgain = false

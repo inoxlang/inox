@@ -196,20 +196,20 @@ func (t *Tree) IsShared() bool {
 	return t.lock.IsValueShared()
 }
 
-func (t *Tree) Lock(state *core.GlobalState) {
+func (t *Tree) _lock(state *core.GlobalState) {
 	t.lock.Lock(state, t)
 }
 
-func (obj *Tree) Unlock(state *core.GlobalState) {
-	obj.lock.Unlock(state, obj)
+func (t *Tree) _unlock(state *core.GlobalState) {
+	t.lock.Unlock(state, t)
 }
 
-func (obj *Tree) ForceLock() {
-	obj.lock.ForceLock()
+func (t *Tree) SmartLock(state *core.GlobalState) {
+	t.lock.Lock(state, t, true)
 }
 
-func (obj *Tree) ForceUnlock() {
-	obj.lock.ForceUnlock()
+func (t *Tree) SmartUnlock(state *core.GlobalState) {
+	t.lock.Unlock(state, t, true)
 }
 
 func (t *Tree) GetGoMethod(name string) (*core.GoFunction, bool) {
@@ -218,8 +218,8 @@ func (t *Tree) GetGoMethod(name string) (*core.GoFunction, bool) {
 
 func (t *Tree) Prop(ctx *core.Context, name string) core.Value {
 	state := ctx.GetClosestState()
-	t.Lock(state)
-	defer t.Unlock(state)
+	t._lock(state)
+	defer t._unlock(state)
 
 	switch name {
 	case "root":

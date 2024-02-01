@@ -42,11 +42,12 @@ func (s *LSPSession) IsShared() bool {
 	return s.lock.IsValueShared()
 }
 
-func (s *LSPSession) ForceLock() {
-	s.lock.ForceLock()
+func (s *LSPSession) SmartLock(state *core.GlobalState) {
+	s.lock.Lock(state, s, true)
 }
-func (s *LSPSession) ForceUnlock() {
-	s.lock.ForceUnlock()
+
+func (s *LSPSession) SmartUnlock(state *core.GlobalState) {
+	s.lock.Unlock(state, s, true)
 }
 
 func (s *LSPSession) Prop(ctx *core.Context, name string) core.Value {

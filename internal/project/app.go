@@ -25,8 +25,9 @@ type applicationData struct {
 func (p *Project) RegisterApplication(ctx *core.Context, name string, modulePath string) error {
 	//we assume this functions is never called by inox code
 
-	p.lock.ForceLock()
-	defer p.lock.ForceUnlock()
+	state := ctx.GetClosestState()
+	p.SmartLock(state)
+	defer p.SmartUnlock(state)
 
 	appName, err := node.ApplicationNameFrom(name)
 	if err != nil {
@@ -49,7 +50,7 @@ func (p *Project) RegisterApplication(ctx *core.Context, name string, modulePath
 	return p.persistNoLock(ctx)
 }
 
-func (p *Project) IsApplicationRegistered(name string) bool {
+func (p *Project) IsApplicationRegistered(ctx *core.Context, name string) bool {
 
 	//we assume this functions is never called by inox co
 	appName, err := node.ApplicationNameFrom(name)
@@ -57,15 +58,16 @@ func (p *Project) IsApplicationRegistered(name string) bool {
 		return false
 	}
 
-	p.lock.ForceLock()
-	defer p.lock.ForceUnlock()
+	state := ctx.GetClosestState()
+	p.SmartLock(state)
+	defer p.SmartUnlock(state)
 
 	_, ok := p.data.Applications[appName]
 	return ok
 }
 
 // ApplicationModulePath returns the path of the application module.
-func (p *Project) ApplicationModulePath(name string) (core.Path, error) {
+func (p *Project) ApplicationModulePath(ctx *core.Context, name string) (core.Path, error) {
 	//we assume this functions is never called by inox code
 
 	appName, err := node.ApplicationNameFrom(name)
@@ -73,8 +75,9 @@ func (p *Project) ApplicationModulePath(name string) (core.Path, error) {
 		return "", err
 	}
 
-	p.lock.ForceLock()
-	defer p.lock.ForceUnlock()
+	state := ctx.GetClosestState()
+	p.SmartLock(state)
+	defer p.SmartUnlock(state)
 
 	data, ok := p.data.Applications[appName]
 	if !ok {
@@ -88,8 +91,9 @@ func (p *Project) ApplicationModulePath(name string) (core.Path, error) {
 func (p *Project) ApplicationNames(ctx *core.Context) []node.ApplicationName {
 	//we assume this functions is never called by inox code
 
-	p.lock.ForceLock()
-	defer p.lock.ForceUnlock()
+	state := ctx.GetClosestState()
+	p.SmartLock(state)
+	defer p.SmartUnlock(state)
 
 	return maps.Keys(p.data.Applications)
 }

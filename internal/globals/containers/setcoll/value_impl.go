@@ -58,18 +58,18 @@ func (s *Set) IsShared() bool {
 	return s.lock.IsValueShared()
 }
 
-func (s *Set) Lock(state *core.GlobalState) {
+func (s *Set) _lock(state *core.GlobalState) {
 	s.lock.Lock(state, s)
 }
 
-func (s *Set) Unlock(state *core.GlobalState) {
+func (s *Set) _unlock(state *core.GlobalState) {
 	s.lock.Unlock(state, s)
 }
 
-func (s *Set) ForceLock() {
-	s.lock.ForceLock()
+func (s *Set) SmartLock(state *core.GlobalState) {
+	s.lock.Lock(state, s, true)
 }
 
-func (s *Set) ForceUnlock() {
-	s.lock.ForceUnlock()
+func (s *Set) SmartUnlock(state *core.GlobalState) {
+	s.lock.Unlock(state, s, true)
 }

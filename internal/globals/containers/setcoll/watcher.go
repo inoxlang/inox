@@ -14,8 +14,8 @@ func (set *Set) Watcher(ctx *core.Context, config core.WatcherConfiguration) cor
 	closestState := ctx.GetClosestState()
 	watcher := core.NewGenericWatcher(config)
 
-	set.Lock(closestState)
-	defer set.Unlock(closestState)
+	set._lock(closestState)
+	defer set._unlock(closestState)
 
 	if set.watchers == nil {
 		set.watchers = core.NewValueWatchers()

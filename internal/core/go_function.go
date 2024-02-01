@@ -67,18 +67,10 @@ func (fn *GoFunction) IsShared() bool {
 	return fn.shared.Load()
 }
 
-func (fn *GoFunction) Lock(state *GlobalState) {
-
+func (fn *GoFunction) SmartLock(state *GlobalState) {
 }
 
-func (fn *GoFunction) Unlock(state *GlobalState) {
-
-}
-
-func (fn *GoFunction) ForceLock() {
-}
-
-func (fn *GoFunction) ForceUnlock() {
+func (fn *GoFunction) SmartUnlock(state *GlobalState) {
 
 }
 

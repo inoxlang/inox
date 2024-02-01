@@ -133,8 +133,8 @@ func (handlers *SynchronousMessageHandlers) CallHandlers(ctx *Context, msg Messa
 
 func (obj *Object) ReceiveMessage(ctx *Context, msg Message) error {
 	state := ctx.GetClosestState()
-	obj.Lock(state)
-	defer obj.Unlock(state)
+	obj._lock(state)
+	defer obj._unlock(state)
 
 	if !obj.hasAdditionalFields() {
 		return nil

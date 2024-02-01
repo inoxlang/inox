@@ -433,11 +433,11 @@ func (g *SystemGraph) IsShared() bool {
 	return true
 }
 
-func (g *SystemGraph) ForceLock() {
+func (g *SystemGraph) SmartLock(state *GlobalState) {
 
 }
 
-func (g *SystemGraph) ForceUnlock() {
+func (g *SystemGraph) SmartUnlock(state *GlobalState) {
 
 }
 
@@ -461,11 +461,11 @@ func (n *SystemGraphNodes) IsShared() bool {
 	return true
 }
 
-func (n *SystemGraphNodes) ForceLock() {
+func (n *SystemGraphNodes) SmartLock(state *GlobalState) {
 
 }
 
-func (n *SystemGraphNodes) ForceUnlock() {
+func (n *SystemGraphNodes) SmartUnlock(state *GlobalState) {
 
 }
 
@@ -519,19 +519,19 @@ func (n *SystemGraphNode) IsShared() bool {
 	return true
 }
 
-func (n *SystemGraphNode) ForceLock() {
+func (n *SystemGraphNode) SmartLock(state *GlobalState) {
 
 }
 
-func (n *SystemGraphNode) ForceUnlock() {
+func (n *SystemGraphNode) SmartUnlock() {
 
 }
 
 func (obj *Object) ProposeSystemGraph(ctx *Context, g *SystemGraph, proposedName string, optionalParent SystemGraphNodeValue) {
 	state := ctx.GetClosestState()
 
-	obj.Lock(state)
-	defer obj.Unlock(state)
+	obj._lock(state)
+	defer obj._unlock(state)
 
 	obj.ensureAdditionalFields()
 

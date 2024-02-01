@@ -272,11 +272,11 @@ func (h *ValueHistory) IsShared() bool {
 	return h.shared.Load()
 }
 
-func (h *ValueHistory) ForceLock() {
+func (h *ValueHistory) SmartLock(state *GlobalState) {
 
 }
 
-func (h *ValueHistory) ForceUnlock() {
+func (h *ValueHistory) SmartUnlock(state *GlobalState) {
 
 }
 

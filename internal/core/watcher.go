@@ -365,8 +365,8 @@ func (obj *Object) Watcher(ctx *Context, config WatcherConfiguration) Watcher {
 	closestState := ctx.GetClosestState()
 	watcher := NewGenericWatcher(config)
 
-	obj.Lock(closestState)
-	defer obj.Unlock(closestState)
+	obj._lock(closestState)
+	defer obj._unlock(closestState)
 
 	obj.ensureAdditionalFields()
 

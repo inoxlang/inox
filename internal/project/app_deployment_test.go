@@ -96,7 +96,7 @@ func TestSameProcessDeployment(t *testing.T) {
 
 	// preparing the deployment without having registered the app is not allowed
 
-	_, err = proj.PrepareApplicationDeployment(project.ApplicationDeploymentPreparationParams{
+	_, err = proj.PrepareApplicationDeployment(ctx, project.ApplicationDeploymentPreparationParams{
 		AppName:          APP_NAME,
 		UpdateRunningApp: false,
 	})
@@ -115,7 +115,7 @@ func TestSameProcessDeployment(t *testing.T) {
 
 	// prepare the deployment and deploy
 
-	deployment, err := proj.PrepareApplicationDeployment(project.ApplicationDeploymentPreparationParams{
+	deployment, err := proj.PrepareApplicationDeployment(ctx, project.ApplicationDeploymentPreparationParams{
 		AppName:          APP_NAME,
 		UpdateRunningApp: false,
 	})

@@ -79,18 +79,18 @@ func (m *Map) IsShared() bool {
 	return m.lock.IsValueShared()
 }
 
-func (m *Map) Lock(state *core.GlobalState) {
+func (m *Map) _lock(state *core.GlobalState) {
 	m.lock.Lock(state, m)
 }
 
-func (m *Map) Unlock(state *core.GlobalState) {
+func (m *Map) _unlock(state *core.GlobalState) {
 	m.lock.Unlock(state, m)
 }
 
-func (m *Map) ForceLock() {
-	m.lock.ForceLock()
+func (m *Map) SmartLock(state *core.GlobalState) {
+	m.lock.Lock(state, m, true)
 }
 
-func (m *Map) ForceUnlock() {
-	m.lock.ForceUnlock()
+func (m *Map) SmartUnlock(state *core.GlobalState) {
+	m.lock.Unlock(state, m, true)
 }

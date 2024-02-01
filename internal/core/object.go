@@ -249,30 +249,30 @@ func (obj *Object) IsShared() bool {
 	return obj.lock.IsValueShared()
 }
 
-func (obj *Object) Lock(state *GlobalState) {
+func (obj *Object) _lock(state *GlobalState) {
 	if obj.additionalObjectFields == nil { //not shared.
 		return
 	}
 	obj.lock.Lock(state, obj)
 }
 
-func (obj *Object) Unlock(state *GlobalState) {
+func (obj *Object) _unlock(state *GlobalState) {
 	if obj.additionalObjectFields == nil { //not shared.
 		return
 	}
 	obj.lock.Unlock(state, obj)
 }
 
-func (obj *Object) ForceLock() {
+func (obj *Object) SmartLock(state *GlobalState) {
 	obj.ensureAdditionalFields()
-	obj.lock.ForceLock()
+	obj.lock.Lock(state, obj, true)
 }
 
-func (obj *Object) ForceUnlock() {
+func (obj *Object) SmartUnlock(state *GlobalState) {
 	if obj.additionalObjectFields == nil {
-		panic(errors.New("unexpected Object.ForceUnlock call: object is not locked because it does not have additional fields"))
+		panic(errors.New("unexpected Object.SmartUnlock call: object is not locked because it does not have additional fields"))
 	}
-	obj.lock.ForceUnlock()
+	obj.lock.Unlock(state, obj, true)
 }
 
 func (obj *Object) jobInstances() []*LifetimeJobInstance {
@@ -305,8 +305,8 @@ func (obj *Object) prop(ctx *Context, name string, stored bool) (returnedValue V
 	obj.waitForOtherTxsToTerminate(ctx, !stored)
 
 	closestState := ctx.GetClosestState()
-	obj.Lock(closestState)
-	defer obj.Unlock(closestState)
+	obj._lock(closestState)
+	defer obj._unlock(closestState)
 
 	if obj.hasAdditionalFields() {
 		if obj.url != "" {
@@ -376,10 +376,10 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 	}
 
 	unlock := true
-	obj.Lock(closestState)
+	obj._lock(closestState)
 	defer func() {
 		if unlock {
-			obj.Unlock(closestState)
+			obj._unlock(closestState)
 		}
 	}()
 
@@ -480,7 +480,7 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 
 				if obj.mutationCallbacks != nil {
 					unlock = false
-					obj.Unlock(closestState)
+					obj._unlock(closestState)
 
 					obj.mutationCallbacks.CallMicrotasks(ctx, mutation)
 				}
@@ -526,7 +526,7 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 
 		if obj.mutationCallbacks != nil {
 			unlock = false
-			obj.Unlock(closestState)
+			obj._unlock(closestState)
 
 			obj.mutationCallbacks.CallMicrotasks(ctx, mutation)
 		}
@@ -539,8 +539,8 @@ func (obj *Object) PropertyNames(ctx *Context) []string {
 	obj.waitForOtherTxsToTerminate(ctx, false)
 
 	closestState := ctx.GetClosestState()
-	obj.Lock(closestState)
-	defer obj.Unlock(closestState)
+	obj._lock(closestState)
+	defer obj._unlock(closestState)
 	return obj.keys
 }
 
@@ -548,8 +548,8 @@ func (obj *Object) HasProp(ctx *Context, name string) bool {
 	obj.waitForOtherTxsToTerminate(ctx, false)
 
 	closestState := ctx.GetClosestState()
-	obj.Lock(closestState)
-	defer obj.Unlock(closestState)
+	obj._lock(closestState)
+	defer obj._unlock(closestState)
 	for _, k := range obj.keys {
 		if k == name {
 			return true
@@ -562,8 +562,8 @@ func (obj *Object) HasPropValue(ctx *Context, value Value) bool {
 	obj.waitForOtherTxsToTerminate(ctx, false)
 
 	closestState := ctx.GetClosestState()
-	obj.Lock(closestState)
-	defer obj.Unlock(closestState)
+	obj._lock(closestState)
+	defer obj._unlock(closestState)
 	for _, v := range obj.values {
 		if v.Equal(ctx, value, map[uintptr]uintptr{}, 0) {
 			return true
@@ -581,8 +581,8 @@ func (obj *Object) EntryMap(ctx *Context) map[string]Serializable {
 		obj.waitForOtherTxsToTerminate(ctx, false)
 
 		closestState := ctx.GetClosestState()
-		obj.Lock(closestState)
-		defer obj.Unlock(closestState)
+		obj._lock(closestState)
+		defer obj._unlock(closestState)
 	} else if obj.IsShared() {
 		panic(errors.New("nil context"))
 	}
@@ -608,8 +608,8 @@ func (obj *Object) ValueEntryMap(ctx *Context) map[string]Value {
 		obj.waitForOtherTxsToTerminate(ctx, false)
 
 		closestState := ctx.GetClosestState()
-		obj.Lock(closestState)
-		defer obj.Unlock(closestState)
+		obj._lock(closestState)
+		defer obj._unlock(closestState)
 	} else if obj.IsShared() {
 		panic(errors.New("nil context"))
 	}
@@ -682,8 +682,8 @@ func (obj *Object) hasURL() bool {
 
 func (obj *Object) SetURLOnce(ctx *Context, u URL) error {
 	closestState := ctx.GetClosestState()
-	obj.Lock(closestState)
-	defer obj.Unlock(closestState)
+	obj._lock(closestState)
+	defer obj._unlock(closestState)
 
 	obj.ensureAdditionalFields()
 
@@ -699,8 +699,8 @@ func (obj *Object) Keys(ctx *Context) []string {
 	obj.waitForOtherTxsToTerminate(ctx, false)
 
 	closestState := ctx.GetClosestState()
-	obj.Lock(closestState)
-	defer obj.Unlock(closestState)
+	obj._lock(closestState)
+	defer obj._unlock(closestState)
 
 	return obj.keys
 }

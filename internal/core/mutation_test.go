@@ -190,16 +190,26 @@ func TestObjectOnMutation(t *testing.T) {
 			return
 		}
 
+		const GOROUTINE_COUNT = 10
 		wg := new(sync.WaitGroup)
-		wg.Add(10)
+		wg.Add(GOROUTINE_COUNT)
 
-		for i := 0; i < 10; i++ {
-			go func() {
+		otherCtxs := make([]*Context, GOROUTINE_COUNT)
+		for i := 0; i < GOROUTINE_COUNT; i++ {
+			ctx := NewContext(ContextConfig{})
+			otherCtxs[i] = ctx
+			NewGlobalState(ctx)
+			defer ctx.CancelGracefully()
+		}
+
+		for i := 0; i < GOROUTINE_COUNT; i++ {
+			go func(i int) {
 				defer wg.Done()
-				if !assert.NoError(t, innerObj.SetProp(ctx, "a", Int(2))) {
+
+				if !assert.NoError(t, innerObj.SetProp(otherCtxs[i], "a", Int(2))) {
 					return
 				}
-			}()
+			}(i)
 		}
 
 		wg.Wait()

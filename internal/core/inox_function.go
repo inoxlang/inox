@@ -122,18 +122,11 @@ func (fn *InoxFunction) IsShared() bool {
 	return fn.shared.Load()
 }
 
-func (fn *InoxFunction) Lock(state *GlobalState) {
+func (fn *InoxFunction) SmartLock(state *GlobalState) {
 
 }
 
-func (fn *InoxFunction) Unlock(state *GlobalState) {
-
-}
-
-func (fn *InoxFunction) ForceLock() {
-}
-
-func (fn *InoxFunction) ForceUnlock() {
+func (fn *InoxFunction) SmartUnlock(state *GlobalState) {
 
 }
 

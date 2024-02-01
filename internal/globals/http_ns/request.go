@@ -190,11 +190,11 @@ func (req *Request) IsShared() bool {
 	return true
 }
 
-func (req *Request) ForceLock() {
+func (req *Request) SmartLock(state *core.GlobalState) {
 	//no op
 }
 
-func (req *Request) ForceUnlock() {
+func (req *Request) SmartUnlock(state *core.GlobalState) {
 	//no op
 }
 

@@ -3,6 +3,7 @@ package projectserver
 import (
 	"context"
 
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/projectserver/lsp"
@@ -54,7 +55,12 @@ func registerProdMethodHandlers(server *lsp.Server, opts LSPServerConfiguration)
 
 			//TODO: in nodeimpl/app.go return an error on startup burst and add a specific status.
 
-			deployment, err := proj.PrepareApplicationDeployment(project.ApplicationDeploymentPreparationParams{
+			handlerCtx := core.NewContexWithEmptyState(core.ContextConfig{
+				ParentContext: session.Context(),
+			}, nil)
+			defer handlerCtx.CancelGracefully()
+
+			deployment, err := proj.PrepareApplicationDeployment(handlerCtx, project.ApplicationDeploymentPreparationParams{
 				AppName:          params.AppName,
 				UpdateRunningApp: params.UpdateRunningApp,
 			})
@@ -95,7 +101,12 @@ func registerProdMethodHandlers(server *lsp.Server, opts LSPServerConfiguration)
 				}, nil
 			}
 
-			err := proj.StopApplication(project.StopApplicationParams{
+			handlerCtx := core.NewContexWithEmptyState(core.ContextConfig{
+				ParentContext: session.Context(),
+			}, nil)
+			defer handlerCtx.CancelGracefully()
+
+			err := proj.StopApplication(handlerCtx, project.StopApplicationParams{
 				AppName: params.AppName,
 			})
 

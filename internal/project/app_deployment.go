@@ -14,8 +14,8 @@ type ApplicationDeploymentPreparationParams struct {
 	UpdateRunningApp bool
 }
 
-func (p *Project) PrepareApplicationDeployment(args ApplicationDeploymentPreparationParams) (node.ApplicationDeployment, error) {
-	if !p.IsApplicationRegistered(args.AppName) {
+func (p *Project) PrepareApplicationDeployment(ctx *core.Context, args ApplicationDeploymentPreparationParams) (node.ApplicationDeployment, error) {
+	if !p.IsApplicationRegistered(ctx, args.AppName) {
 		return nil, ErrAppNotRegistered
 	}
 
@@ -24,7 +24,7 @@ func (p *Project) PrepareApplicationDeployment(args ApplicationDeploymentPrepara
 		return nil, err
 	}
 
-	modulePath, err := p.ApplicationModulePath(args.AppName)
+	modulePath, err := p.ApplicationModulePath(ctx, args.AppName)
 	if err != nil {
 		return nil, err
 	}
@@ -84,8 +84,8 @@ type StopApplicationParams struct {
 	AppName string
 }
 
-func (p *Project) StopApplication(args StopApplicationParams) error {
-	if !p.IsApplicationRegistered(args.AppName) {
+func (p *Project) StopApplication(ctx *core.Context, args StopApplicationParams) error {
+	if !p.IsApplicationRegistered(ctx, args.AppName) {
 		return ErrAppNotRegistered
 	}
 

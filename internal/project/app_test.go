@@ -64,7 +64,7 @@ func TestRegisterApplication(t *testing.T) {
 	appNames = project.ApplicationNames(ctx)
 	assert.EqualValues(t, []node.ApplicationName{APP_NAME}, appNames)
 
-	modPath, err := project.ApplicationModulePath(APP_NAME)
+	modPath, err := project.ApplicationModulePath(ctx, APP_NAME)
 	if !assert.NoError(t, err) {
 		return
 	}

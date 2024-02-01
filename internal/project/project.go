@@ -235,12 +235,12 @@ func (p *Project) IsShared() bool {
 	return p.lock.IsValueShared()
 }
 
-func (p *Project) ForceLock() {
-	p.lock.ForceLock()
+func (p *Project) SmartLock(state *core.GlobalState) {
+	p.lock.Lock(state, p, true)
 }
 
-func (p *Project) ForceUnlock() {
-	p.lock.ForceUnlock()
+func (p *Project) SmartUnlock(state *core.GlobalState) {
+	p.lock.Unlock(state, p, true)
 }
 
 // persisted data

@@ -17,6 +17,10 @@ import (
 const (
 	MINIMAL_STATE_ID             = 1
 	INITIAL_MODULE_HEAP_CAPACITY = 1000
+
+	MINIMUM_MOD_PRIORITY   = ModulePriority(10)
+	READ_TX_PRIORITY       = ModulePriority(50)
+	READ_WRITE_TX_PRIORITY = ModulePriority(150)
 )
 
 var (
@@ -85,6 +89,8 @@ type GlobalState struct {
 
 type StateId int64
 
+type ModulePriority uint32
+
 // NewGlobalState creates a state with the provided context and constants.
 // The OutputFieldsInitialized field is not initialized and should be set by the caller.
 func NewGlobalState(ctx *Context, constants ...map[string]Value) *GlobalState {
@@ -150,6 +156,17 @@ func (g *GlobalState) SetDescendantState(src ResourceName, state *GlobalState) {
 	if g.MainState != nil && g.MainState != g {
 		g.MainState.SetDescendantState(src, state)
 	}
+}
+
+func (g *GlobalState) ComputePriority() ModulePriority {
+	tx := g.Ctx.GetTx()
+	if tx == nil {
+		return MINIMUM_MOD_PRIORITY
+	}
+	if tx.IsReadonly() {
+		return READ_TX_PRIORITY
+	}
+	return READ_WRITE_TX_PRIORITY
 }
 
 func (g *GlobalState) InitSystemGraph() {

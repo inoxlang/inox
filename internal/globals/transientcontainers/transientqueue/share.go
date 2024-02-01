@@ -31,8 +31,8 @@ func (q *TransientQueue) IsShared() bool {
 	return q.threadSafe != nil
 }
 
-func (*TransientQueue) ForceLock() {
+func (*TransientQueue) SmartLock(state *core.GlobalState) {
 }
 
-func (*TransientQueue) ForceUnlock() {
+func (*TransientQueue) SmartUnlock(state *core.GlobalState) {
 }

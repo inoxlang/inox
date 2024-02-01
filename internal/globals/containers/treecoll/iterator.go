@@ -70,16 +70,16 @@ func (it *TreeIterator) Equal(ctx *core.Context, other core.Value, alreadyCompar
 
 func (t *Tree) Iterator(ctx *core.Context, config core.IteratorConfiguration) core.Iterator {
 	state := ctx.GetClosestState()
-	t.Lock(state)
-	defer t.Unlock(state)
+	t._lock(state)
+	defer t._unlock(state)
 
 	return config.CreateIterator(&TreeIterator{start: t.root, children: slices.Clone(t.root.children), i: -1, childIndex: -1})
 }
 
 func (node *TreeNode) Iterator(ctx *core.Context, config core.IteratorConfiguration) core.Iterator {
 	state := ctx.GetClosestState()
-	node.tree.Lock(state)
-	defer node.tree.Unlock(state)
+	node.tree._lock(state)
+	defer node.tree._unlock(state)
 
 	return config.CreateIterator(&TreeIterator{start: node, children: slices.Clone(node.children), i: -1, childIndex: -1})
 }

@@ -313,11 +313,11 @@ func (r *RingBuffer) IsShared() bool {
 	return true
 }
 
-func (r *RingBuffer) ForceLock() {
+func (r *RingBuffer) SmartLock(state *GlobalState) {
 	//
 }
 
-func (r *RingBuffer) ForceUnlock() {
+func (r *RingBuffer) SmartUnlock(state *GlobalState) {
 }
 
 func (r *RingBuffer) Writer() *Writer {

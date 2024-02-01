@@ -11,8 +11,8 @@ import (
 func (s *Set) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
 	ctx := config.Context
 	closestState := ctx.GetClosestState()
-	s.lock.Lock(closestState, s)
-	defer s.lock.Unlock(closestState, s)
+	s._lock(closestState)
+	defer s._unlock(closestState)
 
 	utils.Must(fmt.Fprintf(w, "%#v", s))
 }

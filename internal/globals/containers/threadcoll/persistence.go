@@ -137,8 +137,8 @@ func (t *MessageThread) makePersistOnMutationCallback(elem *core.Object) core.Mu
 		}
 
 		closestState := ctx.GetClosestState()
-		t.lock.Lock(closestState, t)
-		defer t.lock.Unlock(closestState, t)
+		t._lock(closestState)
+		defer t._unlock(closestState)
 
 		if !t.Contains(ctx, elem) {
 			registerAgain = false

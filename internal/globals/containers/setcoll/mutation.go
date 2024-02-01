@@ -6,8 +6,8 @@ import (
 
 func (set *Set) OnMutation(ctx *core.Context, microtask core.MutationCallbackMicrotask, config core.MutationWatchingConfiguration) (core.CallbackHandle, error) {
 	state := ctx.GetClosestState()
-	set.Lock(state)
-	defer set.Unlock(state)
+	set._lock(state)
+	defer set._unlock(state)
 
 	if config.Depth == core.UnspecifiedWatchingDepth {
 		config.Depth = DEFAULT_WATCHING_DEPTH
@@ -41,8 +41,8 @@ func (set *Set) OnMutation(ctx *core.Context, microtask core.MutationCallbackMic
 
 func (set *Set) RemoveMutationCallbackMicrotasks(ctx *core.Context) {
 	state := ctx.GetClosestState()
-	set.Lock(state)
-	defer set.Unlock(state)
+	set._lock(state)
+	defer set._unlock(state)
 
 	if set.mutationCallbacks == nil {
 		return
@@ -53,8 +53,8 @@ func (set *Set) RemoveMutationCallbackMicrotasks(ctx *core.Context) {
 
 func (set *Set) RemoveMutationCallback(ctx *core.Context, handle core.CallbackHandle) {
 	state := ctx.GetClosestState()
-	set.Lock(state)
-	defer set.Unlock(state)
+	set._lock(state)
+	defer set._unlock(state)
 
 	set.mutationCallbacks.RemoveMicrotask(handle)
 }

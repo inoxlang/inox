@@ -67,18 +67,18 @@ func (t *MessageThread) IsShared() bool {
 	return true
 }
 
-func (t *MessageThread) Lock(state *core.GlobalState) {
+func (t *MessageThread) _lock(state *core.GlobalState) {
 	t.lock.Lock(state, t)
 }
 
-func (t *MessageThread) Unlock(state *core.GlobalState) {
+func (t *MessageThread) _unlock(state *core.GlobalState) {
 	t.lock.Unlock(state, t)
 }
 
-func (t *MessageThread) ForceLock() {
-	t.lock.ForceLock()
+func (t *MessageThread) SmartLock(state *core.GlobalState) {
+	t.lock.Lock(state, t, true)
 }
 
-func (t *MessageThread) ForceUnlock() {
-	t.lock.ForceUnlock()
+func (t *MessageThread) SmartUnlock(state *core.GlobalState) {
+	t.lock.Unlock(state, t, true)
 }

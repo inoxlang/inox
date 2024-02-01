@@ -170,8 +170,8 @@ func (m *Map) GetElementByKey(ctx *core.Context, pathKey core.ElementKey) (core.
 			panic(err)
 		}
 		closestState := ctx.GetClosestState()
-		m.lock.Lock(closestState, m)
-		defer m.lock.Unlock(closestState, m)
+		m._lock(closestState)
+		defer m._unlock(closestState)
 	}
 
 	m.initPathKeyMap()
@@ -193,8 +193,8 @@ func (m *Map) Contains(ctx *core.Context, value core.Serializable) bool {
 			panic(err)
 		}
 		closestState := ctx.GetClosestState()
-		m.lock.Lock(closestState, m)
-		defer m.lock.Unlock(closestState, m)
+		m._lock(closestState)
+		defer m._unlock(closestState)
 	}
 
 	alreadyCompared := map[uintptr]uintptr{}
@@ -230,8 +230,8 @@ func (m *Map) Has(ctx *core.Context, keyVal core.Serializable) core.Bool {
 	}
 
 	closestState := ctx.GetClosestState()
-	m.lock.Lock(closestState, m)
-	defer m.lock.Unlock(closestState, m)
+	m._lock(closestState)
+	defer m._unlock(closestState)
 
 	return m.hasNoLock(ctx, keyVal)
 }
@@ -277,8 +277,8 @@ func (m *Map) Get(ctx *core.Context, keyVal core.Serializable) (core.Value, core
 			panic(err)
 		}
 		closestState := ctx.GetClosestState()
-		m.lock.Lock(closestState, m)
-		defer m.lock.Unlock(closestState, m)
+		m._lock(closestState)
+		defer m._unlock(closestState)
 	}
 
 	serialiedKey := m.getUniqueKey(ctx, keyVal)
@@ -359,8 +359,8 @@ func (m *Map) set(ctx *core.Context, entry entry, insert bool) error {
 		}
 	} else if _, ok := m.transactionsWithSetEndCallback[tx]; !ok {
 		closestState := ctx.GetClosestState()
-		m.lock.Lock(closestState, m)
-		defer m.lock.Unlock(closestState, m)
+		m._lock(closestState)
+		defer m._unlock(closestState)
 
 		tx.OnEnd(m, m.makeTransactionEndCallback(ctx, closestState))
 		m.transactionsWithSetEndCallback[tx] = struct{}{}
@@ -381,8 +381,8 @@ func (m *Map) putEntryInSharedMap(ctx *core.Context, entry entry, ignoreTx bool)
 	closestState := ctx.GetClosestState()
 	entry.value = utils.Must(core.ShareOrClone(entry.value, closestState)).(core.Serializable)
 
-	m.lock.Lock(closestState, m)
-	defer m.lock.Unlock(closestState, m)
+	m._lock(closestState)
+	defer m._unlock(closestState)
 
 	serializedKey := strings.Clone(m.getUniqueKey(ctx, entry.key))
 
@@ -450,8 +450,8 @@ func (m *Map) Remove(ctx *core.Context, key core.Serializable) {
 	serializedKey := m.getUniqueKey(ctx, key)
 	closestState := ctx.GetClosestState()
 
-	m.lock.Lock(closestState, m)
-	defer m.lock.Unlock(closestState, m)
+	m._lock(closestState)
+	defer m._unlock(closestState)
 
 	if tx == nil {
 		delete(m.entryByKey, serializedKey)
@@ -505,8 +505,8 @@ func (m *Map) makeTransactionEndCallback(ctx *core.Context, closestState *core.G
 
 		m.lock.AssertValueShared()
 
-		m.lock.Lock(closestState, m)
-		defer m.lock.Unlock(closestState, m)
+		m._lock(closestState)
+		defer m._unlock(closestState)
 
 		defer func() {
 			m.pendingInclusions = m.pendingInclusions[:0]
@@ -542,8 +542,8 @@ func (m *Map) makePersistOnMutationCallback(elem core.Serializable) core.Mutatio
 		}
 
 		closestState := ctx.GetClosestState()
-		m.lock.Lock(closestState, m)
-		defer m.lock.Unlock(closestState, m)
+		m._lock(closestState)
+		defer m._unlock(closestState)
 
 		if !m.hasNoLock(ctx, elem) {
 			registerAgain = false

@@ -11,8 +11,8 @@ func (s *Set) Iterator(ctx *core.Context, config core.IteratorConfiguration) cor
 	i := -1
 
 	closestState := ctx.GetClosestState()
-	s.lock.Lock(closestState, s)
-	defer s.lock.Unlock(closestState, s)
+	s._lock(closestState)
+	defer s._unlock(closestState)
 
 	elements := maps.Clone(s.elementByKey)
 

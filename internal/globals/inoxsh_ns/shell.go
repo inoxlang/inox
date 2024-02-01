@@ -1345,11 +1345,11 @@ func (sh *shell) IsShared() bool {
 	return sh.shared.Load()
 }
 
-func (sh *shell) ForceLock() {
+func (sh *shell) SmartLock(state *core.GlobalState) {
 	//
 }
 
-func (sh *shell) ForceUnlock() {
+func (sh *shell) SmartUnlock(state *core.GlobalState) {
 	//
 }
 

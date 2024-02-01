@@ -123,8 +123,8 @@ func (obj *Object) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]
 	alreadyCompared[otherAddr] = addr
 
 	closestState := ctx.GetClosestState()
-	obj.Lock(closestState)
-	defer obj.Unlock(closestState)
+	obj._lock(closestState)
+	defer obj._unlock(closestState)
 	if len(obj.keys) != len(otherObject.keys) {
 		return false
 	}

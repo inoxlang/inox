@@ -914,7 +914,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		var lockedValues []PotentiallySharable
 		defer func() {
 			for _, val := range utils.ReversedSlice(lockedValues) {
-				val.ForceUnlock()
+				val.SmartUnlock(state.Global)
 			}
 			var newLockedValues []PotentiallySharable
 
@@ -953,7 +953,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			}
 
 			potentiallySharable.Share(state.Global)
-			potentiallySharable.ForceLock()
+			potentiallySharable.SmartLock(state.Global)
 
 			// update list of locked values
 			state.Global.lockedValues = append(state.Global.lockedValues, potentiallySharable)

@@ -76,8 +76,8 @@ func (t *Tuple) Contains(ctx *Context, value Serializable) bool {
 
 func (obj *Object) Contains(ctx *Context, value Serializable) bool {
 	closestState := ctx.GetClosestState()
-	obj.Lock(closestState)
-	defer obj.Unlock(closestState)
+	obj._lock(closestState)
+	defer obj._unlock(closestState)
 
 	if urlHolder, ok := value.(UrlHolder); ok {
 		_, ok := urlHolder.URL()

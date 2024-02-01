@@ -21,8 +21,8 @@ type TreeNode struct {
 func (n *TreeNode) AddChild(ctx *core.Context, childData core.Value) {
 	state := ctx.GetClosestState()
 
-	n.tree.Lock(state)
-	defer n.tree.Unlock(state)
+	n.tree._lock(state)
+	defer n.tree._unlock(state)
 
 	if !utils.Ret0(core.IsSharable(childData, state)) {
 		panic(core.ErrCannotAddNonSharableToSharedContainer)
@@ -46,8 +46,8 @@ func (n *TreeNode) GetGoMethod(name string) (*core.GoFunction, bool) {
 
 func (n *TreeNode) Prop(ctx *core.Context, name string) core.Value {
 	state := ctx.GetClosestState()
-	n.tree.Lock(state)
-	defer n.tree.Unlock(state)
+	n.tree._lock(state)
+	defer n.tree._unlock(state)
 
 	switch name {
 	case "data":
@@ -103,20 +103,12 @@ func (n *TreeNode) IsShared() bool {
 	return n.tree.IsShared()
 }
 
-func (n *TreeNode) Lock(state *core.GlobalState) {
-	n.tree.lock.Lock(state, n.tree)
+func (n *TreeNode) SmartLock(state *core.GlobalState) {
+	n.tree._lock(state)
 }
 
-func (n *TreeNode) Unlock(state *core.GlobalState) {
-	n.tree.lock.Unlock(state, n.tree)
-}
-
-func (n *TreeNode) ForceLock() {
-	n.tree.lock.ForceLock()
-}
-
-func (n *TreeNode) ForceUnlock() {
-	n.tree.lock.ForceUnlock()
+func (n *TreeNode) SmartUnlock(state *core.GlobalState) {
+	n.tree._unlock(state)
 }
 
 func (n TreeNode) IsMutable() bool {

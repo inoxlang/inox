@@ -422,7 +422,7 @@ func TestLocalSecretStorage(t *testing.T) {
 			return
 		}
 
-		listSecrets := func() {
+		listSecrets := func(ctx *core.Context) {
 			secrets, err := project.ListSecrets(ctx)
 			if !assert.NoError(t, err) {
 				return
@@ -445,16 +445,23 @@ func TestLocalSecretStorage(t *testing.T) {
 		wg := new(sync.WaitGroup)
 		wg.Add(2)
 
+		otherCtx1 := core.NewContexWithEmptyState(core.ContextConfig{Limits: []core.Limit{objectStorageLimit}}, nil)
+		defer otherCtx1.CancelGracefully()
+
+		otherCtx2 := core.NewContexWithEmptyState(core.ContextConfig{Limits: []core.Limit{objectStorageLimit}}, nil)
+		defer otherCtx2.CancelGracefully()
+
 		go func() {
 			defer wg.Done()
-			listSecrets()
+			listSecrets(otherCtx1)
 		}()
 		go func() {
 			defer wg.Done()
-			listSecrets()
+			listSecrets(otherCtx2)
 		}()
+
 		time.Sleep(time.Millisecond)
-		listSecrets()
+		listSecrets(ctx)
 		wg.Wait()
 	})
 

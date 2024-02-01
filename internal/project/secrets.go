@@ -27,8 +27,9 @@ type localSecret struct {
 //TODO: encrypt secrets
 
 func (p *Project) ListSecrets(ctx *core.Context) (info []core.ProjectSecretInfo, _ error) {
-	p.lock.ForceLock()
-	defer p.lock.ForceUnlock()
+	state := ctx.GetClosestState()
+	p.SmartLock(state)
+	defer p.SmartUnlock(state)
 
 	if p.storeSecretsInProjectData {
 		for _, secret := range p.data.Secrets {
@@ -48,8 +49,9 @@ func (p *Project) ListSecrets(ctx *core.Context) (info []core.ProjectSecretInfo,
 }
 
 func (p *Project) GetSecrets(ctx *core.Context) (secrets []core.ProjectSecret, _ error) {
-	p.lock.ForceLock()
-	defer p.lock.ForceUnlock()
+	state := ctx.GetClosestState()
+	p.SmartLock(state)
+	defer p.SmartUnlock(state)
 
 	if p.storeSecretsInProjectData {
 		for _, secret := range p.data.Secrets {
@@ -75,8 +77,9 @@ func (p *Project) UpsertSecret(ctx *core.Context, name, value string) error {
 		return err
 	}
 
-	p.lock.ForceLock()
-	defer p.lock.ForceUnlock()
+	state := ctx.GetClosestState()
+	p.SmartLock(state)
+	defer p.SmartUnlock(state)
 
 	if p.storeSecretsInProjectData {
 		p.data.Secrets[secretName] = localSecret{Name: secretName, LastModifDate: time.Now(), Value: value}
@@ -96,8 +99,9 @@ func (p *Project) DeleteSecret(ctx *core.Context, name string) error {
 		return err
 	}
 
-	p.lock.ForceLock()
-	defer p.lock.ForceUnlock()
+	state := ctx.GetClosestState()
+	p.SmartLock(state)
+	defer p.SmartUnlock(state)
 
 	if p.storeSecretsInProjectData {
 		delete(p.data.Secrets, secretName)

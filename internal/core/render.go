@@ -242,8 +242,8 @@ func (list *List) Render(ctx *Context, w io.Writer, config RenderingInput) (int,
 
 func (obj *Object) IsRecursivelyRenderable(ctx *Context, input RenderingInput) bool {
 	closestState := ctx.GetClosestState()
-	obj.Lock(closestState)
-	defer obj.Unlock(closestState)
+	obj._lock(closestState)
+	defer obj._unlock(closestState)
 	for _, v := range obj.values {
 		_, ok := v.(Renderable)
 		if !ok {
@@ -259,8 +259,8 @@ func (obj *Object) Render(ctx *Context, w io.Writer, config RenderingInput) (int
 	}
 
 	closestState := ctx.GetClosestState()
-	obj.Lock(closestState)
-	defer obj.Unlock(closestState)
+	obj._lock(closestState)
+	defer obj._unlock(closestState)
 	switch config.Mime {
 	case mimeconsts.HTML_CTYPE:
 		totalN, err := w.Write(DIV_OPENING_TAG)

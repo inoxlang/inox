@@ -21,10 +21,19 @@ var (
 type PotentiallySharable interface {
 	Value
 	IsSharable(originState *GlobalState) (bool, string)
+
 	Share(originState *GlobalState)
+
 	IsShared() bool
-	ForceLock()
-	ForceUnlock()
+
+	//(No-op allowed) If possible SmartLock() should lock the PotentiallySharable.
+	//This function is primarily called by Inox interpreters when evaluating synchronized() blocks.
+	//TODO: add symbolic evaluation checks to warn the developer if a no-op SmartLock is used inside
+	//a synchronized block.
+	SmartLock(*GlobalState)
+
+	//If SmartLock() is not a no-op, SmartUnlock should unlock the PotentiallySharable.
+	SmartUnlock(*GlobalState)
 }
 
 func ShareOrClone(v Value, originState *GlobalState) (Value, error) {

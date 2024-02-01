@@ -13,8 +13,8 @@ const (
 // The iterators iterates over the MessageThread, not over a snapshot
 func (t *MessageThread) Iterator(ctx *core.Context, config core.IteratorConfiguration) core.Iterator {
 	closestState := ctx.GetClosestState()
-	t.lock.Lock(closestState, t)
-	defer t.lock.Unlock(closestState, t)
+	t._lock(closestState)
+	defer t._unlock(closestState)
 
 	core.NewEmptyPatternIterator()
 	cursor := core.MAX_ULID

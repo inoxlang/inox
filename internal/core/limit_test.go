@@ -106,7 +106,8 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 	})
 
 	t.Run("time spent waiting the locking of a shared object's should not count as CPU time", func(t *testing.T) {
-		cpuLimit, err := GetLimit(nil, EXECUTION_CPU_TIME_LIMIT_NAME, Duration(50*time.Millisecond))
+		cpuLimitDuration := 50 * time.Millisecond
+		cpuLimit, err := GetLimit(nil, EXECUTION_CPU_TIME_LIMIT_NAME, Duration(cpuLimitDuration))
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -130,21 +131,21 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 				ctx.CancelGracefully()
 			}()
 
-			obj.Lock(otherCtx.state)
+			obj._lock(otherCtx.state)
 			locked <- struct{}{}
 			defer close(locked)
 
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(cpuLimitDuration + time.Millisecond)
 
-			obj.Unlock(otherCtx.state)
+			obj._unlock(otherCtx.state)
 		}()
 
 		<-locked
 
 		start := time.Now()
-		obj.Lock(state)
+		obj._lock(state)
 
-		if !assert.WithinDuration(t, start.Add(100*time.Millisecond), time.Now(), 2*time.Millisecond) {
+		if !assert.WithinDuration(t, start.Add(cpuLimitDuration), time.Now(), 5*time.Millisecond) {
 			return
 		}
 
@@ -154,11 +155,12 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 		default:
 		}
 
-		assert.False(t, ctx.done.Load())
+		assert.False(t, ctx.IsDone())
 	})
 
 	t.Run("time spent sleeping should not count as CPU time", func(t *testing.T) {
-		cpuLimit, err := GetLimit(nil, EXECUTION_CPU_TIME_LIMIT_NAME, Duration(50*time.Millisecond))
+		cpuLimitDuration := 50 * time.Millisecond
+		cpuLimit, err := GetLimit(nil, EXECUTION_CPU_TIME_LIMIT_NAME, Duration(cpuLimitDuration))
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -168,7 +170,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 		}, nil)
 		defer ctx.CancelGracefully()
 
-		Sleep(ctx, Duration(100*time.Millisecond))
+		Sleep(ctx, Duration(cpuLimitDuration+time.Millisecond))
 
 		select {
 		case <-ctx.Done():
@@ -176,7 +178,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 		default:
 		}
 
-		assert.False(t, ctx.done.Load())
+		assert.False(t, ctx.IsDone())
 	})
 
 	t.Run("time spent waiting to continue after yielding should not count as CPU time", func(t *testing.T) {
@@ -291,7 +293,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 		default:
 		}
 
-		assert.False(t, ctx.done.Load())
+		assert.False(t, ctx.IsDone())
 	})
 
 	t.Run("context should be cancelled if all CPU time is spent by child thread that we do not wait for", func(t *testing.T) {

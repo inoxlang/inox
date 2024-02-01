@@ -278,7 +278,7 @@ func (v *VM) run() {
 		// }
 
 		for _, locked := range v.global.lockedValues {
-			locked.ForceUnlock()
+			locked.SmartUnlock(v.global)
 		}
 
 	}()
@@ -2795,7 +2795,7 @@ func (v *VM) handleOtherOpcodes(op byte) (_continue bool) {
 			}
 
 			potentiallySharable.Share(v.global)
-			potentiallySharable.ForceLock()
+			potentiallySharable.SmartLock(v.global)
 
 			// update list of locked values
 			v.global.lockedValues = append(v.global.lockedValues, potentiallySharable)
@@ -2808,7 +2808,7 @@ func (v *VM) handleOtherOpcodes(op byte) (_continue bool) {
 
 		for i := len(lockedValues) - 1; i >= 0; i-- {
 			locked := lockedValues[i]
-			locked.ForceUnlock()
+			locked.SmartUnlock(v.global)
 		}
 
 		var newLockedValues []PotentiallySharable

@@ -303,10 +303,11 @@ func (m *Mapping) IsShared() bool {
 	return m.shared.Load()
 }
 
-func (*Mapping) ForceLock() {
+func (*Mapping) SmartLock(state *GlobalState) {
 
 }
-func (*Mapping) ForceUnlock() {
+
+func (*Mapping) SmartUnlock(state *GlobalState) {
 
 }
 

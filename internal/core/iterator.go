@@ -574,8 +574,8 @@ func (it *IpropsIterator) Value(*Context) Value {
 
 func (obj *Object) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
 	closestState := ctx.GetClosestState()
-	obj.Lock(closestState)
-	defer obj.Unlock(closestState)
+	obj._lock(closestState)
+	defer obj._unlock(closestState)
 
 	values := make([]Value, len(obj.values))
 	for i, e := range obj.values {
