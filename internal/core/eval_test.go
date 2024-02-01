@@ -53,6 +53,10 @@ func TestTreeWalkEval(t *testing.T) {
 	testEval(t, false, makeTreeWalkEvalFunc(t))
 }
 
+func TestOptimizedBytecodeEval(t *testing.T) {
+	bytecodeTest(t, true)
+}
+
 func TestBytecodeEval(t *testing.T) {
 	if testing.Short() {
 		t.Skip()
@@ -60,8 +64,11 @@ func TestBytecodeEval(t *testing.T) {
 	bytecodeTest(t, false)
 }
 
-func TestOptimizedBytecodeEval(t *testing.T) {
-	bytecodeTest(t, true)
+func TestEvalWithRecycledTreeWalkEvalState(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
+	testEval(t, false, makeRecylingTreeWalkEvalFunc(t))
 }
 
 func bytecodeTest(t *testing.T, optimize bool) {
@@ -12394,6 +12401,18 @@ func (e *irreversibleEffect) Reverse(*Context) error {
 }
 
 func makeTreeWalkEvalFunc(t *testing.T) func(c any, s *GlobalState, doSymbolicCheck bool) (Value, error) {
+	return _makeTreeWalkEvalFunc(t, false)
+}
+
+func makeRecylingTreeWalkEvalFunc(t *testing.T) func(c any, s *GlobalState, doSymbolicCheck bool) (Value, error) {
+	return _makeTreeWalkEvalFunc(t, true)
+}
+
+func _makeTreeWalkEvalFunc(t *testing.T, recycle bool) func(c any, s *GlobalState, doSymbolicCheck bool) (Value, error) {
+
+	var states []*TreeWalkState
+	var lock sync.Mutex
+
 	return func(c any, s *GlobalState, doSymbolicCheck bool) (Value, error) {
 		var mod *Module
 
@@ -12474,7 +12493,29 @@ func makeTreeWalkEvalFunc(t *testing.T) func(c any, s *GlobalState, doSymbolicCh
 			s.SymbolicData.AddData(symbData)
 		}
 
-		treeWalkState := NewTreeWalkStateWithGlobal(s)
+		var treeWalkState *TreeWalkState
+		if recycle {
+			lock.Lock()
+
+			//Find an unused state to recycle.
+			for i := 0; i < len(states); i++ {
+				if states[i].Global.Ctx.IsDone() {
+					treeWalkState = states[i]
+					treeWalkState.Reset(s)
+					break
+				}
+			}
+
+			//Create a new state if no unused state was found.
+			if treeWalkState == nil {
+				treeWalkState = NewTreeWalkStateWithGlobal(s)
+				states = append(states, treeWalkState)
+			}
+			lock.Unlock()
+		} else {
+			treeWalkState = NewTreeWalkStateWithGlobal(s)
+		}
+
 		return TreeWalkEval(mod.MainChunk.Node, treeWalkState)
 	}
 }

@@ -1,6 +1,8 @@
 package core
 
 import (
+	"errors"
+
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/parse"
 )
@@ -8,8 +10,8 @@ import (
 // A TreeWalkState stores all the state necessary to perform a tree walking evaluation.
 type TreeWalkState struct {
 	Global          *GlobalState
-	LocalScopeStack []map[string]Value
-	frameInfo       []StackFrameInfo //used for debugging only, the list is reversed
+	LocalScopeStack []map[string]Value //TODO: reduce memory usage by using a struct { small *memds.Map8[string,Value]; grown map[string]Value } ?
+	frameInfo       []StackFrameInfo   //used for debugging only, the list is reversed
 	chunkStack      []*parse.ChunkStackItem
 	fullChunkStack  []*parse.ChunkStackItem //chunk stack but including calls' chunks
 
@@ -25,6 +27,8 @@ type TreeWalkState struct {
 	forceDisableTesting bool //used to disable testing in included chunks
 
 	comptimeTypes *ModuleComptimeTypes
+
+	//Fields added in the future should be reset in Reset().
 }
 
 // NewTreeWalkState creates a TreeWalkState and a GlobalState it will use.
@@ -54,6 +58,36 @@ func NewTreeWalkStateWithGlobal(global *GlobalState) *TreeWalkState {
 		constantVars:    map[string]bool{},
 		Global:          global,
 	}
+}
+
+// Reset recycles the state by resetting its fields. Since references to the state may exist somewhere
+// Reset() should only be used for very simple programs, at least for now.
+func (state *TreeWalkState) Reset(global *GlobalState) {
+	if !state.Global.Ctx.IsDone() {
+		panic(errors.New("cannot reset a tree-walk state that is still in use"))
+	}
+
+	state.Global = global
+	state.LocalScopeStack = state.LocalScopeStack[:0]
+	state.chunkStack = state.chunkStack[:0]
+	state.fullChunkStack = state.fullChunkStack[:0]
+
+	chunk := &parse.ChunkStackItem{Chunk: global.Module.MainChunk}
+	state.chunkStack = append(state.chunkStack, chunk)
+	state.fullChunkStack = append(state.fullChunkStack, chunk)
+
+	clear(state.constantVars)
+	state.iterationChange = NoIterationChange
+
+	state.returnValue = nil
+	state.self = nil
+	state.comptimeTypes = nil
+	state.entryComputeFn = nil
+
+	state.forceDisableTesting = false
+	state.postHandle = nil
+	state.debug = nil
+	state.frameInfo = state.frameInfo[:0]
 }
 
 func (state TreeWalkState) currentChunkStackItem() *parse.ChunkStackItem {
