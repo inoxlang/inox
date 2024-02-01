@@ -2,6 +2,7 @@ package http_ns
 
 import (
 	"net/http"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -1188,6 +1189,37 @@ func TestFilesystemRouting(t *testing.T) {
 						method:              "GET",
 						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
 						result:              "85216e5c138b662924f5831df3a55cc8;",
+					},
+				},
+			},
+			createClient,
+		)
+	})
+
+	t.Run("each path parameter should have a corresponding entry in the context's data", func(t *testing.T) {
+		runServerTest(t,
+			serverTestCase{
+				outWriter: os.Stdout,
+				input: `return {
+						routing: {dynamic: /routes/}
+					}`,
+				makeFilesystem: func() core.SnapshotableFilesystem {
+					fls := fs_ns.NewMemFilesystem(10_000)
+					fls.MkdirAll("/routes/users/:user-id", fs_ns.DEFAULT_DIR_FMODE)
+					util.WriteFile(fls, "/routes/users/:user-id/GET.ix", []byte(`
+							manifest {}
+
+							return ctx_data(#user-id)
+						`), fs_ns.DEFAULT_FILE_FMODE)
+
+					return fls
+				},
+				requests: []requestTestInfo{
+					{
+						path:                "/users/456",
+						method:              "GET",
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+						result:              "456",
 					},
 				},
 			},

@@ -12,6 +12,7 @@ import (
 
 	"slices"
 
+	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/html_ns"
@@ -40,67 +41,13 @@ func addFilesystemRoutingHandler(server *HttpsServer, staticDir, dynamicDir core
 
 	fls := server.state.Ctx.GetFileSystem()
 
-	var handleDynamic handlerFn
-	if dynamicDir != "" {
-		if _, err := fls.Stat(string(dynamicDir)); os.IsNotExist(err) {
-			return fmt.Errorf("directory %q does not exist", dynamicDir)
-		}
-		handleDynamic = createHandleDynamic(server, dynamicDir)
+	router, err := newFilesytemRouter(dynamicDir, staticDir, server, fls)
+	if err != nil {
+		return err
 	}
+	server.lastHandlerFn = router.handle
 
-	if staticDir != "" {
-		if _, err := fls.Stat(string(staticDir)); os.IsNotExist(err) {
-			return fmt.Errorf("directory %q does not exist", staticDir)
-		}
-	}
-
-	handler := func(req *Request, rw *ResponseWriter, handlerGlobalState *core.GlobalState) {
-
-		if staticDir != "" {
-			staticFilePath := staticDir.JoinAbsolute(req.Path, handlerGlobalState.Ctx.GetFileSystem())
-
-			if staticFilePath.IsDirPath() {
-				staticFilePath += "index.html"
-			}
-
-			fileExtension := filepath.Ext(string(staticFilePath))
-
-			if fs_ns.Exists(handlerGlobalState.Ctx, staticFilePath) {
-
-				//add CSP header if the content is HTML.
-				if mimeconsts.IsMimeTypeForExtension(mimeconsts.HTML_CTYPE, fileExtension) {
-					headerValue := core.String(server.defaultCSP.HeaderValue(CSPHeaderValueParams{}))
-					rw.AddHeader(handlerGlobalState.Ctx, CSP_HEADER_NAME, headerValue)
-				}
-
-				err := serveFile(fileServingParams{
-					ctx:            handlerGlobalState.Ctx,
-					rw:             rw.DetachRespWriter(),
-					r:              req.request,
-					pth:            staticFilePath,
-					fileCompressor: server.fileCompressor,
-				})
-
-				if err != nil {
-					handlerGlobalState.Logger.Err(err).Send()
-					rw.writeHeaders(http.StatusNotFound)
-					return
-				}
-				return
-			}
-		}
-
-		if handleDynamic != nil {
-			handleDynamic(req, rw, handlerGlobalState)
-		}
-
-		if staticDir == "" && dynamicDir == "" {
-			rw.DetachRespWriter().Write([]byte(NO_HANDLER_PLACEHOLDER_MESSAGE))
-		}
-	}
-
-	server.lastHandlerFn = handler
-
+	//Get the API.
 	dynamicDirString := ""
 	if dynamicDir != "" {
 		dynamicDirString = dynamicDir.UnderlyingString()
@@ -152,187 +99,275 @@ func addFilesystemRoutingHandler(server *HttpsServer, staticDir, dynamicDir core
 	return nil
 }
 
-func createHandleDynamic(server *HttpsServer, routingDirPath core.Path) handlerFn {
-	return func(req *Request, rw *ResponseWriter, handlerGlobalState *core.GlobalState) {
-		path := req.Path
-		method := req.Method.UnderlyingString()
-		tx := handlerGlobalState.Ctx.GetTx()
-		if tx == nil {
-			panic(core.ErrUnreachable)
+type filesystemRouter struct {
+	server     *HttpsServer
+	dynamicDir core.Path
+	staticDir  core.Path
+}
+
+func newFilesytemRouter(dynamicDir, staticDir core.Path, server *HttpsServer, fls afs.Filesystem) (*filesystemRouter, error) {
+	router := &filesystemRouter{
+		server:     server,
+		dynamicDir: dynamicDir,
+		staticDir:  staticDir,
+	}
+
+	if dynamicDir != "" {
+		if _, err := fls.Stat(string(dynamicDir)); os.IsNotExist(err) {
+			return nil, fmt.Errorf("directory %q does not exist", dynamicDir)
+		}
+		router.dynamicDir = dynamicDir
+	}
+
+	if staticDir != "" {
+		if _, err := fls.Stat(string(staticDir)); os.IsNotExist(err) {
+			return nil, fmt.Errorf("directory %q does not exist", staticDir)
+		}
+		router.staticDir = staticDir
+	}
+
+	return router, nil
+}
+
+func (router *filesystemRouter) handle(req *Request, rw *ResponseWriter, handlerGlobalState *core.GlobalState) {
+	if router.staticDir != "" {
+		staticFilePath := router.staticDir.JoinAbsolute(req.Path, handlerGlobalState.Ctx.GetFileSystem())
+
+		if staticFilePath.IsDirPath() {
+			staticFilePath += "index.html"
 		}
 
-		//Check the path.
-		if !path.IsAbsolute() {
-			panic(core.ErrUnreachable)
-		}
+		fileExtension := filepath.Ext(string(staticFilePath))
 
-		if path.IsDirPath() && path != "/" {
-			rw.writeHeaders(http.StatusNotFound)
+		if fs_ns.Exists(handlerGlobalState.Ctx, staticFilePath) {
+
+			//add CSP header if the content is HTML.
+			if mimeconsts.IsMimeTypeForExtension(mimeconsts.HTML_CTYPE, fileExtension) {
+				headerValue := core.String(router.server.defaultCSP.HeaderValue(CSPHeaderValueParams{}))
+				rw.AddHeader(handlerGlobalState.Ctx, CSP_HEADER_NAME, headerValue)
+			}
+
+			err := serveFile(fileServingParams{
+				ctx:            handlerGlobalState.Ctx,
+				rw:             rw.DetachRespWriter(),
+				r:              req.request,
+				pth:            staticFilePath,
+				fileCompressor: router.server.fileCompressor,
+			})
+
+			if err != nil {
+				handlerGlobalState.Logger.Err(err).Send()
+				rw.writeHeaders(http.StatusNotFound)
+				return
+			}
 			return
 		}
+	}
 
-		if slices.Contains(strings.Split(path.UnderlyingString(), "/"), "..") {
-			rw.writeHeaders(http.StatusNotFound)
-			return
-		}
+	if router.dynamicDir != "" {
+		router.handleDynamic(req, rw, handlerGlobalState)
+	}
 
-		//Determine the API Endpoint.
+	if router.staticDir == "" && router.dynamicDir == "" {
+		rw.DetachRespWriter().Write([]byte(NO_HANDLER_PLACEHOLDER_MESSAGE))
+	}
+}
 
-		if strings.Contains(method, "/") {
-			rw.writeHeaders(http.StatusNotFound)
-			return
-		}
+func (router *filesystemRouter) handleDynamic(req *Request, rw *ResponseWriter, handlerGlobalState *core.GlobalState) {
+	path := req.Path
+	method := req.Method.UnderlyingString()
+	tx := handlerGlobalState.Ctx.GetTx()
+	if tx == nil {
+		panic(core.ErrUnreachable)
+	}
 
-		searchedMethod := method
-		switch method {
-		case "HEAD":
-			searchedMethod = "GET"
-		}
+	//Check the path.
+	if !path.IsAbsolute() {
+		panic(core.ErrUnreachable)
+	}
 
-		server.apiLock.Lock()
-		api := server.api
-		server.apiLock.Unlock()
+	if path.IsDirPath() && path != "/" {
+		rw.writeHeaders(http.StatusNotFound)
+		return
+	}
 
-		endpt, err := api.GetEndpoint(string(path))
-		if errors.Is(err, spec.ErrEndpointNotFound) {
-			rw.writeHeaders(http.StatusNotFound)
-			return
-		}
+	if slices.Contains(strings.Split(path.UnderlyingString(), "/"), "..") {
+		rw.writeHeaders(http.StatusNotFound)
+		return
+	}
 
-		if err != nil {
-			handlerGlobalState.Logger.Err(err).Send()
-		}
+	//Determine the API Endpoint.
 
-		methodSpecificModule := true
-		var module *core.Module
+	if strings.Contains(method, "/") {
+		rw.writeHeaders(http.StatusNotFound)
+		return
+	}
 
-		if endpt.CatchAll() {
-			methodSpecificModule = false
-			module, _ = endpt.CatchAllHandler()
-		} else {
-			for _, operation := range endpt.Operations() {
-				if operation.HttpMethod() == searchedMethod {
-					module = utils.MustGet(operation.HandlerModule())
-					break
-				}
+	searchedMethod := method
+	switch method {
+	case "HEAD":
+		searchedMethod = "GET"
+	}
+
+	router.server.apiLock.Lock()
+	api := router.server.api
+	router.server.apiLock.Unlock()
+
+	endpt, err := api.GetEndpoint(string(path))
+	if errors.Is(err, spec.ErrEndpointNotFound) {
+		rw.writeHeaders(http.StatusNotFound)
+		return
+	}
+
+	if err != nil {
+		handlerGlobalState.Logger.Err(err).Send()
+	}
+
+	//Get path parameters.
+	pathParamsArray, paramCount, err := endpt.GetPathParams(string(path))
+	if err != nil {
+		rw.writeHeaders(http.StatusNotFound)
+		return
+	}
+	pathParams := pathParamsArray[:paramCount]
+
+	//Determine the module to execute.
+	methodSpecificModule := true
+	var module *core.Module
+
+	if endpt.CatchAll() {
+		methodSpecificModule = false
+		module, _ = endpt.CatchAllHandler()
+	} else {
+		for _, operation := range endpt.Operations() {
+			if operation.HttpMethod() == searchedMethod {
+				module = utils.MustGet(operation.HandlerModule())
+				break
 			}
 		}
+	}
 
-		if module == nil {
-			rw.writeHeaders(http.StatusNotFound)
-			return
+	if module == nil {
+		rw.writeHeaders(http.StatusNotFound)
+		return
+	}
+
+	//Prepare the module
+	//TODO: check the file is not writable
+
+	modulePath := module.Name()
+	handlerCtx := handlerGlobalState.Ctx
+
+	preparationStart := time.Now()
+
+	fsRoutingLogger := handlerGlobalState.Ctx.NewChildLoggerForInternalSource(FS_ROUTING_LOG_SRC)
+	fsRoutingLogger = fsRoutingLogger.With().Str("handler", modulePath).Logger()
+	moduleLogger := handlerGlobalState.Logger
+
+	state, _, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
+		Fpath:                 modulePath,
+		CachedModule:          module,
+		ParentContext:         handlerCtx,
+		ParentContextRequired: true,
+		DefaultLimits:         core.GetDefaultRequestHandlingLimits(),
+
+		ParsingCompilationContext: handlerCtx,
+		Out:                       handlerGlobalState.Out,
+		Logger:                    moduleLogger,
+		LogLevels:                 router.server.state.LogLevels,
+
+		FullAccessToDatabases: false, //databases should be passed by parent state
+		PreinitFilesystem:     handlerCtx.GetFileSystem(),
+		GetArguments: func(manifest *core.Manifest) (*core.ModuleArgs, error) {
+			args, errStatusCode, err := getHandlerModuleArguments(req, manifest, handlerCtx, methodSpecificModule)
+			if err != nil {
+				rw.writeHeaders(errStatusCode)
+			}
+			return args, err
+		},
+		BeforeContextCreation: func(m *core.Manifest) ([]core.Limit, error) {
+			return getLimitsOfHandlerModule(m, modulePath, router.server)
+		},
+	})
+
+	if err != nil {
+		fsRoutingLogger.Err(err).Send()
+		if !rw.IsStatusSent() {
+			rw.writeHeaders(http.StatusInternalServerError)
 		}
+		if !handlerCtx.IsDoneSlowCheck() {
+			tx.Rollback(handlerCtx)
+		}
+		return
+	}
 
-		//Prepare the module
-		//TODO: check the file is not writable
+	//Put path parameters in the context.
+	for _, param := range pathParams {
+		state.Ctx.PutUserData(core.Identifier(param.Name), core.String(param.Value))
+	}
 
-		modulePath := module.Name()
-		handlerCtx := handlerGlobalState.Ctx
+	fsRoutingLogger.Debug().Dur("preparation-time", time.Since(preparationStart)).Send()
 
-		preparationStart := time.Now()
+	//Create child debugger.
 
-		fsRoutingLogger := handlerGlobalState.Ctx.NewChildLoggerForInternalSource(FS_ROUTING_LOG_SRC)
-		fsRoutingLogger = fsRoutingLogger.With().Str("handler", modulePath).Logger()
-		moduleLogger := handlerGlobalState.Logger
+	var debugger *core.Debugger
 
-		state, _, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
-			Fpath:                 modulePath,
-			CachedModule:          module,
-			ParentContext:         handlerCtx,
-			ParentContextRequired: true,
-			DefaultLimits:         core.GetDefaultRequestHandlingLimits(),
+	if parentDebugger, _ := router.server.state.Debugger.Load().(*core.Debugger); parentDebugger != nil {
+		debugger = parentDebugger.NewChild()
+	}
 
-			ParsingCompilationContext: handlerCtx,
-			Out:                       handlerGlobalState.Out,
-			Logger:                    moduleLogger,
-			LogLevels:                 server.state.LogLevels,
+	//Run the handler module in the current goroutine.
+	//The CPU time depletion of the handler is paused because the same corresponding depletion in the module's limiter is going to start.
 
-			FullAccessToDatabases: false, //databases should be passed by parent state
-			PreinitFilesystem:     handlerCtx.GetFileSystem(),
-			GetArguments: func(manifest *core.Manifest) (*core.ModuleArgs, error) {
-				args, errStatusCode, err := getHandlerModuleArguments(req, manifest, handlerCtx, methodSpecificModule)
-				if err != nil {
-					rw.writeHeaders(errStatusCode)
-				}
-				return args, err
-			},
-			BeforeContextCreation: func(m *core.Manifest) ([]core.Limit, error) {
-				return getLimitsOfHandlerModule(m, modulePath, server)
-			},
-		})
+	handlerCtx.PauseCPUTimeDepletion()
 
-		if err != nil {
-			fsRoutingLogger.Err(err).Send()
+	result, _, _, _, err := mod.RunPreparedModule(mod.RunPreparedModuleArgs{
+		State: state,
+
+		ParentContext:             handlerCtx,
+		ParsingCompilationContext: handlerCtx,
+		IgnoreHighRiskScore:       true,
+		Debugger:                  debugger,
+
+		DoNotCancelWhenFinished: true,
+	})
+
+	handlerCtx.ResumeCPUTimeDepletion()
+
+	if err != nil {
+		handlerGlobalState.Logger.Err(err).Send()
+
+		if handlerCtx.IsDoneSlowCheck() {
 			if !rw.IsStatusSent() {
 				rw.writeHeaders(http.StatusInternalServerError)
 			}
-			if !handlerCtx.IsDoneSlowCheck() {
-				tx.Rollback(handlerCtx)
+		} else {
+			if !rw.IsStatusSent() {
+				rw.writeHeaders(http.StatusNotFound)
 			}
-			return
 		}
 
-		fsRoutingLogger.Debug().Dur("preparation-time", time.Since(preparationStart)).Send()
-
-		var debugger *core.Debugger
-
-		if parentDebugger, _ := server.state.Debugger.Load().(*core.Debugger); parentDebugger != nil {
-			debugger = parentDebugger.NewChild()
-		}
-
-		//Run the handler module in the current goroutine.
-		//The CPU time depletion of the handler is paused because the same corresponding depletion in the module's limiter is going to start.
-
-		handlerCtx.PauseCPUTimeDepletion()
-
-		result, _, _, _, err := mod.RunPreparedModule(mod.RunPreparedModuleArgs{
-			State: state,
-
-			ParentContext:             handlerCtx,
-			ParsingCompilationContext: handlerCtx,
-			IgnoreHighRiskScore:       true,
-			Debugger:                  debugger,
-
-			DoNotCancelWhenFinished: true,
-		})
-
-		handlerCtx.ResumeCPUTimeDepletion()
-
-		if err != nil {
-			handlerGlobalState.Logger.Err(err).Send()
-
-			if handlerCtx.IsDoneSlowCheck() {
-				if !rw.IsStatusSent() {
-					rw.writeHeaders(http.StatusInternalServerError)
-				}
-			} else {
-				if !rw.IsStatusSent() {
-					rw.writeHeaders(http.StatusNotFound)
-				}
-			}
-
-			tx.Rollback(handlerCtx)
-			return
-		}
-
-		nonce := randomCSPNonce()
-
-		//add nonce to <script> tags
-		if node, ok := result.(*html_ns.HTMLNode); ok {
-			node.AddNonceToScriptTagsNoEvent(nonce)
-		}
-
-		respondWithMappingResult(handlingArguments{
-			value:        result,
-			req:          req,
-			rw:           rw,
-			state:        handlerGlobalState,
-			server:       server,
-			logger:       handlerGlobalState.Logger,
-			scriptsNonce: nonce,
-			isMiddleware: false,
-		})
+		tx.Rollback(handlerCtx)
+		return
 	}
+
+	nonce := randomCSPNonce()
+
+	//add nonce to <script> tags
+	if node, ok := result.(*html_ns.HTMLNode); ok {
+		node.AddNonceToScriptTagsNoEvent(nonce)
+	}
+
+	respondWithMappingResult(handlingArguments{
+		value:        result,
+		req:          req,
+		rw:           rw,
+		state:        handlerGlobalState,
+		server:       router.server,
+		logger:       handlerGlobalState.Logger,
+		scriptsNonce: nonce,
+		isMiddleware: false,
+	})
 }
 
 func getLimitsOfHandlerModule(m *core.Manifest, modulePath string, server *HttpsServer) ([]core.Limit, error) {

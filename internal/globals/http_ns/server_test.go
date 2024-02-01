@@ -109,6 +109,7 @@ func init() {
 				"statuses":          STATUS_NAMESPACE,
 				"Status":            core.WrapGoFunction(makeStatus),
 				"Result":            core.WrapGoFunction(NewResult),
+				"ctx_data":          core.WrapGoFunction(_ctx_data),
 			})
 
 			return state, nil
@@ -136,6 +137,11 @@ func init() {
 	core.RegisterSymbolicGoFunction(toRstream, func(ctx *symbolic.Context, v symbolic.Value) *symbolic.ReadableStream {
 		return symbolic.NewReadableStream(symbolic.ANY)
 	})
+
+	core.RegisterSymbolicGoFunction(_ctx_data, func(ctx *symbolic.Context, name *symbolic.Identifier) symbolic.Value {
+		return symbolic.ANY
+	})
+
 	if !core.IsSymbolicEquivalentOfGoFunctionRegistered(core.Sleep) {
 		core.RegisterSymbolicGoFunction(core.Sleep, func(ctx *symbolic.Context, _ *symbolic.Duration) {
 
@@ -900,6 +906,7 @@ func setupTestCase(t *testing.T, testCase serverTestCase) (*core.GlobalState, *c
 		"cancel_exec":  core.WrapGoFunction(cancelExec),
 		"EmailAddress": core.WrapGoFunction(makeEmailAddress),
 		"Status":       core.WrapGoFunction(makeStatus),
+		"ctx_data":     core.WrapGoFunction(_ctx_data),
 	})
 
 	state.Module = module
@@ -1392,4 +1399,12 @@ func (*dummyEffect) Reversability(*core.Context) core.Reversability {
 
 func (*dummyEffect) Reverse(*core.Context) error {
 	panic("unimplemented")
+}
+
+func _ctx_data(ctx *core.Context, name core.Identifier) core.Value {
+	data := ctx.ResolveUserData(name)
+	if data == nil {
+		data = core.Nil
+	}
+	return data
 }
