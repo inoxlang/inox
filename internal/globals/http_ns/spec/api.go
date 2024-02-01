@@ -47,11 +47,11 @@ func NewAPI(endpoints map[string]*ApiEndpoint) (*API, error) {
 		}
 	}
 
-	//build the endpoint tree
+	//build the endpoint tree and decompose paths in segments
 
 	api.tree = &EndpointTreeNode{path: "/", namedChildren: map[string]*EndpointTreeNode{}}
 
-	for endpointPath := range api.endpoints {
+	for endpointPath, endpoint := range api.endpoints {
 		if endpointPath == "" || endpointPath[0] != '/' {
 			return nil, fmt.Errorf("invalid endpoint path %q", endpointPath)
 		}
@@ -61,6 +61,7 @@ func NewAPI(endpoints map[string]*ApiEndpoint) (*API, error) {
 		}
 
 		segments := strings.Split(endpointPath[1:], "/")
+		parametrizedSegmentCount := 0
 		currentNode := api.tree
 
 		//update the endpoint tree
@@ -74,6 +75,13 @@ func NewAPI(endpoints map[string]*ApiEndpoint) (*API, error) {
 				if segment[len(segment)-1] != '}' {
 					return nil, fmt.Errorf("invalid endpoint path %q: invalid parametrized segment %s", endpointPath, segment)
 				}
+				paramName := segment[1 : len(segment)-1]
+				endpoint.pathSegments = append(endpoint.pathSegments, EndpointPathSegment{ParameterName: paramName})
+				parametrizedSegmentCount++
+				if parametrizedSegmentCount > MAX_PATH_PARAM_COUNT {
+					return nil, fmt.Errorf("invalid endpoint path %q: too many parametrized segments, max is %d", endpointPath, MAX_PATH_PARAM_COUNT)
+				}
+
 				child := currentNode.parametrizedChild
 				if child == nil {
 					child = &EndpointTreeNode{
@@ -84,6 +92,8 @@ func NewAPI(endpoints map[string]*ApiEndpoint) (*API, error) {
 				}
 				currentNode = child
 			} else {
+				endpoint.pathSegments = append(endpoint.pathSegments, EndpointPathSegment{Constant: segment})
+
 				child, ok := currentNode.namedChildren[segment]
 				if !ok {
 					if currentNode.namedChildren == nil {
@@ -110,57 +120,6 @@ func NewAPI(endpoints map[string]*ApiEndpoint) (*API, error) {
 	}
 
 	return api, nil
-}
-
-// APIEndpoint represents an endpoint and its supported operations (GET, POST, ...).
-// APIEndpoint is immutable.
-type ApiEndpoint struct {
-	path     string //may have parameters
-	catchAll bool
-
-	//Only set if filesystem routing is used. If set .operations is nil.
-	catchAllHandler *core.Module
-
-	operations []ApiOperation
-}
-
-func (e ApiEndpoint) PathWithParams() string {
-	return e.path
-}
-
-func (e ApiEndpoint) CatchAll() bool {
-	return e.catchAll
-}
-
-func (e ApiEndpoint) CatchAllHandler() (*core.Module, bool) {
-	return e.catchAllHandler, e.catchAllHandler != nil
-}
-
-func (e ApiEndpoint) Operations() []ApiOperation {
-	return e.operations[0:len(e.operations):len(e.operations)]
-}
-
-type ApiOperation struct {
-	id         string //optional
-	endpoint   *ApiEndpoint
-	httpMethod string
-
-	jsonRequestBody    core.Pattern
-	jsonResponseBodies map[uint16]core.Pattern
-
-	handlerModule *core.Module //only set if filesystem routing is used.
-}
-
-func (op ApiOperation) HttpMethod() string {
-	return op.httpMethod
-}
-
-func (op ApiOperation) HandlerModule() (*core.Module, bool) {
-	return op.handlerModule, op.handlerModule != nil
-}
-
-func (op ApiOperation) JSONRequestBodyPattern() (core.Pattern, bool) {
-	return op.jsonRequestBody, op.jsonRequestBody != nil
 }
 
 type EndpointTreeNode struct {
