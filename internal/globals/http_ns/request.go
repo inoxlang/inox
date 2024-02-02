@@ -136,6 +136,17 @@ func NewServerSideRequest(r *http.Request, logger zerolog.Logger, server *HttpsS
 		headerNames = append(headerNames, name)
 	}
 
+	// Check that path does not contain '..' elements.
+	// Use same logic as containsDotDot in stdlib net/http/fs.go
+
+	isSlashRune := func(r rune) bool { return r == '/' || r == '\\' }
+
+	for _, ent := range strings.FieldsFunc(r.URL.Path, isSlashRune) {
+		if ent == ".." {
+			return nil, fmt.Errorf("unexpected .. segment in path: %w", err)
+		}
+	}
+
 	req := &Request{
 		ULID:       id,
 		ULIDString: id.String(),

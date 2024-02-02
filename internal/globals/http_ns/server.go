@@ -206,18 +206,6 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 			}
 		}
 
-		// check that path does not contain '..' elements.
-		// use same logic as containsDotDot in stdlib net/http/fs.go
-
-		isSlashRune := func(r rune) bool { return r == '/' || r == '\\' }
-
-		for _, ent := range strings.FieldsFunc(r.URL.Path, isSlashRune) {
-			if ent == ".." {
-				rw.writeHeaders(http.StatusBadRequest)
-				return
-			}
-		}
-
 		// rate limiting & more
 
 		if server.securityEngine.rateLimitRequest(req, rw) {
