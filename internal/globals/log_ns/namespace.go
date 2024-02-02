@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"fmt"
 	"time"
-	"unicode"
 
 	"github.com/inoxlang/inox/internal/config"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/help"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/rs/zerolog"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
@@ -82,36 +82,14 @@ func _add(ctx *core.Context, record *core.Record) {
 	var level zerolog.Level = zerolog.DebugLevel
 	var msg string
 
-	err := record.ForEachEntry(func(k string, v core.Value) (err error) {
-		switch k {
+	err := record.ForEachEntry(func(propKey string, propVal core.Value) (err error) {
+		switch propKey {
 		case zerolog.LevelFieldName:
-			level, err = zerolog.ParseLevel(v.(core.StringLike).GetOrBuildString())
+			level, err = zerolog.ParseLevel(propVal.(core.StringLike).GetOrBuildString())
 		case zerolog.MessageFieldName:
-			msg = v.(core.StringLike).GetOrBuildString()
+			msg = propVal.(core.StringLike).GetOrBuildString()
 		case zerolog.TimestampFieldName:
-			return fmt.Errorf("the %q field is reserved", k)
-		default:
-
-			if k != "" && unicode.IsDigit(rune(k[0])) {
-				var messagePart string
-				strLike, ok := v.(core.StringLike)
-				if ok {
-					messagePart = strLike.GetOrBuildString()
-				} else { //pretty print
-					buff := &bytes.Buffer{}
-					err := core.PrettyPrint(v, buff, config.DEFAULT_LOG_PRINT_CONFIG.WithContext(ctx), 0, 0)
-					if err != nil {
-						panic(err)
-					}
-					messagePart = buff.String()
-				}
-
-				if msg != "" {
-					msg += " " + messagePart
-				} else {
-					msg += messagePart
-				}
-			}
+			return fmt.Errorf("the %q field is reserved", propKey)
 		}
 		return
 	})
@@ -122,16 +100,35 @@ func _add(ctx *core.Context, record *core.Record) {
 
 	event := logger.WithLevel(level).Timestamp()
 
+	record.ForEachElement(ctx, func(_ int, elem core.Serializable) error {
+		var messagePart string
+		strLike, ok := elem.(core.StringLike)
+		if ok {
+			messagePart = strLike.GetOrBuildString()
+		} else { //pretty print
+			buff := &bytes.Buffer{}
+			err := core.PrettyPrint(elem, buff, config.DEFAULT_LOG_PRINT_CONFIG.WithContext(ctx), 0, 0)
+			if err != nil {
+				panic(err)
+			}
+			messagePart = buff.String()
+		}
+
+		if msg != "" {
+			msg += " " + messagePart
+		} else {
+			msg += messagePart
+		}
+
+		return nil
+	})
+
 	err = record.ForEachEntry(func(k string, v core.Value) (err error) {
 		switch k {
-		case zerolog.LevelFieldName, zerolog.MessageFieldName:
+		case zerolog.LevelFieldName, zerolog.MessageFieldName, inoxconsts.IMPLICIT_PROP_NAME:
 			//already handled
-		default:
-			if k != "" && unicode.IsDigit(rune(k[0])) {
-				//already handled
-				return
-			}
 
+		default:
 			switch val := v.(type) {
 			case core.Duration:
 				event = event.Dur(k, time.Duration(val))

@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strconv"
 
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -113,6 +114,32 @@ func (rec *Record) ForEachEntry(fn func(k string, v Value) error) error {
 		if err := fn(rec.keys[i], v); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+// ForEachElement iterates over the elements in the empty "" property, if the property's value is not a tuple
+// the function does nothing.
+func (rec *Record) ForEachElement(ctx *Context, fn func(index int, v Serializable) error) error {
+
+	for i, v := range rec.values {
+		key := rec.keys[i]
+		if key != inoxconsts.IMPLICIT_PROP_NAME {
+			continue
+		}
+
+		tuple, ok := v.(*Tuple)
+		if !ok {
+			return nil
+		}
+
+		length := tuple.Len()
+		for elemIndex := 0; elemIndex < length; elemIndex++ {
+			if err := fn(elemIndex, tuple.elements[elemIndex].(Serializable)); err != nil {
+				return err
+			}
+		}
+
 	}
 	return nil
 }

@@ -639,7 +639,8 @@ func (obj *Object) ForEachEntry(fn func(k string, v Serializable) error) error {
 	return nil
 }
 
-// ForEachElement iterates over the elemennts in the empty "" property.
+// ForEachElement iterates over the elements in the empty "" property, if the property's value is not a list
+// the function does nothing.
 func (obj *Object) ForEachElement(ctx *Context, fn func(index int, v Serializable) error) error {
 	if obj.IsShared() {
 		panic(errors.New("Object.ForEachElement() can only be called on objects that are not shared"))
