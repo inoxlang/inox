@@ -22,7 +22,7 @@ context-data:
     related-topics: [add_ctx_data]
     text: >
       The `ctx_data` function retrieves the value of a user data entry. `nil` is returned if the entry does not
-      exist. A pattern is accepted as a second
+      exist. A pattern checking the value is accepted as a second argument.
     examples:
     - code: |
         user = ctx_data(/user)

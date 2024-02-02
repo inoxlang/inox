@@ -271,26 +271,26 @@ The `add_ctx_data` function creates a new user data entry in the context. The pa
 user = {name: "foo"}
 
 # `user` will be shared.
-add_ctx_data(#user, user)
+add_ctx_data(/user, user)
 ```
 ```inox
 list = [1, 2, 3]
 
 # `list` will be cloned.
-add_ctx_data(#list, user)
+add_ctx_data(/list, list)
 ```
 ### ctx_data
 
-The `ctx_data` function retrieves the value of a user data entry. `nil` is returned if the entry does not exist. A pattern is accepted as a second.
+The `ctx_data` function retrieves the value of a user data entry. `nil` is returned if the entry does not exist. A pattern checking the value is accepted as a second argument.
 
 **examples**
 
 ```inox
-user = ctx_data(#user)
+user = ctx_data(/user)
 ```
 ```inox
 # ctx_data panics if the value does not match %user.
-user = ctx_data(#user, %user)
+user = ctx_data(/user, %user)
 ```
 
 ## Conversion
