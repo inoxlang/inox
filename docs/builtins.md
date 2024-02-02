@@ -901,7 +901,7 @@ http.FileServer!(https://localhost:8080, ./examples/static/)
 ### http.CSP
 
 The http.CSP function creates a Content Security Policy with the passed directives and some default directives: 
-all directive types that are not provided in arguments default to the following directives:
+all types that are not provided in arguments default to the following:
   - `default-src 'none';`
   - `frame-ancestors 'none';`
   - `frame-src 'none';`

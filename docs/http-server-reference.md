@@ -1,18 +1,26 @@
 # HTTP Server Reference
 
+Inox's HTTP server provides several high-level features and is **secure by default**.
+
 **WORK IN PROGRESS**
 
-- [Creation]
-  - [Handler function](#handler-function)
-- [Certificate]
+- [Creation](#creation)
+- [Listening Address](#listening-address)
+- [Certificate](#certificate)
+- [Configuration object](#configuration-object)
 - [Filesystem routing](#filesystem-routing)
+- [Handler function](#handler-function)
 - [Mapping handler](#mapping-handler)
 - [Request handling](#request-handling)
+- [Handler module](#handler-module)
+- [Content Security Policy](#content-security-policy)
+
+---
 
 ## Creation
 
 The builtin `http.Server` function creates a listening HTTP**S** server.\
-The first parameter is the **listening address**: it should be a HTTPS host such
+The first parameter is the [listening address](#listening-address): it should be a HTTPS host such
 as `https://localhost:8080` or `https://0.0.0.0:8080`.
 
 ```
@@ -23,18 +31,60 @@ The second parameter is a handler ([function](#handler-function) or
 [mapping](#mapping-based-routing)), or a
 [configuration object](#configuration-object).
 
+---
+
+## Listening Address
+
+The listening address is a Inox HTTPS host such as `https://localhost:8080` or `https://0.0.0.0:8080`.
+If the host (standard definition) is `0.0.0.0` the server will listen on all public interfaces.
+
+⚠️ If the [inox daemon](./inox-daemon.md) does not allow exposing web servers the server will listen
+on `localhost` as a fallback.
+
+---
+
 ## Certificate
 
-Inox's HTTP server
+Inox's HTTP server automatically generates a self-signed certificate for `localhost` and public IPs.
+
+---
 
 ## Configuration Object
+
+```
+{
+    routing: function | Mapping | {
+        static?: <dir>
+        dynamic?: <dir>
+    }
+
+    certificate?: <string>
+
+    key?: <secret> # certificate's key
+
+    default-csp?: http.CSP{ ....... }
+
+    sessions?: {
+        collection: <Set>
+    }
+
+    default-limits?: ...
+
+    max-limits?: ...
+}
+```
+
+---
 
 ## Filesystem Routing
 
 ```
 server = http.Server!(https://localhost:8080, {
     routing: {
+        # directory for static resources such as CSS and JS files.
         static: /static/
+
+        # directory containing handler modules (Inox files).
         dynamic: /routes/
     }
 })
@@ -53,6 +103,8 @@ following:
 
 A **single handler module** should be defined for each endpoint/METHOD pair. The `http.Server` function panics
 if there are two or more handlers for the same endpoint/METHOD pair.
+
+---
 
 ### Context Data
 
@@ -73,6 +125,7 @@ routes/
 If a request of path `/users/123` is received the `GET.ix` handler module will be invoked.
 The call to `ctx_data(/path-params/user-id)` will return the string `123`.
 
+---
 
 ## Handler Function
 
@@ -90,6 +143,8 @@ fn handle(response-writer http.resp-writer, request http.req){
 http.Server(ADDR, handle)
 ```
 
+---
+
 ## Mapping Handler
 
 **WORK IN PROGRESS**
@@ -106,6 +161,8 @@ server = http.Server!(ADDR, Mapping {
     %/... => handle
 })
 ```
+
+---
 
 ## Request Handling
 
@@ -148,3 +205,42 @@ The handler is invoked, it can be a **function**, a **Mapping** or a **module**.
 - The handler module selected by the **filesystem router** is executed using a
   state created by **preparing** the module. It is a child of the state at
   [step 3](#3-routing).
+
+---
+
+
+## Handler Module
+
+---
+
+## Content Security Policy
+
+The default [Content Security Policy]((https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP).) used by the HTTP server is the following:
+- `default-src 'none';`
+- `frame-ancestors 'none';`
+- `frame-src 'none';`
+- `script-src-elem 'self' 'nonce-[page-nonce]>';`
+- `connect-src 'self';`
+- `font-src 'self';`
+- `img-src 'self';`
+- `style-src-elem 'self' 'unsafe-inline';`.
+
+Directives can be **individually** overriden or added by passing a CSP to the server:
+
+```
+server = http.Server!(APP_LISTENING_ADDR {
+    ...
+    default-csp: http.CSP{
+        # allow loading images from any HTTPS website.
+        img-src: "https://*"
+    
+        # allow loading scripts from the current server and unpkg.com.
+        script-src-elem: "'self' https://unpkg.com/" 
+    }
+    ...
+})
+```
+
+### Page Nonce
+
+If the filesystem router is used, a nonce is **always added** to the `script-src-elem` directive and to all `<script>` elements in the page's HTML.
