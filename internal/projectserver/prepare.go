@@ -44,18 +44,20 @@ type filePreparationParams struct {
 	_depth int //should not be by caller, it is used internally by prepareSourceFileInExtractionMode
 }
 
+type preparationResult struct {
+	state                            *core.GlobalState
+	module                           *core.Module
+	chunk                            *parse.ParsedChunkSource
+	failedToPrepareDBProvidingParent parse.Node
+	cachedOrGotCache                 bool
+}
+
 // prepareSourceFileInExtractionMode prepares a module or includable-chunk file:
 // - if requiresState is true & state failed to be created ok is false.
 // - if the file at fpath is an includable-chunk the returned module is a fake module.
-// - ok is false if params.requiresCache is true and the file is not cached.
+// - success is false if params.requiresCache is true and the file is not cached.
 // The returned values SHOULD NOT BE MODIFIED.
-func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparationParams) (
-	_ *core.GlobalState,
-	_ *core.Module,
-	_ *parse.ParsedChunkSource,
-	cachedOrGotCache bool,
-	_ bool,
-) {
+func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparationParams) (prepResult preparationResult, success bool) {
 	fpath := params.fpath
 	session := params.session
 	requiresState := params.requiresState
@@ -64,7 +66,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 	fls, new := getLspFilesystem(session)
 	if !new {
 		logs.Println("failed to get LSP filesystem")
-		return nil, nil, nil, false, false
+		return
 	}
 
 	sessionData := getSessionData(params.session)
@@ -92,7 +94,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 
 		fileCache.acknowledgeAccess()
 	} else if params.requiresCache {
-		return nil, nil, nil, false, false
+		return
 	}
 
 	//check the cache
@@ -104,23 +106,33 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 			cachedModule := fileCache.module
 			cachedState := fileCache.state
 
-			return cachedState, cachedModule, cachedChunk, true, true
+			prepResult = preparationResult{
+				state:            cachedState,
+				module:           cachedModule,
+				chunk:            cachedChunk,
+				cachedOrGotCache: true,
+			}
+			success = true
+			return
+
 		} else if params.requiresCache && (!params.forcePrepareIfNoVeryRecentActivity ||
 			time.Since(fileCache.LastUpdateOrInvalidation()) < VERY_RECENT_ACTIVITY_DELTA) {
-			return nil, nil, nil, false, false
+			return
 		} else {
 			_ = 1
 		}
 	} else if params.requiresCache {
-		return nil, nil, nil, false, false
+		return
 	}
 
 	chunk, err := core.ParseFileChunk(fpath, fls)
 
 	if chunk == nil { //unrecoverable parsing error
 		logs.Println("unrecoverable parsing error", err.Error())
-		session.Notify(NewShowMessage(defines.MessageTypeError, err.Error()))
-		return nil, nil, nil, false, false
+		if params._depth == 0 {
+			session.Notify(NewShowMessage(defines.MessageTypeError, err.Error()))
+		}
+		return
 	}
 
 	if chunk.Node.IncludableChunkDesc != nil {
@@ -135,7 +147,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 		if includedChunk == nil {
 			logs.Println("unrecoverable parsing error", err.Error())
 			session.Notify(NewShowMessage(defines.MessageTypeError, err.Error()))
-			return nil, nil, nil, false, false
+			return
 		}
 
 		if requiresState && (state == nil || state.SymbolicData == nil) {
@@ -149,7 +161,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 				}()
 			}
 
-			return nil, nil, nil, false, false
+			return
 		}
 
 		//cache the results if the file was not modified during the preparation
@@ -159,7 +171,14 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 			fileCache.update(state, mod, includedChunk.ParsedChunkSource)
 		}
 
-		return state, mod, includedChunk.ParsedChunkSource, cached, true
+		prepResult = preparationResult{
+			state:            state,
+			module:           mod,
+			chunk:            includedChunk.ParsedChunkSource,
+			cachedOrGotCache: cached,
+		}
+		success = true
+		return
 	} else {
 		var parentCtx *core.Context
 
@@ -169,14 +188,17 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 				node, _ := obj.PropValue(core.MANIFEST_DATABASES_SECTION_NAME)
 
 				if pathLiteral, ok := node.(*parse.AbsolutePathLiteral); ok {
-					state, _, _, _, ok := prepareSourceFileInExtractionMode(ctx, filePreparationParams{
+					preparationResult, ok := prepareSourceFileInExtractionMode(ctx, filePreparationParams{
 						fpath:                  pathLiteral.Value,
 						session:                session,
 						requiresState:          true,
 						notifyUserAboutDbError: true,
+						_depth:                 params._depth + 1,
 					})
 					if ok {
-						parentCtx = state.Ctx
+						parentCtx = preparationResult.state.Ctx
+					} else {
+						preparationResult.failedToPrepareDBProvidingParent = pathLiteral
 					}
 				}
 			}
@@ -210,7 +232,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 		if mod == nil {
 			logs.Println("unrecoverable parsing error", err.Error())
 			session.Notify(NewShowMessage(defines.MessageTypeError, err.Error()))
-			return nil, nil, nil, false, false
+			return
 		}
 
 		if requiresState && (state == nil || state.SymbolicData == nil) {
@@ -224,7 +246,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 				}()
 			}
 
-			return nil, nil, nil, false, false
+			return
 		}
 
 		if params.notifyUserAboutDbError && state != nil && state.FirstDatabaseOpeningError != nil {
@@ -239,7 +261,15 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 			fileCache.update(state, mod, nil)
 		}
 
-		return state, mod, mod.MainChunk, cached, true
+		prepResult = preparationResult{
+			state:                            state,
+			module:                           mod,
+			chunk:                            mod.MainChunk,
+			cachedOrGotCache:                 cached,
+			failedToPrepareDBProvidingParent: prepResult.failedToPrepareDBProvidingParent,
+		}
+		success = true
+		return
 	}
 
 }

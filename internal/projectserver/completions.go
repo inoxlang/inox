@@ -29,7 +29,7 @@ func getCompletions(fpath string, line, column int32, session *jsonrpc.Session) 
 		Filesystem: fls,
 	})
 
-	state, _, chunk, cachedOrHitCache, ok := prepareSourceFileInExtractionMode(handlingCtx, filePreparationParams{
+	prepResult, ok := prepareSourceFileInExtractionMode(handlingCtx, filePreparationParams{
 		fpath:         fpath,
 		session:       session,
 		requiresState: true,
@@ -37,6 +37,10 @@ func getCompletions(fpath string, line, column int32, session *jsonrpc.Session) 
 	if !ok {
 		return nil
 	}
+
+	state := prepResult.state
+	chunk := prepResult.chunk
+	cachedOrHitCache := prepResult.cachedOrGotCache
 
 	if !cachedOrHitCache && state != nil {
 		//teardown in separate goroutine to return quickly

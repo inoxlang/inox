@@ -454,11 +454,15 @@ func handleDefinition(ctx context.Context, req *defines.DefinitionParams) (resul
 	})
 	defer handlingCtx.CancelGracefully()
 
-	state, _, chunk, cachedOrGotCache, ok := prepareSourceFileInExtractionMode(handlingCtx, filePreparationParams{
+	preparationResult, ok := prepareSourceFileInExtractionMode(handlingCtx, filePreparationParams{
 		fpath:         fpath,
 		session:       session,
 		requiresState: true,
 	})
+
+	state := preparationResult.state
+	chunk := preparationResult.chunk
+	cachedOrGotCache := preparationResult.cachedOrGotCache
 
 	if !cachedOrGotCache && state != nil {
 		//teardown in separate goroutine to return quickly

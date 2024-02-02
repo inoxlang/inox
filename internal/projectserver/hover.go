@@ -19,28 +19,32 @@ import (
 
 // getHoverContent gets hover content for a specific position in an Inox code file.
 func getHoverContent(fpath string, line, column int32, handlingCtx *core.Context, session *jsonrpc.Session) (*defines.Hover, error) {
-	state, _, chunk, cachedOrGotCache, ok := prepareSourceFileInExtractionMode(handlingCtx, filePreparationParams{
+	preparationResult, ok := prepareSourceFileInExtractionMode(handlingCtx, filePreparationParams{
 		fpath:                              fpath,
 		session:                            session,
 		requiresState:                      true,
 		requiresCache:                      true,
 		forcePrepareIfNoVeryRecentActivity: true,
 	})
+
 	if !ok {
 		return &defines.Hover{}, nil
 	}
 
-	if !cachedOrGotCache && state != nil {
+	state := preparationResult.state
+	chunk := preparationResult.chunk
+
+	if !preparationResult.cachedOrGotCache && preparationResult.state != nil {
 		//teardown in separate goroutine to return quickly
 		defer func() {
 			go func() {
 				defer utils.Recover()
-				state.Ctx.CancelGracefully()
+				preparationResult.state.Ctx.CancelGracefully()
 			}()
 		}()
 	}
 
-	if state == nil || state.SymbolicData == nil {
+	if preparationResult.state == nil || state.SymbolicData == nil {
 		logs.Println("no data")
 		return &defines.Hover{}, nil
 	}

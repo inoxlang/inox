@@ -16,15 +16,20 @@ func getSignatureHelp(fpath string, line, column int32, handlingCtx *core.Contex
 
 	const NO_DATA_MSG = "no data"
 
-	state, _, chunk, cachedOrGotCache, ok := prepareSourceFileInExtractionMode(handlingCtx, filePreparationParams{
+	preparationResult, ok := prepareSourceFileInExtractionMode(handlingCtx, filePreparationParams{
 		fpath:         fpath,
 		session:       session,
 		requiresState: true,
 		requiresCache: true,
 	})
+
 	if !ok {
 		return &defines.SignatureHelp{}, nil
 	}
+
+	state := preparationResult.state
+	chunk := preparationResult.chunk
+	cachedOrGotCache := preparationResult.cachedOrGotCache
 
 	if !cachedOrGotCache && state != nil {
 		//teardown in separate goroutine to return quickly

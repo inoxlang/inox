@@ -160,11 +160,11 @@ func (a *serverAPI) tryUpdateAPI() {
 	})
 	defer handlingCtx.CancelGracefully()
 
-	state := core.NewGlobalState(handlingCtx)
-	state.OutputFieldsInitialized.Store(true)
-	state.Project, _ = getProject(a.session)
+	// state := core.NewGlobalState(handlingCtx)
+	// state.OutputFieldsInitialized.Store(true)
+	// state.Project, _ = getProject(a.session)
 
-	state, _, _, _, ok := prepareSourceFileInExtractionMode(handlingCtx, filePreparationParams{
+	prepResult, ok := prepareSourceFileInExtractionMode(handlingCtx, filePreparationParams{
 		fpath:                              a.appModPath,
 		session:                            a.session,
 		requiresState:                      true,
@@ -175,6 +175,8 @@ func (a *serverAPI) tryUpdateAPI() {
 	if !ok {
 		return
 	}
+
+	state := prepResult.state
 
 	api, err := httpspec.GetFSRoutingServerAPI(state.Ctx, a.dynamicDir, httpspec.ServerApiResolutionConfig{
 		IgnoreModulesWithErrors: true,
