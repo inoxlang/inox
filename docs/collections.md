@@ -14,6 +14,8 @@ improved in the future.**
 
 Inox collections can be either **persistable** or **transient**.
 
+---
+
 ## Set
 
 - **Persistable**
@@ -76,6 +78,14 @@ therefore they can be stored in the set.
 integers = Set([], {element: %int, unique: #repr})
 
 integers.add(1)
+```
+
+#### Patterns
+
+```
+pattern integers = Set(int, repr)
+pattern users = Set(user, url)
+pattern named-objects = Set({name: string}, .name)
 ```
 
 #### Default configuration
@@ -172,6 +182,8 @@ acquire the Set. The set uses ULIDs as identifiers for elements, so it's
 virtually impossible for different transactions running at the same time to add
 the same element.
 
+---
+
 ## Map
 
 - **Persistable**
@@ -223,6 +235,14 @@ map.set('a', 1)
 one = map.get('a')
 ```
 
+#### Patterns
+
+```
+pattern int2string = Map(int, string)
+```
+
+---
+
 ## Message Thread
 
 - **Persistable**
@@ -255,17 +275,35 @@ message = {
 dbs.main.thread.add(message)
 ```
 
+#### Patterns
+
+```
+pattern message = {
+    text: string
+}
+
+pattern message-thread = MessageThread(message)
+```
+
+---
+
 ## Queue
 
 WIP
+
+---
 
 ## Tree
 
 WIP
 
+---
+
 ## Graph
 
 WIP
+
+---
 
 ## Ranking
 

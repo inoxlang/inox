@@ -850,7 +850,7 @@ http.Client{
 ```
 ### http.Server
 
-The http.Server function creates a listening HTTP server with a given with a given address & handler. The address should be a HTTPS host such as `https://localhost:8080` or `https://0.0.0.0:8080`. The handler can be an function or a Mapping that routes requests.  When you send a request to a server listening on localhost add the --insecure flag to ignore certificate errors. When using filesystem routing modules are reloaded each time files are changed in /routes/. Also for each page render a nonce is added to the `script-src-elem` CSP directive and to all `<script>` elements in the page's HTML.
+The http.Server function creates a listening HTTPS server with a given with a given address & handler. The address should be a HTTPS host such as `https://localhost:8080` or `https://0.0.0.0:8080`. The handler can be an function or a Mapping that routes requests.  When you send a request to a server listening on localhost add the --insecure flag to ignore certificate errors. When using filesystem routing modules are reloaded each time files are changed in /routes/. Also for each page render a nonce is added to the `script-src-elem` CSP directive and to all `<script>` elements in the page's HTML.
 
 **examples**
 

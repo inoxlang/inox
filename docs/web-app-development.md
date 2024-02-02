@@ -66,11 +66,11 @@ When the server receives a request it determinates what is the handler module
 (file) for the request and invokes the handler. The routing rules are the
 following:
 
-| Request's path | HTTP method | Possible handler paths                                      |
-| -------------- | ----------- | ----------------------------------------------------------- |
-| /              | GET         | /GET-index.ix , /index.ix                                   |
-| /about         | GET         | /GET-about.ix , /about.ix , /about/GET.ix , /about/index.ix |
-| /users         | POST        | /POST-users.ix , /users/POST.ix, /users.ix                  |
+| Request's path | HTTP method | Possible handler paths                                      |`
+| -------------- | ----------- | ----------------------------------------------------------- |`
+| `/`              | `GET`         | `/GET-index.ix , /index.ix`                                   |
+| `/about`         | `GET`         | `/GET-about.ix , /about.ix , /about/GET.ix , /about/index.ix` |
+| `/users`        | `POST`        | `/POST-users.ix , /users/POST.ix, /users.ix`                  |
 
 Now create the `/routes/index.ix` file to handle the home page:
 
