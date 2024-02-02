@@ -18,6 +18,7 @@ import (
 
 const (
 	VERY_RECENT_ACTIVITY_DELTA = time.Second
+	MAX_PREPARATION_DEPTH      = 2
 )
 
 type filePreparationParams struct {
@@ -39,6 +40,8 @@ type filePreparationParams struct {
 	ignoreCache bool
 
 	notifyUserAboutDbError bool
+
+	_depth int //should not be by caller, it is used internally by prepareSourceFileInExtractionMode
 }
 
 // prepareSourceFileInExtractionMode prepares a module or includable-chunk file:
@@ -66,6 +69,11 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 
 	sessionData := getSessionData(params.session)
 	var fileCache *preparedFileCacheEntry
+
+	if params._depth > MAX_PREPARATION_DEPTH {
+		session.Notify(NewShowMessage(defines.MessageTypeError, "maximum recursive preparation depth reached"))
+		return
+	}
 
 	//we avoid locking the session data
 	if sessionData.lock.TryLock() || sessionData.lock.TryLock() {
