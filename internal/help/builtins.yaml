@@ -12,12 +12,12 @@ context-data:
         user = {name: "foo"}
 
         # `user` will be shared.
-        add_ctx_data(#user, user)
+        add_ctx_data(/user, user)
     - code: |
         list = [1, 2, 3]
 
         # `list` will be cloned.
-        add_ctx_data(#list, user)
+        add_ctx_data(/list, list)
   - topic: ctx_data
     related-topics: [add_ctx_data]
     text: >
@@ -25,10 +25,10 @@ context-data:
       exist. A pattern is accepted as a second
     examples:
     - code: |
-        user = ctx_data(#user)
+        user = ctx_data(/user)
     - code: |
         # ctx_data panics if the value does not match %user.
-        user = ctx_data(#user, %user)
+        user = ctx_data(/user, %user)
 functional:
   title: Functional Programming
   elements:

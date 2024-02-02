@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	CURRENT_PROJECT_CTX_KEY = core.Identifier("current-project")
-	LSP_FS_CTX_KEY          = core.Identifier("current-filesystem")
+	CURRENT_PROJECT_CTX_DATA_PATH = core.Path("/current-project")
+	LSP_FS_CTX_DATA_PATH          = core.Path("/current-filesystem")
 
 	OPEN_PROJECT_METHOD              = "project/open"
 	CREATE_PROJECT_METHOD            = "project/create"
@@ -118,7 +118,7 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 				}
 			}
 
-			sessionCtx.PutUserData(CURRENT_PROJECT_CTX_KEY, project)
+			sessionCtx.PutUserData(CURRENT_PROJECT_CTX_DATA_PATH, project)
 
 			tokens, err := project.TempProjectTokens(sessionCtx)
 			if err != nil {
@@ -211,7 +211,7 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 }
 
 func getProject(session *jsonrpc.Session) (*project.Project, bool) {
-	p := session.Context().ResolveUserData(CURRENT_PROJECT_CTX_KEY)
+	p := session.Context().ResolveUserData(CURRENT_PROJECT_CTX_DATA_PATH)
 	project, ok := p.(*project.Project)
 	return project, ok
 }

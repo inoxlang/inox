@@ -297,10 +297,10 @@ func init() {
 			return symbolic.ANY_COLOR
 		},
 
-		_add_ctx_data, func(ctx *symbolic.Context, name *symbolic.Identifier, value symbolic.Value) {
+		_add_ctx_data, func(ctx *symbolic.Context, path *symbolic.Path, value symbolic.Value) {
 
 		},
-		_ctx_data, func(ctx *symbolic.Context, name *symbolic.Identifier, pattern *symbolic.OptionalParam[symbolic.Pattern]) symbolic.Value {
+		_ctx_data, func(ctx *symbolic.Context, path *symbolic.Path, pattern *symbolic.OptionalParam[symbolic.Pattern]) symbolic.Value {
 			if pattern == nil || pattern.Value == nil {
 				return symbolic.ANY
 			}

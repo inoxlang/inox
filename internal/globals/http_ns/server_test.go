@@ -138,7 +138,7 @@ func init() {
 		return symbolic.NewReadableStream(symbolic.ANY)
 	})
 
-	core.RegisterSymbolicGoFunction(_ctx_data, func(ctx *symbolic.Context, name *symbolic.Identifier) symbolic.Value {
+	core.RegisterSymbolicGoFunction(_ctx_data, func(ctx *symbolic.Context, path *symbolic.Path) symbolic.Value {
 		return symbolic.ANY
 	})
 
@@ -1401,8 +1401,8 @@ func (*dummyEffect) Reverse(*core.Context) error {
 	panic("unimplemented")
 }
 
-func _ctx_data(ctx *core.Context, name core.Identifier) core.Value {
-	data := ctx.ResolveUserData(name)
+func _ctx_data(ctx *core.Context, path core.Path) core.Value {
+	data := ctx.ResolveUserData(path)
 	if data == nil {
 		data = core.Nil
 	}

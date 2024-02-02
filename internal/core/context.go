@@ -100,7 +100,7 @@ type Context struct {
 	urlProtocolClients  map[URL]ProtocolClient
 	hostProtocolClients map[Host]ProtocolClient
 	hostResolutionData  map[Host]Value
-	userData            map[Identifier]Value
+	userData            map[Path]Value
 	typeExtensions      []*TypeExtension
 
 	executionStartTime time.Time
@@ -401,7 +401,7 @@ func NewContext(config ContextConfig) *Context {
 		urlProtocolClients:      map[URL]ProtocolClient{},
 		hostProtocolClients:     map[Host]ProtocolClient{},
 		hostResolutionData:      hostResolutions,
-		userData:                map[Identifier]Value{},
+		userData:                map[Path]Value{},
 		typeExtensions:          slices.Clone(config.TypeExtensions),
 
 		waitConfirmPrompt: config.WaitConfirmPrompt,
@@ -1301,7 +1301,7 @@ func (ctx *Context) AddHostResolutionData(h Host, data ResourceName) {
 }
 
 // ResolveUserData returns the user data associated with the passed identifier, if the data does not exist nil is returned.
-func (ctx *Context) ResolveUserData(name Identifier) Value {
+func (ctx *Context) ResolveUserData(path Path) Value {
 	ctx.lock.RLock()
 	unlock := true
 	defer func() {
@@ -1310,12 +1310,12 @@ func (ctx *Context) ResolveUserData(name Identifier) Value {
 		}
 	}()
 
-	data, ok := ctx.userData[name]
+	data, ok := ctx.userData[path]
 	if !ok {
 		if ctx.parentCtx != nil {
 			unlock = false
 			ctx.lock.RUnlock()
-			return ctx.parentCtx.ResolveUserData(name)
+			return ctx.parentCtx.ResolveUserData(path)
 		}
 		return nil
 	}
@@ -1324,14 +1324,14 @@ func (ctx *Context) ResolveUserData(name Identifier) Value {
 
 // PutUserData associates $value with the passed name, if the entry is already defined the function will panic.
 // $value must be sharable or clonable.
-func (ctx *Context) PutUserData(name Identifier, value Value) {
+func (ctx *Context) PutUserData(path Path, value Value) {
 	ctx.lock.Lock()
 	defer ctx.lock.Unlock()
 	ctx.assertNotDone()
 
-	_, ok := ctx.userData[name]
+	_, ok := ctx.userData[path]
 	if ok {
-		panic(fmt.Errorf("%w: %s", ErrDoubleUserDataDefinition, name))
+		panic(fmt.Errorf("%w: %s", ErrDoubleUserDataDefinition, path))
 	}
 
 	shared, err := ShareOrClone(value, ctx.getClosestStateNoLock())
@@ -1342,7 +1342,7 @@ func (ctx *Context) PutUserData(name Identifier, value Value) {
 			panic(err)
 		}
 	}
-	ctx.userData[name] = shared
+	ctx.userData[path] = shared
 }
 
 func (ctx *Context) GetTypeExtension(id string) *TypeExtension {

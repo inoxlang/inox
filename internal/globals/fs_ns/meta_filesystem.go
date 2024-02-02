@@ -428,7 +428,7 @@ func (fls *MetaFilesystem) walk(path core.Path, visit func(normalizedPath string
 		slices.Sort(childrenNames)
 
 		for _, childName := range childrenNames {
-			childPath := path.JoinEntry(string(childName), fls)
+			childPath := path.JoinEntry(string(childName))
 			if err := fls.walk(childPath, visit); err != nil {
 				return fmt.Errorf("%q: %w", childPath, err)
 			}

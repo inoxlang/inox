@@ -1209,7 +1209,7 @@ func TestFilesystemRouting(t *testing.T) {
 					util.WriteFile(fls, "/routes/users/:user-id/GET.ix", []byte(`
 							manifest {}
 
-							return ctx_data(#user-id)
+							return ctx_data(/path-params/user-id)
 						`), fs_ns.DEFAULT_FILE_FMODE)
 
 					return fls

@@ -411,17 +411,17 @@ func _Color(ctx *core.Context, firstArg core.Value, other ...core.Value) core.Co
 	}
 }
 
-func _add_ctx_data(ctx *core.Context, name core.Identifier, value core.Value) {
-	ctx.PutUserData(name, value)
+func _add_ctx_data(ctx *core.Context, path core.Path, value core.Value) {
+	ctx.PutUserData(path, value)
 }
 
-func _ctx_data(ctx *core.Context, name core.Identifier, pattern *core.OptionalParam[core.Pattern]) core.Value {
-	data := ctx.ResolveUserData(name)
+func _ctx_data(ctx *core.Context, path core.Path, pattern *core.OptionalParam[core.Pattern]) core.Value {
+	data := ctx.ResolveUserData(path)
 	if data == nil {
 		data = core.Nil
 	}
 	if pattern != nil && !pattern.Value.Test(ctx, data) {
-		panic(fmt.Errorf("the value of the user data entry %q does not match the provided pattern", name.UnderlyingString()))
+		panic(fmt.Errorf("the value of the user data entry %q does not match the provided pattern", path.UnderlyingString()))
 	}
 	return data
 }

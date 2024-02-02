@@ -24,7 +24,8 @@ import (
 )
 
 const (
-	INOX_FILE_EXTENSION = inoxconsts.INOXLANG_FILE_EXTENSION
+	INOX_FILE_EXTENSION            = inoxconsts.INOXLANG_FILE_EXTENSION
+	PATH_PARAMS_CTX_DATA_NAMESPACE = core.Path("/path-params/")
 
 	FS_ROUTING_LOG_SRC = "fs-routing"
 )
@@ -303,7 +304,8 @@ func (router *filesystemRouter) handleDynamic(req *Request, rw *ResponseWriter, 
 
 	//Put path parameters in the context.
 	for _, param := range pathParams {
-		state.Ctx.PutUserData(core.Identifier(param.Name), core.String(param.Value))
+		ctxDataPath := PATH_PARAMS_CTX_DATA_NAMESPACE.JoinEntry(param.Name)
+		state.Ctx.PutUserData(ctxDataPath, core.String(param.Value))
 	}
 
 	fsRoutingLogger.Debug().Dur("preparation-time", time.Since(preparationStart)).Send()

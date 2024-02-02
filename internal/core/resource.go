@@ -348,7 +348,7 @@ func (pth Path) ToGlobbingPattern() PathPattern {
 }
 
 // JoinEntry joins the current dir path to an entry name.
-func (pth Path) JoinEntry(name string, fls afs.Filesystem) Path {
+func (pth Path) JoinEntry(name string) Path {
 	if !pth.IsDirPath() {
 		panic(errors.New("entry name can only be joined with a directory path"))
 	}

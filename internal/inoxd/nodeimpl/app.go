@@ -82,7 +82,7 @@ func (a *Agent) GetOrCreateApplication(name node.ApplicationName) (node.Applicat
 	app, ok := a.applications[name]
 	if !ok {
 		//create folder for the app
-		appDir := a.config.OsProdDir.JoinEntry(string(name), fs_ns.GetOsFilesystem())
+		appDir := a.config.OsProdDir.JoinEntry(string(name))
 		err := os.MkdirAll(appDir.UnderlyingString(), APP_DIR_FPERMS)
 		if err != nil {
 			return nil, err
