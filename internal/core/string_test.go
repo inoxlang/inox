@@ -88,6 +88,79 @@ func TestStringConcatenation(t *testing.T) {
 	})
 }
 
+func TestConcatStringLikes(t *testing.T) {
+	_longString := strings.Repeat("a", MAX_SMALL_STRING_SIZE_IN_LAZY_STR_CONCATENATION+1)
+	longString := String(_longString)
+	_shortString := "b"
+	shortString := String(_shortString)
+	concatenation := NewStringConcatenation(longString, longString)
+	_concatenation := _longString + _longString
+
+	{
+		result, err := ConcatStringLikes(shortString, longString)
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Equal(t, _shortString+_longString, result.GetOrBuildString())
+	}
+
+	{
+		result, err := ConcatStringLikes(shortString, concatenation)
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Equal(t, _shortString+_concatenation, result.GetOrBuildString())
+	}
+
+	{
+		result, err := ConcatStringLikes(longString, shortString)
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Equal(t, _longString+_shortString, result.GetOrBuildString())
+	}
+
+	{
+		result, err := ConcatStringLikes(concatenation, shortString)
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Equal(t, _concatenation+_shortString, result.GetOrBuildString())
+	}
+
+	{
+		result, err := ConcatStringLikes(longString, shortString, longString)
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Equal(t, _longString+_shortString+_longString, result.GetOrBuildString())
+	}
+
+	{
+		result, err := ConcatStringLikes(concatenation, shortString, concatenation)
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Equal(t, _concatenation+_shortString+_concatenation, result.GetOrBuildString())
+	}
+
+	{
+		result, err := ConcatStringLikes(longString, shortString, longString, shortString)
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Equal(t, _longString+_shortString+_longString+_shortString, result.GetOrBuildString())
+	}
+
+	{
+		result, err := ConcatStringLikes(concatenation, shortString, concatenation, shortString)
+		if !assert.NoError(t, err) {
+			return
+		}
+		assert.Equal(t, _concatenation+_shortString+_concatenation+_shortString, result.GetOrBuildString())
+	}
+}
+
 func BenchmarkConcatenateStringLikes(b *testing.B) {
 	longString := String(strings.Repeat("a", 1000))
 

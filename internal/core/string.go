@@ -610,6 +610,12 @@ func ConcatStringLikes(stringLikes ...StringLike) (StringLike, error) {
 		switch s := s.(type) {
 		case String:
 			if len(s) > MAX_SMALL_STRING_SIZE_IN_LAZY_STR_CONCATENATION {
+				if eagerConcatenation.Len() > 0 {
+					//Add the concatenation of short consecutive strings.
+					elements = append(elements, stringConcatElem{string: eagerConcatenation.String()})
+					eagerConcatenation.Reset()
+				}
+
 				elements = append(elements, stringConcatElem{string: string(s)})
 				continue
 			}
@@ -625,6 +631,12 @@ func ConcatStringLikes(stringLikes ...StringLike) (StringLike, error) {
 			str := s.GetOrBuildString()
 			elements = append(elements, stringConcatElem{string: str})
 			if len(str) > MAX_SMALL_STRING_SIZE_IN_LAZY_STR_CONCATENATION {
+				if eagerConcatenation.Len() > 0 {
+					//Add the concatenation of short consecutive strings.
+					elements = append(elements, stringConcatElem{string: eagerConcatenation.String()})
+					eagerConcatenation.Reset()
+				}
+
 				elements = append(elements, stringConcatElem{string: str})
 				continue
 			}
