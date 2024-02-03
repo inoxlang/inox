@@ -10,8 +10,11 @@ func PercentEncode(ctx *core.Context, s core.StringLike) core.String {
 	return core.String(utils.PercentEncode(str))
 }
 
-func PercentDecode(ctx *core.Context, s core.StringLike) (core.String, core.Error) {
+func PercentDecode(ctx *core.Context, s core.StringLike) (core.String, error) {
 	str := s.GetOrBuildString()
 	decoded, err := utils.PercentDecode(str, true)
-	return core.String(decoded), core.NewError(err, core.Nil)
+	if err != nil {
+		return "", core.NewError(err, core.Nil)
+	}
+	return core.String(decoded), nil
 }
