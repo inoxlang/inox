@@ -525,42 +525,79 @@
 
       print("entries of /:", fs.ls!(/))
 
-- name: Language Features Beyond Basics
+- name: Language Features Beyond the Basics
   id: lang-features-beyond-basics
 
   tutorials:
   - name: Variadic Functions
     id: variadic-functions
     program: |
-        manifest {}
+      manifest {}
 
-        # Variadic functions are functions whose last parameter is a special type of parameter that can take any number of arguments. 
-        # This is indicated by the '...' syntax. This parameter is named the variadic parameter and is always of type Array.
+      # Variadic functions are functions whose last parameter can aggregate any number of arguments. 
+      # This is indicated by the '...' syntax. This parameter is named the variadic parameter and is always of type Array.
 
-        fn return_variadic_arguments(first, ...rest){
-            return rest
-        }
+      fn return_variadic_arguments(first, ...rest){
+          return rest
+      }
 
-        return_variadic_arguments(1)        # empty array 
-        return_variadic_arguments(1, 2)     # Array(2)
-        return_variadic_arguments(1, 2, 3)  # Array(2, 3)
+      return_variadic_arguments(1)        # empty array 
+      return_variadic_arguments(1, 2)     # Array(2)
+      return_variadic_arguments(1, 2, 3)  # Array(2, 3)
 
-        # The variadic parameter can have a type annotation:
+      # The variadic parameter can have a type annotation:
 
-        fn sum(...integers int){
-            i = 0
-            for int in integers {
-                i += int
+      fn sum(...integers int){
+          i = 0
+          for int in integers {
+              i += int
+          }
+          return i
+      }
+
+      print(sum())
+      print(sum(1))
+      print(sum(1, 2))
+
+      # ...[2, 3] is a spread argument
+      print(sum(1, ...[2, 3]))
+  - name: Context Data
+    id: ctx-data
+    program: |
+        manifest {
+            permissions: {
+                create: {threads: {}}
             }
-            return i
         }
 
-        print(sum())
-        print(sum(1))
-        print(sum(1, 2))
+        # Each Inox module instance has a context that can, among other things, stores data. Context data entries can be defined once 
+        # and the value should fall in one of the following categories: sharable (e.g. objects, sets), immutable (e.g. integers, records), 
+        # clonable (e.g. lists).
 
-        # ...[2, 3] is a spread argument
-        print(sum(1, ...[2, 3]))
+        # Add the context data entry /x with 1 as value.
+        add_ctx_data(/x, 1)
+
+        # Retrieve the value of the entry /x.
+        value = ctx_data(/x)
+
+        # Retrieving the value of an undefined entry returns nil.
+        print("undefined entry /y:", ctx_data(/y))
+
+        # Retrieve the value of the entry /x and check that the value is an integer.
+        value = ctx_data(/x,  %int)
+
+        # Child modules have access to the context data of their parent and can override the entries.
+        lthread = go do {
+            print("/x from parent:", ctx_data(/x))
+
+            add_ctx_data(/x, 2)
+
+            print("overriden /x:", ctx_data(/x))
+        }
+
+        lthread.wait_result!()
+
+        # Learn more about Inox contexts here: https://github.com/inoxlang/inox/blob/main/docs/language-reference/language.md#must-calls.
 - name: Filesystem
   id: filesystem
 
