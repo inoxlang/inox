@@ -14,7 +14,7 @@ import (
 
 var (
 	DEFAULT_METHOD_RATE_LIMITS  = []int{5, 20, 80} //rate limits for a single method
-	DEFAULT_MESSAGE_RATE_LIMITS = [2]int{40, 200}
+	DEFAULT_MESSAGE_RATE_LIMITS = [2]int{50, 200}
 )
 
 type rateLimiter struct {
