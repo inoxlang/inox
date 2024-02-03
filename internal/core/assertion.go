@@ -37,7 +37,7 @@ func (err AssertionError) IsTestAssertion() bool {
 }
 
 func (err AssertionError) Error() string {
-	if err.data == nil {
+	if err.data == nil || !err.isTestAssertion {
 		return err.msg
 	}
 
@@ -156,7 +156,9 @@ func (err AssertionError) stringifyNode(node parse.Node) string {
 
 func (err AssertionError) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig) {
 	w.Write(utils.StringAsBytes(err.msg))
-	err.writeExplanation(w, config)
+	if err.isTestAssertion {
+		err.writeExplanation(w, config)
+	}
 }
 
 func (err AssertionError) PrettySPrint(config *PrettyPrintConfig) string {
