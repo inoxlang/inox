@@ -128,9 +128,17 @@ func testTutorial(t *testing.T, series learn.TutorialSeries, tut learn.Tutorial,
 			}
 
 			output := strings.Split(outputBuff.String(), "\n")
-			output = utils.FilterSlice(output, func(e string) bool {
-				return e != ""
+			output = utils.FilterMapSlice(output, func(e string) (string, bool) {
+				if e == "" {
+					return "", false
+				}
+				return utils.StripANSISequences(e), true
 			})
+
+			if output == nil {
+				output = []string{}
+			}
+
 			if tut.ExpectedOutput != nil {
 				assert.Equal(t, tut.ExpectedOutput, output)
 			}
