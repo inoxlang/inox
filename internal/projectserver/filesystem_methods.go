@@ -202,7 +202,7 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 		NewRequest: func() interface{} {
 			return &FsFileStatParams{}
 		},
-		RateLimits: []int{30, 100, 300},
+		RateLimits: []int{30, 100, 500},
 		Handler:    handleFileStat,
 	})
 
@@ -268,7 +268,7 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 		NewRequest: func() interface{} {
 			return &FsReadirParams{}
 		},
-		RateLimits: []int{20, 100, 500},
+		RateLimits: []int{30, 100, 500},
 		Handler:    handleReadDir,
 	})
 
