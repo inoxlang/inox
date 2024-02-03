@@ -1080,7 +1080,7 @@ func (sh *shell) handleAction(action termAction) (stop bool) {
 				prefix := utils.FindLongestCommonPrefix(completionValues)
 				if prefix != "" {
 					replacement = prefix
-					replacedSpan = span
+					replacedSpan.End = span.Start + int32(len(prefix))
 				}
 			}
 		}
