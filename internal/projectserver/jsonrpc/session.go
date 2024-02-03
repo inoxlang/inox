@@ -80,9 +80,12 @@ func newSessionWithMessageConn(id int, server *Server, conn MessageReaderWriter)
 
 func newSession(id int, server *Server) *Session {
 	s := &Session{
-		id:          id,
-		server:      server,
-		rateLimiter: newRateLimiter(zerolog.Nop()),
+		id:     id,
+		server: server,
+		rateLimiter: newRateLimiter(zerolog.Nop(), rateLimiterConfig{
+			methodRateLimits:  DEFAULT_METHOD_RATE_LIMITS,
+			messageRateLimits: DEFAULT_MESSAGE_RATE_LIMITS,
+		}),
 	}
 	s.executors = make(map[interface{}]*executor)
 	return s
