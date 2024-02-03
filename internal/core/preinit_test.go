@@ -52,16 +52,16 @@ func TestPreInit(t *testing.T) {
 		Value: 0,
 	}
 
-	//register host resolution checking functions
+	//register host definition checking functions
 	{
-		resetStaticallyCheckHostResolutionDataFnRegistry()
-		defer resetStaticallyCheckHostResolutionDataFnRegistry()
+		resetStaticallyCheckHostDefinitionDataFnRegistry()
+		defer resetStaticallyCheckHostDefinitionDataFnRegistry()
 
-		RegisterStaticallyCheckHostResolutionDataFn("ldb", func(project Project, node parse.Node) (errorMsg string) {
+		RegisterStaticallyCheckHostDefinitionFn("ldb", func(project Project, node parse.Node) (errorMsg string) {
 			return ""
 		})
 
-		RegisterStaticallyCheckHostResolutionDataFn("s3", func(project Project, node parse.Node) (errorMsg string) {
+		RegisterStaticallyCheckHostDefinitionFn("s3", func(project Project, node parse.Node) (errorMsg string) {
 			return ""
 		})
 	}
@@ -190,10 +190,10 @@ func TestPreInit(t *testing.T) {
 			error: false,
 		},
 		{
-			name: "host resolution",
+			name: "host definition",
 			module: `
 				manifest {
-					host-resolution: :{
+					host-definitions: :{
 						ldb://main : /mydb
 					}
 				}`,
@@ -203,10 +203,10 @@ func TestPreInit(t *testing.T) {
 			error:               false,
 		},
 		{
-			name: "host resolution with object data",
+			name: "host definition with object data",
 			module: `
 				manifest {
-					host-resolution: :{
+					host-definitions: :{
 						s3://database : {
 							bucket: "test"
 							provider: "cloudflare"
@@ -1807,7 +1807,7 @@ func TestPreInit(t *testing.T) {
 				}
 				assert.EqualValues(t, testCase.expectedPermissions, manifest.RequiredPermissions)
 				assert.ElementsMatch(t, testCase.expectedLimits, manifest.Limits)
-				assert.EqualValues(t, testCase.expectedResolutions, manifest.HostResolutions)
+				assert.EqualValues(t, testCase.expectedResolutions, manifest.HostDefinitions)
 				assert.EqualValues(t, testCase.expectedAutoInvocationConfig, manifest.AutoInvocation)
 
 				if testCase.expectedPreinitFileErrors == nil {

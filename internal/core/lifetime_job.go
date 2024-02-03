@@ -123,7 +123,7 @@ func (j *LifetimeJob) Instantiate(ctx *Context, self Value) (*LifetimeJobInstanc
 		ParentContext:           ctx,
 		Permissions:             permissions,
 		Limits:                  manifest.Limits,
-		HostResolutions:         manifest.HostResolutions,
+		HostDefinitions:         manifest.HostDefinitions,
 	})
 
 	for k, v := range ctx.GetNamedPatterns() {

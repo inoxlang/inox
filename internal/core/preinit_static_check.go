@@ -155,10 +155,10 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 			} else {
 				onError(p, PERMS_SECTION_SHOULD_BE_AN_OBJECT)
 			}
-		case MANIFEST_HOST_RESOLUTION_SECTION_NAME:
+		case MANIFEST_HOST_DEFINITIONS_SECTION_NAME:
 			dict, ok := p.Value.(*parse.DictionaryLiteral)
 			if !ok {
-				onError(p, HOST_RESOL_SECTION_SHOULD_BE_A_DICT)
+				onError(p, HOST_DEFS_SECTION_SHOULD_BE_A_DICT)
 				continue
 			}
 
@@ -175,15 +175,15 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 					*parse.IdentifierMemberExpression:
 				default:
 					hasErrors = true
-					onError(n, fmtForbiddenNodeInHostResolutionSection(n))
+					onError(n, fmtForbiddenNodeInHostDefinitionsSection(n))
 				}
 
 				return parse.ContinueTraversal, nil
 			}, nil)
 
 			if !hasErrors {
-				staticallyCheckHostResolutionDataFnRegistryLock.Lock()
-				defer staticallyCheckHostResolutionDataFnRegistryLock.Unlock()
+				staticallyCheckHostDefinitionFnRegistryLock.Lock()
+				defer staticallyCheckHostDefinitionFnRegistryLock.Unlock()
 
 				for _, entry := range dict.Entries {
 					key := entry.Key
@@ -192,7 +192,7 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 					case *parse.InvalidURL:
 					case *parse.HostLiteral:
 						host := utils.Must(EvalSimpleValueLiteral(k, nil)).(Host)
-						fn, ok := staticallyCheckHostResolutionDataFnRegistry[host.Scheme()]
+						fn, ok := staticallyCheckHostDefinitionDataFnRegistry[host.Scheme()]
 						if ok {
 							errMsg := fn(args.project, entry.Value)
 							if errMsg != "" {
@@ -202,7 +202,7 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 							onError(k, HOST_SCHEME_NOT_SUPPORTED)
 						}
 					default:
-						onError(k, HOST_RESOL_SECTION_SHOULD_BE_A_DICT)
+						onError(k, HOST_DEFS_SECTION_SHOULD_BE_A_DICT)
 					}
 				}
 			}

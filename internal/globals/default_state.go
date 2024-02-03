@@ -404,7 +404,7 @@ func NewDefaultContext(config core.DefaultContextConfig) (*core.Context, error) 
 		DoNotCheckDatabasePerms: config.DoNotCheckDatabasePerms,
 
 		Limits:                  config.Limits,
-		HostResolutions:         config.HostResolutions,
+		HostDefinitions:         config.HostDefinitions,
 		ParentContext:           config.ParentContext,
 		ParentStdLibContext:     config.ParentStdLibContext,
 		Filesystem:              config.Filesystem,

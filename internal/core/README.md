@@ -108,8 +108,8 @@ A context containing all the core pattern types (int, str, ...) is created.
 The most relevant inputs are:
 - the permissions listed in the manifest
 - the limits listed in the manifest
-- the host resolution data specified in the manifest
-- the **parent context** (host resolution data and limits are inherited)
+- the host definition data specified in the manifest
+- the **parent context** (host definition data and limits are inherited)
 
 ### Global State Creation
 

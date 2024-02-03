@@ -260,7 +260,7 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 		DoNotCheckDatabasePerms: args.EnableTesting,
 
 		Limits:                  limits,
-		HostResolutions:         manifest.HostResolutions,
+		HostDefinitions:         manifest.HostDefinitions,
 		ParentContext:           parentContext,
 		ParentStdLibContext:     args.StdlibCtx,
 		Filesystem:              args.ScriptContextFileSystem,
@@ -348,10 +348,10 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 		if host, ok := config.Resource.(Host); ok {
 			resourceName, ok := config.ResolutionData.(ResourceName)
 			if ok {
-				ctx.AddHostResolutionData(host, resourceName)
+				ctx.AddHostDefinition(host, resourceName)
 			} else {
 				//no data
-				ctx.AddHostResolutionData(host, host)
+				ctx.AddHostDefinition(host, host)
 			}
 		}
 
@@ -692,7 +692,7 @@ func PrepareExtractionModeIncludableChunkfile(args IncludableChunkfilePreparatio
 	ctx, ctxErr := NewDefaultContext(DefaultContextConfig{
 		Permissions:         nil,
 		Limits:              nil,
-		HostResolutions:     nil,
+		HostDefinitions:     nil,
 		Filesystem:          args.IncludedChunkContextFileSystem,
 		ParentStdLibContext: args.StdlibCtx,
 	})

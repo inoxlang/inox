@@ -80,7 +80,7 @@ func init() {
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions:          permissions,
 				ForbiddenPermissions: config.ForbiddenPermissions,
-				HostResolutions:      config.HostResolutions,
+				HostDefinitions:      config.HostDefinitions,
 				ParentContext:        config.ParentContext,
 			})
 
@@ -885,7 +885,7 @@ func setupTestCase(t *testing.T, testCase serverTestCase) (*core.GlobalState, *c
 	// create state & context
 	ctx := core.NewContext(core.ContextConfig{
 		Permissions:     append(perms, manifest.RequiredPermissions...),
-		HostResolutions: manifest.HostResolutions,
+		HostDefinitions: manifest.HostDefinitions,
 		Filesystem:      fls,
 	})
 

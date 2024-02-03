@@ -10158,7 +10158,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				Permissions:          config.Permissions,
 				ForbiddenPermissions: config.ForbiddenPermissions,
 				Limits:               config.Limits,
-				HostResolutions:      config.HostResolutions,
+				HostDefinitions:      config.HostDefinitions,
 				ParentContext:        config.ParentContext,
 				ParentStdLibContext:  config.ParentStdLibContext,
 				Filesystem:           config.Filesystem,

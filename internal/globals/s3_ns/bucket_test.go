@@ -35,7 +35,7 @@ func TestOpenBucket(t *testing.T) {
 
 	t.Run("no options", func(t *testing.T) {
 		ctx := core.NewContext(core.ContextConfig{
-			HostResolutions: map[core.Host]core.Value{
+			HostDefinitions: map[core.Host]core.Value{
 				"s3://bucket": S3_HOST_RESOLUTION_DATA_WITH_CREDENTIALS,
 			},
 		})
@@ -72,7 +72,7 @@ func TestOpenBucket(t *testing.T) {
 
 	t.Run("credentials got from project", func(t *testing.T) {
 		ctx := core.NewContext(core.ContextConfig{
-			HostResolutions: map[core.Host]core.Value{
+			HostDefinitions: map[core.Host]core.Value{
 				"s3://bucket": S3_HOST_RESOLUTION_DATA_WITHOUT_CREDENTIALS,
 			},
 		})

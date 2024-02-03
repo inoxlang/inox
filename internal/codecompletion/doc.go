@@ -14,13 +14,13 @@ const (
 
 var (
 	MANIFEST_SECTION_DEFAULT_VALUE_COMPLETIONS = map[string]string{
-		core.MANIFEST_ENV_SECTION_NAME:             "%{}",
-		core.MANIFEST_DATABASES_SECTION_NAME:       "{}",
-		core.MANIFEST_PARAMS_SECTION_NAME:          "{}",
-		core.MANIFEST_PERMS_SECTION_NAME:           "{}",
-		core.MANIFEST_LIMITS_SECTION_NAME:          "{}",
-		core.MANIFEST_HOST_RESOLUTION_SECTION_NAME: ":{}",
-		core.MANIFEST_PREINIT_FILES_SECTION_NAME:   "{}",
+		core.MANIFEST_ENV_SECTION_NAME:              "%{}",
+		core.MANIFEST_DATABASES_SECTION_NAME:        "{}",
+		core.MANIFEST_PARAMS_SECTION_NAME:           "{}",
+		core.MANIFEST_PERMS_SECTION_NAME:            "{}",
+		core.MANIFEST_LIMITS_SECTION_NAME:           "{}",
+		core.MANIFEST_HOST_DEFINITIONS_SECTION_NAME: ":{}",
+		core.MANIFEST_PREINIT_FILES_SECTION_NAME:    "{}",
 	}
 
 	MANIFEST_SECTION_DOC = map[string]string{

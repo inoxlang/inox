@@ -49,7 +49,7 @@ type DefaultContextConfig struct {
 	DoNotCheckDatabasePerms bool //used for the configuration of the created context.
 
 	Limits              []Limit
-	HostResolutions     map[Host]Value
+	HostDefinitions     map[Host]Value
 	OwnedDatabases      []DatabaseConfig
 	ParentContext       *Context        //optional
 	ParentStdLibContext context.Context //optional, should not be set if ParentContext is set
@@ -60,7 +60,6 @@ type DefaultContextConfig struct {
 }
 
 type NewDefaultContextFn func(config DefaultContextConfig) (*Context, error)
-
 
 // setter and getters
 

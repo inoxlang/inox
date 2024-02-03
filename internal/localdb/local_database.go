@@ -51,7 +51,7 @@ func init() {
 		return ""
 	}
 	core.RegisterStaticallyCheckDbResolutionDataFn(core.LDB_SCHEME, checkResolutionData)
-	core.RegisterStaticallyCheckHostResolutionDataFn(core.LDB_SCHEME, func(optionalProject core.Project, node parse.Node) (errorMsg string) {
+	core.RegisterStaticallyCheckHostDefinitionFn(core.LDB_SCHEME, func(optionalProject core.Project, node parse.Node) (errorMsg string) {
 		return checkResolutionData(node, nil)
 	})
 }
@@ -85,7 +85,7 @@ func OpenDatabase(ctx *core.Context, r core.ResourceName, restrictedAccess bool)
 		if resource.Scheme() != core.LDB_SCHEME {
 			return nil, core.ErrCannotResolveDatabase
 		}
-		switch data := ctx.GetHostResolutionData(resource).(type) {
+		switch data := ctx.GetHostDefinition(resource).(type) {
 		case core.Host:
 			//no data
 

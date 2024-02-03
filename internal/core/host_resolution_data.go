@@ -7,26 +7,26 @@ import (
 )
 
 var (
-	staticallyCheckHostResolutionDataFnRegistry     = map[Scheme]StaticallyCheckHostResolutionDataFn{}
-	staticallyCheckHostResolutionDataFnRegistryLock sync.Mutex
+	staticallyCheckHostDefinitionDataFnRegistry = map[Scheme]StaticallyCheckHostDefinitionFn{}
+	staticallyCheckHostDefinitionFnRegistryLock sync.Mutex
 )
 
-type StaticallyCheckHostResolutionDataFn func(optionalProject Project, node parse.Node) (errorMsg string)
+type StaticallyCheckHostDefinitionFn func(optionalProject Project, node parse.Node) (errorMsg string)
 
-func resetStaticallyCheckHostResolutionDataFnRegistry() {
-	staticallyCheckHostResolutionDataFnRegistryLock.Lock()
-	clear(staticallyCheckHostResolutionDataFnRegistry)
-	staticallyCheckHostResolutionDataFnRegistryLock.Unlock()
+func resetStaticallyCheckHostDefinitionDataFnRegistry() {
+	staticallyCheckHostDefinitionFnRegistryLock.Lock()
+	clear(staticallyCheckHostDefinitionDataFnRegistry)
+	staticallyCheckHostDefinitionFnRegistryLock.Unlock()
 }
 
-func RegisterStaticallyCheckHostResolutionDataFn(scheme Scheme, fn StaticallyCheckHostResolutionDataFn) {
-	staticallyCheckHostResolutionDataFnRegistryLock.Lock()
-	defer staticallyCheckHostResolutionDataFnRegistryLock.Unlock()
+func RegisterStaticallyCheckHostDefinitionFn(scheme Scheme, fn StaticallyCheckHostDefinitionFn) {
+	staticallyCheckHostDefinitionFnRegistryLock.Lock()
+	defer staticallyCheckHostDefinitionFnRegistryLock.Unlock()
 
-	_, ok := staticallyCheckHostResolutionDataFnRegistry[scheme]
+	_, ok := staticallyCheckHostDefinitionDataFnRegistry[scheme]
 	if ok {
 		panic(ErrNonUniqueDbOpenFnRegistration)
 	}
 
-	staticallyCheckHostResolutionDataFnRegistry[scheme] = fn
+	staticallyCheckHostDefinitionDataFnRegistry[scheme] = fn
 }

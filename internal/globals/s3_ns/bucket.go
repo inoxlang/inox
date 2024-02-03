@@ -29,8 +29,8 @@ var (
 )
 
 func init() {
-	core.RegisterStaticallyCheckHostResolutionDataFn("s3", func(project core.Project, node parse.Node) (errorMsg string) {
-		const MAIN_ERR_MSG = "invalid host resolution data: accepted values are: HTTPS hosts (public buckets), mem:// URLs and object literals"
+	core.RegisterStaticallyCheckHostDefinitionFn("s3", func(project core.Project, node parse.Node) (errorMsg string) {
+		const MAIN_ERR_MSG = "invalid host definition data: accepted values are: HTTPS hosts (public buckets), mem:// URLs and object literals"
 		switch n := node.(type) {
 		case *parse.HostLiteral:
 			if !strings.HasPrefix(n.Value, "https") {
@@ -137,7 +137,7 @@ func (b *Bucket) RemoveAllObjects(ctx *core.Context) {
 }
 
 type OpenBucketOptions struct {
-	//if true and the host resolution data of s3Host is an object without the .access-key & .secret-key properties
+	//if true and the host definition data of s3Host is an object without the .access-key & .secret-key properties
 	//calls .Project.GetS3CredentialsForBucket.
 	// The project is not retrieved from the main state because the context might not have
 	// an associated state or the state could be temporary.
@@ -157,7 +157,7 @@ func OpenBucket(ctx *core.Context, host core.Host, opts OpenBucketOptions) (*Buc
 	}
 
 	s3Host := host
-	data := ctx.GetHostResolutionData(s3Host)
+	data := ctx.GetHostDefinition(s3Host)
 
 	switch d := data.(type) {
 	case core.Host:

@@ -209,9 +209,9 @@ func findURLPatternCompletions(ctx *core.Context, node *parse.URLPatternLiteral,
 func findHostCompletions(ctx *core.Context, prefix string, parent parse.Node) []Completion {
 	var completions []Completion
 
-	allData := ctx.GetAllHostResolutionData()
+	allDefinitions := ctx.GetAllHostDefinitions()
 
-	for host := range allData {
+	for host := range allDefinitions {
 		hostStr := string(host)
 		if strings.HasPrefix(hostStr, prefix) {
 			completions = append(completions, Completion{

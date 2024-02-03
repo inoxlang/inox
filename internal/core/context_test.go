@@ -208,11 +208,11 @@ func TestNewContext(t *testing.T) {
 		}()
 	})
 
-	t.Run("child context should inherit all host resolutions of its parent", func(t *testing.T) {
+	t.Run("child context should inherit all host definitions of its parent", func(t *testing.T) {
 
 		ctxCreationStart := time.Now()
 		ctx := NewContexWithEmptyState(ContextConfig{
-			HostResolutions: map[Host]Value{
+			HostDefinitions: map[Host]Value{
 				"ldb://db1": Path("/tmp/db1/"),
 			},
 		}, nil)
@@ -232,7 +232,7 @@ func TestNewContext(t *testing.T) {
 
 		ctxCreationStart = time.Now()
 		childCtx := NewContext(ContextConfig{
-			HostResolutions: map[Host]Value{
+			HostDefinitions: map[Host]Value{
 				"ldb://db2": Path("/tmp/db2/"),
 			},
 			ParentContext: ctx,
@@ -242,19 +242,19 @@ func TestNewContext(t *testing.T) {
 			return
 		}
 
-		hostResolutions := childCtx.GetAllHostResolutionData()
-		if !assert.Len(t, hostResolutions, 2) {
+		hostDefinitions := childCtx.GetAllHostDefinitions()
+		if !assert.Len(t, hostDefinitions, 2) {
 			return
 		}
-		assert.Contains(t, hostResolutions, Host("ldb://db1"))
-		assert.Contains(t, hostResolutions, Host("ldb://db2"))
+		assert.Contains(t, hostDefinitions, Host("ldb://db1"))
+		assert.Contains(t, hostDefinitions, Host("ldb://db2"))
 
 	})
 
 	t.Run("a panic is expected if the child context overrides one if its parent's hosts", func(t *testing.T) {
 
 		ctx := NewContexWithEmptyState(ContextConfig{
-			HostResolutions: map[Host]Value{
+			HostDefinitions: map[Host]Value{
 				"ldb://db1": Path("/tmp/db1/"),
 			},
 		}, nil)
@@ -270,7 +270,7 @@ func TestNewContext(t *testing.T) {
 			}()
 
 			NewContext(ContextConfig{
-				HostResolutions: map[Host]Value{
+				HostDefinitions: map[Host]Value{
 					"ldb://db1": Path("/tmp/db1/"),
 				},
 				ParentContext: ctx,
@@ -322,10 +322,10 @@ func TestBoundChild(t *testing.T) {
 
 	})
 
-	t.Run("child context should inherit all host resolutions of its parent", func(t *testing.T) {
+	t.Run("child context should inherit all host definitions of its parent", func(t *testing.T) {
 
 		ctx := NewContexWithEmptyState(ContextConfig{
-			HostResolutions: map[Host]Value{
+			HostDefinitions: map[Host]Value{
 				"ldb://db1": Path("/tmp/db1/"),
 			},
 		}, nil)
@@ -333,11 +333,11 @@ func TestBoundChild(t *testing.T) {
 
 		childCtx := ctx.BoundChild()
 
-		hostResolutions := childCtx.GetAllHostResolutionData()
-		if !assert.Len(t, hostResolutions, 1) {
+		hostDefinitions := childCtx.GetAllHostDefinitions()
+		if !assert.Len(t, hostDefinitions, 1) {
 			return
 		}
-		assert.Contains(t, hostResolutions, Host("ldb://db1"))
+		assert.Contains(t, hostDefinitions, Host("ldb://db1"))
 
 	})
 }

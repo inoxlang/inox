@@ -657,7 +657,7 @@ func runTestItem(
 		ParentContext:   parentCtx,
 		Permissions:     permissions,
 		Limits:          manifest.Limits,
-		HostResolutions: manifest.HostResolutions,
+		HostDefinitions: manifest.HostDefinitions,
 
 		Filesystem: fls,
 	})

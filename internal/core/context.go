@@ -38,7 +38,7 @@ var (
 	ErrNotUniqueAliasDefinition                = errors.New("cannot register a host alias more than once")
 	ErrNotUniquePatternDefinition              = errors.New("cannot register a pattern more than once")
 	ErrNotUniquePatternNamespaceDefinition     = errors.New("cannot register a pattern namespace more than once")
-	ErrNotUniqueHostResolutionDefinition       = errors.New("cannot set host resolution data more than once")
+	ErrNotUniqueHostDefinitionDefinition       = errors.New("cannot set host definition data more than once")
 	ErrNotUniqueProtocolClient                 = errors.New("client already defined")
 	ErrCannotProvideLimitTokensForChildContext = errors.New("limit tokens cannot be set in new context's config if it is a child")
 	ErrNoAssociatedState                       = errors.New("context has no associated state")
@@ -99,7 +99,7 @@ type Context struct {
 	patternNamespaces   map[string]*PatternNamespace
 	urlProtocolClients  map[URL]ProtocolClient
 	hostProtocolClients map[Host]ProtocolClient
-	hostResolutionData  map[Host]Value
+	hostDefinitions     map[Host]Value
 	userData            map[Path]Value
 	typeExtensions      []*TypeExtension
 
@@ -144,7 +144,7 @@ type ContextConfig struct {
 	//The depletion of total limits' tokens for the created context starts when the associated state is set.
 	Limits []Limit
 
-	HostResolutions     map[Host]Value
+	HostDefinitions     map[Host]Value
 	TypeExtensions      []*TypeExtension
 	OwnedDatabases      []DatabaseConfig
 	ParentContext       *Context
@@ -170,7 +170,7 @@ type WaitConfirmPrompt func(msg string, accepted []string) (bool, error)
 // If .ParentContext is set Check verifies that:
 // - the parent have at least the permissions required by the child
 // - the parent have less restrictive limits than the child
-// - no host resolution of the parent is overriden
+// - no host definition of the parent is overriden
 func (c ContextConfig) Check() (firstErr error, ok bool) {
 	if c.ParentContext == nil {
 		return nil, true
@@ -203,8 +203,8 @@ outer_loop:
 		}
 	}
 
-	for host := range c.ParentContext.GetAllHostResolutionData() {
-		if _, ok := c.HostResolutions[host]; ok {
+	for host := range c.ParentContext.GetAllHostDefinitions() {
+		if _, ok := c.HostDefinitions[host]; ok {
 			return fmt.Errorf("the host '%s' is predefined by child context but is already defined by the parent context", host), false
 		}
 	}
@@ -310,8 +310,8 @@ func NewContext(config ContextConfig) *Context {
 		}
 	}
 
-	hostResolutions := map[Host]Value{}
-	maps.Copy(hostResolutions, config.HostResolutions)
+	hostDefinitions := map[Host]Value{}
+	maps.Copy(hostDefinitions, config.HostDefinitions)
 	parentCtx := config.ParentContext
 
 	if parentCtx == nil {
@@ -343,13 +343,13 @@ func NewContext(config ContextConfig) *Context {
 			}
 		}
 
-		//inherit host resolutions from parent
-		parentHostResolutions := parentCtx.GetAllHostResolutionData()
-		for host, data := range parentHostResolutions {
-			if _, ok := hostResolutions[host]; ok {
+		//inherit host definitions from parent
+		parentHostDefinitions := parentCtx.GetAllHostDefinitions()
+		for host, data := range parentHostDefinitions {
+			if _, ok := hostDefinitions[host]; ok {
 				panic(ErrUnreachable)
 			}
-			hostResolutions[host] = data
+			hostDefinitions[host] = data
 		}
 
 		stdlibCtx, cancel = context.WithCancel(parentCtx)
@@ -400,7 +400,7 @@ func NewContext(config ContextConfig) *Context {
 		patternNamespaces:       map[string]*PatternNamespace{},
 		urlProtocolClients:      map[URL]ProtocolClient{},
 		hostProtocolClients:     map[Host]ProtocolClient{},
-		hostResolutionData:      hostResolutions,
+		hostDefinitions:         hostDefinitions,
 		userData:                map[Path]Value{},
 		typeExtensions:          slices.Clone(config.TypeExtensions),
 
@@ -825,7 +825,7 @@ func (ctx *Context) New() *Context {
 		Permissions:          ctx.grantedPermissions,
 		ForbiddenPermissions: ctx.forbiddenPermissions,
 		Limits:               ctx.limits,
-		HostResolutions:      ctx.hostResolutionData,
+		HostDefinitions:      ctx.hostDefinitions,
 		TypeExtensions:       ctx.typeExtensions,
 		ParentContext:        ctx.parentCtx,
 		Filesystem:           ctx.fs,
@@ -1255,11 +1255,11 @@ func (ctx *Context) GetProtolClient(u URL) (ProtocolClient, error) {
 	return client, nil
 }
 
-func (ctx *Context) GetHostResolutionData(h Host) Value {
+func (ctx *Context) GetHostDefinition(h Host) Value {
 	ctx.lock.RLock()
 	defer ctx.lock.RUnlock()
 
-	v, ok := ctx.hostResolutionData[h]
+	v, ok := ctx.hostDefinitions[h]
 	if !ok {
 		return Nil
 	}
@@ -1267,11 +1267,11 @@ func (ctx *Context) GetHostResolutionData(h Host) Value {
 	return v
 }
 
-func (ctx *Context) GetHostFromResolutionData(r ResourceName) (Host, bool) {
+func (ctx *Context) GetHostByDefinition(r ResourceName) (Host, bool) {
 	ctx.lock.RLock()
 	defer ctx.lock.RUnlock()
 
-	for host, data := range ctx.hostResolutionData {
+	for host, data := range ctx.hostDefinitions {
 		if data == r {
 			return host, true
 		}
@@ -1279,25 +1279,25 @@ func (ctx *Context) GetHostFromResolutionData(r ResourceName) (Host, bool) {
 	return "", false
 }
 
-func (ctx *Context) GetAllHostResolutionData() map[Host]Value {
+func (ctx *Context) GetAllHostDefinitions() map[Host]Value {
 	ctx.lock.RLock()
 	defer ctx.lock.RUnlock()
 
-	return maps.Clone(ctx.hostResolutionData)
+	return maps.Clone(ctx.hostDefinitions)
 }
 
-// AddHostResolutionData associates data to a host in
-func (ctx *Context) AddHostResolutionData(h Host, data ResourceName) {
+// AddHostDefinition adds a host definition, redefining a host causes the function to panic with ErrNotUniqueHostDefinitionDefinition.
+func (ctx *Context) AddHostDefinition(h Host, data ResourceName) {
 	ctx.lock.Lock()
 	defer ctx.lock.Unlock()
 	ctx.assertNotDone()
 
-	_, ok := ctx.hostResolutionData[h]
+	_, ok := ctx.hostDefinitions[h]
 
 	if ok {
-		panic(fmt.Errorf("%w: %s", ErrNotUniqueHostResolutionDefinition, h))
+		panic(fmt.Errorf("%w: %s", ErrNotUniqueHostDefinitionDefinition, h))
 	}
-	ctx.hostResolutionData[h] = data
+	ctx.hostDefinitions[h] = data
 }
 
 // ResolveUserData returns the user data associated with the passed identifier, if the data does not exist nil is returned.

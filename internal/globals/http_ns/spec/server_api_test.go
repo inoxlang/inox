@@ -46,7 +46,7 @@ func init() {
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions:          permissions,
 				ForbiddenPermissions: config.ForbiddenPermissions,
-				HostResolutions:      config.HostResolutions,
+				HostDefinitions:      config.HostDefinitions,
 				ParentContext:        config.ParentContext,
 			})
 

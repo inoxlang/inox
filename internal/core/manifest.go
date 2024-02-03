@@ -23,14 +23,14 @@ const (
 	// -------- sections --------
 
 	//section names
-	MANIFEST_KIND_SECTION_NAME            = "kind"
-	MANIFEST_ENV_SECTION_NAME             = "env"
-	MANIFEST_PARAMS_SECTION_NAME          = "parameters"
-	MANIFEST_PERMS_SECTION_NAME           = "permissions"
-	MANIFEST_LIMITS_SECTION_NAME          = "limits"
-	MANIFEST_HOST_RESOLUTION_SECTION_NAME = "host-resolution"
-	MANIFEST_PREINIT_FILES_SECTION_NAME   = "preinit-files"
-	MANIFEST_INVOCATION_SECTION_NAME      = "invocation"
+	MANIFEST_KIND_SECTION_NAME             = "kind"
+	MANIFEST_ENV_SECTION_NAME              = "env"
+	MANIFEST_PARAMS_SECTION_NAME           = "parameters"
+	MANIFEST_PERMS_SECTION_NAME            = "permissions"
+	MANIFEST_LIMITS_SECTION_NAME           = "limits"
+	MANIFEST_HOST_DEFINITIONS_SECTION_NAME = "host-definitions"
+	MANIFEST_PREINIT_FILES_SECTION_NAME    = "preinit-files"
+	MANIFEST_INVOCATION_SECTION_NAME       = "invocation"
 
 	//preinit-files section
 	MANIFEST_PREINIT_FILE__PATTERN_PROP_NAME = "pattern"
@@ -66,7 +66,7 @@ var (
 	MANIFEST_SECTION_NAMES = []string{
 		MANIFEST_KIND_SECTION_NAME, MANIFEST_ENV_SECTION_NAME, MANIFEST_PARAMS_SECTION_NAME,
 		MANIFEST_PERMS_SECTION_NAME, MANIFEST_LIMITS_SECTION_NAME,
-		MANIFEST_HOST_RESOLUTION_SECTION_NAME, MANIFEST_PREINIT_FILES_SECTION_NAME,
+		MANIFEST_HOST_DEFINITIONS_SECTION_NAME, MANIFEST_PREINIT_FILES_SECTION_NAME,
 		MANIFEST_DATABASES_SECTION_NAME, MANIFEST_INVOCATION_SECTION_NAME,
 	}
 
@@ -110,7 +110,7 @@ type Manifest struct {
 	RequiredPermissions []Permission
 	Limits              []Limit
 
-	HostResolutions map[Host]Value
+	HostDefinitions map[Host]Value
 	EnvPattern      *ObjectPattern
 	Parameters      ModuleParameters
 	PreinitFiles    PreinitFiles
@@ -753,7 +753,7 @@ func (m *Module) createManifest(ctx *Context, object *Object, config manifestObj
 	)
 	permListing := NewObject()
 	limits := make(map[string]Limit, 0)
-	hostResolutions := make(map[Host]Value, 0)
+	hostDefinitions := make(map[Host]Value, 0)
 	specifiedGlobalPermKinds := map[PermissionKind]bool{}
 	actualModuleKind := m.ModuleKind
 	manifestModuleKind := UnspecifiedModuleKind
@@ -784,12 +784,12 @@ func (m *Module) createManifest(ctx *Context, object *Object, config manifestObj
 				return err
 			}
 			maps.Copy(limits, l)
-		case MANIFEST_HOST_RESOLUTION_SECTION_NAME:
-			resolutions, err := getHostResolutions(v)
+		case MANIFEST_HOST_DEFINITIONS_SECTION_NAME:
+			definitions, err := getHostDefinitions(v)
 			if err != nil {
 				return err
 			}
-			hostResolutions = resolutions
+			hostDefinitions = definitions
 		case MANIFEST_PERMS_SECTION_NAME:
 			listing, ok := v.(*Object)
 			if !ok {
@@ -933,7 +933,7 @@ func (m *Module) createManifest(ctx *Context, object *Object, config manifestObj
 		explicitModuleKind:      manifestModuleKind,
 		RequiredPermissions:     perms,
 		Limits:                  maps.Values(limits),
-		HostResolutions:         hostResolutions,
+		HostDefinitions:         hostDefinitions,
 		EnvPattern:              envPattern,
 		Parameters:              moduleParams,
 		PreinitFiles:            config.preinitFileConfigs,
@@ -1132,19 +1132,19 @@ func getLimits(desc Value) (map[string]Limit, error) {
 	return limits, nil
 }
 
-func getHostResolutions(desc Value) (map[Host]Value, error) {
+func getHostDefinitions(desc Value) (map[Host]Value, error) {
 
 	resolutions := make(map[Host]Value)
 
 	dict, ok := desc.(*Dictionary)
 	if !ok {
-		return nil, fmt.Errorf("invalid manifest, description of %s should be an object", MANIFEST_HOST_RESOLUTION_SECTION_NAME)
+		return nil, fmt.Errorf("invalid manifest, description of %s should be an object", MANIFEST_HOST_DEFINITIONS_SECTION_NAME)
 	}
 
 	for k, v := range dict.entries {
 		host, ok := dict.keys[k].(Host)
 		if !ok {
-			return nil, fmt.Errorf("invalid manifest, keys of of %s should be hosts", MANIFEST_HOST_RESOLUTION_SECTION_NAME)
+			return nil, fmt.Errorf("invalid manifest, keys of of %s should be hosts", MANIFEST_HOST_DEFINITIONS_SECTION_NAME)
 		}
 		// resource, ok := v.(ResourceName)
 		// if !ok {

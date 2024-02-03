@@ -63,7 +63,7 @@ func runStartupScript(startupScriptPath string, processTempDirPerms []core.Permi
 	ctx := utils.Must(core.NewDefaultContext(core.DefaultContextConfig{
 		Permissions:             append(slices.Clone(startupManifest.RequiredPermissions), processTempDirPerms...),
 		Limits:                  startupManifest.Limits,
-		HostResolutions:         startupManifest.HostResolutions,
+		HostDefinitions:         startupManifest.HostDefinitions,
 		InitialWorkingDirectory: core.DirPathFrom(initialWorkingDir),
 		Filesystem:              fs_ns.GetOsFilesystem(),
 	}))

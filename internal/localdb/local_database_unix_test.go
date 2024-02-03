@@ -37,7 +37,7 @@ func TestOpenDatabase(t *testing.T) {
 				core.FilesystemPermission{Kind_: permkind.Create, Entity: pattern},
 				core.FilesystemPermission{Kind_: permkind.WriteStream, Entity: pattern},
 			},
-			HostResolutions: map[core.Host]core.Value{
+			HostDefinitions: map[core.Host]core.Value{
 				core.Host("ldb://main"): HOST,
 			},
 			Filesystem: fls,
@@ -76,7 +76,7 @@ func TestOpenDatabase(t *testing.T) {
 				core.FilesystemPermission{Kind_: permkind.Create, Entity: pattern},
 				core.FilesystemPermission{Kind_: permkind.WriteStream, Entity: pattern},
 			},
-			HostResolutions: map[core.Host]core.Value{
+			HostDefinitions: map[core.Host]core.Value{
 				core.Host("ldb://main"): HOST,
 			},
 			Filesystem: fls,
@@ -118,7 +118,7 @@ func TestOpenDatabase(t *testing.T) {
 				core.FilesystemPermission{Kind_: permkind.Create, Entity: pattern},
 				core.FilesystemPermission{Kind_: permkind.WriteStream, Entity: pattern},
 			},
-			HostResolutions: map[core.Host]core.Value{
+			HostDefinitions: map[core.Host]core.Value{
 				core.Host("ldb://main"): HOST,
 			},
 			Filesystem: fls,
@@ -187,7 +187,7 @@ func TestOpenDatabase(t *testing.T) {
 				core.FilesystemPermission{Kind_: permkind.Create, Entity: pattern},
 				core.FilesystemPermission{Kind_: permkind.WriteStream, Entity: pattern},
 			},
-			HostResolutions: map[core.Host]core.Value{
+			HostDefinitions: map[core.Host]core.Value{
 				core.Host("ldb://main"): HOST,
 			},
 			Filesystem: fls,
@@ -276,7 +276,7 @@ func TestOpenDatabase(t *testing.T) {
 					core.FilesystemPermission{Kind_: permkind.Create, Entity: pattern},
 					core.FilesystemPermission{Kind_: permkind.WriteStream, Entity: pattern},
 				},
-				HostResolutions: map[core.Host]core.Value{
+				HostDefinitions: map[core.Host]core.Value{
 					core.Host("ldb://main"): HOST,
 				},
 				Filesystem: fls,
@@ -357,7 +357,7 @@ func TestLocalDatabase(t *testing.T) {
 				core.FilesystemPermission{Kind_: permkind.Create, Entity: pattern},
 				core.FilesystemPermission{Kind_: permkind.WriteStream, Entity: pattern},
 			},
-			HostResolutions: map[core.Host]core.Value{
+			HostDefinitions: map[core.Host]core.Value{
 				HOST: core.Path(osDir),
 			},
 			Filesystem: fls,
@@ -556,7 +556,7 @@ func TestUpdateSchema(t *testing.T) {
 				core.DatabasePermission{Kind_: permkind.Read, Entity: HOST},
 				core.DatabasePermission{Kind_: permkind.Write, Entity: HOST},
 			},
-			HostResolutions: map[core.Host]core.Value{
+			HostDefinitions: map[core.Host]core.Value{
 				HOST: HOST,
 			},
 			Filesystem: filesystem,

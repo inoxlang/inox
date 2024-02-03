@@ -71,8 +71,8 @@ const (
 	SCHEME_NOT_DB_SCHEME_OR_IS_NOT_SUPPORTED                      = "this scheme is not a database scheme or is not supported"
 	THE_DATABASES_SECTION_SHOULD_BE_PRESENT                       = "the databases section should be present because the auto invocation of the module depends on one or more database(s)"
 
-	HOST_RESOL_SECTION_SHOULD_BE_A_DICT = "the '" + MANIFEST_HOST_RESOLUTION_SECTION_NAME + "' section of the manifest should be a dictionary with host keys"
-	HOST_SCHEME_NOT_SUPPORTED           = "the host's scheme is not supported"
+	HOST_DEFS_SECTION_SHOULD_BE_A_DICT = "the '" + MANIFEST_HOST_DEFINITIONS_SECTION_NAME + "' section of the manifest should be a dictionary with host keys"
+	HOST_SCHEME_NOT_SUPPORTED          = "the host's scheme is not supported"
 
 	INVALID_RATE     = "invalid rate"
 	INVALID_QUANTITY = "invalid quantity"
@@ -197,10 +197,10 @@ func fmtForbiddenNodeInDatabasesSection(n parse.Node) string {
 		MANIFEST_DATABASES_SECTION_NAME, n)
 }
 
-func fmtForbiddenNodeInHostResolutionSection(n parse.Node) string {
+func fmtForbiddenNodeInHostDefinitionsSection(n parse.Node) string {
 	return fmt.Sprintf(
 		"invalid %s description: invalid node %T, only object literals, variables and simple literals are allowed",
-		MANIFEST_HOST_RESOLUTION_SECTION_NAME, n)
+		MANIFEST_HOST_DEFINITIONS_SECTION_NAME, n)
 }
 
 func fmtForbiddenNodeInParametersSection(n parse.Node) string {

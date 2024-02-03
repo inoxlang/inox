@@ -1217,7 +1217,7 @@ func TestPrepareLocalModule(t *testing.T) {
 		os.WriteFile(file, []byte(`
 			manifest {
 				permissions: {}
-				host-resolution: :{
+				host-definitions: :{
 					`+string(s3Host)+` : {
 						bucket: "test"
 						provider: "cloudflare"
@@ -1313,7 +1313,7 @@ func TestPrepareLocalModule(t *testing.T) {
 		os.WriteFile(file, []byte(`
 			manifest {
 				permissions: {}
-				host-resolution: :{
+				host-definitions: :{
 					`+string(s3Host)+` : {
 						bucket: "test"
 						provider: "cloudflare"
@@ -1599,7 +1599,7 @@ func TestPrepareLocalModule(t *testing.T) {
 		util.WriteFile(fs, "/script.ix", []byte(`
 			manifest {
 				permissions: {}
-				host-resolution: :{
+				host-definitions: :{
 					`+string(s3Host)+` : {
 						bucket: "test"
 						provider: "cloudflare"
