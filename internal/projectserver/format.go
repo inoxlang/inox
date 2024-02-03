@@ -82,33 +82,10 @@ func (f *formatter) preVisitNode(node, parent, scopeNode parse.Node, ancestorCha
 
 	if needsIndentation(node, parent, ancestorChain) {
 		f.updateIndentation(node.Base().Span)
-		return parse.ContinueTraversal, nil
 	}
 
 	if doesNodeIncreaseDepth(node, ancestorChain) {
 		f.depth++
-	}
-
-	//remove leading space of top-level statements
-
-	if _, ok := parent.(*parse.Chunk); ok {
-		replacementEnd := node.Base().Span.Start
-		replacementStart := replacementEnd
-
-		for i := replacementEnd - 1; i >= 0; i-- {
-			if f.code[i] == ' ' || f.code[i] == '\t' {
-				replacementStart = i
-			} else {
-				break
-			}
-		}
-
-		if replacementStart != replacementEnd {
-			f.replacements = append(f.replacements, replacement{
-				span:    parse.NodeSpan{Start: int32(replacementStart), End: int32(replacementEnd)},
-				newText: "",
-			})
-		}
 	}
 
 	return parse.ContinueTraversal, nil
@@ -189,10 +166,23 @@ func (f *formatter) updateIndentation(span parse.NodeSpan) {
 	replacementStart := span.Start
 
 	lineStartFound := false
+	prevSameLineStatementFound := false
 
 	for i := span.Start - 1; i >= 0; i-- {
+		if i == 0 {
+			lineStartFound = true
+			replacementStart = 0
+			break
+		}
+
 		if f.code[i] == '\n' {
 			lineStartFound = true
+			replacementStart = i + 1
+			break
+		}
+
+		if f.code[i] == ';' {
+			prevSameLineStatementFound = true
 			replacementStart = i + 1
 			break
 		}
@@ -207,6 +197,11 @@ func (f *formatter) updateIndentation(span parse.NodeSpan) {
 		f.replacements = append(f.replacements, replacement{
 			span:    parse.NodeSpan{Start: int32(replacementStart), End: int32(replacementEnd)},
 			newText: strings.Repeat(f.indentationUnit, f.depth),
+		})
+	} else if prevSameLineStatementFound {
+		f.replacements = append(f.replacements, replacement{
+			span:    parse.NodeSpan{Start: int32(replacementStart), End: int32(replacementEnd)},
+			newText: " ",
 		})
 	}
 }
@@ -260,7 +255,7 @@ func needsIndentation(n parse.Node, parent parse.Node, ancestors []parse.Node) b
 	}
 
 	switch parent.(type) {
-	case *parse.Block, *parse.ListLiteral, *parse.TupleLiteral, *parse.EmbeddedModule:
+	case *parse.Block, *parse.ListLiteral, *parse.TupleLiteral, *parse.EmbeddedModule, *parse.Chunk:
 		return true
 	}
 

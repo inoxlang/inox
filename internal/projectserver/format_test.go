@@ -47,6 +47,54 @@ func TestFormat(t *testing.T) {
 			},
 		},
 
+		//several statements on the same line (top level)
+		{
+			{
+				"a = 1; b = 2",
+			},
+			{
+				"a = 1; b = 2",
+			},
+		},
+		{
+			{
+				"manifest {}",
+				"a = 1;b = 2",
+			},
+			{
+				"manifest {}",
+				"a = 1; b = 2",
+			},
+		},
+		//several statements on the same line in a function
+		{
+			{
+				"manifest {}",
+				"fn f(){",
+				"\ta = 1; b = 2",
+				"}",
+			},
+			{
+				"manifest {}",
+				"fn f(){",
+				"\ta = 1; b = 2",
+				"}",
+			},
+		},
+		{
+			{
+				"manifest {}",
+				"fn f(){",
+				"\ta = 1;b = 2",
+				"}",
+			},
+			{
+				"manifest {}",
+				"fn f(){",
+				"\ta = 1; b = 2",
+				"}",
+			},
+		},
 		//properties of a top level object-like literal
 		{
 			{
@@ -613,7 +661,7 @@ func TestFormat(t *testing.T) {
 		}))
 
 		formatted := formatter.formatInoxChunk(chunk, defines.FormattingOptions{})
-		if !assert.Equal(t, strings.Join(testCase[1], "\n"), formatted) {
+		if !assert.Equal(t, strings.Join(testCase[1], "\n"), formatted, "input: "+formatted) {
 			formatter.formatInoxChunk(chunk, defines.FormattingOptions{})
 		}
 	}
