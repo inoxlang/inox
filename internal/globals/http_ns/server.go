@@ -259,6 +259,7 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 		session, err := server.getSession(handlerCtx, req)
 		if err == nil {
 			req.Session = session
+			handlerCtx.PutUserData(SESSION_CTX_DATA_KEY, session)
 		}
 
 		defer rw.FinalLog()

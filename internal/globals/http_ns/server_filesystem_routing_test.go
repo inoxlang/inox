@@ -1162,10 +1162,18 @@ func TestFilesystemRouting(t *testing.T) {
 								read: ldb://main
 							}
 						}
+
+						session = ctx_data(/session)
+						if !(session match {id: string}){
+							return "session not in context data"
+						}
+
+						assert (session match {id: string})
+						session-id = session.id
 						
-						var ids str = ""
-						for session in dbs.main.sessions {
-							ids = concat ids session.id ";"
+						var ids str = concat session-id ":"
+						for stored-session in dbs.main.sessions {
+							ids = concat ids stored-session.id ";"
 						}
 
 						return ids
@@ -1180,15 +1188,18 @@ func TestFilesystemRouting(t *testing.T) {
 						contentType:         mimeconsts.PLAIN_TEXT_CTYPE,
 						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
 						expectedCookieValues: map[string]string{
-							DEFAULT_SESSION_ID_KEY: "85216e5c138b662924f5831df3a55cc8",
+							DEFAULT_SESSION_ID_COOKIE_NAME: "85216e5c138b662924f5831df3a55cc8",
 						},
 					},
 					{
-						pause:               10 * time.Millisecond,
-						path:                "/sessions",
-						method:              "GET",
+						pause:  10 * time.Millisecond,
+						path:   "/sessions",
+						method: "GET",
+						header: http.Header{
+							"Cookie": []string{DEFAULT_SESSION_ID_COOKIE_NAME + "=85216e5c138b662924f5831df3a55cc8"},
+						},
 						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
-						result:              "85216e5c138b662924f5831df3a55cc8;",
+						result:              "85216e5c138b662924f5831df3a55cc8:85216e5c138b662924f5831df3a55cc8;",
 					},
 				},
 			},

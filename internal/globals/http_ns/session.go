@@ -10,16 +10,20 @@ import (
 )
 
 const (
-	MIN_SESSION_ID_BYTE_COUNT     = 16
-	MAX_SESSION_ID_BYTE_COUNT     = 32
-	DEFAULT_SESSION_ID_BYTE_COUNT = MIN_SESSION_ID_BYTE_COUNT
-	DEFAULT_SESSION_ID_KEY        = "session-id"
+	MIN_SESSION_ID_BYTE_COUNT      = 16
+	MAX_SESSION_ID_BYTE_COUNT      = 32
+	DEFAULT_SESSION_ID_BYTE_COUNT  = MIN_SESSION_ID_BYTE_COUNT
+	DEFAULT_SESSION_ID_COOKIE_NAME = "session-id"
+
+	SESSION_CTX_DATA_KEY = core.Path("/session")
 )
 
 var (
-	MAX_SESSION_ID_LEN  = hex.EncodedLen(MAX_SESSION_ID_BYTE_COUNT)
-	ErrSessionNotFound  = errors.New("session not found")
-	ErrSessionIdTooLong = errors.New("session id is too long")
+	MIN_SESSION_ID_LEN   = hex.EncodedLen(MIN_SESSION_ID_BYTE_COUNT)
+	MAX_SESSION_ID_LEN   = hex.EncodedLen(MAX_SESSION_ID_BYTE_COUNT)
+	ErrSessionNotFound   = errors.New("session not found")
+	ErrSessionIdTooLong  = errors.New("session id is too long")
+	ErrSessionIdTooShort = errors.New("session id is too short")
 )
 
 func (server *HttpsServer) getSession(ctx *core.Context, req *Request) (*core.Object, error) {
@@ -29,19 +33,24 @@ func (server *HttpsServer) getSession(ctx *core.Context, req *Request) (*core.Ob
 	}
 
 	for _, cookie := range req.Cookies {
-		if cookie.Name == DEFAULT_SESSION_ID_KEY {
+		if cookie.Name == DEFAULT_SESSION_ID_COOKIE_NAME {
 			if len(cookie.Value) > MAX_SESSION_ID_LEN {
 				return nil, ErrSessionIdTooLong
 			}
+			if len(cookie.Value) < MIN_SESSION_ID_LEN {
+				return nil, ErrSessionIdTooShort
+			}
 
-			var array [MAX_SESSION_ID_BYTE_COUNT]byte
-			key := array[:]
+			var array [MAX_SESSION_ID_BYTE_COUNT + 2]byte
+			key := array[:0]
 			key = append(key, '"')
 			key = append(key, cookie.Value...)
 			key = append(key, '"')
 
-			server.sessions.Get(ctx, core.String(key))
-			//session, ok := server.sessions.Get(core.String(""))
+			session, ok := server.sessions.Get(ctx, core.String(utils.BytesAsString(key[:])))
+			if ok {
+				return session.(*core.Object), nil
+			}
 			//_ = session
 			//_ = ok
 			return nil, ErrSessionNotFound
@@ -53,7 +62,7 @@ func (server *HttpsServer) getSession(ctx *core.Context, req *Request) (*core.Ob
 
 func addSessionIdCookie(rw *ResponseWriter, sessionId string) {
 	http.SetCookie(rw.rw, &http.Cookie{
-		Name:     DEFAULT_SESSION_ID_KEY,
+		Name:     DEFAULT_SESSION_ID_COOKIE_NAME,
 		Value:    sessionId,
 		Path:     "/",
 		Secure:   true,
