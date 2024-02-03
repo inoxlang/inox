@@ -131,9 +131,19 @@ func testTutorial(t *testing.T, series learn.TutorialSeries, tut learn.Tutorial,
 			output = utils.FilterSlice(output, func(e string) bool {
 				return e != ""
 			})
-			if tut.ExpectedLogOutput != nil {
+			if tut.ExpectedOutput != nil {
 				assert.Equal(t, tut.ExpectedOutput, output)
 			}
+
+			//TODO: make the writer for log output thread safe
+
+			// logOutput := strings.Split(logOutputBuff.String(), "\n")
+			// logOutput = utils.FilterSlice(logOutput, func(e string) bool {
+			// 	return e != ""
+			// })
+			// if tut.ExpectedLogOutput != nil {
+			// 	assert.Equal(t, tut.ExpectedLogOutput, logOutput)
+			// }
 		}()
 
 		select {

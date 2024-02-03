@@ -28,7 +28,7 @@
       local2 = 2
       
       # Variable declarations can have a type annotation.
-      # Replace `0` with `str` to see what happens.
+      # Replace `int` with `str` to see what happens.
       var i int = 0
 
       # Global variable declaration
@@ -43,7 +43,6 @@
       print("local1 =", local1, "global1 =", global1)
     output:
     - "local1 = 1 global1 = 1"
-
   - name: Functions
     id: func-basics
     program: |
@@ -83,7 +82,6 @@
     output:
     - "print is a native function"
     - "add(1, 2) = 3"
-
   - name: "'Must' Calls"
     id: must-call-basics
     program: |
@@ -92,13 +90,13 @@
       # 'must' calls are special calls that cause a panic if there is an error. 
       # If there is no error the returned value is transformed.
 
-      # the unhex function decodes an hexadecimal strig.
+      # The `unhex` function decodes an hexadecimal strig.
       # normal call: a value of type Array(byte-slice, (error | nil)) is returned.
       assign bytes error = unhex("...")
 
       print("decoding error:", error)
 
-      # must call: a value of type byte-slice is returned if there is no error.
+      # Must call: a value of type byte-slice is returned if there is no error.
       # bytes = unhex!("...")
 
       fn f(issue bool) (| error | nil) {
@@ -108,19 +106,40 @@
           return nil
       }
 
-      # normal call: a value of type (error | nil) is returned.
+      # Normal call: a value of type (error | nil) is returned.
       err = f(true)
 
       print("error returned by `f`:", err)
 
-      # must call: on error the runtime panics, otherwise nil is returned.
+      # Must call: on error the runtime panics, otherwise nil is returned.
       nil_value = f!(false)      
 
       # you can learn more about must calls here: https://github.com/inoxlang/inox/blob/main/docs/language-reference/language.md#must-calls.
     output:
     - "decoding error: (hex.InvalidByteError)encoding/hex: invalid byte: U+002E '.'"
     - "error returned by `f`: (*errors.errorString)there is an issue !"
+  - name: Unary Expressions
+    id: unary-expr-basics
+    program: |
+      manifest {}
 
+      # A number negation is always parenthesized. Integers and floats that are immediately preceded 
+      # by a '-' sign are parsed as literals.
+
+      int = -1     # integer literal
+      float = -1.0 # float literal
+
+      (- int)     # integer negation: 1
+      (- float)   # float negation: 1.0
+      (- 1.0)     # float negation
+
+      # Boolean negation
+
+      !true # false
+
+      myvar = true
+      !myvar # false
+    output: []
   - name: Binary Expressions
     id: bin-expr-basics
     program: |
@@ -136,17 +155,13 @@
       # Parentheses can be omitted around operands of or/and chains:
 
       a = true; b = false; c = true
-      n = 0; p = 2
 
       (a or b or c)      
-      (n < 1 or p < 3)
+      (1 < 2 or 2 < 3)
 
       # 'or' and 'and' cannot be mixed in the same chain
       # (a or b and c)     
-
     output: []
-
-
   - name: If, Switch, Match
     id: if-switch-match-basics
     program: |
@@ -199,7 +214,6 @@
     - "a == 0"
     - "b == 1"
     - "c is in the range 0..2"
-
   - name: For statement
     id: for-stmt-basics
     program: |
@@ -295,18 +309,18 @@
         relative_filepath1 = ./file.txt
         relative_filepath2 = ../file.txt
 
-        # directory paths end with a slash.
+        # Directory paths end with a slash.
         absolute_dirpath = /dir/
 
         path = absolute_dirpath.join(./file.txt)
         print("(/dir/).join(./file.txt):", path)
 
-        # if a path contains spaces or delimiters such as `[` or `]` it should be quoted:
+        # If a path contains spaces or delimiters such as `[` or `]` it should be quoted:
         quoted_path = /`[file].txt`
 
         # ====== path patterns ======
 
-        # prefix path patterns end with /...
+        # Prefix path patterns end with /...
         prefix_path_pattern = %/...
 
         print "\n(/ match %/...):" (/ match %/...)
@@ -314,7 +328,7 @@
         print "(/dir/file.txt match %/...):" (/dir/file.txt match %/...)
         print "(/file.txt match %/dir/...):" (/file.txt match %/dir/...)
 
-        # path patterns that do not end with /... are glob path patterns.
+        # Path patterns that do not end with /... are glob path patterns.
         glob_path_pattern = %/*.json
 
         print "\n(/ match %/*.json):" (/ match %/*.json)
@@ -330,12 +344,12 @@
 
         # ====== URLs and Hosts ======
 
-        # host literals
+        # Host literals
         https_host = https://example.com
         websocket_host = wss://example.com
         schemeless_host = ://example.com
 
-        # url literals
+        # URL literals
         url1 = https://example/
         url2 = https://example/index.html
 
@@ -384,7 +398,6 @@
 
         # You can learn more about URL patterns and host patterns in the language reference: 
         # https://github.com/inoxlang/inox/blob/main/docs/language-reference/language.md#host-and-url-patterns.
-
   - name: Named Patterns and Typing
     id: pattern-decl
     program: |
@@ -418,7 +431,7 @@
         # true
         (user match user)
 
-        # alternative syntax
+        # Alternative syntax
         (user match %user)
   - name: Object Patterns
     id: object-patterns
@@ -430,7 +443,7 @@
             name: str
         }
 
-        # same pattern stored in a named pattern ('%' not required)
+        # Same pattern stored in a named pattern ('%' not required)
         pattern object_pattern = {
             name: str
         }
@@ -444,23 +457,54 @@
 
         # true
         ({name: "John", additional_prop: 0} match user)
-  - name:  List Patterns
+  - name: List Patterns
     id: list-patterns
     program: |
         manifest {}
 
-        # list pattern matching any list containing (only) integers.
+        # List pattern matching any list containing (only) integers.
         pattern int_list = []int
 
         print `([] match []int):` ([] match []int)
         print `([1] match []int):` ([1] match []int)
         print `([1, "a"] match []int):` ([1, "a"] match []int)
 
-        # list pattern matching any list of length 2 having an integer as first element 
+        # List pattern matching any list of length 2 having an integer as first element 
         # and a string-like value as second element.
         pattern pair = [int, str]
 
         print `\n([1, "a"] match [int, str]):` ([1, "a"] match [int, str])
+  - name: Binary Match and Type Narrowing
+    id: type-narrowing
+    program: |
+      manifest {}
+
+      # Binary match expressions checks whether the value on the left matches the pattern on the right.
+      print (1 match int)
+      print ({a: "1"} match {a: int})
+      print ({a: 1} match {a: int})
+
+      # Important: the right operand is interpreted as a pattern, so the following expressions are equivalent:
+      ({a: 1} match {a: int})   # {a: int} is a pattern, not a object !
+      ({a: 1} match %{a: int})
+
+      # The binary operator `not-match` is also available.
+
+      # Binary match expressions can be used for type narrowing.
+      fn func1(arg){
+          if (arg match int){
+              var integer int = arg
+          }
+      }
+
+      fn func2(arg){
+           assert (arg match {a: int})
+           var object {a: int} = arg
+      }
+    output: 
+    - 'true'
+    - 'false'
+    - 'true'
   - name: Permissions
     id: perm-basics
     program: |
@@ -528,7 +572,7 @@
           PATH = /temp_file.txt
       )
 
-      # accessing the filesystem requires specifying some permissions in the manifest.
+      # Accessing the filesystem requires specifying some permissions in the manifest.
       manifest {
           permissions: {
               read: PATH    # allow reading the content of /temp_file.txt
@@ -537,16 +581,16 @@
           }
       }
 
-      # remove the file /temp_file.txt.
+      # Remove the file /temp_file.txt.
       fs.rm!(PATH)
 
-      # create /temp_file.txt and write `hello` in it.
+      # Create /temp_file.txt and write `hello` in it.
       fs.mkfile!(PATH, "hello")
 
-      # read the content of the file.
+      # Read the content of the file.
       print("content:", fs.read!(PATH))
 
-      # learn more by hovering the called functions.
+      # Learn more by hovering the called functions.
     output:
     - "content: hello"
 
@@ -570,19 +614,19 @@
           }
       }
 
-      # remove /temp_dir/ if it exists.
+      # Remove /temp_dir/ if it exists.
       fs.rm!(DIR_PATH)
 
-      # create /temp_dir/
+      # Create /temp_dir/
       fs.mkdir!(DIR_PATH)
 
-      # create /temp_dir/file.txt
+      # Create /temp_dir/file.txt
       fs.mkfile!(DIR_PATH.join(./file.txt), "content")
 
-      # read the entries of the directory.
+      # Read the entries of the directory.
       print("entries:", fs.ls!(DIR_PATH))
 
-      # learn more by hovering the called functions.
+      # Learn more by hovering the called functions.
 - name: HTTP Requests
   id: http-reqs
 
@@ -596,7 +640,7 @@
           HOST = https://jsonplaceholder.typicode.com
       )
 
-      # making HTTP operations requires specifying some permissions in the manifest.
+      # Making HTTP operations requires specifying some permissions in the manifest.
       manifest {
           permissions: {
               # allow making GET and HEAD requests to HOST.
@@ -604,7 +648,7 @@
           }
       }
 
-      # create a host alias @host
+      # Create a host alias @host
       @host = HOST
       url = @host/posts/1
 
@@ -618,11 +662,11 @@
 
       print(resp)
 
-      # read all the body and print it.
+      # Read all the body and print it.
       raw_content = resp.body.read_all!()
       print("raw content: ", tostr(raw_content))
 
-      # the next tutorial show how to use a more convenient function: http.read.
+      # The next tutorial show how to use a more convenient function: http.read.
   - name: GET Requests 2 (http.read)
     id: http-get-reqs2
     program: |
@@ -656,7 +700,7 @@
             USER1_ENDPOINT = https://jsonplaceholder.typicode.com/users/1
         )
 
-        # note: https://jsonplaceholder.typicode.com provides a mocked API,
+        # Note: https://jsonplaceholder.typicode.com provides a mocked API,
         # the requests we make further in the code have no real effects.
 
         manifest {
@@ -669,7 +713,7 @@
             }
         }
 
-        # make a POST request to create a new user.
+        # Make a POST request to create a new user.
         resp1 = http.post!(USERS_ENDPOINT, {
             name: "John Doe",
             username: "JohnD",
@@ -680,7 +724,7 @@
         print("first response's body:", body)
 
 
-        # make a PATCH request to update a user.
+        # Make a PATCH request to update a user.
         resp2 = http.patch!(USER1_ENDPOINT, {
             title: "New title",
         })
@@ -693,7 +737,7 @@
             USER1_ENDPOINT = https://jsonplaceholder.typicode.com/users/1
         )
 
-        # note: https://jsonplaceholder.typicode.com provides a mocked API,
+        # Note: https://jsonplaceholder.typicode.com provides a mocked API,
         # the requests we make further in the code have no real effects.
 
         manifest {
@@ -703,7 +747,7 @@
             }
         }
 
-        # make a DELETE request to delete the user of id 1
+        # Make a DELETE request to delete the user of id 1
         resp = http.delete!(USER1_ENDPOINT)
 
         print(resp)
@@ -786,7 +830,7 @@
         assign result err = thread1.wait_result()
         print("err:", err)
 
-        # create a lthread allowed to read any file and directory.
+        # Create a lthread allowed to read any file and directory.
         thread2 = go {
             allow: { read: %/... }
         } do {
@@ -969,15 +1013,12 @@
             }
         }
 
-        # the `dbs` global variable holds references to the defined databases.
+        # The `dbs` global variable holds references to the defined databases.
         db = dbs.main0
         print("schema:", db.schema)
   - name: Database Schema
     id: db-schema
     program: |
-        # Inox comes with an embedded database engine.
-        # Databases are defined in the manifest:
-
         manifest {
             permissions: {}
 
@@ -992,8 +1033,7 @@
             }
         }
 
-        # The schema of an Inox Database is an object pattern and can
-        # be set by calling the `update_schema` method on the database.
+        # The schema of an Inox Database is an object pattern and can be set by calling the `update_schema` method on the database.
         # ⚠️ Calling `update_schema` requires the following property in the database description: `expected-schema-update: true`.
 
         db = dbs.main1
