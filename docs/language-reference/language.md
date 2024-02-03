@@ -38,7 +38,11 @@
 
 - [Evaluation](./evaluation.md)
 
+- [Permissions](./permissions.md)
+
 - [Databases](./databases.md)
+
+- [Context](./context.md)
 
 - [Testing](./testing.md)
 

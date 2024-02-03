@@ -10,6 +10,8 @@
 - [Inclusion Imports](#inclusion-imports)
 - [Module Imports](#module-imports)
 - [Limits](#limits)
+- [Host Definitions](#host-definitions)
+- [Databases Definitions](#database-definitions)
 - [Main Module](#main-module)
 
 An Inox **file module** is a code file that starts with a manifest.
@@ -123,6 +125,8 @@ manifest {
     }
 }
 ```
+
+[Permissions Reference](./permissions.md)
 
 ## Execution Phases
 
@@ -438,6 +442,27 @@ Examples:
 - `execution/cpu-time` - the counter decrements on its own, it pauses when an IO
   operation is being performed.
 - `execution/total-time` - the counter decrements on its own.
+
+## Host Definitions
+
+**WORK IN PROGRESS**
+
+The `host-definitions` section of the manifest defines **Inox hosts**.
+
+```
+manifest {
+    host-resolution: {
+		ldb://main : /mydb
+    }
+}
+```
+
+Host definitions are inherited by descendant modules.
+Database definitions implicitly define hosts.
+
+## Database Definitions
+
+See [databases](./databases.md)
 
 ## Main Module
 

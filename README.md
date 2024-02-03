@@ -1,4 +1,4 @@
-> You can [sponsor me](https://github.com/sponsors/GraphR00t) to help me continue working full-time on Inox.
+> Allow me to continue working full-time on Inox by [sponsoring me](https://github.com/sponsors/GraphR00t). Thank you !
 
 # Inox
 
@@ -6,7 +6,7 @@
 
 🛡️ Inox is your **shield** against complexity in full-stack development.
 
-Inox is released as a **single binary** that will contain all you need to develop, test and deploy web apps that are primarily rendered server-side. Applications are developped using **Inoxlang**, a sandboxed programming language that 
+The Inox platform is released as a **single binary** that will contain all you need to develop, test, and deploy web apps that are primarily rendered server-side. Applications are developped using **Inoxlang**, a sandboxed programming language that 
 deeply integrates with Inox's built-in database engine, testing engine and HTTP server.
 
 ⬇️ [Installation](#installation)\
@@ -160,9 +160,12 @@ You can learn Inox directly in VSCode by creating a file with a `.tut.ix` extens
 ![tutorial-demo](https://github.com/inoxlang/inox-vscode/raw/master/assets/docs/tutorial-demo.gif)
 
 📖 [Language reference](docs/language-reference/language.md)\
+📖 [HTTP Server reference](docs/http-server-reference.md)\
+🌐 [Frontend dev](./docs/frontend-development.md)\
 🧰 [Builtins](docs/builtins.md)\
-📚 [Collections](docs/collections.md)\
-🌐 [Frontend dev](./docs/frontend-development.md)
+📚 [Collections](docs/collections.md)
+
+If you have any questions you are welcome to join the [Discord Server](https://discord.gg/53YGx8GzgE).
 
 <details>
 <summary>Scripting</summary>

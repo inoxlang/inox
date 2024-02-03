@@ -38,7 +38,7 @@ Install the [inox daemon](./inox-daemon.md) in order to start the project server
 
 On you development machine create a `<myproject>` folder for the project. Open
 the folder with Visual Studio Code, and execute the following command
-`Inox: Initialize new Project in Current Folder`.
+`Inox: Create New Project in Current Folder`.
 
 Open the generated .code-workspace file and click on **Open Workspace**.
 
