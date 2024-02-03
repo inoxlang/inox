@@ -269,6 +269,47 @@ func (set *Set) getElem(key string) (core.Serializable, bool) {
 	return nil, false
 }
 
+func (set *Set) IsEmpty(ctx *core.Context) bool {
+	set.assertPersistedAndSharedIfURLUniqueness()
+	if set.lock.IsValueShared() {
+		if _, err := set.txIsolator.WaitForOtherTxsToTerminate(ctx, false); err != nil {
+			panic(err)
+		}
+	}
+
+	closestState := ctx.GetClosestState()
+	set._lock(closestState)
+	defer set._unlock(closestState)
+
+	for key := range set.elementByKey {
+		isPresent := true
+		for _, removedKey := range set.pendingRemovals {
+			if removedKey == key {
+				isPresent = false
+				break
+			}
+		}
+		if isPresent {
+			return false //not empty
+		}
+	}
+
+	for _, inclusion := range set.pendingInclusions {
+		isPresent := true
+		for _, removedKey := range set.pendingRemovals {
+			if removedKey == inclusion.key {
+				isPresent = false
+				break
+			}
+		}
+		if isPresent {
+			return false //not empty
+		}
+	}
+
+	return true
+}
+
 func (set *Set) Get(ctx *core.Context, keyVal core.StringLike) (core.Value, core.Bool) {
 	set.assertPersistedAndSharedIfURLUniqueness()
 

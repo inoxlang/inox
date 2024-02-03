@@ -24,6 +24,8 @@ type Container interface {
 	// - if the value has a URL AND there is an element such as Same(element, value) is true.
 	// - if the value has not a URL AND there is an element equal to value.
 	Contains(ctx *Context, value Serializable) bool
+
+	IsEmpty(ctx *Context) bool
 }
 
 // Implementations of Container for some core types.
@@ -51,6 +53,10 @@ func (l *List) Contains(ctx *Context, value Serializable) bool {
 	return false
 }
 
+func (l *List) IsEmpty(ctx *Context) bool {
+	return l.Len() == 0
+}
+
 func (t *Tuple) Contains(ctx *Context, value Serializable) bool {
 	if urlHolder, ok := value.(UrlHolder); ok {
 		_, ok := urlHolder.URL()
@@ -74,7 +80,13 @@ func (t *Tuple) Contains(ctx *Context, value Serializable) bool {
 	return false
 }
 
+func (t *Tuple) IsEmpty(ctx *Context) bool {
+	return t.Len() == 0
+}
+
 func (obj *Object) Contains(ctx *Context, value Serializable) bool {
+	obj.waitForOtherTxsToTerminate(ctx, false)
+
 	closestState := ctx.GetClosestState()
 	obj._lock(closestState)
 	defer obj._unlock(closestState)
@@ -103,6 +115,16 @@ func (obj *Object) Contains(ctx *Context, value Serializable) bool {
 	return false
 }
 
+func (obj *Object) IsEmpty(ctx *Context) bool {
+	obj.waitForOtherTxsToTerminate(ctx, false)
+
+	closestState := ctx.GetClosestState()
+	obj._lock(closestState)
+	defer obj._unlock(closestState)
+
+	return len(obj.keys) == 0
+}
+
 func (rec *Record) Contains(ctx *Context, value Serializable) bool {
 	if urlHolder, ok := value.(UrlHolder); ok {
 		_, ok := urlHolder.URL()
@@ -128,9 +150,21 @@ func (rec *Record) Contains(ctx *Context, value Serializable) bool {
 	return false
 }
 
+func (rec *Record) IsEmpty(ctx *Context) bool {
+	return len(rec.keys) == 0
+}
+
 func (r IntRange) Contains(ctx *Context, v Serializable) bool {
 	i, ok := v.(Int)
 	return ok && r.Includes(ctx, i)
+}
+
+func (r IntRange) IsEmpty(ctx *Context) bool {
+	if r.HasKnownStart() {
+		return r.Len() == 0
+	}
+	//TODO: define what should be returned if the end is the minimum float.
+	return false
 }
 
 func (r FloatRange) Contains(ctx *Context, v Serializable) bool {
@@ -138,9 +172,22 @@ func (r FloatRange) Contains(ctx *Context, v Serializable) bool {
 	return ok && r.Includes(ctx, f)
 }
 
+func (r FloatRange) IsEmpty(ctx *Context) bool {
+	if r.unknownStart {
+		//TODO: define what should be returned if the end is the minimum float.
+		return false
+	}
+
+	return r.KnownStart() == r.InclusiveEnd()
+}
+
 func (r RuneRange) Contains(ctx *Context, v Serializable) bool {
 	i, ok := v.(Rune)
 	return ok && r.Includes(ctx, i)
+}
+
+func (r RuneRange) IsEmpty(ctx *Context) bool {
+	return r.Len() == 0
 }
 
 func (r QuantityRange) Contains(ctx *Context, v Serializable) bool {
@@ -165,4 +212,11 @@ func (r QuantityRange) Contains(ctx *Context, v Serializable) bool {
 	default:
 		panic(ErrUnreachable)
 	}
+}
+
+func (r QuantityRange) IsEmpty(ctx *Context) bool {
+	if r.unknownStart {
+		return false
+	}
+	return r.KnownStart().Equal(ctx, r.InclusiveEnd(), map[uintptr]uintptr{}, 0)
 }

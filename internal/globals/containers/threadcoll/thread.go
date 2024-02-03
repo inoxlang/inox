@@ -123,6 +123,22 @@ func (t *MessageThread) Contains(ctx *core.Context, value core.Serializable) boo
 	return false
 }
 
+func (t *MessageThread) IsEmpty(ctx *core.Context) bool {
+	closestState := ctx.GetClosestState()
+	t._lock(closestState)
+	defer t._unlock(closestState)
+
+	tx := ctx.GetTx()
+
+	for _, e := range t.elements {
+		if e.isVisibleByTx(tx) {
+			return false //not empty
+		}
+	}
+
+	return true
+}
+
 func (t *MessageThread) Add(ctx *core.Context, elem *core.Object) {
 	closestState := ctx.GetClosestState()
 	t._lock(closestState)

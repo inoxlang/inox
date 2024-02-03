@@ -39,6 +39,8 @@ type additionalObjectFields struct {
 
 	lock SmartLock
 	//pendingChanges []pendingObjectEntryChange //only visible by the current read-write tx
+	//TODO: make sure the .IsEmpty and .Contains methods use them.
+
 	txIsolator StrongTransactionIsolator //TODO: replace with LiteTransactionIsolator
 
 	//Watching related fields

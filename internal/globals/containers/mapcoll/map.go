@@ -222,6 +222,46 @@ func (m *Map) Contains(ctx *core.Context, value core.Serializable) bool {
 	return false
 }
 
+func (m *Map) IsEmpty(ctx *core.Context) bool {
+	if m.lock.IsValueShared() {
+		if _, err := m.txIsolator.WaitForOtherTxsToTerminate(ctx, false); err != nil {
+			panic(err)
+		}
+	}
+
+	closestState := ctx.GetClosestState()
+	m._lock(closestState)
+	defer m._unlock(closestState)
+
+	for serializedKey := range m.entryByKey {
+		isPresent := true
+		for _, removedKey := range m.pendingRemovals {
+			if serializedKey == removedKey {
+				isPresent = false
+				break
+			}
+		}
+		if isPresent {
+			return false //not empty
+		}
+	}
+
+	for _, inclusion := range m.pendingInclusions {
+		isPresent := true
+		for _, removedKey := range m.pendingRemovals {
+			if removedKey == inclusion.serializedKey {
+				isPresent = false
+				break
+			}
+		}
+		if isPresent {
+			return false //not empty
+		}
+	}
+
+	return true
+}
+
 func (m *Map) Has(ctx *core.Context, keyVal core.Serializable) core.Bool {
 	if m.lock.IsValueShared() {
 		if _, err := m.txIsolator.WaitForOtherTxsToTerminate(ctx, false); err != nil {
