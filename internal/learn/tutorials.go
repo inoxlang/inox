@@ -34,7 +34,7 @@ func init() {
 				case "base.css":
 					tut.OtherFiles[name] = scaffolding.BASE_CSS_STYLESHEET
 				case "htmx.min.js":
-					tut.OtherFiles[name] = scaffolding.HTMX_MIN_JS
+					tut.OtherFiles[name] = scaffolding.FULL_HTMX_MIN_JS
 				}
 			}
 		}

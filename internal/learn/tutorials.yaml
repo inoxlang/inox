@@ -570,7 +570,7 @@
             }
         }
 
-        # Each Inox module instance has a context that can, among other things, stores data. Context data entries can be defined once 
+        # Each Inox module instance has a context that can, among other things, store data. Context data entries can be defined once 
         # and the value should fall in one of the following categories: sharable (e.g. objects, sets), immutable (e.g. integers, records), 
         # clonable (e.g. lists).
 
@@ -597,7 +597,7 @@
 
         lthread.wait_result!()
 
-        # Learn more about Inox contexts here: https://github.com/inoxlang/inox/blob/main/docs/language-reference/language.md#must-calls.
+        # Learn more about Inox contexts here: https://github.com/inoxlang/inox/blob/main/docs/language-reference/context.md.
 - name: Filesystem
   id: filesystem
 
@@ -1113,12 +1113,13 @@
             }
         }
 
+
         server = http.Server!(HOST, {
             routing: {
-                # directory for static resources such as CSS and JS files.
+                # Directory for static resources such as CSS and JS files.
                 static: /.tutorial-files/static/
 
-                # directory containing handler modules (Inox files).
+                # Directory containing handler modules (Inox files). Explore it to see how routing works.
                 dynamic: /.tutorial-files/fs-routing-basics/
             }
         })
@@ -1131,6 +1132,7 @@
 
             html {
                 box-sizing: border-box;
+                font-size: 18px;
             }
 
             *, *:before, *:after {
@@ -1172,7 +1174,7 @@
             header {
                 font-weight: 700;
                 padding: 7px;
-                font-size: 18px;
+                font-size: 20px;
             }
 
             nav, .forms {
@@ -1183,17 +1185,14 @@
                 display: flex;
                 flex-direction: column;
                 padding: 7px;
+
+                font-weight: 500;
             }
 
-            .forms, .links, .other {
+            .forms, .other {
                 display: flex;
                 flex-direction: column;
                 padding: 5px;
-            }
-
-            .links {
-                border: 1px solid grey;
-                border-radius: 3x;
             }
 
             form {
@@ -1204,9 +1203,8 @@
             }
 
         /.tutorial-files/fs-routing-basics/index.ix: |
-            manifest {
-
-            }
+            # This module is executed each time a GET request on `/` is received.
+            manifest {}
 
             return html<html>
             <head>
@@ -1220,8 +1218,10 @@
                 <header> Hello from index.ix. </header>
                 <nav>
                     <ul>
-                        <li><a href="/about">about (about.ix) </a></li>
-                        <li><a href="/about2">about2 (about2/index.ix) </a></li>
+                        <li><a href="/about">/about</a> (about.ix) </li>
+                        <li><a href="/about2">/about2</a> (about2/index.ix) </li>
+                        <li><a href="/users/1">/users/1</a> (users/:user-id/GET.ix) </li>
+                        <li><a href="/users/2">/users/2</a> (users/:user-id/GET.ix) </li>
                     </ul>      
                 </nav>
 
@@ -1236,16 +1236,15 @@
 
 
                     <div class="other">
-                        <span>Lazy loading of /fake-user</span>
-                        <div hx-lazy-load="/fake-user"></div>
+                        <span>Lazy loading of /users/0</span>
+                        <div hx-lazy-load="/users/0"></div>
                     </div>
                 </main>
             </body>
             </html>
         /.tutorial-files/fs-routing-basics/about.ix: |
-            manifest {
-
-            }
+            # This module is each time a GET request on /about is received.
+            manifest {}
 
             return html<html>
             <head>
@@ -1260,9 +1259,8 @@
             </body>
             </html>
         /.tutorial-files/fs-routing-basics/about2/index.ix: |
-            manifest {
-
-            }
+            # This module is executed each time a GET request on /about2 is received.
+            manifest {}
 
             return html<html>
             <head>
@@ -1276,13 +1274,8 @@
                 <header> Hello from about2/index.ix. </header>
             </body>
             </html>
-        /.tutorial-files/fs-routing-basics/fake-user.ix: |
-            manifest {
-              
-            }
-
-            return html<div> [ Fake user ] Hello from fake-user.ix. </div>
         /.tutorial-files/fs-routing-basics/users/POST.ix: |
+            # This module is executed each time a POST request on /users is received.
             manifest {
                 parameters: {
                     # JSON body
@@ -1293,7 +1286,7 @@
                 }
             }
 
-            # the module arguments are stored in the `mod-args` variable.
+            # The module arguments are stored in the `mod-args` variable.
 
             username = mod-args.name
 
@@ -1308,6 +1301,25 @@
             <body>
                 <header> Hello from users/POST.ix. </header>
                 Received user creation request with name "{username}".
+            </body>
+            </html>
+        /.tutorial-files/fs-routing-basics/users/:user-id/GET.ix: |
+            # This module is executed each time a GET request on /users/<id> is received.
+            manifest {}
+
+            # Retrieve the `user-id` path parameter.
+            user-id = ctx_data(/path-params/user-id, %string)
+
+            return html<html>
+            <head>
+                <meta charset="utf-8"/>
+                <title></title>
+                <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                <link rel="stylesheet" href="/base.css"/>
+                <script src="/htmx.min.js"></script>
+            </head>
+            <body>
+                <header> Hello from users/:user-id/GET.ix. User id is `{user-id}`.</header>
             </body>
             </html>
 # ------------------------------------------------------------
