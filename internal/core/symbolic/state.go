@@ -577,9 +577,10 @@ func (state *State) fork() *State {
 	}
 	for k, v := range state.scopeStack[0].variables {
 		globalScopeCopy.variables[k] = varSymbolicInfo{
-			value:      v.value,
-			static:     v.static,
-			isConstant: v.isConstant,
+			value:              v.value,
+			static:             v.static,
+			isConstant:         v.isConstant,
+			definitionPosition: v.definitionPosition,
 		}
 	}
 

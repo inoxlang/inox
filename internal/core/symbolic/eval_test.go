@@ -12,6 +12,7 @@ import (
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/exp/slices"
 )
 
 func TestSymbolicEval(t *testing.T) {
@@ -3797,6 +3798,15 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
 			assert.Equal(t, Nil, res)
+
+			callee := parse.FindNode(n, (*parse.CallExpression)(nil), nil).Callee
+
+			calleeValue, ok := state.symbolicData.GetMostSpecificNodeValue(callee)
+			if !assert.True(t, ok) {
+				return
+			}
+
+			assert.IsType(t, (*InoxFunction)(nil), calleeValue)
 		})
 
 		t.Run("empty function (member)", func(t *testing.T) {
@@ -6849,6 +6859,78 @@ func TestSymbolicEval(t *testing.T) {
 			_, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
+		})
+
+		t.Run("retrieving the value of nodes should work", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				a = 1
+				b = 2
+				if true {
+					a
+				} else {
+					b
+				}
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Nil(t, res)
+
+			identA := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
+				return n.Name == "a"
+			})
+
+			calleeValue, ok := state.symbolicData.GetMostSpecificNodeValue(identA)
+			if !assert.True(t, ok) {
+				return
+			}
+			assert.Equal(t, INT_1, calleeValue)
+		})
+
+		t.Run("global scope data should be preserved inside the statement", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(){
+
+				}
+				if true {
+					f()
+				} else {
+					f()	
+				}
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Nil(t, res)
+
+			callExprs, ancestors := parse.FindNodesAndChains(n, (*parse.CallExpression)(nil), nil)
+
+			for i, callExpr := range callExprs {
+				callExprAncestors := ancestors[i]
+				callee := callExpr.Callee
+				calleeAncestors := append(slices.Clone(callExprAncestors), callExpr)
+
+				scopeData, ok := state.symbolicData.GetGlobalScopeData(callee, calleeAncestors)
+				if !assert.True(t, ok) {
+					return
+				}
+
+				var data VarData
+
+				for _, varInfo := range scopeData.Variables {
+					if varInfo.Name == "f" {
+						data = varInfo
+						break
+					}
+				}
+
+				if !assert.NotZero(t, data) {
+					return
+				}
+
+				assert.IsType(t, (*InoxFunction)(nil), data.Value)
+				assert.NotZero(t, data.DefinitionPosition)
+			}
 		})
 	})
 
