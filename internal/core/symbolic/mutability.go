@@ -89,7 +89,7 @@ func (any AnyStreamSink) IsMutable() bool {
 }
 
 func (any AnyIntegral) IsMutable() bool {
-	return true
+	return false
 }
 
 func (err Error) IsMutable() bool {

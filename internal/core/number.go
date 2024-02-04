@@ -13,6 +13,8 @@ var (
 	_ = []Integral{Int(0), Byte(0), ByteCount(0), RuneCount(0), LineCount(0)}
 )
 
+// Integral should be implemented by values representing an integer (int, byte, quantities, ...).
+// Implementations should be immutable.
 type Integral interface {
 	Value
 	Int64() int64
