@@ -451,8 +451,8 @@ The `host-definitions` section of the manifest defines **Inox hosts**.
 
 ```
 manifest {
-    host-resolution: {
-		ldb://main : /mydb
+    host-resolution: :{
+        ldb://main : /mydb
     }
 }
 ```
