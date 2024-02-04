@@ -194,9 +194,6 @@ func respondWithMappingResult(h handlingArguments) {
 		maps.Copy(rw.headers(), httpResult.headers)
 		statusIfAccepted = int(httpResult.status)
 
-		//Use the value inside the result
-		value = httpResult.value
-
 		//Add the session and session cookie.
 		if httpResult.session != nil {
 			session := httpResult.session
@@ -205,8 +202,6 @@ func respondWithMappingResult(h handlingArguments) {
 				logger.Print("returned http Result has a session but the server has no collection to store sessions")
 				return
 			}
-			e := state.Ctx.IsDoneSlowCheck()
-			_ = e
 			sessionIDValue := session.Prop(state.Ctx, SESSION_ID_PROPNAME)
 			sessionID := sessionIDValue.(core.StringLike).GetOrBuildString()
 			logger.Print("add cookie")
@@ -217,6 +212,13 @@ func respondWithMappingResult(h handlingArguments) {
 			}()
 		}
 
+		//Use the value inside the result
+		value = httpResult.value
+
+		if value == nil {
+			rw.writeHeaders(int(httpResult.status))
+			return
+		}
 	case core.Identifier:
 		switch v {
 		case "notfound":
