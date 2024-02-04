@@ -275,6 +275,27 @@ func ConcatBytesLikes(bytesLikes ...BytesLike) (BytesLike, error) {
 	}, nil
 }
 
+func NewBytesConcatenation(bytesLikes ...BytesLike) *BytesConcatenation {
+	if len(bytesLikes) < 2 {
+		panic(errors.New("not enough elements"))
+	}
+
+	var totalLen int
+
+	for i, bytesLike := range bytesLikes {
+		if bytesLike.Mutable() {
+			b := slices.Clone(bytesLike.GetOrBuildBytes().bytes) // TODO: use Copy On Write
+			bytesLikes[i] = NewByteSlice(b, false, "")
+		}
+		totalLen += bytesLike.Len()
+	}
+
+	return &BytesConcatenation{
+		elements: slices.Clone(bytesLikes),
+		totalLen: totalLen,
+	}
+}
+
 func (c *BytesConcatenation) GetOrBuildBytes() *ByteSlice {
 	if c.Len() > 0 && len(c.finalBytes) == 0 {
 		slice := make([]byte, c.totalLen)

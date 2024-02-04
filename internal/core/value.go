@@ -47,14 +47,6 @@ func (n NilT) String() string {
 	return "nil"
 }
 
-// Bool implements Value.
-type Bool bool
-
-const (
-	True  = Bool(true)
-	False = Bool(false)
-)
-
 // FileMode implements Value.
 type FileMode fs.FileMode
 
@@ -188,36 +180,6 @@ func ToSerializableValueMap(valMap map[string]Value) map[string]Serializable {
 		serializable[k] = val.(Serializable)
 	}
 	return serializable
-}
-
-func coerceToBool(val Value) bool {
-	reflVal := reflect.ValueOf(val)
-
-	if !reflVal.IsValid() {
-		return false
-	}
-
-	switch v := val.(type) {
-	case Indexable:
-		return v.Len() > 0
-	}
-
-	if reflVal.Type() == NIL_TYPE {
-		return false
-	}
-
-	switch reflVal.Kind() {
-	case reflect.String:
-		return reflVal.Len() != 0
-	case reflect.Slice:
-		return reflVal.Len() != 0
-	case reflect.Chan, reflect.Map:
-		return !reflVal.IsNil() && reflVal.Len() != 0
-	case reflect.Func, reflect.Pointer, reflect.UnsafePointer, reflect.Interface:
-		return !reflVal.IsNil()
-	default:
-		return true
-	}
 }
 
 // Port implements Value. Inox's port literals (e.g. `:80`, `:80/http`) evaluate to a Port.

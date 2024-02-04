@@ -2167,7 +2167,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			return nil, err
 		}
 
-		return Bool(coerceToBool(valueToConvert)), nil
+		return Bool(coerceToBool(state.Global.Ctx, valueToConvert)), nil
 	case *parse.PatternDefinition:
 		var right Pattern
 		if n.IsLazy {

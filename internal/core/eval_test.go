@@ -12275,31 +12275,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 }
 
-func TestToBool(t *testing.T) {
-	ctx := NewContext(ContextConfig{})
-	defer ctx.CancelGracefully()
-
-	testCases := []struct {
-		name  string
-		input Value
-		ok    bool
-	}{
-		{"empty key list", (KeyList)(nil), false},
-		{"not-empty key list", (KeyList)(nil), false},
-		{"empty string", String(""), false},
-		{"not empty string", String("1"), true},
-		{"string concatenation", NewStringConcatenation(String("a"), String("b")), true},
-		{"empty list", NewWrappedValueList(), false},
-		{"not empty list", NewWrappedValueList(Int(1)), true},
-	}
-
-	for _, testCase := range testCases {
-		t.Run(testCase.name, func(t *testing.T) {
-			assert.True(t, testCase.ok == coerceToBool(ctx, testCase.input))
-		})
-	}
-}
-
 func TestGetQuantity(t *testing.T) {
 	//TODO
 }

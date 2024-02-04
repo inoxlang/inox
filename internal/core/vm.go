@@ -1284,7 +1284,7 @@ func (v *VM) run() {
 			v.sp--
 		case OpToBool:
 			val := v.stack[v.sp-1]
-			boolVal := Bool(coerceToBool(val))
+			boolVal := Bool(coerceToBool(v.global.Ctx, val))
 
 			v.stack[v.sp-1] = boolVal
 		case OpCreateString:
