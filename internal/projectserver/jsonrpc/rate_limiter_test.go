@@ -37,9 +37,10 @@ func TestRateLimiter(t *testing.T) {
 		//Check rate limiting for the 10s window.
 
 		i := 0
-		for ; i < rateLimit1; i++ {
+		reqCount := rateLimit1
+		for ; i < reqCount; i++ {
 			//Wait a bit in order to not be rate limited by the 1s window and burst-limited by the 10s window.
-			time.Sleep(3 * time.Second / time.Duration(rateLimit0))
+			time.Sleep(5 * time.Second / time.Duration(rateLimit0))
 
 			rateLimited, methodRateLimited := limiter.limit(MethodInfo{Name: strconv.Itoa(i)}, ulid.Make().String(), addrPort)
 
