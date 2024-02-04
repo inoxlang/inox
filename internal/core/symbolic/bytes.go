@@ -167,7 +167,7 @@ func (b *Byte) WidestOfType() Value {
 	return ANY_BYTE
 }
 
-func (b *Byte) Int64() (n *Int, signed bool) {
+func (b *Byte) Int64() (i *Int, signed bool) {
 	return ANY_INT, false
 }
 

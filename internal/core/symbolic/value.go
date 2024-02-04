@@ -1152,6 +1152,15 @@ func (c *ByteCount) Static() Pattern {
 	return &TypePattern{val: c.WidestOfType()}
 }
 
+func (c *ByteCount) Int64() (i *Int, signed bool) {
+	if c.hasValue {
+		i = NewInt(c.value)
+	} else {
+		i = ANY_INT
+	}
+	return
+}
+
 func (c *ByteCount) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("byte-count")
 	if c.hasValue {
@@ -1270,6 +1279,15 @@ func (c *LineCount) Static() Pattern {
 	return &TypePattern{val: c.WidestOfType()}
 }
 
+func (c *LineCount) Int64() (i *Int, signed bool) {
+	if c.hasValue {
+		i = NewInt(c.value)
+	} else {
+		i = ANY_INT
+	}
+	return
+}
+
 func (c *LineCount) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("line-count")
 	if c.hasValue {
@@ -1320,6 +1338,15 @@ func (c *RuneCount) IsConcretizable() bool {
 
 func (c *RuneCount) Static() Pattern {
 	return &TypePattern{val: c.WidestOfType()}
+}
+
+func (c *RuneCount) Int64() (i *Int, signed bool) {
+	if c.hasValue {
+		i = NewInt(c.value)
+	} else {
+		i = ANY_INT
+	}
+	return
 }
 
 func (c *RuneCount) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {

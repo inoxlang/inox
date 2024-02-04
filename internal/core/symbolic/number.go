@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	_            = []Integral{(*Int)(nil), (*Byte)(nil), (*AnyIntegral)(nil)}
+	_            = []Integral{(*Int)(nil), (*Byte)(nil), (*AnyIntegral)(nil), (*ByteCount)(nil), (*RuneCount)(nil), (*LineCount)(nil)}
 	ANY_INTEGRAL = &AnyIntegral{}
 
 	ANY_INT    = &Int{}
