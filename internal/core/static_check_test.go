@@ -2750,6 +2750,32 @@ func TestCheck(t *testing.T) {
 			assert.Equal(t, expectedErr, err)
 		})
 
+		t.Run("included file that does not exist", func(t *testing.T) {
+			moduleName := "mymod.ix"
+			modpath := writeModuleAndIncludedFiles(t, moduleName, `
+				manifest {}
+				import ./dep.ix
+			`, map[string]string{})
+
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{
+				Context:                             createParsingContext(modpath),
+				RecoverFromNonExistingIncludedFiles: true,
+			})
+
+			if !assert.Error(t, err) {
+				return
+			}
+
+			if !assert.NotNil(t, mod) {
+				return
+			}
+
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{
+				Module: mod,
+				Node:   mod.MainChunk.Node,
+				Chunk:  mod.MainChunk,
+			}))
+		})
 	})
 
 	t.Run("import statement", func(t *testing.T) {

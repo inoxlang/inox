@@ -249,6 +249,9 @@ func (c *checker) defineStructs(closestModule parse.Node, statements []parse.Nod
 			continue
 		}
 		includedChunk := c.currentModule.InclusionStatementMap[inclusionStmt]
+		if includedChunk == nil { //File not found
+			return
+		}
 		c.defineStructs(closestModule, includedChunk.Node.Statements)
 	}
 
@@ -1134,7 +1137,11 @@ func (c *checker) checkInclusionImportStmt(node *parse.InclusionImportStatement,
 		c.addError(node, MISPLACED_INCLUSION_IMPORT_STATEMENT_TOP_LEVEL_STMT)
 		return parse.ContinueTraversal
 	}
+
 	includedChunk := c.currentModule.InclusionStatementMap[node]
+	if includedChunk == nil { //File not found
+		return parse.ContinueTraversal
+	}
 
 	globals := make(map[parse.Node]map[string]globalVarInfo)
 	globals[includedChunk.Node] = map[string]globalVarInfo{}
