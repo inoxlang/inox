@@ -16,46 +16,62 @@ func TestSymbolicCreateHTMLNodeFromXMLElement(t *testing.T) {
 			}),
 		}
 	}
-	t.Run("shallow: invalid interpolation value", func(t *testing.T) {
-		chunk, state := symbolic.MakeTestStateAndChunk("html<div>{1.0}</div>", globals())
 
-		_, err := symbolic.SymbolicEval(chunk, state)
-		assert.NoError(t, err)
+	t.Run("shallow", func(t *testing.T) {
+		t.Run("invalid interpolation value", func(t *testing.T) {
+			chunk, state := symbolic.MakeTestStateAndChunk("html<div>{1.0}</div>", globals())
 
-		errors := state.Errors()
-		assert.NotEmpty(t, errors)
-	})
+			_, err := symbolic.SymbolicEval(chunk, state)
+			assert.NoError(t, err)
 
-	t.Run("shallow: HTML node", func(t *testing.T) {
-		chunk, state := symbolic.MakeTestStateAndChunk("html<div>{html<span></span>}</div>", globals())
+			errors := state.Errors()
+			assert.NotEmpty(t, errors)
+		})
 
-		_, err := symbolic.SymbolicEval(chunk, state)
-		assert.NoError(t, err)
-		assert.Empty(t, state.Errors())
-	})
+		t.Run("HTML node", func(t *testing.T) {
+			chunk, state := symbolic.MakeTestStateAndChunk("html<div>{html<span></span>}</div>", globals())
 
-	t.Run("shallow: list of HTML nodes", func(t *testing.T) {
-		chunk, state := symbolic.MakeTestStateAndChunk("html<div>{ [ html<span></span> ] }</div>", globals())
+			_, err := symbolic.SymbolicEval(chunk, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.Errors())
+		})
 
-		_, err := symbolic.SymbolicEval(chunk, state)
-		assert.NoError(t, err)
-		assert.Empty(t, state.Errors())
-	})
+		t.Run("list of HTML nodes", func(t *testing.T) {
+			chunk, state := symbolic.MakeTestStateAndChunk("html<div>{ [ html<span></span> ] }</div>", globals())
 
-	t.Run("shallow: list of string-like values", func(t *testing.T) {
-		chunk, state := symbolic.MakeTestStateAndChunk(`html<div>{ [ "a", (concat "b" "c")  ] }</div>`, globals())
+			_, err := symbolic.SymbolicEval(chunk, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.Errors())
+		})
 
-		_, err := symbolic.SymbolicEval(chunk, state)
-		assert.NoError(t, err)
-		assert.Empty(t, state.Errors())
-	})
+		t.Run("list of string-like values", func(t *testing.T) {
+			chunk, state := symbolic.MakeTestStateAndChunk(`html<div>{ [ "a", (concat "b" "c")  ] }</div>`, globals())
 
-	t.Run("shallow: list of invalid values", func(t *testing.T) {
-		chunk, state := symbolic.MakeTestStateAndChunk(`html<div>{ [ 1.0 ] }</div>`, globals())
+			_, err := symbolic.SymbolicEval(chunk, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.Errors())
+		})
 
-		_, err := symbolic.SymbolicEval(chunk, state)
-		assert.NoError(t, err)
-		assert.NotEmpty(t, state.Errors())
+		t.Run("list of invalid values", func(t *testing.T) {
+			chunk, state := symbolic.MakeTestStateAndChunk(`html<div>{ [ 1.0 ] }</div>`, globals())
+
+			_, err := symbolic.SymbolicEval(chunk, state)
+			assert.NoError(t, err)
+			assert.NotEmpty(t, state.Errors())
+		})
+
+		t.Run("invalid XML attribute value", func(t *testing.T) {
+			chunk, state := symbolic.MakeTestStateAndChunk("html<div a=1.0></div>", globals())
+
+			_, err := symbolic.SymbolicEval(chunk, state)
+			assert.NoError(t, err)
+
+			errors := state.Errors()
+			if !assert.Len(t, errors, 1) {
+				return
+			}
+			assert.Contains(t, errors[0].Error(), fmtAttrValueNotAccepted(symbolic.FLOAT_1, "a"))
+		})
 	})
 
 	t.Run("deep: invalid interpolation value", func(t *testing.T) {
@@ -65,17 +81,10 @@ func TestSymbolicCreateHTMLNodeFromXMLElement(t *testing.T) {
 		assert.NoError(t, err)
 
 		errors := state.Errors()
-		assert.NotEmpty(t, errors)
-	})
-
-	t.Run("shallow: invalid XML attribute value", func(t *testing.T) {
-		chunk, state := symbolic.MakeTestStateAndChunk("html<div a=1.0></div>", globals())
-
-		_, err := symbolic.SymbolicEval(chunk, state)
-		assert.NoError(t, err)
-
-		errors := state.Errors()
-		assert.NotEmpty(t, errors)
+		if !assert.Len(t, errors, 1) {
+			return
+		}
+		assert.Contains(t, errors[0].Error(), INTERPOLATION_LIMITATION_ERROR_MSG)
 	})
 
 	t.Run("deep: invalid XML attribute value", func(t *testing.T) {
