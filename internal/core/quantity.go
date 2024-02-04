@@ -28,18 +28,103 @@ var (
 	ErrQuantityUnderflow = errors.New("quantity underflow")
 )
 
+var (
+	_ = []Quantity{ByteCount(0), RuneCount(0), LineCount(0)}
+	_ = []Rate{ByteRate(0), Frequency(0)}
+)
+
+type Quantity interface {
+	Value
+
+	// Int64() should return (value, true) if the internal representation of the quantity is an integer (int64, int32, ...),
+	// (0, false) otherwise. If $hasIntegralRepr is true the implementation should aso implement Integral.
+	AsInt64() (v int64, hasIntegralRepr bool)
+
+	// Int64() should return (value, true) if the internal representation of the quantity is a float (float64, float32, ...),
+	// (0, false) otherwise.
+	AsFloat64() (v float64, hasFloatRepr bool)
+
+	IsZeroQuantity() bool
+}
+
+func HasIntegralRepresentation(q Quantity) bool {
+	_, hasIntegralRepr := q.AsInt64()
+	return hasIntegralRepr
+}
+
 // ByteCount implements Value.
 type ByteCount int64
 
-// LineCount implements Value.
-type LineCount int64
+func (c ByteCount) Int64() int64 {
+	return int64(c)
+}
+
+func (c ByteCount) IsSigned() bool {
+	return false
+}
+
+func (c ByteCount) AsInt64() (int64, bool) {
+	return int64(c), true
+}
+
+func (c ByteCount) AsFloat64() (float64, bool) {
+	return 0, false
+}
+
+func (c ByteCount) IsZeroQuantity() bool {
+	return c == 0
+}
 
 // RuneCount implements Value.
 type RuneCount int64
 
+func (c RuneCount) Int64() int64 {
+	return int64(c)
+}
+
+func (c RuneCount) IsSigned() bool {
+	return false
+}
+
+func (c RuneCount) AsInt64() (int64, bool) {
+	return int64(c), true
+}
+
+func (c RuneCount) AsFloat64() (float64, bool) {
+	return 0, false
+}
+
+func (c RuneCount) IsZeroQuantity() bool {
+	return c == 0
+}
+
+// LineCount implements Value.
+type LineCount int64
+
+func (c LineCount) Int64() int64 {
+	return int64(c)
+}
+
+func (c LineCount) IsSigned() bool {
+	return false
+}
+
+func (c LineCount) AsInt64() (int64, bool) {
+	return int64(c), true
+}
+
+func (c LineCount) AsFloat64() (float64, bool) {
+	return 0, false
+}
+
+func (c LineCount) IsZeroQuantity() bool {
+	return c == 0
+}
+
 type Rate interface {
 	Value
 	QuantityPerSecond() Value
+	IsZeroRate() bool
 }
 
 // A ByteRate represents a number of bytes per second, it implements Value.
@@ -47,6 +132,10 @@ type ByteRate int64
 
 func (r ByteRate) QuantityPerSecond() Value {
 	return ByteCount(r)
+}
+
+func (r ByteRate) IsZeroRate() bool {
+	return r == 0
 }
 
 func (r ByteRate) Validate() error {
@@ -61,6 +150,10 @@ type Frequency float64
 
 func (f Frequency) QuantityPerSecond() Value {
 	return Float(f)
+}
+
+func (f Frequency) IsZeroRate() bool {
+	return f == 0
 }
 
 func (f Frequency) Validate() error {

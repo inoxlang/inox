@@ -10,19 +10,24 @@ var (
 	ErrUnknownStartIntRange   = errors.New("integer range has unknown start")
 	ErrUnknownStartFloatRange = errors.New("float range has unknown start")
 
-	_ = []Integral{Int(0), Byte(0)}
+	_ = []Integral{Int(0), Byte(0), ByteCount(0), RuneCount(0), LineCount(0)}
 )
 
 type Integral interface {
 	Value
-	Int64() (n int64, signed bool)
+	Int64() int64
+	IsSigned() bool
 }
 
 // Int implements Value.
 type Int int64
 
-func (i Int) Int64() (n int64, signed bool) {
-	return int64(i), true
+func (i Int) Int64() int64 {
+	return int64(i)
+}
+
+func (i Int) IsSigned() bool {
+	return true
 }
 
 // Float implements Value.

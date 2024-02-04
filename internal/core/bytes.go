@@ -237,8 +237,12 @@ func (s *ByteSlice) appendSequence(ctx *Context, seq Sequence) {
 // Byte implements Value.
 type Byte byte
 
-func (b Byte) Int64() (n int64, signed bool) {
-	return int64(b), false
+func (b Byte) Int64() int64 {
+	return int64(b)
+}
+
+func (b Byte) IsSigned() bool {
+	return false
 }
 
 // BytesConcatenation is a lazy concatenation of values that can form a byte slice, BytesConcatenation implements BytesLike.

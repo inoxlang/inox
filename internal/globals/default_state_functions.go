@@ -125,7 +125,10 @@ func _tostring(ctx *core.Context, arg core.Value) core.String {
 }
 
 func _torune(ctx *core.Context, i core.Integral) core.Rune {
-	n, _ := i.Int64()
+	n := i.Int64()
+	if n < 0 {
+		panic(fmt.Errorf("cannot convert to a rune a negative integer obtained from an integral value"))
+	}
 	// TODO: panic if if larger than maximum unicode point ?
 	return core.Rune(n)
 }
