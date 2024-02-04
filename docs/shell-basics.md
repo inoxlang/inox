@@ -101,7 +101,7 @@ Pipe expressions enable you to save the final result into a variable:
 ints = | map_iterable [{value: "a"}, {value: 1}] .value | filter_iterable $ %int
 ```
 
-> You can add '~' in front of **$** if you want to postpone the [type checking](#type-checker) at runtime.
+> You can add '~' in front of **$** if you want to perform the [type checking](#type-checker) at run time.
 
 ### Help
 

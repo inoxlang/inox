@@ -48,12 +48,12 @@ lthread.wait_result!()
 
 ## Host Definitions
 
-The resolution data of hosts is stored inside the context.
+The host definitions are stored inside the context.
 
 ```
 manifest {
    	host-resolution: :{
-		ldb://main : /mydb
+        ldb://main : /mydb
 	}
 }
 ```
