@@ -3,6 +3,9 @@ package symbolic
 import (
 	"bytes"
 	"errors"
+	"fmt"
+
+	"maps"
 
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
@@ -74,7 +77,27 @@ func (args *ModuleArgs) SetProp(name string, value Value) (IProps, error) {
 }
 
 func (args *ModuleArgs) WithExistingPropReplaced(name string, value Value) (IProps, error) {
-	panic(ErrNotImplementedYet)
+	fields := maps.Clone(args.fieldValues)
+	fields[name] = value
+
+	result := &ModuleArgs{
+		fieldValues: fields,
+		typ:         args.typ,
+	}
+
+	if args.typ == nil {
+		return result, nil
+	}
+
+	pattern, ok := args.typ.typeOfField(name)
+	if !ok {
+		return nil, fmt.Errorf("cannot replace value inexisting property %s", name)
+	}
+	if !pattern.TestValue(value, RecTestCallState{}) {
+		return nil, fmt.Errorf("cannot uodate property %s with a non matching value", name)
+	}
+
+	return result, nil
 }
 
 func (args *ModuleArgs) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
