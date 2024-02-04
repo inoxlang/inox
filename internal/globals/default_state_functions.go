@@ -137,15 +137,15 @@ func _tobyte(ctx *core.Context, i core.Int) core.Byte {
 	return core.Byte(i)
 }
 
-func _tofloat(ctx *core.Context, v core.Int) core.Float {
+func _tofloat(ctx *core.Context, v core.Integral) core.Float {
 	// TODO: panic if loss ?
-	return core.Float(v)
+	return core.Float(v.Int64())
 }
 
 func _toint(ctx *core.Context, v core.Value) core.Int {
 	switch val := v.(type) {
-	case core.Byte:
-		return core.Int(val)
+	case core.Integral:
+		return core.Int(val.Int64())
 	case core.Float:
 		f := val
 		n := core.Int(f)

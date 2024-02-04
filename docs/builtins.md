@@ -309,10 +309,10 @@ The `torune` function converts an integral value to a rune.
 The `tobyte` function converts an integer to a byte.
 ### tofloat
 
-The `tofloat` function converts an integer to a float.
+The `tofloat` function converts an `integral` value (e.g. int, byte, rune count) to a float.
 ### toint
 
-The `toint` function converts a float or byte to an integer. An error is thrown if precision has been lost.
+The `toint` function converts a float or an `integral` value (e.g. int, byte, rune count) to an integer. An error is thrown if precision has been lost.
 ### tobytecount
 
 The `tobytecount` function converts an integer to a byte count. An error is thrown if the provided value is negative.

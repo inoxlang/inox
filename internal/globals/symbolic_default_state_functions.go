@@ -146,14 +146,14 @@ func init() {
 		_tobyte, func(ctx *symbolic.Context, arg *symbolic.Int) *symbolic.Byte {
 			return symbolic.ANY_BYTE
 		},
-		_tofloat, func(ctx *symbolic.Context, arg *symbolic.Int) *symbolic.Float {
+		_tofloat, func(ctx *symbolic.Context, arg symbolic.Integral) *symbolic.Float {
 			return symbolic.ANY_FLOAT
 		},
 		_toint, func(ctx *symbolic.Context, arg symbolic.Value) *symbolic.Int {
 			switch arg.(type) {
-			case *symbolic.Float, *symbolic.Byte:
+			case *symbolic.Float, symbolic.Integral:
 			default:
-				ctx.AddFormattedSymbolicGoFunctionError("toint only accepts floats & bytes, type is %s", symbolic.Stringify(arg))
+				ctx.AddFormattedSymbolicGoFunctionError("toint only accepts floats & integral values, type is %s", symbolic.Stringify(arg))
 			}
 			return symbolic.ANY_INT
 		},
