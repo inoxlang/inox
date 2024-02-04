@@ -11,14 +11,19 @@ var (
 	_ = []Serializable{
 		Bool(false), Int(0), Float(0), Byte(0), Nil,
 
-		ByteCount(0), LineCount(0), ByteRate(0), Frequency(0),
+		ByteCount(0), RuneCount(0), LineCount(0), 
+		
+		ByteRate(0), Frequency(0),
 
 		Duration(0), Year(time.Time{}), Date(time.Time{}), DateTime(time.Time{}),
 
-		Rune('a'), String(""), Path(""), URL(""), Host(""), Identifier(""), PropertyName(""),
-		(*StringConcatenation)(nil),
+		Rune('a'), String(""), (*StringConcatenation)(nil),
 
-		(ULID{}),
+		Path(""), URL(""), Host(""), Scheme(""),
+
+		Identifier(""), PropertyName(""),
+
+		(ULID{}), (UUIDv4{}),
 
 		(*RuneSlice)(nil), (*ByteSlice)(nil),
 
@@ -36,7 +41,7 @@ var (
 
 		(*Secret)(nil),
 
-		FileInfo{},
+		FileMode(0), FileInfo{},
 
 		(*Option)(nil),
 

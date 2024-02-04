@@ -488,6 +488,7 @@ func (o *Option) WidestOfType() Value {
 // A FileMode represents a symbolic FileMode.
 type FileMode struct {
 	_ int
+	SerializableMixin
 }
 
 func (m *FileMode) Test(v Value, state RecTestCallState) bool {

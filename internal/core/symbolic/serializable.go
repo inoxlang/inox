@@ -1,7 +1,6 @@
 package symbolic
 
 import (
-	internal "github.com/inoxlang/inox/internal/prettyprint"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
@@ -11,13 +10,20 @@ var (
 	_ = []Serializable{
 		(*Bool)(nil), (*Int)(nil), (*Float)(nil), (*Byte)(nil), Nil,
 
-		(*ByteCount)(nil), (*LineCount)(nil), (*ByteRate)(nil), (*Frequency)(nil), (*Duration)(nil), (*DateTime)(nil),
+		(*ByteCount)(nil), (*RuneCount)(nil), (*LineCount)(nil),
 
-		(*Rune)(nil), (*String)(nil), (StringLike)(nil), (*AnyStringLike)(nil), (*Path)(nil), (*URL)(nil), (*Host)(nil), (*Scheme)(nil),
-		(*Identifier)(nil),
-		(*PropertyName)(nil),
+		(*ByteRate)(nil), (*Frequency)(nil),
 
-		(*StringConcatenation)(nil),
+		(*Duration)(nil), (*Year)(nil), (*Date)(nil), (*DateTime)(nil),
+
+		(*Rune)(nil), (*String)(nil), (*StringConcatenation)(nil),
+		(StringLike)(nil),
+
+		(*Path)(nil), (*URL)(nil), (*Host)(nil), (*Scheme)(nil),
+
+		(*Identifier)(nil), (*PropertyName)(nil),
+
+		(*ULID)(nil), (*UUIDv4)(nil),
 
 		(*RuneSlice)(nil), (*ByteSlice)(nil),
 
@@ -35,13 +41,13 @@ var (
 
 		(*Secret)(nil),
 
-		(*FileInfo)(nil),
+		(*FileMode)(nil), (*FileInfo)(nil),
 
 		(*Option)(nil),
 
-		(*AnySerializable)(nil),
-
 		(*Treedata)(nil),
+
+		(*AnySerializable)(nil), (*AnyStringLike)(nil),
 	}
 )
 
@@ -81,7 +87,7 @@ func (*AnySerializable) Test(v Value, state RecTestCallState) bool {
 
 // IsWidenable implements SymbolicValue.
 
-func (*AnySerializable) PrettyPrint(w pprint.PrettyPrintWriter, config *internal.PrettyPrintConfig) {
+func (*AnySerializable) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("serializable")
 }
 
