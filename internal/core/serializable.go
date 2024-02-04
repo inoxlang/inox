@@ -22,7 +22,7 @@ var (
 
 		(*RuneSlice)(nil), (*ByteSlice)(nil),
 
-		(*Object)(nil), (*Record)(nil), (*List)(nil), (*Tuple)(nil), (*KeyList)(nil), (*Dictionary)(nil),
+		(*Object)(nil), (*Record)(nil), (*List)(nil), (*Tuple)(nil), KeyList{}, (*Dictionary)(nil),
 
 		Pattern(nil),
 

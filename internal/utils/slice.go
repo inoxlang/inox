@@ -47,15 +47,15 @@ func MapSliceIndexed[T any, U any](s []T, mapper func(e T, i int) U) []U {
 	return result
 }
 
-func ConvertToStringSlice[T ~string](s []T) []string {
+func ConvertStringSlice[A ~string, B ~string](s []A) []B {
 	if s == nil {
 		return nil
 	}
 
-	result := make([]string, len(s))
+	result := make([]B, len(s))
 
 	for i, e := range s {
-		result[i] = string(e)
+		result[i] = B(e)
 	}
 
 	return result

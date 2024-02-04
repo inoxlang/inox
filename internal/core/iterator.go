@@ -10,11 +10,12 @@ import (
 
 	"github.com/bits-and-blooms/bitset"
 	"github.com/inoxlang/inox/internal/memds"
+	"github.com/inoxlang/inox/internal/utils"
 	"golang.org/x/exp/constraints"
 )
 
 var _ = []Iterable{
-	(*List)(nil), (*Tuple)(nil), (*Object)(nil), (*Record)(nil),
+	(*List)(nil), (*Tuple)(nil), (*Object)(nil), (*Record)(nil), (*OrderedPair)(nil), KeyList{},
 	FloatRange{}, IntRange{}, (*RuneRange)(nil),
 
 	Pattern(nil), EventSource(nil),
@@ -1730,6 +1731,20 @@ func (n *SystemGraphNodes) Iterator(ctx *Context, config IteratorConfiguration) 
 	return config.CreateIterator(&immutableSliceIterator[*SystemGraphNode]{
 		i:        -1,
 		elements: graph.nodes.list,
+	})
+}
+
+func (p *OrderedPair) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
+	return config.CreateIterator(&immutableSliceIterator[Serializable]{
+		i:        -1,
+		elements: p[:],
+	})
+}
+
+func (l KeyList) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
+	return config.CreateIterator(&immutableSliceIterator[String]{
+		i:        -1,
+		elements: utils.ConvertStringSlice[string, String](l),
 	})
 }
 

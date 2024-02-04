@@ -75,8 +75,6 @@ func (m FileMode) Executable() bool {
 	return m&0o111 != 0
 }
 
-type KeyList []string
-
 // ---------------------------
 
 func IsIndexKey(key string) bool {

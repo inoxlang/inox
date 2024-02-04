@@ -9,6 +9,11 @@ import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
 )
 
+var _ = []Indexable{
+	(*String)(nil), (*Array)(nil), (*List)(nil), (*Tuple)(nil), (*RuneSlice)(nil), (*ByteSlice)(nil),
+	(*IntRange)(nil), (*RuneRange)(nil), (*OrderedPair)(nil), KeyList{},
+}
+
 type Indexable interface {
 	Iterable
 
@@ -43,6 +48,16 @@ func (a *Array) Len() int {
 func (a *Array) slice(start int, end int) Sequence {
 	slice := (*a)[start:end]
 	return &slice
+}
+
+type KeyList []string
+
+func (l KeyList) At(ctx *Context, i int) Value {
+	return String(l[i])
+}
+
+func (l KeyList) Len() int {
+	return len(l)
 }
 
 // A List represents a sequence of elements, List implements Value.

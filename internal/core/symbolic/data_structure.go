@@ -27,6 +27,7 @@ var (
 	_ = []Indexable{
 		(*String)(nil), (*Array)(nil), (*List)(nil), (*Tuple)(nil), (*RuneSlice)(nil), (*ByteSlice)(nil),
 		(*IntRange)(nil), (*RuneRange)(nil), (*AnyStringLike)(nil), (*AnyIndexable)(nil), (*OrderedPair)(nil),
+		(*KeyList)(nil),
 
 		(*indexableMultivalue)(nil),
 	}

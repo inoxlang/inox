@@ -382,6 +382,33 @@ func (list *KeyList) Concretize(ctx ConcreteContext) any {
 	return extData.ConcreteValueFactories.CreateKeyList(slices.Clone(list.Keys))
 }
 
+func (list *KeyList) HasKnownLen() bool {
+	return list.IsConcretizable()
+}
+
+func (list *KeyList) KnownLen() int {
+	if !list.HasKnownLen() {
+		panic("cannot get the length of a symbolic keylist with no known length")
+	}
+	return len(list.Keys)
+}
+
+func (list *KeyList) Element() Value {
+	return ANY_STR_LIKE
+}
+
+func (list *KeyList) ElementAt(i int) Value {
+	return ANY_STR_LIKE
+}
+
+func (list *KeyList) IteratorElementKey() Value {
+	return ANY_INT
+}
+
+func (list *KeyList) IteratorElementValue() Value {
+	return list.Element()
+}
+
 func (list *KeyList) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if list.Keys != nil {
 		if w.Depth > config.MaxDepth && len(list.Keys) > 0 {
