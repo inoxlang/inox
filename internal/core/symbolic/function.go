@@ -726,7 +726,8 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult Value, mu
 			if !param.Test(arg, RecTestCallState{}) {
 				if _, ok := argNode.(*parse.RuntimeTypeCheckExpression); ok {
 					args[paramIndex] = param
-					pattern, ok := extData.SymbolicToPattern(param)
+					concreteCtx := state.ctx.startingConcreteContext
+					pattern, ok := extData.GetConcretePatternMatchingSymbolicValue(concreteCtx, param)
 					if ok {
 						state.symbolicData.SetRuntimeTypecheckPattern(argNode, pattern)
 					} else {

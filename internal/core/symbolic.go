@@ -68,8 +68,8 @@ func init() {
 		ToSymbolicValue: func(concreteCtx symbolic.ConcreteContext, v any, wide bool) (symbolic.Value, error) {
 			return ToSymbolicValue(concreteCtx.(*Context), v.(Value), wide)
 		},
-		SymbolicToPattern: func(v symbolic.Value) (any, bool) {
-			return symbolicToPattern(v)
+		GetConcretePatternMatchingSymbolicValue: func(concreteCtx symbolic.ConcreteContext, v symbolic.Value) (any, bool) {
+			return getConcretePatternMatchingSymbolicValue(concreteCtx.(*Context), v)
 		},
 		GetQuantity: func(values []float64, units []string) (any, error) {
 			return evalQuantity(values, units)
@@ -1522,16 +1522,17 @@ func _toSymbolicValue(ctx *Context, v Value, wide bool, encountered map[uintptr]
 	return e, nil
 }
 
-func symbolicToPattern(v symbolic.Value) (Pattern, bool) {
+func getConcretePatternMatchingSymbolicValue(ctx *Context, v symbolic.Value) (Pattern, bool) {
 	encountered := map[uintptr]symbolic.Value{}
 
 	for _, pattern := range DEFAULT_NAMED_PATTERNS {
-		symbolicPattern, err := pattern.ToSymbolicValue(nil, encountered)
+		symb, err := pattern.ToSymbolicValue(ctx, encountered)
 		if err != nil {
 			continue
 		}
-		matchedSymbolicVal := symbolicPattern.(symbolic.Pattern).SymbolicValue()
-		if v.Test(matchedSymbolicVal, symbolic.RecTestCallState{}) && matchedSymbolicVal.Test(v, symbolic.RecTestCallState{}) {
+		symbolicPattern := symb.(symbolic.Pattern)
+		if symbolicPattern.TestValue(v, symbolic.RecTestCallState{}) &&
+			v.Test(symbolicPattern.SymbolicValue(), symbolic.RecTestCallState{}) {
 			return pattern, true
 		}
 	}

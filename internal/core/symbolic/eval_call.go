@@ -340,7 +340,8 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 					//the pattern that will be used at runtime to perform the check
 					if _, ok := argNode.(*parse.RuntimeTypeCheckExpression); ok {
 						args[i] = paramType
-						pattern, ok := extData.SymbolicToPattern(paramType)
+						concreteCtx := state.ctx.startingConcreteContext
+						pattern, ok := extData.GetConcretePatternMatchingSymbolicValue(concreteCtx, paramType)
 						if ok {
 							state.symbolicData.SetRuntimeTypecheckPattern(argNode, pattern)
 						} else {
@@ -476,7 +477,8 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 			if argNode != nil {
 				if _, ok := argNode.(*parse.RuntimeTypeCheckExpression); ok {
 					args[i] = paramType
-					pattern, ok := extData.SymbolicToPattern(paramType)
+					concreteCtx := state.ctx.startingConcreteContext
+					pattern, ok := extData.GetConcretePatternMatchingSymbolicValue(concreteCtx, paramType)
 					if ok {
 						state.symbolicData.SetRuntimeTypecheckPattern(argNode, pattern)
 					} else {

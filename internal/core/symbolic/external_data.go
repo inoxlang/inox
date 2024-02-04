@@ -19,7 +19,7 @@ var (
 		MOD_ARGS_VARNAME:                        "mod-args",
 		MANIFEST_POSITIONAL_PARAM_NAME_FIELD:    "name",
 		MANIFEST_POSITIONAL_PARAM_PATTERN_FIELD: "pattern",
-		SymbolicToPattern: func(v Value) (any, bool) {
+		GetConcretePatternMatchingSymbolicValue: func(ctx ConcreteContext, v Value) (any, bool) {
 			//not a real pattern but it's okay
 			return struct{}{}, true
 		},
@@ -62,23 +62,23 @@ var (
 )
 
 type ExternalData struct {
-	ToSymbolicValue                        func(concreteContext ConcreteContext, v any, wide bool) (Value, error)
-	SymbolicToPattern                      func(v Value) (any, bool)
-	GetQuantity                            func(values []float64, units []string) (any, error)
-	GetRate                                func(values []float64, units []string, divUnit string) (any, error)
-	ConvertKeyReprToValue                  func(string) any
-	IsReadable                             func(v any) bool
-	IsWritable                             func(v any) bool
-	IsIndexKey                             func(k string) bool
-	PathMatch                              func(path, pattern string) bool
-	URLMatch                               func(url, pattern string) bool
-	HostMatch                              func(host, pattern string) bool
-	AppendPathSegmentToURL                 func(url, segment string) string
-	AppendPathSegmentToURLPattern          func(urlPattern, segment string) string
-	CheckDatabaseSchema                    func(objectPattern any) error
-	GetTopLevelEntitiesMigrationOperations func(concreteCtx context.Context, current, next any) ([]MigrationOp, error)
-	EstimatePermissionsFromListingNode     func(n *parse.ObjectLiteral) (any, error)
-	CreateConcreteContext                  func(permissions any) ConcreteContext
+	ToSymbolicValue                         func(concreteContext ConcreteContext, v any, wide bool) (Value, error)
+	GetConcretePatternMatchingSymbolicValue func(concreteCtx ConcreteContext, v Value) (any, bool)
+	GetQuantity                             func(values []float64, units []string) (any, error)
+	GetRate                                 func(values []float64, units []string, divUnit string) (any, error)
+	ConvertKeyReprToValue                   func(string) any
+	IsReadable                              func(v any) bool
+	IsWritable                              func(v any) bool
+	IsIndexKey                              func(k string) bool
+	PathMatch                               func(path, pattern string) bool
+	URLMatch                                func(url, pattern string) bool
+	HostMatch                               func(host, pattern string) bool
+	AppendPathSegmentToURL                  func(url, segment string) string
+	AppendPathSegmentToURLPattern           func(urlPattern, segment string) string
+	CheckDatabaseSchema                     func(objectPattern any) error
+	GetTopLevelEntitiesMigrationOperations  func(concreteCtx context.Context, current, next any) ([]MigrationOp, error)
+	EstimatePermissionsFromListingNode      func(n *parse.ObjectLiteral) (any, error)
+	CreateConcreteContext                   func(permissions any) ConcreteContext
 
 	ConcreteValueFactories ConcreteValueFactories
 
