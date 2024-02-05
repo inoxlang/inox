@@ -570,7 +570,7 @@ func (p *URLPattern) TestValue(v Value, state RecTestCallState) bool {
 		return false
 	}
 
-	if u.pattern == p {
+	if u.pattern != nil && (u.pattern == p || p.Test(u.pattern, state)) {
 		return true
 	}
 
