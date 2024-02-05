@@ -6490,7 +6490,7 @@ func (p *parser) parseSingleLocalVarDeclaration(declarations *[]*LocalVariableDe
 				declParsingErr,
 				false,
 			},
-			Left: lhs.(*IdentifierLiteral),
+			Left: lhs,
 			Type: type_,
 		})
 		return
@@ -6542,27 +6542,29 @@ func (p *parser) parseLocalVariableDeclarations(varKeywordBase NodeBase) *LocalV
 
 	if isAlpha(p.s[p.i]) || p.s[p.i] == '_' {
 		p.parseSingleLocalVarDeclaration(&declarations)
-	} else {
+	} else { //multi declarations
+		hasOpeninParenthesis := false
 		if p.s[p.i] != '(' {
 			parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_LOCAL_VAR_DECLS_OPENING_PAREN_EXPECTED}
 		} else {
+			hasOpeninParenthesis = true
 			p.tokens = append(p.tokens, Token{Type: OPENING_PARENTHESIS, Span: NodeSpan{p.i, p.i + 1}})
 			p.i++
 		}
 
+		p.eatSpaceNewlineComment()
+
 		for p.i < p.len && p.s[p.i] != ')' {
-			p.eatSpaceNewlineComment()
 
 			if p.i < p.len && p.s[p.i] == ')' {
 				break
 			}
 
-			if p.i >= p.len {
-				parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_LOCAL_VAR_DECLS_MISSING_CLOSING_PAREN}
+			p.parseSingleLocalVarDeclaration(&declarations)
+
+			if !hasOpeninParenthesis {
 				break
 			}
-
-			p.parseSingleLocalVarDeclaration(&declarations)
 
 			p.eatSpaceNewlineComment()
 		}
@@ -6570,6 +6572,8 @@ func (p *parser) parseLocalVariableDeclarations(varKeywordBase NodeBase) *LocalV
 		if p.i < p.len && p.s[p.i] == ')' {
 			p.tokens = append(p.tokens, Token{Type: CLOSING_PARENTHESIS, Span: NodeSpan{p.i, p.i + 1}})
 			p.i++
+		} else if hasOpeninParenthesis && (p.i >= p.len || p.s[p.i] != ')') {
+			parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_LOCAL_VAR_DECLS_MISSING_CLOSING_PAREN}
 		}
 	}
 
@@ -6642,7 +6646,7 @@ func (p *parser) parseSingleGlobalVarDeclaration(declarations *[]*GlobalVariable
 				declParsingErr,
 				false,
 			},
-			Left: lhs.(*IdentifierLiteral),
+			Left: lhs,
 			Type: type_,
 		})
 		return
@@ -6695,26 +6699,28 @@ func (p *parser) parseGlobalVariableDeclarations(globalVarKeywordBase NodeBase) 
 	if isAlpha(p.s[p.i]) || p.s[p.i] == '_' {
 		p.parseSingleGlobalVarDeclaration(&declarations)
 	} else {
+		//multi declarations
+		hasOpeninParenthesis := false
 		if p.s[p.i] != '(' {
 			parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_GLOBAL_VAR_DECLS_OPENING_PAREN_EXPECTED}
 		} else {
+			hasOpeninParenthesis = true
 			p.tokens = append(p.tokens, Token{Type: OPENING_PARENTHESIS, Span: NodeSpan{p.i, p.i + 1}})
 			p.i++
 		}
 
-		for p.i < p.len && p.s[p.i] != ')' {
-			p.eatSpaceNewlineComment()
+		p.eatSpaceNewlineComment()
 
+		for p.i < p.len && p.s[p.i] != ')' {
 			if p.i < p.len && p.s[p.i] == ')' {
 				break
 			}
 
-			if p.i >= p.len {
-				parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_GLOBAL_VAR_DECLS_MISSING_CLOSING_PAREN}
+			p.parseSingleGlobalVarDeclaration(&declarations)
+
+			if !hasOpeninParenthesis {
 				break
 			}
-
-			p.parseSingleGlobalVarDeclaration(&declarations)
 
 			p.eatSpaceNewlineComment()
 		}
@@ -6722,6 +6728,8 @@ func (p *parser) parseGlobalVariableDeclarations(globalVarKeywordBase NodeBase) 
 		if p.i < p.len && p.s[p.i] == ')' {
 			p.tokens = append(p.tokens, Token{Type: CLOSING_PARENTHESIS, Span: NodeSpan{p.i, p.i + 1}})
 			p.i++
+		} else if hasOpeninParenthesis && (p.i >= p.len || p.s[p.i] != ')') {
+			parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_GLOBAL_VAR_DECLS_MISSING_CLOSING_PAREN}
 		}
 	}
 

@@ -1536,11 +1536,7 @@ func testParse(
 			n, err := parseChunk(t, "var\n1", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{
-					NodeSpan{0, 5},
-					nil,
-					false,
-				},
+				NodeBase: NodeBase{Span: NodeSpan{0, 5}},
 				Statements: []Node{
 					&LocalVariableDeclarations{
 						NodeBase: NodeBase{
@@ -1559,9 +1555,106 @@ func testParse(
 		})
 
 		t.Run("single declaration with invalid LHS", func(t *testing.T) {
-			mod, err := parseChunk(t, "var %| %int | %str", "")
-			assert.NotNil(t, mod)
+			n, err := parseChunk(t, "var 1", "")
 			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{Span: NodeSpan{0, 5}},
+				Statements: []Node{
+					&LocalVariableDeclarations{
+						NodeBase: NodeBase{
+							NodeSpan{0, 5},
+							&ParsingError{UnspecifiedParsingError, INVALID_LOCAL_VAR_DECLS_OPENING_PAREN_EXPECTED},
+							false,
+						},
+						Declarations: []*LocalVariableDeclaration{
+							{
+								NodeBase: NodeBase{
+									Span: NodeSpan{4, 5},
+									Err:  &ParsingError{UnspecifiedParsingError, INVALID_LOCAL_VAR_DECL_LHS_MUST_BE_AN_IDENT},
+								},
+								Left: &IntLiteral{
+									NodeBase: NodeBase{NodeSpan{4, 5}, nil, false},
+									Raw:      "1",
+									Value:    1,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("single declaration with invalid LHS followed by a space", func(t *testing.T) {
+			n, err := parseChunk(t, "var 1 ", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{
+					NodeSpan{0, 6},
+					nil,
+					false,
+				},
+				Statements: []Node{
+					&LocalVariableDeclarations{
+						NodeBase: NodeBase{
+							NodeSpan{0, 6},
+							&ParsingError{UnspecifiedParsingError, INVALID_LOCAL_VAR_DECLS_OPENING_PAREN_EXPECTED},
+							false,
+						},
+						Declarations: []*LocalVariableDeclaration{
+							{
+								NodeBase: NodeBase{
+									Span: NodeSpan{4, 6},
+									Err:  &ParsingError{UnspecifiedParsingError, INVALID_LOCAL_VAR_DECL_LHS_MUST_BE_AN_IDENT},
+								},
+								Left: &IntLiteral{
+									NodeBase: NodeBase{NodeSpan{4, 5}, nil, false},
+									Raw:      "1",
+									Value:    1,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("single declaration with invalid LHS followed by a linefeed and an expression", func(t *testing.T) {
+			n, err := parseChunk(t, "var 1\n1", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{
+					NodeSpan{0, 7},
+					nil,
+					false,
+				},
+				Statements: []Node{
+					&LocalVariableDeclarations{
+						NodeBase: NodeBase{
+							NodeSpan{0, 6},
+							&ParsingError{UnspecifiedParsingError, INVALID_LOCAL_VAR_DECLS_OPENING_PAREN_EXPECTED},
+							false,
+						},
+						Declarations: []*LocalVariableDeclaration{
+							{
+								NodeBase: NodeBase{
+									Span: NodeSpan{4, 6},
+									Err:  &ParsingError{UnspecifiedParsingError, INVALID_LOCAL_VAR_DECL_LHS_MUST_BE_AN_IDENT},
+								},
+								Left: &IntLiteral{
+									NodeBase: NodeBase{NodeSpan{4, 5}, nil, false},
+									Raw:      "1",
+									Value:    1,
+								},
+							},
+						},
+					},
+					&IntLiteral{
+						NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
+						Raw:      "1",
+						Value:    1,
+					},
+				},
+			}, n)
 		})
 
 		t.Run("single declaration with keyword LHS", func(t *testing.T) {
@@ -1570,10 +1663,69 @@ func testParse(
 			assert.Error(t, err)
 		})
 
-		t.Run("single declaration with invalid LHS", func(t *testing.T) {
-			mod, err := parseChunk(t, "var 1 = 1", "")
-			assert.NotNil(t, mod)
+		t.Run("single parenthesized declaration with invalid LHS and valid RHS", func(t *testing.T) {
+			n, err := parseChunk(t, "var (1 = 2)", "")
 			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{Span: NodeSpan{0, 11}},
+				Statements: []Node{
+					&LocalVariableDeclarations{
+						NodeBase: NodeBase{Span: NodeSpan{0, 11}},
+						Declarations: []*LocalVariableDeclaration{
+							{
+								NodeBase: NodeBase{
+									Span: NodeSpan{5, 10},
+									Err:  &ParsingError{UnspecifiedParsingError, INVALID_LOCAL_VAR_DECL_LHS_MUST_BE_AN_IDENT},
+								},
+								Left: &IntLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{5, 6}},
+									Raw:      "1",
+									Value:    1,
+								},
+								Right: &IntLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{9, 10}},
+									Raw:      "2",
+									Value:    2,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("single non-parenthesized declaration with invalid LHS and valid RHS", func(t *testing.T) {
+			n, err := parseChunk(t, "var 1 = 2", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{Span: NodeSpan{0, 9}},
+				Statements: []Node{
+					&LocalVariableDeclarations{
+						NodeBase: NodeBase{
+							Span: NodeSpan{0, 9},
+							Err:  &ParsingError{UnspecifiedParsingError, INVALID_LOCAL_VAR_DECLS_OPENING_PAREN_EXPECTED},
+						},
+						Declarations: []*LocalVariableDeclaration{
+							{
+								NodeBase: NodeBase{
+									Span: NodeSpan{4, 9},
+									Err:  &ParsingError{UnspecifiedParsingError, INVALID_LOCAL_VAR_DECL_LHS_MUST_BE_AN_IDENT},
+								},
+								Left: &IntLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{4, 5}},
+									Raw:      "1",
+									Value:    1,
+								},
+								Right: &IntLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{8, 9}},
+									Raw:      "2",
+									Value:    2,
+								},
+							},
+						},
+					},
+				},
+			}, n)
 		})
 
 		t.Run("single declaration with keyword LHS", func(t *testing.T) {
@@ -2137,9 +2289,98 @@ func testParse(
 		})
 
 		t.Run("single declaration with invalid LHS", func(t *testing.T) {
-			mod, err := parseChunk(t, "globalvar %| %int | %str", "")
-			assert.NotNil(t, mod)
+			n, err := parseChunk(t, "globalvar 1", "")
 			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{Span: NodeSpan{0, 11}},
+				Statements: []Node{
+					&GlobalVariableDeclarations{
+						NodeBase: NodeBase{
+							NodeSpan{0, 11},
+							&ParsingError{UnspecifiedParsingError, INVALID_GLOBAL_VAR_DECLS_OPENING_PAREN_EXPECTED},
+							false,
+						},
+						Declarations: []*GlobalVariableDeclaration{
+							{
+								NodeBase: NodeBase{
+									Span: NodeSpan{10, 11},
+									Err:  &ParsingError{UnspecifiedParsingError, INVALID_GLOBAL_VAR_DECL_LHS_MUST_BE_AN_IDENT},
+								},
+								Left: &IntLiteral{
+									NodeBase: NodeBase{NodeSpan{10, 11}, nil, false},
+									Raw:      "1",
+									Value:    1,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("single declaration with invalid LHS followed by a space", func(t *testing.T) {
+			n, err := parseChunk(t, "globalvar 1 ", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{Span: NodeSpan{0, 12}},
+				Statements: []Node{
+					&GlobalVariableDeclarations{
+						NodeBase: NodeBase{
+							NodeSpan{0, 12},
+							&ParsingError{UnspecifiedParsingError, INVALID_GLOBAL_VAR_DECLS_OPENING_PAREN_EXPECTED},
+							false,
+						},
+						Declarations: []*GlobalVariableDeclaration{
+							{
+								NodeBase: NodeBase{
+									Span: NodeSpan{10, 12},
+									Err:  &ParsingError{UnspecifiedParsingError, INVALID_GLOBAL_VAR_DECL_LHS_MUST_BE_AN_IDENT},
+								},
+								Left: &IntLiteral{
+									NodeBase: NodeBase{NodeSpan{10, 11}, nil, false},
+									Raw:      "1",
+									Value:    1,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("single declaration with invalid LHS followed by a space", func(t *testing.T) {
+			n, err := parseChunk(t, "globalvar 1\n1", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{Span: NodeSpan{0, 13}},
+				Statements: []Node{
+					&GlobalVariableDeclarations{
+						NodeBase: NodeBase{
+							NodeSpan{0, 12},
+							&ParsingError{UnspecifiedParsingError, INVALID_GLOBAL_VAR_DECLS_OPENING_PAREN_EXPECTED},
+							false,
+						},
+						Declarations: []*GlobalVariableDeclaration{
+							{
+								NodeBase: NodeBase{
+									Span: NodeSpan{10, 12},
+									Err:  &ParsingError{UnspecifiedParsingError, INVALID_GLOBAL_VAR_DECL_LHS_MUST_BE_AN_IDENT},
+								},
+								Left: &IntLiteral{
+									NodeBase: NodeBase{NodeSpan{10, 11}, nil, false},
+									Raw:      "1",
+									Value:    1,
+								},
+							},
+						},
+					},
+					&IntLiteral{
+						NodeBase: NodeBase{NodeSpan{12, 13}, nil, false},
+						Raw:      "1",
+						Value:    1,
+					},
+				},
+			}, n)
 		})
 
 		t.Run("single declaration with keyword LHS", func(t *testing.T) {
@@ -2148,10 +2389,69 @@ func testParse(
 			assert.Error(t, err)
 		})
 
-		t.Run("single declaration with invalid LHS", func(t *testing.T) {
-			mod, err := parseChunk(t, "globalvar 1 = 1", "")
-			assert.NotNil(t, mod)
+		t.Run("single parenthesized declaration with invalid LHS and valid RHS", func(t *testing.T) {
+			n, err := parseChunk(t, "globalvar (1 = 2)", "")
 			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{Span: NodeSpan{0, 17}},
+				Statements: []Node{
+					&GlobalVariableDeclarations{
+						NodeBase: NodeBase{Span: NodeSpan{0, 17}},
+						Declarations: []*GlobalVariableDeclaration{
+							{
+								NodeBase: NodeBase{
+									Span: NodeSpan{11, 16},
+									Err:  &ParsingError{UnspecifiedParsingError, INVALID_GLOBAL_VAR_DECL_LHS_MUST_BE_AN_IDENT},
+								},
+								Left: &IntLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{11, 12}},
+									Raw:      "1",
+									Value:    1,
+								},
+								Right: &IntLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{15, 16}},
+									Raw:      "2",
+									Value:    2,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("single non-parenthesized declaration with invalid LHS and valid RHS", func(t *testing.T) {
+			n, err := parseChunk(t, "globalvar 1 = 2", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{Span: NodeSpan{0, 15}},
+				Statements: []Node{
+					&GlobalVariableDeclarations{
+						NodeBase: NodeBase{
+							Span: NodeSpan{0, 15},
+							Err:  &ParsingError{UnspecifiedParsingError, INVALID_GLOBAL_VAR_DECLS_OPENING_PAREN_EXPECTED},
+						},
+						Declarations: []*GlobalVariableDeclaration{
+							{
+								NodeBase: NodeBase{
+									Span: NodeSpan{10, 15},
+									Err:  &ParsingError{UnspecifiedParsingError, INVALID_GLOBAL_VAR_DECL_LHS_MUST_BE_AN_IDENT},
+								},
+								Left: &IntLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{10, 11}},
+									Raw:      "1",
+									Value:    1,
+								},
+								Right: &IntLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{14, 15}},
+									Raw:      "2",
+									Value:    2,
+								},
+							},
+						},
+					},
+				},
+			}, n)
 		})
 
 		t.Run("single declaration with keyword LHS", func(t *testing.T) {
