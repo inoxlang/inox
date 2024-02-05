@@ -730,15 +730,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 	case *parse.FunctionPatternExpression:
 		return evalFunctionPatternExpression(n, state)
 	case *parse.PatternConversionExpression:
-		v, err := symbolicEval(n.Value, state)
-		if err != nil {
-			return nil, err
-		}
-
-		if patt, ok := v.(Pattern); ok {
-			return patt, nil
-		}
-		return &ExactValuePattern{value: v.(Serializable)}, nil
+		return evalPatternNode(n.Value, state)
 	case *parse.LazyExpression:
 		return &AstNode{Node: n}, nil
 	case *parse.MemberExpression:

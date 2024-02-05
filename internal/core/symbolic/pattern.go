@@ -206,7 +206,7 @@ func (p *AnyPattern) WidestOfType() Value {
 	return ANY_PATTERN
 }
 
-// An AnySerialiablePattern represents a symbolic Pattern we do not know the concrete type that represents patterns
+// An AnySerializablePattern represents a symbolic Pattern we do not know the concrete type that represents patterns
 // of serializable values.
 type AnySerializablePattern struct {
 	NotCallablePatternMixin
@@ -909,7 +909,7 @@ func NewUncheckedExactValuePattern(v Serializable) (*ExactValuePattern, error) {
 }
 
 func NewMostAdaptedExactPattern(value Serializable) (Pattern, error) {
-	if !IsAny(value) && value.IsMutable() {
+	if !IsAnySerializable(value) && value.IsMutable() {
 		return nil, ErrValueInExactPatternValueShouldBeImmutable
 	}
 	if s, ok := value.(StringLike); ok {
@@ -2843,18 +2843,21 @@ func evalPatternNode(n parse.Node, state *State) (Pattern, error) {
 			return nil, err
 		}
 
-		if p, ok := v.(*ExactValuePattern); ok {
-			return p, nil
+		if patt, ok := v.(Pattern); ok {
+			return patt, nil
 		}
 
-		asSerializable := AsSerializable(v)
-		serializable, ok := asSerializable.(Serializable)
-		if !ok {
-			state.addError(makeSymbolicEvalError(n, state, VALUES_INSIDE_PATTERNS_MUST_BE_SERIALIZABLE))
-			return &TypePattern{val: ANY_SERIALIZABLE}, nil
+		if v.IsMutable() {
+			state.addError(makeSymbolicEvalError(n, state, ONLY_SERIALIZABLE_IMMUT_VALS_ALLOWED_IN_EXACT_VAL_PATTERN))
+			v = ANY_SERIALIZABLE
+		} else if serializable, ok := AsSerializable(v).(Serializable); ok {
+			v = serializable
+		} else {
+			v = ANY_SERIALIZABLE
+			state.addError(makeSymbolicEvalError(n, state, ONLY_SERIALIZABLE_IMMUT_VALS_ALLOWED_IN_EXACT_VAL_PATTERN))
 		}
 
-		return &ExactValuePattern{value: serializable}, nil
+		return NewMostAdaptedExactPattern(v.(Serializable))
 	}
 }
 

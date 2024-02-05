@@ -37,8 +37,6 @@ const (
 
 	CANNOT_ADD_NEW_PROPERTY_TO_AN_EXACT_OBJECT = "cannot add new property to an exact object"
 
-	VALUES_INSIDE_PATTERNS_MUST_BE_SERIALIZABLE = "values inside patterns must be serializable"
-
 	MISSING_RETURN_IN_FUNCTION                                                   = "missing return in function"
 	MISSING_UNCONDITIONAL_RETURN_IN_FUNCTION                                     = "missing unconditional return in function"
 	INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT                                   = "invalid assignment: left hand side is not an integer"
@@ -83,6 +81,9 @@ const (
 	FROM_XML_FACTORY_IS_NOT_A_GO_FUNCTION                        = "factory ." + FROM_XML_FACTORY_NAME + " is not a Go function"
 	FROM_XML_FACTORY_SHOULD_NOT_BE_A_SHARED_FUNCTION             = "factory ." + FROM_XML_FACTORY_NAME + " should not be a shared function"
 	FROM_XML_FACTORY_SHOULD_HAVE_AT_LEAST_ONE_NON_VARIADIC_PARAM = "factory ." + FROM_XML_FACTORY_NAME + " should have at least one non variadic parameter"
+
+	//exact value pattern
+	ONLY_SERIALIZABLE_IMMUT_VALS_ALLOWED_IN_EXACT_VAL_PATTERN = "only serializable immutable values are allowed in an exact value pattern"
 
 	//record literal
 	INVALID_ELEM_ELEMS_OF_RECORD_SHOULD_BE_IMMUTABLE = "invalid element, elements of a record should be immutable"
