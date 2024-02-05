@@ -93,32 +93,35 @@ func (f *formatter) preVisitNode(node, parent, scopeNode parse.Node, ancestorCha
 
 func (f *formatter) postVisitNode(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
 
+	tokens, hasTokens := f.getTokensOfNode(node.Base().Span)
+
+	//Update identation of comment tokens.
+	if hasTokens {
+		for _, token := range tokens {
+			switch token.Type {
+			case parse.COMMENT:
+			default:
+				continue
+			}
+
+			_, ok := f.seenTokens[token.Span]
+			if ok {
+				continue
+			}
+			f.seenTokens[token.Span] = struct{}{}
+			f.updateIndentation(token.Span)
+		}
+	}
+
 	if doesNodeIncreaseDepth(node, ancestorChain) {
 		f.depth--
 	}
 
-	nodeSpan := node.Base().Span
-
-	//Search the first token in the node.
-	startTokenIndex, ok := slices.BinarySearchFunc(f.allTokens, nodeSpan.Start, func(token parse.Token, spanStart int32) int {
-		return int(token.Span.Start) - int(spanStart)
-	})
-
-	if !ok {
+	if !hasTokens {
 		return parse.ContinueTraversal, nil
 	}
 
-	//Search the first token after the node.
-	endTokenIndex, _ := slices.BinarySearchFunc(f.allTokens, nodeSpan.End, func(token parse.Token, spanEnd int32) int {
-		return int(token.Span.Start) - int(spanEnd)
-	})
-
-	//no issue if endTokenIndex == 1 + max index
-
-	//TODO: optimize
-
-	tokens := f.allTokens[startTokenIndex:endTokenIndex]
-
+	//Update identation and surrounding space of some tokens.
 	for _, token := range tokens {
 		_, ok := f.seenTokens[token.Span]
 		if ok {
@@ -159,6 +162,26 @@ func (f *formatter) postVisitNode(node, parent, scopeNode parse.Node, ancestorCh
 		}
 	}
 	return parse.ContinueTraversal, nil
+}
+
+func (f *formatter) getTokensOfNode(nodeSpan parse.NodeSpan) ([]parse.Token, bool) {
+	//Search the first token in the node.
+	startTokenIndex, ok := slices.BinarySearchFunc(f.allTokens, nodeSpan.Start, func(token parse.Token, spanStart int32) int {
+		return int(token.Span.Start) - int(spanStart)
+	})
+
+	if !ok {
+		return nil, false
+	}
+
+	//Search the first token after the node.
+	endTokenIndex, _ := slices.BinarySearchFunc(f.allTokens, nodeSpan.End, func(token parse.Token, spanEnd int32) int {
+		return int(token.Span.Start) - int(spanEnd)
+	})
+
+	//no issue if endTokenIndex == 1 + max index
+
+	return f.allTokens[startTokenIndex:endTokenIndex], true
 }
 
 func (f *formatter) updateIndentation(span parse.NodeSpan) {

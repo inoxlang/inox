@@ -650,6 +650,70 @@ func TestFormat(t *testing.T) {
 				"</div>",
 			},
 		},
+		//comments
+		{
+			{
+				"manifest {}",
+				"# comment",
+			},
+			{
+				"manifest {}",
+				"# comment",
+			},
+		},
+		{
+			{
+				"manifest {}",
+				" # comment",
+			},
+			{
+				"manifest {}",
+				"# comment",
+			},
+		},
+		{
+			{
+				"manifest {}",
+				"a = {",
+				"\t# comment",
+				"\ta: 1",
+				"\t# comment",
+				"\tb: 1",
+				"}",
+			},
+			{
+				"manifest {}",
+				"a = {",
+				"\t# comment",
+				"\ta: 1",
+				"\t# comment",
+				"\tb: 1",
+				"}",
+			},
+		},
+		//formatting of comments inside XML interpolations is not supported yet:
+		{
+			{
+				"manifest {}",
+				"html<div>",
+				"\t{",
+				"\t\tfn(){",
+				"\t\t# comment",
+				"\t\t}",
+				"\t}",
+				"</div>",
+			},
+			{
+				"manifest {}",
+				"html<div>",
+				"\t{",
+				"\t\tfn(){",
+				"\t\t# comment",
+				"\t\t}",
+				"\t}",
+				"</div>",
+			},
+		},
 	}
 
 	formatter := formatter{}
