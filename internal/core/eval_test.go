@@ -5118,18 +5118,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		assert.Equal(t, True, res)
 	})
 
-	t.Run("pattern conversion expression,", func(t *testing.T) {
-		code := `%(1)`
-		ctx := NewDefaultTestContext()
-		defer ctx.CancelGracefully()
-		state := NewGlobalState(ctx)
-
-		res, err := Eval(code, state, true)
-		assert.NoError(t, err)
-
-		assert.Equal(t, NewExactValuePattern(Int(1)), res)
-	})
-
 	t.Run("pipeline statement", func(t *testing.T) {
 		testconfig.AllowParallelization(t)
 
@@ -7331,11 +7319,110 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		assert.Equal(t, Host("https://localhost"), state.Ctx.ResolveHostAlias("localhost"))
 	})
 
+	t.Run("pattern conversion expression,", func(t *testing.T) {
+		t.Run("int literal", func(t *testing.T) {
+			code := `%(1)`
+			ctx := NewDefaultTestContext()
+			defer ctx.CancelGracefully()
+			state := NewGlobalState(ctx)
+
+			res, err := Eval(code, state, true)
+			assert.NoError(t, err)
+			assert.Equal(t, NewExactValuePattern(Int(1)), res)
+		})
+
+		t.Run("string literal", func(t *testing.T) {
+			code := `%("s")`
+			ctx := NewDefaultTestContext()
+			defer ctx.CancelGracefully()
+			state := NewGlobalState(ctx)
+
+			res, err := Eval(code, state, true)
+			assert.NoError(t, err)
+			assert.Equal(t, NewExactStringPattern(String("s")), res)
+		})
+
+		t.Run("variable with an int value", func(t *testing.T) {
+			code := `
+				one = 1; 
+				return %(one)
+			`
+
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, NewExactValuePattern(Int(1)), res)
+		})
+
+		t.Run("variable with a string value", func(t *testing.T) {
+			code := `
+				s = "s"; 
+				return %(s)
+			`
+
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, NewExactStringPattern(String("s")), res)
+		})
+	})
+
 	t.Run("pattern definition", func(t *testing.T) {
 		testconfig.AllowParallelization(t)
 
-		t.Run("identifier : RHS is a string literal", func(t *testing.T) {
-			code := `pattern s = "s"; return %s`
+		t.Run("RHS is an int literal", func(t *testing.T) {
+			code := `
+				pattern one = 1; 
+				return %one
+			`
+
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, NewExactValuePattern(Int(1)), res)
+		})
+
+		t.Run("RHS is a string literal", func(t *testing.T) {
+			code := `
+				pattern s = "s"
+				return %s
+			`
+
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, NewExactStringPattern(String("s")), res)
+		})
+
+		t.Run("RHS is a variable with an int value", func(t *testing.T) {
+			code := `
+				one = 1; 
+				pattern one = $one
+				return %one
+			`
+
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, NewExactValuePattern(Int(1)), res)
+		})
+
+		t.Run("RHS is a variable with a string value", func(t *testing.T) {
+			code := `
+				s = "s"; 
+				pattern s = $s
+				return %s
+			`
 
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()

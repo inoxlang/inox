@@ -1969,7 +1969,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		if patt, ok := v.(Pattern); ok {
 			return patt, nil
 		}
-		return NewExactValuePattern(v.(Serializable)), nil
+		return evalPatternNode(n.Value, state)
 	case *parse.LazyExpression:
 		return AstNode{
 			Node:  n.Expression,
