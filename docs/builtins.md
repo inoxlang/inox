@@ -20,10 +20,12 @@
  - [Functional Programming](#functional-programming)
  - [HTML](#html)
  - [HTTP](#http)
+ - [Id Parsing](#id-parsing)
  - [Structured Logging](#structured-logging)
  - [Printing](#printing)
  - [rand](#rand)
  - [Resource Manipulation](#resource-manipulation)
+ - [Email Address](#email-address)
  - [TCP](#tcp)
  - [Time](#time)
 ## Errors
@@ -916,6 +918,42 @@ all types that are not provided in arguments default to the following:
 ```inox
 http.CSP{default-src: "'self'"}
 ```
+### http.Result
+
+The `http.Result` function creates an HTTP result that, if returned by a handler, is used by the HTTP server to construct a response.
+The function has several parameters that are all optional:
+- `status`: a status code, defaults to 200.
+- `body` a value that is used to construct the response's body; the Content-Type header is inferred.
+- `headers`: an object `{<header name>: <str> | <strings>}`
+- `session` an `{id: <hex-encoded id string>}` object that is stored in the session storage if the result is returned by a handler;
+  if an empty id is provided it is updated with a random one.
+
+**examples**
+
+```inox
+http.Result{status: http.status.BAD_REQUEST}
+```
+
+## Id Parsing
+
+### ULID
+
+The `ULID` function parses the string representation of an ULID and returns an `ulid` value. https://github.com/ulid/spec.
+
+**examples**
+
+```inox
+ULID("01HNZ7E5R630AD87V7FWSFZ865")
+```
+### UUIDv4
+
+The `UUIDv4` function parses the string representation of an UUIDV4 and returns an `uuiv4` value. https://en.wikipedia.org/wiki/Universally_unique_identifier#Version_4_(random).
+
+**examples**
+
+```inox
+UUIDv4("968011a9-52dc-4816-8527-04b737376471")
+```
 
 ## Structured Logging
 
@@ -984,7 +1022,7 @@ rand(["a", "b"])
 
 ### read
 
-read is a general purpose function that reads the content of a file, a directory or an HTTP resource. The content is parsed by default, to disable parsing use --raw after the resource's name: a byte slice  will be returned instead. The type of content is determined by looking at the extension for files &  the Content-Type header for HTTP resources.
+`read` is a general purpose function that reads the content of a file, a directory or an HTTP resource. The content is parsed by default, to disable parsing use --raw after the resource's name: a byte slice  will be returned instead. The type of content is determined by looking at the extension for files &  the Content-Type header for HTTP resources.
 
 **examples**
 
@@ -1020,7 +1058,7 @@ read https://jsonplaceholder.typicode.com/posts/1
 ```
 ### create
 
-create is a general purpose function that can create a file, a directory or an HTTP resource.
+`create` is a general purpose function that can create a file, a directory or an HTTP resource.
 
 **examples**
 
@@ -1035,7 +1073,7 @@ create ./file.txt "content"
 ```
 ### update
 
-update is a general purpose function that updates an existing resource, it has 2 modes: append and replace. Replace is the default mode.
+`update` is a general purpose function that updates an existing resource, it has 2 modes: append and replace. Replace is the default mode.
 
 **examples**
 
@@ -1053,7 +1091,7 @@ update https://example.com/users/100 tojson({name: "foo"})
 ```
 ### delete
 
-delete is a general purpose function that deletes a resource, deletion is recursive for directories.
+`delete` is a general purpose function that deletes a resource, deletion is recursive for directories.
 
 **examples**
 
@@ -1065,6 +1103,30 @@ delete ./dir/
 ```
 ```inox
 delete https://example.com/users/100
+```
+### get
+
+The `get` function loads a resource located at the specified URL. `get` only supports databases for now.
+
+**examples**
+
+```inox
+get(ldb://main/users)
+```
+```inox
+get(ldb://main/users/01HNZ7E5R630AD87V7FWSFZ865)
+```
+
+## Email Address
+
+### EmailAddress
+
+The `EmailAddress` function parses a RFC 5322 email address and returns a normalized `emailaddr` value. The normalization algorithm depends on the email provider, for example: `john.doe@gmail.com` is normalized to `johndoe@gmail.com`. The list of supported providers can be found here:  https://github.com/dimuska139/go-email-normalizer?tab=readme-ov-file#supported-providers. Internationalized email addresses will be supported in the future.
+
+**examples**
+
+```inox
+EmailAddress("john.doe@gmail.com")
 ```
 
 ## TCP
