@@ -201,10 +201,59 @@ func TestLoadObject(t *testing.T) {
 		assert.True(t, object.IsShared())
 
 		//any deep change to the object should cause a save
-		inner := object.PropNotStored(ctx, "inner").(*List)
+		inner := object.PropNotStored(ctx, "inner").(*List) //TODO: does PropNotStored makes sense in this test ? add test with Prop()
 		inner.append(ctx, Int(1))
 
 		assert.Equal(t, `{"_url_":"ldb://main/user","inner":[1]}`, storage.Data["/user"])
+	})
+
+	t.Run("performing a mutation on a property with a mutable non-sharable value should cause a save: object list", func(t *testing.T) {
+		ctx := NewContexWithEmptyState(ContextConfig{
+			Permissions: perms,
+		}, nil)
+		StartNewTransaction(ctx)
+
+		storage := &TestValueStorage{
+			BaseURL_: "ldb://main/",
+			Data:     map[Path]string{"/user": `{"inner":[]}`},
+		}
+		pattern := NewInexactObjectPattern([]ObjectPatternEntry{
+			{
+				Name:    "inner",
+				Pattern: NewListPatternOf(OBJECT_PATTERN),
+			},
+		})
+
+		val, err := loadFreeObject(ctx, FreeEntityLoadingParams{
+			Key:          "/user",
+			Storage:      storage,
+			Pattern:      pattern,
+			AllowMissing: false,
+			Migration:    nil,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		if !assert.NotNil(t, val) {
+			return
+		}
+		object := val.(*Object)
+
+		url, _ := object.URL()
+
+		if !assert.Equal(t, URL("ldb://main/user"), url) {
+			return
+		}
+
+		assert.True(t, object.IsShared())
+
+		//any deep change to the object should cause a save
+		inner := object.PropNotStored(ctx, "inner").(*List)
+		inner.append(ctx, NewObjectFromMapNoInit(ValMap{"a": Int(1)}))
+
+		assert.Equal(t, `{"_url_":"ldb://main/user","inner":[{"a":{"int__value":1}}]}`, storage.Data["/user"])
 	})
 
 	t.Run("migration: deletion", func(t *testing.T) {

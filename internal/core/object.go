@@ -352,7 +352,9 @@ func (obj *Object) prop(ctx *Context, name string, stored bool) (returnedValue V
 	}
 
 	if obj.IsShared() && stored {
-		returnedValue = utils.Must(CheckSharedOrClone(returnedValue, map[uintptr]Clonable{}, 0)).(Serializable)
+		//We use ShareOrClone and not CheckSharedOrClone because a not-yet-shared value (at any depth) may have been added
+		//during a previous PropNotStored call.
+		returnedValue = utils.Must(ShareOrClone(returnedValue, closestState)).(Serializable)
 	}
 
 	return

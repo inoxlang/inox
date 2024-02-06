@@ -38,7 +38,7 @@ type PotentiallySharable interface {
 
 func ShareOrClone(v Value, originState *GlobalState) (Value, error) {
 	sharableValues := new([]PotentiallySharable)
-	clones := map[uintptr]Clonable{}
+	clones := make(map[uintptr]Clonable, 0)
 	return ShareOrCloneDepth(v, originState, sharableValues, clones, 0)
 }
 

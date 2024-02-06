@@ -136,6 +136,33 @@ func TestObject(t *testing.T) {
 			assert.Equal(t, Int(1), obj.Prop(ctx2, "a"))
 		})
 
+		t.Run("call after adding a non-shared object to a list property obtained using PropNotStored", func(t *testing.T) {
+			ctx1 := NewContexWithEmptyState(ContextConfig{
+				Permissions: GetDefaultGlobalVarPermissions(),
+			}, nil)
+			defer ctx1.CancelGracefully()
+
+			obj := NewObjectFromMap(ValMap{"list": NewWrappedValueList()}, ctx1)
+			obj.Share(ctx1.GetClosestState())
+
+			StartNewTransaction(ctx1)
+
+			list := obj.PropNotStored(ctx1, "list").(*List)
+			nonSharedObject := NewObject()
+			sharedObject := NewObject()
+			sharedObject.Share(ctx1.GetClosestState())
+
+			list.append(ctx1, nonSharedObject)
+
+			ctx2 := NewContexWithEmptyState(ContextConfig{
+				Permissions: GetDefaultGlobalVarPermissions(),
+			}, nil)
+			defer ctx2.CancelGracefully()
+
+			//The object inside .list should be made shared during the call to Prop.
+			assert.Equal(t, sharedObject, obj.Prop(ctx2, "list").(*List).At(ctx2, 0))
+		})
+
 	})
 
 	t.Run("lifetime jobs", func(t *testing.T) {
