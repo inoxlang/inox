@@ -52,8 +52,8 @@ github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ3
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/dimuska139/go-email-normalizer v1.2.1 h1:pJNZnU7uS9MRoYqpoir05B+bCYXrS9sPGE4G1o9EDA8=
-github.com/dimuska139/go-email-normalizer v1.2.1/go.mod h1:fGPWcd/7PSz9aOHusKVYmDk+oKahH/fZTCQ7tTU7e0Y=
+github.com/dimuska139/go-email-normalizer/v2 v2.0.0 h1:LH41ypO4BFast9bc8hNu6YEkRvLloHFYihSjfwiARSg=
+github.com/dimuska139/go-email-normalizer/v2 v2.0.0/go.mod h1:2Gil1j/rfUKJ5BHc/uxxyRiuk3YTg6/C3D7dz7jVQfw=
 github.com/djherbis/times v1.6.0 h1:w2ctJ92J8fBvWPxugmXIv7Nz7Q3iDMKNx9v5ocVH20c=
 github.com/djherbis/times v1.6.0/go.mod h1:gOHeRAz2h+VJNZ5Gmc/o7iD9k4wW7NMVqieYCY99oc0=
 github.com/dlclark/regexp2 v1.10.0 h1:+/GIL799phkJqYW+3YbOd8LCcbHzT0Pbo8zl70MHsq0=

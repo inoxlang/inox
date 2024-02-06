@@ -18,7 +18,7 @@ require (
 	github.com/cloudflare/cloudflare-go v0.83.0
 	github.com/containerd/cgroups/v3 v3.0.2
 	github.com/coreos/go-systemd/v22 v22.5.0
-	github.com/dimuska139/go-email-normalizer v1.2.1
+	github.com/dimuska139/go-email-normalizer/v2 v2.0.0
 	github.com/djherbis/times v1.6.0
 	github.com/elazarl/goproxy v0.0.0-20231117061959-7cc037d33fb5
 	github.com/fsnotify/fsnotify v1.7.0

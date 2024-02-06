@@ -17,7 +17,7 @@ import (
 	"unicode"
 
 	"github.com/bmatcuk/doublestar/v4"
-	emailnormalizer "github.com/dimuska139/go-email-normalizer"
+	emailnormalizer "github.com/dimuska139/go-email-normalizer/v2"
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/inoxconsts"
