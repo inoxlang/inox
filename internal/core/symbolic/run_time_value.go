@@ -119,6 +119,10 @@ top_switch:
 	return
 }
 
+func (rv *RunTimeValue) asStrLike() *strLikeRunTimeValue {
+	return rv.as(STRLIKE_INTERFACE_TYPE).(*strLikeRunTimeValue)
+}
+
 func (rv *RunTimeValue) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("run-time-value(")
 	rv.super.PrettyPrint(w.ZeroDepthIndent(), config)

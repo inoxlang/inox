@@ -10,6 +10,8 @@ import (
 
 var (
 	LIST_APPEND_PARAM_NAMES = []string{"values"}
+
+	LIST_OF_SERIALIZABLES = NewListOf(ANY_SERIALIZABLE)
 )
 
 // An Indexable represents a symbolic Indexable.

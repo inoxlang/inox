@@ -80,3 +80,9 @@ func getIntersection(depth int, values ...Value) (Value, error) {
 
 	return currentIntersection, nil
 }
+
+// work in progress
+func HaveIntersection(a, b Value) bool {
+	v, err := getIntersection(0, a, b)
+	return err == nil && v != NEVER
+}
