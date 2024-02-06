@@ -130,10 +130,10 @@ func NewEmptyManifest() *Manifest {
 }
 
 type ModuleParameters struct {
-	positional        []ModuleParameter
-	others            []ModuleParameter
-	hasRequiredParams bool //true if at least one positional parameter or one required non-positional parameter
-	hasOptions        bool //true if at least one optional non-positional parameter
+	positional             []ModuleParameter
+	others                 []ModuleParameter
+	hasParamsRequiredOnCLI bool //true if at least one positional parameter or one required non-positional parameter
+	hasOptions             bool //true if at least one optional non-positional parameter
 
 	paramsPattern *ModuleParamsPattern
 }
@@ -450,7 +450,7 @@ func (p ModuleParameter) DefaultValue(ctx *Context) (Value, bool) {
 	return nil, false
 }
 
-func (p ModuleParameter) Required(ctx *Context) bool {
+func (p ModuleParameter) RequiredOnCLI(ctx *Context) bool {
 	_, hasDefault := p.DefaultValue(ctx)
 	return !hasDefault
 }
@@ -522,7 +522,7 @@ func (p ModuleParameter) GetArgumentFromCliArg(ctx *Context, s string) (v Serial
 			if err != nil {
 				return nil, true, err
 			}
-			return argValue.(Serializable), true, nil
+			return argValue, true, nil
 		default:
 			return nil, false, nil
 		}
@@ -625,7 +625,7 @@ func (m *Manifest) Usage(ctx *Context) string {
 	}
 
 	for _, param := range m.Parameters.others {
-		if !param.Required(ctx) {
+		if !param.RequiredOnCLI(ctx) {
 			buf.WriteString(" [")
 		} else {
 			buf.WriteByte(' ')
@@ -638,7 +638,7 @@ func (m *Manifest) Usage(ctx *Context) string {
 			buf.WriteString(param.StringifiedPatternNoPercent())
 		}
 
-		if !param.Required(ctx) {
+		if !param.RequiredOnCLI(ctx) {
 			buf.WriteByte(']')
 		}
 	}
@@ -646,7 +646,7 @@ func (m *Manifest) Usage(ctx *Context) string {
 	leftPadding := "  "
 	tripleLeftPadding := "      "
 
-	if m.Parameters.hasRequiredParams { //rest parameters count as required
+	if m.Parameters.hasParamsRequiredOnCLI { //rest parameters count as required
 		buf.WriteString("\n\nrequired:\n")
 
 		for _, param := range m.Parameters.positional {
@@ -659,7 +659,7 @@ func (m *Manifest) Usage(ctx *Context) string {
 		}
 
 		for _, param := range m.Parameters.others {
-			if !param.Required(ctx) {
+			if !param.RequiredOnCLI(ctx) {
 				continue
 			}
 			buf.WriteString(
@@ -671,7 +671,7 @@ func (m *Manifest) Usage(ctx *Context) string {
 		buf.WriteString("\noptions:\n")
 
 		for _, param := range m.Parameters.others {
-			if param.Required(ctx) {
+			if param.RequiredOnCLI(ctx) {
 				continue
 			}
 			buf.WriteString(
@@ -1476,8 +1476,8 @@ func getModuleParameters(ctx *Context, v Value) (ModuleParameters, error) {
 		if param.pattern == nil {
 			return errors.New("missing .pattern in description of non positional parameter")
 		}
-		if param.Required(ctx) {
-			params.hasRequiredParams = true
+		if param.RequiredOnCLI(ctx) {
+			params.hasParamsRequiredOnCLI = true
 		} else {
 			params.hasOptions = true
 		}
@@ -1487,7 +1487,7 @@ func getModuleParameters(ctx *Context, v Value) (ModuleParameters, error) {
 	})
 
 	if len(params.positional) > 0 {
-		params.hasRequiredParams = true
+		params.hasParamsRequiredOnCLI = true
 	}
 
 	if err != nil {
