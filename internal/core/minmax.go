@@ -26,10 +26,30 @@ func init() {
 		return resultType
 	}
 
+	symbMinMax := func(ctx *symbolic.Context, first symbolic.Value, others ...symbolic.Value) (symbolic.Value, symbolic.Value) {
+		first = symbolic.MergeValuesWithSameStaticTypeInMultivalue(first)
+
+		_, ok := first.(symbolic.Comparable)
+		if !ok {
+			ctx.AddSymbolicGoFunctionError("first argument should be comparable")
+			return symbolic.ANY, symbolic.ANY
+		}
+
+		resultType := first.WidestOfType()
+
+		params := utils.RepeatValue(len(others)+1, resultType)
+		ctx.SetSymbolicGoFunctionParameters(
+			&params,
+			append([]string{"first"}, utils.RepeatValue(len(others), "_")...),
+		)
+
+		return resultType, resultType
+	}
+
 	RegisterSymbolicGoFunctions([]any{
 		MinOf, symbMinOf,
 		MaxOf, symbMinOf,
-		MinMaxOf, symbMinOf,
+		MinMaxOf, symbMinMax,
 	})
 }
 
