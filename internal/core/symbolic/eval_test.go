@@ -13944,7 +13944,8 @@ func TestSymbolicEval(t *testing.T) {
 				if !assert.True(t, ok) {
 					return
 				}
-				assert.Equal(t, userPattern.SymbolicValue(), value)
+				expected := utils.Must(ShareOrClone(userPattern.SymbolicValue(), state))
+				assert.Equal(t, expected, value)
 			})
 
 			t.Run("missing property's name", func(t *testing.T) {
@@ -13969,7 +13970,8 @@ func TestSymbolicEval(t *testing.T) {
 				if !assert.True(t, ok) {
 					return
 				}
-				assert.Equal(t, userPattern.SymbolicValue(), value)
+				expected := utils.Must(ShareOrClone(userPattern.SymbolicValue(), state))
+				assert.Equal(t, expected, value)
 			})
 
 			t.Run("inexisting property", func(t *testing.T) {
@@ -13996,7 +13998,8 @@ func TestSymbolicEval(t *testing.T) {
 				if !assert.True(t, ok) {
 					return
 				}
-				assert.Equal(t, userPattern.SymbolicValue(), value)
+				expected := utils.Must(ShareOrClone(userPattern.SymbolicValue(), state))
+				assert.Equal(t, expected, value)
 			})
 
 			t.Run("trailing slash", func(t *testing.T) {
@@ -14136,7 +14139,8 @@ func TestSymbolicEval(t *testing.T) {
 					if !assert.True(t, ok) {
 						return
 					}
-					assert.Equal(t, userPattern.SymbolicValue(), value)
+					expected := utils.Must(ShareOrClone(userPattern.SymbolicValue(), state))
+					assert.Equal(t, expected, value)
 				}
 			})
 
@@ -14163,7 +14167,8 @@ func TestSymbolicEval(t *testing.T) {
 					if !assert.True(t, ok) {
 						return
 					}
-					assert.Equal(t, userPattern.SymbolicValue(), value)
+					expected := utils.Must(ShareOrClone(userPattern.SymbolicValue(), state))
+					assert.Equal(t, expected, value)
 				}
 			})
 
@@ -14199,7 +14204,8 @@ func TestSymbolicEval(t *testing.T) {
 					if !assert.True(t, ok) {
 						return
 					}
-					assert.Equal(t, userPattern.SymbolicValue(), value)
+					expected := utils.Must(ShareOrClone(userPattern.SymbolicValue(), state))
+					assert.Equal(t, expected, value)
 				}
 			})
 		})

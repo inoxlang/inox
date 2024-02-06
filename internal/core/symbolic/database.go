@@ -607,7 +607,17 @@ loop:
 	}
 
 	path := urlOrPattern[pathStart:pathEnd]
-	return db.getValueAt(path)
+	result, err := db.getValueAt(path)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if s, ok := result.(PotentiallySharable); ok && utils.Ret0(s.IsSharable()) {
+		return s.Share(state).(Serializable), nil
+	}
+
+	return result, nil
 }
 
 // Validates the path (or path pattern) of a value/entity located in a database.
