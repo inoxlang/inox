@@ -15,6 +15,8 @@ var (
 		(*Int)(nil), (*Float)(nil), (*Byte)(nil), (*Rune)(nil), (*Bool)(nil),
 
 		(*Duration)(nil), (*DateTime)(nil), (*Date)(nil), (*Year)(nil),
+
+		(*RunTimeValue)(nil),
 	}
 )
 
@@ -563,6 +565,11 @@ func ImplementsOrIsMultivalueWithAllValuesImplementing[T Value](v Value) bool {
 			return ImplementsOrIsMultivalueWithAllValuesImplementing[T](v)
 		})
 	}
+
+	if rv, ok := v.(*RunTimeValue); ok {
+		return ImplementsOrIsMultivalueWithAllValuesImplementing[T](rv.OriginalRunTimeValue().super)
+	}
+
 	return false
 }
 

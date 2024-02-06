@@ -9948,7 +9948,7 @@ func TestSymbolicEval(t *testing.T) {
 		assert.Equal(t, &UnionPattern{
 			cases: []Pattern{
 				utils.Must(NewExactValuePattern(INT_1)),
-				NewExactStringPattern(NewString("1")),
+				NewExactStringPatternWithConcreteValue(NewString("1")),
 			},
 		}, res)
 	})
@@ -10012,7 +10012,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
-			assert.Equal(t, NewExactStringPattern(NewString("1")), res)
+			assert.Equal(t, NewExactStringPatternWithConcreteValue(NewString("1")), res)
 		})
 
 		t.Run("multivalue of serializable immutable values", func(t *testing.T) {
@@ -10025,7 +10025,8 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
 
-			expectedPattern := utils.Must(NewExactValuePattern(AsSerializableChecked(NewMultivalue(INT_1, INT_2))))
+			runTimeValue := NewRunTimeValue(AsSerializableChecked(NewMultivalue(INT_1, INT_2)))
+			expectedPattern := utils.Must(NewExactValuePattern(AsSerializableChecked(runTimeValue)))
 			assert.Equal(t, expectedPattern, res)
 		})
 
@@ -10047,7 +10048,9 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(ident, state, ONLY_SERIALIZABLE_IMMUT_VALS_ALLOWED_IN_EXACT_VAL_PATTERN),
 			}, state.errors())
-			assert.Equal(t, utils.Must(NewExactValuePattern(ANY_SERIALIZABLE)), res)
+
+			runTimeValue := AsSerializableChecked(NewRunTimeValue(ANY_SERIALIZABLE))
+			assert.Equal(t, utils.Must(NewExactValuePattern(runTimeValue)), res)
 		})
 
 		t.Run("serializable mutable value", func(t *testing.T) {
@@ -10066,7 +10069,9 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(objLit, state, ONLY_SERIALIZABLE_IMMUT_VALS_ALLOWED_IN_EXACT_VAL_PATTERN),
 			}, state.errors())
-			assert.Equal(t, utils.Must(NewExactValuePattern(ANY_SERIALIZABLE)), res)
+
+			runTimeValue := AsSerializableChecked(NewRunTimeValue(ANY_SERIALIZABLE))
+			assert.Equal(t, utils.Must(NewExactValuePattern(runTimeValue)), res)
 		})
 	})
 
@@ -10193,7 +10198,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
 
-			expectedValue := NewMultivalue(NewInt(1), NewInt(2)).as(SERIALIZABLE_INTERFACE_TYPE).(Serializable)
+			expectedValue := AsSerializableChecked(NewRunTimeValue(AsSerializableChecked(NewMultivalue(NewInt(1), NewInt(2)))))
 			expectedPattern := utils.Must(NewExactValuePattern(expectedValue))
 			assert.Equal(t, expectedPattern, res)
 		})
@@ -10212,7 +10217,10 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(variable, state, ONLY_SERIALIZABLE_IMMUT_VALS_ALLOWED_IN_EXACT_VAL_PATTERN),
 			}, state.errors())
-			assert.Equal(t, utils.Must(NewExactValuePattern(ANY_SERIALIZABLE)), res)
+
+			expectedValue := AsSerializableChecked(NewRunTimeValue(ANY_SERIALIZABLE))
+			expectedPattern := utils.Must(NewExactValuePattern(expectedValue))
+			assert.Equal(t, expectedPattern, res)
 		})
 
 		t.Run("exact string value", func(t *testing.T) {
@@ -10224,7 +10232,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
-			assert.Equal(t, NewExactStringPattern(NewString("a")), res)
+			assert.Equal(t, NewExactStringPatternWithConcreteValue(NewString("a")), res)
 		})
 
 		t.Run("in preinit block", func(t *testing.T) {
@@ -10459,6 +10467,258 @@ func TestSymbolicEval(t *testing.T) {
 				makeSymbolicEvalError(memberIdent, state, fmtPatternNamespaceHasNotMember("myns", "nonexisting")),
 			}, state.errors())
 			assert.Equal(t, ANY_PATTERN, res)
+		})
+	})
+
+	t.Run("exact value pattern", func(t *testing.T) {
+		t.Run("if the value is concrete then only the same value should be matched", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				pattern p = 1
+
+				var a p = 1
+				var b p = 2 
+
+				fn f(arg int){
+					var c p = arg
+				}
+
+				fn g(arg){
+					var d p = arg
+				}
+			`)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			bDecl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), func(n *parse.LocalVariableDeclaration, isUnique bool) bool {
+				return n.Left.(*parse.IdentifierLiteral).Name == "b"
+			})
+
+			cDecl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), func(n *parse.LocalVariableDeclaration, isUnique bool) bool {
+				return n.Left.(*parse.IdentifierLiteral).Name == "c"
+			})
+
+			dDecl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), func(n *parse.LocalVariableDeclaration, isUnique bool) bool {
+				return n.Left.(*parse.IdentifierLiteral).Name == "d"
+			})
+
+			pattern := utils.Must(NewExactValuePattern(INT_1))
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(bDecl.Right, state, fmtNotAssignableToVarOftype(INT_2, pattern)),
+				makeSymbolicEvalError(cDecl.Right, state, fmtNotAssignableToVarOftype(ANY_INT, pattern)),
+				makeSymbolicEvalError(dDecl.Right, state, fmtNotAssignableToVarOftype(ANY, pattern)),
+			}, state.errors())
+		})
+
+		t.Run("if the value is known at run time then no value should be matched: any int", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				pattern p = $$an_int
+
+				var a p = 1
+
+				fn f(arg int){
+					var b p = arg
+				}
+
+				fn g(arg){
+					var c p = arg
+				}
+			`)
+
+			state.setGlobal("an_int", ANY_INT, GlobalVar)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			aDecl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), func(n *parse.LocalVariableDeclaration, isUnique bool) bool {
+				return n.Left.(*parse.IdentifierLiteral).Name == "a"
+			})
+
+			bDecl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), func(n *parse.LocalVariableDeclaration, isUnique bool) bool {
+				return n.Left.(*parse.IdentifierLiteral).Name == "b"
+			})
+
+			cDecl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), func(n *parse.LocalVariableDeclaration, isUnique bool) bool {
+				return n.Left.(*parse.IdentifierLiteral).Name == "c"
+			})
+
+			pattern := utils.Must(NewExactValuePattern(AsSerializableChecked(NewRunTimeValue(ANY_INT))))
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(aDecl.Right, state, fmtNotAssignableToVarOftype(INT_1, pattern)),
+				makeSymbolicEvalError(bDecl.Right, state, fmtNotAssignableToVarOftype(ANY_INT, pattern)),
+				makeSymbolicEvalError(cDecl.Right, state, fmtNotAssignableToVarOftype(ANY, pattern)),
+			}, state.errors())
+		})
+
+		t.Run("if the value is known at run time then no value should be matched: multivalue with concrete values", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				pattern p = $$one_or_two
+
+				var a p = 1
+
+				fn f(arg int){
+					var b p = arg
+				}
+
+				fn g(arg){
+					var c p = arg
+				}
+			`)
+
+			varValue := NewMultivalue(INT_1, INT_2)
+			state.setGlobal("one_or_two", varValue, GlobalVar)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			aDecl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), func(n *parse.LocalVariableDeclaration, isUnique bool) bool {
+				return n.Left.(*parse.IdentifierLiteral).Name == "a"
+			})
+
+			bDecl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), func(n *parse.LocalVariableDeclaration, isUnique bool) bool {
+				return n.Left.(*parse.IdentifierLiteral).Name == "b"
+			})
+
+			cDecl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), func(n *parse.LocalVariableDeclaration, isUnique bool) bool {
+				return n.Left.(*parse.IdentifierLiteral).Name == "c"
+			})
+
+			pattern := utils.Must(NewExactValuePattern(AsSerializableChecked(NewRunTimeValue(AsSerializableChecked(varValue)))))
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(aDecl.Right, state, fmtNotAssignableToVarOftype(INT_1, pattern)),
+				makeSymbolicEvalError(bDecl.Right, state, fmtNotAssignableToVarOftype(ANY_INT, pattern)),
+				makeSymbolicEvalError(cDecl.Right, state, fmtNotAssignableToVarOftype(ANY, pattern)),
+			}, state.errors())
+		})
+	})
+
+	t.Run("exact string value pattern", func(t *testing.T) {
+		t.Run("if the value is concrete only the same value should be matched", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				pattern p = "a"
+
+				var a p = "a"
+				var b p = "b"
+
+				fn f(arg string){
+					var c p = arg
+				}
+
+				fn g(arg){
+					var d p = arg
+				}
+			`)
+
+			state.ctx.AddNamedPattern("string", &TypePattern{val: ANY_STRING}, false)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			bDecl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), func(n *parse.LocalVariableDeclaration, isUnique bool) bool {
+				return n.Left.(*parse.IdentifierLiteral).Name == "b"
+			})
+
+			cDecl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), func(n *parse.LocalVariableDeclaration, isUnique bool) bool {
+				return n.Left.(*parse.IdentifierLiteral).Name == "c"
+			})
+
+			dDecl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), func(n *parse.LocalVariableDeclaration, isUnique bool) bool {
+				return n.Left.(*parse.IdentifierLiteral).Name == "d"
+			})
+
+			pattern := NewExactStringPatternWithConcreteValue(NewString("a"))
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(bDecl.Right, state, fmtNotAssignableToVarOftype(NewString("b"), pattern)),
+				makeSymbolicEvalError(cDecl.Right, state, fmtNotAssignableToVarOftype(ANY_STRING, pattern)),
+				makeSymbolicEvalError(dDecl.Right, state, fmtNotAssignableToVarOftype(ANY, pattern)),
+			}, state.errors())
+		})
+
+		t.Run("if the value is known at run time then no value should be matched: str like", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				pattern p = $$s
+
+				var a p = "a"
+
+				fn f(arg str){
+					var b p = arg
+				}
+
+				fn g(arg){
+					var c p = arg
+				}
+			`)
+
+			state.setGlobal("s", ANY_STR_LIKE, GlobalVar)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			aDecl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), func(n *parse.LocalVariableDeclaration, isUnique bool) bool {
+				return n.Left.(*parse.IdentifierLiteral).Name == "a"
+			})
+
+			bDecl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), func(n *parse.LocalVariableDeclaration, isUnique bool) bool {
+				return n.Left.(*parse.IdentifierLiteral).Name == "b"
+			})
+
+			cDecl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), func(n *parse.LocalVariableDeclaration, isUnique bool) bool {
+				return n.Left.(*parse.IdentifierLiteral).Name == "c"
+			})
+
+			pattern := NewExactStringPatternWithRunTimeValue(NewRunTimeValue(ANY_STR_LIKE).as(STRLIKE_INTERFACE_TYPE).(*strLikeRunTimeValue))
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(aDecl.Right, state, fmtNotAssignableToVarOftype(NewString("a"), pattern)),
+				makeSymbolicEvalError(bDecl.Right, state, fmtNotAssignableToVarOftype(ANY_STR_LIKE, pattern)),
+				makeSymbolicEvalError(cDecl.Right, state, fmtNotAssignableToVarOftype(ANY, pattern)),
+			}, state.errors())
+		})
+
+		t.Run("if the value is known at run time then no value should be matched: string matching a pattern", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				pattern p = $$s
+
+				var a p = "a"
+
+				fn f(arg str){
+					var b p = arg
+				}
+
+				fn g(arg){
+					var c p = arg
+				}
+			`)
+
+			variableValue := NewStringMatchingPattern(NewRegexPattern("a+"))
+			state.setGlobal("s", variableValue, GlobalVar)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			aDecl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), func(n *parse.LocalVariableDeclaration, isUnique bool) bool {
+				return n.Left.(*parse.IdentifierLiteral).Name == "a"
+			})
+
+			bDecl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), func(n *parse.LocalVariableDeclaration, isUnique bool) bool {
+				return n.Left.(*parse.IdentifierLiteral).Name == "b"
+			})
+
+			cDecl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), func(n *parse.LocalVariableDeclaration, isUnique bool) bool {
+				return n.Left.(*parse.IdentifierLiteral).Name == "c"
+			})
+
+			pattern := NewExactStringPatternWithRunTimeValue(NewRunTimeValue(variableValue).as(STRLIKE_INTERFACE_TYPE).(*strLikeRunTimeValue))
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(aDecl.Right, state, fmtNotAssignableToVarOftype(NewString("a"), pattern)),
+				makeSymbolicEvalError(bDecl.Right, state, fmtNotAssignableToVarOftype(ANY_STR_LIKE, pattern)),
+				makeSymbolicEvalError(cDecl.Right, state, fmtNotAssignableToVarOftype(ANY, pattern)),
+			}, state.errors())
 		})
 	})
 

@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	ANY_EXACT_STR_PATTERN = NewExactStringPattern(nil) //this pattern does not match any string
+	ANY_EXACT_STR_PATTERN = &ExactStringPattern{} //this pattern does not match any string
 
 	ANY_SEQ_STRING_PATTERN             = &SequenceStringPattern{}
 	ANY_LENGTH_CHECKING_STRING_PATTERN = &LengthCheckingStringPattern{minLength: -1}
@@ -87,16 +87,23 @@ func (p *AnyStringPattern) WidestOfType() Value {
 
 // An ExactStringPattern represents a symbolic ExactStringPattern.
 type ExactStringPattern struct {
-	value *String //if nil any string is matched
+	//any ExactStringPattern is matched if both fields are nil.
+	concretizable *String
+	runTimeValue  *strLikeRunTimeValue
+
 	NotCallablePatternMixin
 	SerializableMixin
 }
 
-func NewExactStringPattern(value *String) *ExactStringPattern {
-	if value != nil && !value.hasValue {
+func NewExactStringPatternWithConcreteValue(value *String) *ExactStringPattern {
+	if !value.IsConcretizable() {
 		panic(errors.New("string should have a value"))
 	}
-	return &ExactStringPattern{value: value}
+	return &ExactStringPattern{concretizable: value}
+}
+
+func NewExactStringPatternWithRunTimeValue(rv *strLikeRunTimeValue) *ExactStringPattern {
+	return &ExactStringPattern{runTimeValue: rv}
 }
 
 func (p *ExactStringPattern) Test(v Value, state RecTestCallState) bool {
@@ -104,7 +111,21 @@ func (p *ExactStringPattern) Test(v Value, state RecTestCallState) bool {
 	defer state.FinishCall()
 
 	otherPattern, ok := v.(*ExactStringPattern)
-	return ok && (p.value == nil || (otherPattern.value != nil && p.value.value == otherPattern.value.value))
+	if !ok {
+		return false
+	}
+	if p.concretizable == nil && p.runTimeValue == nil {
+		return true
+	}
+	if (p.concretizable == nil) != (otherPattern.concretizable == nil) || (p.runTimeValue == nil) != (otherPattern.runTimeValue == nil) {
+		return false
+	}
+
+	if p.concretizable != nil {
+		return p.concretizable.value == otherPattern.concretizable.value
+	}
+
+	return p.runTimeValue.Test(otherPattern.runTimeValue, state)
 }
 
 func (p *ExactStringPattern) Concretize(ctx ConcreteContext) any {
@@ -112,21 +133,28 @@ func (p *ExactStringPattern) Concretize(ctx ConcreteContext) any {
 		panic(ErrNotConcretizable)
 	}
 
-	return extData.ConcreteValueFactories.CreateExactStringPattern(utils.Must(Concretize(p.value, ctx)))
+	return extData.ConcreteValueFactories.CreateExactStringPattern(utils.Must(Concretize(p.concretizable, ctx)))
 }
 
 func (p *ExactStringPattern) IsConcretizable() bool {
-	return IsConcretizable(p.value)
+	return p.concretizable != nil
 }
 
 func (p *ExactStringPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("exact-string-pattern")
 
-	if p.value != nil {
+	if p.concretizable != nil {
 		w.WriteString("(")
-		p.value.PrettyPrint(w.IncrDepth(), config)
+		p.concretizable.PrettyPrint(w.IncrDepth(), config)
 		w.WriteString(")")
 	}
+
+	if p.runTimeValue != nil {
+		w.WriteString("(")
+		p.runTimeValue.PrettyPrint(w.IncrDepth(), config)
+		w.WriteString(")")
+	}
+
 }
 
 func (p *ExactStringPattern) HasUnderlyingPattern() bool {
@@ -137,19 +165,38 @@ func (p *ExactStringPattern) TestValue(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 	stringLike, ok := v.(StringLike)
-	if !ok || !stringLike.GetOrBuildString().hasValue || p.value == nil {
+
+	if !ok {
 		return false
 	}
 
-	return p.value.value == stringLike.GetOrBuildString().value
+	if p.runTimeValue != nil {
+		return p.runTimeValue.Test(v, state)
+	}
+
+	if p.concretizable == nil {
+		return false
+	}
+
+	str := stringLike.GetOrBuildString()
+	return p.concretizable.Test(str, state)
 }
 
 func (p *ExactStringPattern) SymbolicValue() Value {
-	return p.value
+	if p.concretizable != nil {
+		return p.concretizable
+	}
+	if p.runTimeValue == nil {
+		return NEVER
+	}
+	return p.runTimeValue
 }
 
 func (p *ExactStringPattern) MigrationInitialValue() (Serializable, bool) {
-	return p.value, true
+	if p.concretizable != nil {
+		return p.concretizable, true
+	}
+	return nil, false
 }
 
 func (p *ExactStringPattern) StringPattern() (StringPattern, bool) {
@@ -161,7 +208,7 @@ func (p *ExactStringPattern) IteratorElementKey() Value {
 }
 
 func (p *ExactStringPattern) IteratorElementValue() Value {
-	return p.value
+	return p.concretizable
 }
 
 func (p *ExactStringPattern) WidestOfType() Value {

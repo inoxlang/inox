@@ -883,7 +883,7 @@ func (p *ExactStringPattern) ToSymbolicValue(ctx *Context, encountered map[uintp
 	if err != nil {
 		return nil, err
 	}
-	exactValPattern := symbolic.NewExactStringPattern(symbolicVal.(*symbolic.String))
+	exactValPattern := symbolic.NewExactStringPatternWithConcreteValue(symbolicVal.(*symbolic.String))
 	encountered[ptr] = exactValPattern
 
 	return exactValPattern, nil

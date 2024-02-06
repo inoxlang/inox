@@ -14,15 +14,15 @@ func TestSymbolicExactStringValuePattern(t *testing.T) {
 		anyStr := ANY_EXACT_STR_PATTERN
 
 		assertTest(t, anyStr, ANY_EXACT_STR_PATTERN)
-		assertTest(t, anyStr, NewExactStringPattern(NewString("")))
-		assertTest(t, anyStr, NewExactStringPattern(NewString("1")))
+		assertTest(t, anyStr, NewExactStringPatternWithConcreteValue(NewString("")))
+		assertTest(t, anyStr, NewExactStringPatternWithConcreteValue(NewString("1")))
 		assertTestFalse(t, anyStr, ANY_INT)
 		assertTestFalse(t, anyStr, ANY_PATTERN)
 
-		emptyStr := NewExactStringPattern(NewString(""))
+		emptyStr := NewExactStringPatternWithConcreteValue(NewString(""))
 
-		assertTest(t, emptyStr, NewExactStringPattern(NewString("")))
-		assertTestFalse(t, emptyStr, NewExactStringPattern(NewString("1")))
+		assertTest(t, emptyStr, NewExactStringPatternWithConcreteValue(NewString("")))
+		assertTestFalse(t, emptyStr, NewExactStringPatternWithConcreteValue(NewString("1")))
 		assertTestFalse(t, emptyStr, ANY_EXACT_STR_PATTERN)
 		assertTestFalse(t, emptyStr, ANY_INT)
 		assertTestFalse(t, emptyStr, ANY_PATTERN)
@@ -36,7 +36,7 @@ func TestSymbolicExactStringValuePattern(t *testing.T) {
 		assertTestValueFalse(t, anyStr, ANY_SERIALIZABLE)
 		assertTestValueFalse(t, anyStr, anyStr)
 
-		emptyStr := NewExactStringPattern(NewString(""))
+		emptyStr := NewExactStringPatternWithConcreteValue(NewString(""))
 
 		assertTestValue(t, emptyStr, NewString(""))
 		assertTestValueFalse(t, emptyStr, NewString("1"))

@@ -898,7 +898,12 @@ type ExactValuePattern struct {
 }
 
 func NewExactValuePattern(v Serializable) (*ExactValuePattern, error) {
-	if !IsAnySerializable(v) && v.IsMutable() {
+	if rv, ok := v.(IRunTimeValue); ok {
+		super := rv.OriginalRunTimeValue().super
+		if !IsAnySerializable(super) && v.IsMutable() {
+			return nil, ErrValueInExactPatternValueShouldBeImmutable
+		}
+	} else if !IsAnySerializable(v) && v.IsMutable() {
 		return nil, ErrValueInExactPatternValueShouldBeImmutable
 	}
 	return &ExactValuePattern{value: v}, nil
@@ -912,9 +917,23 @@ func NewMostAdaptedExactPattern(value Serializable) (Pattern, error) {
 	if !IsAnySerializable(value) && value.IsMutable() {
 		return nil, ErrValueInExactPatternValueShouldBeImmutable
 	}
-	if s, ok := value.(StringLike); ok {
-		return NewExactStringPattern(s.GetOrBuildString()), nil
+
+	if s, ok := AsStringLike(value).(StringLike); ok {
+		str := s.GetOrBuildString()
+
+		if !str.IsConcretizable() {
+			rv := NewRunTimeValue(s).as(STRLIKE_INTERFACE_TYPE).(*strLikeRunTimeValue)
+			return NewExactStringPatternWithRunTimeValue(rv), nil
+		}
+
+		return NewExactStringPatternWithConcreteValue(str), nil
 	}
+
+	if !IsConcretizable(value) {
+		rv := NewRunTimeValue(value).as(SERIALIZABLE_INTERFACE_TYPE).(*serializableRunTimeValue)
+		return NewExactValuePattern(rv)
+	}
+
 	return NewExactValuePattern(value)
 }
 
@@ -2452,7 +2471,7 @@ func NewDisjointStringUnionPattern(cases ...string) (*UnionPattern, error) {
 			}
 		}
 
-		patterns[i] = NewExactStringPattern(NewString(v))
+		patterns[i] = NewExactStringPatternWithConcreteValue(NewString(v))
 	}
 
 	return NewUnionPattern(patterns, true)
@@ -2847,17 +2866,24 @@ func evalPatternNode(n parse.Node, state *State) (Pattern, error) {
 			return patt, nil
 		}
 
+		var exactValue Serializable
+
 		if v.IsMutable() {
 			state.addError(makeSymbolicEvalError(n, state, ONLY_SERIALIZABLE_IMMUT_VALS_ALLOWED_IN_EXACT_VAL_PATTERN))
-			v = ANY_SERIALIZABLE
+			exactValue = ANY_SERIALIZABLE
 		} else if serializable, ok := AsSerializable(v).(Serializable); ok {
-			v = serializable
+			exactValue = serializable
 		} else {
-			v = ANY_SERIALIZABLE
+			exactValue = ANY_SERIALIZABLE
 			state.addError(makeSymbolicEvalError(n, state, ONLY_SERIALIZABLE_IMMUT_VALS_ALLOWED_IN_EXACT_VAL_PATTERN))
 		}
 
-		return NewMostAdaptedExactPattern(v.(Serializable))
+		pattern, err := NewMostAdaptedExactPattern(exactValue)
+		if err != nil {
+			state.addError(makeSymbolicEvalError(n, state, err.Error()))
+			return ANY_PATTERN, nil
+		}
+		return pattern, nil
 	}
 }
 
