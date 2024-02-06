@@ -199,7 +199,7 @@ func respondWithMappingResult(h handlingArguments) {
 			session := httpResult.session
 			if server.sessions == nil {
 				rw.writeHeaders(http.StatusInternalServerError)
-				logger.Print("returned http Result has a session but the server has no collection to store sessions")
+				logger.Warn().Msg("returned http Result has a session but the server has no collection to store sessions")
 				return
 			}
 			sessionIDValue := session.Prop(state.Ctx, SESSION_ID_PROPNAME)
