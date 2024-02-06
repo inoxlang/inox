@@ -81,6 +81,21 @@ func registerHelp() {
 		globalnames.RAND_FN:            _rand,
 		globalnames.FIND_FN:            _find,
 
+		// concurrency & execution
+		globalnames.LTHREADGROUP_FN: core.NewLThreadGroup,
+		globalnames.RUN_FN:          _run,
+		globalnames.EXEC_FN:         _execute,
+		globalnames.CANCEL_EXEC_FN:  _cancel_exec,
+
+		//integer
+		globalnames.IS_EVEN_FN: _is_even,
+		globalnames.IS_ODD_FN:  _is_even,
+
+		//comparable
+		globalnames.MINOF_FN:  core.MinOf,
+		globalnames.MAXOF_FN:  core.MaxOf,
+		globalnames.MINMAX_FN: core.MinMaxOf,
+
 		//others
 		globalnames.ERROR_FN:        _Error,
 		globalnames.ADD_CTX_DATA_FN: _add_ctx_data,
