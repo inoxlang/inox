@@ -727,7 +727,7 @@ func checkParametersObject(objLit *parse.ObjectLiteral, onError func(n parse.Nod
 					}
 
 					switch name {
-					case "pattern":
+					case MANIFEST_PARAM__PATTERN_PROPNAME:
 						if !parse.NodeIsPattern(paramDescProp.Value) {
 							onError(paramDescProp, "the .pattern of a non positional parameter should be a named pattern or a pattern literal")
 						}
@@ -784,25 +784,25 @@ func checkParametersObject(objLit *parse.ObjectLiteral, onError func(n parse.Nod
 				}
 
 				switch propName {
-				case "description":
+				case MANIFEST_PARAM__DESCRIPTION_PROPNAME:
 					switch paramDescProp.Value.(type) {
 					case *parse.QuotedStringLiteral, *parse.MultilineStringLiteral:
 					default:
 						onError(paramDescProp, "the .description property of a positional parameter should be a string literal")
 					}
-				case "rest":
+				case MANIFEST_POSITIONAL_PARAM__REST_PROPNAME:
 					switch paramDescProp.Value.(type) {
 					case *parse.BooleanLiteral:
 					default:
 						onError(paramDescProp, "the .description property of a positional parameter should be a string literal")
 					}
-				case "name":
+				case MANIFEST_NON_POSITIONAL_PARAM__NAME_PROPNAME:
 					switch paramDescProp.Value.(type) {
 					case *parse.UnambiguousIdentifierLiteral:
 					default:
 						onError(paramDescProp, "the .description property of a positional parameter should be an identifier (ex: #dir)")
 					}
-				case "pattern":
+				case MANIFEST_PARAM__PATTERN_PROPNAME:
 					if !parse.NodeIsPattern(paramDescProp.Value) {
 						onError(paramDescProp, "the .pattern of a positional parameter should be a named pattern or a pattern literal")
 					}

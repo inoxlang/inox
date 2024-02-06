@@ -53,6 +53,14 @@ const (
 	INVALID_COMMANDS_PREFIX = "invalid manifest, use: commands: "
 	ERR                     = INVALID_COMMANDS_PREFIX + "a command (or subcommand) name should be followed by object literals with the next subcommands as keys (or empty)"
 
+	//parameters
+	MANIFEST_PARAM__PATTERN_PROPNAME                  = "pattern"
+	MANIFEST_PARAM__DESCRIPTION_PROPNAME              = "description"
+	MANIFEST_POSITIONAL_PARAM__REST_PROPNAME          = "rest"
+	MANIFEST_NON_POSITIONAL_PARAM__NAME_PROPNAME      = "name"
+	MANIFEST_NON_POSITIONAL_PARAM__DEFAULT_PROPNAME   = "default"
+	MANIFEST_NON_POSITIONAL_PARAM__CHAR_NAME_PROPNAME = "char-name"
+
 	// --------------------------------
 	INITIAL_WORKING_DIR_VARNAME        = "IWD"
 	INITIAL_WORKING_DIR_PREFIX_VARNAME = "IWD_PREFIX"
@@ -1398,20 +1406,20 @@ func getModuleParameters(ctx *Context, v Value) (ModuleParameters, error) {
 
 		obj.ForEachEntry(func(propName string, propVal Serializable) error {
 			switch propName {
-			case "name":
+			case MANIFEST_NON_POSITIONAL_PARAM__NAME_PROPNAME: //name
 				param.name = propVal.(Identifier)
 				param.positional = true
-			case "rest":
+			case MANIFEST_POSITIONAL_PARAM__REST_PROPNAME: //rest
 				rest := bool(propVal.(Bool))
 				if rest && restParamFound {
 					return errors.New("at most one positional parameter should be a rest parameter")
 				}
 				param.rest = rest
 				restParamFound = rest
-			case "pattern":
+			case MANIFEST_PARAM__PATTERN_PROPNAME: //pattern
 				patt := propVal.(Pattern)
 				param.pattern = patt
-			case "description":
+			case MANIFEST_PARAM__DESCRIPTION_PROPNAME:
 				param.description = string(propVal.(String))
 			}
 			return nil
@@ -1457,14 +1465,14 @@ func getModuleParameters(ctx *Context, v Value) (ModuleParameters, error) {
 					return nil
 				}
 				switch propName {
-				case "pattern":
+				case MANIFEST_PARAM__PATTERN_PROPNAME:
 					patt := propVal.(Pattern)
 					param.pattern = patt
-				case "default":
+				case MANIFEST_NON_POSITIONAL_PARAM__DEFAULT_PROPNAME:
 					param.defaultVal = propVal
-				case "char-name":
+				case MANIFEST_NON_POSITIONAL_PARAM__CHAR_NAME_PROPNAME:
 					param.singleLetterCliArgName = rune(propVal.(Rune))
-				case "description":
+				case MANIFEST_PARAM__DESCRIPTION_PROPNAME:
 					param.description = string(propVal.(String))
 				}
 				return nil

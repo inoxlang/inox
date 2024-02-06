@@ -190,6 +190,52 @@ func TestPreInit(t *testing.T) {
 			error: false,
 		},
 		{
+			name: "parameters: non positional with description: pattern + default + description",
+			module: `
+				manifest {
+					parameters: {
+						name: {
+							default: "foo"
+							pattern: %str
+							description: "..."
+						}
+					}
+				}`,
+			expectedLimits: []Limit{minLimitA, minLimitB, threadLimit},
+			expectedParameters: []ModuleParameter{
+				{
+					positional:  false,
+					pattern:     STR_PATTERN,
+					name:        "name",
+					cliArgName:  "name",
+					defaultVal:  String("foo"),
+					description: "...",
+				},
+			},
+		},
+		{
+			name: "parameters: non positional with description: pattern + char-name",
+			module: `
+				manifest {
+					parameters: {
+						name: {
+							char-name: 'n'
+							pattern: %str
+						}
+					}
+				}`,
+			expectedLimits: []Limit{minLimitA, minLimitB, threadLimit},
+			expectedParameters: []ModuleParameter{
+				{
+					positional:             false,
+					pattern:                STR_PATTERN,
+					name:                   "name",
+					cliArgName:             "name",
+					singleLetterCliArgName: 'n',
+				},
+			},
+		},
+		{
 			name: "host definition",
 			module: `
 				manifest {
