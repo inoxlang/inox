@@ -117,8 +117,9 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, usi
 	}
 
 	if state.StaticCheckData != nil {
+		//Add static check errors.
 		i := -1
-		staticCheckDiagnostics := utils.MapSlice(state.StaticCheckData.Errors(), func(err *core.StaticCheckError) defines.Diagnostic {
+		staticCheckErrorDiagnostics := utils.MapSlice(state.StaticCheckData.Errors(), func(err *core.StaticCheckError) defines.Diagnostic {
 			i++
 
 			return defines.Diagnostic{
@@ -127,9 +128,23 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, usi
 				Range:    rangeToLspRange(getPositionInPositionStackOrFirst(err.Location, fpath)),
 			}
 		})
+		diagnostics = append(diagnostics, staticCheckErrorDiagnostics...)
 
-		diagnostics = append(diagnostics, staticCheckDiagnostics...)
+		//Add static check warnings.
+		i = -1
+		staticCheckWarningDiagnostics := utils.MapSlice(state.StaticCheckData.Warnings(), func(warning *core.StaticCheckWarning) defines.Diagnostic {
+			i++
 
+			return defines.Diagnostic{
+				Message:  warning.Message,
+				Severity: &warningSeverity,
+				Range:    rangeToLspRange(getPositionInPositionStackOrFirst(warning.Location, fpath)),
+			}
+		})
+
+		diagnostics = append(diagnostics, staticCheckWarningDiagnostics...)
+
+		//Add symbolic check errors.
 		i = -1
 		symbolicCheckErrorDiagnostics := utils.MapSlice(state.SymbolicData.Errors(), func(err symbolic.SymbolicEvaluationError) defines.Diagnostic {
 			i++
@@ -140,9 +155,9 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, usi
 				Range:    rangeToLspRange(getPositionInPositionStackOrFirst(err.Location, fpath)),
 			}
 		})
-
 		diagnostics = append(diagnostics, symbolicCheckErrorDiagnostics...)
 
+		//Add symbolic check warnings.
 		symbolicCheckWarningDiagnostics := utils.MapSlice(state.SymbolicData.Warnings(), func(err symbolic.SymbolicEvaluationWarning) defines.Diagnostic {
 			i++
 
