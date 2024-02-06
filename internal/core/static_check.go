@@ -112,6 +112,7 @@ func StaticCheck(input StaticCheckInput) (*StaticCheckData, error) {
 		var statements []parse.Node
 		if chunk, ok := module.(*parse.Chunk); ok {
 			statements = chunk.Statements
+			checker.precheckTopLevelStatements(chunk)
 		} else {
 			statements = module.(*parse.EmbeddedModule).Statements
 		}
@@ -182,41 +183,16 @@ type propertyInfo struct {
 	known map[string]bool
 }
 
-type StaticCheckError struct {
-	Message        string
-	LocatedMessage string
-	Location       parse.SourcePositionStack
-}
-
-func NewStaticCheckError(s string, location parse.SourcePositionStack) *StaticCheckError {
-	return &StaticCheckError{
-		Message:        CHECK_ERR_PREFIX + s,
-		LocatedMessage: CHECK_ERR_PREFIX + location.String() + s,
-		Location:       location,
-	}
-}
-
-func (err StaticCheckError) Error() string {
-	return err.LocatedMessage
-}
-
-func (err StaticCheckError) Err() Error {
-	//TODO: cache (thread safe)
-	return NewError(err, createRecordFromSourcePositionStack(err.Location))
-
-}
-func (err StaticCheckError) MessageWithoutLocation() string {
-	return err.Message
-}
-
-func (err StaticCheckError) LocationStack() parse.SourcePositionStack {
-	return err.Location
-}
-
 func (checker *checker) makeCheckingError(node parse.Node, s string) *StaticCheckError {
 	location := checker.getSourcePositionStack(node)
 
 	return NewStaticCheckError(s, location)
+}
+
+func (checker *checker) makeCheckingWarning(node parse.Node, s string) *StaticCheckWarning {
+	location := checker.getSourcePositionStack(node)
+
+	return NewStaticCheckWarning(s, location)
 }
 
 func (checker *checker) getSourcePositionStack(node parse.Node) parse.SourcePositionStack {
@@ -238,6 +214,10 @@ func (checker *checker) getSourcePositionStack(node parse.Node) parse.SourcePosi
 
 func (checker *checker) addError(node parse.Node, s string) {
 	checker.data.errors = append(checker.data.errors, checker.makeCheckingError(node, s))
+}
+
+func (checker *checker) addWarning(node parse.Node, s string) {
+	checker.data.warnings = append(checker.data.warnings, checker.makeCheckingWarning(node, s))
 }
 
 func (c *checker) defineStructs(closestModule parse.Node, statements []parse.Node) {
@@ -496,7 +476,7 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 	closestAssertion := findClosest[*parse.AssertionStatement](ancestorChain)
 	inPreinitBlock := findClosest[*parse.PreinitStatement](ancestorChain) != nil
 
-	//check that the node is allowed in assertion
+	//Check that the node is allowed in assertions.
 
 	if closestAssertion != nil {
 		switch n := n.(type) {
@@ -545,7 +525,7 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 		}
 	}
 
-	//actually check the node
+	//Actually check the node.
 
 	switch node := n.(type) {
 	case *parse.IntegerRangeLiteral:
@@ -706,6 +686,28 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 	}
 
 	return parse.ContinueTraversal
+}
+
+func (c *checker) precheckTopLevelStatements(chunk *parse.Chunk) {
+	isIncludedChunk := chunk.IncludableChunkDesc != nil
+
+	for _, stmt := range chunk.Statements {
+		switch stmt := stmt.(type) {
+		//definitions
+		case *parse.PatternDefinition:
+		case *parse.PatternNamespaceDefinition:
+		case *parse.HostAliasDefinition:
+		case *parse.StructDefinition:
+		case *parse.FunctionDeclaration:
+		//simple literals
+		case parse.SimpleValueLiteral:
+		//
+		default:
+			if isIncludedChunk {
+				c.addWarning(stmt, AN_INCLUDED_CHUNK_SHOULD_ONLY_CONTAIN_DEFINITIONS)
+			}
+		}
+	}
 }
 
 func (c *checker) checkQuantityLiteral(node *parse.QuantityLiteral) parse.TraversalAction {
@@ -1185,12 +1187,19 @@ func (c *checker) checkInclusionImportStmt(node *parse.InclusionImportStatement,
 		},
 	}
 
+	chunkChecker.precheckTopLevelStatements(includedChunk.Node)
+
 	err := chunkChecker.check(includedChunk.Node)
 	if err != nil {
 		panic(err)
 	}
+
 	if len(chunkChecker.data.errors) != 0 {
 		c.data.errors = append(c.data.errors, chunkChecker.data.errors...)
+	}
+
+	if len(chunkChecker.data.warnings) != 0 {
+		c.data.warnings = append(c.data.warnings, chunkChecker.data.warnings...)
 	}
 
 	for k, v := range chunkChecker.data.fnData {
@@ -1314,32 +1323,32 @@ func (c *checker) checkImportStmt(node *parse.ImportStatement, parent, closestMo
 	}
 
 	importedModule := c.currentModule.DirectlyImportedModules[importedModuleSource.UnderlyingString()]
-	importModuleNode := importedModule.MainChunk.Node
+	importedModuleNode := importedModule.MainChunk.Node
 
 	globals := make(map[parse.Node]map[string]globalVarInfo)
-	globals[importModuleNode] = map[string]globalVarInfo{}
+	globals[importedModuleNode] = map[string]globalVarInfo{}
 
 	//add base globals to child checker
 	for globalName := range c.checkInput.State.SymbolicBaseGlobalsForImportedModule {
-		globals[importModuleNode][globalName] = globalVarInfo{isConst: true, isStartConstant: true}
+		globals[importedModuleNode][globalName] = globalVarInfo{isConst: true, isStartConstant: true}
 	}
 
 	//add module arguments variable to child checker
-	globals[importModuleNode][MOD_ARGS_VARNAME] = globalVarInfo{isConst: true, isStartConstant: true}
+	globals[importedModuleNode][MOD_ARGS_VARNAME] = globalVarInfo{isConst: true, isStartConstant: true}
 
 	//add base patterns & pattern namespaces to child checker
 	basePatterns, basePatternNamespaces := c.checkInput.State.GetBasePatternsForImportedModule()
 
 	patterns := make(map[parse.Node]map[string]int)
-	patterns[importModuleNode] = map[string]int{}
+	patterns[importedModuleNode] = map[string]int{}
 	for k := range basePatterns {
-		patterns[importModuleNode][k] = 0
+		patterns[importedModuleNode][k] = 0
 	}
 
 	patternNamespaces := make(map[parse.Node]map[string]int)
-	patternNamespaces[importModuleNode] = map[string]int{}
+	patternNamespaces[importedModuleNode] = map[string]int{}
 	for k := range basePatternNamespaces {
-		patternNamespaces[importModuleNode][k] = 0
+		patternNamespaces[importedModuleNode][k] = 0
 	}
 
 	chunkChecker := &checker{
@@ -1362,7 +1371,9 @@ func (c *checker) checkImportStmt(node *parse.ImportStatement, parent, closestMo
 		},
 	}
 
-	err := chunkChecker.check(importModuleNode)
+	chunkChecker.precheckTopLevelStatements(importedModuleNode)
+
+	err := chunkChecker.check(importedModuleNode)
 	if err != nil {
 		panic(err)
 	}
@@ -1371,8 +1382,12 @@ func (c *checker) checkImportStmt(node *parse.ImportStatement, parent, closestMo
 		c.data.errors = append(c.data.errors, chunkChecker.data.errors...)
 	}
 
-	if v, ok := chunkChecker.store[importModuleNode]; ok {
-		panic(fmt.Errorf("data stored for included chunk %#v : %#v", importModuleNode, v))
+	if len(chunkChecker.data.warnings) != 0 {
+		c.data.warnings = append(c.data.warnings, chunkChecker.data.warnings...)
+	}
+
+	if v, ok := chunkChecker.store[importedModuleNode]; ok {
+		panic(fmt.Errorf("data stored for included chunk %#v : %#v", importedModuleNode, v))
 	}
 	return parse.ContinueTraversal
 }
@@ -2758,4 +2773,57 @@ func combineStaticCheckErrors(errs ...*StaticCheckError) error {
 		goErrors[i] = e
 	}
 	return utils.CombineErrors(goErrors...)
+}
+
+type StaticCheckError struct {
+	Message        string
+	LocatedMessage string
+	Location       parse.SourcePositionStack
+}
+
+func NewStaticCheckError(s string, location parse.SourcePositionStack) *StaticCheckError {
+	return &StaticCheckError{
+		Message:        CHECK_ERR_PREFIX + s,
+		LocatedMessage: CHECK_ERR_PREFIX + location.String() + s,
+		Location:       location,
+	}
+}
+
+func (err StaticCheckError) Error() string {
+	return err.LocatedMessage
+}
+
+func (err StaticCheckError) Err() Error {
+	//TODO: cache (thread safe)
+	return NewError(err, createRecordFromSourcePositionStack(err.Location))
+}
+
+func (err StaticCheckError) MessageWithoutLocation() string {
+	return err.Message
+}
+
+func (err StaticCheckError) LocationStack() parse.SourcePositionStack {
+	return err.Location
+}
+
+type StaticCheckWarning struct {
+	Message        string
+	LocatedMessage string
+	Location       parse.SourcePositionStack
+}
+
+func NewStaticCheckWarning(s string, location parse.SourcePositionStack) *StaticCheckWarning {
+	return &StaticCheckWarning{
+		Message:        CHECK_ERR_PREFIX + s,
+		LocatedMessage: CHECK_ERR_PREFIX + location.String() + s,
+		Location:       location,
+	}
+}
+
+func (err StaticCheckWarning) MessageWithoutLocation() string {
+	return err.Message
+}
+
+func (err StaticCheckWarning) LocationStack() parse.SourcePositionStack {
+	return err.Location
 }

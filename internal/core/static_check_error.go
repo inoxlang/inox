@@ -74,6 +74,9 @@ const (
 	HOST_DEFS_SECTION_SHOULD_BE_A_DICT = "the '" + MANIFEST_HOST_DEFINITIONS_SECTION_NAME + "' section of the manifest should be a dictionary with host keys"
 	HOST_SCHEME_NOT_SUPPORTED          = "the host's scheme is not supported"
 
+	//included chunk
+	AN_INCLUDED_CHUNK_SHOULD_ONLY_CONTAIN_DEFINITIONS = "an included chunk should only contain definitions (functions, patterns, ...)"
+
 	INVALID_RATE     = "invalid rate"
 	INVALID_QUANTITY = "invalid quantity"
 

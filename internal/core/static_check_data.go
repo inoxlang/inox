@@ -10,12 +10,17 @@ import (
 // A StaticCheckData is the immutable data produced by statically checking a module.
 type StaticCheckData struct {
 	errors      []*StaticCheckError
+	warnings    []*StaticCheckWarning
 	fnData      map[*parse.FunctionExpression]*FunctionStaticData
 	mappingData map[*parse.MappingExpression]*MappingStaticData
 
 	//.errors property accessible from scripts
 	errorsPropSet atomic.Bool
 	errorsProp    *Tuple
+
+	//.warnings property accessible from scripts
+	warningsPropSet atomic.Bool
+	warningsProp    *Tuple
 }
 
 // Errors returns all errors in the code after a static check, the result should not be modified.
@@ -34,6 +39,22 @@ func (d *StaticCheckData) ErrorTuple() *Tuple {
 	return d.errorsProp
 }
 
+// Warnings returns all warnings in the code after a static check, the result should not be modified.
+func (d *StaticCheckData) Warnings() []*StaticCheckWarning {
+	return d.warnings
+}
+
+func (d *StaticCheckData) WarningTuple() *Tuple {
+	if d.warningsPropSet.CompareAndSwap(false, true) {
+		warnings := make([]Serializable, len(d.warnings))
+		for i, warning := range d.warnings {
+			warnings[i] = String(warning.LocatedMessage)
+		}
+		d.warningsProp = NewTuple(warnings)
+	}
+	return d.warningsProp
+}
+
 func (d *StaticCheckData) GetGoMethod(name string) (*GoFunction, bool) {
 	return nil, false
 }
@@ -42,6 +63,8 @@ func (d *StaticCheckData) Prop(ctx *Context, name string) Value {
 	switch name {
 	case "errors":
 		return d.ErrorTuple()
+	case "warnings":
+		return d.WarningTuple()
 	}
 
 	method, ok := d.GetGoMethod(name)

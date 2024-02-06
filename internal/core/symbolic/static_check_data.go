@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	STATIC_CHECK_DATA_PROP_NAMES = []string{"errors"}
+	STATIC_CHECK_DATA_PROP_NAMES = []string{"errors", "warnings"}
 )
 
 // A StaticCheckData represents a symbolic StaticCheckData.
@@ -41,6 +41,8 @@ func (d *StaticCheckData) Prop(name string) Value {
 	switch name {
 	case "errors":
 		return NewTupleOf(NewError(SOURCE_POSITION_RECORD))
+	case "warnings":
+		return NewTupleOf(ANY_STR_LIKE)
 	}
 	return GetGoMethodOrPanic(name, d)
 }
