@@ -335,6 +335,8 @@ func (set *Set) Get(ctx *core.Context, keyVal core.StringLike) (core.Value, core
 func (set *Set) Add(ctx *core.Context, elem core.Serializable) {
 	set.assertPersistedAndSharedIfURLUniqueness()
 
+	mutation := NewAddElemMutation("/")
+
 	if !set.lock.IsValueShared() {
 		// No locking required.
 		// Transactions are ignored.
@@ -362,6 +364,8 @@ func (set *Set) Add(ctx *core.Context, elem core.Serializable) {
 		if set.pathKeyToKey != nil {
 			set.pathKeyToKey[set.getElementPathKeyFromKey(key)] = key
 		}
+
+		set.informAboutMutation(ctx, mutation)
 		return
 	}
 
@@ -384,13 +388,19 @@ func (set *Set) Add(ctx *core.Context, elem core.Serializable) {
 		if set.storage != nil {
 			utils.PanicIfErr(persistSet(ctx, set, set.path, set.storage))
 		}
-	} else if _, ok := set.transactionsWithSetEndCallback[tx]; !ok {
-		closestState := ctx.GetClosestState()
-		set._lock(closestState)
-		defer set._unlock(closestState)
+		set.informAboutMutation(ctx, mutation)
+	} else {
+		mutation.Tx = tx
+		set.informAboutMutation(ctx, mutation)
 
-		tx.OnEnd(set, set.makeTransactionEndCallback(ctx, closestState))
-		set.transactionsWithSetEndCallback[tx] = struct{}{}
+		if _, ok := set.transactionsWithSetEndCallback[tx]; !ok {
+			closestState := ctx.GetClosestState()
+			set._lock(closestState)
+			defer set._unlock(closestState)
+
+			tx.OnEnd(set, set.makeTransactionEndCallback(ctx, closestState))
+			set.transactionsWithSetEndCallback[tx] = struct{}{}
+		}
 	}
 }
 
@@ -453,6 +463,8 @@ func (set *Set) addToSharedSetNoPersist(ctx *core.Context, elem core.Serializabl
 func (set *Set) Remove(ctx *core.Context, elem core.Serializable) {
 	set.assertPersistedAndSharedIfURLUniqueness()
 
+	mutation := NewRemoveElemMutation("/")
+
 	if !set.lock.IsValueShared() {
 		// No locking required.
 		// Transactions are ignored.
@@ -471,6 +483,8 @@ func (set *Set) Remove(ctx *core.Context, elem core.Serializable) {
 
 		delete(set.elementByKey, key)
 		//TODO: remove path key (ElementKey) efficiently
+
+		set.informAboutMutation(ctx, mutation)
 		return
 	}
 
@@ -509,6 +523,7 @@ func (set *Set) Remove(ctx *core.Context, elem core.Serializable) {
 		if set.storage != nil {
 			utils.PanicIfErr(persistSet(ctx, set, set.path, set.storage))
 		}
+		set.informAboutMutation(ctx, mutation)
 	} else {
 		key = strings.Clone(key)
 
@@ -522,6 +537,9 @@ func (set *Set) Remove(ctx *core.Context, elem core.Serializable) {
 			tx.OnEnd(set, set.makeTransactionEndCallback(ctx, closestState))
 			set.transactionsWithSetEndCallback[tx] = struct{}{}
 		}
+
+		mutation.Tx = tx
+		set.informAboutMutation(ctx, mutation)
 	}
 }
 

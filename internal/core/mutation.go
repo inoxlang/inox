@@ -73,6 +73,7 @@ type Mutation struct {
 	Complete                bool                    // true if the Mutation contains all the data necessary to be applied
 	SpecificMutationVersion SpecificMutationVersion // set only if specific mutation
 	SpecificMutationKind    SpecificMutationKind    // set only if specific mutation
+	Tx                      *Transaction
 
 	Data               []byte
 	DataElementLengths [6]int32
@@ -271,7 +272,7 @@ func NewRemovePositionRangeMutation(ctx *Context, intRange IntRange, depth Watch
 
 type SpecificMutationMetadata struct {
 	Version SpecificMutationVersion
-	Kind    SpecificMutationKind
+	Kind    SpecificMutationKind //Depends on the value on which the mutation is applied.
 	Depth   WatchingDepth
 	Path    Path
 }
@@ -286,6 +287,17 @@ func NewSpecificMutation(ctx *Context, meta SpecificMutationMetadata, values ...
 		Complete:                err == nil,
 		Data:                    data,
 		DataElementLengths:      sizes,
+		Depth:                   meta.Depth,
+		Path:                    meta.Path,
+	}
+}
+
+func NewSpecificIncompleteNoDataMutation(meta SpecificMutationMetadata) Mutation {
+	return Mutation{
+		Kind:                    SpecificMutation,
+		SpecificMutationVersion: meta.Version,
+		SpecificMutationKind:    meta.Kind,
+		Complete:                false,
 		Depth:                   meta.Depth,
 		Path:                    meta.Path,
 	}

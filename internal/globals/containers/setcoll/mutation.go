@@ -4,6 +4,39 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 )
 
+const (
+	AddElem core.SpecificMutationKind = iota + 1
+	RemoveElem
+)
+
+func NewAddElemMutation(path core.Path) core.Mutation {
+	return core.NewSpecificIncompleteNoDataMutation(core.SpecificMutationMetadata{
+		Version: 1,
+		Kind:    AddElem,
+		Depth:   core.ShallowWatching,
+		Path:    path,
+	})
+}
+
+func NewRemoveElemMutation(path core.Path) core.Mutation {
+	return core.NewSpecificIncompleteNoDataMutation(core.SpecificMutationMetadata{
+		Version: 1,
+		Kind:    RemoveElem,
+		Depth:   core.ShallowWatching,
+		Path:    path,
+	})
+}
+
+func (set *Set) informAboutMutation(ctx *core.Context, mutation core.Mutation) {
+	if set.mutationCallbacks != nil {
+		set.watchers.InformAboutAsync(ctx, mutation, mutation.Depth, true)
+
+		if set.mutationCallbacks != nil {
+			set.mutationCallbacks.CallMicrotasks(ctx, mutation)
+		}
+	}
+}
+
 func (set *Set) OnMutation(ctx *core.Context, microtask core.MutationCallbackMicrotask, config core.MutationWatchingConfiguration) (core.CallbackHandle, error) {
 	state := ctx.GetClosestState()
 	set._lock(state)
