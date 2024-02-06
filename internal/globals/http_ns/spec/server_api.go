@@ -285,7 +285,7 @@ func addFilesysteDirEndpoints(
 				name := param.Name()
 				paramEntries = append(paramEntries, core.ObjectPatternEntry{
 					Name:       name,
-					IsOptional: !param.RequiredOnCLI(ctx),
+					IsOptional: false,
 					Pattern:    param.Pattern(),
 				})
 			}

@@ -508,7 +508,7 @@ func getHandlerModuleParameters(ctx *core.Context, manifest *core.Manifest, meth
 			entry := core.ObjectPatternEntry{
 				Name:       param.Name(),
 				Pattern:    param.Pattern(),
-				IsOptional: param.RequiredOnCLI(ctx),
+				IsOptional: false,
 			}
 			entries = append(entries, entry)
 		}

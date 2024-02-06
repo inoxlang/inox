@@ -262,6 +262,15 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 			handlerCtx.PutUserData(SESSION_CTX_DATA_KEY, session)
 		}
 
+		defer func() {
+			e := recover()
+			if e != nil {
+				err := utils.ConvertPanicValueToError(e)
+				err = fmt.Errorf("%w: %s", err, debug.Stack())
+				serverLogger.Err(err).Send()
+			}
+		}()
+
 		defer rw.FinalLog()
 
 		//call middlewares & handler
