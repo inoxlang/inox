@@ -225,17 +225,22 @@ func (db *DatabaseIL) SetOwnerStateOnceAndLoadIfNecessary(ctx *Context, state *G
 		panic(ErrOwnerStateAlreadySet)
 	}
 
+	db.ownerState = state
+
 	if db.topLevelEntities == nil && !db.schemaUpdateExpected && !db.devMode {
 		topLevelEntities, err := db.inner.LoadTopLevelEntities(ctx)
 		if err != nil {
+			closeErr := db.Close(ctx)
+			db.ownerState = nil
+			if closeErr != nil {
+				return fmt.Errorf("failed to close database after it failed to load data, close error: %w, loading error: %w", closeErr, err)
+			}
 			return err
 		}
 		db.topLevelEntities = topLevelEntities
 		db.topLevelEntitiesLoaded.Store(true)
 		db.setDatabasePermissions()
 	}
-	db.ownerState = state
-
 	db.AddOwnerStateTeardownCallback()
 	return nil
 }

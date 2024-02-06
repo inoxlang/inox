@@ -44,6 +44,7 @@ type dummyDatabase struct {
 	schemaUpdated    bool
 	currentSchema    *ObjectPattern //if nil EMPTY_INEXACT_OBJECT_PATTERN is the schema.
 	topLevelEntities map[string]Serializable
+	loadError        error
 	closed           atomic.Bool
 }
 
@@ -89,6 +90,9 @@ func (db *dummyDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern, handl
 func (db *dummyDatabase) LoadTopLevelEntities(_ *Context) (map[string]Serializable, error) {
 	if db.closed.Load() {
 		return nil, ErrDatabaseClosed
+	}
+	if db.loadError != nil {
+		return nil, db.loadError
 	}
 	return db.topLevelEntities, nil
 }

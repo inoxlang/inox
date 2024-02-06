@@ -2,6 +2,7 @@ package core
 
 import (
 	"bufio"
+	"errors"
 	"io"
 	"reflect"
 	"runtime"
@@ -189,6 +190,47 @@ func TestDatabaseIL(t *testing.T) {
 		assert.Equal(t, map[string]Serializable{"a": &loadableTestValue{
 			value: 1,
 		}}, dbIL.topLevelEntities)
+	})
+
+	t.Run("the database should be closed if the data fails to be loaded during the call to SetOwnerStateOnceAndLoadIfNecessary ", func(t *testing.T) {
+		resetLoadFreeEntityFnRegistry()
+		defer resetLoadFreeEntityFnRegistry()
+
+		RegisterLoadFreeEntityFn(reflect.TypeOf(LOADABLE_TEST_VALUE_PATTERN), func(ctx *Context, args FreeEntityLoadingParams) (UrlHolder, error) {
+			assert.Fail(t, "should never be called")
+			return nil, nil
+		})
+
+		ctx := NewContexWithEmptyState(ContextConfig{
+			Permissions: []Permission{
+				DatabasePermission{
+					Kind_:  permkind.Read,
+					Entity: Host("ldb://main"),
+				},
+			},
+		}, nil)
+		defer ctx.CancelGracefully()
+
+		errCannotLoad := errors.New("cannot load")
+		db := &dummyDatabase{
+			resource:  Host("ldb://main"),
+			loadError: errCannotLoad, //ERROR
+			topLevelEntities: map[string]Serializable{"a": &loadableTestValue{
+				value: 1,
+			}},
+		}
+
+		dbIL := utils.Must(WrapDatabase(ctx, DatabaseWrappingArgs{
+			Inner:                        db,
+			ForceLoadBeforeOwnerStateSet: false,
+		}))
+
+		assert.False(t, db.closed.Load())
+
+		err := dbIL.SetOwnerStateOnceAndLoadIfNecessary(ctx, ctx.state)
+		assert.ErrorIs(t, err, errCannotLoad)
+
+		assert.True(t, db.closed.Load())
 	})
 
 	t.Run("if the current schema is not equal to the expected schema an error should be returned", func(t *testing.T) {
