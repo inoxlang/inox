@@ -115,7 +115,7 @@ const (
 
 	// concurrency & execution
 	LTHREADGROUP_FN = "LThreadGroup"
-	RUN_FN          = "rune"
+	RUN_FN          = "run"
 	EXEC_FN         = "ex" //command execution
 	CANCEL_EXEC_FN  = "cancel_exec"
 
