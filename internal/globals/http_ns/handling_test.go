@@ -262,6 +262,46 @@ func TestHandling(t *testing.T) {
 		)
 	})
 
+	t.Run("result having headers", func(t *testing.T) {
+		runServerTest(t,
+			serverTestCase{
+				input: `return {
+						routing: {dynamic: /routes/}
+					}`,
+				makeFilesystem: func() core.SnapshotableFilesystem {
+					fls := fs_ns.NewMemFilesystem(10_000)
+					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
+					util.WriteFile(fls, "/routes/x.ix", []byte(`
+							manifest {}
+
+							return Result{
+								headers: {
+									A: ["1", "2"]
+									B: "3"
+								}
+							}
+						`), fs_ns.DEFAULT_FILE_FMODE)
+
+					return fls
+				},
+				requests: []requestTestInfo{
+					{
+						path:                "/x",
+						method:              "GET",
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+						result:              "",
+						header: http.Header{
+							"A": []string{"1", "2"},
+							"B": []string{"3"},
+						},
+						status: http.StatusOK,
+					},
+				},
+			},
+			createClient,
+		)
+	})
+
 	t.Run("session in returned result should be stored and a cookie should be sent", func(t *testing.T) {
 
 		runServerTest(t,

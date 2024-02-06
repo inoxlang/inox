@@ -202,6 +202,7 @@ func init() {
 		"http.servefile":  ServeFile,
 		"http.Client":     NewClient,
 		"http.CSP":        NewCSP,
+		"http.Result":     NewResult,
 	})
 }
 

@@ -1767,3 +1767,29 @@ func IterateAllValuesOnly(ctx *Context, it Iterator) []Value {
 
 	return values
 }
+
+func ForEachValueInIterable(ctx *Context, iterable Iterable, fn func(Value) error) error {
+	indexable, ok := iterable.(Indexable)
+	if ok {
+		for i := 0; i < indexable.Len(); i++ {
+			e := indexable.At(ctx, i)
+			err := fn(e)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	it := iterable.Iterator(ctx, IteratorConfiguration{
+		KeysNeverRead: true,
+	})
+
+	for it.Next(ctx) {
+		e := it.Value(ctx)
+		err := fn(e)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}

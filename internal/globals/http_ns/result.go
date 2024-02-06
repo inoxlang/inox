@@ -60,8 +60,23 @@ func NewResult(ctx *core.Context, init *core.Object) *Result {
 			value = v
 		case RESULT_INIT_HEADERS_PROPNAME:
 			headers = http.Header{}
-			v.(*core.Object).ForEachEntry(func(headerName string, headerValue core.Serializable) error {
-				headers.Add(headerName, headerValue.(core.StringLike).GetOrBuildString())
+			v.(*core.Object).ForEachEntry(func(headerName string, propertyValue core.Serializable) error {
+
+				strLike, ok := propertyValue.(core.StringLike)
+				if ok {
+					headerValue := strLike.GetOrBuildString()
+					headers.Add(headerName, headerValue)
+
+				} else {
+					//Handle iterable after string like because string-like values are iterable.
+					iterable := propertyValue.(core.Iterable)
+					core.ForEachValueInIterable(ctx, iterable, func(v core.Value) error {
+						headerValue := v.(core.StringLike).GetOrBuildString()
+						headers.Add(headerName, headerValue)
+						return nil
+					})
+				}
+
 				return nil
 			})
 		case RESULT_INIT_SESSION_PROPNAME:
@@ -97,10 +112,18 @@ func symbolicNewResult(ctx *symbolic.Context, init *symbolic.Object) *http_ns_sy
 	if symbolic.HasRequiredOrOptionalProperty(init, RESULT_INIT_HEADERS_PROPNAME) {
 		headers, ok := init.Prop(RESULT_INIT_HEADERS_PROPNAME).(*symbolic.Object)
 		if ok {
-			headers.ForEachEntry(func(headerName string, headerValue symbolic.Value) error {
-				_, ok := headerValue.(symbolic.StringLike)
-				if !ok {
-					ctx.AddSymbolicGoFunctionError(fmt.Sprintf("invalid value for header %q, only string-like values are allowed", headerName))
+			headers.ForEachEntry(func(headerName string, propertyValue symbolic.Value) error {
+				isValidValue := false
+				switch propertyValue := propertyValue.(type) {
+				case symbolic.StringLike:
+					isValidValue = true
+				case symbolic.Iterable:
+					_, isStrLike := symbolic.AsStringLike(propertyValue.IteratorElementValue()).(symbolic.StringLike)
+					isValidValue = isStrLike
+				}
+				if !isValidValue {
+					errMsg := fmt.Sprintf("invalid value for header %q, only string-like values and lists (iterables) containing string-likes are allowed", headerName)
+					ctx.AddSymbolicGoFunctionError(errMsg)
 				}
 				return nil
 			})
