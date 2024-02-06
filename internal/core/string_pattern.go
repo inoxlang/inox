@@ -2126,8 +2126,7 @@ func (pattern *PathStringPattern) Test(ctx *Context, v Value) bool {
 	}
 
 	if pattern.optionalPathPattern == "" {
-		v, _ := ParseJSONRepresentation(ctx, path, nil)
-		_, ok := v.(Path)
+		_, ok := ParsePathLiteral(path)
 		return ok
 	}
 	return pattern.optionalPathPattern.Test(ctx, String(path))

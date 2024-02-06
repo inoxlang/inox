@@ -162,6 +162,24 @@ func NewPath(slices []Value, isStaticPathSliceList []bool) (Value, error) {
 	return Path(pth), nil
 }
 
+func ParsePathLiteral(s string) (Path, bool) {
+	e, ok := parse.ParseExpression(s)
+	if !ok {
+		return "", false
+	}
+
+	switch e.(type) {
+	case *parse.AbsolutePathLiteral, *parse.RelativePathLiteral:
+		path, err := EvalSimpleValueLiteral(e.(parse.SimpleValueLiteral), nil)
+		if err != nil {
+			return "", false
+		}
+		return path.(Path), true
+	default:
+		return "", false
+	}
+}
+
 func PathFrom(pth string) Path {
 	if pth == "" {
 		panic(ErrEmptyPath)
