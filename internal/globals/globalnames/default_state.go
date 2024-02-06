@@ -25,14 +25,13 @@ const (
 	GET_CURRENT_TX_FN = "get_current_tx"
 	START_TX_FN       = "start_tx"
 
-	ERROR_FN = "Error"
-
 	// resource
 	READ_FN   = "read"
 	CREATE_FN = "create"
 	UPDATE_FN = "update"
 	DELETE_FN = "delete"
 	SERVE_FN  = "serve"
+	GET_FN    = "get"
 
 	// events
 	EVENT_FN     = "Event"
@@ -137,7 +136,7 @@ const (
 	ADD_CTX_DATA_FN = "add_ctx_data"
 	CTX_DATA_FN     = "ctx_data"
 	PROPNAMES_FN    = "propnames"
-	GET_FN          = "get"
+	ERROR_FN        = "Error"
 
 	ARRAY_FN = "Array"
 	LIST_FN  = "List"

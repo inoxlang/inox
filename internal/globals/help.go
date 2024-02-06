@@ -8,21 +8,23 @@ import (
 
 func registerHelp() {
 	help.RegisterHelpValues(map[string]any{
-		//functional
-		globalnames.MAP_ITERABLE_FN:    core.MapIterable,
-		globalnames.FILTER_ITERABLE_FN: core.Filter,
-		globalnames.GET_AT_MOST_FN:     core.GetAtMost,
-		globalnames.SOME_FN:            core.Some,
-		globalnames.ALL_FN:             core.All,
-		globalnames.NONE_FN:            core.None,
-		globalnames.RAND_FN:            _rand,
-		globalnames.FIND_FN:            _find,
+		//transaction
 
 		//resource manipulation
 		globalnames.CREATE_FN: _createResource,
 		globalnames.READ_FN:   _readResource,
 		globalnames.UPDATE_FN: _updateResource,
 		globalnames.DELETE_FN: _deleteResource,
+		globalnames.GET_FN:    _get,
+
+		//events
+
+		//globalnames.EVENT_FN: _Event,
+		//globalnames.EVENT_SRC_FN: core.NewEventSource,
+
+		//watch
+
+		//crypto: registered in crypto.go
 
 		//encoding
 		globalnames.B64_FN:  encodeBase64,
@@ -61,6 +63,23 @@ func registerHelp() {
 		globalnames.IS_SPACE_FN:   _is_space,
 		globalnames.READER_FN:     _Reader,
 		globalnames.RINGBUFFER_FN: core.NewRingBuffer,
+
+		//string types
+		globalnames.EMAIL_ADDRESS_FN: _EmailAddress,
+
+		//id types
+		globalnames.ULID_FN:   _ULID,
+		globalnames.UUIDv4_FN: _UUIDV4,
+
+		//functional
+		globalnames.MAP_ITERABLE_FN:    core.MapIterable,
+		globalnames.FILTER_ITERABLE_FN: core.Filter,
+		globalnames.GET_AT_MOST_FN:     core.GetAtMost,
+		globalnames.SOME_FN:            core.Some,
+		globalnames.ALL_FN:             core.All,
+		globalnames.NONE_FN:            core.None,
+		globalnames.RAND_FN:            _rand,
+		globalnames.FIND_FN:            _find,
 
 		//others
 		globalnames.ERROR_FN:        _Error,

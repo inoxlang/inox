@@ -267,3 +267,8 @@ func _deleteResource(ctx *core.Context, resource core.ResourceName, args ...core
 		return nil, fmt.Errorf("resources of type %T not supported yet", res)
 	}
 }
+
+func _get(ctx *core.Context, u core.URL) (core.Serializable, error) {
+	state := ctx.GetClosestState()
+	return core.GetOrLoadValueAtURL(ctx, u, state)
+}
