@@ -216,6 +216,18 @@ func TestParseJSONRepresentation(t *testing.T) {
 			assert.ErrorIs(t, err, ErrPathWithInvalidStart)
 			assert.Nil(t, v)
 		})
+
+		t.Run("specific pattern: non-matching value", func(t *testing.T) {
+			v, err := ParseJSONRepresentation(ctx, `"./a"`, PathPattern("/..."))
+			assert.ErrorIs(t, err, ErrJsonNotMatchingSchema)
+			assert.Nil(t, v)
+		})
+
+		t.Run("specific pattern: matching value", func(t *testing.T) {
+			v, err := ParseJSONRepresentation(ctx, `"/a"`, PathPattern("/..."))
+			assert.NoError(t, err)
+			assert.Equal(t, Path("/a"), v)
+		})
 	})
 
 	t.Run("schemes", func(t *testing.T) {
@@ -323,6 +335,18 @@ func TestParseJSONRepresentation(t *testing.T) {
 			assert.ErrorIs(t, err, ErrInvalidHost)
 			assert.Nil(t, v)
 		})
+
+		t.Run("specific pattern: non-matching value", func(t *testing.T) {
+			v, err := ParseJSONRepresentation(ctx, `"https://example.org"`, HostPattern("https://*.com"))
+			assert.ErrorIs(t, err, ErrJsonNotMatchingSchema)
+			assert.Nil(t, v)
+		})
+
+		t.Run("specific pattern: maching value", func(t *testing.T) {
+			v, err := ParseJSONRepresentation(ctx, `"https://example.com"`, HostPattern("https://*.com"))
+			assert.NoError(t, err)
+			assert.Equal(t, Host("https://example.com"), v)
+		})
 	})
 
 	t.Run("urls", func(t *testing.T) {
@@ -382,6 +406,18 @@ func TestParseJSONRepresentation(t *testing.T) {
 			if assert.NoError(t, err) {
 				assert.Equal(t, URL("https://example.com/"), v)
 			}
+		})
+
+		t.Run("specific pattern: non-matching value", func(t *testing.T) {
+			v, err := ParseJSONRepresentation(ctx, `"https://example.com/b/c"`, URLPattern("https://example.com/a/..."))
+			assert.ErrorIs(t, err, ErrJsonNotMatchingSchema)
+			assert.Nil(t, v)
+		})
+
+		t.Run("specific pattern: maching value", func(t *testing.T) {
+			v, err := ParseJSONRepresentation(ctx, `"https://example.com/a/"`, URLPattern("https://example.com/a/..."))
+			assert.NoError(t, err)
+			assert.Equal(t, URL("https://example.com/a/"), v)
 		})
 	})
 
