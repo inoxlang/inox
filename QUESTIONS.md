@@ -55,7 +55,7 @@ _________
 
 No, Inoxlang is unsound. **BUT**:
 
-- The **any** type does not disable checks like in Typescript. It is more similar to **unknow**.
+- The **any** type is not directly available to the developer, and it does not disable checks like in Typescript. It is more similar to **unknow**.
 - The type system is not overly complex and I don't plan to add classes or true generics*.
 - Type assertions using the `assert` keyword are checked at runtime.
 

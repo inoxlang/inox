@@ -28,7 +28,7 @@ deeply integrates with Inox's built-in database engine, testing engine and HTTP 
 
 <details>
 
-**<summary>Security Features</summary>**
+**<summary>🛡️ Security Features</summary>**
 - [Permission system](#permission-system)
   - [Required permissions](#required-permissions)
   - [Isolation of dependencies](#isolation-of-dependencies)
@@ -44,7 +44,7 @@ deeply integrates with Inox's built-in database engine, testing engine and HTTP 
 
 <details>
 
-**<summary>Other Language Features</summary>**
+**<summary>⭐ Other Language Features</summary>**
 - [Concurrency](#concurrency)
   - [Lightweight Threads](#lightweight-threads)
   - [LThread Groups](#lthread-groups)
@@ -55,7 +55,7 @@ deeply integrates with Inox's built-in database engine, testing engine and HTTP 
 
 <details>
 
-**<summary>Planned Features</summary>**
+**<summary>🚧Planned Features</summary>**
 - CSS and JS Bundling
 - Encryption of secrets and database data
 - Storage of secrets in key management services (e.g. GCP KMS, AWS KMS)
@@ -270,7 +270,8 @@ cancel_exec()
 
 
 ⚠️ I am still working on this feature. For now most effects on databases and some on the filesystem are implemented.
-Filesystem changes are reversed if the transaction is rolled back.
+Filesystem changes are reversed if the transaction is rolled back, but I intend to add real transaction
+support (applying changes on commit) at least for the in-processs virtual filesystems.
 
 ### Built-in Database
 
