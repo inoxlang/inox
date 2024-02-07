@@ -928,7 +928,7 @@ func (opt Option) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth 
 	if depth > config.MaxDepth {
 		utils.Must(w.Write(utils.StringAsBytes("(...)")))
 	} else {
-		opt.Value.PrettyPrint(w, config, depth+1, 0)
+		opt.Value.PrettyPrint(w, config, depth, parentIndentCount)
 	}
 }
 
@@ -1454,7 +1454,7 @@ func (r FloatRange) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, dept
 
 func (pattern ExactValuePattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	w.WriteString("%(")
-	pattern.value.PrettyPrint(w, config, depth+1, 0)
+	pattern.value.PrettyPrint(w, config, depth, parentIndentCount)
 	w.WriteString(")")
 }
 
@@ -2110,7 +2110,7 @@ func (r *TestCaseResult) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig,
 func (d *DynamicValue) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write([]byte{'d', 'y', 'n', '('}))
 
-	d.Resolve(config.Context).PrettyPrint(w, config, depth, 0)
+	d.Resolve(config.Context).PrettyPrint(w, config, depth, parentIndentCount)
 
 	utils.Must(w.Write([]byte{')'}))
 
