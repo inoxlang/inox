@@ -185,8 +185,9 @@ pattern email-address = (("user1" | "user2") domain)
 
 ### Recursive String Patterns
 
+
 Recursive string patterns are defined by putting a `@` symbol in front of the
-pattern. ⚠️ **Recursive string patterns are pretty limited and slow: don't use
+pattern. ⚠️ This feature still needs some bug fixes. Also **recursive string patterns are pretty limited and slow: don't use
 them to check/parse complex strings, use real parsers instead.**
 
 ```

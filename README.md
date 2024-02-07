@@ -1,4 +1,4 @@
-> Allow me to continue working full-time on Inox by [sponsoring me](https://github.com/sponsors/GraphR00t). Thank you !
+> Allow me to continue working full-time on Inox by [sponsoring me](https://github.com/sponsors/GraphR00t). Thank you :) !
 
 # Inox
 
@@ -48,6 +48,8 @@ deeply integrates with Inox's built-in database engine, testing engine and HTTP 
 - [Concurrency](#concurrency)
   - [Lightweight Threads](#lightweight-threads)
   - [LThread Groups](#lthread-groups)
+- [Context Data](#context-data)
+- [Readable String Patterns](#readable-string-patterns)
 - [Many Built-in Functions](#built-in-functions)
 - [Easy declaration of CLI Parameters](#declaration-of-cli-parameters--environment-variables)
 
@@ -55,7 +57,7 @@ deeply integrates with Inox's built-in database engine, testing engine and HTTP 
 
 <details>
 
-**<summary>🚧Planned Features</summary>**
+**<summary>🚧 Planned Features</summary>**
 - CSS and JS Bundling
 - Encryption of secrets and database data
 - Storage of secrets in key management services (e.g. GCP KMS, AWS KMS)
@@ -850,6 +852,81 @@ lthread2 = go {group: group} do read!(https://jsonplaceholder.typicode.com/posts
 
 results = group.wait_results!()
 ```
+
+### Context Data
+
+The [context](docs/language-reference/context.md) of module instances can contain data entries that can be set **only once**.
+Child modules have access to the context data of their parent and can individually override entries.
+
+```
+add_ctx_data(/lang, "en-US")
+
+...
+
+fn print_error(){
+  lang = ctx_data(/lang)
+  ...
+}
+```
+
+The HTTP server adds a `/session` entry to the handling context of a request if the `session-id` cookie is present.
+
+
+### Readable String Patterns
+
+Here is the regex for a made up identifier type:
+`(?<name>[a-z]+)#(?<numA>\d+)-(?<letters>[a-z]+)-(?<numB>\d+)`
+
+Same RegExp without group names:
+`([a-z]+)#(\d+)-([a-z]+)-(\d+)`
+
+
+This pattern defined in Inox is more readable:
+
+```inox
+pattern code = %str(
+    name: 'a'..'z'+
+    '#' numA: 0..9+
+    '-' letters: 'a'..'z'+
+    '-' numB: 0..9+
+)
+```
+
+String patterns can also be composed
+
+```
+pattern code-name = %str('a'..'z'+)
+
+pattern code = %str(
+    name: code-name 
+    '#' numA: 0..9+
+    '-' letters: 'a'..'z'+
+    '-' numB: 0..9+
+)
+```
+
+<details>
+
+**<summary>Recursive string patterns (WIP)</summary>**
+
+```
+pattern json-list = @ %str( 
+    '[' 
+        (| atomic-json-val
+         | json-val 
+         | ((json-val ',')* json-val) 
+        )? 
+    ']'
+)
+
+pattern json-val = @ %str(| json-list | atomic-json-val)
+pattern atomic-json-val = "1"
+```
+
+⚠️ Recursive string patterns are not intended to be used for validating or parsing large inputs.
+
+</details>
+
 
 ### Built-in Functions
 

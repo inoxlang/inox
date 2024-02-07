@@ -180,8 +180,7 @@ pattern user = {
 }
 ```
 
-⚠️ This feature is currently in development ! File inclusion will follow strict
-rules.
+⚠️ It is not recommended to perform computations or make I/O operations at the top level of included chunks.
 
 ## Module Imports
 
