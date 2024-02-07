@@ -295,6 +295,7 @@ func NewDefaultGlobalState(ctx *core.Context, conf core.DefaultGlobalStateConfig
 		globalnames.NONE_FN:            core.WrapGoFunction(core.None),
 		globalnames.REPLACE_FN:         core.WrapGoFunction(_replace),
 		globalnames.FIND_FN:            core.WrapGoFunction(_find),
+		globalnames.FIND_FIRST_FN:      core.WrapGoFunction(_find_first),
 
 		// concurrency & execution
 		globalnames.LTHREADGROUP_FN: core.ValOf(core.NewLThreadGroup),

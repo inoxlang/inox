@@ -112,6 +112,7 @@ const (
 	NONE_FN            = "none"
 	REPLACE_FN         = "replace"
 	FIND_FN            = "find"
+	FIND_FIRST_FN      = "find_first"
 
 	// concurrency & execution
 	LTHREADGROUP_FN = "LThreadGroup"
