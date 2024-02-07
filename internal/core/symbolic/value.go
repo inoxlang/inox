@@ -23,6 +23,7 @@ var (
 	ErrUnassignablePropsMixin              = errors.New("UnassignablePropsMixin")
 	ErrMaximumSymbolicTestCallDepthReached = errors.New("maximum recursive Test() call depth reached, there is probably a cycle")
 
+	ANY_TYPE           = &Type{}
 	ANY                = &Any{}
 	NEVER              = &Never{}
 	ANY_BOOL           = &Bool{}
@@ -608,7 +609,7 @@ func (t *Type) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrin
 }
 
 func (t *Type) WidestOfType() Value {
-	return &Type{}
+	return ANY_TYPE
 }
 
 type IProps interface {

@@ -28,10 +28,10 @@ func init() {
 			return symbolic.ANY_STRING, nil
 		},
 		_sha1, func(ctx *symbolic.Context, arg symbolic.Readable) *symbolic.ByteSlice {
-			return &symbolic.ByteSlice{}
+			return &symbolic.ByteSlice{} //TODO: set length when symbolic ByteSlice supports it.
 		},
 		_md5, func(ctx *symbolic.Context, arg symbolic.Readable) *symbolic.ByteSlice {
-			return &symbolic.ByteSlice{}
+			return &symbolic.ByteSlice{} //TODO: set length when symbolic ByteSlice supports it.
 		},
 		_mkpath, func(ctx *symbolic.Context, arg symbolic.Value) *symbolic.Path {
 			return symbolic.ANY_PATH
@@ -115,7 +115,7 @@ func init() {
 
 		//
 		_typeof, func(ctx *symbolic.Context, arg symbolic.Value) *symbolic.Type {
-			return &symbolic.Type{}
+			return symbolic.ANY_TYPE
 		},
 
 		encodeBase64, func(ctx *symbolic.Context, arg symbolic.Readable) *symbolic.String {

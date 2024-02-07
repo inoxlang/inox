@@ -242,7 +242,7 @@ func _symbolic_find_first(ctx *symbolic.Context, patt symbolic.Pattern, location
 		return symbolic.NewMultivalue(result, symbolic.Nil), nil
 	default:
 		ctx.AddSymbolicGoFunctionError("invalid location (second argument): only string-like values, paths and iterables are supported")
-		return symbolic.LIST_OF_SERIALIZABLES, nil
+		return symbolic.Nil, nil
 	}
 
 }
