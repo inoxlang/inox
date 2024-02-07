@@ -9921,7 +9921,7 @@ func testParse(
 						&ObjectLiteral{
 							NodeBase: NodeBase{
 								NodeSpan{0, 1},
-								&ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_REC_MISSING_CLOSING_BRACE},
+								&ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_MISSING_CLOSING_BRACE},
 								false,
 								/*[]Token{
 									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{0, 1}},
@@ -9941,7 +9941,7 @@ func testParse(
 						&ObjectLiteral{
 							NodeBase: NodeBase{
 								NodeSpan{0, 2},
-								&ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_REC_MISSING_CLOSING_BRACE},
+								&ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_MISSING_CLOSING_BRACE},
 								false,
 								/*[]Token{
 									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{0, 1}},
@@ -10026,12 +10026,29 @@ func testParse(
 						&ObjectLiteral{
 							NodeBase: NodeBase{
 								NodeSpan{0, 2},
-								&ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_REC_MISSING_CLOSING_BRACE},
+								&ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_MISSING_CLOSING_BRACE},
 								false,
 								/*[]Token{
 									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{0, 1}},
 									{Type: COMMA, Span: NodeSpan{1, 2}},
 								},*/
+							},
+							Properties: nil,
+						},
+					},
+				},
+			},
+			{
+				input:    "({)",
+				hasError: true,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 3}, nil, false},
+					Statements: []Node{
+						&ObjectLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{1, 2},
+								&ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_MISSING_CLOSING_BRACE},
+								true,
 							},
 							Properties: nil,
 						},
@@ -10153,6 +10170,36 @@ func testParse(
 				},
 			},
 			{
+				input:    "({a:1)",
+				hasError: true,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 6}, nil, false},
+					Statements: []Node{
+						&ObjectLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{1, 5},
+								&ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_MISSING_CLOSING_BRACE},
+								true,
+							},
+							Properties: []*ObjectProperty{
+								{
+									NodeBase: NodeBase{Span: NodeSpan{2, 5}},
+									Key: &IdentifierLiteral{
+										NodeBase: NodeBase{NodeSpan{2, 3}, nil, false},
+										Name:     "a",
+									},
+									Value: &IntLiteral{
+										NodeBase: NodeBase{NodeSpan{4, 5}, nil, false},
+										Raw:      "1",
+										Value:    1,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
 				input:    "{ a: 1, a: 2}",
 				hasError: false,
 				result: &Chunk{
@@ -10216,7 +10263,7 @@ func testParse(
 						&ObjectLiteral{
 							NodeBase: NodeBase{
 								NodeSpan{0, 3},
-								&ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_REC_MISSING_CLOSING_BRACE},
+								&ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_MISSING_CLOSING_BRACE},
 								false,
 								/*[]Token{
 									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{0, 1}},
@@ -10586,7 +10633,7 @@ func testParse(
 						&ObjectLiteral{
 							NodeBase: NodeBase{
 								NodeSpan{0, 2},
-								&ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_REC_MISSING_CLOSING_BRACE},
+								&ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_MISSING_CLOSING_BRACE},
 								false,
 								/*[]Token{
 									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{0, 1}},
@@ -10616,7 +10663,7 @@ func testParse(
 						&ObjectLiteral{
 							NodeBase: NodeBase{
 								NodeSpan{0, 3},
-								&ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_REC_MISSING_CLOSING_BRACE},
+								&ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_MISSING_CLOSING_BRACE},
 								false,
 								/*[]Token{
 									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{0, 1}},
@@ -10646,7 +10693,7 @@ func testParse(
 						&ObjectLiteral{
 							NodeBase: NodeBase{
 								NodeSpan{0, 3},
-								&ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_REC_MISSING_CLOSING_BRACE},
+								&ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_MISSING_CLOSING_BRACE},
 								false,
 								/*[]Token{
 									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{0, 1}},
@@ -10677,7 +10724,7 @@ func testParse(
 						&ObjectLiteral{
 							NodeBase: NodeBase{
 								NodeSpan{0, 3},
-								&ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_REC_MISSING_CLOSING_BRACE},
+								&ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_MISSING_CLOSING_BRACE},
 								false,
 								/*[]Token{
 									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{0, 1}},
@@ -11451,6 +11498,7 @@ func testParse(
 					},
 				},
 			},
+
 			{
 				input:    "{]}",
 				hasError: true,
@@ -23107,6 +23155,54 @@ func testParse(
 								Key: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 3}, nil, false},
 									Name:     "a",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("empty pattern with missing closing brace before parenthesis of parent", func(t *testing.T) {
+			n, err := parseChunk(t, "(%{)", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 4}, nil, false},
+				Statements: []Node{
+					&ObjectPatternLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{1, 3},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_PATTERN_MISSING_CLOSING_BRACE},
+							true,
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("non-empty pattern with missing closing brace before parenthesis of parent", func(t *testing.T) {
+			n, err := parseChunk(t, "(%{a:1)", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 7}, nil, false},
+				Statements: []Node{
+					&ObjectPatternLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{1, 6},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_PATTERN_MISSING_CLOSING_BRACE},
+							true,
+						},
+						Properties: []*ObjectPatternProperty{
+							{
+								NodeBase: NodeBase{Span: NodeSpan{3, 6}},
+								Key: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{3, 4}, nil, false},
+									Name:     "a",
+								},
+								Value: &IntLiteral{
+									NodeBase: NodeBase{NodeSpan{5, 6}, nil, false},
+									Raw:      "1",
+									Value:    1,
 								},
 							},
 						},

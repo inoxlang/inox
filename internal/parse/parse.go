@@ -2719,7 +2719,7 @@ func (p *parser) parseObjectRecordPatternLiteral(percentPrefixed, isRecordPatter
 	)
 
 object_pattern_top_loop:
-	for p.i < p.len && p.s[p.i] != '}' { //one iteration == one entry or spread element (that can be invalid)
+	for p.i < p.len && p.s[p.i] != '}' && !isClosingDelim(p.s[p.i]) { //one iteration == one entry or spread element (that can be invalid)
 		p.eatSpaceNewlineCommaComment()
 
 		propParsingErr = nil
@@ -2732,7 +2732,7 @@ object_pattern_top_loop:
 		propParsingErr = nil
 		noKey = false
 
-		if p.i >= p.len || p.s[p.i] == '}' {
+		if p.i >= p.len || p.s[p.i] == '}' || isClosingDelim(p.s[p.i]) {
 			break object_pattern_top_loop
 		}
 
@@ -2786,8 +2786,14 @@ object_pattern_top_loop:
 
 			//if missing expression we report an error and we continue the main loop
 			if isMissingExpr {
+				char := p.s[p.i]
+				if isClosingDelim(char) {
+					p.i--
+					break object_pattern_top_loop
+				}
+
 				propParsingErr = &ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInObjectPattern(p.s[p.i])}
-				p.tokens = append(p.tokens, Token{Type: UNEXPECTED_CHAR, Raw: string(p.s[p.i]), Span: NodeSpan{p.i, p.i + 1}})
+				p.tokens = append(p.tokens, Token{Type: UNEXPECTED_CHAR, Raw: string(char), Span: NodeSpan{p.i, p.i + 1}})
 
 				p.i++
 				properties = append(properties, &ObjectPatternProperty{
@@ -2994,7 +3000,7 @@ object_pattern_top_loop:
 
 				p.eatSpace()
 
-				if !isMissingExpr && p.i < p.len && !isValidEntryEnd(p.s, p.i) {
+				if !isMissingExpr && p.i < p.len && !isValidEntryEnd(p.s, p.i) && !isClosingDelim(p.s[p.i]) {
 					propParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_OBJ_PATT_LIT_ENTRY_SEPARATION}
 				}
 
@@ -3034,19 +3040,19 @@ object_pattern_top_loop:
 		})
 	}
 
-	if p.i >= p.len {
-		if isRecordPattern {
-			parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_REC_PATTERN_MISSING_CLOSING_BRACE}
-		} else {
-			parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_PATTERN_MISSING_CLOSING_BRACE}
-		}
-	} else {
+	if p.i < p.len && p.s[p.i] == '}' {
 		p.tokens = append(p.tokens, Token{
 			Type:    CLOSING_CURLY_BRACKET,
 			SubType: OBJECT_LIKE_CLOSING_BRACE,
 			Span:    NodeSpan{p.i, p.i + 1},
 		})
 		p.i++
+	} else {
+		if isRecordPattern {
+			parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_REC_PATTERN_MISSING_CLOSING_BRACE}
+		} else {
+			parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_PATTERN_MISSING_CLOSING_BRACE}
+		}
 	}
 
 	base := NodeBase{
@@ -3218,7 +3224,7 @@ func (p *parser) parseObjectOrRecordLiteral(isRecord bool) Node {
 	)
 
 object_literal_top_loop:
-	for p.i < p.len && p.s[p.i] != '}' { //one iteration == one entry or spread element (that can be invalid)
+	for p.i < p.len && p.s[p.i] != '}' && !isClosingDelim(p.s[p.i]) { //one iteration == one entry or spread element (that can be invalid)
 		p.eatSpaceNewlineCommaComment()
 
 		propParsingErr = nil
@@ -3234,7 +3240,7 @@ object_literal_top_loop:
 		propParsingErr = nil
 		noKey = false
 
-		if p.i >= p.len || p.s[p.i] == '}' {
+		if p.i >= p.len || p.s[p.i] == '}' || isClosingDelim(p.s[p.i]) {
 			break object_literal_top_loop
 		}
 
@@ -3276,8 +3282,13 @@ object_literal_top_loop:
 
 		//if missing expression we report an error and we continue the main loop
 		if isMissingExpr {
+			char := p.s[p.i]
+			if isClosingDelim(char) {
+				p.i--
+				break object_literal_top_loop
+			}
 			propParsingErr = &ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInObjectRecord(p.s[p.i])}
-			p.tokens = append(p.tokens, Token{Type: UNEXPECTED_CHAR, Raw: string(p.s[p.i]), Span: NodeSpan{p.i, p.i + 1}})
+			p.tokens = append(p.tokens, Token{Type: UNEXPECTED_CHAR, Raw: string(char), Span: NodeSpan{p.i, p.i + 1}})
 
 			p.i++
 			properties = append(properties, &ObjectProperty{
@@ -3506,7 +3517,7 @@ object_literal_top_loop:
 
 			p.eatSpace()
 
-			if !isMissingExpr && p.i < p.len && !isValidEntryEnd(p.s, p.i) {
+			if !isMissingExpr && p.i < p.len && !isValidEntryEnd(p.s, p.i) && !isClosingDelim(p.s[p.i]) {
 				propParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_OBJ_REC_LIT_ENTRY_SEPARATION}
 			}
 
@@ -3543,15 +3554,19 @@ object_literal_top_loop:
 		})
 	}
 
-	if p.i >= p.len {
-		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJ_REC_MISSING_CLOSING_BRACE}
-	} else {
+	if p.i < p.len && p.s[p.i] == '}' {
 		p.tokens = append(p.tokens, Token{
 			Type:    CLOSING_CURLY_BRACKET,
 			SubType: OBJECT_LIKE_CLOSING_BRACE,
 			Span:    NodeSpan{p.i, p.i + 1},
 		})
 		p.i++
+	} else {
+		errorMessage := UNTERMINATED_OBJ_MISSING_CLOSING_BRACE
+		if isRecord {
+			errorMessage = UNTERMINATED_REC_MISSING_CLOSING_BRACE
+		}
+		parsingErr = &ParsingError{UnspecifiedParsingError, errorMessage}
 	}
 
 	base := NodeBase{
