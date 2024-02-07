@@ -335,9 +335,7 @@ func GetMigrationOperations(ctx *Context, current, next Pattern, pseudoPath stri
 }
 
 func (o *Object) Migrate(ctx *Context, key Path, migration *FreeEntityMigrationArgs) (Value, error) {
-	if o.IsShared() {
-		panic(ErrUnreachable)
-	}
+	//TODO: very efficiently check that the object is only modified by the main state.
 
 	o.ensureAdditionalFields()
 
