@@ -15,6 +15,7 @@ import (
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/config"
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/mod"
 
 	"github.com/inoxlang/inox/internal/globals/inoxsh_ns"
@@ -446,4 +447,51 @@ func _propnames(ctx *core.Context, val core.Value) *core.List {
 	props := val.(core.IProps).PropertyNames(ctx)
 	values := utils.MapSlice(props, func(s string) core.Serializable { return core.String(s) })
 	return core.NewWrappedValueListFrom(values)
+}
+
+func asJSON(ctx *core.Context, v core.Serializable) core.String {
+	stream := jsoniter.NewStream(jsoniter.ConfigDefault, nil, 0)
+	_asJSON(ctx, v, stream)
+	return core.String(stream.Buffer())
+}
+
+func _asJSON(ctx *core.Context, v core.Serializable, w *jsoniter.Stream) {
+	switch v := v.(type) {
+	case *core.Object:
+		w.WriteObjectStart()
+
+		i := 0
+		v.ForEachEntry(func(k string, propVal core.Serializable) error {
+			if i != 0 {
+				w.WriteMore()
+			}
+			i++
+			w.WriteObjectField(k)
+			_asJSON(ctx, propVal, w)
+			return nil
+		})
+
+		w.WriteObjectEnd()
+	case *core.List:
+		w.WriteArrayStart()
+
+		for i := 0; i < v.Len(); i++ {
+			if i != 0 {
+				w.WriteMore()
+			}
+			_asJSON(ctx, v.At(ctx, i).(core.Serializable), w)
+		}
+
+		w.WriteArrayEnd()
+	case core.StringLike:
+		w.WriteString(v.GetOrBuildString())
+	case core.Int:
+		w.WriteInt64(int64(v.Int64()))
+	case core.Float:
+		w.WriteFloat64(float64(v))
+	case core.Bool:
+		w.WriteBool(bool(v))
+	default:
+		panic(fmt.Errorf("unexpected value %s, `asjson` only supports objects, lists, integers, floats, bools and string-likes", core.Stringify(v, ctx)))
+	}
 }

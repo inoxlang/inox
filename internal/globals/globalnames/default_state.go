@@ -73,6 +73,7 @@ const (
 	TORSTREAM_FN = "torstream"
 	TOJSON_FN    = "tojson"
 	TOPJSON_FN   = "topjson"
+	ASJSON_FN    = "asjson"
 	PARSE_FN     = "parse"
 	SPLIT_FN     = "split"
 

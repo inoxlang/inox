@@ -325,6 +325,10 @@ func init() {
 			}
 			return v, nil
 		},
+		asJSON, func(ctx *symbolic.Context, v symbolic.Serializable) *symbolic.String {
+			//TODO: recursively check that $v contains supported values.
+			return symbolic.ANY_STRING
+		},
 	})
 
 }
