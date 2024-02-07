@@ -273,7 +273,8 @@ func needsIndentation(n parse.Node, parent parse.Node, ancestors []parse.Node) b
 	case *parse.ObjectMetaProperty, *parse.ObjectProperty, *parse.ObjectPatternProperty,
 		*parse.DictionaryEntry,
 		*parse.StaticMappingEntry, *parse.DynamicMappingEntry,
-		*parse.SwitchCase, *parse.MatchCase, *parse.DefaultCase:
+		*parse.SwitchCase, *parse.MatchCase, *parse.DefaultCase,
+		*parse.GlobalConstantDeclaration:
 		return true
 	}
 
@@ -290,7 +291,8 @@ func doesNodeIncreaseDepth(node parse.Node, ancestors []parse.Node) bool {
 	case *parse.ObjectLiteral, *parse.ObjectPatternLiteral, *parse.RecordLiteral,
 		*parse.ListLiteral, *parse.MappingExpression, *parse.DictionaryLiteral, *parse.EmbeddedModule,
 		*parse.SwitchStatement, *parse.MatchStatement,
-		*parse.XMLElement:
+		*parse.XMLElement,
+		*parse.GlobalConstantDeclarations:
 		return true
 	case *parse.Block:
 		return true
