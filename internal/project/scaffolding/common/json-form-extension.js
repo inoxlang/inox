@@ -8,6 +8,14 @@ htmx.defineExtension('json-form', {
     },
     encodeParameters: function(xhr, params, form) {
         xhr.overrideMimeType('text/json');
+
+        if(form instanceof HTMLFormElement){
+            const payload = form.getAttribute('jsonform-payload')
+            if(payload){
+                return payload
+            }
+        }
+
         return JSON.stringify(transformFormParams(params, form));
     }
 });
