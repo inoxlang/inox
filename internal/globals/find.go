@@ -199,9 +199,9 @@ func _symbolic_find_first(ctx *symbolic.Context, patt symbolic.Pattern, location
 		ctx.SetSymbolicGoFunctionParameters(SYMBOLIC_FIND_FIRST_FN_PARAMS_IF_STR_LIKE_LOCATION, FIND_FIRST_FN_PARAM_NAMES)
 		strPatt, ok := patt.(symbolic.StringPattern)
 		if ok {
-			return symbolic.NewListOf(symbolic.AsSerializableChecked(strPatt.SymbolicValue())), nil
+			return symbolic.NewMultivalue(symbolic.AsSerializableChecked(strPatt.SymbolicValue()), symbolic.Nil), nil
 		}
-		return symbolic.NewListOf(symbolic.ANY_STR_LIKE), nil
+		return symbolic.NewMultivalue(symbolic.ANY_STR_LIKE, symbolic.Nil), nil
 	case *symbolic.Path:
 		ctx.AddSymbolicGoFunctionError("paths are not supported")
 		return symbolic.Nil, nil
@@ -239,7 +239,7 @@ func _symbolic_find_first(ctx *symbolic.Context, patt symbolic.Pattern, location
 			ctx.AddSymbolicGoFunctionError("values matching the pattern should be serializable")
 			result = symbolic.ANY_SERIALIZABLE
 		}
-		return result, nil
+		return symbolic.NewMultivalue(result, symbolic.Nil), nil
 	default:
 		ctx.AddSymbolicGoFunctionError("invalid location (second argument): only string-like values, paths and iterables are supported")
 		return symbolic.LIST_OF_SERIALIZABLES, nil
