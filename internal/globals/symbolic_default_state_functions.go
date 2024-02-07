@@ -173,10 +173,10 @@ func init() {
 
 		//
 
-		core.ToJSON, func(ctx *symbolic.Context, arg symbolic.Value) *symbolic.String {
+		core.ToJSON, func(ctx *symbolic.Context, arg symbolic.Value, pattern *symbolic.OptionalParam[symbolic.Pattern]) *symbolic.String {
 			return symbolic.ANY_STRING
 		},
-		core.ToPrettyJSON, func(ctx *symbolic.Context, arg symbolic.Value) *symbolic.String {
+		core.ToPrettyJSON, func(ctx *symbolic.Context, arg symbolic.Value, pattern *symbolic.OptionalParam[symbolic.Pattern]) *symbolic.String {
 			return symbolic.ANY_STRING
 		},
 

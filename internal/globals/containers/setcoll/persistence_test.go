@@ -662,8 +662,8 @@ func TestSetMigrate(t *testing.T) {
 		expectedRecord2 := core.NewRecordFromMap(core.ValMap{"a": core.Int(2), "b": core.Int(3)})
 
 		assert.Equal(t, map[string]core.Serializable{
-			string(core.ToJSON(ctx, expectedRecord1)): expectedRecord1,
-			string(core.ToJSON(ctx, expectedRecord2)): expectedRecord2,
+			string(core.ToJSON(ctx, expectedRecord1, nil)): expectedRecord1,
+			string(core.ToJSON(ctx, expectedRecord2, nil)): expectedRecord2,
 		}, set.elementByKey)
 	})
 

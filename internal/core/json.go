@@ -11,10 +11,17 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
-func ToJSON(ctx *Context, v Serializable) String {
+func ToJSON(ctx *Context, v Serializable, pattern *OptionalParam[Pattern]) String {
+	var patt Pattern
+	if pattern == nil {
+		patt = ANYVAL_PATTERN
+	} else {
+		patt = pattern.Value
+	}
+
 	return ToJSONWithConfig(ctx, v, JSONSerializationConfig{
 		ReprConfig: &ReprConfig{},
-		Pattern:    ANYVAL_PATTERN,
+		Pattern:    patt,
 		Location:   "/",
 	})
 }
@@ -30,8 +37,8 @@ func ToJSONWithConfig(ctx *Context, v Serializable, config JSONSerializationConf
 	return String(stream.Buffer())
 }
 
-func ToPrettyJSON(ctx *Context, v Serializable) String {
-	s := ToJSON(ctx, v)
+func ToPrettyJSON(ctx *Context, v Serializable, pattern *OptionalParam[Pattern]) String {
+	s := ToJSON(ctx, v, pattern)
 	var unmarshalled interface{}
 	err := json.Unmarshal([]byte(s), &unmarshalled)
 	if err != nil {
@@ -46,7 +53,7 @@ func ToPrettyJSON(ctx *Context, v Serializable) String {
 }
 
 func ToJSONVal(ctx *Context, v Serializable) interface{} {
-	s := ToJSON(ctx, v)
+	s := ToJSON(ctx, v, nil)
 	var jsonVal interface{}
 	err := json.Unmarshal([]byte(s), &jsonVal)
 	if err != nil {

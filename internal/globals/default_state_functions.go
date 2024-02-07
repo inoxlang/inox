@@ -491,6 +491,8 @@ func _asJSON(ctx *core.Context, v core.Serializable, w *jsoniter.Stream) {
 		w.WriteFloat64(float64(v))
 	case core.Bool:
 		w.WriteBool(bool(v))
+	case core.NilT:
+		w.WriteNil()
 	default:
 		panic(fmt.Errorf("unexpected value %s, `asjson` only supports objects, lists, integers, floats, bools and string-likes", core.Stringify(v, ctx)))
 	}

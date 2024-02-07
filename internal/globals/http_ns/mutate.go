@@ -53,11 +53,11 @@ func _httpPostPatch(ctx *core.Context, isPatch bool, args ...core.Value) (*Respo
 			if body != nil {
 				return nil, commonfmt.FmtErrArgumentProvidedAtLeastTwice("body")
 			}
-			jsonString := core.ToJSON(ctx, argVal)
+			jsonString := core.ToJSON(ctx, argVal, nil)
 			body = strings.NewReader(string(jsonString))
 		case *core.Object:
 			if body == nil {
-				jsonString := core.ToJSON(ctx, argVal)
+				jsonString := core.ToJSON(ctx, argVal, nil)
 				body = strings.NewReader(string(jsonString))
 			} else {
 				return nil, commonfmt.FmtErrArgumentProvidedAtLeastTwice("body")
