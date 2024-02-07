@@ -6974,14 +6974,18 @@ func (p *parser) parseMappingExpression(mappingIdent Node) *MappingExpression {
 
 	for p.i < p.len && p.s[p.i] != '}' {
 		key, isMissingExpr := p.parseExpression()
-		p.eatSpace()
 
 		if p.i < p.len && isMissingExpr {
-			p.tokens = append(p.tokens, Token{Type: UNEXPECTED_CHAR, Span: NodeSpan{p.i, p.i + 1}, Raw: string(p.s[p.i])})
+			char := p.s[p.i]
+			if isClosingDelim(char) {
+				break
+			}
+
+			p.tokens = append(p.tokens, Token{Type: UNEXPECTED_CHAR, Span: NodeSpan{p.i, p.i + 1}, Raw: string(char)})
 			key = &UnknownNode{
 				NodeBase: NodeBase{
 					NodeSpan{p.i, p.i + 1},
-					&ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInMappingExpression(p.s[p.i])},
+					&ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInMappingExpression(char)},
 					false,
 				},
 			}
@@ -6994,7 +6998,13 @@ func (p *parser) parseMappingExpression(mappingIdent Node) *MappingExpression {
 			entryParsingErr = &ParsingError{UnspecifiedParsingError, KEYWORDS_SHOULD_NOT_BE_USED_IN_ASSIGNMENT_LHS}
 		}
 
-		if p.i >= p.len {
+		p.eatSpace()
+
+		if p.i >= p.len || isClosingDelim(p.s[p.i]) {
+			if entryParsingErr == nil {
+				entryParsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_MAPPING_ENTRY}
+			}
+
 			if isDynamicEntry {
 				entries = append(entries, &DynamicMappingEntry{
 					NodeBase: NodeBase{
@@ -7012,14 +7022,7 @@ func (p *parser) parseMappingExpression(mappingIdent Node) *MappingExpression {
 					Key: key,
 				})
 			}
-
-			return &MappingExpression{
-				NodeBase: NodeBase{
-					Span: NodeSpan{start, p.i},
-					Err:  &ParsingError{UnspecifiedParsingError, UNTERMINATED_MAPPING_ENTRY},
-				},
-				Entries: entries,
-			}
+			break
 		}
 
 		var (
@@ -7101,11 +7104,11 @@ func (p *parser) parseMappingExpression(mappingIdent Node) *MappingExpression {
 	}
 
 	var parsingErr *ParsingError
-	if p.i >= p.len || p.s[p.i] != '}' {
-		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_MAPPING_EXPRESSION_MISSING_CLOSING_BRACE}
-	} else {
+	if p.i < p.len && p.s[p.i] == '}' {
 		p.tokens = append(p.tokens, Token{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
 		p.i++
+	} else {
+		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_MAPPING_EXPRESSION_MISSING_CLOSING_BRACE}
 	}
 
 	return &MappingExpression{

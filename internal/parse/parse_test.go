@@ -20506,22 +20506,35 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("empty, missing closing brace before closing parenthesis", func(t *testing.T) {
+			n, err := parseChunk(t, `(Mapping {)`, "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 11}, nil, false},
+				Statements: []Node{
+					&MappingExpression{
+						NodeBase: NodeBase{
+							NodeSpan{1, 10},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_MAPPING_EXPRESSION_MISSING_CLOSING_BRACE},
+							true,
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("empty, missing closing brace before closing bracket", func(t *testing.T) {
+			_, err := parseChunk(t, `[Mapping {]`, "")
+			assert.ErrorContains(t, err, UNTERMINATED_MAPPING_EXPRESSION_MISSING_CLOSING_BRACE)
+		})
+
 		t.Run("static entry", func(t *testing.T) {
 			n := mustparseChunk(t, "Mapping { 0 => 1 }")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 18}, nil, false},
 				Statements: []Node{
 					&MappingExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 18},
-							nil,
-							false,
-							/*[]Token{
-								{Type: MAPPING_KEYWORD, Span: NodeSpan{0, 7}},
-								{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{8, 9}},
-								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{17, 18}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 18}},
 						Entries: []Node{
 							&StaticMappingEntry{
 								NodeBase: NodeBase{
@@ -20546,41 +20559,34 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("dynamic entry", func(t *testing.T) {
-			n := mustparseChunk(t, "Mapping { n 0 => n }")
+		t.Run("static entry: missing closing brace before closing parenthesis", func(t *testing.T) {
+			n, err := parseChunk(t, `(Mapping { 0 => 1)`, "")
+			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 18}, nil, false},
 				Statements: []Node{
 					&MappingExpression{
 						NodeBase: NodeBase{
-							NodeSpan{0, 20},
-							nil,
-							false,
-							/*[]Token{
-								{Type: MAPPING_KEYWORD, Span: NodeSpan{0, 7}},
-								{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{8, 9}},
-								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{19, 20}},
-							},*/
+							NodeSpan{1, 17},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_MAPPING_EXPRESSION_MISSING_CLOSING_BRACE},
+							true,
 						},
 						Entries: []Node{
-							&DynamicMappingEntry{
+							&StaticMappingEntry{
 								NodeBase: NodeBase{
-									NodeSpan{10, 18},
+									NodeSpan{11, 17},
 									nil,
 									false,
 								},
 								Key: &IntLiteral{
-									NodeBase: NodeBase{NodeSpan{12, 13}, nil, false},
+									NodeBase: NodeBase{NodeSpan{11, 12}, nil, false},
 									Raw:      "0",
 									Value:    0,
 								},
-								KeyVar: &IdentifierLiteral{
-									NodeBase: NodeBase{NodeSpan{10, 11}, nil, false},
-									Name:     "n",
-								},
-								ValueComputation: &IdentifierLiteral{
-									NodeBase: NodeBase{NodeSpan{17, 18}, nil, false},
-									Name:     "n",
+								Value: &IntLiteral{
+									NodeBase: NodeBase{NodeSpan{16, 17}, nil, false},
+									Raw:      "1",
+									Value:    1,
 								},
 							},
 						},
@@ -20589,66 +20595,12 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("dynamic entry var should not be a keyword", func(t *testing.T) {
-			n, err := parseChunk(t, "Mapping { manifest 0 => n }", "")
-			assert.NotNil(t, n)
-			assert.ErrorContains(t, err, KEYWORDS_SHOULD_NOT_BE_USED_IN_ASSIGNMENT_LHS)
+		t.Run("static entry: missing closing brace before closing bracket", func(t *testing.T) {
+			_, err := parseChunk(t, `[Mapping { 0 => 1]`, "")
+			assert.ErrorContains(t, err, UNTERMINATED_MAPPING_EXPRESSION_MISSING_CLOSING_BRACE)
 		})
 
-		t.Run("dynamic entry with group matching variable", func(t *testing.T) {
-			n := mustparseChunk(t, "Mapping { p %/ m => m }")
-			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
-				Statements: []Node{
-					&MappingExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 23},
-							nil,
-							false,
-							/*[]Token{
-								{Type: MAPPING_KEYWORD, Span: NodeSpan{0, 7}},
-								{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{8, 9}},
-								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{22, 23}},
-							},*/
-						},
-						Entries: []Node{
-							&DynamicMappingEntry{
-								NodeBase: NodeBase{
-									NodeSpan{10, 21},
-									nil,
-									false,
-								},
-								Key: &AbsolutePathPatternLiteral{
-									NodeBase: NodeBase{NodeSpan{12, 14}, nil, false},
-									Raw:      "%/",
-									Value:    "/",
-								},
-								KeyVar: &IdentifierLiteral{
-									NodeBase: NodeBase{NodeSpan{10, 11}, nil, false},
-									Name:     "p",
-								},
-								GroupMatchingVariable: &IdentifierLiteral{
-									NodeBase: NodeBase{NodeSpan{15, 16}, nil, false},
-									Name:     "m",
-								},
-								ValueComputation: &IdentifierLiteral{
-									NodeBase: NodeBase{NodeSpan{20, 21}, nil, false},
-									Name:     "m",
-								},
-							},
-						},
-					},
-				},
-			}, n)
-		})
-
-		t.Run("group matching variable should not be a keyword", func(t *testing.T) {
-			n, err := parseChunk(t, "Mapping { p %/ manifest => m  }", "")
-			assert.NotNil(t, n)
-			assert.ErrorContains(t, err, KEYWORDS_SHOULD_NOT_BE_USED_IN_ASSIGNMENT_LHS)
-		})
-
-		t.Run("static entry, missing closing brace", func(t *testing.T) {
+		t.Run("static entry: missing closing brace", func(t *testing.T) {
 			n, err := parseChunk(t, "Mapping { 0 => 1", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
@@ -20787,6 +20739,153 @@ func testParse(
 				},
 			}, n)
 		})
+
+		t.Run("dynamic entry", func(t *testing.T) {
+			n := mustparseChunk(t, "Mapping { n 0 => n }")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
+				Statements: []Node{
+					&MappingExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 20},
+							nil,
+							false,
+							/*[]Token{
+								{Type: MAPPING_KEYWORD, Span: NodeSpan{0, 7}},
+								{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{8, 9}},
+								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{19, 20}},
+							},*/
+						},
+						Entries: []Node{
+							&DynamicMappingEntry{
+								NodeBase: NodeBase{
+									NodeSpan{10, 18},
+									nil,
+									false,
+								},
+								Key: &IntLiteral{
+									NodeBase: NodeBase{NodeSpan{12, 13}, nil, false},
+									Raw:      "0",
+									Value:    0,
+								},
+								KeyVar: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{10, 11}, nil, false},
+									Name:     "n",
+								},
+								ValueComputation: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{17, 18}, nil, false},
+									Name:     "n",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("dynamic entry var should not be a keyword", func(t *testing.T) {
+			n, err := parseChunk(t, "Mapping { manifest 0 => n }", "")
+			assert.NotNil(t, n)
+			assert.ErrorContains(t, err, KEYWORDS_SHOULD_NOT_BE_USED_IN_ASSIGNMENT_LHS)
+		})
+
+		t.Run("dynamic entry with group matching variable", func(t *testing.T) {
+			n := mustparseChunk(t, "Mapping { p %/ m => m }")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
+				Statements: []Node{
+					&MappingExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 23},
+							nil,
+							false,
+							/*[]Token{
+								{Type: MAPPING_KEYWORD, Span: NodeSpan{0, 7}},
+								{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{8, 9}},
+								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{22, 23}},
+							},*/
+						},
+						Entries: []Node{
+							&DynamicMappingEntry{
+								NodeBase: NodeBase{
+									NodeSpan{10, 21},
+									nil,
+									false,
+								},
+								Key: &AbsolutePathPatternLiteral{
+									NodeBase: NodeBase{NodeSpan{12, 14}, nil, false},
+									Raw:      "%/",
+									Value:    "/",
+								},
+								KeyVar: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{10, 11}, nil, false},
+									Name:     "p",
+								},
+								GroupMatchingVariable: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{15, 16}, nil, false},
+									Name:     "m",
+								},
+								ValueComputation: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{20, 21}, nil, false},
+									Name:     "m",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("group matching variable should not be a keyword", func(t *testing.T) {
+			n, err := parseChunk(t, "Mapping { p %/ manifest => m  }", "")
+			assert.NotNil(t, n)
+			assert.ErrorContains(t, err, KEYWORDS_SHOULD_NOT_BE_USED_IN_ASSIGNMENT_LHS)
+		})
+
+		t.Run("dynamic entry: missing closing brace before closing parenthesis", func(t *testing.T) {
+			n, err := parseChunk(t, `(Mapping { n 0 => n)`, "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
+				Statements: []Node{
+					&MappingExpression{
+						NodeBase: NodeBase{
+							NodeSpan{1, 19},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_MAPPING_EXPRESSION_MISSING_CLOSING_BRACE},
+							true,
+						},
+						Entries: []Node{
+							&DynamicMappingEntry{
+								NodeBase: NodeBase{
+									NodeSpan{11, 19},
+									nil,
+									false,
+								},
+								Key: &IntLiteral{
+									NodeBase: NodeBase{NodeSpan{13, 14}, nil, false},
+									Raw:      "0",
+									Value:    0,
+								},
+								KeyVar: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{11, 12}, nil, false},
+									Name:     "n",
+								},
+								ValueComputation: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{18, 19}, nil, false},
+									Name:     "n",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("dynamic entry: missing closing brace before closing bracket", func(t *testing.T) {
+			_, err := parseChunk(t, `[Mapping { n 0 => n]`, "")
+			assert.ErrorContains(t, err, UNTERMINATED_MAPPING_EXPRESSION_MISSING_CLOSING_BRACE)
+		})
+
 	})
 
 	t.Run("treedata expression", func(t *testing.T) {
