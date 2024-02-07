@@ -113,6 +113,26 @@ dbs.main.update_schema(%{
 are not defined in the schema.\
 During a migration previous values are passed to the handlers.
 
+### Handler Restrictions
+
+Migration handlers are restricted in order to avoid issues and long execution times: some syntax elements are not allowed and only a limited subset of built-in functions is allowed to be called.
+
+```
+# conversion functions
+toint
+tofloat
+tostring
+tostr
+torune
+tobyte
+tobytecount
+
+rand
+
+```
+
+**More functions will be added in the future.**
+
 ## Serialization
 
 Most Inox types (objects, lists, Sets) are serializable so no translation layer
