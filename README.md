@@ -254,7 +254,7 @@ Also I am working on a library to allow the development of small client-side com
 
 Inox allows you to attach a **transaction** to the current execution context.
 
-This feature is primarly used when handling **HTTP requests**. For each request, a transaction is created by the server. Effects such as database changes are only applied when the transaction is committed.
+This feature is always used when handling **HTTP requests**. For each request, a transaction is created by the server. Effects such as database changes are only applied when the transaction is committed.
 
 <details>
 
@@ -718,7 +718,7 @@ Here is an Inox object:
   non_sensitive: 1, 
   x: EmailAddress"example@mail.com"
   age: 30, 
-  passwordHash: "x"
+  password-hash: "x"
 }
 ```
 
@@ -738,15 +738,17 @@ metaproperty.
 {
   _visibility_ {
     {
-      public: .{passwordHash}
+      public: .{password-hash}
     }
   }
-  passwordHash: "x"
+  password-hash: "x"
 }
 ```
 
 ℹ️ In the near future the visibility will be configurable directly in patterns &
-database schemas.
+database schemas. Also the detection of properties with a 'sensitive name' will
+rely on the developer following **standard naming conventions** that I will document
+in the future.
 
 </details>
 
@@ -892,7 +894,7 @@ pattern code = %str(
 )
 ```
 
-String patterns can also be composed
+String patterns can also be composed:
 
 ```
 pattern code-name = %str('a'..'z'+)
