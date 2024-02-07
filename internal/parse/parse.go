@@ -2496,7 +2496,7 @@ func (p *parser) parseComplexStringPatternPiece(start int32, ident *PatternIdent
 			j := int32(p.i + 1)
 
 			for ; j < p.len; j++ {
-				if isAlpha(p.s[j]) || p.s[j] == '_' {
+				if isAlpha(p.s[j]) || isDecDigit(p.s[j]) || p.s[j] == '_' || p.s[j] == '-' {
 					continue
 				}
 				if p.s[j] == ':' {
@@ -2506,6 +2506,7 @@ func (p *parser) parseComplexStringPatternPiece(start int32, ident *PatternIdent
 			}
 
 			if isGroupName {
+
 				p.i = j
 				groupName = &PatternGroupName{
 					NodeBase: NodeBase{
@@ -2513,9 +2514,13 @@ func (p *parser) parseComplexStringPatternPiece(start int32, ident *PatternIdent
 					},
 					Name: string(p.s[elementStart:p.i]),
 				}
+				if groupName.Name[len(groupName.Name)-1] == '-' {
+					groupName.Err = &ParsingError{UnspecifiedParsingError, INVALID_GROUP_NAME_SHOULD_NOT_END_WITH_DASH}
+				}
 
 				p.tokens = append(p.tokens, Token{Type: COLON, Span: NodeSpan{p.i, p.i + 1}})
 				p.i++
+				p.eatSpace()
 			}
 		}
 

@@ -121,6 +121,7 @@ const (
 	UNTERMINATED_PAREN_PATTERN_MISSING_PAREN                 = "unterminated parenthesized pattern, missing closing parenthesis"
 	UNTERMINATED_PAREN_PATTERN                               = "unterminated parenthesized pattern"
 	UNTERMINATED_COMPLEX_STRING_PATT_MISSING_CLOSING_BRACKET = "unterminated complex string pattern: missing closing ')'"
+	INVALID_GROUP_NAME_SHOULD_NOT_END_WITH_DASH              = "invalid group name: name should not end with '-'"
 
 	UNTERMINATED_STRING_PATTERN_ELEMENT                        = "unterminated string pattern element"
 	UNTERMINATED_UNION_MISSING_CLOSING_PAREN                   = "unterminated union: missing closing ')'"

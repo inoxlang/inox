@@ -24185,6 +24185,64 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("one named element: space after name", func(t *testing.T) {
+			n := mustparseChunk(t, `%str(l: "a")`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
+				Statements: []Node{
+					&ComplexStringPatternPiece{
+						NodeBase: NodeBase{Span: NodeSpan{0, 12}},
+						Elements: []*PatternPieceElement{
+							{
+								NodeBase:  NodeBase{Span: NodeSpan{5, 11}},
+								Ocurrence: ExactlyOneOcurrence,
+								Expr: &QuotedStringLiteral{
+									NodeBase: NodeBase{NodeSpan{8, 11}, nil, false},
+									Raw:      "\"a\"",
+									Value:    "a",
+								},
+								GroupName: &PatternGroupName{
+									NodeBase: NodeBase{Span: NodeSpan{5, 6}},
+									Name:     "l",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("one named element: invalid name", func(t *testing.T) {
+			n, err := parseChunk(t, `%str(name-0-: "a")`, "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 18}, nil, false},
+				Statements: []Node{
+					&ComplexStringPatternPiece{
+						NodeBase: NodeBase{Span: NodeSpan{0, 18}},
+						Elements: []*PatternPieceElement{
+							{
+								NodeBase:  NodeBase{Span: NodeSpan{5, 17}},
+								Ocurrence: ExactlyOneOcurrence,
+								Expr: &QuotedStringLiteral{
+									NodeBase: NodeBase{NodeSpan{14, 17}, nil, false},
+									Raw:      "\"a\"",
+									Value:    "a",
+								},
+								GroupName: &PatternGroupName{
+									NodeBase: NodeBase{
+										Span: NodeSpan{5, 12},
+										Err:  &ParsingError{UnspecifiedParsingError, INVALID_GROUP_NAME_SHOULD_NOT_END_WITH_DASH},
+									},
+									Name: "name-0-",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("element name without element", func(t *testing.T) {
 			n, err := parseChunk(t, `%str(l:)`, "")
 			assert.Error(t, err)
