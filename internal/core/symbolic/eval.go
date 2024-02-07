@@ -3164,7 +3164,12 @@ func evalFunctionExpression(n *parse.FunctionExpression, state *State, options e
 					return parse.StopTraversal, err
 				}
 				if !allowed {
-					state.addError(makeSymbolicEvalError(node, state, THIS_EXPR_STMT_SYNTAX_IS_NOT_ALLOWED))
+					msg := THIS_EXPR_STMT_SYNTAX_IS_NOT_ALLOWED
+
+					if expectedFunction.forbiddenNodeExplanation != "" {
+						msg += "; " + expectedFunction.forbiddenNodeExplanation
+					}
+					state.addError(makeSymbolicEvalError(node, state, msg))
 					options.setActualValueMismatchIfNotNil()
 					return parse.Prune, nil
 				}

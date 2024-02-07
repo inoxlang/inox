@@ -23,6 +23,10 @@ const (
 	DB_MIGRATION__INCLUSIONS_PROP_NAME      = "inclusions"
 	DB_MIGRATION__REPLACEMENTS_PROP_NAME    = "replacements"
 	DB_MIGRATION__INITIALIZATIONS_PROP_NAME = "initializations"
+
+	EXPLANATION_ABOUT_RESTRICTED_SYNTAX_IN_MIGRATION_HANDLERS = //
+	`Migration handlers are restricted in order to avoid issues and long execution times, the list of functions usable inside the handlers can be found here: ` +
+		`https://github.com/inoxlang/inox/blob/main/docs/language-reference/databases.md#handler-restrictions`
 )
 
 var (
@@ -420,10 +424,11 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, addition
 			for _, op := range replacements {
 				pathPattern := "%" + op.PseudoPath
 				var entryValue Serializable = &InoxFunction{
-					parameters:     []Value{op.Current.SymbolicValue()},
-					parameterNames: []string{"previous-value"},
-					result:         op.Next.SymbolicValue(),
-					visitCheckNode: isNodeAllowedInMigrationHandler,
+					parameters:               []Value{op.Current.SymbolicValue()},
+					parameterNames:           []string{"previous-value"},
+					result:                   op.Next.SymbolicValue(),
+					visitCheckNode:           isNodeAllowedInMigrationHandler,
+					forbiddenNodeExplanation: EXPLANATION_ABOUT_RESTRICTED_SYNTAX_IN_MIGRATION_HANDLERS,
 				}
 
 				capable, ok := op.Next.(MigrationInitialValueCapablePattern)
@@ -450,10 +455,11 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, addition
 				pathPattern := "%" + op.PseudoPath
 				dict.entries[pathPattern] = AsSerializable(NewMultivalue(
 					&InoxFunction{
-						parameters:     []Value{op.Value.SymbolicValue()},
-						parameterNames: []string{"removed-value"},
-						result:         Nil,
-						visitCheckNode: isNodeAllowedInMigrationHandler,
+						parameters:               []Value{op.Value.SymbolicValue()},
+						parameterNames:           []string{"removed-value"},
+						result:                   Nil,
+						visitCheckNode:           isNodeAllowedInMigrationHandler,
+						forbiddenNodeExplanation: EXPLANATION_ABOUT_RESTRICTED_SYNTAX_IN_MIGRATION_HANDLERS,
 					},
 					Nil,
 				)).(Serializable)
@@ -472,10 +478,11 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, addition
 			for _, op := range inclusions {
 				pathPattern := "%" + op.PseudoPath
 				var entryValue Serializable = &InoxFunction{
-					parameters:     []Value{ANY},
-					parameterNames: []string{"previous-value"},
-					result:         op.Value.SymbolicValue(),
-					visitCheckNode: isNodeAllowedInMigrationHandler,
+					parameters:               []Value{ANY},
+					parameterNames:           []string{"previous-value"},
+					result:                   op.Value.SymbolicValue(),
+					visitCheckNode:           isNodeAllowedInMigrationHandler,
+					forbiddenNodeExplanation: EXPLANATION_ABOUT_RESTRICTED_SYNTAX_IN_MIGRATION_HANDLERS,
 				}
 
 				capable, ok := op.Value.(MigrationInitialValueCapablePattern)
@@ -503,10 +510,11 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, addition
 				value := op.Value.SymbolicValue()
 
 				var entryValue Serializable = &InoxFunction{
-					parameters:     []Value{joinValues([]Value{value, Nil})},
-					parameterNames: []string{"previous-value"},
-					result:         value,
-					visitCheckNode: isNodeAllowedInMigrationHandler,
+					parameters:               []Value{joinValues([]Value{value, Nil})},
+					parameterNames:           []string{"previous-value"},
+					result:                   value,
+					visitCheckNode:           isNodeAllowedInMigrationHandler,
+					forbiddenNodeExplanation: EXPLANATION_ABOUT_RESTRICTED_SYNTAX_IN_MIGRATION_HANDLERS,
 				}
 
 				capable, ok := op.Value.(MigrationInitialValueCapablePattern)

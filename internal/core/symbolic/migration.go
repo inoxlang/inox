@@ -1,6 +1,9 @@
 package symbolic
 
-import "github.com/inoxlang/inox/internal/parse"
+import (
+	"github.com/inoxlang/inox/internal/globals/globalnames"
+	"github.com/inoxlang/inox/internal/parse"
+)
 
 var (
 	_ = []MigrationInitialValueCapablePattern{
@@ -49,7 +52,7 @@ type MigrationInitialValueCapablePattern interface {
 }
 
 func isNodeAllowedInMigrationHandler(visit visitArgs, globalsAtCreation map[string]Value) (parse.TraversalAction, bool, error) {
-	switch visit.node.(type) {
+	switch n := visit.node.(type) {
 	case parse.SimpleValueLiteral, //includes IdentifierLiteral
 		*parse.GlobalVariable, *parse.Variable,
 		//basic data structures
@@ -61,6 +64,24 @@ func isNodeAllowedInMigrationHandler(visit visitArgs, globalsAtCreation map[stri
 	case *parse.BinaryExpression:
 		//TODO: prevent expensive operations
 	case *parse.Assignment:
+	case *parse.PatternIdentifierLiteral, *parse.PatternNamespaceIdentifierLiteral, *parse.PatternNamespaceMemberExpression:
+	case *parse.CallExpression:
+		ident, ok := n.Callee.(*parse.IdentifierLiteral)
+
+		if !ok {
+			return parse.Prune, false, nil
+		}
+
+		switch ident.Name {
+		//conversion functions
+		case globalnames.TOINT_FN, globalnames.TOFLOAT_FN,
+			globalnames.TOSTRING_FN, globalnames.TOSTR_FN, globalnames.TORUNE_FN,
+			globalnames.TOBYTE_FN, globalnames.TOBYTECOUNT:
+		//other functions
+		case globalnames.RAND_FN:
+		default:
+			return parse.Prune, false, nil
+		}
 	default:
 		return parse.Prune, false, nil
 	}

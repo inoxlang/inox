@@ -35,8 +35,9 @@ type InoxFunction struct {
 	originState    *State
 
 	//optional, should not be present if node is not present
-	visitCheckNode    func(visit visitArgs, globalsAtCreation map[string]Value) (parse.TraversalAction, bool, error)
-	globalsAtCreation map[string]Value
+	visitCheckNode           func(visit visitArgs, globalsAtCreation map[string]Value) (parse.TraversalAction, bool, error)
+	forbiddenNodeExplanation string //optional
+	globalsAtCreation        map[string]Value
 
 	SerializableMixin
 }
