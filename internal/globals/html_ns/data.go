@@ -121,6 +121,7 @@ func GetAllTagAttributes(name string) ([]AttributeData, bool) {
 	data = append(data, STANDARD_DATA.GlobalAttributes...)
 	data = append(data, HTMX_DATA.GlobalAttributes...)
 	data = append(data, PSEUDO_HTMX_DATA.GlobalAttributes...)
+	data = append(data, JSONFORM_DATA.GlobalAttributes...)
 
 	return data, true
 }
