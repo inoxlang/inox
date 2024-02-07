@@ -10170,6 +10170,43 @@ func testParse(
 				},
 			},
 			{
+				input:    "{a:1?}",
+				hasError: true,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 6}, nil, false},
+					Statements: []Node{
+						&ObjectLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{0, 6}},
+							Properties: []*ObjectProperty{
+								{
+									NodeBase: NodeBase{
+										NodeSpan{1, 4},
+										&ParsingError{UnspecifiedParsingError, INVALID_OBJ_REC_LIT_ENTRY_SEPARATION},
+										false,
+									},
+									Key: &IdentifierLiteral{
+										NodeBase: NodeBase{NodeSpan{1, 2}, nil, false},
+										Name:     "a",
+									},
+									Value: &IntLiteral{
+										NodeBase: NodeBase{NodeSpan{3, 4}, nil, false},
+										Raw:      "1",
+										Value:    1,
+									},
+								},
+								{
+									NodeBase: NodeBase{
+										NodeSpan{4, 5},
+										&ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInObjectRecord('?')},
+										false,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
 				input:    "({a:1)",
 				hasError: true,
 				result: &Chunk{
@@ -23203,6 +23240,44 @@ func testParse(
 									NodeBase: NodeBase{NodeSpan{5, 6}, nil, false},
 									Raw:      "1",
 									Value:    1,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("non-closing unexpected char after property", func(t *testing.T) {
+			n, err := parseChunk(t, "%{a:1?}", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 7}, nil, false},
+				Statements: []Node{
+					&ObjectPatternLiteral{
+						NodeBase: NodeBase{Span: NodeSpan{0, 7}},
+						Properties: []*ObjectPatternProperty{
+							{
+								NodeBase: NodeBase{
+									NodeSpan{2, 5},
+									&ParsingError{UnspecifiedParsingError, INVALID_OBJ_PATT_LIT_ENTRY_SEPARATION},
+									false,
+								},
+								Key: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 3}, nil, false},
+									Name:     "a",
+								},
+								Value: &IntLiteral{
+									NodeBase: NodeBase{NodeSpan{4, 5}, nil, false},
+									Raw:      "1",
+									Value:    1,
+								},
+							},
+							{
+								NodeBase: NodeBase{
+									NodeSpan{5, 6},
+									&ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInObjectPattern('?')},
+									false,
 								},
 							},
 						},

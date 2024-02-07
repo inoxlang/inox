@@ -2789,7 +2789,7 @@ object_pattern_top_loop:
 				char := p.s[p.i]
 				if isClosingDelim(char) {
 					p.i--
-					break object_pattern_top_loop
+					goto step_end
 				}
 
 				propParsingErr = &ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInObjectPattern(p.s[p.i])}
@@ -2798,13 +2798,13 @@ object_pattern_top_loop:
 				p.i++
 				properties = append(properties, &ObjectPatternProperty{
 					NodeBase: NodeBase{
-						Span: NodeSpan{propSpanStart, p.i - 1},
+						Span: NodeSpan{p.i - 1, p.i},
 						Err:  propParsingErr,
 					},
 					Key:   nil,
 					Value: nil,
 				})
-				continue object_pattern_top_loop
+				goto step_end
 			}
 
 			if boolConvExpr, ok := key.(*BooleanConversionExpression); ok {
@@ -3029,7 +3029,6 @@ object_pattern_top_loop:
 	}
 
 	if !noKey && keyName != "" || (keyName == "" && key != nil) {
-
 		properties = append(properties, &ObjectPatternProperty{
 			NodeBase: NodeBase{
 				Span: NodeSpan{propSpanStart, propSpanEnd},
@@ -3285,7 +3284,7 @@ object_literal_top_loop:
 			char := p.s[p.i]
 			if isClosingDelim(char) {
 				p.i--
-				break object_literal_top_loop
+				goto step_end
 			}
 			propParsingErr = &ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInObjectRecord(p.s[p.i])}
 			p.tokens = append(p.tokens, Token{Type: UNEXPECTED_CHAR, Raw: string(char), Span: NodeSpan{p.i, p.i + 1}})
@@ -3293,13 +3292,14 @@ object_literal_top_loop:
 			p.i++
 			properties = append(properties, &ObjectProperty{
 				NodeBase: NodeBase{
-					Span: NodeSpan{propSpanStart, p.i - 1},
+					Span: NodeSpan{p.i - 1, p.i},
 					Err:  propParsingErr,
 				},
 				Key:   nil,
 				Value: nil,
 			})
-			continue object_literal_top_loop
+			goto step_end
+
 		}
 
 		propSpanStart = key.Base().Span.Start

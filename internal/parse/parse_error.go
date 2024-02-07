@@ -419,7 +419,7 @@ const (
 	UNTERMINATED_REC_MISSING_CLOSING_BRACE  = "unterminated record literal, missing closing brace '}'"
 
 	//object pattern literals
-	INVALID_OBJ_PATT_LIT_ENTRY_SEPARATION                = "invalid object pattern literal, each entry should be followed by '}', newline, or ','."
+	INVALID_OBJ_PATT_LIT_ENTRY_SEPARATION                = "invalid object/record pattern literal, each entry should be followed by '}', newline, or ','."
 	METAPROPS_ARE_NOT_ALLOWED_IN_OBJECT_PATTERNS         = "metaproperties are not allowed in object patterns"
 	A_KEY_IS_REQUIRED_FOR_EACH_VALUE_IN_OBJ_REC_PATTERNS = "a key is required for each value in object/record patterns"
 	UNTERMINATED_OBJ_PATTERN_MISSING_CLOSING_BRACE       = "unterminated object pattern literal, missing closing brace '}'"
