@@ -283,10 +283,32 @@ conversion:
       a byte stream is returned. If the value is indexable a stream containing the elements is returned.
       
   - topic: tojson
-    text: The `tojson` function converts a value to JSON (string).
-
+    related-topics: [topjson, asjson]
+    text: >
+      The `tojson` function returns the JSON representation of an Inox value. 
+      The representation depends on the provided pattern (optional second parameter).
+      If you want to create a custom JSON (string) see the `asjson` function instead.
+    examples:
+    - code: 'tojson({a: 1}, %{a: int}) # `{"a":1}`'
+      standalone: true
+    - code: 'tojson({a: 1}, %object) # `{"a":{"int__value":1}}`'
+      standalone: true
+    - code: 'tojson({a: 1}) # `{"object__value":{"a":{"int__value":1}}}`'
+      standalone: true
+  
   - topic: topjson
-    text: The `topjson` function converts a value to formatted JSON (string).
+    related-topics: [tojson, asjson]
+    text: The `topjson` function is equivalent to `tojson` but the JSON output is pretty (formatted).
+
+  - topic: asjson
+    related-topics: [tojson, topjson]
+    text: >
+      The `asjson` function returns a JSON string created by stringifying the provided Inox value
+      as if it was a JSON value. Only objects, lists, string-like values, integers, floats, boolean, and `nil` are supported.
+      If you want to get the JSON representation of an Inox value see the `tojson` function instead.
+    examples:
+    - code: 'asjson({a: {b: 1}}) # {a: {b: 1}}'
+      standalone: true
 
   - topic: parse
     text: The `parse` function parses a string based on the specified pattern.

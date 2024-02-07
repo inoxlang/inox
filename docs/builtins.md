@@ -10,6 +10,7 @@
  - [Errors](#errors)
  - [Bytes and Runes](#bytes-and-runes)
  - [Browser Automation](#browser-automation)
+ - [Concurrency & Execution](#concurrency-&-execution)
  - [Data Containers](#data-containers)
  - [Context data](#context-data)
  - [Conversion](#conversion)
@@ -20,8 +21,10 @@
  - [Functional Programming](#functional-programming)
  - [HTML](#html)
  - [HTTP](#http)
- - [Id Parsing](#id-parsing)
+ - [ID Parsing](#id-parsing)
+ - [Integer Utils](#integer-utils)
  - [Structured Logging](#structured-logging)
+ - [Minimum & Maximum](#minimum-&-maximum)
  - [Printing](#printing)
  - [rand](#rand)
  - [Resource Manipulation](#resource-manipulation)
@@ -195,6 +198,57 @@ png_bytes = handle.screenshot_page!()
 
 this method should be called when you are finished using the Chrome handle.
 
+## Concurrency & Execution
+
+### LThreadGroup
+
+The `LThreadGroup` function creates a lightweight thread group. The group supports cancelling all lthreads added to it by calling its `cancel_all` method. Added lthreads can be waited for by calling the `wait_results` method of the group.
+
+**examples**
+
+```inox
+LThreadGroup()
+```
+### ex
+
+The `ex` function executes a command by name or by path in the OS filesystem. Executing commands requires the appropriate Inox permissions. The timeout duration for the execution can be configured by prefixing the command name (or path) with a duration range (e.g. ..5s),  it defaults to 500ms.
+
+**examples**
+
+```inox
+ex echo "hello"
+```
+```inox
+ex!(#echo, "hello")
+```
+```inox
+ex!(/bin/echo "hello")
+```
+```inox
+ex git --log
+```
+```inox
+ex ..5s rm ./
+```
+### run
+
+The `run` function executes an Inox script.
+
+**examples**
+
+```inox
+run ./script.ix
+```
+### cancel_exec
+
+The `cancel_exec` cancels the execution of the module.
+
+**examples**
+
+```inox
+cancel_exec()
+```
+
 ## Data Containers
 
 ### Graph
@@ -323,10 +377,31 @@ The `tobytecount` function converts an integer to a byte count. An error is thro
 The `torstream` function creates a readable stream from a value. If the value is readable (string, byte-slice, ...) a byte stream is returned. If the value is indexable a stream containing the elements is returned.
 ### tojson
 
-The `tojson` function converts a value to JSON (string).
+The `tojson` function returns the JSON representation of an Inox value.  The representation depends on the provided pattern (optional second parameter). If you want to create a custom JSON (string) see the `asjson` function instead.
+
+**examples**
+
+```inox
+tojson({a: 1}, %{a: int}) # `{"a":1}`
+```
+```inox
+tojson({a: 1}, %object) # `{"a":{"int__value":1}}`
+```
+```inox
+tojson({a: 1}) # `{"object__value":{"a":{"int__value":1}}}`
+```
 ### topjson
 
-The `topjson` function converts a value to formatted JSON (string).
+The `topjson` function is equivalent to `tojson` but the JSON output is pretty (formatted).
+### asjson
+
+The `asjson` function returns a JSON string created by stringifying the provided Inox value as if it was a JSON value. Only objects, lists, string-like values, integers, floats, boolean, and `nil` are supported. If you want to get the JSON representation of an Inox value see the `tojson` function instead.
+
+**examples**
+
+```inox
+asjson({a: {b: 1}}) # {a: {b: 1}}
+```
 ### parse
 
 The `parse` function parses a string based on the specified pattern.
@@ -934,11 +1009,11 @@ The function has several parameters that are all optional:
 http.Result{status: http.status.BAD_REQUEST}
 ```
 
-## Id Parsing
+## ID Parsing
 
 ### ULID
 
-The `ULID` function parses the string representation of an ULID and returns an `ulid` value. https://github.com/ulid/spec.
+The `ULID` function parses the string representation of a ULID and returns an `ulid` value. https://github.com/ulid/spec.
 
 **examples**
 
@@ -947,13 +1022,22 @@ ULID("01HNZ7E5R630AD87V7FWSFZ865")
 ```
 ### UUIDv4
 
-The `UUIDv4` function parses the string representation of an UUIDV4 and returns an `uuiv4` value. https://en.wikipedia.org/wiki/Universally_unique_identifier#Version_4_(random).
+The `UUIDv4` function parses the string representation of a UUIDV4 and returns an `uuiv4` value. https://en.wikipedia.org/wiki/Universally_unique_identifier#Version_4_(random).
 
 **examples**
 
 ```inox
 UUIDv4("968011a9-52dc-4816-8527-04b737376471")
 ```
+
+## Integer Utils
+
+### is_even
+
+`is_even` tells whether the provided integer is even, negative values are allowed.
+### is_odd
+
+`is_odd` tells whether the provided integer is odd, negative values are allowed.
 
 ## Structured Logging
 
@@ -983,6 +1067,45 @@ id = 100
 # add a log event of level 'debug' with the message 'user 100 created'
 # and a field `id: 100`
 log.add #{"user", id, "created", id: 100}
+```
+
+## Minimum & Maximum
+
+### minof
+
+`minof` returns the minimum value among its arguments, it supports all comparable values.
+
+**examples**
+
+```inox
+minof(1, 2)
+```
+```inox
+minof(1ms, 1s)
+```
+### maxof
+
+`maxof` returns the maximum value among its arguments, it supports all comparable values.
+
+**examples**
+
+```inox
+maxof(1, 2)
+```
+```inox
+maxof(1ms, 1s)
+```
+### minmax
+
+`minmax` returns the minimum and maximum values among its arguments, it supports all comparable values.
+
+**examples**
+
+```inox
+assign min max = minmax(1, 2)
+```
+```inox
+assign min max = minmax(1ms, 1s)
 ```
 
 ## Printing
@@ -1121,7 +1244,7 @@ get(ldb://main/users/01HNZ7E5R630AD87V7FWSFZ865)
 
 ### EmailAddress
 
-The `EmailAddress` function parses a RFC 5322 email address and returns a normalized `emailaddr` value. The normalization algorithm depends on the email provider, for example: `john.doe@gmail.com` is normalized to `johndoe@gmail.com`. The list of supported providers can be found here:  https://github.com/dimuska139/go-email-normalizer?tab=readme-ov-file#supported-providers. Internationalized email addresses will be supported in the future.
+The `EmailAddress` function parses a RFC 5322 email address and returns a normalized `emailaddr` value. The normalization algorithm depends on the email provider, for example: `john.doe@gmail.com` is normalized  to `johndoe@gmail.com`. The email is not normalized if the provider is not supported, supported providers are  listed here: https://github.com/dimuska139/go-email-normalizer?tab=readme-ov-file#supported-providers. Internationalized email addresses will be supported in the future.
 
 **examples**
 
