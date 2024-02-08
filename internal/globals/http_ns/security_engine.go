@@ -12,16 +12,16 @@ import (
 
 const (
 	//socket
-	SOCKET_WINDOW              = 10 * time.Second
+	SOCKET_RLIMIT_WINDOW       = 10 * time.Second
 	SOCKET_MAX_READ_REQ_COUNT  = 10
-	SOCKET_MAX_WRITE_REQ_COUNT = 2
+	SOCKET_MAX_WRITE_REQ_COUNT = 5
 
 	//ip level
-	SHARED_READ_BUST_WINDOW      = 10 * time.Second
+	SHARED_READ_BURST_WINDOW     = 10 * time.Second
 	SHARED_READ_BURST_WINDOW_REQ = 60
 
 	SHARED_WRITE_BURST_WINDOW     = 10 * time.Second
-	SHARED_WRITE_BURST_WINDOW_REQ = 6
+	SHARED_WRITE_BURST_WINDOW_REQ = 10
 )
 
 // the security engine is responsible for IP blacklisting, rate limiting & catpcha verification.
@@ -85,7 +85,7 @@ func (engine *securityEngine) getSocketMitigationData(req *Request) (*reqratelim
 	if !present {
 		engine.debugLogger.Debug().Str("newWindowFor", string(req.RemoteAddrAndPort)).Send()
 		window = reqratelimit.NewWindow(reqratelimit.WindowParameters{
-			Duration:     SOCKET_WINDOW,
+			Duration:     SOCKET_RLIMIT_WINDOW,
 			RequestCount: maxReqCount,
 		})
 		if IsMutationMethod(windowReqInfo.Method) {
@@ -119,7 +119,7 @@ func (engine *securityEngine) getIpLevelMitigationData(req *Request) *remoteIpDa
 	}
 
 	mitigationData.sharedReadBurstWindow = reqratelimit.NewSharedRateLimitingWindow(reqratelimit.WindowParameters{
-		Duration:     SHARED_READ_BUST_WINDOW,
+		Duration:     SHARED_READ_BURST_WINDOW,
 		RequestCount: SHARED_READ_BURST_WINDOW_REQ,
 	})
 	mitigationData.sharedWriteBurstWindow = reqratelimit.NewSharedRateLimitingWindow(reqratelimit.WindowParameters{
