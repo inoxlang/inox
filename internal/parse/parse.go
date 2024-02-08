@@ -7156,27 +7156,23 @@ func (p *parser) parseTreedataLiteral(treedataIdent Node) *TreedataLiteral {
 
 	for p.i < p.len && p.s[p.i] != '}' { //
 		entry, cont := p.parseTreeStructureEntry()
-		children = append(children, entry)
+		if entry != nil {
+			children = append(children, entry)
+		}
 
 		if !cont {
-			return &TreedataLiteral{
-				NodeBase: NodeBase{
-					Span: NodeSpan{start, p.i},
-				},
-				Root:     root,
-				Children: children,
-			}
+			break
 		}
 
 		p.eatSpaceNewlineCommaComment()
 	}
 
 	var parsingErr *ParsingError
-	if p.i >= p.len || p.s[p.i] != '}' {
-		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_TREEDATA_LIT_MISSING_CLOSING_BRACE}
-	} else {
+	if p.i < p.len && p.s[p.i] == '}' {
 		p.tokens = append(p.tokens, Token{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
 		p.i++
+	} else {
+		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_TREEDATA_LIT_MISSING_CLOSING_BRACE}
 	}
 
 	return &TreedataLiteral{
@@ -7198,11 +7194,16 @@ func (p *parser) parseTreeStructureEntry() (entry *TreedataEntry, cont bool) {
 	p.eatSpace()
 
 	if p.i < p.len && isMissingExpr {
-		p.tokens = append(p.tokens, Token{Type: UNEXPECTED_CHAR, Span: NodeSpan{p.i, p.i + 1}, Raw: string(p.s[p.i])})
+		char := p.s[p.i]
+		if isClosingDelim(char) {
+			cont = false
+			return
+		}
+		p.tokens = append(p.tokens, Token{Type: UNEXPECTED_CHAR, Span: NodeSpan{p.i, p.i + 1}, Raw: string(char)})
 		node = &UnknownNode{
 			NodeBase: NodeBase{
 				node.Base().Span,
-				&ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInTreedataLiteral(p.s[p.i])},
+				&ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInTreedataLiteral(char)},
 				false,
 			},
 		}

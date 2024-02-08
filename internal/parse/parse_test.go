@@ -20969,6 +20969,28 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("empty, missing closing brace before closing parenthesis of parent", func(t *testing.T) {
+			n, err := parseChunk(t, `(treedata 0 {)`, "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
+				Statements: []Node{
+					&TreedataLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{1, 13},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_TREEDATA_LIT_MISSING_CLOSING_BRACE},
+							true,
+						},
+						Root: &IntLiteral{
+							NodeBase: NodeBase{NodeSpan{10, 11}, nil, false},
+							Raw:      "0",
+							Value:    0,
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("single entry with children", func(t *testing.T) {
 			n := mustparseChunk(t, "treedata 0 { 0 {} }")
 			assert.EqualValues(t, &Chunk{
@@ -21025,6 +21047,38 @@ func testParse(
 								NodeBase: NodeBase{NodeSpan{13, 15}, nil, false},
 								Value: &IntLiteral{
 									NodeBase: NodeBase{NodeSpan{13, 14}, nil, false},
+									Raw:      "0",
+									Value:    0,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("missing closing brace after entry and before closing parenthesis of parent", func(t *testing.T) {
+			n, err := parseChunk(t, "(treedata 0 { 0 )", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
+				Statements: []Node{
+					&TreedataLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{1, 16},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_TREEDATA_LIT_MISSING_CLOSING_BRACE},
+							true,
+						},
+						Root: &IntLiteral{
+							NodeBase: NodeBase{NodeSpan{10, 11}, nil, false},
+							Raw:      "0",
+							Value:    0,
+						},
+						Children: []*TreedataEntry{
+							{
+								NodeBase: NodeBase{NodeSpan{14, 16}, nil, false},
+								Value: &IntLiteral{
+									NodeBase: NodeBase{NodeSpan{14, 15}, nil, false},
 									Raw:      "0",
 									Value:    0,
 								},
