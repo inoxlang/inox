@@ -1019,7 +1019,7 @@ Errors:
 
 concurrency-exec:
   namespace: false
-  title: Concurrency & Execution
+  title: Concurrency And Execution
   elements:
   - topic: LThreadGroup
     text: The `LThreadGroup` function creates a lightweight thread group. The group supports cancelling

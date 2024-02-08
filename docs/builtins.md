@@ -10,7 +10,7 @@
  - [Errors](#errors)
  - [Bytes and Runes](#bytes-and-runes)
  - [Browser Automation](#browser-automation)
- - [Concurrency & Execution](#concurrency-&-execution)
+ - [Concurrency And Execution](#concurrency-and-execution)
  - [Data Containers](#data-containers)
  - [Context data](#context-data)
  - [Conversion](#conversion)
@@ -198,7 +198,7 @@ png_bytes = handle.screenshot_page!()
 
 this method should be called when you are finished using the Chrome handle.
 
-## Concurrency & Execution
+## Concurrency And Execution
 
 ### LThreadGroup
 
