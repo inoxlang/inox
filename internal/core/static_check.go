@@ -586,9 +586,9 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 	case *parse.Assignment, *parse.MultiAssignment:
 		return c.checkAssignment(node, scopeNode, closestModule)
 	case *parse.ForStatement:
-		return c.checkForStmt(node, scopeNode)
+		return c.checkForStmt(node, scopeNode, closestModule)
 	case *parse.WalkStatement:
-		return c.checkWalkStmt(node, scopeNode)
+		return c.checkWalkStmt(node, scopeNode, closestModule)
 	case *parse.ReadonlyPatternExpression:
 		return c.checkReadonlyPatternExpr(node, parent)
 	case *parse.FunctionDeclaration:
@@ -1581,47 +1581,56 @@ func (c *checker) checkAssignment(node parse.Node, scopeNode, closestModule pars
 	return parse.ContinueTraversal
 }
 
-func (c *checker) checkForStmt(node *parse.ForStatement, scopeNode parse.Node) parse.TraversalAction {
-	variablesBeforeStmt := c.getScopeLocalVarsCopy(scopeNode)
-	variables := c.getLocalVarsInScope(scopeNode)
+func (c *checker) checkForStmt(node *parse.ForStatement, scopeNode, closestModule parse.Node) parse.TraversalAction {
+	localVariablesBeforeStmt := c.getScopeLocalVarsCopy(scopeNode)
+	localVars := c.getLocalVarsInScope(scopeNode)
+	globalVars := c.getModGlobalVars(closestModule)
 
-	c.store[node] = variablesBeforeStmt
+	c.store[node] = localVariablesBeforeStmt
 
 	if node.KeyIndexIdent != nil {
-		if _, alreadyDefined := variables[node.KeyIndexIdent.Name]; alreadyDefined &&
-			!c.shellLocalVars[node.KeyIndexIdent.Name] {
-			c.addError(node, fmtCannotShadowVariable(node.KeyIndexIdent.Name))
-			return parse.ContinueTraversal
+		name := node.KeyIndexIdent.Name
+
+		if _, alreadyDefined := localVars[name]; alreadyDefined && !c.shellLocalVars[name] {
+			c.addError(node.KeyIndexIdent, fmtCannotShadowLocalVariable(name))
+		} else if _, alreadyDefined := globalVars[name]; alreadyDefined {
+			c.addError(node.KeyIndexIdent, fmtCannotShadowGlobalVariable(name))
+		} else {
+			localVars[name] = localVarInfo{}
 		}
-		variables[node.KeyIndexIdent.Name] = localVarInfo{}
 	}
 
 	if node.ValueElemIdent != nil {
-		if _, alreadyDefined := variables[node.ValueElemIdent.Name]; alreadyDefined &&
-			!c.shellLocalVars[node.ValueElemIdent.Name] {
-			c.addError(node, fmtCannotShadowVariable(node.ValueElemIdent.Name))
-			return parse.ContinueTraversal
+		name := node.ValueElemIdent.Name
+
+		if _, alreadyDefined := localVars[name]; alreadyDefined {
+			c.addError(node.ValueElemIdent, fmtCannotShadowLocalVariable(name))
+		} else if _, alreadyDefined := globalVars[name]; alreadyDefined {
+			c.addError(node.ValueElemIdent, fmtCannotShadowGlobalVariable(name))
+		} else {
+			localVars[name] = localVarInfo{}
 		}
-		variables[node.ValueElemIdent.Name] = localVarInfo{}
 	}
 
 	return parse.ContinueTraversal
 }
 
-func (c *checker) checkWalkStmt(node *parse.WalkStatement, scopeNode parse.Node) parse.TraversalAction {
-
+func (c *checker) checkWalkStmt(node *parse.WalkStatement, scopeNode, closestModule parse.Node) parse.TraversalAction {
 	variablesBeforeStmt := c.getScopeLocalVarsCopy(scopeNode)
-	variables := c.getLocalVarsInScope(scopeNode)
+	localVars := c.getLocalVarsInScope(scopeNode)
+	globalVars := c.getModGlobalVars(closestModule)
 
 	c.store[node] = variablesBeforeStmt
 
 	if node.EntryIdent != nil {
-		if _, alreadyDefined := variables[node.EntryIdent.Name]; alreadyDefined &&
-			!c.shellLocalVars[node.EntryIdent.Name] {
-			c.addError(node, fmtCannotShadowVariable(node.EntryIdent.Name))
-			return parse.ContinueTraversal
+		name := node.EntryIdent.Name
+		if _, alreadyDefined := localVars[name]; alreadyDefined && !c.shellLocalVars[name] {
+			c.addError(node.EntryIdent, fmtCannotShadowLocalVariable(name))
+		} else if _, alreadyDefined := globalVars[name]; alreadyDefined {
+			c.addError(node.EntryIdent, fmtCannotShadowGlobalVariable(name))
+		} else {
+			localVars[name] = localVarInfo{}
 		}
-		variables[node.EntryIdent.Name] = localVarInfo{}
 	}
 	return parse.ContinueTraversal
 }

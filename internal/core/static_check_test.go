@@ -3286,6 +3286,44 @@ func TestCheck(t *testing.T) {
 			)
 			assert.Equal(t, expectedErr, err)
 		})
+
+		t.Run("key and value vars should not shadow local variables", func(t *testing.T) {
+			n, src := mustParseCode(`
+				k = 1
+				v = 1
+				for k, v in [] {}
+			`)
+			keyIdent := n.Statements[2].(*parse.ForStatement).KeyIndexIdent
+			valueIdent := n.Statements[2].(*parse.ForStatement).ValueElemIdent
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(keyIdent, src, fmtCannotShadowLocalVariable("k")),
+				makeError(valueIdent, src, fmtCannotShadowLocalVariable("v")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("key and value vars should not shadow global variables", func(t *testing.T) {
+			n, src := mustParseCode(`
+				$$k = 1
+				$$v = 1
+				for k, v in [] {}
+			`)
+			keyIdent := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
+				return n.Name == "k"
+			})
+			valueIdent := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
+				return n.Name == "v"
+			})
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(keyIdent, src, fmtCannotShadowGlobalVariable("k")),
+				makeError(valueIdent, src, fmtCannotShadowGlobalVariable("v")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
 	})
 
 	t.Run("walk statement", func(t *testing.T) {
@@ -3316,6 +3354,34 @@ func TestCheck(t *testing.T) {
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
 				makeError(varNode, src, fmtVarIsNotDeclared("x")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("entry var should not shadow local variables", func(t *testing.T) {
+			n, src := mustParseCode(`
+				e = 1
+				walk ./ e {}
+			`)
+			entryIdent := n.Statements[1].(*parse.WalkStatement).EntryIdent
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(entryIdent, src, fmtCannotShadowLocalVariable("e")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("entry var should not shadow local variables", func(t *testing.T) {
+			n, src := mustParseCode(`
+				$$e = 1
+				walk ./ e {}
+			`)
+			entryIdent := n.Statements[1].(*parse.WalkStatement).EntryIdent
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(entryIdent, src, fmtCannotShadowGlobalVariable("e")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
