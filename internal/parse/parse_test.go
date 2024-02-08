@@ -8175,6 +8175,11 @@ func testParse(
 				[]byte{0x12, 0x12},
 				"",
 			},
+			{
+				"(0x[12)",
+				[]byte{0x12},
+				UNTERMINATED_BYTE_SICE_LIT_MISSING_CLOSING_BRACKET,
+			},
 
 			//binary
 			{
@@ -8227,6 +8232,12 @@ func testParse(
 				[]byte{0b0000_0000, 0b0000_0000},
 				"",
 			},
+			{
+				"(0b[1)",
+				[]byte{0x1},
+				UNTERMINATED_BYTE_SICE_LIT_MISSING_CLOSING_BRACKET,
+			},
+
 			//decimal
 			{
 				"0d[]",
@@ -8262,6 +8273,11 @@ func testParse(
 				"0d[1 256]",
 				nil,
 				fmtInvalidByteInDecimalByteSliceLiteral([]byte("256")),
+			},
+			{
+				"(0d[1)",
+				[]byte{0x1},
+				UNTERMINATED_BYTE_SICE_LIT_MISSING_CLOSING_BRACKET,
 			},
 		}
 

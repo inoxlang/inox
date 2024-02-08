@@ -5852,6 +5852,7 @@ func (p *parser) parseByteSlices() Node {
 		value        []byte
 	)
 
+base_switch:
 	switch p.s[p.i] {
 	case 'x':
 		p.i++
@@ -5875,6 +5876,8 @@ func (p *parser) parseByteSlices() Node {
 			switch {
 			case r >= '0' && r <= '9' || r >= 'a' && r <= 'z':
 				buff = append(buff, byte(r))
+			case isClosingDelim(r):
+				break base_switch
 			default:
 				if parsingError == nil {
 					parsingError = &ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInHexadecimalByteSliceLiteral(r)}
@@ -5938,6 +5941,10 @@ func (p *parser) parseByteSlices() Node {
 				}
 			case ' ', '\n', '\r':
 			default:
+				if isClosingDelim(r) {
+					break base_switch
+				}
+
 				if parsingError == nil {
 					parsingError = &ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInBinByteSliceLiteral(r)}
 				} else {
@@ -5978,6 +5985,10 @@ func (p *parser) parseByteSlices() Node {
 					buff = append(buff, ' ')
 				}
 			default:
+				if isClosingDelim(r) {
+					break base_switch
+				}
+
 				if parsingError == nil {
 					parsingError = &ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInDecimalByteSliceLiteral(r)}
 				} else {
@@ -6032,14 +6043,14 @@ func (p *parser) parseByteSlices() Node {
 		}
 	}
 
-	if p.i >= p.len {
+	if p.i < p.len && p.s[p.i] == ']' {
+		p.i++
+	} else {
 		if parsingError == nil {
 			parsingError = &ParsingError{UnspecifiedParsingError, UNTERMINATED_BYTE_SICE_LIT_MISSING_CLOSING_BRACKET}
 		} else {
 			parsingError.Message += "\n" + UNTERMINATED_BYTE_SICE_LIT_MISSING_CLOSING_BRACKET
 		}
-	} else {
-		p.i++
 	}
 
 	return &ByteSliceLiteral{
