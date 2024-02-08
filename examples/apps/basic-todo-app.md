@@ -1,27 +1,32 @@
 # Basic ToDo App
 
-Files
-
-- [main.ix](#/main.ix)
-- [schema.ix](#/schema.ix)
+- [main.ix](#main.ix)
+- [schema.ix](#schema.ix)
 - **routes/**
-  - [index.ix](#/routes/index.ix)
+  - [index.ix](#routes-index.ix)
   - **users/**
-    - [POST.ix](#/routes/users/POST.ix)
+    - [POST.ix](#routes-users/POST.ix)
   - **sessions/**
-    - [POST.ix](#/routes/sessions/POST.ix)
+    - [POST.ix](#routes-sessions/POST.ix)
   - **todos/**
-    - [GET.ix](#/routes/todos/GET.ix)
-    - [POST.ix](#/routes/todos/POST.ix)
-    - [PATCH.ix](#/routes/todos/PATCH.ix)
+    - [GET.ix](#routes-todos/GET.ix)
+    - [POST.ix](#routes-todos/POST.ix)
+    - [PATCH.ix](#routes-todos/PATCH.ix)
 - **components/**
-  - [common.ix](#/components/common.ix)
-  - [login.ix](#/components/login.ix)
-  - [todo.ix](#/components/todo.ix)
+  - [common.ix](#components-common.ix)
+  - [login.ix](#components-login.ix)
+  - [todo.ix](#components-todo.ix)
 - **static**
   - **base.css**
   - **htmx.min.js**
-  - **inox.js**
+  - **inox.js** (< 12kB gzipped, not minified yet),
+    - [Surreal](https://github.com/gnat/surreal) 
+    - [CSS Scope Inline](https://github.com/gnat/css-scope-inline)
+    - [Preact Signals](https://github.com/preactjs/signals/tree/main/packages/core)
+    - [Small client-side component library](../../docs/frontend-development.md#client-side-components---inoxjs)
+
+_The current state of the code is not yet representative of all the features that Inox will provide. Also please note that 
+this is a limited application example._
 
 ## /main.ix
 

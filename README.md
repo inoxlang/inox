@@ -1,4 +1,4 @@
-> Allow me to continue working full-time on Inox by [sponsoring me](https://github.com/sponsors/GraphR00t). Thank you :) !
+> Allow me to continue working full-time on Inox by [sponsoring me](https://github.com/sponsors/GraphR00t). Thank you :)
 
 # Inox
 
@@ -10,6 +10,7 @@ The Inox platform is released as a **single binary** that will contain all you n
 deeply integrates with Inox's built-in database engine, testing engine and HTTP server.
 
 ⬇️ [Installation](#installation)\
+⬇️ [Application Code Examples](#application-code-examples)\
 📚 [Learning Inox](#learning-inox)\
 👥 [Discord Server](https://discord.gg/53YGx8GzgE)
 
@@ -133,12 +134,12 @@ Inox applications can currently only be developed using the Inox extension for V
   rm ./inox inox-linux-amd64.tar.gz
   ```
 
-- __\[recommended\]__ add the [inoxd daemon](./docs/inox-daemon.md) (systemd service) to automatically start the project server.
+<!-- - __\[recommended\]__ add the [inoxd daemon](./docs/inox-daemon.md) (systemd service) to automatically start the project server.
   If you have installed `inox` on your **local machine** or a local VM, you can execute the following command to add **inoxd**:
   ```
   sudo inox add-service # don't run this on a REMOTE machine
   ```
-  _If you execute this command inside a VM, don't forget to forward the port 8305 to allow VSCode to connect to the project server._
+  _If you execute this command inside a VM, don't forget to forward the port 8305 to allow VSCode to connect to the project server._ -->
 
 - __Add Inox support to your IDE__
   - [VSCode & VSCodium](https://marketplace.visualstudio.com/items?itemName=graphr00t.inox) : LSP, debug, colorization, snippets, formatting.\
@@ -151,7 +152,13 @@ Inox applications can currently only be developed using the Inox extension for V
 
 </details>
 
-If you want to compile Inox from source go [here](#compile-from-source).
+If you want to build Inox from source go [here](#build-from-source).
+
+## Application Code Examples
+
+- [Basic Todo app](./examples/apps/basic-todo-app.md)
+
+_More examples will be added soon._
 
 ## Learning Inox
 
@@ -547,15 +554,15 @@ permissions.
 
 **<summary>Permission examples</summary>**
 
-- access to the filesystem (read, create, update, write, delete)
-- access to the network (several distinct permissions)
+- Access to the filesystem (read, create, update, write, delete)
+- Access to the network (several distinct permissions)
   - HTTP (read, create, update, delete, listen)
   - Websocket (read, write, listen)
   - DNS (read)
   - Raw TCP (read, write)
-- access to environment variables (read, write, delete)
-- create lightweight threads
-- execute specific commands
+- Access to environment variables (read, write, delete)
+- Create lightweight threads
+- Cxecute specific commands
 
 </details>
 
@@ -996,11 +1003,11 @@ options:
 </details>
 
 
-## Compile from Source
+## Build From Source
 
-- clone this repository
+- Clone this repository
 - `cd` into the directory
-- run `go build ./cmd/inox`
+- Run `go build ./cmd/inox`
 
 ## Early Sponsors
 
