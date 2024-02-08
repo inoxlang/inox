@@ -3,9 +3,11 @@ package projectserver
 import (
 	"encoding/json"
 	"errors"
+	"strings"
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
@@ -63,10 +65,22 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, usi
 	parsingDiagnostics := utils.MapSlice(mod.ParsingErrors, func(err core.Error) defines.Diagnostic {
 		i++
 
+		pos := mod.ParsingErrorPositions[i]
+		text := err.Text()
+
+		//If the error is about the missing closing brace of a block we only show the rightmost
+		//position in the error's range. Keeping the whole range would cause the editor to underline
+		//all the block's range.
+		if strings.Contains(text, parse.UNTERMINATED_BLOCK_MISSING_BRACE) {
+			pos.StartLine = pos.EndLine
+			pos.StartColumn = pos.EndColumn
+			pos.Span.Start = pos.Span.End - 1
+		}
+
 		return defines.Diagnostic{
 			Message:  err.Text(),
 			Severity: &errSeverity,
-			Range:    rangeToLspRange(mod.ParsingErrorPositions[i]),
+			Range:    rangeToLspRange(pos),
 		}
 	})
 
