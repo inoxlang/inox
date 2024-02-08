@@ -3,22 +3,22 @@
 Note: The application uses [HTMX](https://htmx.org/), and a [custom HTMX extension](../../docs/frontend-development.md#forms) for converting form parameters to JSON. The current state of the code is not yet representative of all the features that Inox will provide. Also please note that 
 this is a limited application example.
 
-- [main.ix](#main.ix)
-- [schema.ix](#schema.ix)
+- [main.ix](#mainix)
+- [schema.ix](#schemaix)
 - **routes/**
-  - [index.ix](#routes-index.ix)
+  - [index.ix](#routesindexix)
   - **users/**
-    - [POST.ix](#routes-users/POST.ix)
+    - [POST.ix](#routessessionspostix)
   - **sessions/**
-    - [POST.ix](#routes-sessions/POST.ix)
+    - [POST.ix](#routessessionspostix)
   - **todos/**
-    - [GET.ix](#routes-todos/GET.ix)
-    - [POST.ix](#routes-todos/POST.ix)
-    - [PATCH.ix](#routes-todos/PATCH.ix)
+    - [GET.ix](#routestodosgetix)
+    - [POST.ix](#routestodospostix)
+    - [PATCH.ix](#routestodospatchix)
 - **components/**
-  - [common.ix](#components-common.ix)
-  - [login.ix](#components-login.ix)
-  - [todo.ix](#components-todo.ix)
+  - [common.ix](#componentscommonix)
+  - [login.ix](#componentsloginix)
+  - [todo.ix](#componentstodoix)
 - **static**
   - **base.css**
   - **htmx.min.js**
@@ -27,9 +27,6 @@ this is a limited application example.
     - [CSS Scope Inline](https://github.com/gnat/css-scope-inline)
     - [Preact Signals](https://github.com/preactjs/signals/tree/main/packages/core)
     - [Small client-side component library](../../docs/frontend-development.md#client-side-components---inoxjs)
-
-
-
 
 ## /main.ix
 
@@ -58,7 +55,7 @@ this is a limited application example.
 
 <details>
 
-![image](https://github.com/inoxlang/inox/assets/113632189/82283f87-0d9b-4509-aa3d-d374ecba8042)
+![image](https://github.com/inoxlang/inox/assets/113632189/a6ab983c-7868-47d5-8084-3cbcd999a04b)
 </details>
 
 
@@ -106,7 +103,7 @@ this is a limited application example.
 ![image](https://github.com/inoxlang/inox/assets/113632189/cb3d0e88-8715-4163-b2f7-f15ef4cbbc29)
 </details>
 
-## /components/login.ix
+## /components/todo.ix
 
 <details>
 
