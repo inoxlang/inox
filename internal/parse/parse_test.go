@@ -17616,6 +17616,7 @@ func testParse(
 				},
 			}, n)
 		})
+
 		t.Run("missing block's closing brace, trailing space", func(t *testing.T) {
 			n, err := parseChunk(t, "fn(){ ", "")
 
@@ -17643,6 +17644,29 @@ func testParse(
 								/*[]Token{
 									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{4, 5}},
 								},*/
+							},
+							Statements: nil,
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("missing block's closing brace before closing parenthesis", func(t *testing.T) {
+			n, err := parseChunk(t, "(fn(){)", "")
+
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 7}, nil, false},
+				Statements: []Node{
+					&FunctionExpression{
+						NodeBase:   NodeBase{Span: NodeSpan{1, 6}, IsParenthesized: true},
+						Parameters: nil,
+						Body: &Block{
+							NodeBase: NodeBase{
+								NodeSpan{5, 6},
+								&ParsingError{UnspecifiedParsingError, UNTERMINATED_BLOCK_MISSING_BRACE},
+								false,
 							},
 							Statements: nil,
 						},
@@ -20969,7 +20993,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("empty, missing closing brace before closing parenthesis of parent", func(t *testing.T) {
+		t.Run("empty, missing closing brace before closing parenthesis", func(t *testing.T) {
 			n, err := parseChunk(t, `(treedata 0 {)`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
@@ -21057,7 +21081,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("missing closing brace after entry and before closing parenthesis of parent", func(t *testing.T) {
+		t.Run("missing closing brace after entry and before closing parenthesis", func(t *testing.T) {
 			n, err := parseChunk(t, "(treedata 0 { 0 )", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{

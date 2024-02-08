@@ -408,7 +408,9 @@ func (p *parser) parseBlock() *Block {
 		stmts      []Node
 	)
 
-	for p.i < p.len && p.s[p.i] != '}' {
+	p.eatSpaceNewlineSemicolonComment()
+
+	for p.i < p.len && p.s[p.i] != '}' && !isClosingDelim(p.s[p.i]) {
 		if IsForbiddenSpaceCharacter(p.s[p.i]) {
 
 			p.tokens = append(p.tokens, Token{Type: UNEXPECTED_CHAR, Span: NodeSpan{p.i, p.i + 1}, Raw: string(p.s[p.i])})
@@ -425,7 +427,6 @@ func (p *parser) parseBlock() *Block {
 		}
 
 		var stmtErr *ParsingError
-		p.eatSpaceNewlineSemicolonComment()
 
 		if p.i >= p.len || p.s[p.i] == '}' {
 			break
@@ -452,16 +453,15 @@ func (p *parser) parseBlock() *Block {
 
 	closingBraceIndex := p.i
 
-	if p.i >= p.len {
-		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_BLOCK_MISSING_BRACE}
-
-	} else {
+	if p.i < p.len && p.s[p.i] == '}' {
 		p.tokens = append(p.tokens, Token{
 			Type:    CLOSING_CURLY_BRACKET,
 			SubType: BLOCK_CLOSING_BRACE,
 			Span:    NodeSpan{closingBraceIndex, closingBraceIndex + 1},
 		})
 		p.i++
+	} else {
+		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_BLOCK_MISSING_BRACE}
 	}
 
 	end := p.i
