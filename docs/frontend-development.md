@@ -276,13 +276,13 @@ required to have specific attributes that enable JSON encoding.
 }
 ```
 
-## HTMX Integrations
+## HTML and HTMX Integrations
 
-**This is not implemented yet.**
+**This is not fully implemented yet.**
 
 ### Checks
 
-- Validation of `<input>` elements in HTMX forms
+- Validation of `<input>` elements in forms
 - Validation of URLs in attributes such as `hx-get`
 
 _and more._

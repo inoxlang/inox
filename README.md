@@ -17,7 +17,6 @@ deeply integrates with Inox's built-in database engine, testing engine and HTTP 
 
 - [XML Expressions (HTML)](#xml-expressions)
 - [HTTP Server - Filesystem Routing](#http-server---filesystem-routing)
-- [HTMX Integration](#htmx-integration)
 - [Transactions & Effects (WIP)](#transactions--effects-wip)
 - [Built-in Database](#built-in-database)
 - [Project Server (LSP)](#project-server-lsp)
@@ -243,12 +242,6 @@ username = mod-args.name
 > Note: The default [Content Security Policy](./docs/builtins.md#httpcsp) returned by the HTTP server (header) is very strict by default. 
 
 > GET/HEAD requests cannot cause changes in the filesystem or in databases.
-
-### HTMX Integration
-
-Server-side components can be written using [HTMX](https://htmx.org/) since its based on HTML attributes, see [here](./docs/frontend-development.md). In the near future HTMX will be integrated in order to improve [user experience](./docs/frontend-development.md#htmx-integrations) and [allow database optimizations](./docs/frontend-development.md#server-side-optimizations).
-
-Also I am working on a library to allow the development of small client-side components written in JS (see [frontend development](./docs/frontend-development.md)).
 
 ### Transactions & Effects (WIP)
 
