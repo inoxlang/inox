@@ -2703,6 +2703,8 @@ func (p *parser) parseObjectRecordPatternLiteral(percentPrefixed, isRecordPatter
 		}
 	}
 
+	p.eatSpaceNewlineCommaComment()
+
 	//entry
 	var (
 		key            Node
@@ -2720,8 +2722,6 @@ func (p *parser) parseObjectRecordPatternLiteral(percentPrefixed, isRecordPatter
 
 object_pattern_top_loop:
 	for p.i < p.len && p.s[p.i] != '}' && !isClosingDelim(p.s[p.i]) { //one iteration == one entry or spread element (that can be invalid)
-		p.eatSpaceNewlineCommaComment()
-
 		propParsingErr = nil
 		key = nil
 		isMissingExpr = false
@@ -2732,7 +2732,7 @@ object_pattern_top_loop:
 		propParsingErr = nil
 		noKey = false
 
-		if p.i >= p.len || p.s[p.i] == '}' || isClosingDelim(p.s[p.i]) {
+		if p.s[p.i] == '}' {
 			break object_pattern_top_loop
 		}
 
@@ -2774,6 +2774,7 @@ object_pattern_top_loop:
 				Expr: expr,
 			})
 
+			goto step_end
 		} else {
 			prev := p.inPattern
 			p.inPattern = false
@@ -2787,11 +2788,6 @@ object_pattern_top_loop:
 			//if missing expression we report an error and we continue the main loop
 			if isMissingExpr {
 				char := p.s[p.i]
-				if isClosingDelim(char) {
-					p.i--
-					goto step_end
-				}
-
 				propParsingErr = &ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInObjectPattern(p.s[p.i])}
 				p.tokens = append(p.tokens, Token{Type: UNEXPECTED_CHAR, Raw: string(char), Span: NodeSpan{p.i, p.i + 1}})
 
@@ -3015,17 +3011,17 @@ object_pattern_top_loop:
 					Optional: isOptional,
 				})
 			}
-
-		step_end:
-			keyName = ""
-			key = nil
-			keyOrVal = nil
-			isOptional = false
-			v = nil
-			noKey = false
-			type_ = nil
-			p.eatSpaceNewlineCommaComment()
 		}
+
+	step_end:
+		keyName = ""
+		key = nil
+		keyOrVal = nil
+		isOptional = false
+		v = nil
+		noKey = false
+		type_ = nil
+		p.eatSpaceNewlineCommaComment()
 	}
 
 	if !noKey && keyName != "" || (keyName == "" && key != nil) {
@@ -3207,6 +3203,8 @@ func (p *parser) parseObjectOrRecordLiteral(isRecord bool) Node {
 		p.i++
 	}
 
+	p.eatSpaceNewlineCommaComment()
+
 	//entry
 	var (
 		nextTokenIndex int
@@ -3224,8 +3222,6 @@ func (p *parser) parseObjectOrRecordLiteral(isRecord bool) Node {
 
 object_literal_top_loop:
 	for p.i < p.len && p.s[p.i] != '}' && !isClosingDelim(p.s[p.i]) { //one iteration == one entry or spread element (that can be invalid)
-		p.eatSpaceNewlineCommaComment()
-
 		propParsingErr = nil
 		nextTokenIndex = -1
 		key = nil
@@ -3239,7 +3235,7 @@ object_literal_top_loop:
 		propParsingErr = nil
 		noKey = false
 
-		if p.i >= p.len || p.s[p.i] == '}' || isClosingDelim(p.s[p.i]) {
+		if p.i >= p.len || p.s[p.i] == '}' {
 			break object_literal_top_loop
 		}
 
@@ -3282,10 +3278,6 @@ object_literal_top_loop:
 		//if missing expression we report an error and we continue the main loop
 		if isMissingExpr {
 			char := p.s[p.i]
-			if isClosingDelim(char) {
-				p.i--
-				goto step_end
-			}
 			propParsingErr = &ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInObjectRecord(p.s[p.i])}
 			p.tokens = append(p.tokens, Token{Type: UNEXPECTED_CHAR, Raw: string(char), Span: NodeSpan{p.i, p.i + 1}})
 
@@ -3701,11 +3693,12 @@ func (p *parser) parseDictionaryLiteral() *DictionaryLiteral {
 	var entries []*DictionaryEntry
 	p.tokens = append(p.tokens, Token{Type: OPENING_DICTIONARY_BRACKET, Span: NodeSpan{p.i - 2, p.i}})
 
-dictionary_literal_top_loop:
-	for p.i < p.len && p.s[p.i] != '}' { //one iteration == one entry (that can be invalid)
-		p.eatSpaceNewlineCommaComment()
+	p.eatSpaceNewlineCommaComment()
 
-		if p.i < p.len && p.s[p.i] == '}' {
+dictionary_literal_top_loop:
+	for p.i < p.len && p.s[p.i] != '}' && !isClosingDelim(p.s[p.i]) { //one iteration == one entry (that can be invalid)
+
+		if p.s[p.i] == '}' {
 			break dictionary_literal_top_loop
 		}
 
@@ -3787,9 +3780,13 @@ dictionary_literal_top_loop:
 		entry.Value = value
 		entry.Span.End = value.Base().Span.End
 
-		for isMissingExpr && p.i < p.len && p.s[p.i] != '}' && p.s[p.i] != ',' {
+		if isMissingExpr && p.i < p.len && p.s[p.i] != '}' && p.s[p.i] != ',' {
+			char := p.s[p.i]
+			if isClosingDelim(char) {
+				break dictionary_literal_top_loop //No need to add the the entry since it is already added .
+			}
 			if entry.Err == nil {
-				entry.Err = &ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInDictionary(p.s[p.i])}
+				entry.Err = &ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInDictionary(char)}
 			}
 			p.i++
 		}
@@ -3803,11 +3800,11 @@ dictionary_literal_top_loop:
 		p.eatSpaceNewlineCommaComment()
 	}
 
-	if p.i >= p.len {
-		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_DICT_MISSING_CLOSING_BRACE}
-	} else {
+	if p.i < p.len && p.s[p.i] == '}' {
 		p.tokens = append(p.tokens, Token{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
 		p.i++
+	} else {
+		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_DICT_MISSING_CLOSING_BRACE}
 	}
 
 	return &DictionaryLiteral{
@@ -6972,15 +6969,11 @@ func (p *parser) parseMappingExpression(mappingIdent Node) *MappingExpression {
 	p.eatSpaceNewlineComment()
 	var entries []Node
 
-	for p.i < p.len && p.s[p.i] != '}' {
+	for p.i < p.len && p.s[p.i] != '}' && !isClosingDelim(p.s[p.i]) {
 		key, isMissingExpr := p.parseExpression()
 
 		if p.i < p.len && isMissingExpr {
 			char := p.s[p.i]
-			if isClosingDelim(char) {
-				break
-			}
-
 			p.tokens = append(p.tokens, Token{Type: UNEXPECTED_CHAR, Span: NodeSpan{p.i, p.i + 1}, Raw: string(char)})
 			key = &UnknownNode{
 				NodeBase: NodeBase{

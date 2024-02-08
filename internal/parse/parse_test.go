@@ -13818,6 +13818,43 @@ func testParse(
 				},
 			},
 			{
+				input:    `(:{ "a":)`,
+				hasError: true,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 9}, nil, false},
+					Statements: []Node{
+						&DictionaryLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{1, 8},
+								&ParsingError{UnspecifiedParsingError, UNTERMINATED_DICT_MISSING_CLOSING_BRACE},
+								true,
+							},
+							Entries: []*DictionaryEntry{
+								{
+									NodeBase: NodeBase{
+										NodeSpan{4, 9},
+										nil,
+										false,
+									},
+									Key: &QuotedStringLiteral{
+										NodeBase: NodeBase{NodeSpan{4, 7}, nil, false},
+										Raw:      `"a"`,
+										Value:    "a",
+									},
+									Value: &MissingExpression{
+										NodeBase: NodeBase{
+											NodeSpan{8, 9},
+											&ParsingError{UnspecifiedParsingError, fmtExprExpectedHere([]rune(`(:{ "a":)`), 8, true)},
+											false,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
 				input:    `:{ "a"   }`,
 				hasError: true,
 				result: &Chunk{
