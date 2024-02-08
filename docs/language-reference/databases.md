@@ -5,9 +5,9 @@
 # Databases
 
 - [Schema](#database-schema)
+- [Migrations](#migrations)
 - [Serialization](#serialization)
 - [Access From Other Modules](#access-from-other-modules)
-
 
 Inox comes with an embedded database engine, you can define databases in the
 manifest:
@@ -79,6 +79,8 @@ users = dbs.main.users
 So before executing the program you will need to add a call to
 `dbs.main.update_schema` with the new schema.
 
+---
+
 ## Migrations
 
 Updating the schema often requires data updates. When this is the case
@@ -132,6 +134,9 @@ rand
 ```
 
 **More functions will be added in the future.**
+
+
+---
 
 ## Serialization
 
@@ -204,6 +209,8 @@ for friend in user.friends {
     loaded_friend = get!(friend)
 }
 ```
+
+---
 
 ## Access From Other Modules
 

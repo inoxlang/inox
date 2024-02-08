@@ -882,8 +882,7 @@ Here is the regex for a made up identifier type:
 Same RegExp without group names:
 `([a-z]+)#(\d+)-([a-z]+)-(\d+)`
 
-
-This pattern defined in Inox is more readable:
+Inox version:
 
 ```inox
 pattern code = %str(
