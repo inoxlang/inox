@@ -1,5 +1,8 @@
 # Basic ToDo App
 
+Note: The application uses [HTMX](https://htmx.org/), and a [custom HTMX extension](../../docs/frontend-development.md#forms) for converting form parameters to JSON. The current state of the code is not yet representative of all the features that Inox will provide. Also please note that 
+this is a limited application example.
+
 - [main.ix](#main.ix)
 - [schema.ix](#schema.ix)
 - **routes/**
@@ -25,8 +28,8 @@
     - [Preact Signals](https://github.com/preactjs/signals/tree/main/packages/core)
     - [Small client-side component library](../../docs/frontend-development.md#client-side-components---inoxjs)
 
-_The current state of the code is not yet representative of all the features that Inox will provide. Also please note that 
-this is a limited application example._
+
+
 
 ## /main.ix
 
