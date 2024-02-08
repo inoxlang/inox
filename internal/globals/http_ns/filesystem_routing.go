@@ -64,7 +64,7 @@ func addFilesystemRoutingHandler(server *HttpsServer, staticDir, dynamicDir core
 	if dynamicDir != "" {
 		// update the API each time the files are changed.
 		server.onIdleFilesystem(idleFilesystemHandler{
-			watchedPaths: []core.PathPattern{dynamicDir.ToPrefixPattern()},
+			watchedPaths: []core.PathPattern{"/..."},
 			microtask: func(serverCtx *core.Context) {
 				select {
 				case <-serverCtx.Done():
