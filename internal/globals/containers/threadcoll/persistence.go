@@ -130,10 +130,12 @@ func (t *MessageThread) makePersistOnMutationCallback(elem *core.Object) core.Mu
 	return func(ctx *core.Context, mutation core.Mutation) (registerAgain bool) {
 		registerAgain = true
 
+		//TODO: always persist if mutation.tx == nil
+
 		tx := ctx.GetTx()
 		if tx != nil {
-			//if there is a transaction the thread will be persisted when the transaction is finished.
-			return
+			//TODO: if tx == mutation.tx record in element changes to apply during commit
+			//What should be done if tx is readonly ?
 		}
 
 		closestState := ctx.GetClosestState()
