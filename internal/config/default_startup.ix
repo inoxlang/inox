@@ -75,7 +75,7 @@ manifest {
         "fs/read": 100MB/s
         "fs/write": 100MB/s
         "fs/total-new-files": 100000
-        "fs/create": 100x/s
+        "fs/create-file": 100x/s
 
         "http/request": 100x/s
 
