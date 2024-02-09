@@ -8,7 +8,7 @@
 - ⚙️ [Server-Side Components](#server-side-components)
 - 🌐 [Client-Side Components](#client-side-components---inoxjs)
 - 📝 [Forms](#forms)
-- ✨ [Planned HTMX Integrations](#htmx-integrations)
+- ✨ [Planned HTML & HTMX integrations](#planned-html-and-htmx-integrations)
 - ⚡ [Planned Optimizations](#server-side-optimizations)
 
 The frontend of an Inox application is built using the following features and
@@ -276,20 +276,20 @@ required to have specific attributes that enable JSON encoding.
 }
 ```
 
-## HTML and HTMX Integrations
+## Planned HTML and HTMX Integrations
 
-**This is not fully implemented yet.**
+**Implementation has begun.**
 
 ### Checks
 
-- Validation of `<input>` elements in forms
-- Validation of URLs in attributes such as `hx-get`
+- Validation of `<input>` elements in forms against the current API
+- Validation of URLs in attributes such as `hx-get` against the current API
 
 _and more._
 
 ### LSP
 
-- `<form>` completion with `<input>` elements
+- `<form>` and `<input>` completions based on the current API
 - URL completion for attributes such as `hx-get`
 
 _and more._
