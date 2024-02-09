@@ -1,4 +1,4 @@
-> Allow me to continue working full-time on Inox by [sponsoring me](https://github.com/sponsors/GraphR00t). Thank you :)
+> Allow me to continue working full-time on Inox by [sponsoring me](https://github.com/sponsors/GraphR00t). Thank you !
 
 # Inox
 
@@ -10,7 +10,7 @@ The Inox platform is released as a **single binary** that will contain all you n
 deeply integrates with Inox's built-in database engine, testing engine and HTTP server.
 
 ⬇️ [Installation](#installation)\
-⬇️ [Application Code Examples](#application-code-examples)\
+🔍 [Application Examples](#application-examples)\
 📚 [Learning Inox](#learning-inox)\
 👥 [Discord Server](https://discord.gg/53YGx8GzgE)
 
@@ -154,7 +154,7 @@ Inox applications can currently only be developed using the Inox extension for V
 
 If you want to build Inox from source go [here](#build-from-source).
 
-## Application Code Examples
+## Application Examples
 
 - [Basic Todo app](./examples/apps/basic-todo-app.md)
 
@@ -882,29 +882,14 @@ Here is the regex for a made up identifier type:
 Same RegExp without group names:
 `([a-z]+)#(\d+)-([a-z]+)-(\d+)`
 
-Inox version:
+Inox's version:
 
-```inox
-pattern code = %str(
-    name: 'a'..'z'+
-    '#' numA: 0..9+
-    '-' letters: 'a'..'z'+
-    '-' numB: 0..9+
-)
-```
+![image](https://github.com/inoxlang/inox/assets/113632189/0027a873-a957-401e-9efb-f6d9fdf57a64)
+
 
 String patterns can also be composed:
 
-```
-pattern code-name = %str('a'..'z'+)
-
-pattern code = %str(
-    name: code-name 
-    '#' numA: 0..9+
-    '-' letters: 'a'..'z'+
-    '-' numB: 0..9+
-)
-```
+![image](https://github.com/inoxlang/inox/assets/113632189/8a6ffb9a-0250-447b-8d46-e53f3becadd9)
 
 <details>
 
