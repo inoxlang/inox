@@ -1,5 +1,3 @@
-> Allow me to continue working full-time on Inox by [sponsoring me](https://github.com/sponsors/GraphR00t). Thank you !
-
 # Inox
 
 <img src="https://avatars.githubusercontent.com/u/122291844?s=200&v=4" alt="a shield"></img>
@@ -8,6 +6,8 @@
 
 The Inox platform is released as a **single binary** that will contain all you need to develop, test, and deploy web apps that are primarily rendered server-side. Applications are developped using **Inoxlang**, a sandboxed programming language that 
 deeply integrates with Inox's built-in database engine, testing engine and HTTP server.
+
+⚠️ The language is not production ready yet. Please consider donating through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t).
 
 ⬇️ [Installation](#installation)\
 🔍 [Application Examples](#application-examples)\
@@ -86,7 +86,7 @@ deeply integrates with Inox's built-in database engine, testing engine and HTTP 
 
 </details>
 
-⚠️ The language is not production ready yet. I am working full-time on Inox, please consider donating through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t).
+
 
 ❔ [Questions you may have](./QUESTIONS.md)
 
@@ -304,6 +304,9 @@ dbs.main.update_schema(%{
         %/users: []
     }
 })
+
+# Objects inside the database are accessed like any other Inox objects.
+users = dbs.main.users
 ```
 
 <details>

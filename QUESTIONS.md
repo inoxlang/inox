@@ -32,6 +32,7 @@ However, implementing a custom database engine gives more control over caching, 
 My goal is to have a DB engine that is aware of the code accessing it (HTTP request handlers) in order to smartly pre-fetch and cache data. It could even support **partial deserialization**: for example if an object is stored as `{"name":"foo","value":1,"other-data":{...}}` in the database and a piece of code only requires the `name` property, only this property could be retrieved by iterating over the marshalled JSON.
 
 The database currently uses the [Bbolt](https://github.com/etcd-io/bbolt) key-value store under the hood.
+In the future each database will use several single-file key-value stores in order to improve performance and scalability.
 
 **Related**:
 - https://github.com/whitfin/s3-concat
