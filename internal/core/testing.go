@@ -567,10 +567,20 @@ func runTestItem(
 		FilesystemPermission{Kind_: permkind.Write, Entity: PathPattern("/...")},
 		FilesystemPermission{Kind_: permkind.Delete, Entity: PathPattern("/...")},
 	}
+
 	for _, fsPerm := range fsPerms {
 		if parentCtx.HasPermission(fsPerm) {
 			implicitlyAddedPermissions = append(implicitlyAddedPermissions, fsPerm)
 		}
+	}
+
+	//Inherit some HTTP permissions.
+	for _, perm := range parentCtx.GetGrantedPermissions() {
+		httpPerm, ok := perm.(HttpPermission)
+		if !ok || httpPerm.AnyEntity {
+			continue
+		}
+		implicitlyAddedPermissions = append(implicitlyAddedPermissions, perm)
 	}
 
 	var fls afs.Filesystem
