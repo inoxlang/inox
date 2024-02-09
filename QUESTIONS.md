@@ -9,7 +9,7 @@ _'I' refers to [GraphR00t](https://github.com/GraphR00t), the creator and mainta
 **<summary>Why isn't Inox using a container runtime such as Docker ?</summary>**
 
 
-Because the long term goal of Inox is to be a **simple**, single-binary and **super stable** platform for applications written in Inoxlang  and using librairies compiled to WASM.\
+Because the long term goal of Inox is to be a **simple**, single-binary and **super stable** platform for applications written in Inoxlang  and using libraries compiled to WASM.\
 Each application or service will ultimately run in a separate process:
 - filesystem isolation is achieved by using virtual filesystems (meta filesystem)
 - process-level access control will be achieved using [Landlock](https://landlock.io/)

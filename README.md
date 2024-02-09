@@ -7,7 +7,7 @@
 The Inox platform is released as a **single binary** that will contain all you need to develop, test, and deploy web apps that are primarily rendered server-side. Applications are developped using **Inoxlang**, a sandboxed programming language that 
 deeply integrates with Inox's built-in database engine, testing engine and HTTP server.
 
-⚠️ The language is not production ready yet. Please consider donating through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t).
+⚠️ Inox is not production-ready yet. Please consider donating through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t).
 
 ⬇️ [Installation](#installation)\
 🔍 [Application Examples](#application-examples)\
@@ -104,16 +104,13 @@ end
 
 InoxExtension -->|LSP| ProjectServer
 
-subgraph InoxBinary["Inox (Linux)"]
+subgraph InoxBinary["Inox binary (Linux)"]
   ProjectServer(Project Server)
 end
 ```
 
 Inox applications can currently only be developed using the Inox extension for VSCode and VSCodium.
-
-- If your local machine is running Linux, you can install Inox and VSCode + the extension on it.
-- If your local machine is not running Linux, you can install VSCode + the extension on it and install Inox on another machine, such as a VPS.\
- You can also setup a local virtual machine running Linux.
+You can install the inox binary on your local (Linux) machine, local VM, or a remote machine.
 
 <details>
 
