@@ -11,6 +11,7 @@ this is a limited application example.
 
 - [main.ix](#mainix)
 - [schema.ix](#schemaix)
+- [app.spec.ix](#appspecix)
 - **routes/**
   - [index.ix](#routesindexix)
   - **users/**
@@ -48,6 +49,14 @@ this is a limited application example.
 
 ![image](https://github.com/inoxlang/inox/assets/113632189/5cf17dc6-e4cd-4df9-9701-79c77f1efcfd)
 </details>
+
+## /app.spec.ix
+
+<details>
+
+![image](https://github.com/inoxlang/inox/assets/113632189/e2457153-8470-4287-9ae5-292fa56a5ff9)
+</details>
+
 
 
 ## /routes/index.ix
