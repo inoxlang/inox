@@ -49,7 +49,9 @@ type TokenType uint16
 
 const (
 	LAST_TOKEN_TYPE_WITHOUT_VALUE = NEWLINE
+)
 
+const (
 	//WITH NO ASSOCIATED VALUE
 	IF_KEYWORD TokenType = iota + 1
 	ELSE_KEYWORD
