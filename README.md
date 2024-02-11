@@ -40,7 +40,7 @@ _Note: the permissions granted to imported modules (local or third-party) are **
 ---
 
 **I have been working 2 years full time on Inox.**  There is still a lot to do in order to make Inox
-usable in real world applications. If you believe this project has potential, **consider donating** through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t). Your contribution will help me continue working on Inox.
+usable in real world applications. If you believe this project has potential, **consider donating** through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t). It will help me continue working on Inox.
 
 ⬇️ [Installation](#installation)\
 🔍 [Application Examples](#application-examples)\
@@ -87,13 +87,13 @@ cannot be printed, logged or serialized.
 
 <details>
 
-**<summary>❌ Non Goals (for now) </summary>**
+**<summary>❌ Non Goals </summary>**
 
 - Be a suitable solution for 100% of real-world web projects
 - Support any database for storing domain data (`users`, ...)
-  (however Wasm support is planned and will at least enable the use of SQLite and DuckDB).
-- Be _blazingly_ fast
-- Be planet scale
+  (however WebAssembly support is planned and will at least enable the use of SQLite and DuckDB).
+- Be super fast
+- Be very highly scalable (Multi-node support is planned though)
 
 </details>
 
