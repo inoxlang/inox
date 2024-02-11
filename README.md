@@ -97,7 +97,6 @@ cannot be printed, logged or serialized.
 
 </details>
 
-❔ [Questions you may have](#questions-you-may-have)
 ---
 
 ### Development Environment - Inox Project Server
