@@ -99,7 +99,7 @@ cannot be printed, logged or serialized.
 
 ---
 
-### Development Environment - Inox Project Server
+## Development Environment - Inox Project Server
 
 The Inox binary comes with a **project server** that your IDE connects to. This server is a LSP server that implements custom methods. It enables the developer to develop, debug, test, deploy and manage secrets, all from VsCode. The project server will also provide automatic infrastructure management in the **near future**.
 
@@ -110,20 +110,26 @@ __Note that there is no local development environment.__ Code files are cached o
 **<summary>⚙️ Diagram</summary>**
 
 ```mermaid
-graph TB
+flowchart TB
+
 subgraph VSCode
   VSCodeVFS(Virtual Filesystem)
   Editor
   Editor --> |persists edited files in| VSCodeVFS
   DebugAdapter
 end
+
 Editor(Editor) --> |standard LSP methods| ProjectServer
+
 VSCodeVFS --> |"custom methods (LSP)"| ProjImage
+
 DebugAdapter(Debug Adapter) -->|"Debug Adapter Protocol (LSP wrapped)"| Runtime(Inox Runtime)
+
 subgraph ProjectServer[Project Server]
   Runtime
   ProjImage(Project Image)
 end
+
 ProjectServer -->|manages| Infrastructure(Infrastructure)
 ProjectServer -->|gets/sets| Secrets(Secrets)
 ```
@@ -256,8 +262,8 @@ glue and import components that are just needed 99% of the time. I don't like sp
 configuration is fine though. Local development environments are also a pain to setup sometimes. (There is no true [local dev environment](#development-environment---inox-project-server) when developping Inox projects).
 
 Inox being an opinionated **high-level** programming language / high level platform it obviously has pros and cons.
-Also when using a new programming language you don't have access to a rich ecosystem. But I just don't care: I want to 
-known how far this project can go.
+Also when using a new programming language you don't have access to a rich ecosystem. In other words Inox currently does not
+bring all the potential value it could bring.
 
 </details>
 
