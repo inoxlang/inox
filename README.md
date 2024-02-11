@@ -7,27 +7,35 @@
 The Inox platform is released as a **single binary** that will contain all you need to develop, test, and deploy web apps that are primarily rendered server-side. Applications are developped using **Inoxlang**, a sandboxed programming language that 
 deeply integrates with Inox's built-in database engine, testing engine and HTTP server.
 
-**The first stable versions of Inox won't support high scalability applications**
+**The first stable versions of Inox won't support high scalability applications.**
 
-Please consider donating through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t).
-
-⬇️ [Development Environemnt](#development-environment---inox-project-server)\
+⬇️ [Development Environement](#development-environment---inox-project-server)\
 ⬇️ [Installation](#installation)\
 🔍 [Application Examples](#application-examples)\
 📚 [Learning Inox](#learning-inox)\
 👥 [Discord Server](https://discord.gg/53YGx8GzgE)\
 ❔ [Questions you may have](#questions-you-may-have)
 
+Here are a few example files that come from a basic todo app.
+
 ![image](https://github.com/inoxlang/inox/assets/113632189/f6aed69d-ff30-428e-ba5b-042f72ac329e)
 
+**Database schema**
+
 ![image](https://github.com/inoxlang/inox/assets/113632189/5f07deb5-56ec-42e7-a550-bdc4e613336d)
+
+**A request handler (filesystem routing)**
 
 ![image](https://github.com/inoxlang/inox/assets/113632189/6e632f71-8a01-4cde-b5d7-239a52942e58)
 
 _Note: the permissions granted to imported modules (local or third-party) are **explicit**: `ìmport lib ./malicious-lib.ix { allow: {} }`_
 
-![image](https://github.com/inoxlang/inox/assets/113632189/85772ae4-4025-4aef-94c8-15b624580285)
+<details>
 
+**<summary>Another request handler (GET request with HTML rendering)</summary>**
+
+![image](https://github.com/inoxlang/inox/assets/113632189/85772ae4-4025-4aef-94c8-15b624580285)
+</details>
 
 <details>
 
@@ -35,6 +43,8 @@ _Note: the permissions granted to imported modules (local or third-party) are **
 
 ![image](https://github.com/inoxlang/inox/assets/113632189/c1445e7b-d272-4252-9def-6fa5284c996d)
 </details>
+
+---
 
 **I have been working 2 years full time on Inox.** There is still a lot to do in order to make Inox
 usable in real world applications. If you find this project promising **consider donating** through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t). Your contribution will help me continue working on Inox.
@@ -180,7 +190,7 @@ If you want to build Inox from source go [here](#build-from-source).
 
 ## Application Examples
 
-- [Basic Todo app](./examples/apps/basic-todo-app.md)
+- [Basic Todo app](./examples/apps/basic-todo/README.md)
 
 _More examples will be added soon._
 
