@@ -7,16 +7,9 @@
 The Inox platform is released as a **single binary** that will contain all you need to develop, test, and deploy web apps that are primarily rendered server-side. Applications are developped using **Inoxlang**, a sandboxed programming language that 
 deeply integrates with Inox's built-in database engine, testing engine and HTTP server.
 
-**The first stable versions of Inox won't support high scalability applications.**
+**⚠️ Important node: bear in mind that the current version of Inox is 0.2, not 1.0. The first stable versions of Inox won't support high-scalability applications.**
 
-⬇️ [Development Environement](#development-environment---inox-project-server)\
-⬇️ [Installation](#installation)\
-🔍 [Application Examples](#application-examples)\
-📚 [Learning Inox](#learning-inox)\
-👥 [Discord Server](https://discord.gg/53YGx8GzgE)\
-❔ [Questions you may have](#questions-you-may-have)
-
-Here are a few example files that come from a basic todo app.
+**Here are a few example files that are part of a basic todo app.**
 
 ![image](https://github.com/inoxlang/inox/assets/113632189/f6aed69d-ff30-428e-ba5b-042f72ac329e)
 
@@ -46,10 +39,18 @@ _Note: the permissions granted to imported modules (local or third-party) are **
 
 ---
 
-**I have been working 2 years full time on Inox.** There is still a lot to do in order to make Inox
-usable in real world applications. If you find this project promising **consider donating** through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t). Your contribution will help me continue working on Inox.
+**I have been working 2 years full time on Inox.**  There is still a lot to do in order to make Inox
+usable in real world applications. If you find this project promising, **consider donating** through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t). Your contribution will help me continue working on Inox.
 
-**What is planned ?**
+⬇️ [Installation](#installation)\
+🔍 [Application Examples](#application-examples)\
+📚 [Learning Inox](#learning-inox)\
+👥 [Discord Server](https://discord.gg/53YGx8GzgE)\
+❔ [Questions you may have](#questions-you-may-have)
+
+<details>
+
+**<summary>What is planned ?</summary>**
 
 - Automated database backups in S3-compatible storage
 - Log persistence in S3 (note that Inox has builtins for [structured logging](./docs/builtins.md#structured-logging)).
@@ -65,6 +66,10 @@ cannot be printed, logged or serialized.
 - Improve execution performance and memory usage 
 - Finalize the implementation of [structs](./docs/language-reference/transient-types.md#structs) and implement a [Low Level VM](https://github.com/inoxlang/inox/issues/32).
 - And more !
+
+</details>
+
+
 
 
 <details>
@@ -128,7 +133,6 @@ ProjectServer -->|gets/sets| Secrets(Secrets)
 </details>
 
 
-
 ## Installation
 
 ```mermaid
@@ -139,7 +143,7 @@ subgraph VSCode["VSCode (any OS)"]
   InoxExtension(Inox Extension)
 end
 
-InoxExtension -->|LSP| ProjectServer
+InoxExtension -->|"LSP (WebSocket)"| ProjectServer
 
 subgraph InoxBinary["Inox binary (Linux)"]
   ProjectServer(Project Server)
@@ -229,8 +233,6 @@ To learn scripting go [here](./docs/scripting-basics.md). View
 
 
 ## Questions You May Have
-
-<details>
 
 **<summary>Why isn't Inox using a container runtime such as Docker ?</summary>**
 
