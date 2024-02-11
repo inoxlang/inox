@@ -7,9 +7,9 @@
 The Inox platform is released as a **single binary** that will contain all you need to develop, test, and deploy web apps that are primarily rendered server-side. Applications are developped using **Inoxlang**, a sandboxed programming language that 
 deeply integrates with Inox's built-in database engine, testing engine and HTTP server.
 
-**⚠️ Important node: bear in mind that the current version of Inox is 0.2, not 1.0. The first stable versions of Inox won't support high-scalability applications.**
+**Important node: bear in mind that the current version of Inox is 0.2, not 1.0. The first stable versions of Inox won't support high-scalability applications.**
 
-**Here are a few example files that are part of a basic todo app.**
+Here are a few example files that are part of a basic todo app.
 
 ![image](https://github.com/inoxlang/inox/assets/113632189/f6aed69d-ff30-428e-ba5b-042f72ac329e)
 
@@ -17,7 +17,7 @@ deeply integrates with Inox's built-in database engine, testing engine and HTTP 
 
 ![image](https://github.com/inoxlang/inox/assets/113632189/5f07deb5-56ec-42e7-a550-bdc4e613336d)
 
-**A request handler (filesystem routing)**
+**A request handler (filesystem routing).** Each handler modules run in a dedicated execution context with its own permissions.
 
 ![image](https://github.com/inoxlang/inox/assets/113632189/6e632f71-8a01-4cde-b5d7-239a52942e58)
 
@@ -25,14 +25,14 @@ _Note: the permissions granted to imported modules (local or third-party) are **
 
 <details>
 
-**<summary>Another request handler (GET request with HTML rendering)</summary>**
+**<summary>⚙️ Another request handler (GET request with HTML rendering)</summary>**
 
 ![image](https://github.com/inoxlang/inox/assets/113632189/85772ae4-4025-4aef-94c8-15b624580285)
 </details>
 
 <details>
 
-**<summary>Testing engine example</summary>**
+**<summary>✅ Testing engine example</summary>**
 
 ![image](https://github.com/inoxlang/inox/assets/113632189/c1445e7b-d272-4252-9def-6fa5284c996d)
 </details>
@@ -60,16 +60,15 @@ cannot be printed, logged or serialized.
 - Develop a standard library
 - Integrate a subset of Git (using https://github.com/go-git/go-billy and https://code.visualstudio.com/api/extension-guides/scm-provider)
 - Support no-downtime upgrades
-- WebAssembly support using https://github.com/tetratelabs/wazero
+- **WebAssembly support** using https://github.com/tetratelabs/wazero
 - Finish the transaction system and support persisting most data-structure types with accepable performance
 - Team access control for Inox projects
 - Improve execution performance and memory usage 
 - Finalize the implementation of [structs](./docs/language-reference/transient-types.md#structs) and implement a [Low Level VM](https://github.com/inoxlang/inox/issues/32).
+- Allow developers to define custom `builtins` written in Go (note: building inox is just `go build ./cmd/inox`)
 - And more !
 
 </details>
-
-
 
 
 <details>
@@ -88,13 +87,13 @@ cannot be printed, logged or serialized.
 
 <details>
 
-**<summary>❌ Non-Goals (for now) </summary>**
+**<summary>❌ Non Goals (for now) </summary>**
 
+- Be a suitable solution for 100% of real-world web projects
+- Support any database for storing domain data (`users`, ...)
+  (however Wasm support is planned and will at least enable the use of SQLite and DuckDB).
 - Be _blazingly_ fast
 - Be planet scale
-- Be a suitable solution for 100% of real-world web projects
-- Support other databases for storing domain data (`users`, ...)
-  (however Wasm support is planned and will enable the use of SQLite and DuckDB).
 
 </details>
 
@@ -105,7 +104,7 @@ cannot be printed, logged or serialized.
 
 The Inox binary comes with a **project server** that your IDE connects to. This server is a LSP server that implements custom methods. It enables the developer to develop, debug, test, deploy and manage secrets, all from VsCode. The project server will also provide automatic infrastructure management in the **near future**.
 
-__Note that there is no local development environment.__ Code files are cached on the IDE for offline access (read-only).
+__Note that there is no local development environment.__ Code files are cached on the IDE for offline access (read-only only).
 
 <details>
 
@@ -205,11 +204,6 @@ You can learn Inox directly in VSCode by creating a file with a `.tut.ix` extens
 
 ![tutorial-demo](https://github.com/inoxlang/inox-vscode/raw/master/assets/docs/tutorial-demo.gif)
 
-📖 [Language reference](docs/language-reference/language.md)\
-📖 [HTTP Server reference](docs/http-server-reference.md)\
-🌐 [Frontend dev](./docs/frontend-development.md)\
-🧰 [Builtins](docs/builtins.md)\
-📚 [Collections](docs/collections.md)
 
 If you have any questions you are welcome to join the [Discord Server](https://discord.gg/53YGx8GzgE).
 
@@ -234,6 +228,9 @@ To learn scripting go [here](./docs/scripting-basics.md). View
 
 ## Questions You May Have
 
+
+<details>
+
 **<summary>Why isn't Inox using a container runtime such as Docker ?</summary>**
 
 Because the long term goal of Inox is to be a **simple**, single-binary and **super stable** platform for applications written in Inoxlang
@@ -249,11 +246,31 @@ Each application or service will ultimately run in a separate process:
 
 <details>
 
+
+**<summary>Why have you created Inox ?</summary>**
+
+Before reading the answser please make sure to read the **Goals & Non Goals sections**.
+
+I like creating programming languages. At the beginning Inox was not even about full stack development.
+It quickly evolved towards this use case because I am tired of accidental complexity in full stack development. I particularly hate having to 
+glue and import components that are just needed 99% of the time. I don't like spending hours configuring stuff, a bit of 
+configuration is fine though. Local development environments are also a pain to setup sometimes. (There is no true [local dev environment](#development-environment---inox-project-server) when developping Inox projects).
+
+Inox being an opinionated **high-level** programming language / high level platform it obviously has pros and cons.
+Also when using a new programming language you don't have access to a rich ecosystem. But I just don't care: I want to 
+known how far this project can go.
+
+</details>
+
+
+<details>
+
 **<summary>What is the state of the codebase (quality, documentation, tests) ?</summary>**
 
 As of now, certain parts of the codebase are not optimally written, lack sufficient comments and documentation, and do not have robust test coverage. The first version (0.1) being now released, I will dedicate 20-30% of my working time to improving the overall quality, documentation, and test coverage of the codebase.
 
 </details>
+
 
 ## Early Sponsors
 
