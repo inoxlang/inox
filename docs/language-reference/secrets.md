@@ -2,7 +2,7 @@
 
 Secrets are special Inox values, they can only be created by defining an
 **environment variable** with a pattern like %secret-string or by storing a
-[project secret](../docs/project.md#project-secrets).
+[project secret](../../docs/project.md#project-secrets).
 
 - The content of the secret is **hidden** when printed or logged.
 - Secrets are not serializable so they cannot be included in HTTP responses.

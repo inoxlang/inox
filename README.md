@@ -57,7 +57,7 @@ _Note: the permissions granted to imported modules (local or third-party) are **
 
 
 **I have been working 2 years full time on Inox.** There is a **lot** of remaining work to do in order to make Inox
-usable in real world applications. If you consider this project to have some potential: consider donating through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t), to allow me to continue my work on the project. Thank you :)
+usable in real world applications. If you consider this project to have some potential: **consider donating** through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t). This will allow me to continue continue working on the project.
 
 What is planned ?
 
@@ -67,12 +67,13 @@ What is planned ?
 - Support automated deployments on popular cloud providers
 - Storage of secrets in key management services (e.g. GCP KMS, AWS KMS). [Secrets](./docs/language-reference/secrets.md) are special Inox values that 
 cannot be printed, logged or serialized.
-- Improve execution performance and memory usage
 - Develop a standard library
 - Integrate a subset of Git (using https://github.com/go-git/go-billy and https://code.visualstudio.com/api/extension-guides/scm-provider)
 - Support no-downtime upgrades
 - WebAssembly support using https://github.com/tetratelabs/wazero
 - Team access control for Inox projects
+- Improve execution performance and memory usage 
+- Finalize the implementation of [structs](./docs/language-reference/transient-types.md#structs) and implement a [Low Level VM](https://github.com/inoxlang/inox/issues/32).
 - And more !
 
 ## Questions You May Have
