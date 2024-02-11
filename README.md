@@ -5,7 +5,7 @@
 🛡️ Inox is your **shield** against complexity in full-stack development.
 
 The Inox platform is released as a **single binary** that will contain all you need to develop, test, and deploy web apps that are primarily rendered server-side. Applications are developped using **Inoxlang**, a sandboxed programming language that 
-deeply integrates with Inox's built-in database engine, testing engine and HTTP server.
+deeply integrates with several components: a built-in database engine, testing engine, HTTP server, and in-process container engine.
 
 **Important node: bear in mind that the current version of Inox is 0.2, not 1.0. The first stable versions of Inox won't support high-scalability applications.**
 
@@ -17,7 +17,7 @@ Here are a few example files that are part of a basic todo app.
 
 ![image](https://github.com/inoxlang/inox/assets/113632189/5f07deb5-56ec-42e7-a550-bdc4e613336d)
 
-**A request handler (filesystem routing).** Each handler modules run in a dedicated execution context with its own permissions.
+**A request handler (filesystem routing).** Each handler module runs in a dedicated execution context with its own permissions.
 
 ![image](https://github.com/inoxlang/inox/assets/113632189/6e632f71-8a01-4cde-b5d7-239a52942e58)
 
@@ -40,7 +40,7 @@ _Note: the permissions granted to imported modules (local or third-party) are **
 ---
 
 **I have been working 2 years full time on Inox.**  There is still a lot to do in order to make Inox
-usable in real world applications. If you find this project promising, **consider donating** through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t). Your contribution will help me continue working on Inox.
+usable in real world applications. If you believe this project has potential, **consider donating** through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t). Your contribution will help me continue working on Inox.
 
 ⬇️ [Installation](#installation)\
 🔍 [Application Examples](#application-examples)\
