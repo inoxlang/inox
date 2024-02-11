@@ -92,12 +92,12 @@ cannot be printed, logged or serialized.
 - Be a suitable solution for 100% of real-world web projects
 - Support any database for storing domain data (`users`, ...)
   (however WebAssembly support is planned and will at least enable the use of SQLite and DuckDB).
-- Be super fast
+- Be extremely fast
 - Be very highly scalable (Multi-node support is planned though)
 
 </details>
 
-❔ [Questions you may have](#questions-you-may-have)\
+❔ [Questions you may have](#questions-you-may-have)
 ---
 
 ### Development Environment - Inox Project Server
