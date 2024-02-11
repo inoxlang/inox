@@ -14,9 +14,8 @@ Please consider donating through [GitHub](https://github.com/sponsors/GraphR00t)
 ⬇️ [Installation](#installation)\
 🔍 [Application Examples](#application-examples)\
 📚 [Learning Inox](#learning-inox)\
-👥 [Discord Server](https://discord.gg/53YGx8GzgE)
-❔ [Questions you may have](./QUESTIONS.md)
-
+👥 [Discord Server](https://discord.gg/53YGx8GzgE)\
+❔ [Questions you may have](#questions-you-may-have)
 
 ![image](https://github.com/inoxlang/inox/assets/113632189/f6aed69d-ff30-428e-ba5b-042f72ac329e)
 
@@ -30,7 +29,6 @@ _Note: the permissions granted to imported modules (local or third-party) are **
 
 ![image](https://github.com/inoxlang/inox/assets/113632189/c1445e7b-d272-4252-9def-6fa5284c996d)
 
-
 <details>
 
 **<summary>🎯 Goals</summary>**
@@ -41,9 +39,41 @@ _Note: the permissions granted to imported modules (local or third-party) are **
 - Secure by default
 - Low maintenance
 - A programming language as simple as possible
+- (Not in the near future) Support 100k+ requests per second (combined request throughput of several nodes).
 
 </details>
 
+<details>
+
+**<summary>❌ Non-Goals (for now) </summary>**
+
+- Be _blazingly_ fast
+- Be planet scale
+- Be a suitable solution for 100% of real-world web projects
+- Support other databases for storing domain data (`users`, ...)
+  (however Wasm support is planned and will enable the use of SQLite and DuckDB).
+
+</details>
+
+
+**I have been working 2 years full time on Inox.** There is a **lot** of remaining work to do in order to make Inox
+usable in real world applications. If you consider this project to have some potential: consider donating through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t), to allow me to continue my work on the project. Thank you :)
+
+What is planned ?
+
+- Finish the transaction system and support persisting most data-structure types
+- Automated database backups in S3-compatible storage
+- Log persistence in S3 (note that Inox has builtins for [structured logging](./docs/builtins.md#structured-logging)).
+- Support automated deployments on popular cloud providers
+- Storage of secrets in key management services (e.g. GCP KMS, AWS KMS). [Secrets](./docs/language-reference/secrets.md) are special Inox values that 
+cannot be printed, logged or serialized.
+- Improve execution performance and memory usage
+- Develop a standard library
+- Integrate a subset of Git (using https://github.com/go-git/go-billy and https://code.visualstudio.com/api/extension-guides/scm-provider)
+- Support no-downtime upgrades
+- WebAssembly support using https://github.com/tetratelabs/wazero
+- Team access control for Inox projects
+- And more !
 
 ## Questions You May Have
 
@@ -69,22 +99,6 @@ Each application or service will ultimately run in a separate process:
 As of now, certain parts of the codebase are not optimally written, lack sufficient comments and documentation, and do not have robust test coverage. The first version (0.1) being now released, I will dedicate 20-30% of my working time to improving the overall quality, documentation, and test coverage of the codebase.
 
 </details>
-
-
-**<summary>🚧 Planned Features</summary>**
-- CSS and JS Bundling
-- Encryption of secrets and database data
-- Storage of secrets in key management services (e.g. GCP KMS, AWS KMS)
-- Version Control System (Git) for projects using https://github.com/go-git/go-git 
-- Database backup in S3 (compatible) storage
-- Database with persistence in S3 and on-disk cache
-- Log persistence in S3
-- WebAssembly support using https://github.com/tetratelabs/wazero.
-- Team management and access control
-- ... [other planned features](./FUTURE.md)
-
-</details>
-
 
 ---
 
