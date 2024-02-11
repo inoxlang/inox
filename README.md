@@ -11,6 +11,7 @@ deeply integrates with Inox's built-in database engine, testing engine and HTTP 
 
 Please consider donating through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t).
 
+⬇️ [Development Environemnt](#development-environment---inox-project-server)\
 ⬇️ [Installation](#installation)\
 🔍 [Application Examples](#application-examples)\
 📚 [Learning Inox](#learning-inox)\
@@ -27,7 +28,34 @@ _Note: the permissions granted to imported modules (local or third-party) are **
 
 ![image](https://github.com/inoxlang/inox/assets/113632189/85772ae4-4025-4aef-94c8-15b624580285)
 
+
+<details>
+
+**<summary>Testing engine example</summary>**
+
 ![image](https://github.com/inoxlang/inox/assets/113632189/c1445e7b-d272-4252-9def-6fa5284c996d)
+</details>
+
+**I have been working 2 years full time on Inox.** There is still a lot to do in order to make Inox
+usable in real world applications. If you find this project promising **consider donating** through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t). Your contribution will help me continue working on Inox.
+
+**What is planned ?**
+
+- Automated database backups in S3-compatible storage
+- Log persistence in S3 (note that Inox has builtins for [structured logging](./docs/builtins.md#structured-logging)).
+- Support automated deployments on popular cloud providers
+- Storage of secrets in key management services (e.g. GCP KMS, AWS KMS). [Secrets](./docs/language-reference/secrets.md) are special Inox values that 
+cannot be printed, logged or serialized.
+- Develop a standard library
+- Integrate a subset of Git (using https://github.com/go-git/go-billy and https://code.visualstudio.com/api/extension-guides/scm-provider)
+- Support no-downtime upgrades
+- WebAssembly support using https://github.com/tetratelabs/wazero
+- Finish the transaction system and support persisting most data-structure types with accepable performance
+- Team access control for Inox projects
+- Improve execution performance and memory usage 
+- Finalize the implementation of [structs](./docs/language-reference/transient-types.md#structs) and implement a [Low Level VM](https://github.com/inoxlang/inox/issues/32).
+- And more !
+
 
 <details>
 
@@ -55,53 +83,41 @@ _Note: the permissions granted to imported modules (local or third-party) are **
 
 </details>
 
-
-**I have been working 2 years full time on Inox.** There is a **lot** of remaining work to do in order to make Inox
-usable in real world applications. If you consider this project to have some potential: **consider donating** through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t). This will allow me to continue continue working on the project.
-
-What is planned ?
-
-- Finish the transaction system and support persisting most data-structure types
-- Automated database backups in S3-compatible storage
-- Log persistence in S3 (note that Inox has builtins for [structured logging](./docs/builtins.md#structured-logging)).
-- Support automated deployments on popular cloud providers
-- Storage of secrets in key management services (e.g. GCP KMS, AWS KMS). [Secrets](./docs/language-reference/secrets.md) are special Inox values that 
-cannot be printed, logged or serialized.
-- Develop a standard library
-- Integrate a subset of Git (using https://github.com/go-git/go-billy and https://code.visualstudio.com/api/extension-guides/scm-provider)
-- Support no-downtime upgrades
-- WebAssembly support using https://github.com/tetratelabs/wazero
-- Team access control for Inox projects
-- Improve execution performance and memory usage 
-- Finalize the implementation of [structs](./docs/language-reference/transient-types.md#structs) and implement a [Low Level VM](https://github.com/inoxlang/inox/issues/32).
-- And more !
-
-## Questions You May Have
-
-<details>
-
-**<summary>Why isn't Inox using a container runtime such as Docker ?</summary>**
-
-Because the long term goal of Inox is to be a **simple**, single-binary and **super stable** platform for applications written in Inoxlang
-and using libraries compiled to WASM.\
-Each application or service will ultimately run in a separate process:
-- filesystem isolation is achieved by using virtual filesystems (meta filesystem)
-- process-level access control will be achieved using [Landlock](https://landlock.io/)
-- fine-grained module-level access control is already achieved by Inox's permission system
-- process-level resource allocation and limitation will be implemented using cgroups
-- module-level resource allocation and limitation is performed by Inox's limit system
-
-</details>
-
-<details>
-
-**<summary>What is the state of the codebase (quality, documentation, tests) ?</summary>**
-
-As of now, certain parts of the codebase are not optimally written, lack sufficient comments and documentation, and do not have robust test coverage. The first version (0.1) being now released, I will dedicate 20-30% of my working time to improving the overall quality, documentation, and test coverage of the codebase.
-
-</details>
-
+❔ [Questions you may have](#questions-you-may-have)\
 ---
+
+### Development Environment - Inox Project Server
+
+The Inox binary comes with a **project server** that your IDE connects to. This server is a LSP server that implements custom methods. It enables the developer to develop, debug, test, deploy and manage secrets, all from VsCode. The project server will also provide automatic infrastructure management in the **near future**.
+
+__Note that there is no local development environment.__ Code files are cached on the IDE for offline access (read-only).
+
+<details>
+
+**<summary>⚙️ Diagram</summary>**
+
+```mermaid
+graph TB
+subgraph VSCode
+  VSCodeVFS(Virtual Filesystem)
+  Editor
+  Editor --> |persists edited files in| VSCodeVFS
+  DebugAdapter
+end
+Editor(Editor) --> |standard LSP methods| ProjectServer
+VSCodeVFS --> |"custom methods (LSP)"| ProjImage
+DebugAdapter(Debug Adapter) -->|"Debug Adapter Protocol (LSP wrapped)"| Runtime(Inox Runtime)
+subgraph ProjectServer[Project Server]
+  Runtime
+  ProjImage(Project Image)
+end
+ProjectServer -->|manages| Infrastructure(Infrastructure)
+ProjectServer -->|gets/sets| Secrets(Secrets)
+```
+
+</details>
+
+
 
 ## Installation
 
@@ -200,6 +216,32 @@ To learn scripting go [here](./docs/scripting-basics.md). View
 - Clone this repository
 - `cd` into the directory
 - Run `go build ./cmd/inox`
+
+
+## Questions You May Have
+
+<details>
+
+**<summary>Why isn't Inox using a container runtime such as Docker ?</summary>**
+
+Because the long term goal of Inox is to be a **simple**, single-binary and **super stable** platform for applications written in Inoxlang
+and using libraries compiled to WASM.\
+Each application or service will ultimately run in a separate process:
+- filesystem isolation is achieved by using virtual filesystems (meta filesystem)
+- process-level access control will be achieved using [Landlock](https://landlock.io/)
+- fine-grained module-level access control is already achieved by Inox's permission system
+- process-level resource allocation and limitation will be implemented using cgroups
+- module-level resource allocation and limitation is performed by Inox's limit system
+
+</details>
+
+<details>
+
+**<summary>What is the state of the codebase (quality, documentation, tests) ?</summary>**
+
+As of now, certain parts of the codebase are not optimally written, lack sufficient comments and documentation, and do not have robust test coverage. The first version (0.1) being now released, I will dedicate 20-30% of my working time to improving the overall quality, documentation, and test coverage of the codebase.
+
+</details>
 
 ## Early Sponsors
 
