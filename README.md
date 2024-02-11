@@ -7,7 +7,7 @@
 The Inox platform is released as a **single binary** that will contain all you need to develop, test, and deploy web apps that are primarily rendered server-side. Applications are developped using **Inoxlang**, a sandboxed programming language that 
 deeply integrates with several components: a built-in database engine, testing engine, HTTP server, and in-process container engine.
 
-**Important node: bear in mind that the current version of Inox is 0.2, not 1.0. The first stable versions of Inox won't support high-scalability applications.**
+**Important note: bear in mind that the current version of Inox is 0.2, not 1.0. The first stable versions of Inox won't support high-scalability applications.**
 
 Here are a few example files that are part of a basic todo app.
 
