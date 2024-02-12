@@ -23,8 +23,8 @@ const (
 	TEST__MAX_FS_STORAGE_HINT = ByteCount(10_000_000)
 	TEST_FULL_NAME_PART_SEP   = "::"
 
-	//Time to wait before starting a test item that tests a progam.
-	DEFAULT_WAIT_FOR_TESTED_PROGRAM_STARTUP = 25 * time.Millisecond
+	//Time to wait before starting to test a progam.
+	DEFAULT_WAIT_DURATION_FOR_TESTED_PROGRAM_STARTUP = 100 * time.Millisecond
 )
 
 var (
@@ -749,7 +749,7 @@ func runTestItem(
 			return nil, fmt.Errorf("testing: failed to spawn a lthread for the program to test (%q): %w", programToExecute, err)
 		}
 
-		time.Sleep(DEFAULT_WAIT_FOR_TESTED_PROGRAM_STARTUP)
+		time.Sleep(DEFAULT_WAIT_DURATION_FOR_TESTED_PROGRAM_STARTUP)
 	}
 
 	//spawn the lthread
