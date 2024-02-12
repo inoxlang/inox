@@ -2,9 +2,7 @@
 
 <img src="https://avatars.githubusercontent.com/u/122291844?s=200&v=4" alt="a shield"></img>
 
-🛡️ Inox is your **shield** against complexity in full-stack development.
-
-The Inox platform is released as a **single binary** that will contain all you need to develop, test, and deploy web apps that are primarily rendered server-side. Applications are developped using **Inoxlang**, a sandboxed programming language that 
+Inox is  **single-binary platform** that will contain all you need to develop, test, and deploy web apps that are primarily rendered server-side. Applications are developped using **Inoxlang**, a sandboxed programming language that 
 deeply integrates with several components: a built-in database engine, testing engine, HTTP server, and in-process container engine.
 
 **Important note: bear in mind that the current version of Inox is 0.2, not 1.0. The first stable versions of Inox won't support high-scalability applications.**
@@ -21,7 +19,7 @@ Here are a few example files that are part of a basic todo app.
 
 ![image](https://github.com/inoxlang/inox/assets/113632189/6e632f71-8a01-4cde-b5d7-239a52942e58)
 
-_Note: the permissions granted to imported modules (local or third-party) are **explicit**: `ìmport lib ./malicious-lib.ix { allow: {} }`_
+_Note: the permissions granted to imported modules (local or third-party) are **explicit**: `import lib ./malicious-lib.ix { allow: {} }`_
 
 <details>
 
@@ -65,7 +63,7 @@ cannot be printed, logged or serialized.
 - Team access control for Inox projects
 - Improve execution performance and memory usage 
 - Finalize the implementation of [structs](./docs/language-reference/transient-types.md#structs) and implement a [Low Level VM](https://github.com/inoxlang/inox/issues/32).
-- Allow developers to define custom `builtins` written in Go (note: building inox is just `go build ./cmd/inox`)
+- Allow developers to define custom builtins written in Go (note: building inox is just `go build ./cmd/inox`)
 - And more !
 
 </details>
@@ -103,7 +101,7 @@ cannot be printed, logged or serialized.
 
 The Inox binary comes with a **project server** that your IDE connects to. This server is a LSP server that implements custom methods. It enables the developer to develop, debug, test, deploy and manage secrets, all from VsCode. The project server will also provide automatic infrastructure management in the **near future**.
 
-__Note that there is no local development environment.__ Code files are cached on the IDE for offline access (read-only only).
+__Note that there is no local development environment.__ Code files are cached on the IDE for offline access (read only).
 
 <details>
 
@@ -155,11 +153,11 @@ end
 ```
 
 Inox applications can currently only be developed using the Inox extension for VSCode and VSCodium.
-You can install the inox binary on your local (Linux) machine, local VM, or a remote machine.
+You can install the inox binary on your local (Linux) machine, a local VM, or a remote machine.
 
 <details>
 
-**<summary>Installation Instructions</summary>**
+**<summary> Local Installation</summary>**
 
 - Download the latest release
   ```
@@ -183,14 +181,16 @@ You can install the inox binary on your local (Linux) machine, local VM, or a re
   ```
   _If you execute this command inside a VM, don't forget to forward the port 8305 to allow VSCode to connect to the project server._ -->
 
-- __Add Inox support to your IDE__
-  - [VSCode & VSCodium](https://marketplace.visualstudio.com/items?itemName=graphr00t.inox) : LSP, debug, colorization, snippets, formatting.\
-    **⚠️ Once the extension is installed make sure to read the Requirements and Usage sections in the extension's details.**
+- Install the VSCode/VScodium [extension](https://marketplace.visualstudio.com/items?itemName=graphr00t.inox). Make sure to read the Requirements and Usage sections in the extension's details.
+</details>
 
-- __\[optional\]__ install command completions for the current user
-  ```
-  inox install-completions
-  ```
+
+<details>
+
+**<summary>Installation on a remote machine (VPS)</summary>**
+
+- Install the [Inox Daemon](https://github.com/inoxlang/inox/blob/main/docs/inox-daemon.md#on-a-vps---publicly-exposed-servers)
+- Install the VSCode/VScodium [extension](https://marketplace.visualstudio.com/items?itemName=graphr00t.inox). Make sure to read the Requirements and Usage sections in the extension's details.
 
 </details>
 
@@ -198,7 +198,7 @@ If you want to build Inox from source go [here](#build-from-source).
 
 ## Application Examples
 
-- [Basic Todo app](./examples/apps/basic-todo/README.md)
+- [Basic Todo app with accounts and data persistence](./examples/apps/basic-todo)
 
 _More examples will be added soon._
 
@@ -272,7 +272,7 @@ bring all the potential value it could bring.
 
 **<summary>What is the state of the codebase (quality, documentation, tests) ?</summary>**
 
-As of now, certain parts of the codebase are not optimally written, lack sufficient comments and documentation, and do not have robust test coverage. The first version (0.1) being now released, I will dedicate 20-30% of my working time to improving the overall quality, documentation, and test coverage of the codebase.
+As of now, certain parts of the codebase are not optimally written, lack sufficient comments and documentation, and do not have robust test coverage. 
 
 </details>
 
@@ -287,7 +287,7 @@ As of now, certain parts of the codebase are not optimally written, lack suffici
   </tr>
 </table>
 
-I am working full-time on Inox, please consider donating through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t).
+Consider donating through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t). Thank you !
 
 [Questions you may have](./QUESTIONS.md)\
 [Installation](#installation)\
