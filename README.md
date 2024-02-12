@@ -213,7 +213,13 @@ _More examples will be added soon._
 
 ## Learning Inox
 
-You can learn Inox directly in VSCode by creating a file with a `.tut.ix` extension. This is the recommended way.
+📖 [Language reference](docs/language-reference/language.md)\
+📖 [HTTP Server reference](docs/http-server-reference.md)\
+🌐 [Frontend dev](./docs/frontend-development.md)\
+🧰 [Builtins](docs/builtins.md)\
+📚 [Collections](docs/collections.md)
+
+You can also learn the language directly in VSCode by creating a file with a `.tut.ix` extension.
 **Make sure to create this file inside an Inox project.**
 
 ![tutorial-demo](https://github.com/inoxlang/inox-vscode/raw/master/assets/docs/tutorial-demo.gif)
