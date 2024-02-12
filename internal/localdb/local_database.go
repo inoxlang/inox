@@ -2,6 +2,7 @@ package localdb
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -34,11 +35,14 @@ var (
 
 	ErrOpenDatabase = errors.New("database is already open by the current process or another one")
 
-	_ core.Database = (*LocalDatabase)(nil)
+	_ = []core.Database{(*LocalDatabase)(nil)}
 )
 
 func init() {
 	core.RegisterOpenDbFn(core.LDB_SCHEME, func(ctx *core.Context, config core.DbOpenConfiguration) (core.Database, error) {
+		if config.IsTestDatabase {
+			return OpenTempDatabase(ctx, config.Resource, !config.FullAccess)
+		}
 		return OpenDatabase(ctx, config.Resource, !config.FullAccess)
 	})
 
@@ -79,29 +83,9 @@ type LocalDatabaseConfig struct {
 // OpenDatabase opens a local database, read, create & write permissions are required.
 func OpenDatabase(ctx *core.Context, r core.ResourceName, restrictedAccess bool) (*LocalDatabase, error) {
 
-	var host core.Host
-	switch resource := r.(type) {
-	case core.Host:
-		if resource.Scheme() != core.LDB_SCHEME {
-			return nil, core.ErrCannotResolveDatabase
-		}
-		switch data := ctx.GetHostDefinition(resource).(type) {
-		case core.Host:
-			//no data
-
-			host = data
-		case nil, core.NilT:
-			host = resource
-		default:
-			//local databases do not require resolution data
-			return nil, core.ErrCannotResolveDatabase
-		}
-	default:
-		return nil, core.ErrCannotResolveDatabase
-	}
-
-	if host.Scheme() != core.LDB_SCHEME || host.ExplicitPort() >= 0 {
-		return nil, core.ErrInvalidDatabaseHost
+	host, err := getLdbHost(ctx, r)
+	if err != nil {
+		return nil, err
 	}
 
 	project := ctx.GetClosestState().Project
@@ -117,6 +101,81 @@ func OpenDatabase(ctx *core.Context, r core.ResourceName, restrictedAccess bool)
 	})
 
 	return db, err
+}
+
+// OpenTempDatabase opends local temporary database that will be deleted on context cancellation,  read, create & write permissions are required.
+func OpenTempDatabase(ctx *core.Context, r core.ResourceName, restrictedAccess bool) (*LocalDatabase, error) {
+
+	host, err := getLdbHost(ctx, r)
+	if err != nil {
+		return nil, err
+	}
+
+	project := ctx.GetClosestState().Project
+	if project == nil || reflect.ValueOf(project).IsZero() {
+		return nil, errors.New("local databases are only supported in project mode")
+	}
+
+	dir := randTempDirPathInOsFs()
+
+	db, err := openLocalDatabaseWithConfig(ctx, LocalDatabaseConfig{
+		OsFsDir:    core.DirPathFrom(dir),
+		Host:       host,
+		Restricted: restrictedAccess,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	ctx.OnGracefulTearDown(func(ctx *core.Context) error {
+		defer os.RemoveAll(dir)
+		return db.Close(ctx)
+	})
+
+	ctx.OnDone(func(timeoutCtx context.Context, teardownStatus core.GracefulTeardownStatus) error {
+		//It's acceptable to spawn a goroutine even though a microtask is expected. Closing should be related
+		//fast and is not expected to be a frequent operation.
+		go func() {
+			defer utils.Recover()
+			defer os.RemoveAll(dir)
+			db.Close(ctx)
+		}()
+
+		return nil
+	})
+
+	return db, err
+}
+
+func getLdbHost(ctx *core.Context, r core.ResourceName) (core.Host, error) {
+	var host core.Host
+
+	switch resource := r.(type) {
+	case core.Host:
+		if resource.Scheme() != core.LDB_SCHEME {
+			return "", core.ErrCannotResolveDatabase
+		}
+		switch data := ctx.GetHostDefinition(resource).(type) {
+		case core.Host:
+			//no data
+
+			host = data
+		case nil, core.NilT:
+			host = resource
+		default:
+			//local databases do not require resolution data
+			return "", core.ErrCannotResolveDatabase
+		}
+	default:
+		return "", core.ErrCannotResolveDatabase
+	}
+
+	if host.Scheme() != core.LDB_SCHEME || host.ExplicitPort() >= 0 {
+		return "", core.ErrInvalidDatabaseHost
+	}
+
+	return host, nil
 }
 
 func openLocalDatabaseWithConfig(ctx *core.Context, config LocalDatabaseConfig) (*LocalDatabase, error) {
