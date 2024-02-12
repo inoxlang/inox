@@ -40,8 +40,6 @@ _Note: the permissions granted to imported modules (local or third-party) are **
 **I have been working 2 years full time on Inox.**  There is still a lot to do in order to make Inox
 usable in real world applications. If you believe this project has potential, **consider donating** through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t). It will help me continue working on Inox (check see **What is planned**). 
 
-<details>
-
 ⬇️ [Installation](#installation)\
 🔍 [Application Examples](#application-examples)\
 📚 [Learning Inox](#learning-inox)\
