@@ -16,7 +16,7 @@ import (
 
 const (
 	TEMP_DIRS_PARENT     = "/tmp"
-	TEMP_DIR_NAME_PREFIX = "temp-local-inox-db"
+	TEMP_DIR_NAME_PREFIX = "temp_local_inox_db"
 )
 
 func randTempDirPathInOsFs() string {
@@ -58,10 +58,10 @@ func DeleteTempDatabaseDirsOfDeadProcesses(logger zerolog.Logger, maxDuration ti
 		}
 
 		if exists, err := processutils.PidExists(int32(pid)); err == nil && !exists {
-			logger.Info().Msgf("remove temp dir %s", path)
+			logger.Info().Msgf("remove temp local db dir %s", path)
 			err := fls.RemoveAll(path)
 			if err != nil {
-				logger.Err(err).Msgf("failed to remove dead process's temporary directory (%s): %s", path, err.Error())
+				logger.Err(err).Msgf("failed to remove temporary local db directory (%s): %s", path, err.Error())
 			}
 		}
 	}

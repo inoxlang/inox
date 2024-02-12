@@ -7,6 +7,7 @@ import (
 	_ "github.com/inoxlang/inox/internal/globals"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/inoxprocess/binary"
+	"github.com/inoxlang/inox/internal/localdb"
 	"github.com/inoxlang/inox/internal/metricsperf"
 
 	"github.com/inoxlang/inox/internal/inoxd"
@@ -69,6 +70,7 @@ const (
 	MAX_STACK_SIZE                       = 200_000_000
 	BROWSER_DOWNLOAD_TIMEOUT             = 300 * time.Second
 	TEMP_DIR_CLEANUP_TIMEOUT             = time.Second / 2
+	TEMP_DB_DIR_CLEANUP_TIMEOUT          = time.Second / 2
 	ROOT_CTX_TEARDOWN_TIMEOUT            = 5 * time.Second
 
 	COMMAND_NAME = "inox"
@@ -717,6 +719,9 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 
 			logger := zerolog.New(out).With().Str(core.SOURCE_LOG_FIELD_NAME, "temp-dir-cleanup").Logger()
 			fs_ns.DeleteDeadProcessTempDirs(logger, TEMP_DIR_CLEANUP_TIMEOUT)
+
+			logger = zerolog.New(out).With().Str(core.SOURCE_LOG_FIELD_NAME, "temp-db-dir-cleanup").Logger()
+			localdb.DeleteTempDatabaseDirsOfDeadProcesses(logger, TEMP_DB_DIR_CLEANUP_TIMEOUT)
 		}()
 
 		//create a temporary directory for the whole process
