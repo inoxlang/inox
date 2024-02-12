@@ -8,6 +8,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/mimeconsts"
 )
 
 func IsMutationMethod(method string) bool {
@@ -53,12 +54,18 @@ func _httpPostPatch(ctx *core.Context, isPatch bool, args ...core.Value) (*Respo
 			if body != nil {
 				return nil, commonfmt.FmtErrArgumentProvidedAtLeastTwice("body")
 			}
-			jsonString := core.ToJSON(ctx, argVal, nil)
+			jsonString := core.AsJSON(ctx, argVal)
 			body = strings.NewReader(string(jsonString))
+			if contentType == "" {
+				contentType = mimeconsts.JSON_CTYPE
+			}
 		case *core.Object:
 			if body == nil {
-				jsonString := core.ToJSON(ctx, argVal, nil)
+				jsonString := core.AsJSON(ctx, argVal)
 				body = strings.NewReader(string(jsonString))
+				if contentType == "" {
+					contentType = mimeconsts.JSON_CTYPE
+				}
 			} else {
 				return nil, commonfmt.FmtErrArgumentProvidedAtLeastTwice("body")
 			}

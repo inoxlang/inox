@@ -861,7 +861,7 @@ html.Node("div", { children: [ html<span>text</span> ] })
 The http namespace contains functions to read, modify & delete HTTP resources. Most functions accept the --insecure option to ignore certificate errors & the --client option to specify an HTTP client to use.
 ### http.get
 
-The http.get function takes a URL (or host) as first argument and returns an HTTP response. The --insecure options causes the function to ignore certificate errors.
+The `http.get` function takes a URL (or host) as first argument and returns an HTTP response. The --insecure options causes the function to ignore certificate errors.
 
 **examples**
 
@@ -870,7 +870,7 @@ http.get https://example.com/
 ```
 ### http.read
 
-The http.read function behaves exactly like the `read` function but only works on HTTP resources. By default the type of content is determined by looking at the Content-Type header. You can specify a content type by adding a mimetype value such as mime"json".
+The `http.read` function behaves exactly like the `read` function but only works on HTTP resources. By default the type of content is determined by looking at the Content-Type header. You can specify a content type by adding a mimetype value such as mime"json".
 
 **examples**
 
@@ -882,31 +882,31 @@ http.read https://jsonplaceholder.typicode.com/posts/1
 the http.exists takes a URL (or host) as argument, it sends a HEAD request and returns true if the status code is less than 400.
 ### http.post
 
-The http.post sends a POST request to the specified URL (or host) with the given body value, the body value can be any %readable or serializable object/list. A %mimetype value can be specified to change the value of the Content-Type header.
+The `http.post` function sends a **POST** request to the specified URL (or host) with the given body value. The body value can be a `readable` (e.g. string, byte slice), an object or a list. If an object or list is passed the `Content-Type`  is set to JSON, and the body is created with the result of `asjson(<value>)`. A %mimetype value can be specified  to change the value of the Content-Type header.
 
 **examples**
 
 ```inox
-http.post https://example.com/posts `{"title":"hello"}`
+http.post https://example.com/data `text` # no Content-Type header is sent
 ```
 ```inox
-http.post https://example.com/posts {title: "hello"}
+http.post https://example.com/posts mime"json" `{"title":"hello"}` # Content-Type: application/json is sent
 ```
 ```inox
-http.post https://example.com/posts [ {title: "hello"} ]
+http.post https://example.com/posts {title: "hello"} # object values are converted to JSON using asjson
 ```
 ```inox
-http.post https://example.com/posts mime"json" {title:"hello"}
+http.post https://example.com/posts [ {title: "hello"} ] # list values are converted to JSON using asjson
 ```
 ### http.patch
 
-The http.patch function works like http.post but sends an HTTP PATCH request instead.
+The `http.patch` function works exactly like `http.post` but sends a **PATCH** request instead.
 ### http.delete
 
-The http.delete function sends an HTTP DELETE request to the specified URL.
+The `http.delete` function sends an HTTP DELETE request to the specified URL.
 ### http.Client
 
-The http.Client function creates an HTTP client that can be used in most http.* functions with the --client flag.
+The `http.Client` function creates an HTTP client that can be used in most http.* functions with the --client flag.
 
 **examples**
 
@@ -927,7 +927,7 @@ http.Client{
 ```
 ### http.Server
 
-The http.Server function creates a listening HTTPS server with a given with a given address & handler. The address should be a HTTPS host such as `https://localhost:8080` or `https://0.0.0.0:8080`. The handler can be an function or a Mapping that routes requests.  When you send a request to a server listening on localhost add the --insecure flag to ignore certificate errors. When using filesystem routing modules are reloaded each time files are changed in /routes/. Also for each page render a nonce is added to the `script-src-elem` CSP directive and to all `<script>` elements in the page's HTML.
+The `http.Server` function creates a listening HTTPS server with a given with a given address & handler. The address should be a HTTPS host such as `https://localhost:8080` or `https://0.0.0.0:8080`. The handler can be an function or a Mapping that routes requests.  When you send a request to a server listening on localhost add the --insecure flag to ignore certificate errors. When using filesystem routing modules are reloaded each time files are changed in /routes/. Also for each page render a nonce is added to the `script-src-elem` CSP directive and to all `<script>` elements in the page's HTML.
 
 **examples**
 
@@ -965,7 +965,7 @@ server = http.Server!(https://localhost:8080, handle)
 ```
 ### http.FileServer
 
-The http.FileServer creates an HTTP server that serves static file from a given directory.
+The `http.FileServer` creates an HTTP server that serves static file from a given directory.
 
 **examples**
 
@@ -977,7 +977,7 @@ http.FileServer!(https://localhost:8080, ./examples/static/)
 
 ### http.CSP
 
-The http.CSP function creates a Content Security Policy with the passed directives and some default directives: 
+The `http.CSP` function creates a Content Security Policy with the passed directives and some default directives: 
 all types that are not provided in arguments default to the following:
   - `default-src 'none';`
   - `frame-ancestors 'none';`

@@ -860,14 +860,14 @@ http:
       to specify an HTTP client to use.
   - topic: http.get
     text: >
-      The http.get function takes a URL (or host) as first argument and returns an HTTP response.
+      The `http.get` function takes a URL (or host) as first argument and returns an HTTP response.
       The --insecure options causes the function to ignore certificate errors.
     examples:
     - code: 'http.get https://example.com/'
 
   - topic: http.read
     text: >
-      The http.read function behaves exactly like the `read` function but only works on HTTP resources.
+      The `http.read` function behaves exactly like the `read` function but only works on HTTP resources.
       By default the type of content is determined by looking at the Content-Type header. You can specify a content type
       by adding a mimetype value such as mime"json".
     examples:
@@ -877,24 +877,25 @@ http:
     text: 'the http.exists takes a URL (or host) as argument, it sends a HEAD request and returns true if the status code is less than 400.'
   - topic: http.post
     text: > 
-      The http.post sends a POST request to the specified URL (or host) with the given body value, the body value can be any %readable or serializable object/list.
-      A %mimetype value can be specified to change the value of the Content-Type header.
+      The `http.post` function sends a **POST** request to the specified URL (or host) with the given body value.
+      The body value can be a `readable` (e.g. string, byte slice), an object or a list. If an object or list is passed the `Content-Type` 
+      is set to JSON, and the body is created with the result of `asjson(<value>)`. A %mimetype value can be specified 
+      to change the value of the Content-Type header.
     examples:
-    - code: http.post https://example.com/posts `{"title":"hello"}`
-    - code: 'http.post https://example.com/posts {title: "hello"}'
-    - code: 'http.post https://example.com/posts [ {title: "hello"} ]'
-    - code: 'http.post https://example.com/posts mime"json" {title:"hello"}'
-
+    - code: 'http.post https://example.com/data `text` # no Content-Type header is sent'
+    - code: 'http.post https://example.com/posts mime"json" `{"title":"hello"}` # Content-Type: application/json is sent'
+    - code: 'http.post https://example.com/posts {title: "hello"} # object values are converted to JSON using asjson'
+    - code: 'http.post https://example.com/posts [ {title: "hello"} ] # list values are converted to JSON using asjson'
 
   - topic: http.patch
-    text: The http.patch function works like http.post but sends an HTTP PATCH request instead
+    text: The `http.patch` function works exactly like `http.post` but sends a **PATCH** request instead.
     related-topics: [http.post]
 
   - topic: http.delete
-    text: The http.delete function sends an HTTP DELETE request to the specified URL
+    text: The `http.delete` function sends an HTTP DELETE request to the specified URL
 
   - topic: http.Client
-    text: The http.Client function creates an HTTP client that can be used in most http.* functions with the --client flag.
+    text: The `http.Client` function creates an HTTP client that can be used in most http.* functions with the --client flag.
 
     examples:
     - code: 'http.Client{ save-cookies: true }'
@@ -918,7 +919,7 @@ http:
 
   - topic: http.Server
     text: >
-      The http.Server function creates a listening HTTPS server with a given with a given address & handler. The address should be a HTTPS
+      The `http.Server` function creates a listening HTTPS server with a given with a given address & handler. The address should be a HTTPS
       host such as `https://localhost:8080` or `https://0.0.0.0:8080`. The handler can be an function or a Mapping that routes requests. 
       When you send a request to a server listening on localhost add the --insecure flag to ignore certificate errors. When using filesystem routing modules are reloaded each time files are changed in /routes/.
       Also for each page render a nonce is added to the `script-src-elem` CSP directive and to all `<script>` elements in the page's HTML.
@@ -969,7 +970,7 @@ http:
       standalone: true
 
   - topic: http.FileServer
-    text: The http.FileServer creates an HTTP server that serves static file from a given directory.
+    text: The `http.FileServer` creates an HTTP server that serves static file from a given directory.
     examples:
     - code: http.FileServer!(https://localhost:8080, ./examples/static/)
       explanation: https://localhost:8080/index.html will return the content of the file ./examples/static/index.html
@@ -978,7 +979,7 @@ http:
 
   - topic: http.CSP
     text: |
-      The http.CSP function creates a Content Security Policy with the passed directives and some default directives: 
+      The `http.CSP` function creates a Content Security Policy with the passed directives and some default directives: 
       all types that are not provided in arguments default to the following:
         - `default-src 'none';`
         - `frame-ancestors 'none';`

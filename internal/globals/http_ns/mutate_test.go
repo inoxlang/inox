@@ -1,9 +1,11 @@
 package http_ns
 
 import (
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -11,13 +13,14 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/mimeconsts"
 	"github.com/inoxlang/inox/internal/testconfig"
 )
 
 func TestHttpPost(t *testing.T) {
 	testconfig.AllowParallelization(t)
 
-	makeServer := func() (*http.Server, core.URL) {
+	makeServer := func(checkReq func(*http.Request)) (*http.Server, core.URL) {
 		var ADDR = "localhost:" + nextPort()
 		var URL = core.URL("http://" + ADDR + "/")
 
@@ -25,6 +28,10 @@ func TestHttpPost(t *testing.T) {
 			Addr: ADDR,
 			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				//always ok
+
+				if checkReq != nil {
+					checkReq(r)
+				}
 			}),
 		}
 
@@ -36,7 +43,7 @@ func TestHttpPost(t *testing.T) {
 	t.Run("missing URL", func(t *testing.T) {
 		testconfig.AllowParallelization(t)
 
-		server, URL := makeServer()
+		server, URL := makeServer(nil)
 		defer server.Close()
 
 		ctx := core.NewContext(core.ContextConfig{
@@ -48,6 +55,10 @@ func TestHttpPost(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		resp, err := HttpPost(ctx, core.NewObject())
+		if resp != nil {
+			resp.wrapped.Body.Close()
+		}
+
 		assert.Error(t, err)
 		assert.Nil(t, resp)
 	})
@@ -55,7 +66,7 @@ func TestHttpPost(t *testing.T) {
 	t.Run("string provided instead of URL", func(t *testing.T) {
 		testconfig.AllowParallelization(t)
 
-		server, URL := makeServer()
+		server, URL := makeServer(nil)
 		defer server.Close()
 
 		ctx := core.NewContext(core.ContextConfig{
@@ -67,6 +78,10 @@ func TestHttpPost(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		resp, err := HttpPost(ctx, core.String(URL), core.NewObject())
+		if resp != nil {
+			resp.wrapped.Body.Close()
+		}
+
 		assert.Error(t, err)
 		assert.Nil(t, resp)
 	})
@@ -74,7 +89,7 @@ func TestHttpPost(t *testing.T) {
 	t.Run("missing body", func(t *testing.T) {
 		testconfig.AllowParallelization(t)
 
-		server, URL := makeServer()
+		server, URL := makeServer(nil)
 		defer server.Close()
 
 		ctx := core.NewContext(core.ContextConfig{
@@ -86,6 +101,10 @@ func TestHttpPost(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		resp, err := HttpPost(ctx, URL)
+		if resp != nil {
+			resp.wrapped.Body.Close()
+		}
+
 		assert.Error(t, err)
 		assert.Nil(t, resp)
 	})
@@ -93,7 +112,7 @@ func TestHttpPost(t *testing.T) {
 	t.Run("missing permission", func(t *testing.T) {
 		testconfig.AllowParallelization(t)
 
-		server, URL := makeServer()
+		server, URL := makeServer(nil)
 		defer server.Close()
 
 		ctx := core.NewContext(core.ContextConfig{
@@ -106,10 +125,94 @@ func TestHttpPost(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		resp, err := HttpPost(ctx, URL)
+		if resp != nil {
+			resp.wrapped.Body.Close()
+		}
+
 		assert.Error(t, err)
 		assert.IsType(t, &core.NotAllowedError{}, err)
 		assert.Equal(t, core.HttpPermission{Kind_: permkind.Write, Entity: URL}, err.(*core.NotAllowedError).Permission)
 		assert.Nil(t, resp)
+	})
+
+	t.Run("if the body value is an object the Content-Type should be JSON", func(t *testing.T) {
+		testconfig.AllowParallelization(t)
+
+		var cType atomic.Value
+		var body atomic.Value
+
+		server, URL := makeServer(func(r *http.Request) {
+			cType.Store(r.Header.Get("Content-Type"))
+
+			bytes, err := io.ReadAll(r.Body)
+			if err == nil {
+				body.Store(string(bytes))
+			}
+		})
+		defer server.Close()
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: []core.Permission{
+				core.HttpPermission{Kind_: permkind.Write, Entity: URL},
+			},
+			Limits: []core.Limit{
+				{Name: HTTP_REQUEST_RATE_LIMIT_NAME, Kind: core.FrequencyLimit, Value: 1 * core.FREQ_LIMIT_SCALE},
+			},
+		})
+		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
+
+		resp, err := HttpPost(ctx, URL, core.NewObject())
+		if resp != nil {
+			resp.wrapped.Body.Close()
+		}
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.Equal(t, mimeconsts.JSON_CTYPE, cType.Load())
+		assert.Equal(t, `{}`, body.Load())
+	})
+
+	t.Run("if the body value is a list the Content-Type should be JSON", func(t *testing.T) {
+		testconfig.AllowParallelization(t)
+
+		var cType atomic.Value
+		var body atomic.Value
+
+		server, URL := makeServer(func(r *http.Request) {
+			cType.Store(r.Header.Get("Content-Type"))
+
+			bytes, err := io.ReadAll(r.Body)
+			if err == nil {
+				body.Store(string(bytes))
+			}
+		})
+		defer server.Close()
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: []core.Permission{
+				core.HttpPermission{Kind_: permkind.Write, Entity: URL},
+			},
+			Limits: []core.Limit{
+				{Name: HTTP_REQUEST_RATE_LIMIT_NAME, Kind: core.FrequencyLimit, Value: 1 * core.FREQ_LIMIT_SCALE},
+			},
+		})
+		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
+
+		resp, err := HttpPost(ctx, URL, core.NewWrappedValueList())
+		if resp != nil {
+			resp.wrapped.Body.Close()
+		}
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.Equal(t, mimeconsts.JSON_CTYPE, cType.Load())
+		assert.Equal(t, `[]`, body.Load())
 	})
 }
 
