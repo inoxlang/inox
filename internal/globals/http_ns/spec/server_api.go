@@ -5,9 +5,12 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"runtime/debug"
 	"slices"
 	"strings"
+	"sync"
 
+	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/inoxconsts"
@@ -40,9 +43,10 @@ func GetFSRoutingServerAPI(ctx *core.Context, dir string, config ServerApiResolu
 	}()
 
 	endpoints := map[string]*ApiEndpoint{}
+	pState := &parallelState{endpointLocks: map[*ApiEndpoint]*sync.Mutex{}}
 
 	if dir != "" {
-		err := addFilesysteDirEndpoints(ctx, config, endpoints, dir, "/", preparedModuleCache)
+		err := addFilesysteDirEndpoints(ctx, config, endpoints, dir, "/", preparedModuleCache, pState)
 		if err != nil {
 			return nil, err
 		}
@@ -59,6 +63,7 @@ func addFilesysteDirEndpoints(
 	dir,
 	urlDirPath string,
 	preparedModuleCache map[string]*core.GlobalState,
+	pState *parallelState,
 ) error {
 	fls := ctx.GetFileSystem()
 	entries, err := fls.ReadDir(dir)
@@ -78,6 +83,8 @@ func addFilesysteDirEndpoints(
 	}
 
 	parentState, _ := ctx.GetState()
+
+	wg := new(sync.WaitGroup) //This wait group is waited for in 2 different places.
 
 	for _, entry := range entries {
 		select {
@@ -99,7 +106,9 @@ func addFilesysteDirEndpoints(
 				urlSubDir = filepath.Join(urlDirPath, entryName) + "/"
 			}
 
-			err := addFilesysteDirEndpoints(ctx, config, endpoints, subDir, urlSubDir, preparedModuleCache)
+			//wg.Wait()
+
+			err := addFilesysteDirEndpoints(ctx, config, endpoints, subDir, urlSubDir, preparedModuleCache, pState)
 			if err != nil {
 				return err
 			}
@@ -175,134 +184,282 @@ func addFilesysteDirEndpoints(
 			}
 		}
 
-		//Check the same operation is not already defined.
-		for _, op := range endpt.operations {
-			if op.httpMethod == method || method == "" {
-				if op.handlerModule != nil {
-					return fmt.Errorf(
-						"operation %s %q is already implemented by the module %q; unexpected module %q",
-						op.httpMethod, endpointPath, op.handlerModule.Name(), absEntryPath)
-				}
-				return fmt.Errorf(
-					"operation %s %q is already implemented; unexpected module %q",
-					op.httpMethod, endpointPath, absEntryPath)
-			}
+		//We need to lock the endpoint because the same endpoint can be mutated by a goroutine created by the caller.
+		pState.lock.Lock()
+		endpointLock, ok := pState.endpointLocks[endpt]
+		if !ok {
+			endpointLock = new(sync.Mutex)
+			pState.endpointLocks[endpt] = endpointLock
 		}
+		pState.lock.Unlock()
 
-		endpt.operations = append(endpt.operations, ApiOperation{
-			httpMethod: method,
-		})
-		operation := &endpt.operations[len(endpt.operations)-1]
+		err = func() error {
+			endpointLock.Lock()
+			defer endpointLock.Unlock()
 
-		manifestObj := chunk.Node.Manifest.Object.(*parse.ObjectLiteral)
-		dbSection, _ := manifestObj.PropValue(core.MANIFEST_DATABASES_SECTION_NAME)
-
-		var parentCtx *core.Context = ctx
-
-		//If the databases are defined in another module we retrieve this module.
-		if path, ok := dbSection.(*parse.AbsolutePathLiteral); ok {
-			if cache, ok := preparedModuleCache[path.Value]; ok {
-				parentCtx = cache.Ctx
-
-				//if false there is nothing to do as the parentCtx is already set to ctx.
-			} else if parentState.Module.Name() != path.Value {
-
-				state, _, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
-					Fpath:                     path.Value,
-					ParsingCompilationContext: ctx,
-
-					ParentContext:         ctx,
-					ParentContextRequired: true,
-					DefaultLimits: []core.Limit{
-						core.MustMakeNotAutoDepletingCountLimit(fs_ns.FS_READ_LIMIT_NAME, 10_000_000),
-					},
-
-					Out:                     io.Discard,
-					DataExtractionMode:      true,
-					ScriptContextFileSystem: fls,
-					PreinitFilesystem:       fls,
-				})
-
-				if err != nil {
-					if config.IgnoreModulesWithErrors {
-						delete(endpoints, endpointPath)
-						continue
-					} else {
-						return err
+			//Check the same operation is not already defined.
+			for _, op := range endpt.operations {
+				if op.httpMethod == method || method == "" {
+					if op.handlerModule != nil {
+						return fmt.Errorf(
+							"operation %s %q is already implemented by the module %q; unexpected module %q",
+							op.httpMethod, endpointPath, op.handlerModule.Name(), absEntryPath)
 					}
+					return fmt.Errorf(
+						"operation %s %q is already implemented; unexpected module %q",
+						op.httpMethod, endpointPath, absEntryPath)
 				}
-
-				preparedModuleCache[path.Value] = state
-				parentCtx = state.Ctx
 			}
-		}
 
-		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
-			Fpath:                     absEntryPath,
-			ParsingCompilationContext: parentCtx,
+			endpt.operations = append(endpt.operations, ApiOperation{
+				httpMethod: method,
+			})
 
-			ParentContext:         parentCtx,
-			ParentContextRequired: true,
-			DefaultLimits: []core.Limit{
-				core.MustMakeNotAutoDepletingCountLimit(fs_ns.FS_READ_LIMIT_NAME, 10_000_000),
-			},
+			operation := &endpt.operations[len(endpt.operations)-1]
 
-			Out:                     io.Discard,
-			DataExtractionMode:      true,
-			ScriptContextFileSystem: fls,
-			PreinitFilesystem:       fls,
-		})
+			wg.Add(1)
+			go addHandlerModule(
+				ctx.BoundChild(), parentState,
 
-		if state != nil {
-			defer state.Ctx.CancelGracefully()
-		}
+				//handler
+				method, fls, absEntryPath, chunk,
+
+				preparedModuleCache, config,
+
+				//parallelization
+				wg, endpointLock, pState,
+
+				//API components
+				endpt, operation,
+			)
+			return nil
+		}()
 
 		if err != nil {
-			if config.IgnoreModulesWithErrors {
-				delete(endpoints, endpointPath)
-				continue
-			} else {
-				return err
-			}
-		}
-
-		operation.handlerModule = mod
-
-		bodyParams := utils.FilterSlice(state.Manifest.Parameters.NonPositionalParameters(), func(p core.ModuleParameter) bool {
-			return !strings.HasPrefix(p.Name(), "_")
-		})
-
-		if len(bodyParams) > 0 {
-			if method == "GET" {
-				return fmt.Errorf("%w: module %q", ErrUnexpectedBodyParamsInGETHandler, absEntryPath)
-			} else if method == "OPTIONS" {
-				return fmt.Errorf("%w: module %q", ErrUnexpectedBodyParamsInOPTIONSHandler, absEntryPath)
-			}
-
-			var paramEntries []core.ObjectPatternEntry
-
-			for _, param := range bodyParams {
-				name := param.Name()
-				paramEntries = append(paramEntries, core.ObjectPatternEntry{
-					Name:       name,
-					IsOptional: false,
-					Pattern:    param.Pattern(),
-				})
-			}
-
-			operation.jsonRequestBody = core.NewInexactObjectPattern(paramEntries)
+			return err
 		}
 	}
 
-	//update catch-all endpoints
-	for _, endpt := range endpoints {
-		if len(endpt.operations) == 1 && endpt.operations[0].httpMethod == "" {
-			operation := endpt.operations[0]
-			endpt.operations = nil
-			endpt.catchAll = true
-			endpt.catchAllHandler = operation.handlerModule
+	wg.Wait() //TODO: prevent blocking + add a timeout (kill context)
+
+	//Handle errors
+	for i, err := range pState.errors {
+		if config.IgnoreModulesWithErrors {
+			endpoint := pState.endpoints[i]
+			operation := pState.operations[i]
+
+			if endpoint == nil || operation == nil {
+				continue
+			}
+
+			if len(endpoint.operations) == 1 {
+				delete(endpoints, endpoint.path)
+			} else {
+				endpoint.operations = slices.DeleteFunc(endpoint.operations, func(op ApiOperation) bool {
+					return op.httpMethod == operation.httpMethod
+				})
+			}
+
+			continue
+		} else {
+			return err
 		}
+	}
+
+	//Update catch-all endpoints.
+	for _, endpt := range endpoints {
+		pState.lock.Lock()
+		endpointLock := pState.endpointLocks[endpt]
+		pState.lock.Unlock()
+
+		func() {
+			endpointLock.Lock() //We need to lock because the same endpoint can be mutated by a goroutine created by the caller.
+			defer endpointLock.Unlock()
+
+			if len(endpt.operations) == 1 && endpt.operations[0].httpMethod == "" {
+				{
+
+					operation := endpt.operations[0]
+					endpt.operations = nil
+					endpt.catchAll = true
+					endpt.catchAllHandler = operation.handlerModule
+				}
+			}
+		}()
 	}
 
 	return nil
+}
+
+type parallelState struct {
+	errors     []error
+	operations []*ApiOperation //same length as .errors
+	endpoints  []*ApiEndpoint  //same length as .errors
+
+	endpointLocks map[*ApiEndpoint]*sync.Mutex
+
+	lock sync.Mutex
+}
+
+func addHandlerModule(
+	ctx *core.Context,
+	parentState *core.GlobalState,
+
+	method string,
+	fls afs.Filesystem,
+	absEntryPath string,
+	chunk *parse.ParsedChunkSource,
+
+	preparedModuleCache map[string]*core.GlobalState,
+	config ServerApiResolutionConfig,
+
+	wg *sync.WaitGroup,
+	endpointLock *sync.Mutex,
+	pState *parallelState,
+
+	endpoint *ApiEndpoint,
+	operation *ApiOperation,
+) {
+
+	defer wg.Done()
+
+	errorIndex := -1
+
+	defer func() {
+		e := recover()
+		if e != nil {
+			err := utils.ConvertPanicValueToError(e)
+			err = fmt.Errorf("%w: %s", err, debug.Stack())
+
+			if errorIndex >= 0 {
+				pState.errors[errorIndex] = err
+			} else {
+				pState.lock.Lock()
+				defer pState.lock.Unlock()
+				pState.errors = append(pState.errors, err)
+				pState.operations = append(pState.operations, nil)
+				pState.endpoints = append(pState.endpoints, nil)
+			}
+		}
+	}()
+
+	defer ctx.CancelGracefully()
+
+	manifestObj := chunk.Node.Manifest.Object.(*parse.ObjectLiteral)
+	dbSection, _ := manifestObj.PropValue(core.MANIFEST_DATABASES_SECTION_NAME)
+
+	var parentCtx *core.Context = ctx
+
+	//If the databases are defined in another module we retrieve this module.
+	if path, ok := dbSection.(*parse.AbsolutePathLiteral); ok {
+		if cache, ok := preparedModuleCache[path.Value]; ok {
+			parentCtx = cache.Ctx
+
+			//if false there is nothing to do as the parentCtx is already set to ctx.
+		} else if parentState.Module.Name() != path.Value {
+
+			state, _, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
+				Fpath:                     path.Value,
+				ParsingCompilationContext: ctx,
+
+				ParentContext:         ctx,
+				ParentContextRequired: true,
+				DefaultLimits: []core.Limit{
+					core.MustMakeNotAutoDepletingCountLimit(fs_ns.FS_READ_LIMIT_NAME, 10_000_000),
+				},
+
+				Out:                     io.Discard,
+				DataExtractionMode:      true,
+				ScriptContextFileSystem: fls,
+				PreinitFilesystem:       fls,
+			})
+
+			if err != nil {
+				pState.lock.Lock()
+				defer pState.lock.Unlock()
+
+				errorIndex = len(pState.errors)
+				pState.errors = append(pState.errors, err)
+				pState.operations = append(pState.operations, operation)
+				pState.endpoints = append(pState.endpoints, endpoint)
+				return
+			}
+
+			preparedModuleCache[path.Value] = state
+			parentCtx = state.Ctx
+		}
+	}
+
+	state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
+		Fpath:                     absEntryPath,
+		ParsingCompilationContext: parentCtx,
+
+		ParentContext:         parentCtx,
+		ParentContextRequired: true,
+		DefaultLimits: []core.Limit{
+			core.MustMakeNotAutoDepletingCountLimit(fs_ns.FS_READ_LIMIT_NAME, 10_000_000),
+		},
+
+		Out:                     io.Discard,
+		DataExtractionMode:      true,
+		ScriptContextFileSystem: fls,
+		PreinitFilesystem:       fls,
+	})
+
+	if state != nil {
+		defer state.Ctx.CancelGracefully()
+	}
+
+	if err != nil {
+		pState.lock.Lock()
+		defer pState.lock.Unlock()
+
+		errorIndex = len(pState.errors)
+		pState.errors = append(pState.errors, err)
+		pState.operations = append(pState.operations, operation)
+		pState.endpoints = append(pState.endpoints, endpoint)
+		return
+	}
+
+	endpointLock.Lock()
+	operation.handlerModule = mod
+	endpointLock.Unlock()
+
+	bodyParams := utils.FilterSlice(state.Manifest.Parameters.NonPositionalParameters(), func(p core.ModuleParameter) bool {
+		return !strings.HasPrefix(p.Name(), "_")
+	})
+
+	if len(bodyParams) > 0 {
+		if method == "GET" {
+			pState.lock.Lock()
+			defer pState.lock.Unlock()
+
+			errorIndex = len(pState.errors)
+			pState.errors = append(pState.errors, fmt.Errorf("%w: module %q", ErrUnexpectedBodyParamsInGETHandler, absEntryPath))
+			pState.operations = append(pState.operations, operation)
+			pState.endpoints = append(pState.endpoints, endpoint)
+		} else if method == "OPTIONS" {
+			pState.lock.Lock()
+			defer pState.lock.Unlock()
+
+			errorIndex = len(pState.errors)
+			pState.errors = append(pState.errors, fmt.Errorf("%w: module %q", ErrUnexpectedBodyParamsInOPTIONSHandler, absEntryPath))
+			pState.operations = append(pState.operations, operation)
+			pState.endpoints = append(pState.endpoints, endpoint)
+			return
+		}
+
+		var paramEntries []core.ObjectPatternEntry
+
+		for _, param := range bodyParams {
+			name := param.Name()
+			paramEntries = append(paramEntries, core.ObjectPatternEntry{
+				Name:       name,
+				IsOptional: false,
+				Pattern:    param.Pattern(),
+			})
+		}
+
+		operation.jsonRequestBody = core.NewInexactObjectPattern(paramEntries)
+	}
 }
