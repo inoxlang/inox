@@ -69,6 +69,7 @@ const (
 	MAX_STACK_SIZE                       = 200_000_000
 	BROWSER_DOWNLOAD_TIMEOUT             = 300 * time.Second
 	TEMP_DIR_CLEANUP_TIMEOUT             = time.Second / 2
+	ROOT_CTX_TEARDOWN_TIMEOUT            = 5 * time.Second
 
 	COMMAND_NAME = "inox"
 	LINE_SEP     = "\n-----------------------------------------"
@@ -788,6 +789,8 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 		state.Logger = zerolog.New(out)
 		state.OutputFieldsInitialized.Store(true)
 
+		CancelOnSigintSigterm(state.Ctx, ROOT_CTX_TEARDOWN_TIMEOUT)
+
 		//restrict filesystem access at the process level.
 		inoxprocess.RestrictProcessAccess(ctx, inoxprocess.ProcessRestrictionConfig{
 			AllowBrowserAccess: projectServerConfig.AllowBrowserAutomation,
@@ -1050,6 +1053,8 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			fmt.Fprintln(errW, err)
 			return
 		}
+
+		CancelOnSigintSigterm(state.Ctx, ROOT_CTX_TEARDOWN_TIMEOUT)
 
 		client.StartControl()
 	case SHELL_SUBCMD:
