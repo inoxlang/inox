@@ -179,6 +179,10 @@ func init() {
 		core.ToPrettyJSON, func(ctx *symbolic.Context, arg symbolic.Value, pattern *symbolic.OptionalParam[symbolic.Pattern]) *symbolic.String {
 			return symbolic.ANY_STRING
 		},
+		core.AsJSON, func(ctx *symbolic.Context, v symbolic.Serializable) *symbolic.String {
+			//TODO: recursively check that $v contains supported values.
+			return symbolic.ANY_STRING
+		},
 
 		_parse, func(ctx *symbolic.Context, arg symbolic.Readable, p symbolic.Pattern) (symbolic.Value, *symbolic.Error) {
 			return p.SymbolicValue(), nil
@@ -324,10 +328,6 @@ func init() {
 				return symbolic.ANY_SERIALIZABLE, nil
 			}
 			return v, nil
-		},
-		asJSON, func(ctx *symbolic.Context, v symbolic.Serializable) *symbolic.String {
-			//TODO: recursively check that $v contains supported values.
-			return symbolic.ANY_STRING
 		},
 	})
 

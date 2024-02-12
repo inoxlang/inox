@@ -135,3 +135,52 @@ func parseJson(ctx *Context, v any) (any, error) {
 
 	return ConvertJSONValToInoxVal(result, false), nil
 }
+
+func AsJSON(ctx *Context, v Serializable) String {
+	stream := jsoniter.NewStream(jsoniter.ConfigDefault, nil, 0)
+	asJSON(ctx, v, stream)
+	return String(stream.Buffer())
+}
+
+func asJSON(ctx *Context, v Serializable, w *jsoniter.Stream) {
+	switch v := v.(type) {
+	case *Object:
+		w.WriteObjectStart()
+
+		i := 0
+		v.ForEachEntry(func(k string, propVal Serializable) error {
+			if i != 0 {
+				w.WriteMore()
+			}
+			i++
+			w.WriteObjectField(k)
+			asJSON(ctx, propVal, w)
+			return nil
+		})
+
+		w.WriteObjectEnd()
+	case *List:
+		w.WriteArrayStart()
+
+		for i := 0; i < v.Len(); i++ {
+			if i != 0 {
+				w.WriteMore()
+			}
+			asJSON(ctx, v.At(ctx, i).(Serializable), w)
+		}
+
+		w.WriteArrayEnd()
+	case StringLike:
+		w.WriteString(v.GetOrBuildString())
+	case Int:
+		w.WriteInt64(int64(v.Int64()))
+	case Float:
+		w.WriteFloat64(float64(v))
+	case Bool:
+		w.WriteBool(bool(v))
+	case NilT:
+		w.WriteNil()
+	default:
+		panic(fmt.Errorf("unexpected value %s, `asjson` only supports objects, lists, integers, floats, bools and string-likes", Stringify(v, ctx)))
+	}
+}

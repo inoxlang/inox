@@ -256,7 +256,7 @@ func NewDefaultGlobalState(ctx *core.Context, conf core.DefaultGlobalStateConfig
 		globalnames.TORSTREAM_FN: core.ValOf(_torstream),
 		globalnames.TOJSON_FN:    core.ValOf(core.ToJSON),
 		globalnames.TOPJSON_FN:   core.ValOf(core.ToPrettyJSON),
-		globalnames.ASJSON_FN:    core.ValOf(asJSON),
+		globalnames.ASJSON_FN:    core.ValOf(core.AsJSON),
 		globalnames.PARSE_FN:     core.ValOf(_parse),
 		globalnames.SPLIT_FN:     core.ValOf(_split),
 
