@@ -22,6 +22,9 @@ import (
 const (
 	TEST__MAX_FS_STORAGE_HINT = ByteCount(10_000_000)
 	TEST_FULL_NAME_PART_SEP   = "::"
+
+	//Time to wait before starting a test item that tests a progam.
+	DEFAULT_WAIT_FOR_TESTED_PROGRAM_STARTUP = 25 * time.Millisecond
 )
 
 var (
@@ -711,6 +714,17 @@ func runTestItem(
 
 			Out:    spawnerState.Out,
 			Logger: spawnerState.Logger,
+
+			AfterDBCreations: func(state *GlobalState, dbs map[string]*DatabaseIL) error {
+				if mainDatabaseSchema != nil {
+					db, ok := dbs["main"]
+					if !ok {
+						return fmt.Errorf("testing: the program to test (%q) has not a main database", programToExecute)
+					}
+					db.UpdateSchema(state.Ctx, mainDatabaseSchema, mainDatabaseMigrations)
+				}
+				return nil
+			},
 		})
 
 		if err != nil {
@@ -718,14 +732,6 @@ func runTestItem(
 				programState.Ctx.CancelGracefully()
 			}
 			return nil, fmt.Errorf("testing: failed to prepare the program to test (%q): %w", programToExecute, err)
-		}
-
-		if mainDatabaseSchema != nil {
-			db, ok := programState.Databases["main"]
-			if !ok {
-				return nil, fmt.Errorf("testing: the program to test (%q) has not a main database", programToExecute)
-			}
-			db.UpdateSchema(programState.Ctx, mainDatabaseSchema, mainDatabaseMigrations)
 		}
 
 		dbs := map[string]Value{}
@@ -742,6 +748,8 @@ func runTestItem(
 		if err != nil {
 			return nil, fmt.Errorf("testing: failed to spawn a lthread for the program to test (%q): %w", programToExecute, err)
 		}
+
+		time.Sleep(DEFAULT_WAIT_FOR_TESTED_PROGRAM_STARTUP)
 	}
 
 	//spawn the lthread

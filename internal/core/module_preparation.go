@@ -52,6 +52,7 @@ type ModulePreparationArgs struct {
 	AllowMissingEnvVars     bool
 	FullAccessToDatabases   bool
 	ForceExpectSchemaUpdate bool
+	AfterDBCreations        func(state *GlobalState, dbs map[string]*DatabaseIL) error
 
 	EnableTesting bool
 	TestFilters   TestFilters
@@ -390,6 +391,7 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 			ExpectedSchema:               config.ExpectedSchema,
 			DevMode:                      args.DataExtractionMode,
 		})
+
 		if err != nil && (!args.DataExtractionMode || !errors.Is(err, ErrCurrentSchemaNotEqualToExpectedSchema)) {
 			err = fmt.Errorf("failed to wrap '%s' database: %w", config.Name, err)
 			if !args.DataExtractionMode {
@@ -430,6 +432,15 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 			}
 		}
 	}
+
+	if args.AfterDBCreations != nil {
+		err := args.AfterDBCreations(state, dbs)
+		if err != nil {
+			finalErr = fmt.Errorf("post database creations handler: %w", err)
+			return
+		}
+	}
+
 	preparationLogger.Debug().Dur("db-openings-dur", time.Since(dbOpeningStart)).Send()
 
 	//add project-secrets global
