@@ -3,7 +3,11 @@
 <img src="https://avatars.githubusercontent.com/u/122291844?s=200&v=4" alt="a shield"></img>
 
 Inox is  **single-binary platform** that will contain all you need to develop, test, and deploy web apps that are primarily rendered server-side. Applications are developped using **Inoxlang**, a sandboxed programming language that 
-deeply integrates with several components: a built-in database engine, testing engine, HTTP server, and in-process container engine.
+deeply integrates with several components: 
+- A built-in database engine
+- HTTP server
+- Testing engine with in-memory filesystems (transparent for application code)
+- An in-process container engine (unrelated to Linux containers).
 
 **Important note: bear in mind that the current version of Inox is 0.2, not 1.0. The first stable versions of Inox won't support high-scalability applications.**
 
@@ -43,9 +47,8 @@ usable in real world applications. If you believe this project has potential, **
 ⬇️ [Installation](#installation)\
 🔍 [Application Examples](#application-examples)\
 📚 [Learning Inox](#learning-inox)\
-👥 [Discord Server](https://discord.gg/53YGx8GzgE)\
+👥 [Discord Server](https://discord.gg/53YGx8GzgE)\ & [Subreddit](https://www.reddit.com/r/inoxlang/).
 ❔ [Questions you may have](#questions-you-may-have)
-
 
 <details>
 
@@ -199,7 +202,7 @@ You can install the inox binary on your local (Linux) machine, a local VM, or a 
 
 </details>
 
-If you have any questions you are welcome to join the [Discord Server](https://discord.gg/53YGx8GzgE).
+If you have any questions you are welcome to join the [Discord Server](https://discord.gg/53YGx8GzgE) and the [Subreddit](https://www.reddit.com/r/inoxlang/).
 If you want to build Inox from source go [here](#build-from-source).
 
 ## Application Examples
