@@ -47,7 +47,7 @@ usable in real world applications. If you believe this project has potential, **
 ⬇️ [Installation](#installation)\
 🔍 [Application Examples](#application-examples)\
 📚 [Learning Inox](#learning-inox)\
-👥 [Discord Server](https://discord.gg/53YGx8GzgE)\ & [Subreddit](https://www.reddit.com/r/inoxlang/).
+👥 [Discord Server](https://discord.gg/53YGx8GzgE) & [Subreddit](https://www.reddit.com/r/inoxlang/)\
 ❔ [Questions you may have](#questions-you-may-have)
 
 <details>
