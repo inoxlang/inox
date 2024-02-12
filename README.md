@@ -38,7 +38,9 @@ _Note: the permissions granted to imported modules (local or third-party) are **
 ---
 
 **I have been working 2 years full time on Inox.**  There is still a lot to do in order to make Inox
-usable in real world applications. If you believe this project has potential, **consider donating** through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t). It will help me continue working on Inox.
+usable in real world applications. If you believe this project has potential, **consider donating** through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t). It will help me continue working on Inox (check see **What is planned**). 
+
+<details>
 
 ⬇️ [Installation](#installation)\
 🔍 [Application Examples](#application-examples)\
@@ -46,9 +48,7 @@ usable in real world applications. If you believe this project has potential, **
 👥 [Discord Server](https://discord.gg/53YGx8GzgE)\
 ❔ [Questions you may have](#questions-you-may-have)
 
-<details>
-
-**<summary>What is planned ?</summary>**
+**<summary>🗓️ What is planned ?</summary>**
 
 - Automated database backups in S3-compatible storage
 - Log persistence in S3 (note that Inox has builtins for [structured logging](./docs/builtins.md#structured-logging)).
@@ -67,6 +67,7 @@ cannot be printed, logged or serialized.
 - And more !
 
 </details>
+
 
 
 <details>
@@ -157,7 +158,7 @@ You can install the inox binary on your local (Linux) machine, a local VM, or a 
 
 <details>
 
-**<summary> Local Installation</summary>**
+**<summary>Local Installation</summary>**
 
 - Download the latest release
   ```
@@ -181,7 +182,7 @@ You can install the inox binary on your local (Linux) machine, a local VM, or a 
   ```
   _If you execute this command inside a VM, don't forget to forward the port 8305 to allow VSCode to connect to the project server._ -->
 
-- Install the VSCode/VScodium [extension](https://marketplace.visualstudio.com/items?itemName=graphr00t.inox). Make sure to read the Requirements and Usage sections in the extension's details.
+- Install the VSCode/VSCodium [extension](https://marketplace.visualstudio.com/items?itemName=graphr00t.inox). Make sure to read the **Requirements** and **Usage** sections in the extension's details.
 </details>
 
 
@@ -189,8 +190,11 @@ You can install the inox binary on your local (Linux) machine, a local VM, or a 
 
 **<summary>Installation on a remote machine (VPS)</summary>**
 
+**This install is not recommended for now since there are potentially memory leaks.**
+
 - Install the [Inox Daemon](https://github.com/inoxlang/inox/blob/main/docs/inox-daemon.md#on-a-vps---publicly-exposed-servers)
-- Install the VSCode/VScodium [extension](https://marketplace.visualstudio.com/items?itemName=graphr00t.inox). Make sure to read the Requirements and Usage sections in the extension's details.
+
+- Install the VSCode/VSCodium [extension](https://marketplace.visualstudio.com/items?itemName=graphr00t.inox). Make sure to read the **Requirements** and **Usage** sections in the extension's details.
 
 </details>
 
