@@ -43,6 +43,8 @@ type ModulePreparationArgs struct {
 	//if not nil the module is not parsed and this value is used.
 	CachedModule *Module
 
+	IsUnderTest bool
+
 	// enable data extraction mode, this mode allows some errors.
 	// this mode is intended to be used by the LSP server.
 	DataExtractionMode bool
@@ -366,7 +368,9 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 			ResolutionData: config.ResolutionData,
 			FullAccess:     args.FullAccessToDatabases,
 			Project:        project,
+			IsTestDatabase: args.IsUnderTest,
 		})
+
 		if err != nil {
 			err = fmt.Errorf("failed to open the '%s' database: %w", config.Name, err)
 			if !args.DataExtractionMode {

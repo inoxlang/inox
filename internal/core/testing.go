@@ -694,6 +694,7 @@ func runTestItem(
 
 	if programToExecute != "" {
 		programState, _, _, err := PrepareLocalModule(ModulePreparationArgs{
+			IsUnderTest:             true,
 			FullAccessToDatabases:   true,
 			ForceExpectSchemaUpdate: true,
 

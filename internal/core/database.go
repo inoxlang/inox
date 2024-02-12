@@ -78,6 +78,7 @@ type DbOpenConfiguration struct {
 	ResolutionData Value
 	FullAccess     bool
 	Project        Project
+	IsTestDatabase bool
 }
 
 func checkDatabaseSchema(pattern *ObjectPattern) error {
