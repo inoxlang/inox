@@ -48,6 +48,9 @@ usable in real world applications. If you believe this project has potential, **
 👥 [Discord Server](https://discord.gg/53YGx8GzgE)\
 ❔ [Questions you may have](#questions-you-may-have)
 
+
+<details>
+
 **<summary>🗓️ What is planned ?</summary>**
 
 - Automated database backups in S3-compatible storage
@@ -198,6 +201,7 @@ You can install the inox binary on your local (Linux) machine, a local VM, or a 
 
 </details>
 
+If you have any questions you are welcome to join the [Discord Server](https://discord.gg/53YGx8GzgE).
 If you want to build Inox from source go [here](#build-from-source).
 
 ## Application Examples
