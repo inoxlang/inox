@@ -13,3 +13,12 @@ pattern tutorial-series = {
     description?: str
     tutorials: []tutorial
 }
+
+
+fn get_order_string(index int){
+    assert (index <= 99)
+    if(index >= 10){
+        return concat tostr(index)
+    }
+    return concat "0" tostr(index)
+}

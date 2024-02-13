@@ -23,13 +23,12 @@ assert (content match [[]tutorial-series])
 
 tutorial_series = content[0]
 
-delete!(OUTPUT_DIR)
-
 # Generate tutorials/README.md.
 var readme str = "# Tutorial Series \n\n"
 
-for series in tutorial_series {
-    readme = concat readme `- [${series.name}](./${series.id}/)\n`
+for series_index, series in tutorial_series {
+    order = get_order_string(series_index)
+    readme = concat readme `- [${series.name}](./${order}-${series.id}/)\n`
 }
 
 readme = concat readme `
@@ -42,17 +41,24 @@ You will get syntax colorization. Make sure to create the file **inside a projec
 
 `
 
+# Delete tutorials directory.
+
+delete!(OUTPUT_DIR)
+
+# Add README
+
 create!(OUTPUT_DIR.join(./README.md), readme)
 
 # Generate a directory for each series.
-for series in tutorial_series {
-    series_dir = OUTPUT_DIR.join(./{series.id}/)
+for series_index, series in tutorial_series {
+    order = get_order_string(series_index)
+    series_dir = OUTPUT_DIR.join(./{order}-{series.id}/)
     fs.mkdir!(series_dir)
 
     # Generate a file for each tutorial in the series.
-    for i, tutorial in series.tutorials {
-        number = tostr((i + 1))
-        tutorial_file = series_dir.join(./{number}-{tutorial.id}.md)
+    for tut_index, tutorial in series.tutorials {
+        tutorial_order = get_order_string(tut_index)
+        tutorial_file = series_dir.join(./{tutorial_order}-{tutorial.id}.md)
 
         program = strmanip.trim_space(tutorial.program)
 
