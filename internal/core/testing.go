@@ -525,13 +525,20 @@ func (*TestCase) PropertyNames(ctx *Context) []string {
 }
 
 func runTestItem(
+	//parent state
+
 	parentCtx *Context,
 	spawnerState *GlobalState,
+
+	//test item
+
 	testItem TestItem,
 	testItemModule *Module,
 	testItemFSProvider *fsProvider,
 	timeout time.Duration,
 	parentTestSuite *TestSuite,
+
+	//tested program
 
 	programToExecute Path, //can be empty
 	programModuleCache *Module, //can be nil
@@ -577,13 +584,26 @@ func runTestItem(
 		}
 	}
 
-	//Inherit some HTTP permissions.
+	//Inherit some HTTP permissions add create an insecure HTTP client for each provide: https://localhost:.. permission.
+
+	httpClients := map[Host]ProtocolClient{}
+
 	for _, perm := range parentCtx.GetGrantedPermissions() {
 		httpPerm, ok := perm.(HttpPermission)
 		if !ok || httpPerm.AnyEntity {
 			continue
 		}
 		implicitlyAddedPermissions = append(implicitlyAddedPermissions, perm)
+		if httpPerm.Kind_ == permkind.Provide {
+			host, ok := httpPerm.Entity.(Host)
+			if ok && host.Name() == "localhost" {
+				client, err := CreateHttpClient(true, true)
+				if err != nil {
+					return nil, err
+				}
+				httpClients[host] = client
+			}
+		}
 	}
 
 	var fls afs.Filesystem
@@ -647,7 +667,7 @@ func runTestItem(
 		}
 	}
 
-	//create the lthread context
+	//Create the lthread context
 
 	for _, perm := range manifest.RequiredPermissions {
 		if err := spawnerState.Ctx.CheckHasPermission(perm); err != nil {
@@ -675,7 +695,12 @@ func runTestItem(
 		Filesystem: fls,
 	})
 
-	//inherit patterns and host aliases.
+	//Add HTTP clients.
+	for host, client := range httpClients {
+		lthreadCtx.SetProtocolClientForHost(host, client)
+	}
+
+	//Inherit patterns and host aliases.
 	spawnerState.Ctx.ForEachNamedPattern(func(name string, pattern Pattern) error {
 		lthreadCtx.AddNamedPattern(name, pattern)
 		return nil
@@ -752,7 +777,7 @@ func runTestItem(
 		time.Sleep(DEFAULT_WAIT_DURATION_FOR_TESTED_PROGRAM_STARTUP)
 	}
 
-	//spawn the lthread
+	//Spawn the lthread
 
 	globals := spawnerState.Globals.Entries()
 

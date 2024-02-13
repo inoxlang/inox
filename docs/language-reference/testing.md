@@ -146,7 +146,7 @@ testsuite({
     program: /web-app.ix
 }) {
     testcase {
-        assert http.exists(https://localhost:8080/)
+        assert http.exists(https://localhost:8080/) 
     }
 
     testcase {
@@ -157,6 +157,9 @@ testsuite({
 
 The short-lived filesystem is created from the current project's
 [base image](#project-images).
+
+
+**For convenience sake, HTTP requests to a `localhost` host present in a `provide` permission are made with a HTTP client created by the current test case. This client ignores certificate errors and it saves cookies. You don't have to add the --insecure flag when making requests to the tested program.**
 
 **Database initialization**:
 

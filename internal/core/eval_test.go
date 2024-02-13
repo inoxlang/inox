@@ -47,6 +47,9 @@ func init() {
 	RegisterSymbolicGoFunction(toByte, func(ctx *symbolic.Context, i *symbolic.Int) *symbolic.Byte {
 		return symbolic.ANY_BYTE
 	})
+
+	RegisterSymbolicGoFunction(isClientInsecureAndStateful, func(ctx *symbolic.Context, h *symbolic.Host) {})
+
 }
 
 func TestTreeWalkEval(t *testing.T) {
@@ -9311,6 +9314,54 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Equal(t, Nil, res)
 		})
 
+		t.Run("test cases should have http clients configured for all provided localhost hosts ", func(t *testing.T) {
+
+			src := makeSourceFile(`
+				manifest {
+					permissions: {
+						provide: https://localhost:8081
+					}
+				}
+
+				testsuite "name" {
+					testcase {
+						 ok = is_client_insecure_and_stateful(https://localhost:8081)
+						 assert ok 
+						 ok = is_client_insecure_and_stateful(https://localhost:8081)
+						 assert !ok
+					}
+				}
+			`)
+
+			state := NewGlobalState(NewDefaultTestContext())
+			state.TestingState.IsTestingEnabled = true
+			state.TestingState.Filters = allTestsFilter
+			state.Globals.Set("is_client_insecure_and_stateful", WrapGoFunction(isClientInsecureAndStateful))
+
+			defer state.Ctx.CancelGracefully()
+
+			//Generate a self signed certificate and spins 2 HTTP server (localhost:8081 and localhost/8082)
+
+			res, err := Eval(src, state, false)
+
+			assert.NoError(t, err)
+			assert.Equal(t, Nil, res)
+
+			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
+				return
+			}
+
+			testSuitResult := state.TestingState.SuiteResults[0]
+			if !assert.Len(t, testSuitResult.caseResults, 1) {
+				return
+			}
+
+			caseResult := testSuitResult.caseResults[0]
+			if !assert.False(t, caseResult.Success) {
+				return
+			}
+		})
+
 		t.Run("manifest with ungranted permissions", func(t *testing.T) {
 			src := makeSourceFile(`testsuite "name" {
 				manifest {    
@@ -12637,4 +12688,10 @@ func (img testImage) FilesystemSnapshot() FilesystemSnapshot {
 
 func toByte(ctx *Context, i Int) Byte {
 	return Byte(i)
+}
+
+func isClientInsecureAndStateful(ctx *Context, host Host) bool {
+	client := utils.Must(ctx.GetProtolClient(host.URLWithPath("/")))
+
+	return client.MayPurposefullySkipAuthentication() && client.IsStateful()
 }
