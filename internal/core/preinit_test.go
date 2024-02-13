@@ -236,6 +236,20 @@ func TestPreInit(t *testing.T) {
 			},
 		},
 		{
+			name: "methods of global constants are allowed to be called",
+			module: `
+				const (
+					PATH_A = /a/
+					PATH_B = PATH_A.join(./b)
+				)
+				manifest {
+					permissions: { read: PATH_B }
+				}`,
+			expectedPermissions: []Permission{FilesystemPermission{Kind_: permkind.Read, Entity: Path("/a/b")}},
+			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
+			expectedResolutions: nil,
+		},
+		{
 			name: "host definition",
 			module: `
 				manifest {
@@ -282,7 +296,7 @@ func TestPreInit(t *testing.T) {
 			error:               false,
 		},
 		{
-			name: "read_any_global",
+			name: "read any global",
 			module: `manifest {
 					permissions: { read: {globals: "*"} }
 				}`,
@@ -292,7 +306,7 @@ func TestPreInit(t *testing.T) {
 			error:               false,
 		},
 		{
-			name: "create_routine",
+			name: "create routine",
 			module: `manifest {
 					permissions: {
 						create: {threads: {}}
@@ -304,7 +318,7 @@ func TestPreInit(t *testing.T) {
 			error:               false,
 		},
 		{
-			name: "create_routine",
+			name: "create routine",
 			module: `manifest {
 					permissions: {
 						create: {threads: {}}
@@ -316,7 +330,7 @@ func TestPreInit(t *testing.T) {
 			error:               false,
 		},
 		{
-			name: "read_@const_var",
+			name: "read @const var",
 			module: `
 				const (
 					URL = https://example.com/
@@ -330,7 +344,7 @@ func TestPreInit(t *testing.T) {
 			error:               false,
 		},
 		{
-			name: "invalid_permission_kind",
+			name: "invalid permission kind",
 			module: `
 				const (
 					URL = https://example.com/
@@ -1676,7 +1690,7 @@ func TestPreInit(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			if testCase.name == "read_any_global" {
+			if testCase.name == "read any global" {
 				testCase.expectedPermissions =
 					append(testCase.expectedPermissions, GlobalVarPermission{permkind.Use, "*"}, GlobalVarPermission{permkind.Create, "*"})
 			} else {

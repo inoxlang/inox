@@ -6,8 +6,13 @@ import (
 
 	"github.com/inoxlang/inox/internal/afs"
 	permkind "github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
+)
+
+var (
+	USABLE_GLOBALS_IN_PREINIT = []string{globalnames.READ_FN}
 )
 
 type PreinitArgs struct {
@@ -131,8 +136,26 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 
 	//we create a temporary state to pre-evaluate some parts of the manifest
 	if preinitArgs.RunningState == nil {
+
+		ctxPerms := []Permission{GlobalVarPermission{permkind.Read, "*"}}
+
+		//Allow calling some builtins.
+		for _, name := range USABLE_GLOBALS_IN_PREINIT {
+			ctxPerms = append(ctxPerms, GlobalVarPermission{permkind.Use, name})
+		}
+
+		//Allow using user-defined global constants (direct call or method call).
+		if preinitArgs.GlobalConsts != nil {
+			for _, decl := range preinitArgs.GlobalConsts.Declarations {
+				ident, ok := decl.Left.(*parse.IdentifierLiteral)
+				if ok {
+					ctxPerms = append(ctxPerms, GlobalVarPermission{permkind.Use, ident.Name})
+				}
+			}
+		}
+
 		ctx := NewContext(ContextConfig{
-			Permissions:               []Permission{GlobalVarPermission{permkind.Read, "*"}},
+			Permissions:               ctxPerms,
 			Filesystem:                preinitArgs.PreinitFilesystem,
 			DoNotSetFilesystemContext: true,
 			DoNotSpawnDoneGoroutine:   true,
