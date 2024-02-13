@@ -1,0 +1,15 @@
+# Module Imports 
+
+```
+manifest {
+    permissions: {
+        read: %/...    # don't forget the read permission
+    }
+}
+
+# A module import imports a module: an Inox file that starts with a manifest.
+# ⚠️ Each module import creates a new instance of the imported module.
+import result ./.tutorial-files/return_1.ix {}
+
+print(result)
+```

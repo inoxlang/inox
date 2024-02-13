@@ -1,0 +1,15 @@
+includable-chunk
+
+pattern tutorial = {
+    name: str
+    id: str
+    program: str
+    output?: []str
+}
+
+pattern tutorial-series = {
+    name: str
+    id: str
+    description?: str
+    tutorials: []tutorial
+}

@@ -1,0 +1,25 @@
+# Object Patterns 
+
+```
+manifest {}
+
+# object pattern with a single property
+%{
+    name: str
+}
+
+# Same pattern stored in a named pattern ('%' not required)
+pattern object_pattern = {
+    name: str
+}
+
+# ⚠️ By default object patterns are inexact: they accept additional properties.
+({name: "John"} match {}) # true
+
+pattern user = {
+    name: str
+}
+
+# true
+({name: "John", additional_prop: 0} match user)
+```

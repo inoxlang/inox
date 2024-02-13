@@ -1,0 +1,18 @@
+# Arguments 
+
+```
+manifest {
+    permissions: {
+        read: %/...    # don't forget the read permission
+    }
+}
+
+# Importing a module
+import result ./.tutorial-files/add.ix {
+    # import configuration
+
+    arguments: {1, 2}
+} 
+
+print(result)
+```

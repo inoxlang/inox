@@ -1,0 +1,34 @@
+# 'Must' Calls 
+
+```
+manifest {}
+
+# 'must' calls are special calls that cause a panic if there is an error. 
+# If there is no error the returned value is transformed.
+
+# The `unhex` function decodes an hexadecimal strig.
+# normal call: a value of type Array(byte-slice, (error | nil)) is returned.
+assign bytes error = unhex("...")
+
+print("decoding error:", error)
+
+# Must call: a value of type byte-slice is returned if there is no error.
+# bytes = unhex!("...")
+
+fn f(issue bool) (| error | nil) {
+    if issue {
+        return Error("there is an issue !")
+    }
+    return nil
+}
+
+# Normal call: a value of type (error | nil) is returned.
+err = f(true)
+
+print("error returned by `f`:", err)
+
+# Must call: on error the runtime panics, otherwise nil is returned.
+nil_value = f!(false)      
+
+# you can learn more about must calls here: https://github.com/inoxlang/inox/blob/main/docs/language-reference/language.md#must-calls.
+```

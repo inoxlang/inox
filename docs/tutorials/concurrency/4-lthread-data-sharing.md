@@ -1,0 +1,41 @@
+# Data sharing 
+
+```
+manifest {
+    permissions: {
+        create: {threads: {}}
+    }
+}
+
+# Immutable and lock-protected values are sharable between threads.
+
+# The most common immutables values are records, tuples, string-like values
+# and all simple values ( floats, integral values (ints, bytes, ...)
+immutable = #{a: 1}
+
+# The most common lock-protected values are objects.
+lock_protected = {b: 2}
+
+lthread = go {
+    globals: {
+        record: immutable
+        object: lock_protected
+    }
+} do {
+    # assigning a property of a lock-protected value causes the underlying lock of the object to be acquired
+    # before the mutation and to be released afterwards.
+    
+    object.b = 3
+}
+
+lthread.wait_result!()
+print("object =", lock_protected)
+
+# Non-sharable values that are clonable are cloned when passed to another execution context.
+clonable = [1, 2, 3]
+
+go {globals: {list: clonable}} do {
+    # since the value is cloned mutating the list has no impact on the variable `clonable`.
+    list.append(4)
+}
+```

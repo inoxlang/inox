@@ -1,0 +1,24 @@
+# LThread Group 
+
+```
+# LThread Groups allow easier control of multiple lthreads.
+
+const (
+    USERS_PREFIX_PATTERN = %https://jsonplaceholder.typicode.com/users/...
+)
+
+manifest {
+    permissions: {
+        create: {threads: {}}
+        read: USERS_PREFIX_PATTERN
+    }
+}
+
+req_group = LThreadGroup()
+
+thread_fetching_user1_data = go {group: req_group} do read!(https://jsonplaceholder.typicode.com/users/1)
+thread_fetching_user2_data = go {group: req_group} do read!(https://jsonplaceholder.typicode.com/users/2)
+
+results = req_group.wait_results!()
+print("users:", results)
+```

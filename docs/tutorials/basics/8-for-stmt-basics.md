@@ -1,0 +1,29 @@
+# For statement 
+
+```
+manifest {}
+
+list = ["a", "b", "c"]
+
+for elem in list {
+    print(elem)
+}
+
+print()
+
+for index, elem in list {
+    print(index, elem)
+}
+
+print()
+
+for i in (0 ..< len(list)) {
+    print(i, list[i])
+}
+
+print()
+
+for key, value in {name: "Tom", age: 30} {
+    print(key, value)
+}
+```

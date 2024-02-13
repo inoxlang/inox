@@ -1,0 +1,27 @@
+# Variables 
+
+```
+manifest {}
+
+# There are two kinds of variables: globals & locals.
+# Local variables are declared with the `var` keyword or with an assignment.
+var local1 = 1
+
+# Assigning a local that is not declared is equivalent to declaring it.
+local2 = 2
+
+# Variable declarations can have a type annotation.
+# Replace `int` with `str` to see what happens.
+var i int = 0
+
+# Global variable declaration
+globalvar global1 = 1
+
+# Assigning a global that is not declared is equivalent to declaring it.
+$$global2 = 2
+
+# Global variables cannot be shadowed by local variables.
+# var global1 = 3
+
+print("local1 =", local1, "global1 =", global1)
+```

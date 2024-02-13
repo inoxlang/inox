@@ -1,0 +1,37 @@
+# Functions 
+
+```
+manifest {}
+
+# Native (Golang) functions are built-in and cannot be defined.
+print("print is a native function")
+
+# Inox Functions are declared at the top-level of the module.
+fn hello(arg){
+    print("hello", arg)
+    return 0
+}
+
+# Parameters and return value of a function can have a type annotation:
+fn add(a int, b int) int {
+    return (a + b)
+}
+
+# Parenthesized call
+print("add(1, 2) =", add(1, 2))
+
+pattern user = {
+    name: str
+    friends: []str
+}
+
+fn new_user(data {name: str}) user {
+    return {
+        name: data.name
+        friends: []
+    }
+}
+
+# Shorthand call syntax for functions accepting a single argument of type object.
+user = new_user{name: "Tom"}
+```
