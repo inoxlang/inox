@@ -21,6 +21,15 @@ import (
 	http_ns_symb "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
 )
 
+func init() {
+	core.CreateHttpClient = func(insecure, saveCookies bool) (core.ProtocolClient, error) {
+		return NewClientWithConfig(ClientConfig{
+			Insecure:    insecure,
+			SaveCookies: saveCookies,
+		})
+	}
+}
+
 var (
 	DEFAULT_HTTP_PROFILE_CONFIG = ClientConfig{
 		SaveCookies: false,
@@ -67,6 +76,10 @@ func NewClient(ctx *core.Context, configObject *core.Object) (*Client, error) {
 		return nil, err
 	}
 
+	return NewClientWithConfig(config)
+}
+
+func NewClientWithConfig(config ClientConfig) (*Client, error) {
 	client := &Client{
 		config:  config,
 		options: RequestOptions{},
@@ -75,7 +88,7 @@ func NewClient(ctx *core.Context, configObject *core.Object) (*Client, error) {
 	if config.SaveCookies {
 		jar, err := _cookiejar.New(&_cookiejar.Options{PublicSuffixList: publicsuffix.List})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failes to create http client: %w", err)
 		}
 		client.options.Jar = jar
 	}
@@ -93,7 +106,7 @@ func NewClient(ctx *core.Context, configObject *core.Object) (*Client, error) {
 	return client, nil
 }
 
-func NewHttpClientFromPreExistingClient(client *http.Client, insecure bool) *Client {
+func NewClientFromGolangHTTPClient(client *http.Client, insecure bool) *Client {
 	return &Client{
 		client: client,
 		config: ClientConfig{

@@ -998,7 +998,7 @@ func runAdvancedServerTest(
 	}
 	client := createClient()
 
-	ctx.SetProtocolClientForHost(host, NewHttpClientFromPreExistingClient(client, true))
+	ctx.SetProtocolClientForHost(host, NewClientFromGolangHTTPClient(client, true))
 
 	responseLock := sync.Mutex{}
 	responses := make([]*http.Response, len(testCase.requests))
