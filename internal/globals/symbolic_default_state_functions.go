@@ -13,6 +13,14 @@ var (
 		symbolic.NewMultivalue(symbolic.ANY_PATTERN, symbolic.ANY_INDEXABLE),
 	}
 	RAND_FN_PARAM_NAMES = []string{"arg"}
+
+	TOSTR_FN_PARAMS = []symbolic.Value{
+		symbolic.NewMultivalue(symbolic.ANY_BOOL, symbolic.ANY_INTEGRAL, symbolic.ANY_STR_LIKE, symbolic.ANY_BYTES_LIKE,
+			symbolic.ANY_RUNE, symbolic.ANY_RES_NAME)}
+
+	TOSTR_FN_PARAM_NAMES = []string{"arg"}
+
+	TOSTRING_FN_PARAMS = TOSTR_FN_PARAMS
 )
 
 func init() {
@@ -135,9 +143,11 @@ func init() {
 		},
 
 		_tostr, func(ctx *symbolic.Context, arg symbolic.Value) symbolic.StringLike {
+			ctx.SetSymbolicGoFunctionParameters(&TOSTR_FN_PARAMS, TOSTR_FN_PARAM_NAMES)
 			return symbolic.ANY_STR_LIKE
 		},
 		_tostring, func(ctx *symbolic.Context, arg symbolic.Value) *symbolic.String {
+			ctx.SetSymbolicGoFunctionParameters(&TOSTRING_FN_PARAMS, TOSTR_FN_PARAM_NAMES)
 			return symbolic.ANY_STRING
 		},
 		_torune, func(ctx *symbolic.Context, arg symbolic.Integral) *symbolic.Rune {

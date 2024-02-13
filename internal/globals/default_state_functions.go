@@ -89,10 +89,12 @@ func _tostr(ctx *core.Context, arg core.Value) core.StringLike {
 		return core.String("false")
 	case core.Integral:
 		return core.String(core.Stringify(a, ctx))
+	case core.Rune:
+		return core.String(a)
 	case core.StringLike:
 		return a
-	case *core.ByteSlice:
-		return core.String(a.UnderlyingBytes()) //TODO: panic if invalid characters ?
+	case core.BytesLike:
+		return core.String(a.GetOrBuildBytes().UnderlyingBytes()) //TODO: panic if invalid characters ?
 	case *core.RuneSlice:
 		return core.String(a.ElementsDoNotModify())
 	case core.ResourceName:
@@ -111,10 +113,12 @@ func _tostring(ctx *core.Context, arg core.Value) core.String {
 		return core.String("false")
 	case core.Integral:
 		return core.String(core.Stringify(a, ctx))
+	case core.Rune:
+		return core.String(a)
 	case core.StringLike:
 		return core.String(a.GetOrBuildString())
-	case *core.ByteSlice:
-		return core.String(a.UnderlyingBytes()) //TODO: panic if invalid characters ?
+	case core.BytesLike:
+		return core.String(a.GetOrBuildBytes().UnderlyingBytes()) //TODO: panic if invalid characters ?
 	case *core.RuneSlice:
 		return core.String(a.ElementsDoNotModify())
 	case core.ResourceName:

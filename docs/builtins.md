@@ -353,10 +353,10 @@ user = ctx_data(/user, %user)
 
 ### tostr
 
-The `tostr` function converts its argument to a string-like value. Only the following types are supported: bool, int, byte-slice, rune-slice, path, host, url and all string-likes.
+The `tostr` function converts its argument to a string-like value. The following types are supported: bool, int, rune, rune-slice, path, host, url, all bytes-likes, and all string-likes.
 ### tostring
 
-The `tostring` function converts its argument to a string. `tostr` should always be used over `tostring`, unless you need a `string`, not a string-like value. Only the following types are supported: bool, int, byte-slice,  rune-slice, path, host, url and all string-likes.
+The `tostring` function converts its argument to a string. `tostr` should always be used over `tostring`, unless you need a `string`, not a string-like value. The following types are supported: bool, int, rune, rune-slice, path, host, url, all bytes-likes, and all string-likes.
 ### torune
 
 The `torune` function converts an integral value to a rune.
