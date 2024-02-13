@@ -1,3 +1,3 @@
 # Filesystem
-- [Files](./00-file-basics.md)
-- [Directories](./01-dir-basics.md)
+- [Files](./00-file-basics.ix)
+- [Directories](./01-dir-basics.ix)

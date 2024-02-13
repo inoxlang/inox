@@ -1,0 +1,35 @@
+# [GET Requests 1] 
+
+const (
+    # host literal - note: adding a slash at the end would turn it into a URL literal.
+    # This domain provides a mocked HTTP API.
+    HOST = https://jsonplaceholder.typicode.com
+)
+
+# Making HTTP operations requires specifying some permissions in the manifest.
+manifest {
+    permissions: {
+        # allow making GET and HEAD requests to HOST.
+        read: HOST
+    }
+}
+
+# Create a host alias @host
+@host = HOST
+url = @host/posts/1
+
+assign resp err = http.get(url)
+if err? {
+    print("err: ", err)
+    return    
+}
+# note: if you don't want to handle the error you can use a 'must' call instead.
+# See the corresponding tutorial in the Basics series.
+
+print(resp)
+
+# Read all the body and print it.
+raw_content = resp.body.read_all!()
+print("raw content: ", tostr(raw_content))
+
+# The next tutorial show how to use a more convenient function: http.read.

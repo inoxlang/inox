@@ -1,0 +1,25 @@
+# [Files] 
+
+const (
+    PATH = /temp_file.txt
+)
+
+# Accessing the filesystem requires specifying some permissions in the manifest.
+manifest {
+    permissions: {
+        read: PATH    # allow reading the content of /temp_file.txt
+        write: PATH   # allow creating and writing /temp_file.txt
+        delete: PATH  # allow removing /temp_file.txt
+    }
+}
+
+# Remove the file /temp_file.txt.
+fs.rm!(PATH)
+
+# Create /temp_file.txt and write `hello` in it.
+fs.mkfile!(PATH, "hello")
+
+# Read the content of the file.
+print("content:", fs.read!(PATH))
+
+# Learn more by hovering the called functions.

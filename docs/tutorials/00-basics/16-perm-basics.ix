@@ -1,0 +1,18 @@
+# [Permissions] 
+
+# In Inox some operations require permissions: reading a file, sending an HTTP request, 
+# or creating a lightweight thread. The permissions of a module are specified in its manifest.
+manifest {
+    permissions: {
+        read: {
+            # allow reading any file in the /dir/ directory
+            %/... 
+
+            # allow making HTTPS GET requests to example.com
+            https://example.com
+        }
+    }
+}
+print(http.read!(https://example.com/), "\n")
+
+print("entries of /:", fs.ls!(/))

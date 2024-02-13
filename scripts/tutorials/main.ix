@@ -60,13 +60,13 @@ for series_index, series in tutorial_series {
     # Generate a file for each tutorial in the series and a README for the series.
     for tut_index, tutorial in series.tutorials {
         tutorial_order = get_order_string(tut_index)
-        tutorial_file_name = `${tutorial_order}-${tutorial.id}.md`
+        tutorial_file_name = `${tutorial_order}-${tutorial.id}.ix`
         tutorial_file = series_dir.join(./{tutorial_file_name})
         series_readme = concat series_readme `- [${tutorial.name}](./${tutorial_file_name})\n`
 
         program = strmanip.trim_space(tutorial.program)
 
-        create!(tutorial_file, (concat "# " tutorial.name " \n\n```\n"  program "\n```"))
+        create!(tutorial_file, (concat "# [" tutorial.name "] \n\n"  program "\n"))
     }
 
     # Write the README for the series.

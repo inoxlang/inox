@@ -1,0 +1,48 @@
+# [Lightweight Threads] 
+
+# LThreads (lightweight threads) are mainly used for concurrent work and
+# isolation. Each lthread runs an Inox module in a dedicated Goroutine.
+
+const (
+    USER1_ENDPOINT = https://jsonplaceholder.typicode.com/users/1
+)
+
+manifest {
+    permissions: {
+        create: {threads: {}}
+        read: USER1_ENDPOINT
+    }
+}
+
+# There are several ways to create a lightweight thread with a spawn expression.
+# If you only want to call a function without passing variables as arguments you can use the following:
+
+# the idt function returns its argument.
+lthread1 = go do idt(1) 
+print("lthread1's result:", lthread1.wait_result!())
+
+
+# If you need to pass the value of a variable as argument you can define the lthread's globals.
+# Predefined globals (print, read, write, http, fs, ...) are always inherited,
+# you don't need to add them to the globals section.
+
+var a = "a"
+lthread2 = go {globals: {a: a}} do idt(a)
+print("lthread2's result:", lthread2.wait_result!())
+
+
+
+# If you want to write custom logic for the lthread you can replace the function 
+# call by an embedded module:
+var operand1 = 1
+var operand2 = 2
+
+lthread3 = go {globals: {operand1: operand1, operand2: operand2}} do {
+    # embedded module
+
+    return (operand1 + operand2)
+}
+print("lthread3's result:", lthread3.wait_result!())
+
+
+# Data sharing follows specific rules that are explained in details in a turorial in this series.

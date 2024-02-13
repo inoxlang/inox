@@ -1,0 +1,37 @@
+# [POST & PATCH Requests] 
+
+const (
+    USERS_ENDPOINT = https://jsonplaceholder.typicode.com/users
+    USER1_ENDPOINT = https://jsonplaceholder.typicode.com/users/1
+)
+
+# Note: https://jsonplaceholder.typicode.com provides a mocked API,
+# the requests we make further in the code have no real effects.
+
+manifest {
+    permissions: {
+        # allow making POST and PATCH requests to the specified endpoints.
+        write: {
+            USERS_ENDPOINT
+            USER1_ENDPOINT
+        }
+    }
+}
+
+# Make a POST request to create a new user.
+resp1 = http.post!(USERS_ENDPOINT, {
+    name: "John Doe",
+    username: "JohnD",
+    email: "john.doe@example.com"
+})
+
+body = tostr(resp1.body.read_all!())
+print("first response's body:", body)
+
+
+# Make a PATCH request to update a user.
+resp2 = http.patch!(USER1_ENDPOINT, {
+    title: "New title",
+})
+
+print("second response:", resp2)

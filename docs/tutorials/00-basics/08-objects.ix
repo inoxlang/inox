@@ -1,0 +1,21 @@
+# [Objects] 
+
+manifest {}
+
+# An object is a data structure containing properties, each property has a name and a value.
+object1 = {  
+    a: 1
+    "b": 2
+    c: 0, d: 100ms
+}
+
+a = object1.a
+print("a:", a)
+
+# values not preceded by a name are known as elements and are stored in the empty name property "" (list).
+object2 = {
+    1
+    []
+}
+
+print(object2)
