@@ -8111,6 +8111,78 @@ func testParse(
 					},
 				},
 			},
+			"`\\``": {
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 4}, nil, false},
+					Statements: []Node{
+						&MultilineStringLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 4}, nil, false},
+							Raw:      "`\\``",
+							Value:    "`",
+						},
+					},
+				},
+			},
+			"`\\\\\\``": {
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 6}, nil, false},
+					Statements: []Node{
+						&MultilineStringLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 6}, nil, false},
+							Raw:      "`\\\\\\``",
+							Value:    "\\`",
+						},
+					},
+				},
+			},
+			"`\\`\\``": {
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 6}, nil, false},
+					Statements: []Node{
+						&MultilineStringLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 6}, nil, false},
+							Raw:      "`\\`\\``",
+							Value:    "``",
+						},
+					},
+				},
+			},
+			"`\\\\`": {
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 4}, nil, false},
+					Statements: []Node{
+						&MultilineStringLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 4}, nil, false},
+							Raw:      "`\\\\`",
+							Value:    "\\",
+						},
+					},
+				},
+			},
+			"`\\`e`": {
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 5}, nil, false},
+					Statements: []Node{
+						&MultilineStringLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 5}, nil, false},
+							Raw:      "`\\`e`",
+							Value:    "`e",
+						},
+					},
+				},
+			},
+			"`e\\``": {
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 5}, nil, false},
+					Statements: []Node{
+						&MultilineStringLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 5}, nil, false},
+							Raw:      "`e\\``",
+							Value:    "e`",
+						},
+					},
+				},
+			},
 		}
 
 		for input, testCase := range testCases {

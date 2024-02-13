@@ -4193,6 +4193,11 @@ func (p *parser) getValueOfMultilineStringSliceOrLiteral(raw []byte, literal boo
 			marshalingInput = append(marshalingInput, '\\', 'r')
 		case '\t':
 			marshalingInput = append(marshalingInput, '\\', 't')
+		case '\\':
+			if i < len(raw)-1 && raw[i+1] == '`' { //escaped backquote
+				continue
+			}
+			marshalingInput = append(marshalingInput, '\\')
 		case '"':
 			if i != 0 && i < len(raw)-1 {
 				marshalingInput = append(marshalingInput, '\\', '"')
