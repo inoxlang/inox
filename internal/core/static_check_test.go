@@ -62,6 +62,33 @@ func TestCheck(t *testing.T) {
 		return err
 	}
 
+	t.Run("global constant declarations in modules", func(t *testing.T) {
+		t.Run("methods of global constants are allowed to be called", func(t *testing.T) {
+			n, src := mustParseCode(`
+				const (
+					PATH_A = /a/
+					PATH_B = PATH_A.join(./b)
+				)
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("some node types are not allowed", func(t *testing.T) {
+			n, src := mustParseCode(`
+				const (
+					A = go do {}
+				)
+			`)
+			intLit := parse.FindNode(n, (*parse.SpawnExpression)(nil), nil)
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(intLit, src, fmtFollowingNodeTypeNotAllowedInGlobalConstantDeclarations((*parse.SpawnExpression)(nil))),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+	})
+
 	t.Run("object literal", func(t *testing.T) {
 		t.Run("two elements", func(t *testing.T) {
 			n, src := mustParseCode(`{1, 2}`)

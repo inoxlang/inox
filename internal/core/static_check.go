@@ -1407,8 +1407,58 @@ func (c *checker) checkGlobalConstDecls(node *parse.GlobalConstantDeclarations, 
 			c.addError(decl, fmtInvalidConstDeclGlobalAlreadyDeclared(name))
 			return parse.ContinueTraversal
 		}
+
 		globalVars[name] = globalVarInfo{isConst: true}
+
+		//Check that there are not forbidden node types.
+		parse.Walk(decl.Right, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
+			switch n := node.(type) {
+			case
+				//variables
+				*parse.Variable, *parse.GlobalVariable, *parse.IdentifierLiteral,
+
+				*parse.BinaryExpression, *parse.UnaryExpression, *parse.URLExpression, *parse.AtHostLiteral,
+				parse.SimpleValueLiteral, *parse.IntegerRangeLiteral, *parse.FloatRangeLiteral,
+
+				//data structure literals
+				*parse.ObjectLiteral, *parse.ObjectProperty, *parse.ListLiteral, *parse.RecordLiteral,
+
+				//member-like expressions
+				*parse.MemberExpression, *parse.IdentifierMemberExpression, *parse.DoubleColonExpression,
+				*parse.IndexExpression, *parse.SliceExpression,
+
+				//patterns
+				*parse.PatternIdentifierLiteral,
+				*parse.ObjectPatternLiteral, *parse.ObjectPatternProperty, *parse.RecordPatternLiteral,
+				*parse.ListPatternLiteral, *parse.TuplePatternLiteral,
+				*parse.FunctionPatternExpression,
+				*parse.PatternNamespaceIdentifierLiteral, *parse.PatternNamespaceMemberExpression,
+				*parse.OptionPatternLiteral, *parse.OptionalPatternExpression,
+				*parse.ComplexStringPatternPiece, *parse.PatternPieceElement, *parse.PatternGroupName,
+				*parse.PatternUnion,
+				*parse.PatternCallExpression:
+				//ok
+			case *parse.CallExpression:
+				switch callee := n.Callee.(type) {
+				case *parse.IdentifierLiteral:
+					if !slices.Contains(USABLE_GLOBALS_IN_PREINIT, callee.Name) {
+						c.addError(n.Callee, A_LIMITED_NUMBER_OF_BUILTINS_ARE_ALLOWED_TO_BE_CALLED_IN_GLOBAL_CONST_DECLS)
+						return parse.Prune, nil
+					}
+				case *parse.MemberExpression, *parse.IdentifierMemberExpression:
+				default:
+					c.addError(n, CALLED_NOT_ALLOWED_INSIDE_GLOBAL_CONST_DECLS)
+					return parse.Prune, nil
+				}
+			default:
+				c.addError(n, fmtFollowingNodeTypeNotAllowedInGlobalConstantDeclarations(n))
+				return parse.Prune, nil
+			}
+			return parse.ContinueTraversal, nil
+		}, nil)
+
 	}
+
 	return parse.ContinueTraversal
 }
 

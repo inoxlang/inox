@@ -15,6 +15,8 @@ const (
 	VAR_CONST_NOT_DECLARED_IF_YOU_MEANT_TO_DECLARE_CONSTANTS_GLOBAL_CONST_DECLS_ONLY_SUPPORTED_AT_THE_START_OF_THE_MODULE = //
 	"variable 'const' is not declared, if you meant to declare constants note that a single global constant declaration section at the start of the module is supported for now"
 
+	CALLED_NOT_ALLOWED_INSIDE_GLOBAL_CONST_DECLS = "this callee is not allowed inside global constant declarations"
+
 	//manifest
 	NO_SPREAD_IN_MANIFEST            = "objects & lists in the manifest cannot contain spread elements"
 	ELEMENTS_NOT_ALLOWED_IN_MANIFEST = "elements (valus without a key) are not allowed in the manifest object"
@@ -164,6 +166,11 @@ const (
 	A_STRUCT_TYPE_NAME_IS_EXPECTED = "a struct type name is expected"
 )
 
+var (
+	A_LIMITED_NUMBER_OF_BUILTINS_ARE_ALLOWED_TO_BE_CALLED_IN_GLOBAL_CONST_DECLS = //
+	"a limited number of builtins are allowed to be called in global constant declarations: " + strings.Join(USABLE_GLOBALS_IN_PREINIT, " ")
+)
+
 func fmtNotValidPermissionKindName(name string) string {
 	return fmt.Sprintf("'%s' is not a valid permission kind, valid permissions are %s", name, strings.Join(permkind.PERMISSION_KIND_NAMES, ", "))
 }
@@ -228,6 +235,10 @@ func fmtUnexpectedPropOfInvocationDescription(name string) string {
 
 func fmtFollowingNodeTypeNotAllowedInAssertions(n parse.Node) string {
 	return fmt.Sprintf("following node type is not allowed in assertion: %T", n)
+}
+
+func fmtFollowingNodeTypeNotAllowedInGlobalConstantDeclarations(n parse.Node) string {
+	return fmt.Sprintf("following node type is not allowed in global constant declarations: %T", n)
 }
 
 func fmtNonSupportedUnit(unit string) string {
