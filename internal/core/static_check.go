@@ -484,7 +484,7 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 			//variables
 			*parse.Variable, *parse.GlobalVariable, *parse.IdentifierLiteral,
 
-			*parse.BinaryExpression, *parse.URLExpression, *parse.AtHostLiteral,
+			*parse.BinaryExpression, *parse.UnaryExpression, *parse.URLExpression, *parse.AtHostLiteral,
 			parse.SimpleValueLiteral, *parse.IntegerRangeLiteral, *parse.FloatRangeLiteral,
 
 			//data structure literals
