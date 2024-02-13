@@ -18,7 +18,10 @@ import (
 	"golang.org/x/net/publicsuffix"
 
 	"github.com/inoxlang/inox/internal/globals/http_ns/spec"
-	http_ns_symb "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
+)
+
+var (
+	CLIENT_SUPPORTED_SCHEMES = []core.Scheme{"http", "https"}
 )
 
 func init() {
@@ -121,33 +124,17 @@ func NewClientFromGolangHTTPClient(client *http.Client, insecure bool) *Client {
 	}
 }
 
-func (c *Client) GetGoMethod(name string) (*core.GoFunction, bool) {
-	switch name {
-	case "get_host_cookies":
-		return core.WrapGoMethod(c.GetHostCookieObjects), true
-	}
-	return nil, false
-}
-
-func (c *Client) Prop(ctx *core.Context, name string) core.Value {
-	method, ok := c.GetGoMethod(name)
-	if !ok {
-		panic(core.FormatErrPropertyDoesNotExist(name, c))
-	}
-	return method
-
-}
-
-func (*Client) SetProp(ctx *core.Context, name string, value core.Value) error {
-	return core.ErrCannotSetProp
-}
-
-func (*Client) PropertyNames(ctx *core.Context) []string {
-	return http_ns_symb.HTTP_CLIENT_PROPNAMES
-}
-
 func (c *Client) Schemes() []core.Scheme {
-	return []core.Scheme{"http", "https"}
+	return CLIENT_SUPPORTED_SCHEMES
+}
+
+func (c *Client) IsStateful() bool {
+	//TODO: also return true if the client reuse connections.
+	return c.config.SaveCookies
+}
+
+func (c *Client) MayPurposefullySkipAuthentication() bool {
+	return c.config.Insecure
 }
 
 func (c *Client) GetHostCookies(h core.Host) []*http.Cookie {
