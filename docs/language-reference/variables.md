@@ -68,13 +68,15 @@ var myglobal = 3
 Go to the [Functions](./functions.md) section to learn more about variables &
 scopes.
 
+Global variables can only be declared at the top level before any function declaration or function call to a function declared below.
+
 **Assignment of global variables**:
 
 ```
 $$myglobal = 0
 ```
 
-ℹ️ Assigning a global that is not defined is allowed but redeclaration is an
+ℹ️ Assigning a global that is not defined is allowed (it will be considered as a declaration), but redeclaration is an
 error.
 
 **Global constants** are defined at the top of the file, before the manifest.

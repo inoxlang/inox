@@ -3605,6 +3605,116 @@ func TestSymbolicEval(t *testing.T) {
 			}, res)
 		})
 
+		t.Run("a function that does not capture locals nor access globals is callable anywhere", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return (g() + f())
+
+				fn g(){
+					return f()
+				}
+
+				fn f(){
+					return 1
+				}
+			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, INT_2, res)
+		})
+
+		t.Run("a function that accesses a global variable is not callable before the definition of the variable", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				val = f()
+
+				fn g(){
+					return f()
+				}
+
+				val += g()
+
+				globalvar x = (1 + val)
+
+				fn f(){
+					return $$x
+				}
+			`)
+			fnExpr := n.Statements[1].(*parse.FunctionDeclaration).Function
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, &InoxFunction{
+				node:      fnExpr,
+				result:    Nil,
+				nodeChunk: n,
+			}, res)
+		})
+
+		t.Run("a function that accesses a global variable is callable after the definition of the variable", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				globalvar x = 1
+
+				val = f()
+
+				fn g(){
+					return f()
+				}
+
+				return (val + g())
+
+				fn f(){
+					return $$x
+				}
+			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, INT_2, res)
+		})
+
+		t.Run("a function that captures a local variable is not callable before the definition of the variable", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				val = f()
+
+				fn g(){
+					return f()
+				}
+
+				val += g()
+
+				x = (1 + val)
+
+				fn f[x](){
+					return $$x
+				}
+			`)
+			fnExpr := n.Statements[1].(*parse.FunctionDeclaration).Function
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, &InoxFunction{
+				node:      fnExpr,
+				result:    Nil,
+				nodeChunk: n,
+			}, res)
+		})
+
+		t.Run("a function that captures a local variable is callable after the definition of the variable", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				x = 1
+
+				val = f()
+
+				fn g(){
+					return f()
+				}
+
+				return (val + g())
+
+				fn[x] f(){
+					return $$x
+				}
+			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, INT_2, res)
+		})
 	})
 
 	t.Run("function expression", func(t *testing.T) {

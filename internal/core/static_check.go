@@ -89,19 +89,20 @@ func StaticCheck(input StaticCheckInput) (*StaticCheckData, error) {
 	}
 
 	checker := &checker{
-		checkInput:        input,
-		fnDecls:           make(map[parse.Node]map[string]*fnDeclInfo),
-		structDefs:        make(map[parse.Node]map[string]int),
-		globalVars:        globals,
-		localVars:         localVars,
-		shellLocalVars:    shellLocalVars,
-		properties:        make(map[*parse.ObjectLiteral]*propertyInfo),
-		hostAliases:       make(map[parse.Node]map[string]int),
-		patterns:          patterns,
-		patternNamespaces: patternNamespaces,
-		currentModule:     input.Module,
-		chunk:             input.Chunk,
-		store:             make(map[parse.Node]interface{}),
+		checkInput:                      input,
+		fnDecls:                         make(map[parse.Node]map[string]*fnDeclInfo),
+		lastAllowedPosForGlobalVarDecls: make(map[parse.Node]parse.NodeSpan),
+		structDefs:                      make(map[parse.Node]map[string]int),
+		globalVars:                      globals,
+		localVars:                       localVars,
+		shellLocalVars:                  shellLocalVars,
+		properties:                      make(map[*parse.ObjectLiteral]*propertyInfo),
+		hostAliases:                     make(map[parse.Node]map[string]int),
+		patterns:                        patterns,
+		patternNamespaces:               patternNamespaces,
+		currentModule:                   input.Module,
+		chunk:                           input.Chunk,
+		store:                           make(map[parse.Node]interface{}),
 		data: &StaticCheckData{
 			fnData:      map[*parse.FunctionExpression]*FunctionStaticData{},
 			mappingData: map[*parse.MappingExpression]*MappingStaticData{},
@@ -138,6 +139,9 @@ type checker struct {
 	fnDecls map[parse.Node]map[string]*fnDeclInfo
 
 	//key: *parse.Chunk|*parse.EmbeddedModule
+	lastAllowedPosForGlobalVarDecls map[parse.Node]parse.NodeSpan
+
+	//key: *parse.Chunk|*parse.EmbeddedModule
 	structDefs map[parse.Node]map[string]int
 
 	//key: *parse.Chunk|*parse.EmbeddedModule
@@ -167,6 +171,7 @@ type checker struct {
 type fnDeclInfo struct {
 	node           *parse.FunctionDeclaration
 	capturedLocals []string
+	chunk          *parse.Chunk
 }
 
 // globalVarInfo represents the information stored about a global variable during checking.
@@ -587,13 +592,15 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 	case *parse.GlobalVariableDeclarations:
 		return c.checkGlobalVarDecls(node, parent, scopeNode, closestModule)
 	case *parse.Assignment, *parse.MultiAssignment:
-		return c.checkAssignment(node, scopeNode, closestModule)
+		return c.checkAssignment(node, parent, scopeNode, closestModule)
 	case *parse.ForStatement:
 		return c.checkForStmt(node, scopeNode, closestModule)
 	case *parse.WalkStatement:
 		return c.checkWalkStmt(node, scopeNode, closestModule)
 	case *parse.ReadonlyPatternExpression:
 		return c.checkReadonlyPatternExpr(node, parent)
+	case *parse.CallExpression:
+		return c.checkCallExpression(node, scopeNode, closestModule)
 	case *parse.FunctionDeclaration:
 		return c.checkFuncDecl(node, parent, closestModule)
 	case *parse.FunctionExpression:
@@ -708,9 +715,6 @@ func (c *checker) precheckTopLevelStatements(module parse.Node) {
 		statements = embeddedMod.Statements
 	}
 
-	globVars := c.getModGlobalVars(module)
-	fnDecls := c.getModFunctionDecls(module)
-
 	for _, stmt := range statements {
 		switch stmt := stmt.(type) {
 		//definitions
@@ -719,7 +723,7 @@ func (c *checker) precheckTopLevelStatements(module parse.Node) {
 		case *parse.HostAliasDefinition:
 		case *parse.StructDefinition:
 		case *parse.FunctionDeclaration:
-			c.precheckTopLevelFuncDecl(stmt, globVars, fnDecls)
+			c.precheckTopLevelFuncDecl(stmt, module)
 		//simple literals
 		case parse.SimpleValueLiteral:
 		//
@@ -1191,19 +1195,20 @@ func (c *checker) checkInclusionImportStmt(node *parse.InclusionImportStatement,
 	}
 
 	chunkChecker := &checker{
-		parentChecker:            c,
-		checkInput:               c.checkInput,
-		fnDecls:                  make(map[parse.Node]map[string]*fnDeclInfo),
-		structDefs:               make(map[parse.Node]map[string]int),
-		globalVars:               globals,
-		localVars:                make(map[parse.Node]map[string]localVarInfo),
-		properties:               make(map[*parse.ObjectLiteral]*propertyInfo),
-		patterns:                 patterns,
-		patternNamespaces:        patternNamespaces,
-		currentModule:            c.currentModule,
-		chunk:                    includedChunk.ParsedChunkSource,
-		inclusionImportStatement: node,
-		store:                    make(map[parse.Node]any),
+		parentChecker:                   c,
+		checkInput:                      c.checkInput,
+		fnDecls:                         make(map[parse.Node]map[string]*fnDeclInfo),
+		lastAllowedPosForGlobalVarDecls: make(map[parse.Node]parse.NodeSpan),
+		structDefs:                      make(map[parse.Node]map[string]int),
+		globalVars:                      globals,
+		localVars:                       make(map[parse.Node]map[string]localVarInfo),
+		properties:                      make(map[*parse.ObjectLiteral]*propertyInfo),
+		patterns:                        patterns,
+		patternNamespaces:               patternNamespaces,
+		currentModule:                   c.currentModule,
+		chunk:                           includedChunk.ParsedChunkSource,
+		inclusionImportStatement:        node,
+		store:                           make(map[parse.Node]any),
 		data: &StaticCheckData{
 			fnData:      map[*parse.FunctionExpression]*FunctionStaticData{},
 			mappingData: map[*parse.MappingExpression]*MappingStaticData{},
@@ -1375,19 +1380,20 @@ func (c *checker) checkImportStmt(node *parse.ImportStatement, parent, closestMo
 	}
 
 	chunkChecker := &checker{
-		parentChecker:         c,
-		checkInput:            c.checkInput,
-		fnDecls:               make(map[parse.Node]map[string]*fnDeclInfo),
-		structDefs:            make(map[parse.Node]map[string]int),
-		globalVars:            globals,
-		localVars:             make(map[parse.Node]map[string]localVarInfo),
-		properties:            make(map[*parse.ObjectLiteral]*propertyInfo),
-		patterns:              patterns,
-		patternNamespaces:     patternNamespaces,
-		currentModule:         importedModule,
-		chunk:                 importedModule.MainChunk,
-		moduleImportStatement: node,
-		store:                 make(map[parse.Node]any),
+		parentChecker:                   c,
+		checkInput:                      c.checkInput,
+		fnDecls:                         make(map[parse.Node]map[string]*fnDeclInfo),
+		lastAllowedPosForGlobalVarDecls: make(map[parse.Node]parse.NodeSpan),
+		structDefs:                      make(map[parse.Node]map[string]int),
+		globalVars:                      globals,
+		localVars:                       make(map[parse.Node]map[string]localVarInfo),
+		properties:                      make(map[*parse.ObjectLiteral]*propertyInfo),
+		patterns:                        patterns,
+		patternNamespaces:               patternNamespaces,
+		currentModule:                   importedModule,
+		chunk:                           importedModule.MainChunk,
+		moduleImportStatement:           node,
+		store:                           make(map[parse.Node]any),
 		data: &StaticCheckData{
 			fnData:      map[*parse.FunctionExpression]*FunctionStaticData{},
 			mappingData: map[*parse.MappingExpression]*MappingStaticData{},
@@ -1511,10 +1517,20 @@ func (c *checker) checkLocalVarDecls(node *parse.LocalVariableDeclarations, scop
 func (c *checker) checkGlobalVarDecls(node *parse.GlobalVariableDeclarations, parentNode, scopeNode, closestModule parse.Node) parse.TraversalAction {
 	globalVars := c.getModGlobalVars(closestModule)
 
+	//Check the declarations are not misplaced.
+
 	if !SamePointer(parentNode, closestModule) {
 		c.addError(node, MISPLACED_GLOBAL_VAR_DECLS_TOP_LEVEL_STMT)
 		return parse.Prune
 	}
+
+	lastAllowedPos := c.lastAllowedPosForGlobalVarDecls[closestModule]
+	if lastAllowedPos != (parse.NodeSpan{}) && node.Base().Span.Start >= lastAllowedPos.End {
+		c.addError(node, MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_CALL)
+		return parse.Prune
+	}
+
+	//Check each declaration.
 
 	for _, decl := range node.Declarations {
 		name := decl.Left.(*parse.IdentifierLiteral).Name
@@ -1537,7 +1553,7 @@ func (c *checker) checkGlobalVarDecls(node *parse.GlobalVariableDeclarations, pa
 	return parse.ContinueTraversal
 }
 
-func (c *checker) checkAssignment(node parse.Node, scopeNode, closestModule parse.Node) parse.TraversalAction {
+func (c *checker) checkAssignment(node parse.Node, parentNode, scopeNode, closestModule parse.Node) parse.TraversalAction {
 	var names []string
 
 	if assignment, ok := node.(*parse.Assignment); ok {
@@ -1554,6 +1570,8 @@ func (c *checker) checkAssignment(node parse.Node, scopeNode, closestModule pars
 				}
 			}
 
+			//Check the assignment does not shadow a local variable.
+
 			localVars := c.getLocalVarsInScope(scopeNode)
 
 			if _, alreadyDefined := localVars[left.Name]; alreadyDefined {
@@ -1569,10 +1587,25 @@ func (c *checker) checkAssignment(node parse.Node, scopeNode, closestModule pars
 					c.addError(node, fmtInvalidGlobalVarAssignmentNameIsConstant(left.Name))
 					return parse.ContinueTraversal
 				}
+
 			} else {
 				if assignment.Operator != parse.Assign {
 					c.addError(node, fmtInvalidGlobalVarAssignmentVarDoesNotExist(left.Name))
 				}
+
+				//Check the declaration is not misplaced.
+
+				if !SamePointer(parentNode, closestModule) {
+					c.addError(node, MISPLACED_GLOBAL_VAR_DECLS_TOP_LEVEL_STMT)
+					return parse.Prune
+				}
+
+				lastAllowedPos := c.lastAllowedPosForGlobalVarDecls[closestModule]
+				if lastAllowedPos != (parse.NodeSpan{}) && node.Base().Span.Start >= lastAllowedPos.End {
+					c.addError(node, MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_CALL)
+					return parse.Prune
+				}
+
 				variables[left.Name] = globalVarInfo{isConst: false}
 			}
 
@@ -1728,7 +1761,10 @@ func (c *checker) checkReadonlyPatternExpr(node *parse.ReadonlyPatternExpression
 	return parse.ContinueTraversal
 }
 
-func (c *checker) precheckTopLevelFuncDecl(stmt *parse.FunctionDeclaration, globalVars map[string]globalVarInfo, fnDecls map[string]*fnDeclInfo) {
+func (c *checker) precheckTopLevelFuncDecl(stmt *parse.FunctionDeclaration, module parse.Node) {
+	globalVars := c.getModGlobalVars(module)
+	fnDecls := c.getModFunctionDecls(module)
+
 	globalVars[stmt.Name.Name] = globalVarInfo{isConst: true, fnExpr: stmt.Function}
 
 	_, alreadyDeclared := fnDecls[stmt.Name.Name]
@@ -1737,9 +1773,27 @@ func (c *checker) precheckTopLevelFuncDecl(stmt *parse.FunctionDeclaration, glob
 		return
 	}
 
-	info := &fnDeclInfo{node: stmt}
+	info := &fnDeclInfo{node: stmt, chunk: c.chunk.Node}
 
 	fnDecls[stmt.Name.Name] = info
+}
+
+func (c *checker) checkCallExpression(node *parse.CallExpression, scopeNode, closestModule parse.Node) parse.TraversalAction {
+
+	ident, ok := node.Callee.(*parse.IdentifierLiteral)
+	fnDecls := c.getModFunctionDecls(closestModule)
+
+	//Top level call of a function declared in the curent chunk.
+	if ok && fnDecls[ident.Name] != nil && fnDecls[ident.Name].chunk == c.chunk.Node && SamePointer(scopeNode, closestModule) {
+		if c.lastAllowedPosForGlobalVarDecls[closestModule] == (parse.NodeSpan{}) {
+			c.lastAllowedPosForGlobalVarDecls[closestModule] = parse.NodeSpan{
+				Start: max(node.Span.Start-1, 0),
+				End:   node.Span.Start,
+			}
+		}
+	}
+
+	return parse.ContinueTraversal
 }
 
 func (c *checker) checkFuncDecl(node *parse.FunctionDeclaration, parent, closestModule parse.Node) parse.TraversalAction {
@@ -1765,6 +1819,14 @@ func (c *checker) checkFuncDecl(node *parse.FunctionDeclaration, parent, closest
 				} else if !isGlobal {
 					c.addError(node, fmtInvalidOrMisplacedFnDeclShouldBeAfterCapturedVarDeclaration(ident.Name))
 				}
+			}
+		}
+
+		lastPos := c.lastAllowedPosForGlobalVarDecls[closestModule]
+		if lastPos == (parse.NodeSpan{}) {
+			c.lastAllowedPosForGlobalVarDecls[closestModule] = parse.NodeSpan{
+				Start: max(node.Span.Start-1, 0),
+				End:   node.Span.Start,
 			}
 		}
 

@@ -1810,6 +1810,60 @@ func TestCheck(t *testing.T) {
 			)
 			assert.Equal(t, expectedErr, err)
 		})
+
+		t.Run("declaring a global variable is not allowed after a function declaration", func(t *testing.T) {
+			n, src := mustParseCode(`
+				fn f(){}
+
+				globalvar a = 0
+			`)
+			decls := parse.FindNode(n, (*parse.GlobalVariableDeclarations)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(decls, src, MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_CALL),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("declaring a global variable are not allowed after a call to a function declared below", func(t *testing.T) {
+			n, src := mustParseCode(`
+				f()
+				
+				globalvar a = 0
+
+				fn f(){}
+			`)
+			decls := parse.FindNode(n, (*parse.GlobalVariableDeclarations)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(decls, src, MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_CALL),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("declaring a global variable is allowed after a call to a function declared in an included chunk", func(t *testing.T) {
+			moduleName := "mymod.ix"
+			modpath := writeModuleAndIncludedFiles(t, moduleName, `
+				manifest {}
+				import ./dep.ix
+
+				f()
+				globalvar a = 0
+			`, map[string]string{"./dep.ix": "includable-chunk\n fn f(){}"})
+
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			err = staticCheckNoData(StaticCheckInput{
+				Module: mod,
+				Node:   mod.MainChunk.Node,
+				Chunk:  mod.MainChunk,
+			})
+
+			assert.NoError(t, err)
+		})
 	})
 
 	t.Run("assignment", func(t *testing.T) {
@@ -1941,6 +1995,76 @@ func TestCheck(t *testing.T) {
 				makeError(assignment, src, INVALID_ASSIGNMENT_EQUAL_ONLY_SUPPORTED_ASSIGNMENT_OPERATOR_FOR_SLICE_EXPRS),
 			)
 			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("assignments declaring a global variable are only allowed as top-level statements", func(t *testing.T) {
+			n, src := mustParseCode(`
+				fn f(){
+					$$a = 0
+				}
+			`)
+			assignment := parse.FindNode(n, (*parse.Assignment)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(assignment, src, MISPLACED_GLOBAL_VAR_DECLS_TOP_LEVEL_STMT),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("assignments declaring a global variable are not allowed after a function declaration", func(t *testing.T) {
+			n, src := mustParseCode(`
+				fn f(){
+				}
+
+				$$a = 0
+			`)
+			assignment := parse.FindNode(n, (*parse.Assignment)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(assignment, src, MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_CALL),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("assignments declaring a global variable are not allowed after a call to a function declared below", func(t *testing.T) {
+			n, src := mustParseCode(`
+				f()
+				
+				$$a = 0
+
+				fn f(){
+				}
+			`)
+			assignment := parse.FindNode(n, (*parse.Assignment)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(assignment, src, MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_CALL),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("declaring a global variable is allowed after a call to a function declared in an included chunk", func(t *testing.T) {
+			moduleName := "mymod.ix"
+			modpath := writeModuleAndIncludedFiles(t, moduleName, `
+				manifest {}
+				import ./dep.ix
+
+				f()
+				$$a = 0
+			`, map[string]string{"./dep.ix": "includable-chunk\n fn f(){}"})
+
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			err = staticCheckNoData(StaticCheckInput{
+				Module: mod,
+				Node:   mod.MainChunk.Node,
+				Chunk:  mod.MainChunk,
+			})
+
+			assert.NoError(t, err)
 		})
 	})
 
