@@ -1641,7 +1641,7 @@ func TestCheck(t *testing.T) {
 			assert.Equal(t, expectedErr, err)
 		})
 
-		t.Run("function that captures a local variable and is declared after he definition of the variable", func(t *testing.T) {
+		t.Run("function that captures a local variable and is declared after the definition of the variable", func(t *testing.T) {
 			n, src := mustParseCode(`
 				x = 1
 
@@ -1825,7 +1825,7 @@ func TestCheck(t *testing.T) {
 			assert.Equal(t, expectedErr, err)
 		})
 
-		t.Run("declaring a global variable are not allowed after a call to a function declared below", func(t *testing.T) {
+		t.Run("declaring a global variable is not allowed after a call to a function declared below", func(t *testing.T) {
 			n, src := mustParseCode(`
 				f()
 				
@@ -3773,7 +3773,7 @@ func TestCheck(t *testing.T) {
 			assert.Equal(t, expectedErr, err)
 		})
 
-		t.Run("misplaced", func(t *testing.T) {
+		t.Run("should be a top-level statement", func(t *testing.T) {
 			n, src := mustParseCode(`
 				fn f(){
 					@host = https://localhost
@@ -3784,6 +3784,36 @@ func TestCheck(t *testing.T) {
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
 				makeError(def, src, MISPLACED_HOST_ALIAS_DEF_STATEMENT_TOP_LEVEL_STMT),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("definitions are not allowed after a call to a function declared below", func(t *testing.T) {
+			n, src := mustParseCode(`
+				f()
+				
+				@host = https://localhost
+
+				fn f(){}
+			`)
+			def := parse.FindNode(n, (*parse.HostAliasDefinition)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(def, src, MISPLACED_HOST_ALIAS_DEF_AFTER_FN_DECL_OR_CALL),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("definition are not allowed after a function definition", func(t *testing.T) {
+			n, src := mustParseCode(`
+				fn f(){}
+				
+				@host = https://localhost
+			`)
+			def := parse.FindNode(n, (*parse.HostAliasDefinition)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(def, src, MISPLACED_HOST_ALIAS_DEF_AFTER_FN_DECL_OR_CALL),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -3804,7 +3834,7 @@ func TestCheck(t *testing.T) {
 			assert.Equal(t, expectedErr, err)
 		})
 
-		t.Run("misplaced", func(t *testing.T) {
+		t.Run("should be a top-levle statement", func(t *testing.T) {
 			n, src := mustParseCode(`
 				fn f(){
 					pattern p = 0
@@ -3814,7 +3844,37 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(def, src, MISPLACED_PATTERN_DEF_STATEMENT_TOP_LEVEL_STMT),
+				makeError(def, src, MISPLACED_PATTERN_DEF_NOT_TOP_LEVEL_STMT),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("definitions are not allowed after a call to a function declared below", func(t *testing.T) {
+			n, src := mustParseCode(`
+				f()
+				
+				pattern p = 0
+
+				fn f(){}
+			`)
+			def := parse.FindNode(n, (*parse.PatternDefinition)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(def, src, MISPLACED_PATTERN_DEF_AFTER_FN_DECL_OR_CALL),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("definition are not allowed after a function definition", func(t *testing.T) {
+			n, src := mustParseCode(`
+				fn f(){}
+				
+				pattern p = 0
+			`)
+			def := parse.FindNode(n, (*parse.PatternDefinition)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(def, src, MISPLACED_PATTERN_DEF_AFTER_FN_DECL_OR_CALL),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -3835,7 +3895,7 @@ func TestCheck(t *testing.T) {
 			assert.Equal(t, expectedErr, err)
 		})
 
-		t.Run("misplaced", func(t *testing.T) {
+		t.Run("should be a top-level statement", func(t *testing.T) {
 			n, src := mustParseCode(`
 				fn f(){
 					pnamespace p. = {}
@@ -3845,7 +3905,37 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(def, src, MISPLACED_PATTERN_NS_DEF_STATEMENT_TOP_LEVEL_STMT),
+				makeError(def, src, MISPLACED_PATTERN_NS_DEF_NOT_TOP_LEVEL_STMT),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("definitions are not allowed after a call to a function declared below", func(t *testing.T) {
+			n, src := mustParseCode(`
+				f()
+				
+				pnamespace p. = {}
+
+				fn f(){}
+			`)
+			def := parse.FindNode(n, (*parse.PatternNamespaceDefinition)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(def, src, MISPLACED_PATTERN_NS_DEF_AFTER_FN_DECL_OR_CALL),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("definition are not allowed after a function definition", func(t *testing.T) {
+			n, src := mustParseCode(`
+				fn f(){}
+				
+				pnamespace p. = {}
+			`)
+			def := parse.FindNode(n, (*parse.PatternNamespaceDefinition)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(def, src, MISPLACED_PATTERN_NS_DEF_AFTER_FN_DECL_OR_CALL),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
