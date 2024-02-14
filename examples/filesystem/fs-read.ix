@@ -7,4 +7,6 @@ manifest {
     }
 }
 
-print tostr(fs.read!(./examples/filesystem/fs-read.ix))
+content = fs.read!(./examples/filesystem/fs-read.ix)
+assert (content match bytes)
+print tostr(content)

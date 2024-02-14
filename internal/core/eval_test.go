@@ -4132,6 +4132,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				name: "extension method calling a recursive function accessing a global",
 				input: `
 					$$a = 3
+					pattern o = {}
+
 					fn rec(i %int) int {
 						if (i == 0) {
 							return 0
@@ -4141,7 +4143,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 					obj = {}
 
-					pattern o = {}
 
 					extend o {
 						f: fn(){
@@ -5103,10 +5104,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 	t.Run("function pattern matching,", func(t *testing.T) {
 		code := `
+			pattern intfn = %fn() %int
 			fn f() %int { 
 				return 1
 			}
-			pattern intfn = %fn() %int
 			return (f match %intfn)
 		`
 

@@ -2,6 +2,11 @@
 
 manifest {}
 
+pattern user = {
+    name: str
+    friends: []str
+}
+
 # Native (Golang) functions are built-in and cannot be defined.
 print("print is a native function")
 
@@ -18,11 +23,6 @@ fn add(a int, b int) int {
 
 # Parenthesized call
 print("add(1, 2) =", add(1, 2))
-
-pattern user = {
-    name: str
-    friends: []str
-}
 
 fn new_user(data {name: str}) user {
     return {

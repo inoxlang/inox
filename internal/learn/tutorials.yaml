@@ -47,7 +47,12 @@
     id: func-basics
     program: |
       manifest {}
-      
+
+      pattern user = {
+          name: str
+          friends: []str
+      }
+
       # Native (Golang) functions are built-in and cannot be defined.
       print("print is a native function")
 
@@ -64,11 +69,6 @@
 
       # Parenthesized call
       print("add(1, 2) =", add(1, 2))
-
-      pattern user = {
-          name: str
-          friends: []str
-      }
 
       fn new_user(data {name: str}) user {
           return {
@@ -405,8 +405,13 @@
 
         # In Inox a pattern is a runtime value that matches values of a given kind and shape.
         # Besides the pattern literals, there are other kinds of patterns in Inox such as object patterns: `%{a: int}`.
-        # Even though patterns are created at runtime, they can act as types:
 
+        # Creating a named pattern `user` does not prevent you to name a variable `user`:
+        pattern user = {
+            name: str
+        }
+
+        # Even though patterns are created at runtime, they can act as types:
         pattern small_int = int(0..10)
 
         # small_int is created at runtime but it can be used in type annotations:
@@ -420,11 +425,6 @@
 
         # uncomment to see the error.
         # add(1, 2000)
-
-        # Creating a named pattern `user` does not prevent you to name a variable `user`:
-        pattern user = {
-            name: str
-        }
 
         user = {name: "foo"}
 
@@ -967,12 +967,12 @@
                 CONST_FROM_FILE = 1
             )
 
-            fn function_from_file(){
-                print("hello from included file")
-            }
-
             pattern user = {
                 name: str
+            }
+
+            fn function_from_file(){
+                print("hello from included file")
             }
   - name: Module Imports
     id: module-imports

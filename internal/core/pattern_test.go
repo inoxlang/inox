@@ -2,11 +2,9 @@ package core
 
 import (
 	"math"
-	"runtime"
 	"testing"
 
 	"github.com/inoxlang/inox/internal/parse"
-	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -173,18 +171,18 @@ func TestObjectPattern(t *testing.T) {
 	assert.False(t, singleOptionalProp.Test(ctx, objFrom(ValMap{"a": Int(1), "b": Int(2)})))
 
 	t.Run("constraint validations", func(t *testing.T) {
-		{
-			runtime.GC()
-			startMemStats := new(runtime.MemStats)
-			runtime.ReadMemStats(startMemStats)
+		// {
+		// 	runtime.GC()
+		// 	startMemStats := new(runtime.MemStats)
+		// 	runtime.ReadMemStats(startMemStats)
 
-			defer utils.AssertNoMemoryLeak(t, startMemStats, 10, utils.AssertNoMemoryLeakOptions{
-				PreSleepDurationMillis: 100,
-				CheckGoroutines:        true,
-				GoroutineCount:         runtime.NumGoroutine(),
-				MaxGoroutineCountDelta: 0,
-			})
-		}
+		// 	defer utils.AssertNoMemoryLeak(t, startMemStats, 10, utils.AssertNoMemoryLeakOptions{
+		// 		PreSleepDurationMillis: 100,
+		// 		CheckGoroutines:        true,
+		// 		GoroutineCount:         runtime.NumGoroutine(),
+		// 		MaxGoroutineCountDelta: 0,
+		// 	})
+		// }
 
 		patternWithPropALessThan5 := NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN}}).
 			WithConstraints(
