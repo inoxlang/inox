@@ -5,11 +5,11 @@
 Inox is  **single-binary platform** that will contain all you need to develop, test, and deploy web apps that are primarily rendered server-side. Applications are developped using **Inoxlang**, a sandboxed programming language that 
 deeply integrates with several components: 
 - A built-in database engine
-- HTTP server
-- Testing engine with in-memory filesystems (transparent for application code)
-- An in-process container engine (unrelated to Linux containers).
+- HTTP server with filesystem routing
+- Testing engine supporting virtual filesystems and temporary databases (completely transparent for application code).
+- An in-process container engine: applications run in a virtual filesystem and are subject to permissions. This is unrelated to Linux containers.
 
-**Important note: bear in mind that the current version of Inox is 0.2, not 1.0. The first stable versions of Inox won't support high-scalability applications.**
+**Even though you can already develop web apps using Inox, keep in mind that the current version of Inox is 0.2, not 1.0. Also the first stable versions of Inox won't support high-scalability applications.**
 
 Here are a few example files that are part of a basic todo app.
 
@@ -36,19 +36,24 @@ _Note: the permissions granted to imported modules (local or third-party) are **
 
 **<summary>✅ Testing engine example</summary>**
 
-![image](https://github.com/inoxlang/inox/assets/113632189/c1445e7b-d272-4252-9def-6fa5284c996d)
+![image](https://github.com/inoxlang/inox/assets/113632189/602ce2d1-68a1-4403-a578-27db9251998c)
 </details>
 
+
+
 ---
+
 
 **I have been working 2 years full time on Inox.**  There is still a lot to do in order to make Inox
 usable in real world applications. If you believe this project has potential, **consider donating** through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t). It will help me continue working on Inox (check see **What is planned**). 
 
-⬇️ [Installation](#installation)\
-🔍 [Application Examples](#application-examples)\
-📚 [Learning Inox](#learning-inox)\
+⬇️ [Installation](#⬇️-installation)\
+🔍 [Application Examples](#🔍-application-examples)\
+📚 [Learning Inox](#📚-learning-inox)\
 👥 [Discord Server](https://discord.gg/53YGx8GzgE) & [Subreddit](https://www.reddit.com/r/inoxlang/)\
-❔ [Questions you may have](#questions-you-may-have)
+⭐ [Many other features](#⭐-other-features)\
+❔ [Questions you may have](#❔-questions-you-may-have)
+
 
 <details>
 
@@ -140,7 +145,7 @@ ProjectServer -->|gets/sets| Secrets(Secrets)
 </details>
 
 
-## Installation
+## ⬇️ Installation
 
 ```mermaid
 graph LR
@@ -205,19 +210,20 @@ You can install the inox binary on your local (Linux) machine, a local VM, or a 
 If you have any questions you are welcome to join the [Discord Server](https://discord.gg/53YGx8GzgE) and the [Subreddit](https://www.reddit.com/r/inoxlang/).
 If you want to build Inox from source go [here](#build-from-source).
 
-## Application Examples
+## 🔍 Application Examples
 
 - [Basic Todo app with accounts and data persistence](./examples/apps/basic-todo)
 
 _More examples will be added soon._
 
-## Learning Inox
+## 📚 Learning Inox
 
-📖 [Language reference](docs/language-reference/language.md)\
-📖 [HTTP Server reference](docs/http-server-reference.md)\
+📚 [Tutorials](docs/language-reference/language.md)\
 🌐 [Frontend dev](./docs/frontend-development.md)\
 🧰 [Builtins](docs/builtins.md)\
-📚 [Collections](docs/collections.md)
+🗂️ [Collections](docs/collections.md)\
+📖 [Language reference](docs/language-reference/language.md)\
+📖 [HTTP Server reference](docs/http-server-reference.md)
 
 You can also learn the language directly in VSCode by creating a file with a `.tut.ix` extension.
 **Make sure to create this file inside an Inox project.**
@@ -245,19 +251,327 @@ To learn scripting go [here](./docs/scripting-basics.md). View
 - `cd` into the directory
 - Run `go build ./cmd/inox`
 
+## ⭐ Other Features
 
-## Questions You May Have
+- [Structured logging](#structured-logging)
+- [More secure secrets](#secrets)
+- [Built-in browser automation](#built-in-browser-automation)
+- [Composable string patterns](#composable-string-patterns)
+- [Context data](#context-data)
+- [Lightweight threads](#lightweight-threads)
+- [Lightweight thread groups](#lthread-groups)
+- [More secure path interpolations](#more-secure-path-interpolations)
+- [More secure URL interpolations](#more-secure-url-interpolations)
+- [Per-module limits](#per-module-limits)
 
+
+### Structured Logging
+
+![structured logging demo](./docs/img/structured-logs.png)
+
+[Documentation](./docs/builtins.md#structured-logging)
+
+### Secrets
+
+Secrets are special Inox values, they can only be created by defining an
+**environment variable** with a pattern like `%secret-string` or by storing a
+[project secret](./docs/project.md#project-secrets).
+
+- The content of the secret is **hidden** when printed or logged.
+- Secrets are not serializable so they cannot be included in HTTP responses.
+- A comparison involving a secret always returns **false**.
+
+```
+manifest {
+    ...
+    env: %{
+        API_KEY: %secret-string
+    }
+    ...
+}
+
+API_KEY = env.initial.API_KEY
+```
 
 <details>
 
-**<summary>Why isn't Inox using a container runtime such as Docker ?</summary>**
+**<summary>Demo of project secrets</summary>**
+
+![project secrets demo](https://github.com/inoxlang/inox/assets/113632189/55f23134-e289-4f78-bd26-693bbc75c8ea)
+
+</details>
+
+### Built-in Browser Automation
+
+```
+h = chrome.Handle!()
+
+h.nav https://go.dev/
+node = h.html_node!(".Hero-blurb")
+h.close()
+```
+
+[Documentation](https://github.com/inoxlang/inox/blob/main/docs/builtins.md#browser-automation)
+
+[Examples](https://github.com/inoxlang/inox/tree/main/examples/chrome)
+
+> Browser automation is quite buggy right now, I need to improve the configuration of https://github.com/chromedp/chromedp.
+
+### Composable String Patterns
+
+Here is the regex for a made up identifier type:
+`(?<name>[a-z]+)#(?<numA>\d+)-(?<letters>[a-z]+)-(?<numB>\d+)`
+
+Same RegExp without group names:
+`([a-z]+)#(\d+)-([a-z]+)-(\d+)`
+
+Inox's version:
+
+![image](https://github.com/inoxlang/inox/assets/113632189/0027a873-a957-401e-9efb-f6d9fdf57a64)
+
+
+String patterns can also be composed:
+
+![image](https://github.com/inoxlang/inox/assets/113632189/8a6ffb9a-0250-447b-8d46-e53f3becadd9)
+
+<details>
+
+**<summary>Recursive string patterns (WIP)</summary>**
+
+```
+pattern json-list = @ %str( 
+    '[' 
+        (| atomic-json-val
+         | json-val 
+         | ((json-val ',')* json-val) 
+        )? 
+    ']'
+)
+
+pattern json-val = @ %str(| json-list | atomic-json-val)
+pattern atomic-json-val = "1"
+```
+
+⚠️ Recursive string patterns are not intended to be used for validating or parsing large inputs.
+
+</details>
+
+### Context Data
+
+The [context](docs/language-reference/context.md) of module instances can contain data entries that can be set **only once**.
+Child modules have access to the context data of their parent and can individually override entries.
+
+```
+add_ctx_data(/lang, "en-US")
+
+...
+
+fn print_error(){
+  lang = ctx_data(/lang)
+  ...
+}
+```
+
+The HTTP server adds a `/session` entry to the handling context of a request if the `session-id` cookie is present.
+
+
+### Lightweight threads
+
+```
+lthread = go {} do {
+  print("hello from lightweight thread !")
+  return 1
+}
+
+# 1
+result = lthread.wait_result!()
+```
+
+### Lthread Groups
+
+```
+group = LThreadGroup()
+lthread1 = go {group: group} do read!(https://jsonplaceholder.typicode.com/posts/1)
+lthread2 = go {group: group} do read!(https://jsonplaceholder.typicode.com/posts/2)
+
+results = group.wait_results!()
+```
+
+### More Secure Path Interpolations
+
+In Inox interpolations are always restricted in order to prevent **injections**
+and regular strings are **never trusted**. URLs & paths are first-class values
+and must be used to perform network or filesystem operations.
+
+```
+filepath = ./go
+/home/user/{filepath} # /home/user/go
+
+filepath = ../../etc/shadow # malicious user input
+/home/user/{filepath} 
+# error: result of a path interpolation should not contain any of the following substrings: '..', '\', '*', '?'
+```
+
+> This is still work in progress,
+> Allowing specific dangerous substrings may be supported in the future.
+
+### More Secure URL Interpolations
+
+URL interpolations are restricted based on their location (path, query).
+
+```
+https://example.com/{path}?a={param}
+```
+
+In short, most malicious `path` and `param` values provided by a malevolent user
+will cause an error at runtime.
+
+<details>
+<summary>
+ Click for more explanations.
+</summary>
+
+Let's say that you are writing a piece of code that fetches **public** data from
+a private/internal service and returns the result to a user. You are using the
+query parameter `?admin=false` in the URL because only public data should be
+returned.
+
+```
+public_data = http.read!(https://private-service{path}?admin=false)
+```
+
+The way in which the user interacts with your code is not important here, let's
+assume that the user can send any value for `path`. Obviously this is a very bad
+idea from a security standpoint. A malicious path could be used to:
+
+- perform a directory traversal if the private service has a vulnerable endpoint
+- inject a query parameter `?admin=true` to retrieve private data
+- inject a port number
+
+In Inox the URL interpolations are special, based on the location of the
+interpolation specific checks are performed:
+
+```
+https://example.com/api/{path}/?x={x}
+```
+
+- interpolations before the `'?'` are **path** interpolations
+  - the strings/characters `'..'`, `'\\'`, `'?'` and `'#'` are forbidden
+  - the URL encoded versions of `'..'` and `'\\'` are forbidden
+  - `':'` is forbidden at the start of the finalized path (after all
+    interpolations have been evaluated)
+- interpolations after the `'?'` are **query** interpolations
+  - the characters `'&'` and `'#'` are forbidden
+
+In the example if the path `/data?admin=true` is received the Inox runtime will
+throw an error:
+
+```
+URL expression: result of a path interpolation should not contain any of the following substrings: "..", "\" , "*", "?"
+```
+
+</details>
+
+---
+
+
+
+
+### Isolation of Dependencies
+
+Permissions granted to the imported modules are specified in the import statements.
+
+`./app.ix`
+
+```
+manifest {
+  permissions: {
+    read: %/...
+    create: {threads: {}}
+  }
+}
+
+import lib ./malicious-lib.ix {
+  arguments: {}
+  allow: {
+    read: %/tmp/...
+  }
+}
+```
+
+<details>
+
+**<summary>./malicious-lib.ix</summary>**
+
+```
+manifest {
+  permissions: {
+    read: %/...
+  }
+}
+
+data = fs.read!(/etc/passwd)
+```
+</details>
+
+
+If the imported module asks more permissions than granted an error is thrown:\
+`import: some permissions in the imported module's manifest are not granted: [read path(s) /...]`
+
+### Process-Level Access Control
+
+In addition to the checks performed by the permission system, the **inox**
+binary uses [Landlock](https://landlock.io/) to restrict file access for the
+whole process and its children.
+
+### Dropping Permissions
+
+Sometimes programs have an **initialization** phase, for example a program reads
+a file or performs an HTTP request to fetch its configuration. After this phase
+it no longer needs some permissions so it can drop them.
+
+```
+drop-perms {
+  read: %https://**
+}
+```
+
+## Per-Module Limits
+
+(WIP)
+
+Limits limit intensive operations, there are three kinds of limits: **byte rate**, **frequency** & **total**. They are defined in the manifest and are
+[shared](./docs/language-reference/language.md#limits) with the children of the module.
+
+```
+manifest {
+    permissions: {
+        ...
+    }
+    limits: {
+        "fs/read": 10MB/s
+        "http/req": 10x/s
+    }
+}
+```
+
+By default strict limits are applied on HTTP request handlers in order to
+mitigate some types of DoS.
+
+[Learn More](./docs/language-reference/language.md#limits)
+
+## ❔ Questions You May Have
+
+
+### Why isn't Inox using a container runtime such as Docker ?
+
+<details>
 
 Because the long term goal of Inox is to be a **simple**, single-binary and **super stable** platform for applications written in Inoxlang
 and using libraries compiled to WASM.\
 Each application or service will ultimately run in a separate process:
 - filesystem isolation is achieved by using virtual filesystems (meta filesystem)
-- process-level access control will be achieved using [Landlock](https://landlock.io/)
+- process-level access control is achieved using [Landlock](https://landlock.io/). (This is still work in progress).
 - fine-grained module-level access control is already achieved by Inox's permission system
 - process-level resource allocation and limitation will be implemented using cgroups
 - module-level resource allocation and limitation is performed by Inox's limit system
@@ -267,7 +581,9 @@ Each application or service will ultimately run in a separate process:
 <details>
 
 
-**<summary>Why have you created Inox ?</summary>**
+### Why have you created Inox ?
+
+<details>
 
 Before reading the answser please make sure to read the **Goals & Non Goals sections**.
 
@@ -282,10 +598,35 @@ bring all the potential value it could bring.
 
 </details>
 
+### 
 
 <details>
 
-**<summary>What is the state of the codebase (quality, documentation, tests) ?</summary>**
+
+</details>
+
+<details>
+
+### Is Inoxlang sound ?
+
+<details>
+
+No, Inoxlang is **unsound**. However:
+
+- The type system is not complex, and I do not plan to add many features impacting it. I will not add object methods nor classes.
+- Type assertions using the `assert` keyword are checked at run time.
+- The `any` type is not directly available to the developer, and it does not disable checks like in Typescript. It is more similar to **unknow**.
+
+_\*Types like Set are kind of generic but it cannot be said that generics are implemented._
+
+_The type checking system not being implemented in a classic way, that will lead to some limitations and bugs. However
+the type checking logic is not expected to grow much. Therefore the vast majority issues should be resolved by testing extensively.
+
+</details>
+
+### What is the state of the codebase (quality, documentation, tests) ?
+
+<details>
 
 As of now, certain parts of the codebase are not optimally written, lack sufficient comments and documentation, and do not have robust test coverage. 
 
@@ -304,6 +645,5 @@ As of now, certain parts of the codebase are not optimally written, lack suffici
 
 Consider donating through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t). Thank you !
 
-[Questions you may have](./QUESTIONS.md)\
-[Installation](#installation)\
+[Installation](#⬇️-installation)\
 [Back To Top](#inox)
