@@ -325,8 +325,16 @@ func fmtInvalidFnDeclAlreadyDeclared(name string) string {
 	return fmt.Sprintf("invalid function declaration: %s is already declared", name)
 }
 
+func fmtInvalidOrMisplacedFnDeclShouldBeAfterCapturedVarDeclaration(name string) string {
+	return fmt.Sprintf("invalid or misplaced function declaration: the function should be declared after the declaration of the local variable '%s'", name)
+}
+
 func fmtInvalidFnDeclGlobVarExist(name string) string {
 	return fmt.Sprintf("invalid function declaration: a global variable named '%s' exists", name)
+}
+
+func fmtMisplacedFnDeclGlobVarExist(name string) string {
+	return fmt.Sprintf("misplaced function declaration: a global variable named '%s' exists", name)
 }
 
 func fmtInvalidStructDefAlreadyDeclared(name string) string {

@@ -1245,7 +1245,7 @@ func TestCheck(t *testing.T) {
 			fnExprNode := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(fnExprNode, src, fmtVarIsNotDeclared("a")),
+				makeError(fnExprNode.CaptureList[0], src, fmtVarIsNotDeclared("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -1495,23 +1495,24 @@ func TestCheck(t *testing.T) {
 			n, src := mustParseCode(`
 				fn[a] f(){}
 			`)
-			fnDecl := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
+			fnDecl := parse.FindNode(n, (*parse.FunctionDeclaration)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(fnDecl, src, fmtVarIsNotDeclared("a")),
+				makeError(fnDecl, src, fmtInvalidOrMisplacedFnDeclShouldBeAfterCapturedVarDeclaration("a")),
+				makeError(fnDecl.Function.CaptureList[0], src, fmtVarIsNotDeclared("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
 
-		t.Run("captured local variable is not a local", func(t *testing.T) {
+		t.Run("captured variable is not a local", func(t *testing.T) {
 			n, src := mustParseCode(`
 				$$a = 1
 				fn[a] f(){}
 			`)
-			fnDecl := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
+			fnExpr := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(fnDecl, src, fmtCannotPassGlobalToFunction("a")),
+				makeError(fnExpr, src, fmtCannotPassGlobalToFunction("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -1583,12 +1584,80 @@ func TestCheck(t *testing.T) {
 	
 				fn f(){}
 			`)
+			globalVar := parse.FindNode(n, (*parse.GlobalVariable)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(globalVar, src, fmtInvalidGlobalVarAssignmentNameIsFuncName("f")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("a function that does not capture locals nor access globals is callable anywhere", func(t *testing.T) {
+			n, src := mustParseCode(`
+				return (g() + f())
+
+				fn g(){
+					return f()
+				}
+
+				fn f(){
+					return 1
+				}
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("in an embedded module a function that does not capture locals nor access globals is callable anywhere", func(t *testing.T) {
+			n, src := mustParseCode(`
+				go do {
+					return (g() + f())
+
+					fn g(){
+						return f()
+					}
+	
+					fn f(){
+						return 1
+					}
+				}
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("a function that captures a local variable should be declared after the declaration of the variable", func(t *testing.T) {
+			n, src := mustParseCode(`
+				fn[x] f(){
+					return x
+				}
+
+				x = 1
+			`)
 			declNode := parse.FindNode(n, (*parse.FunctionDeclaration)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(declNode, src, fmtInvalidFnDeclGlobVarExist("f")),
+				makeError(declNode, src, fmtInvalidOrMisplacedFnDeclShouldBeAfterCapturedVarDeclaration("x")),
+				makeError(declNode.Function.CaptureList[0], src, fmtVarIsNotDeclared("x")),
 			)
 			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("function that captures a local variable and is declared after he definition of the variable", func(t *testing.T) {
+			n, src := mustParseCode(`
+				x = 1
+
+				val = f()
+
+				fn g(){
+					return f()
+				}
+
+				return (val + g())
+
+				fn[x] f(){
+					return x
+				}
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 	})
 
@@ -1602,7 +1671,7 @@ func TestCheck(t *testing.T) {
 			fnExprNode := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(fnExprNode, src, fmtVarIsNotDeclared("a")),
+				makeError(fnExprNode.CaptureList[0], src, fmtVarIsNotDeclared("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})

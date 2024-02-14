@@ -90,7 +90,7 @@ func StaticCheck(input StaticCheckInput) (*StaticCheckData, error) {
 
 	checker := &checker{
 		checkInput:        input,
-		fnDecls:           make(map[parse.Node]map[string]int),
+		fnDecls:           make(map[parse.Node]map[string]*fnDeclInfo),
 		structDefs:        make(map[parse.Node]map[string]int),
 		globalVars:        globals,
 		localVars:         localVars,
@@ -109,15 +109,13 @@ func StaticCheck(input StaticCheckInput) (*StaticCheckData, error) {
 	}
 
 	if module != nil {
-		var statements []parse.Node
+
 		if chunk, ok := module.(*parse.Chunk); ok {
-			statements = chunk.Statements
+			checker.defineStructs(module, chunk.Statements)
 			checker.precheckTopLevelStatements(chunk)
 		} else {
-			statements = module.(*parse.EmbeddedModule).Statements
+			checker.defineStructs(module, module.(*parse.EmbeddedModule).Statements)
 		}
-
-		checker.defineStructs(module, statements)
 	}
 
 	err := checker.check(input.Node)
@@ -137,7 +135,7 @@ type checker struct {
 	checkInput               StaticCheckInput
 
 	//key: *parse.Chunk|*parse.EmbeddedModule
-	fnDecls map[parse.Node]map[string]int
+	fnDecls map[parse.Node]map[string]*fnDeclInfo
 
 	//key: *parse.Chunk|*parse.EmbeddedModule
 	structDefs map[parse.Node]map[string]int
@@ -164,6 +162,11 @@ type checker struct {
 	store map[parse.Node]any
 
 	data *StaticCheckData
+}
+
+type fnDeclInfo struct {
+	node           *parse.FunctionDeclaration
+	capturedLocals []string
 }
 
 // globalVarInfo represents the information stored about a global variable during checking.
@@ -378,10 +381,10 @@ func (checker *checker) getModGlobalVars(module parse.Node) map[string]globalVar
 	return variables
 }
 
-func (checker *checker) getModFunctionDecls(mod parse.Node) map[string]int {
+func (checker *checker) getModFunctionDecls(mod parse.Node) map[string]*fnDeclInfo {
 	fns, ok := checker.fnDecls[mod]
 	if !ok {
-		fns = make(map[string]int)
+		fns = make(map[string]*fnDeclInfo)
 		checker.fnDecls[mod] = fns
 	}
 	return fns
@@ -688,10 +691,27 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 	return parse.ContinueTraversal
 }
 
-func (c *checker) precheckTopLevelStatements(chunk *parse.Chunk) {
-	isIncludedChunk := chunk.IncludableChunkDesc != nil
+func (c *checker) precheckTopLevelStatements(module parse.Node) {
+	chunk, isChunk := module.(*parse.Chunk)
+	isIncludedChunk := isChunk && chunk.IncludableChunkDesc != nil
+	embeddedMod, isEmbeddedMod := module.(*parse.EmbeddedModule)
 
-	for _, stmt := range chunk.Statements {
+	if !isChunk && !isEmbeddedMod {
+		panic(fmt.Errorf("precheckTopLevelStatements should be called on a chunk or embedded module"))
+	}
+
+	var statements []parse.Node
+
+	if isChunk {
+		statements = chunk.Statements
+	} else {
+		statements = embeddedMod.Statements
+	}
+
+	globVars := c.getModGlobalVars(module)
+	fnDecls := c.getModFunctionDecls(module)
+
+	for _, stmt := range statements {
 		switch stmt := stmt.(type) {
 		//definitions
 		case *parse.PatternDefinition:
@@ -699,6 +719,7 @@ func (c *checker) precheckTopLevelStatements(chunk *parse.Chunk) {
 		case *parse.HostAliasDefinition:
 		case *parse.StructDefinition:
 		case *parse.FunctionDeclaration:
+			c.precheckTopLevelFuncDecl(stmt, globVars, fnDecls)
 		//simple literals
 		case parse.SimpleValueLiteral:
 		//
@@ -1036,6 +1057,8 @@ func (c *checker) checkSpawnExpr(node *parse.SpawnExpression, closestModule pars
 	}
 
 	c.defineStructs(node.Module, node.Module.Statements)
+	c.precheckTopLevelStatements(node.Module)
+
 	return parse.ContinueTraversal
 }
 
@@ -1170,7 +1193,7 @@ func (c *checker) checkInclusionImportStmt(node *parse.InclusionImportStatement,
 	chunkChecker := &checker{
 		parentChecker:            c,
 		checkInput:               c.checkInput,
-		fnDecls:                  make(map[parse.Node]map[string]int),
+		fnDecls:                  make(map[parse.Node]map[string]*fnDeclInfo),
 		structDefs:               make(map[parse.Node]map[string]int),
 		globalVars:               globals,
 		localVars:                make(map[parse.Node]map[string]localVarInfo),
@@ -1354,7 +1377,7 @@ func (c *checker) checkImportStmt(node *parse.ImportStatement, parent, closestMo
 	chunkChecker := &checker{
 		parentChecker:         c,
 		checkInput:            c.checkInput,
-		fnDecls:               make(map[parse.Node]map[string]int),
+		fnDecls:               make(map[parse.Node]map[string]*fnDeclInfo),
 		structDefs:            make(map[parse.Node]map[string]int),
 		globalVars:            globals,
 		localVars:             make(map[parse.Node]map[string]localVarInfo),
@@ -1700,26 +1723,46 @@ func (c *checker) checkReadonlyPatternExpr(node *parse.ReadonlyPatternExpression
 	return parse.ContinueTraversal
 }
 
+func (c *checker) precheckTopLevelFuncDecl(stmt *parse.FunctionDeclaration, globalVars map[string]globalVarInfo, fnDecls map[string]*fnDeclInfo) {
+	globalVars[stmt.Name.Name] = globalVarInfo{isConst: true, fnExpr: stmt.Function}
+
+	_, alreadyDeclared := fnDecls[stmt.Name.Name]
+	if alreadyDeclared {
+		c.addError(stmt, fmtInvalidFnDeclAlreadyDeclared(stmt.Name.Name))
+		return
+	}
+
+	info := &fnDeclInfo{node: stmt}
+
+	fnDecls[stmt.Name.Name] = info
+}
+
 func (c *checker) checkFuncDecl(node *parse.FunctionDeclaration, parent, closestModule parse.Node) parse.TraversalAction {
 	switch parent.(type) {
-	case *parse.Chunk, *parse.EmbeddedModule:
+	case *parse.Chunk, *parse.EmbeddedModule: //valid location
 		fns := c.getModFunctionDecls(closestModule)
 		globVars := c.getModGlobalVars(closestModule)
+		localVars := c.getLocalVarsInScope(closestModule)
 
-		_, alreadyDeclared := fns[node.Name.Name]
-		if alreadyDeclared {
-			c.addError(node, fmtInvalidFnDeclAlreadyDeclared(node.Name.Name))
+		declInfo, ok := fns[node.Name.Name]
+		if !ok {
+			c.addError(node, "function has no been pre-checked by the static checker")
 			return parse.ContinueTraversal
 		}
 
-		_, alreadyUsed := globVars[node.Name.Name]
-		if alreadyUsed {
-			c.addError(node, fmtInvalidFnDeclGlobVarExist(node.Name.Name))
-			return parse.ContinueTraversal
+		for _, captured := range node.Function.CaptureList {
+			if ident, ok := captured.(*parse.IdentifierLiteral); ok {
+				_, isLocal := localVars[ident.Name]
+				_, isGlobal := globVars[ident.Name]
+
+				if isLocal {
+					declInfo.capturedLocals = append(declInfo.capturedLocals, ident.Name)
+				} else if !isGlobal {
+					c.addError(node, fmtInvalidOrMisplacedFnDeclShouldBeAfterCapturedVarDeclaration(ident.Name))
+				}
+			}
 		}
 
-		fns[node.Name.Name] = 0
-		globVars[node.Name.Name] = globalVarInfo{isConst: true, fnExpr: node.Function}
 	case *parse.StructBody:
 		//struct method
 	default:
@@ -1738,7 +1781,7 @@ func (c *checker) checkFuncExpr(node *parse.FunctionExpression, closestModule pa
 		name := e.(*parse.IdentifierLiteral).Name
 
 		if !c.varExists(name, ancestorChain) {
-			c.addError(node, fmtVarIsNotDeclared(name))
+			c.addError(e, fmtVarIsNotDeclared(name))
 		} else if c.doGlobalVarExist(name, closestModule) {
 			c.addError(node, fmtCannotPassGlobalToFunction(name))
 		}
@@ -1988,10 +2031,11 @@ func (c *checker) checkIdentifier(node *parse.IdentifierLiteral, parent, scopeNo
 			return parse.ContinueTraversal
 
 		}
+	case *parse.FunctionDeclaration:
+		return parse.ContinueTraversal
 	case *parse.ObjectProperty:
 		if p.Key == node {
 			return parse.ContinueTraversal
-
 		}
 	case *parse.ObjectPatternProperty:
 		if p.Key == node {
@@ -2047,7 +2091,7 @@ func (c *checker) checkIdentifier(node *parse.IdentifierLiteral, parent, scopeNo
 			return parse.ContinueTraversal
 
 		}
-	case *parse.ForStatement, *parse.WalkStatement, *parse.ObjectLiteral, *parse.FunctionDeclaration, *parse.MemberExpression, *parse.QuantityLiteral, *parse.RateLiteral,
+	case *parse.ForStatement, *parse.WalkStatement, *parse.ObjectLiteral, *parse.MemberExpression, *parse.QuantityLiteral, *parse.RateLiteral,
 		*parse.KeyListExpression:
 		return parse.ContinueTraversal
 
