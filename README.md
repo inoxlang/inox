@@ -575,8 +575,6 @@ Each application or service will ultimately run in a separate process:
 
 </details>
 
-<details>
-
 
 ### Why have you created Inox ?
 
@@ -594,15 +592,6 @@ Also when using a new programming language you don't have access to a rich ecosy
 bring all the potential value it could bring.
 
 </details>
-
-### 
-
-<details>
-
-
-</details>
-
-<details>
 
 ### Is Inoxlang sound ?
 
