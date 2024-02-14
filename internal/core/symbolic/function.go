@@ -20,6 +20,7 @@ const (
 var (
 	ANY_INOX_FUNC = &InoxFunction{}
 	ANY_FUNC      = &Function{}
+
 )
 
 // An InoxFunction represents a symbolic InoxFunction.

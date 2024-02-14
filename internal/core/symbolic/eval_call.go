@@ -74,6 +74,21 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 	var argMismatches []bool
 	isGoFunc := false
 
+	inoxFunctionToBeDeclared, ok := callee.(*inoxFunctionToBeDeclared)
+	if ok {
+		//Properly declare the function
+		_, err := evalFunctionDeclaration(inoxFunctionToBeDeclared.decl, state, evalOptions{})
+		if err != nil {
+			return ANY, fmt.Errorf("error while evaluating the function declaration: %w", err)
+		}
+
+		varInfo, ok := state.getGlobal(inoxFunctionToBeDeclared.decl.Name.Name)
+		if !ok {
+			return ANY, fmt.Errorf("error while evaluating the function declaration: %w", err)
+		}
+		callee = varInfo.value.(*InoxFunction)
+	}
+
 	if inoxFn, ok := callee.(*InoxFunction); ok {
 		isSharedFunction = inoxFn.IsShared()
 		if isSharedFunction {

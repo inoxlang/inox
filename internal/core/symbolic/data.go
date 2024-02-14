@@ -368,6 +368,24 @@ func (d *Data) SetGlobalScopeData(n parse.Node, scopeData ScopeData) {
 	d.globalScopeData[n] = scopeData
 }
 
+func (d *Data) UpdateAllPreviousGlobalScopeDataWithInoxFunction(chunk *parse.Chunk, name string, value *InoxFunction) {
+	if d == nil {
+		return
+	}
+
+	for node, data := range d.globalScopeData {
+		for index, varInfo := range data.Variables {
+			if _, ok := varInfo.Value.(*inoxFunctionToBeDeclared); ok {
+				varInfo.Value = value
+				data.Variables[index] = varInfo
+				break
+			}
+		}
+		d.globalScopeData[node] = data
+	}
+
+}
+
 func (d *Data) SetContextData(n parse.Node, contextData ContextData) {
 	if d == nil {
 		return
@@ -578,6 +596,7 @@ func (d *Data) GetComptimeTypes(module parse.Node) (*ModuleCompileTimeTypes, boo
 
 type ScopeData struct {
 	Variables []VarData
+	Chunk     *parse.Chunk
 }
 
 type VarData struct {

@@ -170,11 +170,15 @@ func (state *State) setGlobal(name string, value Value, constness GlobalConstnes
 	return true
 }
 
-func (state *State) overrideGlobal(name string, value Value) (ok bool) {
+func (state *State) overrideGlobal(name string, value Value, optDefinitionNode ...parse.Node) (ok bool) {
 	scope := state.scopeStack[0]
 	info := scope.variables[name]
 	info.value = value
 	scope.variables[name] = info
+
+	if len(optDefinitionNode) != 0 {
+		info.definitionPosition = state.getCurrentChunkNodePositionOrZero(optDefinitionNode[0])
+	}
 	return true
 }
 
@@ -528,7 +532,7 @@ func (state *State) currentGlobalScopeData() ScopeData {
 			DefinitionPosition: v.definitionPosition,
 		})
 	}
-	return ScopeData{Variables: vars}
+	return ScopeData{Variables: vars, Chunk: state.currentChunk().Node}
 }
 
 func (state *State) pushInoxCall(call inoxCallInfo) bool {

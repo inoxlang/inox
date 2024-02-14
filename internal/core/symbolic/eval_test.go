@@ -3619,80 +3619,7 @@ func TestSymbolicEval(t *testing.T) {
 			`)
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
-			assert.Equal(t, INT_2, res)
-		})
-
-		t.Run("a function that accesses a global variable is not callable before the definition of the variable", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				val = f()
-
-				fn g(){
-					return f()
-				}
-
-				val += g()
-
-				globalvar x = (1 + val)
-
-				fn f(){
-					return $$x
-				}
-			`)
-			fnExpr := n.Statements[1].(*parse.FunctionDeclaration).Function
-			res, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Equal(t, &InoxFunction{
-				node:      fnExpr,
-				result:    Nil,
-				nodeChunk: n,
-			}, res)
-		})
-
-		t.Run("a function that accesses a global variable is callable after the definition of the variable", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				globalvar x = 1
-
-				val = f()
-
-				fn g(){
-					return f()
-				}
-
-				return (val + g())
-
-				fn f(){
-					return $$x
-				}
-			`)
-			res, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Equal(t, INT_2, res)
-		})
-
-		t.Run("a function that captures a local variable is not callable before the definition of the variable", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				val = f()
-
-				fn g(){
-					return f()
-				}
-
-				val += g()
-
-				x = (1 + val)
-
-				fn f[x](){
-					return $$x
-				}
-			`)
-			fnExpr := n.Statements[1].(*parse.FunctionDeclaration).Function
-			res, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Equal(t, &InoxFunction{
-				node:      fnExpr,
-				result:    Nil,
-				nodeChunk: n,
-			}, res)
+			assert.Equal(t, ANY_INT, res)
 		})
 
 		t.Run("a function that captures a local variable is callable after the definition of the variable", func(t *testing.T) {
@@ -3705,15 +3632,15 @@ func TestSymbolicEval(t *testing.T) {
 					return f()
 				}
 
-				return (val + g())
-
 				fn[x] f(){
-					return $$x
+					return x
 				}
+
+				return (val + g())
 			`)
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
-			assert.Equal(t, INT_2, res)
+			assert.Equal(t, ANY_INT, res)
 		})
 	})
 
@@ -10978,8 +10905,7 @@ func TestSymbolicEval(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`f ~arg`)
 
 			goFunc := &GoFunction{
-				fn: func(*Context, *Int) {
-				},
+				fn: func(*Context, *Int) {},
 			}
 
 			state.setGlobal("f", goFunc, GlobalConst)
@@ -11000,12 +10926,6 @@ func TestSymbolicEval(t *testing.T) {
 				return f(~arg)
 			`)
 
-			goFunc := &GoFunction{
-				fn: func(*Context, *Int) {
-				},
-			}
-
-			state.setGlobal("f", goFunc, GlobalConst)
 			state.setGlobal("arg", ANY, GlobalConst)
 
 			res, err := symbolicEval(n, state)

@@ -322,18 +322,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 	case *parse.RuneLiteral:
 		return NewRune(n.Value), nil
 	case *parse.IdentifierLiteral:
-		info, ok := state.get(n.Name)
-		if !ok {
-			msg := fmtVarIsNotDeclared(n.Name)
-
-			if pattern := state.ctx.ResolveNamedPattern(n.Name); pattern != nil {
-				msg += fmt.Sprintf("; did you mean %%%s ? In this location patterns require a leading '%%'.", n.Name)
-			}
-
-			state.addError(makeSymbolicEvalError(node, state, msg))
-			return ANY, nil
-		}
-		return info.value, nil
+		return evalIdentifier(n, state, options)
 	case *parse.UnambiguousIdentifierLiteral:
 		return &Identifier{name: n.Name}, nil
 	case *parse.PropertyNameLiteral:
@@ -455,13 +444,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		}
 		return info.value, nil
 	case *parse.GlobalVariable:
-		info, ok := state.getGlobal(n.Name)
-
-		if !ok {
-			state.addError(makeSymbolicEvalError(node, state, fmtGlobalVarIsNotDeclared(n.Name)))
-			return ANY, nil
-		}
-		return info.value, nil
+		return evalGlobalVariable(n, state, options)
 	case *parse.ReturnStatement:
 		return evalReturnStatement(n, state)
 	case *parse.YieldStatement:
@@ -689,23 +672,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 	case *parse.FunctionExpression:
 		return evalFunctionExpression(n, state, options)
 	case *parse.FunctionDeclaration:
-		funcName := n.Name.Name
-
-		//declare the function before checking it
-		state.setGlobal(funcName, &InoxFunction{node: n.Function, result: ANY_SERIALIZABLE}, GlobalConst, n.Name)
-		if state.recursiveFunctionName != "" {
-			state.addError(makeSymbolicEvalError(n, state, NESTED_RECURSIVE_FUNCTION_DECLARATION))
-		} else {
-			state.recursiveFunctionName = funcName
-		}
-
-		v, err := symbolicEval(n.Function, state)
-		if err == nil {
-			state.overrideGlobal(funcName, v)
-			state.symbolicData.SetMostSpecificNodeValue(n.Name, v)
-			state.symbolicData.SetGlobalScopeData(n, state.currentGlobalScopeData())
-		}
-		return nil, err
+		return evalFunctionDeclaration(n, state, options)
 	case *parse.ReadonlyPatternExpression:
 		pattern, err := evalPatternNode(n.Pattern, state)
 		if err != nil {
@@ -1147,13 +1114,20 @@ func evalChunk(n *parse.Chunk, state *State) (_ Value, finalErr error) {
 	state.symbolicData.SetGlobalScopeData(n, state.currentGlobalScopeData())
 	state.symbolicData.SetContextData(n, state.ctx.currentData())
 
-	//register all structs defined in the current module
-
+	//If the chunk is the main one, recursively register all structs defined in the current module.
 	if n == state.Module.mainChunk.Node {
 		defineStructs(state.Module.mainChunk, n.Statements, state)
 	}
 
-	//evaluation of statements
+	// Predeclare all Inox functions that don't capture locals.
+	for _, stmt := range n.Statements {
+		decl, ok := stmt.(*parse.FunctionDeclaration)
+		if ok && decl.Function != nil && len(decl.Function.CaptureList) == 0 {
+			state.setGlobal(decl.Name.Name, &inoxFunctionToBeDeclared{decl: decl}, GlobalConst, decl.Name)
+		}
+	}
+
+	//Evaluation of statements.
 	if len(n.Statements) == 1 {
 		res, err := symbolicEval(n.Statements[0], state)
 		if err != nil {
@@ -1236,6 +1210,61 @@ func evalURLExpression(n *parse.URLExpression, state *State) (_ Value, finalErr 
 	}
 
 	return ANY_URL, nil
+}
+
+func evalIdentifier(node *parse.IdentifierLiteral, state *State, evalOptions evalOptions) (Value, error) {
+	info, ok := state.get(node.Name)
+	if !ok {
+		msg := fmtVarIsNotDeclared(node.Name)
+
+		if pattern := state.ctx.ResolveNamedPattern(node.Name); pattern != nil {
+			msg += fmt.Sprintf("; did you mean %%%s ? In this location patterns require a leading '%%'.", node.Name)
+		}
+
+		state.addError(makeSymbolicEvalError(node, state, msg))
+		return ANY, nil
+	}
+
+	inoxFn, ok := info.value.(*inoxFunctionToBeDeclared)
+	if ok {
+		//Properly declare the function.
+		_, err := evalFunctionDeclaration(inoxFn.decl, state, evalOptions)
+		if err != nil {
+			return nil, fmt.Errorf("error while evaluating the function declaration: %w", err)
+		}
+		varInfo, ok := state.getGlobal(node.Name)
+		if !ok {
+			return nil, fmt.Errorf("error while evaluating the function declaration: %w", err)
+		}
+		return varInfo.value, nil
+	}
+
+	return info.value, nil
+}
+
+func evalGlobalVariable(node *parse.GlobalVariable, state *State, evalOptions evalOptions) (Value, error) {
+	info, ok := state.getGlobal(node.Name)
+
+	if !ok {
+		state.addError(makeSymbolicEvalError(node, state, fmtGlobalVarIsNotDeclared(node.Name)))
+		return ANY, nil
+	}
+
+	inoxFn, ok := info.value.(*inoxFunctionToBeDeclared)
+	if ok {
+		//Properly declare the function.
+		_, err := evalFunctionDeclaration(inoxFn.decl, state, evalOptions)
+		if err != nil {
+			return nil, fmt.Errorf("error while evaluating the function declaration: %w", err)
+		}
+		varInfo, ok := state.getGlobal(node.Name)
+		if !ok {
+			return nil, fmt.Errorf("error while evaluating the function declaration: %w", err)
+		}
+		return varInfo.value, nil
+	}
+
+	return info.value, nil
 }
 
 func evalReturnStatement(n *parse.ReturnStatement, state *State) (_ Value, finalErr error) {
@@ -3188,6 +3217,49 @@ return_function:
 		result:         storedReturnType,
 		capturedLocals: capturedLocals,
 	}, nil
+}
+
+func evalFunctionDeclaration(n *parse.FunctionDeclaration, state *State, options evalOptions) (_ Value, finalErr error) {
+	funcName := n.Name.Name
+
+	info, preDeclared := state.getGlobal(funcName)
+	if preDeclared && !utils.Implements[*inoxFunctionToBeDeclared](info.value) { //properly declared
+		return nil, nil
+	}
+
+	startValue := &InoxFunction{node: n.Function, result: ANY_SERIALIZABLE}
+
+	if !preDeclared {
+		if n.Function != nil && len(n.Function.CaptureList) == 0 {
+			return nil, fmt.Errorf("internal error: a value should already be associated with the name %s", funcName)
+		}
+		//declare the function before checking it
+		state.setGlobal(funcName, startValue, GlobalConst, n.Name, n.Name)
+	} else {
+		state.overrideGlobal(funcName, startValue)
+	}
+
+	if n.Function == nil {
+		state.symbolicData.SetMostSpecificNodeValue(n.Name, startValue)
+		state.symbolicData.SetGlobalScopeData(n, state.currentGlobalScopeData())
+		return nil, nil
+	}
+
+	if state.recursiveFunctionName != "" {
+		state.addError(makeSymbolicEvalError(n, state, NESTED_RECURSIVE_FUNCTION_DECLARATION))
+	} else {
+		state.recursiveFunctionName = funcName
+	}
+
+	v, err := symbolicEval(n.Function, state)
+	if err == nil {
+		state.symbolicData.UpdateAllPreviousGlobalScopeDataWithInoxFunction(state.currentChunk().Node, funcName, v.(*InoxFunction))
+
+		state.overrideGlobal(funcName, v)
+		state.symbolicData.SetMostSpecificNodeValue(n.Name, v)
+		state.symbolicData.SetGlobalScopeData(n, state.currentGlobalScopeData())
+	}
+	return nil, err
 }
 
 func evalFunctionPatternExpression(n *parse.FunctionPatternExpression, state *State) (_ Value, finalErr error) {
