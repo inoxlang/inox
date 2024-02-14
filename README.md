@@ -634,6 +634,6 @@ Consider donating through [GitHub](https://github.com/sponsors/GraphR00t) (prefe
 ⬇️ [Installation](#-installation)\
 🔍 [Application Examples](#-application-examples)\
 📚 [Learning Inox](#-learning-inox)\
-👥 [Discord Server](https://discord.gg/53YGx8GzgE) & [Subreddit](https://www.reddit.com/r/inoxlang/)\
+👥 [Discord Server](https://discord.gg/53YGx8GzgE) & [Subreddit](https://www.reddit.com/r/inoxlang/)
 
 [Back To Top](#inox)
