@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"sync/atomic"
 
 	"github.com/inoxlang/inox/internal/parse"
@@ -13,6 +14,9 @@ type StaticCheckData struct {
 	warnings    []*StaticCheckWarning
 	fnData      map[*parse.FunctionExpression]*FunctionStaticData
 	mappingData map[*parse.MappingExpression]*MappingStaticData
+
+	//key: *parse.Chunk|*parse.EmbeddedModule
+	firstForbiddenPosForGlobalElementDecls map[parse.Node]int32
 
 	//.errors property accessible from scripts
 	errorsPropSet atomic.Bool
@@ -144,4 +148,13 @@ func (data *StaticCheckData) GetFnData(fnExpr *parse.FunctionExpression) *Functi
 
 func (data *StaticCheckData) GetMappingData(expr *parse.MappingExpression) *MappingStaticData {
 	return data.mappingData[expr]
+}
+
+func (data *StaticCheckData) GetEarlyFunctionDeclarationsPosition(module parse.Node) int32 {
+	switch module.(type) {
+	case *parse.Chunk, *parse.EmbeddedModule:
+		panic(fmt.Errorf("%T is not a module", module))
+	}
+
+	return data.firstForbiddenPosForGlobalElementDecls[module] //no issue if the default value is returned (zero).
 }

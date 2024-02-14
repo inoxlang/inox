@@ -89,23 +89,23 @@ func StaticCheck(input StaticCheckInput) (*StaticCheckData, error) {
 	}
 
 	checker := &checker{
-		checkInput:                          input,
-		fnDecls:                             make(map[parse.Node]map[string]*fnDeclInfo),
-		lastAllowedPosForGlobalElementDecls: make(map[parse.Node]parse.NodeSpan),
-		structDefs:                          make(map[parse.Node]map[string]int),
-		globalVars:                          globals,
-		localVars:                           localVars,
-		shellLocalVars:                      shellLocalVars,
-		properties:                          make(map[*parse.ObjectLiteral]*propertyInfo),
-		hostAliases:                         make(map[parse.Node]map[string]int),
-		patterns:                            patterns,
-		patternNamespaces:                   patternNamespaces,
-		currentModule:                       input.Module,
-		chunk:                               input.Chunk,
-		store:                               make(map[parse.Node]interface{}),
+		checkInput:        input,
+		fnDecls:           make(map[parse.Node]map[string]*fnDeclInfo),
+		structDefs:        make(map[parse.Node]map[string]int),
+		globalVars:        globals,
+		localVars:         localVars,
+		shellLocalVars:    shellLocalVars,
+		properties:        make(map[*parse.ObjectLiteral]*propertyInfo),
+		hostAliases:       make(map[parse.Node]map[string]int),
+		patterns:          patterns,
+		patternNamespaces: patternNamespaces,
+		currentModule:     input.Module,
+		chunk:             input.Chunk,
+		store:             make(map[parse.Node]interface{}),
 		data: &StaticCheckData{
-			fnData:      map[*parse.FunctionExpression]*FunctionStaticData{},
-			mappingData: map[*parse.MappingExpression]*MappingStaticData{},
+			fnData:                                 map[*parse.FunctionExpression]*FunctionStaticData{},
+			mappingData:                            map[*parse.MappingExpression]*MappingStaticData{},
+			firstForbiddenPosForGlobalElementDecls: make(map[parse.Node]int32, 0),
 		},
 	}
 
@@ -137,9 +137,6 @@ type checker struct {
 
 	//key: *parse.Chunk|*parse.EmbeddedModule
 	fnDecls map[parse.Node]map[string]*fnDeclInfo
-
-	//key: *parse.Chunk|*parse.EmbeddedModule
-	lastAllowedPosForGlobalElementDecls map[parse.Node]parse.NodeSpan
 
 	//key: *parse.Chunk|*parse.EmbeddedModule
 	structDefs map[parse.Node]map[string]int
@@ -1195,23 +1192,23 @@ func (c *checker) checkInclusionImportStmt(node *parse.InclusionImportStatement,
 	}
 
 	chunkChecker := &checker{
-		parentChecker:                       c,
-		checkInput:                          c.checkInput,
-		fnDecls:                             make(map[parse.Node]map[string]*fnDeclInfo),
-		lastAllowedPosForGlobalElementDecls: make(map[parse.Node]parse.NodeSpan),
-		structDefs:                          make(map[parse.Node]map[string]int),
-		globalVars:                          globals,
-		localVars:                           make(map[parse.Node]map[string]localVarInfo),
-		properties:                          make(map[*parse.ObjectLiteral]*propertyInfo),
-		patterns:                            patterns,
-		patternNamespaces:                   patternNamespaces,
-		currentModule:                       c.currentModule,
-		chunk:                               includedChunk.ParsedChunkSource,
-		inclusionImportStatement:            node,
-		store:                               make(map[parse.Node]any),
+		parentChecker:            c,
+		checkInput:               c.checkInput,
+		fnDecls:                  make(map[parse.Node]map[string]*fnDeclInfo),
+		structDefs:               make(map[parse.Node]map[string]int),
+		globalVars:               globals,
+		localVars:                make(map[parse.Node]map[string]localVarInfo),
+		properties:               make(map[*parse.ObjectLiteral]*propertyInfo),
+		patterns:                 patterns,
+		patternNamespaces:        patternNamespaces,
+		currentModule:            c.currentModule,
+		chunk:                    includedChunk.ParsedChunkSource,
+		inclusionImportStatement: node,
+		store:                    make(map[parse.Node]any),
 		data: &StaticCheckData{
-			fnData:      map[*parse.FunctionExpression]*FunctionStaticData{},
-			mappingData: map[*parse.MappingExpression]*MappingStaticData{},
+			fnData:                                 map[*parse.FunctionExpression]*FunctionStaticData{},
+			mappingData:                            map[*parse.MappingExpression]*MappingStaticData{},
+			firstForbiddenPosForGlobalElementDecls: c.data.firstForbiddenPosForGlobalElementDecls,
 		},
 	}
 
@@ -1380,23 +1377,23 @@ func (c *checker) checkImportStmt(node *parse.ImportStatement, parent, closestMo
 	}
 
 	chunkChecker := &checker{
-		parentChecker:                       c,
-		checkInput:                          c.checkInput,
-		fnDecls:                             make(map[parse.Node]map[string]*fnDeclInfo),
-		lastAllowedPosForGlobalElementDecls: make(map[parse.Node]parse.NodeSpan),
-		structDefs:                          make(map[parse.Node]map[string]int),
-		globalVars:                          globals,
-		localVars:                           make(map[parse.Node]map[string]localVarInfo),
-		properties:                          make(map[*parse.ObjectLiteral]*propertyInfo),
-		patterns:                            patterns,
-		patternNamespaces:                   patternNamespaces,
-		currentModule:                       importedModule,
-		chunk:                               importedModule.MainChunk,
-		moduleImportStatement:               node,
-		store:                               make(map[parse.Node]any),
+		parentChecker:         c,
+		checkInput:            c.checkInput,
+		fnDecls:               make(map[parse.Node]map[string]*fnDeclInfo),
+		structDefs:            make(map[parse.Node]map[string]int),
+		globalVars:            globals,
+		localVars:             make(map[parse.Node]map[string]localVarInfo),
+		properties:            make(map[*parse.ObjectLiteral]*propertyInfo),
+		patterns:              patterns,
+		patternNamespaces:     patternNamespaces,
+		currentModule:         importedModule,
+		chunk:                 importedModule.MainChunk,
+		moduleImportStatement: node,
+		store:                 make(map[parse.Node]any),
 		data: &StaticCheckData{
-			fnData:      map[*parse.FunctionExpression]*FunctionStaticData{},
-			mappingData: map[*parse.MappingExpression]*MappingStaticData{},
+			fnData:                                 map[*parse.FunctionExpression]*FunctionStaticData{},
+			mappingData:                            map[*parse.MappingExpression]*MappingStaticData{},
+			firstForbiddenPosForGlobalElementDecls: c.data.firstForbiddenPosForGlobalElementDecls,
 		},
 	}
 
@@ -1524,8 +1521,8 @@ func (c *checker) checkGlobalVarDecls(node *parse.GlobalVariableDeclarations, pa
 		return parse.Prune
 	}
 
-	lastAllowedPos := c.lastAllowedPosForGlobalElementDecls[closestModule]
-	if lastAllowedPos != (parse.NodeSpan{}) && node.Base().Span.Start >= lastAllowedPos.End {
+	firstForbiddenPos := c.data.firstForbiddenPosForGlobalElementDecls[closestModule]
+	if firstForbiddenPos != 0 && node.Base().Span.Start >= firstForbiddenPos {
 		c.addError(node, MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_REF_TO_FN)
 		return parse.Prune
 	}
@@ -1600,8 +1597,8 @@ func (c *checker) checkAssignment(node parse.Node, parentNode, scopeNode, closes
 					return parse.Prune
 				}
 
-				lastAllowedPos := c.lastAllowedPosForGlobalElementDecls[closestModule]
-				if lastAllowedPos != (parse.NodeSpan{}) && node.Base().Span.Start >= lastAllowedPos.End {
+				firstForbiddenPos := c.data.firstForbiddenPosForGlobalElementDecls[closestModule]
+				if firstForbiddenPos != 0 && node.Base().Span.Start >= firstForbiddenPos {
 					c.addError(node, MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_REF_TO_FN)
 					return parse.Prune
 				}
@@ -1809,12 +1806,9 @@ func (c *checker) checkFuncDecl(node *parse.FunctionDeclaration, parent, closest
 			}
 		}
 
-		lastPos := c.lastAllowedPosForGlobalElementDecls[closestModule]
-		if lastPos == (parse.NodeSpan{}) {
-			c.lastAllowedPosForGlobalElementDecls[closestModule] = parse.NodeSpan{
-				Start: max(node.Span.Start-1, 0),
-				End:   node.Span.Start,
-			}
+		lastPos := c.data.firstForbiddenPosForGlobalElementDecls[closestModule]
+		if lastPos == 0 {
+			c.data.firstForbiddenPosForGlobalElementDecls[closestModule] = node.Span.Start
 		}
 
 	case *parse.StructBody:
@@ -2036,12 +2030,9 @@ func (c *checker) checkGlobalVar(node *parse.GlobalVariable, parent, scopeNode, 
 	fnDecls := c.getModFunctionDecls(closestModule)
 
 	if fnDecls[node.Name] != nil && fnDecls[node.Name].chunk == c.chunk.Node &&
-		SamePointer(scopeNode, closestModule) && c.lastAllowedPosForGlobalElementDecls[closestModule] == (parse.NodeSpan{}) {
+		SamePointer(scopeNode, closestModule) && c.data.firstForbiddenPosForGlobalElementDecls[closestModule] == 0 {
 
-		c.lastAllowedPosForGlobalElementDecls[closestModule] = parse.NodeSpan{
-			Start: max(node.Span.Start-1, 0),
-			End:   node.Span.Start,
-		}
+		c.data.firstForbiddenPosForGlobalElementDecls[closestModule] = node.Span.Start
 	}
 
 	switch scope := scopeNode.(type) {
@@ -2202,12 +2193,9 @@ func (c *checker) checkIdentifier(node *parse.IdentifierLiteral, parent, scopeNo
 		fnDecls := c.getModFunctionDecls(closestModule)
 
 		if fnDecls[node.Name] != nil && fnDecls[node.Name].chunk == c.chunk.Node &&
-			SamePointer(scopeNode, closestModule) && c.lastAllowedPosForGlobalElementDecls[closestModule] == (parse.NodeSpan{}) {
+			SamePointer(scopeNode, closestModule) && c.data.firstForbiddenPosForGlobalElementDecls[closestModule] == 0 {
 
-			c.lastAllowedPosForGlobalElementDecls[closestModule] = parse.NodeSpan{
-				Start: max(node.Span.Start-1, 0),
-				End:   node.Span.Start,
-			}
+			c.data.firstForbiddenPosForGlobalElementDecls[closestModule] = node.Span.Start
 		}
 
 		globalVarInfo := c.getModGlobalVars(closestModule)[node.Name]
@@ -2386,8 +2374,8 @@ func (c *checker) checkHostAlisDef(node *parse.HostAliasDefinition, parent, clos
 		}
 	}
 
-	lastAllowedPos := c.lastAllowedPosForGlobalElementDecls[closestModule]
-	if lastAllowedPos != (parse.NodeSpan{}) && node.Base().Span.Start >= lastAllowedPos.End {
+	firstForbiddenPos := c.data.firstForbiddenPosForGlobalElementDecls[closestModule]
+	if firstForbiddenPos != 0 && node.Base().Span.Start >= firstForbiddenPos {
 		c.addError(node, MISPLACED_HOST_ALIAS_DEF_AFTER_FN_DECL_OR_REF_TO_FN)
 		return parse.Prune
 	}
@@ -2414,8 +2402,8 @@ func (c *checker) checkPatternDef(node *parse.PatternDefinition, parent, closest
 		}
 	}
 
-	lastAllowedPos := c.lastAllowedPosForGlobalElementDecls[closestModule]
-	if lastAllowedPos != (parse.NodeSpan{}) && node.Base().Span.Start >= lastAllowedPos.End {
+	firstForbiddenPos := c.data.firstForbiddenPosForGlobalElementDecls[closestModule]
+	if firstForbiddenPos != 0 && node.Base().Span.Start >= firstForbiddenPos {
 		c.addError(node, MISPLACED_PATTERN_DEF_AFTER_FN_DECL_OR_REF_TO_FN)
 		return parse.Prune
 	}
@@ -2443,8 +2431,8 @@ func (c *checker) checkPatternNamespaceDefinition(node *parse.PatternNamespaceDe
 		}
 	}
 
-	lastAllowedPos := c.lastAllowedPosForGlobalElementDecls[closestModule]
-	if lastAllowedPos != (parse.NodeSpan{}) && node.Base().Span.Start >= lastAllowedPos.End {
+	firstForbiddenPos := c.data.firstForbiddenPosForGlobalElementDecls[closestModule]
+	if firstForbiddenPos != 0 && node.Base().Span.Start >= firstForbiddenPos {
 		c.addError(node, MISPLACED_PATTERN_NS_DEF_AFTER_FN_DECL_OR_REF_TO_FN)
 		return parse.Prune
 	}
