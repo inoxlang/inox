@@ -1,6 +1,6 @@
 # Inox Daemon (inoxd)
 
-⬇️ [Installation](#⬇️-installation)\
+⬇️ [Installation](#installation)\
 ⚙️ [Implementation](#implementation)\
 🛑 [Stopping/Starting the Daemon](#stoppingstarting-the-daemon)\
 ⚠️ [Removing the Daemon](#removing-the-daemon)

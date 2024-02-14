@@ -40,20 +40,17 @@ _Note: the permissions granted to imported modules (local or third-party) are **
 </details>
 
 
-
 ---
 
-
 **I have been working 2 years full time on Inox.**  There is still a lot to do in order to make Inox
-usable in real world applications. If you believe this project has potential, **consider donating** through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t). It will help me continue working on Inox (check see **What is planned**). 
+usable in real world applications. If you believe this project has potential, **consider donating** through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t). It will help me continue working on Inox (check see **What is planned** and [Other features](#-other-features)). 
 
-⬇️ [Installation](#⬇️-installation)\
-🔍 [Application Examples](#🔍-application-examples)\
-📚 [Learning Inox](#📚-learning-inox)\
+⬇️ [Installation](#-installation)\
+🔍 [Application Examples](#-application-examples)\
+📚 [Learning Inox](#-learning-inox)\
+⭐ [Other features](#-other-features)\
 👥 [Discord Server](https://discord.gg/53YGx8GzgE) & [Subreddit](https://www.reddit.com/r/inoxlang/)\
-⭐ [Many other features](#⭐-other-features)\
-❔ [Questions you may have](#❔-questions-you-may-have)
-
+❔ [Questions you may have](#-questions-you-may-have)
 
 <details>
 
@@ -645,5 +642,9 @@ As of now, certain parts of the codebase are not optimally written, lack suffici
 
 Consider donating through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t). Thank you !
 
-[Installation](#⬇️-installation)\
+⬇️ [Installation](#-installation)\
+🔍 [Application Examples](#-application-examples)\
+📚 [Learning Inox](#-learning-inox)\
+👥 [Discord Server](https://discord.gg/53YGx8GzgE) & [Subreddit](https://www.reddit.com/r/inoxlang/)\
+
 [Back To Top](#inox)

@@ -1,4 +1,4 @@
-[Install Inox](../README.md#⬇️-installation) |
+[Install Inox](../README.md#-installation) |
 [Language Reference](./language-reference/language.md) |
 [Shell Basics](./shell-basics.md) | [Built-in Functions](./builtins.md) |
 [Web App Development](./web-app-development.md) |
