@@ -585,7 +585,7 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 	case *parse.LocalVariableDeclarations:
 		return c.checkLocalVarDecls(node, scopeNode, closestModule)
 	case *parse.GlobalVariableDeclarations:
-		return c.checkGlobalVarDecls(node, scopeNode, closestModule)
+		return c.checkGlobalVarDecls(node, parent, scopeNode, closestModule)
 	case *parse.Assignment, *parse.MultiAssignment:
 		return c.checkAssignment(node, scopeNode, closestModule)
 	case *parse.ForStatement:
@@ -1508,8 +1508,13 @@ func (c *checker) checkLocalVarDecls(node *parse.LocalVariableDeclarations, scop
 	return parse.ContinueTraversal
 }
 
-func (c *checker) checkGlobalVarDecls(node *parse.GlobalVariableDeclarations, scopeNode, closestModule parse.Node) parse.TraversalAction {
+func (c *checker) checkGlobalVarDecls(node *parse.GlobalVariableDeclarations, parentNode, scopeNode, closestModule parse.Node) parse.TraversalAction {
 	globalVars := c.getModGlobalVars(closestModule)
+
+	if !SamePointer(parentNode, closestModule) {
+		c.addError(node, MISPLACED_GLOBAL_VAR_DECLS_TOP_LEVEL_STMT)
+		return parse.Prune
+	}
 
 	for _, decl := range node.Declarations {
 		name := decl.Left.(*parse.IdentifierLiteral).Name

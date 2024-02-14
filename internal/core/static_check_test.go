@@ -1796,6 +1796,20 @@ func TestCheck(t *testing.T) {
 			)
 			assert.Equal(t, expectedErr, err)
 		})
+
+		t.Run("should be a top-level statement", func(t *testing.T) {
+			n, src := mustParseCode(`
+				fn f(){
+					globalvar a = 0
+				}
+			`)
+			decls := parse.FindNode(n, (*parse.GlobalVariableDeclarations)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(decls, src, MISPLACED_GLOBAL_VAR_DECLS_TOP_LEVEL_STMT),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
 	})
 
 	t.Run("assignment", func(t *testing.T) {
