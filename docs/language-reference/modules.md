@@ -5,13 +5,13 @@
 # Modules
 
 - [Module Parameters](#module-parameters)
-- [Permissions](#permissions)
-- [Execution Phases](#execution-phases)
+- [Preparation, checking & execution phases](#preparation-checking-and-execution-phases)
 - [Inclusion Imports](#inclusion-imports)
 - [Module Imports](#module-imports)
-- [Limits](#limits)
+- [Permissions](./permissions.md)
+- [Limits](./limits.md)
 - [Host Definitions](#host-definitions)
-- [Databases Definitions](#database-definitions)
+- [Databases Definitions](./databases.md)
 - [Main Module](#main-module)
 
 An Inox **file module** is a code file that starts with a manifest.
@@ -66,84 +66,22 @@ Arguments should be added after the path when executing the program:
 inox run [...run options...] ./script.ix ./dir/ --verbose
 ```
 
-## Permissions
-
-The permissions section of the manifest lists the permissions required by the
-module. Permissions represent a type of action a module is allowed (or
-forbidden) to do. Most IO operations (filesystem access, HTTP requests) and
-resource intensive operations (lthread creation) necessitate a permission.
-
-**Examples:**
-
-```
-# reading any file in /home/user/ or below
-manifest {
-    permissions: {
-        read: {
-            %/home/user/...
-        }
-    }
-}
-
-# sending HTTP GET & POST requests to any HTTPS server
-manifest {
-    permissions: {
-        read: {
-            %https://**
-        }
-        write: {
-            %https://**
-        }
-    }
-}
-
-# creating an HTTPS server listening on localhost:8080
-manifest {
-    permissions: {
-        provide: https://localhost:808
-    }
-}
-
-# reading from & writing to the database ldb://main
-manifest {
-    permissions: {
-        read: {
-            ldb://main
-        }
-        write: {
-            ldb://main
-        }
-    }
-}
-
-# creating lightweight threads
-manifest {
-    permissions: {
-        create: {
-            threads: {}
-        }
-    }
-}
-```
-
-[Permissions Reference](./permissions.md)
-
-## Execution Phases
+## Preparation, Checking And Execution Phases
 
 The execution of a module has several phases:
 
 **preparation phases**:
 
 - **Parsing**
-- [Pre-initialization](#pre-initialization)
+- [Pre-initialization](./pre-initialization.md)
 - **Opening of Databases**
-- [Static Check](#static-check)
-- [Symbolic Evaluation/Check](#symbolic-evaluation)
+- [Static Check](./static-check.md)
+- [Symbolic Evaluation/Check](./symbolic-evaluation.md)
 
 **actual execution phases**:
 
-- [Compilation](#compilation) (if using the [bytecode interpreter](#evaluation))
-- [Evaluation](#evaluation)
+- [Compilation](./compilation.md) (if using the [bytecode interpreter](./evaluation.md))
+- [Evaluation](./evaluation.md)
 
 ## Result
 
@@ -331,117 +269,6 @@ return fn(){
 trusted, local files. Modules are useful to provide a library or to decompose an
 application in smaller parts.
 
-## Limits
-
-Limits limit intensive operations, there are three kinds of limits:
-**[byte rate](#byte-rate-limits)**, **[frequency](#frequency-limits)** &
-**[total](#total-limits)**. Limits are defined in module manifests.
-
-```
-manifest {
-    permissions: {
-        ...
-    }
-    limits: {
-        "fs/read": 10MB/s
-        "http/req": 10x/s
-    }
-}
-```
-
-### Sharing
-
-At runtime a counter will be created for each limit, the behaviour of the
-counter is specific to the limit's kind. Limits defined by a module will be
-shared with all of its child modules/threads. In other words when the module
-defining the limit or one if its children performs an operation a shared counter
-is decremented.
-
-**Example 1 - CPU Time**
-
-```
-# ./lib.ix
-manifest {}
-
-do_intensive_operation1()
-...
-return ...
-
-
-# ./main.ix
-manifest {
-    limits: {
-        "execution/cpu-time": 1s
-    }
-}
-
-# all CPU time spent by the lib is added to the counter of ./main.ix
-import lib ./lib.ix {} 
-
-# all CPU time spent by the child threads are added to the counter of ./main.ix
-lthread = go do {
-    do_intensive_operation2()
-}
-
-...
-```
-
-[Issues with the CPU time limit.](https://github.com/inoxlang/inox/issues/19)
-
-**Example 2 - Simultaneous Thread Count**
-
-```
-# ./main.ix
-manifest {
-    limits: {
-        "threads/simul-instances": 2
-    }
-}
-
-# lthread creation, the counter is decreased by one
-lthread = go do {
-    # lthread creation inside the child lthread, the counter is decreased by one
-    go do {
-        sleep 1s
-    }
-    sleep 1s
-}
-
-# at this point 2 lthreads are running, attempting to create a new one would cause an error.
-...
-```
-
-### Byte Rate Limits
-
-This kind of limit represents a number of bytes per second.\
-Examples:
-
-- `fs/read`
-- `fs/write`
-
-### Frequency Limits
-
-This kind of limit represents a number of operations per second.\
-Examples:
-
-- `fs/create-file`
-- `http/request`
-- `object-storage/request`
-
-### Total Limits
-
-This kind of limit represents a total number of operations or resources.
-Attempting to make an operation while the counter associated with the limit is
-at zero will cause a panic.\
-Examples:
-
-- `fs/total-new-files` - the counter can only go down.
-- `ws/simul-connections` - simultaneous number of WebSocket connections, the
-  counter can go up & down since connections can be closed.
-- `execution/cpu-time` - the counter decrements on its own, it pauses when an IO
-  operation is being performed.
-- `execution/total-time` - the counter decrements on its own.
-
 ## Host Definitions
 
 **WORK IN PROGRESS**
@@ -458,10 +285,6 @@ manifest {
 
 Host definitions are inherited by descendant modules.
 Database definitions implicitly define hosts.
-
-## Database Definitions
-
-See [databases](./databases.md)
 
 ## Main Module
 

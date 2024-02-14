@@ -10,7 +10,6 @@ for checking [permissions](./permissions.md) and [limit](./modules.md#limits) re
     - [Ungraceful](#ungraceful)
     - [Manual Cancellation](#manual-cancellation)
 
-
 ## Context Data
 
 Context data entries are indexed using **paths** , each entry can be defined only once. The value should fall in one of the following categories: **sharable** (e.g. objects, sets), **immutable** (e.g. integers, records)

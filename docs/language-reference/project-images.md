@@ -4,6 +4,8 @@
 
 # Project Images
 
+_This feature is work in progress._
+
 A **project image** is a filesystem snapshot + some metadata about the project.
 Projects have several types of **images**, the most important one is the **base
 image**.

@@ -78,6 +78,32 @@ my_pattern = %user
 (user match $my_pattern)
 ```
 
+<details>
+
+<summary>Forbidden definition locations</summary>
+
+Patterns can only be defined at the top level before any function declaration, and before any function call to a function declared further below.
+```
+# ok
+pattern a = {a: 1}
+
+fn f(){}
+
+# not allowed: the definition is after a function declaration.
+pattern b = {a: 1}
+```
+
+```
+f()
+
+# not allowed: the definition is after a call to a function that is declared further below.
+pattern a = {a: 1}
+
+fn f(){}
+```
+
+</details>
+
 ## Object Patterns
 
 ```
@@ -244,6 +270,32 @@ pnamespace ints. = {
 # assign the namespace %ints to a variable
 namespace = %ints.
 ```
+
+<details>
+
+<summary>Forbidden definition locations</summary>
+
+Pattern namespaces can only be defined at the top level before any function declaration, and before any function call to a function declared further below.
+```
+# ok
+pnamespace a. = {int: %int}
+
+fn f(){}
+
+# not allowed: the definition is after a function declaration.
+pnamespace b. = {int: %int}
+```
+
+```
+f()
+
+# not allowed: the definition is after a call to a function that is declared further below.
+pnamespace a. = {int: %int}
+
+fn f(){}
+```
+
+</details>
 
 ## Path Patterns
 

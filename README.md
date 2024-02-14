@@ -2,12 +2,12 @@
 
 <img src="https://avatars.githubusercontent.com/u/122291844?s=200&v=4" alt="a shield"></img>
 
-Inox is  **single-binary platform** that will contain all you need to develop, test, and deploy web apps that are primarily rendered server-side. Applications are developped using **Inoxlang**, a sandboxed programming language that 
+Inox is a **single-binary platform** that will contain all you need to develop, test, and deploy web apps that are primarily rendered server-side. Applications are developped using **Inoxlang**, a sandboxed programming language that 
 deeply integrates with several components: 
 - A built-in database engine
 - HTTP server with filesystem routing
 - Testing engine supporting virtual filesystems and temporary databases (completely transparent for application code).
-- An in-process container engine: applications run in a virtual filesystem and are subject to permissions. This is unrelated to Linux containers.
+- An in-process container engine: each application runs in a dedicated virtual filesystem, and is subject to permissions (unrelated to Linux containers).
 
 **Even though you can already develop web apps using Inox, keep in mind that the current version of Inox is 0.2, not 1.0. Also the first stable versions of Inox won't support high-scalability applications.**
 
@@ -62,7 +62,7 @@ usable in real world applications. If you believe this project has potential, **
 - Storage of secrets in key management services (e.g. GCP KMS, AWS KMS). [Secrets](./docs/language-reference/secrets.md) are special Inox values that 
 cannot be printed, logged or serialized.
 - Develop a standard library
-- Integrate a subset of Git (using https://github.com/go-git/go-billy and https://code.visualstudio.com/api/extension-guides/scm-provider)
+- Integrate a subset of Git (using https://github.com/go-git/go-git and https://code.visualstudio.com/api/extension-guides/scm-provider)
 - Support no-downtime upgrades
 - **WebAssembly support** using https://github.com/tetratelabs/wazero
 - Finish the transaction system and support persisting most data-structure types with accepable performance
@@ -251,7 +251,7 @@ To learn scripting go [here](./docs/scripting-basics.md). View
 ## ⭐ Other Features
 
 - [Structured logging](#structured-logging)
-- [More secure secrets](#secrets)
+- [Secrets](#secrets)
 - [Built-in browser automation](#built-in-browser-automation)
 - [Composable string patterns](#composable-string-patterns)
 - [Context data](#context-data)
@@ -605,8 +605,8 @@ No, Inoxlang is **unsound**. However:
 
 _\*Types like Set are kind of generic but it cannot be said that generics are implemented._
 
-_The type checking system not being implemented in a classic way, that will lead to some limitations and bugs. However
-the type checking logic is not expected to grow much. Therefore the vast majority issues should be resolved by testing extensively.
+_The type checking system not being implemented in a classic way, that will lead to some limitations and a bit less safe checks. However
+the type checking logic is not expected to grow much. Therefore the vast majority issues should be resolved by testing extensively._
 
 </details>
 

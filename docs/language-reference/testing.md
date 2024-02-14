@@ -63,7 +63,7 @@ testsuite ({
 
 ## Custom Filesystem
 
-Test suites and test cases can be configured to use a short-lived filesystem:
+Test suites and test cases can be configured to use a short-lived (in-memory) filesystem:
 
 ```
 manifest {}

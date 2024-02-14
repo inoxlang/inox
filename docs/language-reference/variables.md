@@ -68,7 +68,26 @@ var myglobal = 3
 Go to the [Functions](./functions.md) section to learn more about variables &
 scopes.
 
-Global variables can only be declared at the top level before any function declaration or function call to a function declared below.
+
+<details>
+
+<summary>Forbidden declaration locations</summary>
+
+Global variables can only be declared at the top level before any function declaration, and before any function call to a function declared further below.
+
+```
+# ok
+globalvar a = {a: 1}
+
+fn f(){}
+
+# not allowed: the definition is after a function declaration.
+globalvar b = {a: 1}
+```
+
+</details>
+
+
 
 **Assignment of global variables**:
 
