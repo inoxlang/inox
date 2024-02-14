@@ -1820,7 +1820,7 @@ func TestCheck(t *testing.T) {
 			decls := parse.FindNode(n, (*parse.GlobalVariableDeclarations)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(decls, src, MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_CALL),
+				makeError(decls, src, MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_REF_TO_FN),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -1836,7 +1836,39 @@ func TestCheck(t *testing.T) {
 			decls := parse.FindNode(n, (*parse.GlobalVariableDeclarations)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(decls, src, MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_CALL),
+				makeError(decls, src, MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_REF_TO_FN),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("definitions are not allowed after a reference (identifier) to a function declared below", func(t *testing.T) {
+			n, src := mustParseCode(`
+				f
+				
+				globalvar a = 0
+
+				fn f(){}
+			`)
+			decls := parse.FindNode(n, (*parse.GlobalVariableDeclarations)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(decls, src, MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_REF_TO_FN),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("definitions are not allowed after a reference (global variable node) to a function declared below", func(t *testing.T) {
+			n, src := mustParseCode(`
+				$$f
+				
+				globalvar a = 0
+
+				fn f(){}
+			`)
+			decls := parse.FindNode(n, (*parse.GlobalVariableDeclarations)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(decls, src, MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_REF_TO_FN),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2021,7 +2053,7 @@ func TestCheck(t *testing.T) {
 			assignment := parse.FindNode(n, (*parse.Assignment)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(assignment, src, MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_CALL),
+				makeError(assignment, src, MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_REF_TO_FN),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2038,7 +2070,39 @@ func TestCheck(t *testing.T) {
 			assignment := parse.FindNode(n, (*parse.Assignment)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(assignment, src, MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_CALL),
+				makeError(assignment, src, MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_REF_TO_FN),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("definitions are not allowed after a reference (identifier) to a function declared below", func(t *testing.T) {
+			n, src := mustParseCode(`
+				f
+				
+				$$a = 0
+
+				fn f(){}
+			`)
+			assignment := parse.FindNode(n, (*parse.Assignment)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(assignment, src, MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_REF_TO_FN),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("definitions are not allowed after a reference (global variable node) to a function declared below", func(t *testing.T) {
+			n, src := mustParseCode(`
+				$$f
+				
+				$$a = 0
+
+				fn f(){}
+			`)
+			assignment := parse.FindNode(n, (*parse.Assignment)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(assignment, src, MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_REF_TO_FN),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -3799,7 +3863,7 @@ func TestCheck(t *testing.T) {
 			def := parse.FindNode(n, (*parse.HostAliasDefinition)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(def, src, MISPLACED_HOST_ALIAS_DEF_AFTER_FN_DECL_OR_CALL),
+				makeError(def, src, MISPLACED_HOST_ALIAS_DEF_AFTER_FN_DECL_OR_REF_TO_FN),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -3813,7 +3877,7 @@ func TestCheck(t *testing.T) {
 			def := parse.FindNode(n, (*parse.HostAliasDefinition)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(def, src, MISPLACED_HOST_ALIAS_DEF_AFTER_FN_DECL_OR_CALL),
+				makeError(def, src, MISPLACED_HOST_ALIAS_DEF_AFTER_FN_DECL_OR_REF_TO_FN),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -3860,7 +3924,7 @@ func TestCheck(t *testing.T) {
 			def := parse.FindNode(n, (*parse.PatternDefinition)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(def, src, MISPLACED_PATTERN_DEF_AFTER_FN_DECL_OR_CALL),
+				makeError(def, src, MISPLACED_PATTERN_DEF_AFTER_FN_DECL_OR_REF_TO_FN),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -3874,7 +3938,7 @@ func TestCheck(t *testing.T) {
 			def := parse.FindNode(n, (*parse.PatternDefinition)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(def, src, MISPLACED_PATTERN_DEF_AFTER_FN_DECL_OR_CALL),
+				makeError(def, src, MISPLACED_PATTERN_DEF_AFTER_FN_DECL_OR_REF_TO_FN),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -3921,7 +3985,39 @@ func TestCheck(t *testing.T) {
 			def := parse.FindNode(n, (*parse.PatternNamespaceDefinition)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(def, src, MISPLACED_PATTERN_NS_DEF_AFTER_FN_DECL_OR_CALL),
+				makeError(def, src, MISPLACED_PATTERN_NS_DEF_AFTER_FN_DECL_OR_REF_TO_FN),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("definitions are not allowed after a reference (identifier) to a function declared below", func(t *testing.T) {
+			n, src := mustParseCode(`
+				f
+				
+				pnamespace p. = {}
+
+				fn f(){}
+			`)
+			def := parse.FindNode(n, (*parse.PatternNamespaceDefinition)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(def, src, MISPLACED_PATTERN_NS_DEF_AFTER_FN_DECL_OR_REF_TO_FN),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("definitions are not allowed after a reference (global variable node) to a function declared below", func(t *testing.T) {
+			n, src := mustParseCode(`
+				$$f
+				
+				pnamespace p. = {}
+
+				fn f(){}
+			`)
+			def := parse.FindNode(n, (*parse.PatternNamespaceDefinition)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(def, src, MISPLACED_PATTERN_NS_DEF_AFTER_FN_DECL_OR_REF_TO_FN),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -3935,7 +4031,7 @@ func TestCheck(t *testing.T) {
 			def := parse.FindNode(n, (*parse.PatternNamespaceDefinition)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(def, src, MISPLACED_PATTERN_NS_DEF_AFTER_FN_DECL_OR_CALL),
+				makeError(def, src, MISPLACED_PATTERN_NS_DEF_AFTER_FN_DECL_OR_REF_TO_FN),
 			)
 			assert.Equal(t, expectedErr, err)
 		})

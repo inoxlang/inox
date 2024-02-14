@@ -644,7 +644,7 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 	case *parse.MatchCase:
 		return c.checkMatchCase(node, scopeNode, closestModule)
 	case *parse.Variable:
-		return c.checkVariable(node, scopeNode)
+		return c.checkVariable(node, scopeNode, closestModule)
 	case *parse.GlobalVariable:
 		return c.checkGlobalVar(node, parent, scopeNode, closestModule, ancestorChain)
 	case *parse.IdentifierLiteral:
@@ -1526,7 +1526,7 @@ func (c *checker) checkGlobalVarDecls(node *parse.GlobalVariableDeclarations, pa
 
 	lastAllowedPos := c.lastAllowedPosForGlobalElementDecls[closestModule]
 	if lastAllowedPos != (parse.NodeSpan{}) && node.Base().Span.Start >= lastAllowedPos.End {
-		c.addError(node, MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_CALL)
+		c.addError(node, MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_REF_TO_FN)
 		return parse.Prune
 	}
 
@@ -1602,7 +1602,7 @@ func (c *checker) checkAssignment(node parse.Node, parentNode, scopeNode, closes
 
 				lastAllowedPos := c.lastAllowedPosForGlobalElementDecls[closestModule]
 				if lastAllowedPos != (parse.NodeSpan{}) && node.Base().Span.Start >= lastAllowedPos.End {
-					c.addError(node, MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_CALL)
+					c.addError(node, MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_REF_TO_FN)
 					return parse.Prune
 				}
 
@@ -1779,19 +1779,6 @@ func (c *checker) precheckTopLevelFuncDecl(stmt *parse.FunctionDeclaration, modu
 }
 
 func (c *checker) checkCallExpression(node *parse.CallExpression, scopeNode, closestModule parse.Node) parse.TraversalAction {
-
-	ident, ok := node.Callee.(*parse.IdentifierLiteral)
-	fnDecls := c.getModFunctionDecls(closestModule)
-
-	//Top level call of a function declared in the curent chunk.
-	if ok && fnDecls[ident.Name] != nil && fnDecls[ident.Name].chunk == c.chunk.Node && SamePointer(scopeNode, closestModule) {
-		if c.lastAllowedPosForGlobalElementDecls[closestModule] == (parse.NodeSpan{}) {
-			c.lastAllowedPosForGlobalElementDecls[closestModule] = parse.NodeSpan{
-				Start: max(node.Span.Start-1, 0),
-				End:   node.Span.Start,
-			}
-		}
-	}
 
 	return parse.ContinueTraversal
 }
@@ -1975,7 +1962,7 @@ func (c *checker) checkMatchCase(node *parse.MatchCase, scopeNode, closestModule
 	return parse.ContinueTraversal
 }
 
-func (c *checker) checkVariable(node *parse.Variable, scopeNode parse.Node) parse.TraversalAction {
+func (c *checker) checkVariable(node *parse.Variable, scopeNode, closestModule parse.Node) parse.TraversalAction {
 	if len(node.Name) > MAX_NAME_BYTE_LEN {
 		c.addError(node, fmtNameIsTooLong(node.Name))
 		return parse.ContinueTraversal
@@ -2027,6 +2014,7 @@ func (c *checker) checkGlobalVar(node *parse.GlobalVariable, parent, scopeNode, 
 	if _, isLazyExpr := scopeNode.(*parse.LazyExpression); isLazyExpr {
 		return parse.ContinueTraversal
 	}
+
 	globalVars := c.getModGlobalVars(closestModule)
 	globalVarInfo, exist := globalVars[node.Name]
 
@@ -2043,6 +2031,17 @@ func (c *checker) checkGlobalVar(node *parse.GlobalVariable, parent, scopeNode, 
 	if !exist {
 		c.addError(node, fmtGlobalVarIsNotDeclared(node.Name))
 		return parse.ContinueTraversal
+	}
+
+	fnDecls := c.getModFunctionDecls(closestModule)
+
+	if fnDecls[node.Name] != nil && fnDecls[node.Name].chunk == c.chunk.Node &&
+		SamePointer(scopeNode, closestModule) && c.lastAllowedPosForGlobalElementDecls[closestModule] == (parse.NodeSpan{}) {
+
+		c.lastAllowedPosForGlobalElementDecls[closestModule] = parse.NodeSpan{
+			Start: max(node.Span.Start-1, 0),
+			End:   node.Span.Start,
+		}
 	}
 
 	switch scope := scopeNode.(type) {
@@ -2200,6 +2199,17 @@ func (c *checker) checkIdentifier(node *parse.IdentifierLiteral, parent, scopeNo
 
 	// if the variable is a global in a function expression or in a mapping entry we capture it
 	if c.doGlobalVarExist(node.Name, closestModule) {
+		fnDecls := c.getModFunctionDecls(closestModule)
+
+		if fnDecls[node.Name] != nil && fnDecls[node.Name].chunk == c.chunk.Node &&
+			SamePointer(scopeNode, closestModule) && c.lastAllowedPosForGlobalElementDecls[closestModule] == (parse.NodeSpan{}) {
+
+			c.lastAllowedPosForGlobalElementDecls[closestModule] = parse.NodeSpan{
+				Start: max(node.Span.Start-1, 0),
+				End:   node.Span.Start,
+			}
+		}
+
 		globalVarInfo := c.getModGlobalVars(closestModule)[node.Name]
 
 		switch scope := scopeNode.(type) {
@@ -2378,7 +2388,7 @@ func (c *checker) checkHostAlisDef(node *parse.HostAliasDefinition, parent, clos
 
 	lastAllowedPos := c.lastAllowedPosForGlobalElementDecls[closestModule]
 	if lastAllowedPos != (parse.NodeSpan{}) && node.Base().Span.Start >= lastAllowedPos.End {
-		c.addError(node, MISPLACED_HOST_ALIAS_DEF_AFTER_FN_DECL_OR_CALL)
+		c.addError(node, MISPLACED_HOST_ALIAS_DEF_AFTER_FN_DECL_OR_REF_TO_FN)
 		return parse.Prune
 	}
 
@@ -2406,7 +2416,7 @@ func (c *checker) checkPatternDef(node *parse.PatternDefinition, parent, closest
 
 	lastAllowedPos := c.lastAllowedPosForGlobalElementDecls[closestModule]
 	if lastAllowedPos != (parse.NodeSpan{}) && node.Base().Span.Start >= lastAllowedPos.End {
-		c.addError(node, MISPLACED_PATTERN_DEF_AFTER_FN_DECL_OR_CALL)
+		c.addError(node, MISPLACED_PATTERN_DEF_AFTER_FN_DECL_OR_REF_TO_FN)
 		return parse.Prune
 	}
 
@@ -2435,7 +2445,7 @@ func (c *checker) checkPatternNamespaceDefinition(node *parse.PatternNamespaceDe
 
 	lastAllowedPos := c.lastAllowedPosForGlobalElementDecls[closestModule]
 	if lastAllowedPos != (parse.NodeSpan{}) && node.Base().Span.Start >= lastAllowedPos.End {
-		c.addError(node, MISPLACED_PATTERN_NS_DEF_AFTER_FN_DECL_OR_CALL)
+		c.addError(node, MISPLACED_PATTERN_NS_DEF_AFTER_FN_DECL_OR_REF_TO_FN)
 		return parse.Prune
 	}
 

@@ -73,7 +73,7 @@ scopes.
 
 <summary>Forbidden declaration locations</summary>
 
-Global variables can only be declared at the top level before any function declaration, and before any function call to a function declared further below.
+Global variables can only be declared at the top level before any function declaration, and before any reference to a function declared further below.
 
 ```
 # ok

@@ -82,7 +82,7 @@ my_pattern = %user
 
 <summary>Forbidden definition locations</summary>
 
-Patterns can only be defined at the top level before any function declaration, and before any function call to a function declared further below.
+Patterns can only be defined at the top level before any function declaration, and before any reference to a function declared further below.
 ```
 # ok
 pattern a = {a: 1}
@@ -275,7 +275,7 @@ namespace = %ints.
 
 <summary>Forbidden definition locations</summary>
 
-Pattern namespaces can only be defined at the top level before any function declaration, and before any function call to a function declared further below.
+Pattern namespaces can only be defined at the top level before any function declaration, and before any reference to a function declared further below.
 ```
 # ok
 pnamespace a. = {int: %int}
