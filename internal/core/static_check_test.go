@@ -1604,7 +1604,24 @@ func TestCheck(t *testing.T) {
 					return 1
 				}
 			`)
-			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+
+			ctx := NewContext(ContextConfig{})
+			defer ctx.CancelGracefully()
+
+			data, err := StaticCheck(StaticCheckInput{Node: n, Chunk: src, State: NewGlobalState(ctx)})
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			firstCallee := parse.FindNode(n, (*parse.CallExpression)(nil), func(n *parse.CallExpression, isFirstFound bool) bool {
+				return n.Callee.(*parse.IdentifierLiteral).Name == "g"
+			}).Callee
+
+			pos, _ := data.GetEarlyFunctionDeclarationsPosition(n)
+			assert.Equal(t, firstCallee.Base().Span.Start, pos)
+
+			decls := data.GetFunctionsToDeclareEarly(n)
+			assert.Len(t, decls, 2)
 		})
 
 		t.Run("in an embedded module a function that does not capture locals nor access globals is callable anywhere", func(t *testing.T) {
@@ -1622,6 +1639,28 @@ func TestCheck(t *testing.T) {
 				}
 			`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+
+			ctx := NewContext(ContextConfig{})
+			defer ctx.CancelGracefully()
+
+			data, err := StaticCheck(StaticCheckInput{Node: n, Chunk: src, State: NewGlobalState(ctx)})
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			firstCallee := parse.FindNode(n, (*parse.CallExpression)(nil), func(n *parse.CallExpression, isFirstFound bool) bool {
+				return n.Callee.(*parse.IdentifierLiteral).Name == "g"
+			}).Callee
+			embeddedMod := parse.FindNode(n, (*parse.EmbeddedModule)(nil), nil)
+
+			pos, _ := data.GetEarlyFunctionDeclarationsPosition(embeddedMod)
+			assert.Equal(t, firstCallee.Base().Span.Start, pos)
+
+			decls := data.GetFunctionsToDeclareEarly(n)
+			assert.Len(t, decls, 0)
+
+			decls = data.GetFunctionsToDeclareEarly(embeddedMod)
+			assert.Len(t, decls, 2)
 		})
 
 		t.Run("a function that captures a local variable should be declared after the declaration of the variable", func(t *testing.T) {
@@ -1641,7 +1680,7 @@ func TestCheck(t *testing.T) {
 			assert.Equal(t, expectedErr, err)
 		})
 
-		t.Run("function that captures a local variable and is declared after the definition of the variable", func(t *testing.T) {
+		t.Run("a function that captures a local variable is only accessible after the function's declaration", func(t *testing.T) {
 			n, src := mustParseCode(`
 				x = 1
 
@@ -1651,13 +1690,19 @@ func TestCheck(t *testing.T) {
 					return f()
 				}
 
-				return (val + g())
-
 				fn[x] f(){
 					return x
 				}
+
+				f()
 			`)
-			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+			callExprs := parse.FindNodes(n, (*parse.CallExpression)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(callExprs[0].Callee, src, fmtVarIsNotDeclared("f")),
+				makeError(callExprs[1].Callee, src, fmtVarIsNotDeclared("f")),
+			)
+			assert.Equal(t, expectedErr, err)
 		})
 	})
 

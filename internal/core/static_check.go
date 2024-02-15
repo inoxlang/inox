@@ -106,6 +106,7 @@ func StaticCheck(input StaticCheckInput) (*StaticCheckData, error) {
 			fnData:                                 map[*parse.FunctionExpression]*FunctionStaticData{},
 			mappingData:                            map[*parse.MappingExpression]*MappingStaticData{},
 			firstForbiddenPosForGlobalElementDecls: make(map[parse.Node]int32, 0),
+			functionsToDeclareEarly:                make(map[parse.Node]*[]*parse.FunctionDeclaration, 0),
 		},
 	}
 
@@ -1209,6 +1210,7 @@ func (c *checker) checkInclusionImportStmt(node *parse.InclusionImportStatement,
 			fnData:                                 map[*parse.FunctionExpression]*FunctionStaticData{},
 			mappingData:                            map[*parse.MappingExpression]*MappingStaticData{},
 			firstForbiddenPosForGlobalElementDecls: c.data.firstForbiddenPosForGlobalElementDecls,
+			functionsToDeclareEarly:                c.data.functionsToDeclareEarly,
 		},
 	}
 
@@ -1394,6 +1396,7 @@ func (c *checker) checkImportStmt(node *parse.ImportStatement, parent, closestMo
 			fnData:                                 map[*parse.FunctionExpression]*FunctionStaticData{},
 			mappingData:                            map[*parse.MappingExpression]*MappingStaticData{},
 			firstForbiddenPosForGlobalElementDecls: c.data.firstForbiddenPosForGlobalElementDecls,
+			functionsToDeclareEarly:                c.data.functionsToDeclareEarly,
 		},
 	}
 
@@ -1762,17 +1765,26 @@ func (c *checker) precheckTopLevelFuncDecl(stmt *parse.FunctionDeclaration, modu
 	globalVars := c.getModGlobalVars(module)
 	fnDecls := c.getModFunctionDecls(module)
 
-	globalVars[stmt.Name.Name] = globalVarInfo{isConst: true, fnExpr: stmt.Function}
-
 	_, alreadyDeclared := fnDecls[stmt.Name.Name]
 	if alreadyDeclared {
 		c.addError(stmt, fmtInvalidFnDeclAlreadyDeclared(stmt.Name.Name))
 		return
 	}
 
-	info := &fnDeclInfo{node: stmt, chunk: c.chunk.Node}
+	//Pre-declare the functions that don't capture locals.
+	if len(stmt.Function.CaptureList) == 0 {
+		globalVars[stmt.Name.Name] = globalVarInfo{isConst: true, fnExpr: stmt.Function}
 
-	fnDecls[stmt.Name.Name] = info
+		fns := c.data.functionsToDeclareEarly[module]
+		if fns == nil {
+			fns = new([]*parse.FunctionDeclaration)
+			c.data.functionsToDeclareEarly[module] = fns
+		}
+		*fns = append(*fns, stmt)
+
+		info := &fnDeclInfo{node: stmt, chunk: c.chunk.Node}
+		fnDecls[stmt.Name.Name] = info
+	}
 }
 
 func (c *checker) checkCallExpression(node *parse.CallExpression, scopeNode, closestModule parse.Node) parse.TraversalAction {
@@ -1783,32 +1795,39 @@ func (c *checker) checkCallExpression(node *parse.CallExpression, scopeNode, clo
 func (c *checker) checkFuncDecl(node *parse.FunctionDeclaration, parent, closestModule parse.Node) parse.TraversalAction {
 	switch parent.(type) {
 	case *parse.Chunk, *parse.EmbeddedModule: //valid location
-		fns := c.getModFunctionDecls(closestModule)
-		globVars := c.getModGlobalVars(closestModule)
+		fnDecls := c.getModFunctionDecls(closestModule)
+		globalVars := c.getModGlobalVars(closestModule)
 		localVars := c.getLocalVarsInScope(closestModule)
 
-		declInfo, ok := fns[node.Name.Name]
-		if !ok {
-			c.addError(node, "function has no been pre-checked by the static checker")
-			return parse.ContinueTraversal
-		}
+		if len(node.Function.CaptureList) == 0 {
+			_, ok := fnDecls[node.Name.Name]
+			if !ok {
+				c.addError(node, "function has no been pre-checked by the static checker")
+				return parse.ContinueTraversal
+			}
 
-		for _, captured := range node.Function.CaptureList {
-			if ident, ok := captured.(*parse.IdentifierLiteral); ok {
-				_, isLocal := localVars[ident.Name]
-				_, isGlobal := globVars[ident.Name]
+			_, ok = c.data.firstForbiddenPosForGlobalElementDecls[closestModule]
+			if !ok {
+				c.data.firstForbiddenPosForGlobalElementDecls[closestModule] = node.Span.Start
+			}
+		} else {
+			declInfo := &fnDeclInfo{node: node, chunk: c.chunk.Node}
 
-				if isLocal {
-					declInfo.capturedLocals = append(declInfo.capturedLocals, ident.Name)
-				} else if !isGlobal {
-					c.addError(node, fmtInvalidOrMisplacedFnDeclShouldBeAfterCapturedVarDeclaration(ident.Name))
+			for _, captured := range node.Function.CaptureList {
+				if ident, ok := captured.(*parse.IdentifierLiteral); ok {
+					_, isLocal := localVars[ident.Name]
+					_, isGlobal := globalVars[ident.Name]
+
+					if isLocal {
+						declInfo.capturedLocals = append(declInfo.capturedLocals, ident.Name)
+					} else if !isGlobal {
+						c.addError(node, fmtInvalidOrMisplacedFnDeclShouldBeAfterCapturedVarDeclaration(ident.Name))
+					}
 				}
 			}
-		}
 
-		lastPos := c.data.firstForbiddenPosForGlobalElementDecls[closestModule]
-		if lastPos == 0 {
-			c.data.firstForbiddenPosForGlobalElementDecls[closestModule] = node.Span.Start
+			fnDecls[node.Name.Name] = declInfo
+			globalVars[node.Name.Name] = globalVarInfo{isConst: true, fnExpr: node.Function}
 		}
 
 	case *parse.StructBody:
@@ -2030,9 +2049,11 @@ func (c *checker) checkGlobalVar(node *parse.GlobalVariable, parent, scopeNode, 
 	fnDecls := c.getModFunctionDecls(closestModule)
 
 	if fnDecls[node.Name] != nil && fnDecls[node.Name].chunk == c.chunk.Node &&
-		SamePointer(scopeNode, closestModule) && c.data.firstForbiddenPosForGlobalElementDecls[closestModule] == 0 {
+		SamePointer(scopeNode, closestModule) {
 
-		c.data.firstForbiddenPosForGlobalElementDecls[closestModule] = node.Span.Start
+		if _, ok := c.data.firstForbiddenPosForGlobalElementDecls[closestModule]; !ok {
+			c.data.firstForbiddenPosForGlobalElementDecls[closestModule] = node.Span.Start
+		}
 	}
 
 	switch scope := scopeNode.(type) {
@@ -2193,9 +2214,11 @@ func (c *checker) checkIdentifier(node *parse.IdentifierLiteral, parent, scopeNo
 		fnDecls := c.getModFunctionDecls(closestModule)
 
 		if fnDecls[node.Name] != nil && fnDecls[node.Name].chunk == c.chunk.Node &&
-			SamePointer(scopeNode, closestModule) && c.data.firstForbiddenPosForGlobalElementDecls[closestModule] == 0 {
+			SamePointer(scopeNode, closestModule) {
 
-			c.data.firstForbiddenPosForGlobalElementDecls[closestModule] = node.Span.Start
+			if _, ok := c.data.firstForbiddenPosForGlobalElementDecls[closestModule]; !ok {
+				c.data.firstForbiddenPosForGlobalElementDecls[closestModule] = node.Span.Start
+			}
 		}
 
 		globalVarInfo := c.getModGlobalVars(closestModule)[node.Name]

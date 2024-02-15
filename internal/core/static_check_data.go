@@ -17,6 +17,7 @@ type StaticCheckData struct {
 
 	//key: *parse.Chunk|*parse.EmbeddedModule
 	firstForbiddenPosForGlobalElementDecls map[parse.Node]int32
+	functionsToDeclareEarly                map[parse.Node]*[]*parse.FunctionDeclaration
 
 	//.errors property accessible from scripts
 	errorsPropSet atomic.Bool
@@ -150,11 +151,27 @@ func (data *StaticCheckData) GetMappingData(expr *parse.MappingExpression) *Mapp
 	return data.mappingData[expr]
 }
 
-func (data *StaticCheckData) GetEarlyFunctionDeclarationsPosition(module parse.Node) int32 {
+func (data *StaticCheckData) GetEarlyFunctionDeclarationsPosition(module parse.Node) (int32, bool) {
 	switch module.(type) {
 	case *parse.Chunk, *parse.EmbeddedModule:
-		panic(fmt.Errorf("%T is not a module", module))
+	default:
+		panic(fmt.Errorf("node is a not a module, type is: %T", module))
 	}
 
-	return data.firstForbiddenPosForGlobalElementDecls[module] //no issue if the default value is returned (zero).
+	pos, ok := data.firstForbiddenPosForGlobalElementDecls[module]
+	return pos, ok
+}
+
+func (data *StaticCheckData) GetFunctionsToDeclareEarly(module parse.Node) []*parse.FunctionDeclaration {
+	switch module.(type) {
+	case *parse.Chunk, *parse.EmbeddedModule:
+	default:
+		panic(fmt.Errorf("node is a not a module, type is: %T", module))
+	}
+
+	decls, ok := data.functionsToDeclareEarly[module]
+	if ok {
+		return *decls
+	}
+	return nil
 }

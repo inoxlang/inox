@@ -3049,7 +3049,7 @@ func FindNodesAndChains[T Node](root Node, typ T, handle func(n T) bool) ([]T, [
 	return found, ancestors
 }
 
-func FindNode[T Node](root Node, typ T, handle func(n T, isUnique bool) bool) T {
+func FindNode[T Node](root Node, typ T, handle func(n T, isFirstFound bool) bool) T {
 	n, _ := FindNodeAndChain(root, typ, handle)
 	return n
 }
