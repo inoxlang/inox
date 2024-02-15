@@ -46,6 +46,8 @@ struct Token {
 }
 ```
 
+Struct methods will be executed by the [low level VM](https://github.com/inoxlang/inox/issues/32).
+
 ## Arrays
 
 ⚠️ This feature is not implemented yet and is subject to change.

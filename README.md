@@ -2,14 +2,21 @@
 
 <img src="https://avatars.githubusercontent.com/u/122291844?s=200&v=4" alt="a shield"></img>
 
-Inox is a **single-binary platform** that will contain all you need to develop, test, and deploy web apps that are primarily rendered server-side. Applications are developped using **Inoxlang**, a sandboxed programming language that 
-deeply integrates with several components: 
+Inox is a **single-binary platform** that will contain all you need to develop,
+test, and deploy web apps that are primarily rendered server-side. Applications
+are developped using **Inoxlang**, a sandboxed programming language that deeply
+integrates with several components:
+
 - A built-in database engine
 - HTTP server with filesystem routing
-- Testing engine supporting virtual filesystems and temporary databases (completely transparent for application code).
-- An in-process container engine: each application runs in a dedicated virtual filesystem, and is subject to permissions (unrelated to Linux containers).
+- Testing engine supporting virtual filesystems and temporary databases
+  (completely transparent for application code).
+- An in-process container engine: each application runs in a dedicated virtual
+  filesystem, and is subject to permissions (unrelated to Linux containers).
 
-**Even though you can already develop web apps using Inox, keep in mind that the current version of Inox is 0.2, not 1.0. Also the first stable versions of Inox won't support high-scalability applications.**
+**Even though you can already develop web apps using Inox, keep in mind that the
+current version of Inox is 0.2, not 1.0. Also the first stable versions of Inox
+won't support high-scalability applications.**
 
 Here are a few example files that are part of a basic todo app.
 
@@ -19,17 +26,21 @@ Here are a few example files that are part of a basic todo app.
 
 ![image](https://github.com/inoxlang/inox/assets/113632189/5f07deb5-56ec-42e7-a550-bdc4e613336d)
 
-**A request handler (filesystem routing).** Each handler module runs in a dedicated execution context with its own permissions.
+**A request handler (filesystem routing).** Each handler module runs in a
+dedicated execution context with its own permissions.
 
 ![image](https://github.com/inoxlang/inox/assets/113632189/6e632f71-8a01-4cde-b5d7-239a52942e58)
 
-_Note: the permissions granted to imported modules (local or third-party) are **explicit**: `import lib ./malicious-lib.ix { allow: {} }`_
+_Note: the permissions granted to imported modules (local or third-party) are
+**explicit**: `import lib ./malicious-lib.ix { allow: {} }`_
 
 <details>
 
-**<summary>⚙️ Another request handler (GET request with HTML rendering)</summary>**
+**<summary>⚙️ Another request handler (GET request with HTML
+rendering)</summary>**
 
 ![image](https://github.com/inoxlang/inox/assets/113632189/85772ae4-4025-4aef-94c8-15b624580285)
+
 </details>
 
 <details>
@@ -37,44 +48,54 @@ _Note: the permissions granted to imported modules (local or third-party) are **
 **<summary>✅ Testing engine example</summary>**
 
 ![image](https://github.com/inoxlang/inox/assets/113632189/602ce2d1-68a1-4403-a578-27db9251998c)
-</details>
 
+</details>
 
 ---
 
-**I have been working 2 years full time on Inox.**  There is still a lot to do in order to make Inox
-usable in real world applications. If you believe this project has potential, **consider donating** through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t). It will help me continue working on Inox (check see **What is planned** and [Other features](#-other-features)). 
+**I have been working 2 years full time on Inox.** There is still a lot to do in
+order to make Inox usable in real world applications. If you believe this
+project has potential, **consider donating** through
+[GitHub](https://github.com/sponsors/GraphR00t) (preferred) or
+[Patreon](https://patreon.com/GraphR00t). It will help me continue working on
+Inox (check see 'What is planned' and [Other features](#other-features)).
 
-⬇️ [Installation](#-installation)\
-🔍 [Application Examples](#-application-examples)\
-📚 [Learning Inox](#-learning-inox)\
-⭐ [Other features](#-other-features)\
-👥 [Discord Server](https://discord.gg/53YGx8GzgE) & [Subreddit](https://www.reddit.com/r/inoxlang/)\
-❔ [Questions you may have](#-questions-you-may-have)
+⬇️ [Installation](#installation)\
+🔍 [Application Examples](#application-examples)\
+📚 [Learning Inox](#learning-inox)\
+⭐ [Other features](#other-features)\
+👥 [Discord Server](https://discord.gg/53YGx8GzgE) &
+[Subreddit](https://www.reddit.com/r/inoxlang/)\
+❔ [Questions you may have](#questions-you-may-have)
 
 <details>
 
 **<summary>🗓️ What is planned ?</summary>**
 
 - Automated database backups in S3-compatible storage
-- Log persistence in S3 (note that Inox has builtins for [structured logging](./docs/builtins.md#structured-logging)).
+- Log persistence in S3 (note that Inox has builtins for
+  [structured logging](#structured-logging).
 - Support automated deployments on popular cloud providers
-- Storage of secrets in key management services (e.g. GCP KMS, AWS KMS). [Secrets](./docs/language-reference/secrets.md) are special Inox values that 
-cannot be printed, logged or serialized.
+- Storage of secrets in key management services (e.g. GCP KMS, AWS KMS).
+  [Secrets](./docs/language-reference/secrets.md) are special Inox values that
+  cannot be printed, logged or serialized.
 - Develop a standard library
-- Integrate a subset of Git (using https://github.com/go-git/go-git and https://code.visualstudio.com/api/extension-guides/scm-provider)
+- Integrate a subset of Git (using https://github.com/go-git/go-git and
+  https://code.visualstudio.com/api/extension-guides/scm-provider)
 - Support no-downtime upgrades
 - **WebAssembly support** using https://github.com/tetratelabs/wazero
-- Finish the transaction system and support persisting most data-structure types with accepable performance
+- Finish the transaction system and support persisting most data-structure types
+  with accepable performance
 - Team access control for Inox projects
-- Improve execution performance and memory usage 
-- Finalize the implementation of [structs](./docs/language-reference/transient-types.md#structs) and implement a [Low Level VM](https://github.com/inoxlang/inox/issues/32).
-- Allow developers to define custom builtins written in Go (note: building inox is just `go build ./cmd/inox`)
+- Improve execution performance and memory usage
+- Finalize the implementation of
+  [structs](./docs/language-reference/transient-types.md#structs) and implement
+  a [Low Level VM](https://github.com/inoxlang/inox/issues/32).
+- Allow developers to define custom builtins written in Go (note: building inox
+  is just `go build ./cmd/inox`)
 - And more !
 
 </details>
-
-
 
 <details>
 
@@ -86,7 +107,8 @@ cannot be printed, logged or serialized.
 - Secure by default
 - Low maintenance
 - A programming language as simple as possible
-- (Not in the near future) Support 100k+ requests per second (combined request throughput of several nodes).
+- (Not in the near future) Support 100k+ requests per second (combined request
+  throughput of several nodes).
 
 </details>
 
@@ -95,8 +117,9 @@ cannot be printed, logged or serialized.
 **<summary>❌ Non Goals </summary>**
 
 - Be a suitable solution for 100% of real-world web projects
-- Support any database for storing domain data (`users`, ...)
-  (however WebAssembly support is planned and will at least enable the use of SQLite and DuckDB).
+- Support any database for storing domain data (`users`, ...) (however
+  WebAssembly support is planned and will at least enable the use of SQLite and
+  DuckDB).
 - Be extremely fast
 - Be very highly scalable (Multi-node support is planned though)
 
@@ -106,9 +129,14 @@ cannot be printed, logged or serialized.
 
 ## Development Environment - Inox Project Server
 
-The Inox binary comes with a **project server** that your IDE connects to. This server is a LSP server that implements custom methods. It enables the developer to develop, debug, test, deploy and manage secrets, all from VsCode. The project server will also provide automatic infrastructure management in the **near future**.
+The Inox binary comes with a **project server** that your IDE connects to. This
+server is a LSP server that implements custom methods. It enables the developer
+to develop, debug, test, deploy and manage secrets, all from VsCode. The project
+server will also provide automatic infrastructure management in the **near
+future**.
 
-__Note that there is no local development environment.__ Code files are cached on the IDE for offline access (read only).
+**Note that there is no local development environment.** Code files are cached
+on the IDE for offline access (read only).
 
 <details>
 
@@ -141,8 +169,7 @@ ProjectServer -->|gets/sets| Secrets(Secrets)
 
 </details>
 
-
-## ⬇️ Installation
+## Installation ⬇️
 
 ```mermaid
 graph LR
@@ -159,8 +186,9 @@ subgraph InoxBinary["Inox binary (Linux)"]
 end
 ```
 
-Inox applications can currently only be developed using the Inox extension for VSCode and VSCodium.
-You can install the inox binary on your local (Linux) machine, a local VM, or a remote machine.
+Inox applications can currently only be developed using the Inox extension for
+VSCode and VSCodium. You can install the inox binary on your local (Linux)
+machine, a local VM, or a remote machine.
 
 <details>
 
@@ -188,32 +216,42 @@ You can install the inox binary on your local (Linux) machine, a local VM, or a 
   ```
   _If you execute this command inside a VM, don't forget to forward the port 8305 to allow VSCode to connect to the project server._ -->
 
-- Install the VSCode/VSCodium [extension](https://marketplace.visualstudio.com/items?itemName=graphr00t.inox). Make sure to read the **Requirements** and **Usage** sections in the extension's details.
-</details>
+- Install the VSCode/VSCodium
+  [extension](https://marketplace.visualstudio.com/items?itemName=graphr00t.inox).
+  Make sure to read the **Requirements** and **Usage** sections in the
+  extension's details.
 
+</details>
 
 <details>
 
 **<summary>Installation on a remote machine (VPS)</summary>**
 
-**This install is not recommended for now since there are potentially memory leaks.**
+**This install is not recommended for now since there are potentially memory
+leaks.**
 
-- Install the [Inox Daemon](https://github.com/inoxlang/inox/blob/main/docs/inox-daemon.md#on-a-vps---publicly-exposed-servers)
+- Install the
+  [Inox Daemon](https://github.com/inoxlang/inox/blob/main/docs/inox-daemon.md#on-a-vps---publicly-exposed-servers)
 
-- Install the VSCode/VSCodium [extension](https://marketplace.visualstudio.com/items?itemName=graphr00t.inox). Make sure to read the **Requirements** and **Usage** sections in the extension's details.
+- Install the VSCode/VSCodium
+  [extension](https://marketplace.visualstudio.com/items?itemName=graphr00t.inox).
+  Make sure to read the **Requirements** and **Usage** sections in the
+  extension's details.
 
 </details>
 
-If you have any questions you are welcome to join the [Discord Server](https://discord.gg/53YGx8GzgE) and the [Subreddit](https://www.reddit.com/r/inoxlang/).
-If you want to build Inox from source go [here](#build-from-source).
+If you have any questions you are welcome to join the
+[Discord Server](https://discord.gg/53YGx8GzgE) and the
+[Subreddit](https://www.reddit.com/r/inoxlang/). If you want to build Inox from
+source go [here](#build-from-source).
 
-## 🔍 Application Examples
+## Application Examples
 
 - [Basic Todo app with accounts and data persistence](./examples/apps/basic-todo)
 
 _More examples will be added soon._
 
-## 📚 Learning Inox
+## Learning Inox
 
 📚 [Tutorials](docs/language-reference/language.md)\
 🌐 [Frontend dev](./docs/frontend-development.md)\
@@ -222,13 +260,13 @@ _More examples will be added soon._
 📖 [Language reference](docs/language-reference/language.md)\
 📖 [HTTP Server reference](docs/http-server-reference.md)
 
-You can also learn the language directly in VSCode by creating a file with a `.tut.ix` extension.
-**Make sure to create this file inside an Inox project.**
+You can also learn the language directly in VSCode by creating a file with a
+`.tut.ix` extension. **Make sure to create this file inside an Inox project.**
 
 ![tutorial-demo](https://github.com/inoxlang/inox-vscode/raw/master/assets/docs/tutorial-demo.gif)
 
-
-If you have any questions you are welcome to join the [Discord Server](https://discord.gg/53YGx8GzgE).
+If you have any questions you are welcome to join the
+[Discord Server](https://discord.gg/53YGx8GzgE).
 
 <details>
 <summary>Scripting</summary>
@@ -248,7 +286,7 @@ To learn scripting go [here](./docs/scripting-basics.md). View
 - `cd` into the directory
 - Run `go build ./cmd/inox`
 
-## ⭐ Other Features
+## Other Features
 
 - [Structured logging](#structured-logging)
 - [Secrets](#secrets)
@@ -270,12 +308,16 @@ To learn scripting go [here](./docs/scripting-basics.md). View
 
 ### Secrets
 
-Secrets are special Inox values, they can only be created by defining an
-**environment variable** with a pattern like `%secret-string` or by storing a
-[project secret](./docs/project.md#project-secrets).
+Secrets are special Inox values, they can only be created by:
+
+- Defining an **environment variable** with a pattern like `%secret-string`
+- Storing a [project secret](./docs/project.md#project-secrets)
+- Built-in functions (e.g. a function returning a private key)
+
+Secrets have special properties:
 
 - The content of the secret is **hidden** when printed or logged.
-- Secrets are not serializable so they cannot be included in HTTP responses.
+- Secrets are not serializable, so they cannot be included in HTTP responses.
 - A comparison involving a secret always returns **false**.
 
 ```
@@ -312,20 +354,19 @@ h.close()
 
 [Examples](https://github.com/inoxlang/inox/tree/main/examples/chrome)
 
-> Browser automation is quite buggy right now, I need to improve the configuration of https://github.com/chromedp/chromedp.
+> Browser automation is quite buggy right now, I need to improve the
+> configuration of https://github.com/chromedp/chromedp.
 
 ### Composable String Patterns
 
 Here is the regex for a made up identifier type:
 `(?<name>[a-z]+)#(?<numA>\d+)-(?<letters>[a-z]+)-(?<numB>\d+)`
 
-Same RegExp without group names:
-`([a-z]+)#(\d+)-([a-z]+)-(\d+)`
+Same RegExp without group names: `([a-z]+)#(\d+)-([a-z]+)-(\d+)`
 
 Inox's version:
 
 ![image](https://github.com/inoxlang/inox/assets/113632189/0027a873-a957-401e-9efb-f6d9fdf57a64)
-
 
 String patterns can also be composed:
 
@@ -349,14 +390,16 @@ pattern json-val = @ %str(| json-list | atomic-json-val)
 pattern atomic-json-val = "1"
 ```
 
-⚠️ Recursive string patterns are not intended to be used for validating or parsing large inputs.
+⚠️ Recursive string patterns are not intended to be used for validating or
+parsing large inputs.
 
 </details>
 
 ### Context Data
 
-The [context](docs/language-reference/context.md) of module instances can contain data entries that can be set **only once**.
-Child modules have access to the context data of their parent and can individually override entries.
+The [context](docs/language-reference/context.md) of module instances can
+contain data entries that can be set **only once**. Child modules have access to
+the context data of their parent and can individually override entries.
 
 ```
 add_ctx_data(/lang, "en-US")
@@ -369,8 +412,8 @@ fn print_error(){
 }
 ```
 
-The HTTP server adds a `/session` entry to the handling context of a request if the `session-id` cookie is present.
-
+The HTTP server adds a `/session` entry to the handling context of a request if
+the `session-id` cookie is present.
 
 ### Lightweight threads
 
@@ -409,8 +452,8 @@ filepath = ../../etc/shadow # malicious user input
 # error: result of a path interpolation should not contain any of the following substrings: '..', '\', '*', '?'
 ```
 
-> This is still work in progress,
-> Allowing specific dangerous substrings may be supported in the future.
+> This is still work in progress, Allowing specific dangerous substrings may be
+> supported in the future.
 
 ### More Secure URL Interpolations
 
@@ -471,12 +514,10 @@ URL expression: result of a path interpolation should not contain any of the fol
 
 ---
 
-
-
-
 ### Isolation of Dependencies
 
-Permissions granted to the imported modules are specified in the import statements.
+Permissions granted to the imported modules are specified in the import
+statements.
 
 `./app.ix`
 
@@ -509,8 +550,8 @@ manifest {
 
 data = fs.read!(/etc/passwd)
 ```
-</details>
 
+</details>
 
 If the imported module asks more permissions than granted an error is thrown:\
 `import: some permissions in the imported module's manifest are not granted: [read path(s) /...]`
@@ -537,8 +578,10 @@ drop-perms {
 
 (WIP)
 
-Limits limit intensive operations, there are three kinds of limits: **byte rate**, **frequency** & **total**. They are defined in the manifest and are
-[shared](./docs/language-reference/language.md#limits) with the children of the module.
+Limits limit intensive operations, there are three kinds of limits: **byte
+rate**, **frequency** & **total**. They are defined in the manifest and are
+[shared](./docs/language-reference/language.md#limits) with the children of the
+module.
 
 ```
 manifest {
@@ -559,39 +602,83 @@ mitigate some types of DoS.
 
 ## ❔ Questions You May Have
 
-
 ### Why isn't Inox using a container runtime such as Docker ?
 
 <details>
 
-Because the long term goal of Inox is to be a **simple**, single-binary and **super stable** platform for applications written in Inoxlang
-and using libraries compiled to WASM.\
+Because the long term goal of Inox is to be a **simple**, single-binary and
+**super stable** platform for applications written in Inoxlang and using
+libraries compiled to WASM.\
 Each application or service will ultimately run in a separate process:
-- filesystem isolation is achieved by using virtual filesystems (meta filesystem)
-- process-level access control is achieved using [Landlock](https://landlock.io/). (This is still work in progress).
-- fine-grained module-level access control is already achieved by Inox's permission system
-- process-level resource allocation and limitation will be implemented using cgroups
-- module-level resource allocation and limitation is performed by Inox's limit system
+
+- filesystem isolation is achieved by using virtual filesystems (meta
+  filesystem)
+- process-level access control is achieved using
+  [Landlock](https://landlock.io/). (This is still work in progress).
+- fine-grained module-level access control is already achieved by Inox's
+  permission system
+- process-level resource allocation and limitation will be implemented using
+  cgroups
+- module-level resource allocation and limitation is performed by Inox's limit
+  system
 
 </details>
-
 
 ### Why have you created Inox ?
 
 <details>
 
-Before reading the answser please make sure to read the **Goals & Non Goals sections**.
+Before reading the answser please make sure to read the **Goals & Non Goals
+sections**.
 
-I like creating programming languages. At the beginning Inox was not even about full stack development.
-It quickly evolved towards this use case because I am tired of accidental complexity in full stack development. I particularly hate having to 
-glue and import components that are just needed 99% of the time. I don't like spending hours configuring stuff, a bit of 
-configuration is fine though. Local development environments are also a pain to setup sometimes. (There is no true [local dev environment](#development-environment---inox-project-server) when developping Inox projects).
+I like creating programming languages. At the beginning Inox was not even about
+full stack development. It quickly evolved towards this use case because I am
+tired of accidental complexity in full stack development. I particularly hate
+having to glue and import components that are just needed 99% of the time. I
+don't like spending hours configuring stuff, a bit of configuration is fine
+though. Local development environments are also a pain to setup sometimes.
+(There is no true
+[local dev environment](#development-environment---inox-project-server) when
+developping Inox projects).
 
-Inox being an opinionated **high-level** programming language / high level platform it obviously has pros and cons.
-Also when using a new programming language you don't have access to a rich ecosystem. In other words Inox currently does not
-bring all the potential value it could bring.
+Inox being an opinionated **high-level** programming language / high level
+platform it obviously has pros and cons. Also when using a new programming
+language you don't have access to a rich ecosystem. In other words Inox
+currently does not bring all the potential value it could bring.
 
 </details>
+
+### Does Inoxlang support multi-threading ?
+
+<details>
+
+Inoxlang uses **goroutines** under the hood and allows the developer to create
+[lighweight threads](#lightweight-threads). The HTTP server is built upon
+Golang's HTTP server: each request is handled in a dedicated goroutine that runs
+a bytecode interpreter.
+
+</details>
+
+### Is Inoxlang fast ?
+
+<details>
+
+Each Inoxlang module is executed by a bytecode interpreter. This interpreter is
+not super fast because it is intended to execute businness logic: among other
+things it always checks for integer overflow/underflow, which has a cost.
+
+I plan to improve the interpreter and add an additional, lower-level,
+[interpreter](https://github.com/inoxlang/inox/issues/32) that will execute
+**low-level** mode code only. This includes struct methods and low-level
+functions. In this mode only a few types are available (structs, int, float,
+bool, string, ...). High-level data structures such as objects and lists are
+primarly designed to represent **domain data** and to interact with the database. They are not designed to be ultra fast.
+
+I also need to improve the creation of interpreters for request handlers so that
+it's fast and cheap in memory.
+
+</details>
+
 
 ### Is Inoxlang sound ?
 
@@ -599,14 +686,19 @@ bring all the potential value it could bring.
 
 No, Inoxlang is **unsound**. However:
 
-- The type system is not complex, and I do not plan to add many features impacting it. I will not add object methods nor classes.
+- The type system is not complex, and I do not plan to add many features
+  impacting it. I will not add object methods nor classes.
 - Type assertions using the `assert` keyword are checked at run time.
-- The `any` type is not directly available to the developer, and it does not disable checks like in Typescript. It is more similar to **unknow**.
+- The `any` type is not directly available to the developer, and it does not
+  disable checks like in Typescript. It is more similar to **unknow**.
 
-_\*Types like Set are kind of generic but it cannot be said that generics are implemented._
+_\*Types like Set are kind of generic but it cannot be said that generics are
+implemented._
 
-_The type checking system not being implemented in a classic way, that will lead to some limitations and a bit less safe checks. However
-the type checking logic is not expected to grow much. Therefore the vast majority issues should be resolved by testing extensively._
+_The type checking system not being implemented in a classic way, that will lead
+to some limitations and a bit less safe checks. However the type checking logic
+is not expected to grow much. Therefore the vast majority issues should be
+resolved by testing extensively._
 
 </details>
 
@@ -614,10 +706,18 @@ the type checking logic is not expected to grow much. Therefore the vast majorit
 
 <details>
 
-As of now, certain parts of the codebase are not optimally written, lack sufficient comments and documentation, and do not have robust test coverage. 
+As of now, certain parts of the codebase are not optimally written, lack
+sufficient comments and documentation, and do not have robust test coverage.
 
 </details>
 
+### Where do you come from ?
+
+<details>
+
+I am French 🇫🇷, and I live in France.
+
+</details>
 
 ## Early Sponsors
 
@@ -629,11 +729,13 @@ As of now, certain parts of the codebase are not optimally written, lack suffici
   </tr>
 </table>
 
-Consider donating through [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or [Patreon](https://patreon.com/GraphR00t). Thank you !
+Consider donating through [GitHub](https://github.com/sponsors/GraphR00t)
+(preferred) or [Patreon](https://patreon.com/GraphR00t). Thank you !
 
-⬇️ [Installation](#-installation)\
-🔍 [Application Examples](#-application-examples)\
-📚 [Learning Inox](#-learning-inox)\
-👥 [Discord Server](https://discord.gg/53YGx8GzgE) & [Subreddit](https://www.reddit.com/r/inoxlang/)
+⬇️ [Installation](#installation)\
+🔍 [Application Examples](#application-examples)\
+📚 [Learning Inox](#learning-inox)\
+👥 [Discord Server](https://discord.gg/53YGx8GzgE) &
+[Subreddit](https://www.reddit.com/r/inoxlang/)
 
 [Back To Top](#inox)

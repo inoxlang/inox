@@ -12,7 +12,7 @@
 It is recommended to follow through these tutorial series directly in VSCode by creating a file with a `.tut.ix` extension.
 You will get syntax colorization. Make sure to create the file **inside a project**.
 
-[Install Inox & VSCode Extension](https://github.com/inoxlang/inox#-installation)
+[Install Inox & VSCode Extension](https://github.com/inoxlang/inox#⬇️-installation)
 
 ![tutorial-demo](https://github.com/inoxlang/inox-vscode/raw/master/assets/docs/tutorial-demo.gif)
 
