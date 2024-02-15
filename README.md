@@ -600,7 +600,7 @@ mitigate some types of DoS.
 
 [Learn More](./docs/language-reference/language.md#limits)
 
-## ❔ Questions You May Have
+## Questions You May Have
 
 ### Why isn't Inox using a container runtime such as Docker ?
 
