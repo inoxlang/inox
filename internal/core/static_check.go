@@ -2050,9 +2050,15 @@ func (c *checker) checkGlobalVar(node *parse.GlobalVariable, parent, scopeNode, 
 
 	if fnDecls[node.Name] != nil && fnDecls[node.Name].chunk == c.chunk.Node &&
 		SamePointer(scopeNode, closestModule) {
+		//If the global variable is a function then no global declarations (patterns, host aliases, global variables)
+		//should be located after this reference.
 
 		if _, ok := c.data.firstForbiddenPosForGlobalElementDecls[closestModule]; !ok {
-			c.data.firstForbiddenPosForGlobalElementDecls[closestModule] = node.Span.Start
+			topLevelStmt, ok := parse.FindClosestTopLevelStatement(node, ancestorChain)
+			if !ok {
+				panic(ErrUnreachable)
+			}
+			c.data.firstForbiddenPosForGlobalElementDecls[closestModule] = topLevelStmt.Base().Span.Start
 		}
 	}
 
@@ -2216,8 +2222,15 @@ func (c *checker) checkIdentifier(node *parse.IdentifierLiteral, parent, scopeNo
 		if fnDecls[node.Name] != nil && fnDecls[node.Name].chunk == c.chunk.Node &&
 			SamePointer(scopeNode, closestModule) {
 
+			//If the identifier references a  function then no global declarations (patterns, host aliases, global variables)
+			//should be located after this reference.
+
 			if _, ok := c.data.firstForbiddenPosForGlobalElementDecls[closestModule]; !ok {
-				c.data.firstForbiddenPosForGlobalElementDecls[closestModule] = node.Span.Start
+				topLevelStmt, ok := parse.FindClosestTopLevelStatement(node, ancestorChain)
+				if !ok {
+					panic(ErrUnreachable)
+				}
+				c.data.firstForbiddenPosForGlobalElementDecls[closestModule] = topLevelStmt.Base().Span.Start
 			}
 		}
 

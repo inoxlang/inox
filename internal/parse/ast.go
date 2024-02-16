@@ -152,6 +152,14 @@ func IsScopeContainerNode(node Node) bool {
 	}
 }
 
+func IsTheTopLevel(node Node) bool {
+	switch node.(type) {
+	case *Chunk, *EmbeddedModule:
+		return true
+	}
+	return false
+}
+
 // Chunk represents the root node obtained when parsing an Inox chunk.
 type Chunk struct {
 	NodeBase                   `json:"base:chunk"`
@@ -3098,6 +3106,25 @@ func FindClosestMaxDistance[T Node](ancestorChain []Node, typ T, maxDistance int
 	}
 
 	return reflect.Zero(searchedType).Interface().(T), -1, false
+}
+
+// FindClosestTopLevelStatement returns the deepest top level statement among node and its ancestors.
+func FindClosestTopLevelStatement(node Node, ancestorChain []Node) (Node, bool) {
+	if len(ancestorChain) == 0 {
+		return nil, false
+	}
+	parent := ancestorChain[len(ancestorChain)-1]
+
+	if IsTheTopLevel(parent) {
+		return node, true
+	}
+
+	for i := len(ancestorChain) - 1; i >= 1; i-- {
+		if IsTheTopLevel(ancestorChain[i-1]) {
+			return ancestorChain[i], true
+		}
+	}
+	return nil, false
 }
 
 func FindPreviousStatement(n Node, ancestorChain []Node) (stmt Node, ok bool) {

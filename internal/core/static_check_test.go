@@ -1592,7 +1592,7 @@ func TestCheck(t *testing.T) {
 			assert.Equal(t, expectedErr, err)
 		})
 
-		t.Run("a function that does not capture locals nor access globals is callable anywhere", func(t *testing.T) {
+		t.Run("a function that does not capture locals nor access globals is callable anywhere: identifier callee", func(t *testing.T) {
 			n, src := mustParseCode(`
 				return (g() + f())
 
@@ -1613,12 +1613,44 @@ func TestCheck(t *testing.T) {
 				return
 			}
 
-			firstCallee := parse.FindNode(n, (*parse.CallExpression)(nil), func(n *parse.CallExpression, isFirstFound bool) bool {
-				return n.Callee.(*parse.IdentifierLiteral).Name == "g"
-			}).Callee
+			returnStmt := parse.FindNode(n, (*parse.ReturnStatement)(nil), func(n *parse.ReturnStatement, isFirstFound bool) bool {
+				return isFirstFound
+			})
 
 			pos, _ := data.GetEarlyFunctionDeclarationsPosition(n)
-			assert.Equal(t, firstCallee.Base().Span.Start, pos)
+			assert.Equal(t, returnStmt.Base().Span.Start, pos)
+
+			decls := data.GetFunctionsToDeclareEarly(n)
+			assert.Len(t, decls, 2)
+		})
+
+		t.Run("a function that does not capture locals nor access globals is callable anywhere: global variable callee", func(t *testing.T) {
+			n, src := mustParseCode(`
+				return ($$g() + $$f())
+
+				fn g(){
+					return f()
+				}
+
+				fn f(){
+					return 1
+				}
+			`)
+
+			ctx := NewContext(ContextConfig{})
+			defer ctx.CancelGracefully()
+
+			data, err := StaticCheck(StaticCheckInput{Node: n, Chunk: src, State: NewGlobalState(ctx)})
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			returnStmt := parse.FindNode(n, (*parse.ReturnStatement)(nil), func(n *parse.ReturnStatement, isFirstFound bool) bool {
+				return isFirstFound
+			})
+
+			pos, _ := data.GetEarlyFunctionDeclarationsPosition(n)
+			assert.Equal(t, returnStmt.Span.Start, pos)
 
 			decls := data.GetFunctionsToDeclareEarly(n)
 			assert.Len(t, decls, 2)
@@ -1648,19 +1680,49 @@ func TestCheck(t *testing.T) {
 				return
 			}
 
-			firstCallee := parse.FindNode(n, (*parse.CallExpression)(nil), func(n *parse.CallExpression, isFirstFound bool) bool {
-				return n.Callee.(*parse.IdentifierLiteral).Name == "g"
-			}).Callee
+			returnStmt := parse.FindNode(n, (*parse.ReturnStatement)(nil), func(n *parse.ReturnStatement, isFirstFound bool) bool {
+				return isFirstFound
+			})
+
 			embeddedMod := parse.FindNode(n, (*parse.EmbeddedModule)(nil), nil)
 
 			pos, _ := data.GetEarlyFunctionDeclarationsPosition(embeddedMod)
-			assert.Equal(t, firstCallee.Base().Span.Start, pos)
+			assert.Equal(t, returnStmt.Span.Start, pos)
 
 			decls := data.GetFunctionsToDeclareEarly(n)
 			assert.Len(t, decls, 0)
 
 			decls = data.GetFunctionsToDeclareEarly(embeddedMod)
 			assert.Len(t, decls, 2)
+		})
+
+		t.Run("the early declarations of functions that don't capture local should happen at the top-level statement that is the closest"+
+			" to the first reference to one of the functions", func(t *testing.T) {
+			chunk, src := mustParseCode(`
+				for true {
+					f()
+				}
+
+				fn f(){
+					return 1
+				}
+			`)
+
+			ctx := NewContext(ContextConfig{})
+			defer ctx.CancelGracefully()
+
+			data, err := StaticCheck(StaticCheckInput{Node: chunk, Chunk: src, State: NewGlobalState(ctx)})
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			forStmt := parse.FindNode(chunk, (*parse.ForStatement)(nil), nil)
+
+			pos, _ := data.GetEarlyFunctionDeclarationsPosition(chunk)
+			assert.Equal(t, forStmt.Base().Span.Start, pos)
+
+			decls := data.GetFunctionsToDeclareEarly(chunk)
+			assert.Len(t, decls, 1)
 		})
 
 		t.Run("a function that captures a local variable should be declared after the declaration of the variable", func(t *testing.T) {
