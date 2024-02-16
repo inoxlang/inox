@@ -19,6 +19,7 @@ manifest {
 }
 
 # Make a POST request to create a new user.
+# Objects and lists are stringified to JSON.
 resp1 = http.post!(USERS_ENDPOINT, {
     name: "John Doe",
     username: "JohnD",
@@ -27,7 +28,6 @@ resp1 = http.post!(USERS_ENDPOINT, {
 
 body = tostr(resp1.body.read_all!())
 print("first response's body:", body)
-
 
 # Make a PATCH request to update a user.
 resp2 = http.patch!(USER1_ENDPOINT, {

@@ -5,8 +5,8 @@ manifest {}
 # 'must' calls are special calls that cause a panic if there is an error. 
 # If there is no error the returned value is transformed.
 
-# The `unhex` function decodes an hexadecimal strig.
-# normal call: a value of type Array(byte-slice, (error | nil)) is returned.
+# Let's see an example with `unhex`, a function that decodes an hexadecimal string.
+# Regular call: a value of type Array(byte-slice, (error | nil)) is returned.
 assign bytes error = unhex("...")
 
 print("decoding error:", error)
@@ -14,6 +14,7 @@ print("decoding error:", error)
 # Must call: a value of type byte-slice is returned if there is no error.
 # bytes = unhex!("...")
 
+# Another example but with a user-defined function.
 fn f(issue bool) (| error | nil) {
     if issue {
         return Error("there is an issue !")
@@ -21,7 +22,7 @@ fn f(issue bool) (| error | nil) {
     return nil
 }
 
-# Normal call: a value of type (error | nil) is returned.
+# Regular call: a value of type (error | nil) is returned.
 err = f(true)
 
 print("error returned by `f`:", err)

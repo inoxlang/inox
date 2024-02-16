@@ -2,7 +2,7 @@
 
 manifest {}
 
-# In Inox a pattern is a run time value that matches values of a given kind and shape.
+# In Inox a pattern is a run-time value that matches values of a given kind and shape.
 # Besides the pattern literals, there are other kinds of patterns in Inox such as object patterns: `%{a: int}`.
 
 # Creating a named pattern `user` does not prevent you to name a variable `user`:
@@ -10,13 +10,12 @@ pattern user = {
     name: str
 }
 
+pattern small-int = int(0..10)
+
 # Even though patterns are created at run time, they can act as types:
-pattern small_int = int(0..10)
+var n small-int = 0
 
-# small_int is created at run time but it can be used in type annotations:
-var n small_int = 0
-
-fn add(a small_int, b small_int){
+fn add(a small-int, b small-int){
     return (a + b)
 }
 

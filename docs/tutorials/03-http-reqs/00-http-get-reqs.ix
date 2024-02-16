@@ -1,7 +1,7 @@
 # [GET Requests 1] 
 
 const (
-    # host literal - note: adding a slash at the end would turn it into a URL literal.
+    # Host literal - note: adding a slash at the end would turn it into a URL literal.
     # This domain provides a mocked HTTP API.
     HOST = https://jsonplaceholder.typicode.com
 )

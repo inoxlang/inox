@@ -16,9 +16,6 @@ var i int = 0
 # Global variable declaration
 globalvar global1 = 1
 
-# Assigning a global that is not declared is equivalent to declaring it.
-$$global2 = 2
-
 # Global variables cannot be shadowed by local variables.
 # var global1 = 3
 

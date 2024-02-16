@@ -13,5 +13,5 @@ list1[0] = 2
 
 list2 = [1, 2, 3]
 
-# the following slice expression creates a new list containing 1 and 2 
+# The following slice expression creates a new list containing 1 and 2.
 print("list2[0:2]:", list2[0:2])

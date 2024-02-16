@@ -3,16 +3,21 @@
 manifest {}
 
 # An object is a data structure containing properties, each property has a name and a value.
-object1 = {  
+object1 = {
+    # Property names containing only the characters a..z, `-` and `_` don't need to be quoted.
     a: 1
+
     "b": 2
+
+    # Properties can be separated by commas and linefees.
     c: 0, d: 100ms
 }
 
 a = object1.a
 print("a:", a)
 
-# values not preceded by a name are known as elements and are stored in the empty name property "" (list).
+# Values not preceded by a name are known as `elements` and are stored in a list.
+# You will not use elements often outside of in permissions (e.g: ... permissions: { read: {/a, /b} } ... )
 object2 = {
     1
     []

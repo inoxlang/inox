@@ -2,7 +2,7 @@
 
 manifest {}
 
-# Binary match expressions checks whether the value on the left matches the pattern on the right.
+# Binary match expressions check whether the value on the left matches the pattern on the right.
 print (1 match int)
 print ({a: "1"} match {a: int})
 print ({a: 1} match {a: int})

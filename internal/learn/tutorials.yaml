@@ -34,9 +34,6 @@
       # Global variable declaration
       globalvar global1 = 1
 
-      # Assigning a global that is not declared is equivalent to declaring it.
-      $$global2 = 2
-      
       # Global variables cannot be shadowed by local variables.
       # var global1 = 3
 
@@ -90,8 +87,8 @@
       # 'must' calls are special calls that cause a panic if there is an error. 
       # If there is no error the returned value is transformed.
 
-      # The `unhex` function decodes an hexadecimal strig.
-      # normal call: a value of type Array(byte-slice, (error | nil)) is returned.
+      # Let's see an example with `unhex`, a function that decodes an hexadecimal string.
+      # Regular call: a value of type Array(byte-slice, (error | nil)) is returned.
       assign bytes error = unhex("...")
 
       print("decoding error:", error)
@@ -99,6 +96,7 @@
       # Must call: a value of type byte-slice is returned if there is no error.
       # bytes = unhex!("...")
 
+      # Another example but with a user-defined function.
       fn f(issue bool) (| error | nil) {
           if issue {
               return Error("there is an issue !")
@@ -106,7 +104,7 @@
           return nil
       }
 
-      # Normal call: a value of type (error | nil) is returned.
+      # Regular call: a value of type (error | nil) is returned.
       err = f(true)
 
       print("error returned by `f`:", err)
@@ -225,19 +223,19 @@
           print(elem)
       }
 
-      print()
+      print("---")
 
       for index, elem in list {
           print(index, elem)
       }
 
-      print()
+      print("---")
 
       for i in (0 ..< len(list)) {
           print(i, list[i])
       }
 
-      print()
+      print("---")
 
       for key, value in {name: "Tom", age: 30} {
           print(key, value)
@@ -248,13 +246,19 @@
     - "b"
     - "c"
 
-    - "0 a"
-    - "1 b"
-    - "2 c"
+    - "---"
 
     - "0 a"
     - "1 b"
     - "2 c"
+
+    - "---"
+
+    - "0 a"
+    - "1 b"
+    - "2 c"
+
+    - "---"
 
     - "age 30"
     - "name Tom"
@@ -264,16 +268,21 @@
         manifest {}
 
         # An object is a data structure containing properties, each property has a name and a value.
-        object1 = {  
+        object1 = {
+            # Property names containing only the characters a..z, `-` and `_` don't need to be quoted.
             a: 1
+
             "b": 2
+
+            # Properties can be separated by commas and linefees.
             c: 0, d: 100ms
         }
 
         a = object1.a
         print("a:", a)
 
-        # values not preceded by a name are known as elements and are stored in the empty name property "" (list).
+        # Values not preceded by a name are known as `elements` and are stored in a list.
+        # You will not use elements often outside of in permissions (e.g: ... permissions: { read: {/a, /b} } ... )
         object2 = {
             1
             []
@@ -304,7 +313,7 @@
 
         list2 = [1, 2, 3]
 
-        # the following slice expression creates a new list containing 1 and 2 
+        # The following slice expression creates a new list containing 1 and 2.
         print("list2[0:2]:", list2[0:2])
   - name: Paths and Path patterns
     id: paths-path-patterns
@@ -486,7 +495,7 @@
     program: |
       manifest {}
 
-      # Binary match expressions checks whether the value on the left matches the pattern on the right.
+      # Binary match expressions check whether the value on the left matches the pattern on the right.
       print (1 match int)
       print ({a: "1"} match {a: int})
       print ({a: 1} match {a: int})
@@ -642,11 +651,11 @@
     id: dir-basics
     program: |
       const (
-          # directory paths always end with a slash.
+          # Directory paths always end with a slash.
           DIR_PATH = /temp_dir/
 
 
-          # path patterns always start with the '%' symbol.
+          # Path patterns always start with the '%' symbol.
           DIR_PATH_PATTERN = %/temp_dir/...
       )
 
@@ -679,7 +688,7 @@
     id: http-get-reqs
     program: |
       const (
-          # host literal - note: adding a slash at the end would turn it into a URL literal.
+          # Host literal - note: adding a slash at the end would turn it into a URL literal.
           # This domain provides a mocked HTTP API.
           HOST = https://jsonplaceholder.typicode.com
       )
@@ -758,6 +767,7 @@
         }
 
         # Make a POST request to create a new user.
+        # Objects and lists are stringified to JSON.
         resp1 = http.post!(USERS_ENDPOINT, {
             name: "John Doe",
             username: "JohnD",
@@ -766,7 +776,6 @@
 
         body = tostr(resp1.body.read_all!())
         print("first response's body:", body)
-
 
         # Make a PATCH request to update a user.
         resp2 = http.patch!(USER1_ENDPOINT, {

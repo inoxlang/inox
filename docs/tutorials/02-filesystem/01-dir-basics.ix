@@ -1,11 +1,11 @@
 # [Directories] 
 
 const (
-    # directory paths always end with a slash.
+    # Directory paths always end with a slash.
     DIR_PATH = /temp_dir/
 
 
-    # path patterns always start with the '%' symbol.
+    # Path patterns always start with the '%' symbol.
     DIR_PATH_PATTERN = %/temp_dir/...
 )
 
