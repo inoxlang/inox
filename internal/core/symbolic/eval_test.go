@@ -12288,7 +12288,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("no interpolation", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(replace(`
-				pattern digit = %str('0'..'9')
+				pattern digit = str('0'..'9')
 				return %digit|3|
 			`))
 
@@ -12311,7 +12311,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("interpolation & non-namespaced pattern", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(replace(`
-				pattern sql = %str( %|.*| )
+				pattern sql = str( %|.*| )
 				unsanitized_id = "5"
 				return %sql|SELECT * FROM users WHERE id = ${int:$unsanitized_id}|
 			`))

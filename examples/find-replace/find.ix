@@ -1,7 +1,7 @@
 manifest {}
 
 s = "abc"
-pattern two-letters = %str(
+pattern two-letters = str(
     first_letter:'a'..'z' 
     'a'..'z'
 )

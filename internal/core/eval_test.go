@@ -3649,7 +3649,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("single element", func(t *testing.T) {
 			code := `
-				pattern s = %str( 'a'..'z' )
+				pattern s = str( 'a'..'z' )
 				return %s
 			`
 
@@ -3665,7 +3665,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("single element: integer range with no upper bound", func(t *testing.T) {
 			code := `
-				pattern s = %str( 1.. )
+				pattern s = str( 1.. )
 				return %s
 			`
 
@@ -7528,7 +7528,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("pattern definition: sequence string pattern: single element", func(t *testing.T) {
 			code := `
-				pattern s = %str( 'a'..'z' )
+				pattern s = str( 'a'..'z' )
 				return %s
 			`
 
@@ -11138,7 +11138,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("no interpolation", func(t *testing.T) {
 			code := replace(`
-				pattern digit = %str('0'..'9')
+				pattern digit = str('0'..'9')
 				return %digit|3|
 			`)
 

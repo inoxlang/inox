@@ -765,7 +765,7 @@ func TestPreInit(t *testing.T) {
 			name: "correct_preinit_file_but_content_not_matching_pattern",
 			module: `
 				preinit {
-					pattern p = %str("a"+)
+					pattern p = str("a"+)
 				}
 				manifest {
 					preinit-files: {

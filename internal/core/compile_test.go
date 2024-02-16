@@ -1818,7 +1818,7 @@ func TestCompileModule(t *testing.T) {
 		// 	[]Value{Int(1), Str("p")},
 		// )
 
-		expectBytecode(t, `pattern p = %str( "a" )`,
+		expectBytecode(t, `pattern p = str( "a" )`,
 			0,
 			instrs(
 				inst(OpPushConstant, 0),
