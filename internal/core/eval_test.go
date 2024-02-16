@@ -85,7 +85,7 @@ func bytecodeTest(t *testing.T, optimize bool) {
 		case parse.SourceFile:
 			chunk := utils.Must(parse.ParseChunkSource(val))
 
-			mod = &Module{MainChunk: chunk}
+			mod = &Module{MainChunk: chunk, TopLevelNode: chunk.Node}
 
 			//if the test case provide a module we reuse the source
 			if s.Module != nil {
@@ -101,7 +101,7 @@ func bytecodeTest(t *testing.T, optimize bool) {
 				CodeString: val,
 			}))
 
-			mod = &Module{MainChunk: chunk}
+			mod = &Module{MainChunk: chunk, TopLevelNode: chunk.Node}
 
 			//if the test case provide a module we reuse the source
 			if s.Module != nil {
@@ -3744,14 +3744,29 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("function declaration", func(t *testing.T) {
-		code := `fn f(){}`
-		state := NewGlobalState(NewDefaultTestContext())
-		defer state.Ctx.CancelGracefully()
-		_, err := Eval(code, state, false)
-		assert.NoError(t, err)
+		t.Run("base case", func(t *testing.T) {
+			code := `fn f(){}`
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+			_, err := Eval(code, state, false)
+			assert.NoError(t, err)
 
-		assert.Contains(t, state.Globals.Entries(), "f")
-		assert.IsType(t, &InoxFunction{}, state.Globals.Get("f"))
+			assert.Contains(t, state.Globals.Entries(), "f")
+			assert.IsType(t, &InoxFunction{}, state.Globals.Get("f"))
+		})
+
+		t.Run("function that do not capture locals should be available before the declaration statement", func(t *testing.T) {
+			code := `
+				return f
+				fn f(){}
+			`
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+			res, err := Eval(code, state, true)
+			assert.NoError(t, err)
+
+			assert.IsType(t, &InoxFunction{}, res)
+		})
 	})
 
 	t.Run("Inox function call", func(t *testing.T) {
@@ -3769,8 +3784,20 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			checkResult           func(t *testing.T, result Value, state *GlobalState)
 			isShared              bool
 			isolatedCaseArguments func() []Value
-			doSymbolicCheck       bool
+			doAnalysis       bool
 		}{
+			{
+
+				name: "call before function declaration: no captured locals",
+				input: `
+					return f()
+					fn f(){
+						return 1
+					}
+				`,
+				result:          Int(1),
+				doAnalysis: true,
+			},
 			{
 				name:  "must call of a function returning an array of length 2 whose last element is an error",
 				error: true,
@@ -3920,7 +3947,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return f()
 				`,
 				isolatedCaseArguments: noargs,
-				doSymbolicCheck:       true,
+				doAnalysis:       true,
 				checkResult: func(t *testing.T, result Value, state *GlobalState) {
 					assert.IsType(t, (*InoxFunction)(nil), result)
 				},
@@ -3981,7 +4008,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return f()
 				`,
 				isolatedCaseArguments: noargs,
-				doSymbolicCheck:       true,
+				doAnalysis:       true,
 				checkResult: func(t *testing.T, result Value, state *GlobalState) {
 					assert.IsType(t, (*InoxFunction)(nil), result)
 				},
@@ -4090,7 +4117,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				`,
 				isolatedCaseArguments: func() []Value { return []Value{Int(3)} },
 				result:                Int(6),
-				doSymbolicCheck:       true,
+				doAnalysis:       true,
 			},
 			{
 				name: "recursive function accessing a global",
@@ -4106,7 +4133,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return [result, a] # we also check that a is still accessible
 				`,
 				result:          NewWrappedValueList(Int(6), Int(3)),
-				doSymbolicCheck: true,
+				doAnalysis: true,
 			},
 			{
 				name: "function calling a recursive function accessing a global",
@@ -4126,7 +4153,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				`,
 				isolatedCaseArguments: noargs,
 				result:                NewWrappedValueList(Int(6), Int(3)),
-				doSymbolicCheck:       true,
+				doAnalysis:       true,
 			},
 			{
 				name: "extension method calling a recursive function accessing a global",
@@ -4153,7 +4180,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return obj::f()
 				`,
 				result:          NewWrappedValueList(Int(6), Int(3)),
-				doSymbolicCheck: true,
+				doAnalysis: true,
 			},
 			{
 				name: "return is in if statement",
@@ -4298,7 +4325,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				state.Ctx.AddNamedPattern("int", INT_PATTERN)
 				state.Ctx.AddNamedPattern("any", ANYVAL_PATTERN)
 
-				res, err := Eval(testCase.input, state, testCase.doSymbolicCheck)
+				res, err := Eval(testCase.input, state, testCase.doAnalysis)
 				if testCase.error {
 					if !assert.Error(t, err) {
 						return
@@ -4335,7 +4362,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					lastOpeningParenIndex := strings.LastIndexByte(testCase.input, '(')
 					input := testCase.input[:lastOpeningParenIndex]
 
-					val, err := Eval(input, state, testCase.doSymbolicCheck)
+					val, err := Eval(input, state, testCase.doAnalysis)
 					if !assert.NoError(t, err) {
 						return
 					}
@@ -5858,11 +5885,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			defer ctx.CancelGracefully()
 
 			state := NewGlobalState(ctx)
-			state.Module = &Module{
-				MainChunk: &parse.ParsedChunkSource{
-					Source: parse.SourceFile{Resource: "/mytest", ResourceDir: "/", NameString: "/mytest"},
-				},
-			}
+			state.Module = mod
 			state.GetBasePatternsForImportedModule = func() (map[string]Pattern, map[string]*PatternNamespace) {
 				return DEFAULT_NAMED_PATTERNS, DEFAULT_PATTERN_NAMESPACES
 			}
@@ -5936,11 +5959,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				ctx.Logger().Debug().Msg(string(msg))
 			}))
 
-			state.Module = &Module{
-				MainChunk: &parse.ParsedChunkSource{
-					Source: parse.SourceFile{Resource: "/mod.ix", ResourceDir: "/", NameString: "/mod.ix"},
-				},
-			}
+			state.Module = mod
 			state.GetBaseGlobalsForImportedModule = func(ctx *Context, manifest *Manifest) (GlobalVariables, error) {
 				return state.Globals, nil
 			}
@@ -6024,11 +6043,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				ctx.Logger().Info().Msg(string(msg))
 			}))
 
-			state.Module = &Module{
-				MainChunk: &parse.ParsedChunkSource{
-					Source: parse.SourceFile{Resource: "/mod.ix", ResourceDir: "/", NameString: "/mod.ix"},
-				},
-			}
+			state.Module = mod
 			state.GetBaseGlobalsForImportedModule = func(ctx *Context, manifest *Manifest) (GlobalVariables, error) {
 				return state.Globals, nil
 			}

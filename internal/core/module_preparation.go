@@ -683,8 +683,11 @@ func PrepareExtractionModeIncludableChunkfile(args IncludableChunkfilePreparatio
 		ResourceDir: includedChunkDir,
 	}
 
+	parsedChunk := utils.Must(parse.ParseChunkSource(modSource))
+
 	mod := &Module{
-		MainChunk:             utils.Must(parse.ParseChunkSource(modSource)),
+		MainChunk:             parsedChunk,
+		TopLevelNode:          parsedChunk.Node,
 		InclusionStatementMap: make(map[*parse.InclusionImportStatement]*IncludedChunk),
 		IncludedChunkMap:      map[string]*IncludedChunk{},
 	}

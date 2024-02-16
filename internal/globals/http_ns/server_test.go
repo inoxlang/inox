@@ -871,6 +871,7 @@ func setupTestCase(t *testing.T, testCase serverTestCase) (*core.GlobalState, *c
 			ResourceDir: "/",
 			CodeString:  testCase.input,
 		}),
+		TopLevelNode:     chunk,
 		ManifestTemplate: chunk.Manifest,
 	}
 
@@ -1270,7 +1271,8 @@ func createHandlers(t *testing.T, code string) (*core.InoxFunction, *core.InoxFu
 		CodeString: code,
 	}))
 	module := &core.Module{
-		MainChunk: chunk,
+		MainChunk:    chunk,
+		TopLevelNode: chunk.Node,
 	}
 
 	staticCheckData, err := core.StaticCheck(core.StaticCheckInput{

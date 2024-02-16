@@ -9,11 +9,12 @@ import (
 
 // A TreeWalkState stores all the state necessary to perform a tree walking evaluation.
 type TreeWalkState struct {
-	Global          *GlobalState
-	LocalScopeStack []map[string]Value //TODO: reduce memory usage by using a struct { small *memds.Map8[string,Value]; grown map[string]Value } ?
-	frameInfo       []StackFrameInfo   //used for debugging only, the list is reversed
-	chunkStack      []*parse.ChunkStackItem
-	fullChunkStack  []*parse.ChunkStackItem //chunk stack but including calls' chunks
+	Global                            *GlobalState
+	LocalScopeStack                   []map[string]Value //TODO: reduce memory usage by using a struct { small *memds.Map8[string,Value]; grown map[string]Value } ?
+	frameInfo                         []StackFrameInfo   //used for debugging only, the list is reversed
+	chunkStack                        []*parse.ChunkStackItem
+	earlyFunctionDeclarationsPosition int32                   //-1 if no position, specific to the current chunk.
+	fullChunkStack                    []*parse.ChunkStackItem //chunk stack but including calls' chunks
 
 	constantVars map[string]bool
 	postHandle   func(node parse.Node, val Value, err error) (Value, error)
@@ -40,24 +41,29 @@ func NewTreeWalkState(ctx *Context, constants ...map[string]Value) *TreeWalkStat
 
 // NewTreeWalkState creates a TreeWalkState that will use $global as its global state.
 func NewTreeWalkStateWithGlobal(global *GlobalState) *TreeWalkState {
-	var chunkStack []*parse.ChunkStackItem
-	var fullChunkStack []*parse.ChunkStackItem
+
+	state := &TreeWalkState{
+		LocalScopeStack:                   []map[string]Value{},
+		constantVars:                      make(map[string]bool, 0),
+		Global:                            global,
+		earlyFunctionDeclarationsPosition: -1,
+	}
 
 	if global.Module != nil {
 		chunk := &parse.ChunkStackItem{
 			Chunk: global.Module.MainChunk,
 		}
-		chunkStack = append(chunkStack, chunk)
-		fullChunkStack = append(fullChunkStack, chunk)
+		state.chunkStack = append(state.chunkStack, chunk)
+		state.fullChunkStack = append(state.fullChunkStack, chunk)
+	}
+	if global.StaticCheckData != nil {
+		earlyDeclarationsPosition, ok := global.StaticCheckData.GetEarlyFunctionDeclarationsPosition(global.Module.MainChunk.Node)
+		if ok {
+			state.earlyFunctionDeclarationsPosition = earlyDeclarationsPosition
+		}
 	}
 
-	return &TreeWalkState{
-		LocalScopeStack: []map[string]Value{},
-		chunkStack:      chunkStack,
-		fullChunkStack:  fullChunkStack,
-		constantVars:    map[string]bool{},
-		Global:          global,
-	}
+	return state
 }
 
 // Reset recycles the state by resetting its fields. Since references to the state may exist somewhere
@@ -74,11 +80,18 @@ func (state *TreeWalkState) Reset(global *GlobalState) {
 	state.LocalScopeStack = state.LocalScopeStack[:0]
 	state.chunkStack = state.chunkStack[:0]
 	state.fullChunkStack = state.fullChunkStack[:0]
+	state.earlyFunctionDeclarationsPosition = -1
 
 	if global != nil {
 		chunk := &parse.ChunkStackItem{Chunk: global.Module.MainChunk}
 		state.chunkStack = append(state.chunkStack, chunk)
 		state.fullChunkStack = append(state.fullChunkStack, chunk)
+	}
+	if global.StaticCheckData != nil {
+		earlyDeclarationsPosition, ok := global.StaticCheckData.GetEarlyFunctionDeclarationsPosition(global.Module.MainChunk.Node)
+		if ok {
+			state.earlyFunctionDeclarationsPosition = earlyDeclarationsPosition
+		}
 	}
 
 	clear(state.constantVars)

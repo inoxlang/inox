@@ -183,10 +183,12 @@ func TestObject(t *testing.T) {
 			})
 
 			state := NewGlobalState(ctx)
+			chunk := parse.MustParseChunk("")
 			state.Module = &Module{
 				MainChunk: &parse.ParsedChunkSource{
-					Node: parse.MustParseChunk(""),
+					Node: chunk,
 				},
+				TopLevelNode: chunk,
 			}
 
 			valMap := ValMap{

@@ -215,6 +215,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 			Globals:      GlobalVariablesFromMap(map[string]Value{}, nil),
 			Module: &Module{
 				MainChunk:  chunk,
+				TopLevelNode: chunk.Node,
 				ModuleKind: UserLThreadModule,
 			},
 			//prevent the lthread to continue after yielding

@@ -42,7 +42,7 @@ func TestTreeWalkDebug(t *testing.T) {
 			ExceptionBreakpointId: options.exceptionBreakpointId,
 		})
 
-		state.Module = &Module{MainChunk: chunk}
+		state.Module = &Module{MainChunk: chunk, TopLevelNode: chunk.Node}
 		debugger.AttachAndStart(treeWalkState)
 
 		return treeWalkState, state.Ctx, chunk, debugger

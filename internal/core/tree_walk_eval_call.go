@@ -175,7 +175,7 @@ func TreeWalkCallFunc(call TreeWalkCall) (Value, error) {
 	prevSelf := state.self
 	state.self = self
 
-	if capturedGlobals != nil || isSharedFunction {
+	if capturedGlobals != nil && isSharedFunction {
 		state.Global.Globals.PushCapturedGlobals(capturedGlobals)
 		defer state.Global.Globals.PopCapturedGlobals()
 	}

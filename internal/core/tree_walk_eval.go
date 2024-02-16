@@ -71,6 +71,20 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		}
 	}
 
+	if state.earlyFunctionDeclarationsPosition >= 0 && node.Base().Span.Start >= state.earlyFunctionDeclarationsPosition {
+		state.earlyFunctionDeclarationsPosition = -1 //Prevent infinite recursion.
+
+		//Declare functions that can be called before their definition statement.
+
+		decls := state.Global.StaticCheckData.GetFunctionsToDeclareEarly(state.currentChunk().Node)
+		for _, decl := range decls {
+			_, err := TreeWalkEval(decl, state)
+			if err != nil {
+				return nil, fmt.Errorf("failed to declare function %s: %w", decl.Name.Name, err)
+			}
+		}
+	}
+
 	switch n := node.(type) {
 	case *parse.IdentifierLiteral:
 		v, ok := state.Global.Globals.CheckedGet(n.Name)
@@ -1182,8 +1196,9 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		}
 
 		routineMod := &Module{
-			MainChunk:  parsedChunk,
-			ModuleKind: UserLThreadModule,
+			MainChunk:    parsedChunk,
+			TopLevelNode: n.Module,
+			ModuleKind:   UserLThreadModule,
 		}
 
 		lthread, err := SpawnLThread(LthreadSpawnArgs{
@@ -1930,6 +1945,10 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		}, nil
 	case *parse.FunctionDeclaration:
 		funcName := n.Name.Name
+		if state.HasGlobal(funcName) { //Declared before the statement.
+			return nil, nil
+		}
+
 		localScope := state.CurrentLocalScope()
 		capturedLocals := map[string]Value{}
 
@@ -2674,6 +2693,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		jobMod := &Module{
 			ModuleKind:       LifetimeJobModule,
+			TopLevelNode:     n.Module,
 			MainChunk:        parsedChunk,
 			ManifestTemplate: parsedChunk.Node.Manifest,
 		}

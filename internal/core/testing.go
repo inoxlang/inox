@@ -100,6 +100,7 @@ func NewTestSuite(input TestSuiteCreationInput) (*TestSuite, error) {
 
 	routineMod := &Module{
 		MainChunk:        parsedChunk,
+		TopLevelNode:     embeddedModChunk,
 		ManifestTemplate: parsedChunk.Node.Manifest,
 		ModuleKind:       TestSuiteModule,
 		//TODO: bytecode ?
@@ -324,6 +325,7 @@ func NewTestCase(input TestCaseCreationInput) (*TestCase, error) {
 
 	routineMod := &Module{
 		MainChunk:        parsedChunk,
+		TopLevelNode:     modChunk,
 		ManifestTemplate: parsedChunk.Node.Manifest,
 		ModuleKind:       TestCaseModule,
 		//TODO: bytecode ?

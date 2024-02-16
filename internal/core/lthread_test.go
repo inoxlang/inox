@@ -36,8 +36,9 @@ func TestSpawnLThread(t *testing.T) {
 			SpawnerState: state,
 			Globals:      GlobalVariablesFromMap(map[string]Value{}, nil),
 			Module: &Module{
-				MainChunk:  chunk,
-				ModuleKind: UserLThreadModule,
+				MainChunk:    chunk,
+				TopLevelNode: chunk.Node,
+				ModuleKind:   UserLThreadModule,
 			},
 		})
 		assert.Nil(t, lthread)
@@ -67,8 +68,9 @@ func TestSpawnLThread(t *testing.T) {
 				"x": Int(1),
 			}, nil),
 			Module: &Module{
-				MainChunk:  chunk,
-				ModuleKind: UserLThreadModule,
+				MainChunk:    chunk,
+				TopLevelNode: chunk.Node,
+				ModuleKind:   UserLThreadModule,
 			},
 		})
 		assert.NoError(t, err)
@@ -99,8 +101,9 @@ func TestSpawnLThread(t *testing.T) {
 			SpawnerState: state,
 			Globals:      GlobalVariablesFromMap(map[string]Value{}, nil),
 			Module: &Module{
-				MainChunk:  chunk,
-				ModuleKind: UserLThreadModule,
+				MainChunk:    chunk,
+				TopLevelNode: chunk.Node,
+				ModuleKind:   UserLThreadModule,
 			},
 		})
 		assert.NoError(t, err)
@@ -137,8 +140,9 @@ func TestSpawnLThread(t *testing.T) {
 			SpawnerState: state,
 			Globals:      GlobalVariablesFromMap(map[string]Value{}, nil),
 			Module: &Module{
-				MainChunk:  chunk,
-				ModuleKind: UserLThreadModule,
+				MainChunk:    chunk,
+				TopLevelNode: chunk.Node,
+				ModuleKind:   UserLThreadModule,
 			},
 		})
 
@@ -175,8 +179,9 @@ func TestSpawnLThread(t *testing.T) {
 			SpawnerState: state,
 			Globals:      GlobalVariablesFromMap(map[string]Value{}, nil),
 			Module: &Module{
-				MainChunk:  chunk,
-				ModuleKind: UserLThreadModule,
+				MainChunk:    chunk,
+				TopLevelNode: chunk.Node,
+				ModuleKind:   UserLThreadModule,
 			},
 			//prevent the lthread to continue after yielding
 			PauseAfterYield: true,

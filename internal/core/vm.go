@@ -3001,7 +3001,7 @@ func (v *VM) fnCall(numArgs int, spread, must bool, callIp int) bool {
 		v.curFrame.mustCall = must
 		v.curInsts = compiled.Instructions
 
-		if capturedGlobals != nil {
+		if capturedGlobals != nil && isSharedFunction {
 			v.global.Globals.PushCapturedGlobals(capturedGlobals)
 			v.curFrame.popCapturedGlobals = true
 		}

@@ -36,22 +36,23 @@ func Compile(input CompilationInput) (*Bytecode, error) {
 
 // compiler compiles the AST into bytecode.
 type compiler struct {
-	module                *Module
-	symbolicData          *symbolic.Data
-	staticCheckData       *StaticCheckData
-	moduleComptimeTypes   *ModuleComptimeTypes
-	constants             []Value
-	globalSymbols         *symbolTable
-	localSymbolTableStack []*symbolTable
-	scopes                []compilationScope
-	scopeIndex            int
-	chunkStack            []*parse.ParsedChunkSource //main chunk + included chunks
-	loops                 []*loopCompilation
-	loopIndex             int
-	walkIndex             int
-	trace                 io.Writer
-	indent                int
-	lastOp                Opcode
+	module                            *Module
+	symbolicData                      *symbolic.Data
+	staticCheckData                   *StaticCheckData
+	moduleComptimeTypes               *ModuleComptimeTypes
+	constants                         []Value
+	globalSymbols                     *symbolTable
+	earlyFunctionDeclarationsPosition int32 //-1 if no position, specific to the current chunk.
+	localSymbolTableStack             []*symbolTable
+	scopes                            []compilationScope
+	scopeIndex                        int
+	chunkStack                        []*parse.ParsedChunkSource //main chunk + included chunks
+	loops                             []*loopCompilation
+	loopIndex                         int
+	walkIndex                         int
+	trace                             io.Writer
+	indent                            int
+	lastOp                            Opcode
 
 	context *Context
 
@@ -104,20 +105,30 @@ func NewCompiler(
 		symbolicData = symbolic.NewSymbolicData()
 	}
 
-	return &compiler{
-		module:                mod,
-		symbolicData:          symbolicData,
-		staticCheckData:       staticCheckData,
-		moduleComptimeTypes:   NewModuleComptimeTypes(symbolicData.GetCreateComptimeTypes(mod.MainChunk.Node)),
-		globalSymbols:         symbTable,
-		localSymbolTableStack: []*symbolTable{},
-		scopes:                []compilationScope{mainScope},
-		scopeIndex:            0,
-		loopIndex:             -1,
-		walkIndex:             -1,
-		trace:                 trace,
-		context:               ctx,
+	compiler := &compiler{
+		module:                            mod,
+		symbolicData:                      symbolicData,
+		staticCheckData:                   staticCheckData,
+		moduleComptimeTypes:               NewModuleComptimeTypes(symbolicData.GetCreateComptimeTypes(mod.MainChunk.Node)),
+		globalSymbols:                     symbTable,
+		localSymbolTableStack:             []*symbolTable{},
+		earlyFunctionDeclarationsPosition: -1,
+		scopes:                            []compilationScope{mainScope},
+		scopeIndex:                        0,
+		loopIndex:                         -1,
+		walkIndex:                         -1,
+		trace:                             trace,
+		context:                           ctx,
 	}
+
+	if staticCheckData != nil {
+		earlyDeclarationsPosition, ok := staticCheckData.GetEarlyFunctionDeclarationsPosition(mod.MainChunk.Node)
+		if ok {
+			compiler.earlyFunctionDeclarationsPosition = earlyDeclarationsPosition
+		}
+	}
+
+	return compiler
 }
 
 // Compile compiles an AST node.
@@ -134,6 +145,19 @@ func (c *compiler) Compile(node parse.Node) error {
 				c.enterTracingBlock("<nil>")
 				c.leaveTracingBlock()
 			}()
+		}
+	}
+
+	if c.earlyFunctionDeclarationsPosition >= 0 && node.Base().Span.Start >= c.earlyFunctionDeclarationsPosition {
+		c.earlyFunctionDeclarationsPosition = -1 //Prevent infinite recursion.
+
+		//Declare functions that can be called before their definition statement.
+
+		decls := c.staticCheckData.GetFunctionsToDeclareEarly(c.currentChunk().Node)
+		for _, decl := range decls {
+			if err := c.Compile(decl); err != nil {
+				return fmt.Errorf("failed to compile early declaration of the function `%s`: %w", decl.Name.Name, err)
+			}
 		}
 	}
 
@@ -1460,11 +1484,11 @@ func (c *compiler) Compile(node parse.Node) error {
 	case *parse.FunctionDeclaration:
 		_, exists := c.globalSymbols.Resolve(node.Name.Name)
 
-		if exists {
-			return c.NewError(node, fmt.Sprintf("function %s already declared", node.Name.Name))
+		if exists { //Declared before the statement.
+			return nil
 		}
 
-		s := c.globalSymbols.Define(node.Name.Name)
+		s := c.globalSymbols.Define(node.Name.Name) //Define the symbol early in case the function is recursive.
 		s.IsConstant = true
 
 		if err := c.Compile(node.Function); err != nil {
@@ -1881,8 +1905,9 @@ func (c *compiler) Compile(node parse.Node) error {
 		routineChunk := node.Module.ToChunk()
 
 		routineMod := &Module{
-			MainChunk:  parse.NewParsedChunkSource(routineChunk, c.currentChunk().Source),
-			ModuleKind: UserLThreadModule,
+			MainChunk:    parse.NewParsedChunkSource(routineChunk, c.currentChunk().Source),
+			TopLevelNode: node.Module,
+			ModuleKind:   UserLThreadModule,
 		}
 
 		embeddedModCompiler := NewCompiler(routineMod, map[string]Value{}, c.symbolicData, c.staticCheckData, c.context, c.trace)
@@ -1959,6 +1984,7 @@ func (c *compiler) Compile(node parse.Node) error {
 
 		jobMod := &Module{
 			ModuleKind:       LifetimeJobModule,
+			TopLevelNode:     node.Module,
 			MainChunk:        parse.NewParsedChunkSource(jobChunk, c.currentChunk().Source),
 			ManifestTemplate: node.Module.Manifest,
 		}

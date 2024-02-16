@@ -22,7 +22,7 @@ func TestSymbolicEvalCheck(t *testing.T) {
 			CodeString: code,
 		}))
 
-		mod := &Module{MainChunk: chunk}
+		mod := &Module{MainChunk: chunk, TopLevelNode: chunk.Node}
 
 		_, err := symbolic.EvalCheck(symbolic.EvalCheckInput{
 			Node:   chunk.Node,
@@ -43,7 +43,7 @@ func TestSymbolicEvalCheck(t *testing.T) {
 			CodeString: code,
 		}))
 
-		mod := &Module{MainChunk: chunk}
+		mod := &Module{MainChunk: chunk, TopLevelNode: chunk.Node}
 
 		_, err := symbolic.EvalCheck(symbolic.EvalCheckInput{
 			Node:   chunk.Node,
@@ -64,7 +64,7 @@ func TestSymbolicEvalCheck(t *testing.T) {
 			CodeString: code,
 		}))
 
-		mod := &Module{MainChunk: chunk}
+		mod := &Module{MainChunk: chunk, TopLevelNode: chunk.Node}
 
 		ctx := NewContext(ContextConfig{
 			Permissions: []Permission{LThreadPermission{Kind_: permkind.Create}},
@@ -92,7 +92,7 @@ func TestSymbolicEvalCheck(t *testing.T) {
 			CodeString: code,
 		}))
 
-		mod := &Module{MainChunk: chunk}
+		mod := &Module{MainChunk: chunk, TopLevelNode: chunk.Node}
 
 		data, err := symbolic.EvalCheck(symbolic.EvalCheckInput{
 			Node:   chunk.Node,
@@ -120,7 +120,7 @@ func TestSymbolicEvalCheck(t *testing.T) {
 			CodeString: code,
 		}))
 
-		mod := &Module{MainChunk: chunk}
+		mod := &Module{MainChunk: chunk, TopLevelNode: chunk.Node}
 
 		ctx := NewContext(ContextConfig{
 			Permissions: []Permission{LThreadPermission{Kind_: permkind.Create}},

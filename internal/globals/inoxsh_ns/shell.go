@@ -1207,7 +1207,8 @@ func (sh *shell) parseModule(inputString string) (*core.Module, error) {
 	}
 
 	return &core.Module{
-		MainChunk: chunk,
+		MainChunk:    chunk,
+		TopLevelNode: chunk.Node,
 	}, err
 }
 

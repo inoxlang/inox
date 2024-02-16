@@ -8,12 +8,15 @@ import (
 )
 
 func createTestLifetimeJob(t *testing.T, state *GlobalState, code string) *LifetimeJob {
+	chunk := parse.NewParsedChunkSource(parse.MustParseChunk(code), parse.InMemorySource{
+		NameString: "test",
+		CodeString: code,
+	})
+
 	jobMod := &Module{
-		ModuleKind: LifetimeJobModule,
-		MainChunk: parse.NewParsedChunkSource(parse.MustParseChunk(code), parse.InMemorySource{
-			NameString: "test",
-			CodeString: code,
-		}),
+		ModuleKind:   LifetimeJobModule,
+		TopLevelNode: chunk.Node,
+		MainChunk:    chunk,
 	}
 
 	job, err := NewLifetimeJob(Identifier("job"), nil, jobMod, nil, state)

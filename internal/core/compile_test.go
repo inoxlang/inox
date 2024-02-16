@@ -1952,7 +1952,8 @@ func traceCompile(
 	}))
 
 	module := &Module{
-		MainChunk: chunk,
+		MainChunk:    chunk,
+		TopLevelNode: chunk.Node,
 	}
 
 	tr := &compileTracer{}

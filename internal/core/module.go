@@ -59,7 +59,8 @@ type Module struct {
 	//no set for modules with an in-memory sourceName
 	sourceName ResourceName
 
-	MainChunk *parse.ParsedChunkSource
+	MainChunk    *parse.ParsedChunkSource
+	TopLevelNode parse.Node //*parse.Chunk|*parse.EmbeddedModule
 
 	//inclusion imports (in top level adnd preinit block)
 
@@ -260,14 +261,15 @@ func ParseInMemoryModule(codeString String, config InMemoryModuleParsingConfig) 
 		CodeString: string(codeString),
 	}
 
-	code, err := parse.ParseChunkSource(src)
-	if err != nil && code == nil {
+	parsedChunk, err := parse.ParseChunkSource(src)
+	if err != nil && parsedChunk == nil {
 		return nil, fmt.Errorf("failed to parse in-memory module named '%s': %w", config.Name, err)
 	}
 
 	mod := &Module{
-		MainChunk:        code,
-		ManifestTemplate: code.Node.Manifest,
+		MainChunk:        parsedChunk,
+		TopLevelNode:     parsedChunk.Node,
+		ManifestTemplate: parsedChunk.Node.Manifest,
 	}
 
 	// add parsing errors to the module
@@ -289,13 +291,13 @@ func ParseInMemoryModule(codeString String, config InMemoryModuleParsingConfig) 
 	}
 
 	// add error if manifest is missing
-	if code.Node.Manifest == nil {
+	if parsedChunk.Node.Manifest == nil {
 		err := NewError(fmt.Errorf("missing manifest in in-memory module %s: the file should start with 'manifest {}'", config.Name), String(config.Name))
 		mod.ParsingErrors = append(mod.ParsingErrors, err)
 		//TODO: add position
 	}
 
-	inclusionStmts := parse.FindNodes(code.Node, &parse.InclusionImportStatement{}, nil)
+	inclusionStmts := parse.FindNodes(parsedChunk.Node, &parse.InclusionImportStatement{}, nil)
 
 	// add error if there are inclusion statements
 	if len(inclusionStmts) != 0 {
@@ -444,8 +446,9 @@ func ParseModuleFromSource(src parse.ChunkSource, resource ResourceName, config 
 	}
 
 	mod := &Module{
-		MainChunk:  code,
-		sourceName: resource,
+		MainChunk:    code,
+		TopLevelNode: code.Node,
+		sourceName:   resource,
 
 		ManifestTemplate:      code.Node.Manifest,
 		InclusionStatementMap: make(map[*parse.InclusionImportStatement]*IncludedChunk),

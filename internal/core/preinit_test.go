@@ -1729,8 +1729,10 @@ func TestPreInit(t *testing.T) {
 					CodeString:  testCase.parentModule,
 				}
 
+				parsedChunk := parse.NewParsedChunkSource(chunk, srcFile)
 				mod := &Module{
-					MainChunk:        parse.NewParsedChunkSource(chunk, srcFile),
+					MainChunk:        parsedChunk,
+					TopLevelNode: parsedChunk.Node,
 					ManifestTemplate: chunk.Manifest,
 				}
 
@@ -1779,6 +1781,7 @@ func TestPreInit(t *testing.T) {
 						CodeString:             testCase.module,
 					},
 				),
+				TopLevelNode: chunk,
 				ModuleKind:            testCase.moduleKind,
 				ManifestTemplate:      chunk.Manifest,
 				InclusionStatementMap: map[*parse.InclusionImportStatement]*IncludedChunk{},

@@ -2777,8 +2777,9 @@ func TestCheck(t *testing.T) {
 				Chunk: src,
 				//test suite module
 				Module: &Module{
-					MainChunk:  src,
-					ModuleKind: TestSuiteModule,
+					MainChunk:    src,
+					TopLevelNode: src.Node,
+					ModuleKind:   TestSuiteModule,
 				},
 			}))
 		})
