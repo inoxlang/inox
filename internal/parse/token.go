@@ -111,6 +111,7 @@ const (
 	AND_KEYWORD
 	OR_KEYWORD
 	PERCENT_STR
+	UNPREFIXED_STR
 	PERCENT_SYMBOL
 	TILDE
 	EXCLAMATION_MARK
@@ -354,6 +355,7 @@ var tokenStrings = [...]string{
 	EXCLAMATION_MARK_EQUAL:         "!=",
 	DOUBLE_QUESTION_MARK:           "??",
 	PERCENT_STR:                    "%str",
+	UNPREFIXED_STR:                 "str",
 	NOT_IN_KEYWORD:                 "not-in",
 	IS_KEYWORD:                     "is",
 	IS_NOT_KEYWORD:                 "is-not",
@@ -517,6 +519,7 @@ var tokenTypenames = [...]string{
 	AND_KEYWORD:                    "AND_KEYWORD",
 	OR_KEYWORD:                     "OR_KEYWORD",
 	PERCENT_STR:                    "PERCENT_STR",
+	UNPREFIXED_STR:                 "UNPREFIXED_STR",
 	PERCENT_SYMBOL:                 "PERCENT_SYMBOL",
 	TILDE:                          "TILDE",
 	EXCLAMATION_MARK:               "EXCLAMATION_MARK",

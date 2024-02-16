@@ -2415,11 +2415,23 @@ func (p *parser) parseComplexStringPatternUnion(start int32, isShorthandUnion bo
 func (p *parser) parseComplexStringPatternPiece(start int32, ident *PatternIdentifierLiteral) *ComplexStringPatternPiece {
 	p.panicIfContextDone()
 
+	unprefixed := false
+
 	if ident != nil {
-		p.tokens = append(p.tokens,
-			Token{Type: PERCENT_STR, Span: ident.Span},
-			Token{Type: OPENING_PARENTHESIS, Span: NodeSpan{ident.Span.End, ident.Span.End + 1}},
-		)
+		unprefixed = ident.Unprefixed
+
+		if unprefixed {
+			p.tokens = append(p.tokens,
+				Token{Type: UNPREFIXED_STR, Span: ident.Span},
+				Token{Type: OPENING_PARENTHESIS, Span: NodeSpan{ident.Span.End, ident.Span.End + 1}},
+			)
+		} else {
+			p.tokens = append(p.tokens,
+				Token{Type: PERCENT_STR, Span: ident.Span},
+				Token{Type: OPENING_PARENTHESIS, Span: NodeSpan{ident.Span.End, ident.Span.End + 1}},
+			)
+		}
+
 	} else {
 		p.tokens = append(p.tokens, Token{Type: OPENING_PARENTHESIS, Span: NodeSpan{start, start + 1}})
 	}
@@ -2560,7 +2572,8 @@ func (p *parser) parseComplexStringPatternPiece(start int32, ident *PatternIdent
 			parsingErr,
 			false,
 		},
-		Elements: elements,
+		Unprefixed: unprefixed,
+		Elements:   elements,
 	}
 }
 

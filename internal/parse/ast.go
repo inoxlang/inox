@@ -2102,7 +2102,8 @@ func (PatternNamespaceMemberExpression) Kind() NodeKind {
 
 type ComplexStringPatternPiece struct {
 	NodeBase
-	Elements []*PatternPieceElement
+	Unprefixed bool
+	Elements   []*PatternPieceElement
 }
 
 type OcurrenceCountModifier int

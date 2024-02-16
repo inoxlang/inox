@@ -355,6 +355,13 @@ func TestPrint(t *testing.T) {
 		"pattern p = (| 1 | 2)",
 		"pattern p = (\n| 1 | 2)",
 		"pattern p = (\n| 1 \n| 2)",
+		"pattern p = %str",
+		"pattern p = %str('a')",
+		"pattern p = %str('a'",
+		"pattern p = %str(",
+		"pattern p = str('a')",
+		"pattern p = str('a'",
+		"pattern p = str(",
 		//string template literals
 		"%p``",
 		"%p`",

@@ -25122,6 +25122,37 @@ func testParse(
 				},
 			}, n)
 		})
+
+		t.Run("in pattern definition", func(t *testing.T) {
+			n := mustparseChunk(t, "pattern p = %str(\"a\")")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
+				Statements: []Node{
+					&PatternDefinition{
+						NodeBase: NodeBase{Span: NodeSpan{0, 21}},
+						Left: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+							Name:       "p",
+							Unprefixed: true,
+						},
+						Right: &ComplexStringPatternPiece{
+							NodeBase: NodeBase{Span: NodeSpan{12, 21}},
+							Elements: []*PatternPieceElement{
+								{
+									NodeBase:  NodeBase{NodeSpan{17, 20}, nil, false},
+									Ocurrence: ExactlyOneOcurrence,
+									Expr: &QuotedStringLiteral{
+										NodeBase: NodeBase{NodeSpan{17, 20}, nil, false},
+										Raw:      "\"a\"",
+										Value:    "a",
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
 	})
 
 	t.Run("pattern call", func(t *testing.T) {
