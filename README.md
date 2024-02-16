@@ -169,7 +169,7 @@ ProjectServer -->|gets/sets| Secrets(Secrets)
 
 </details>
 
-## Installation ⬇️
+## Installation
 
 ```mermaid
 graph LR
@@ -253,17 +253,17 @@ _More examples will be added soon._
 
 ## Learning Inox
 
-📚 [Tutorials](docs/language-reference/language.md)\
+You can learn the language directly in VSCode by creating a file with a
+`.tut.ix` extension. **Make sure to create this file inside an Inox project.**
+
+![tutorial-demo](https://github.com/inoxlang/inox-vscode/raw/master/assets/docs/tutorial-demo.gif)
+
+📚 [Tutorials](docs/tutorials/README.md)\
 🌐 [Frontend dev](./docs/frontend-development.md)\
 🧰 [Builtins](docs/builtins.md)\
 🗂️ [Collections](docs/collections.md)\
 📖 [Language reference](docs/language-reference/language.md)\
 📖 [HTTP Server reference](docs/http-server-reference.md)
-
-You can also learn the language directly in VSCode by creating a file with a
-`.tut.ix` extension. **Make sure to create this file inside an Inox project.**
-
-![tutorial-demo](https://github.com/inoxlang/inox-vscode/raw/master/assets/docs/tutorial-demo.gif)
 
 If you have any questions you are welcome to join the
 [Discord Server](https://discord.gg/53YGx8GzgE).
