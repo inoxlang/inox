@@ -1,4 +1,4 @@
-[Install Inox](../README.md#installation) | [Language Reference](./language-reference/language.md)| [Built-in Functions](./builtins.md) | [Project](./project.md) | [Web App Development](./web-app-development.md) | [Scripting Basics](./scripting-basics.md) 
+[Install Inox](../README.md#installation) | [Language Reference](./language-reference/README.md)| [Built-in Functions](./builtins.md) | [Project](./project.md) | [Web App Development](./web-app-development.md) | [Scripting Basics](./scripting-basics.md) 
 
 -----
 
@@ -130,7 +130,7 @@ read https://jsonplaceholder.typicode.com/posts | map_iterable $ .title
 ```
 
 The type checker will complain that `$` is not an %iterable, that's pretty annoying.
-You can postpone the type check of this argument at runtime by prefixing it with '~'.
+You can postpone the type check of this argument at run time by prefixing it with '~'.
 
 ```
 read https://jsonplaceholder.typicode.com/posts | map_iterable ~$ .title

@@ -1,4 +1,4 @@
-[Table of contents](./language.md)
+[Table of contents](./README.md)
 
 ---
 
@@ -18,12 +18,12 @@ In Inox a pattern is a **runtime value** that matches values of a given kind and
 shape.\
 Besides the pattern [literals](./literals.md), there are other kinds of patterns in
 Inox such as object patterns `%{a: int}`.\
-Even though patterns are created at runtime, they can act as types:
+Even though patterns are created at run time, they can act as types:
 
 ```
 pattern small_int = int(0..10)
 
-# small_int is created at runtime but it can be used in type annotations:
+# small_int is created at run time but it can be used in type annotations:
 var n small_int = 0
 ```
 
@@ -36,10 +36,10 @@ built-in named patterns such as: `int, str, bool`. Pattern definitions allow you
 to declare a pattern.
 
 ```
-pattern int_list = []int
+pattern int-list = []int
 
 # true
-([1, 2, 3] match int_list) 
+([1, 2, 3] match int-list) 
 
 pattern user = {
     name: str
@@ -148,7 +148,7 @@ The syntax for patterns that match a list with **elements of the same type**
 (only integers, only strings, etc.) is as follows:
 
 ```
-pattern int_list = []int
+pattern int-list = []int
 
 ([] match pattern) # true
 ([1] match pattern) # true
@@ -160,7 +160,7 @@ pattern int_list = []int
 **<summary>Alternative syntax with leading '%' symbol</summary>**
 
 ```
-pattern int_list = %[]int
+pattern int-list = %[]int
 ```
 
 </details>

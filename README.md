@@ -262,7 +262,7 @@ You can learn the language directly in VSCode by creating a file with a
 🌐 [Frontend dev](./docs/frontend-development.md)\
 🧰 [Builtins](docs/builtins.md)\
 🗂️ [Collections](docs/collections.md)\
-📖 [Language reference](docs/language-reference/language.md)\
+📖 [Language reference](docs/language-reference/README.md)\
 📖 [HTTP Server reference](docs/http-server-reference.md)
 
 If you have any questions you are welcome to join the
@@ -464,7 +464,7 @@ https://example.com/{path}?a={param}
 ```
 
 In short, most malicious `path` and `param` values provided by a malevolent user
-will cause an error at runtime.
+will cause an error at run time.
 
 <details>
 <summary>
@@ -580,7 +580,7 @@ drop-perms {
 
 Limits limit intensive operations, there are three kinds of limits: **byte
 rate**, **frequency** & **total**. They are defined in the manifest and are
-[shared](./docs/language-reference/language.md#limits) with the children of the
+[shared](./docs/language-reference/README.md#limits) with the children of the
 module.
 
 ```
@@ -598,7 +598,7 @@ manifest {
 By default strict limits are applied on HTTP request handlers in order to
 mitigate some types of DoS.
 
-[Learn More](./docs/language-reference/language.md#limits)
+[Learn More](./docs/language-reference/README.md#limits)
 
 ## Questions You May Have
 

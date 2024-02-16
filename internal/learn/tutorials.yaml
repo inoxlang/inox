@@ -114,7 +114,7 @@
       # Must call: on error the runtime panics, otherwise nil is returned.
       nil_value = f!(false)      
 
-      # you can learn more about must calls here: https://github.com/inoxlang/inox/blob/main/docs/language-reference/language.md#must-calls.
+      # You can learn more about must calls here: https://github.com/inoxlang/inox/blob/main/docs/language-reference/functions.md#must-calls
     output:
     - "decoding error: (hex.InvalidByteError)encoding/hex: invalid byte: U+002E '.'"
     - "error returned by `f`: (*errors.errorString)there is an issue !"
@@ -280,6 +280,14 @@
         }
 
         print(object2)
+
+        # output:
+        # {
+        #     "": [
+        #         1, 
+        #         [    ]
+        #     ]
+        # }
   - name: Lists
     id: lists
     program: |
@@ -336,7 +344,7 @@
         print "(/dir/file.json match %/*.json):" (/dir/file.json match %/*.json)
 
         # You can learn more about path patterns in the language reference: 
-        # https://github.com/inoxlang/inox/blob/main/docs/language-reference/language.md#path-patterns.
+        # https://github.com/inoxlang/inox/blob/main/docs/language-reference/patterns.md#path-patterns
   - name: URLs and URLs patterns
     id: urls-url-patterns
     program: |
@@ -397,13 +405,13 @@
         )
 
         # You can learn more about URL patterns and host patterns in the language reference: 
-        # https://github.com/inoxlang/inox/blob/main/docs/language-reference/language.md#host-and-url-patterns.
+        # https://github.com/inoxlang/inox/blob/main/docs/language-reference/patterns.md#host-and-url-patterns
   - name: Named Patterns and Typing
     id: pattern-decl
     program: |
         manifest {}
 
-        # In Inox a pattern is a runtime value that matches values of a given kind and shape.
+        # In Inox a pattern is a run-time value that matches values of a given kind and shape.
         # Besides the pattern literals, there are other kinds of patterns in Inox such as object patterns: `%{a: int}`.
 
         # Creating a named pattern `user` does not prevent you to name a variable `user`:
@@ -411,13 +419,12 @@
             name: str
         }
 
-        # Even though patterns are created at runtime, they can act as types:
-        pattern small_int = int(0..10)
+        pattern small-int = int(0..10)
 
-        # small_int is created at runtime but it can be used in type annotations:
-        var n small_int = 0
+        # Even though patterns are created at run time, they can act as types:
+        var n small-int = 0
 
-        fn add(a small_int, b small_int){
+        fn add(a small-int, b small-int){
             return (a + b)
         }
 
@@ -463,7 +470,7 @@
         manifest {}
 
         # List pattern matching any list containing (only) integers.
-        pattern int_list = []int
+        pattern int-list = []int
 
         print `([] match []int):` ([] match []int)
         print `([1] match []int):` ([1] match []int)

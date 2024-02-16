@@ -29,4 +29,4 @@ print("error returned by `f`:", err)
 # Must call: on error the runtime panics, otherwise nil is returned.
 nil_value = f!(false)      
 
-# you can learn more about must calls here: https://github.com/inoxlang/inox/blob/main/docs/language-reference/language.md#must-calls.
+# You can learn more about must calls here: https://github.com/inoxlang/inox/blob/main/docs/language-reference/functions.md#must-calls

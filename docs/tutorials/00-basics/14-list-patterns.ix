@@ -3,7 +3,7 @@
 manifest {}
 
 # List pattern matching any list containing (only) integers.
-pattern int_list = []int
+pattern int-list = []int
 
 print `([] match []int):` ([] match []int)
 print `([1] match []int):` ([1] match []int)

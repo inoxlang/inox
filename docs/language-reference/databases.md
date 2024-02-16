@@ -1,4 +1,4 @@
-[Table of contents](./language.md)
+[Table of contents](./README.md)
 
 ---
 
@@ -74,7 +74,7 @@ manifest {
 users = dbs.main.users
 ```
 
-⚠️ At runtime the current schema of the database is matched against
+⚠️ At run time the current schema of the database is matched against
 `assert-schema`.\
 So before executing the program you will need to add a call to
 `dbs.main.update_schema` with the new schema.

@@ -4,7 +4,7 @@ manifest {}
 
 #  unsanitized_id = "59658950" # if you add a character that is not a digit this will cause a panic
 
-#  # at runtime unsanitized_id will be matched against %sql.int.
+#  # At runtime unsanitized_id will be matched against %sql.int.
 #  # if it does not match the program will panic.
 #  stmt = %sql.query`SELECT * FROM users WHERE id = ${int:unsanitized_id}`
 

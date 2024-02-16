@@ -35,4 +35,4 @@ print "(/file.json match %/*.json):" (/file.json match %/*.json)
 print "(/dir/file.json match %/*.json):" (/dir/file.json match %/*.json)
 
 # You can learn more about path patterns in the language reference: 
-# https://github.com/inoxlang/inox/blob/main/docs/language-reference/language.md#path-patterns.
+# https://github.com/inoxlang/inox/blob/main/docs/language-reference/patterns.md#path-patterns

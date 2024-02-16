@@ -1,4 +1,4 @@
-[Table of contents](./language.md)
+[Table of contents](./README.md)
 
 ---
 
@@ -27,7 +27,7 @@ string = (if (a > 0) "positive" else "negative or zero")
 val = (if false 1) # val is nil because the condition is false
 ```
 
-When the condition is a boolean conversion expression the type of the converted
+When the condition is a [boolean conversion expression](./unary-operations.md#boolean-conversion) the type of the converted
 value is narrowed:
 
 ```
@@ -78,6 +78,23 @@ match value {
 
 output:
 /a
+```
+
+The value of the match statement is narrowed in each block except `defaultcase`'s block:
+
+```
+fn print_type(arg){
+
+    match arg {
+        %path {
+            var path path = arg
+        }
+        %int {
+            var integer int = arg
+        }
+        defaultcase { }
+    }
+}
 ```
 
 ## For Statement

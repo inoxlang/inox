@@ -57,4 +57,4 @@ print(
 )
 
 # You can learn more about URL patterns and host patterns in the language reference: 
-# https://github.com/inoxlang/inox/blob/main/docs/language-reference/language.md#host-and-url-patterns.
+# https://github.com/inoxlang/inox/blob/main/docs/language-reference/patterns.md#host-and-url-patterns

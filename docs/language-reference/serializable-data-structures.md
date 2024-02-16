@@ -1,4 +1,4 @@
-[Table of contents](./language.md)
+[Table of contents](./README.md)
 
 ---
 
@@ -13,10 +13,11 @@
 - [Dictionaries](#dictionaries)
 
 **Serializable** data structures are intended to represent **business objects**
-or part of them (e.g. a `user`).
+(e.g. a `user`) or parts of them .
 
 Code performing heavy computations should use **transient types** such as
-[Structs](./transient-types.md#structs) and [Arrays](./transient-types.md#arrays) instead.
+[Structs](./transient-types.md#structs) and
+[Arrays](./transient-types.md#arrays) instead.
 
 ## Lists
 
@@ -31,7 +32,8 @@ first_elem = list[0] # index expression
 list[0] = 2
 
 list = [1, 2, 3]
-first_two_elems = list[0:2] # creates a new list containing 1 and 2
+# creates a new list containing 1 and 2
+first_two_elems = list[0:2] 
 
 # lists can be spread in list literals.
 other_list = [1, ...list]
@@ -89,8 +91,9 @@ object = {
 a = object.a
 ```
 
+Values not preceded by a name are known as object elements and are stored in a
+list in the empty name property "".
 
-Values not preceded by a name are known as object elements and are stored in a list in the empty name property "".
 ```
 object = {1, 2}
 
@@ -102,7 +105,8 @@ output:
 }
 ```
 
-Objects are **lock-protected** (see [Data Sharing](./concurrency.md#data-sharing)).
+Objects are **lock-protected** (see
+[Data Sharing](./concurrency.md#data-sharing)).
 
 ### Methods
 
@@ -111,7 +115,7 @@ Methods are defined in [extensions](./extensions.md), not in the objects.
 ### Computed Member Expressions
 
 Computed member expressions are member expressions where the property name is
-computed at runtime:
+computed at run time:
 
 ```
 object = { name: "foo" }
@@ -155,8 +159,8 @@ Objects are not intended to be used when performing heavy computations. Use
 
 ## Records
 
-Records are the immutable equivalent of objects, their properties can only have
-immutable values.
+Records are the immutable counterparts of objects, their properties can only
+have immutable values.
 
 ```
 record = #{
@@ -171,7 +175,9 @@ record = #{
 }
 ```
 
-Values not preceded by a name are known as record elements and are stored in a tuple in the empty name property "".
+Values not preceded by a name are known as record elements and are stored in a
+tuple in the empty name property "".
+
 ```
 record = #{1, 2}
 
@@ -185,7 +191,7 @@ output:
 
 ## Tuples
 
-Tuples are the immutable equivalent of lists.
+Tuples are the immutable counterparts of lists.
 
 ```
 tuple = #[1, #[2, 3]]

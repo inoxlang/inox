@@ -18,7 +18,7 @@ manifest {
 
 ## Sharing
 
-At runtime a counter will be created for each limit, the behaviour of the
+At run time a counter will be created for each limit, the behaviour of the
 counter is specific to the limit's kind. Limits defined by a module will be
 shared with all of its child modules/threads. In other words when the module
 defining the limit or one if its children performs an operation a shared counter

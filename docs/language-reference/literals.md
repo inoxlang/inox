@@ -1,4 +1,4 @@
-[Table of contents](./language.md)
+[Table of contents](./README.md)
 
 ---
 
@@ -19,6 +19,7 @@ Here are the most commonly used literals in Inox:
   second line`
   ```
 - runes represent a single character: `'a', '\n'`
+- rune ranges: `'a'..'z'`
 - regex literals: `` %`a+` ``
 
 

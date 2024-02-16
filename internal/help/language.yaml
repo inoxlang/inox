@@ -139,7 +139,7 @@ module:
         Most IO operations (filesystem access, HTTP requests) and resource intensive operations 
         (lthread creation) necessitate a permission. 
         
-        To learn more about permissions see https://github.com/inoxlang/inox/blob/main/docs/language-reference/language.md#permissions.
+        To learn more about permissions see https://github.com/inoxlang/inox/blob/main/docs/language-reference/README.md#permissions.
       examples:
       - code: |
           # permission section allowing the module 

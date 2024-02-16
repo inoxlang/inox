@@ -1,4 +1,4 @@
-[Table of contents](./language.md)
+[Table of contents](./README.md)
 
 ---
 
@@ -18,7 +18,7 @@ No, Inoxlang is unsound. **BUT**:
 
 - The **any** type is not directly available to the developer, and it does not disable checks like in Typescript. It is more similar to **unknow**.
 - The type system is not overly complex and I don't plan to add classes or advanced generics*.
-- Type assertions using the `assert` keyword are checked at runtime.
+- Type assertions using the `assert` keyword are checked at run time.
 
 _\*Types like Set are kind of generic but it cannot be said that generics are implemented._
 

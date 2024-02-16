@@ -1,4 +1,4 @@
-[Table of contents](./language.md)
+[Table of contents](./README.md)
 
 ---
 
@@ -52,19 +52,19 @@ Parentheses can be omitted around operands of **or**/**and** chains:
 ### Substraction
 
 - Integers and floats cannot be mixed, they have to be explicitly converted to
-  be added together (details in [addition](#addition)).
-- Durations can be substraction from one another: `(1h + 1s)`
+  be used in a substraction (details in [addition](#addition)).
+- Durations can be substracted from one another: `(1h + 1s)`
 
 ### Multiplication
 
 - Integers and floats cannot be mixed, they have to be explicitly converted to
-  be added together (details in [addition](#addition)).
+  be used in a multiplication (details in [addition](#addition)).
 - Integer multiplication produces an integer
 
 ### Division
 
 - Integers and floats cannot be mixed, they have to be explicitly converted to
-  be added together (details in [addition](#addition)).
+  be used in a division (details in [addition](#addition)).
 - Integer division produces an integer
 
 ---
@@ -106,7 +106,6 @@ of a property in the object on the right.
 
 ```
 ("a" keyof {a: 1}) # true
-("0" keyof {1}) # true
 ```
 
 ---

@@ -19,3 +19,11 @@ object2 = {
 }
 
 print(object2)
+
+# output:
+# {
+#     "": [
+#         1, 
+#         [    ]
+#     ]
+# }
