@@ -12,7 +12,7 @@ pattern json-list = @ %str(
     ']'
 )
 
-pattern json-val = @ %str(| json-list | atomic-json-val)
+pattern json-val = @ str(| json-list | atomic-json-val)
 pattern atomic-json-val = "1"
 
 print "[] match json-val:" ("[]" match json-val)

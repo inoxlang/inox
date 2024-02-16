@@ -217,7 +217,7 @@ pattern. ⚠️ This feature still needs some bug fixes. Also **recursive string
 them to check/parse complex strings, use real parsers instead.**
 
 ```
-pattern json-list = @ %str( 
+pattern json-list = @ str( 
     '[' 
         (| atomic-json-val
          | json-val 
@@ -226,7 +226,7 @@ pattern json-list = @ %str(
     ']'
 )
 
-pattern json-val = @ %str( (| json-list | atomic-json-val ) )
+pattern json-val = @ str( (| json-list | atomic-json-val ) )
 pattern atomic-json-val = "1"
 ```
 

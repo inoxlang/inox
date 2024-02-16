@@ -4074,7 +4074,7 @@ func TestCheck(t *testing.T) {
 
 		t.Run("not declared pattern in lazy pattern definition", func(t *testing.T) {
 			n, src := mustParseCode(`
-				pattern p = @ %str( s )
+				pattern p = @ str( s )
 			`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
