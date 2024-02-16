@@ -2658,17 +2658,6 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
-		t.Run("should inherit host aliases", func(t *testing.T) {
-			n, src := mustParseCode(`
-				@host = https://localhost
-				testsuite { 
-					val = @host/index.html
-				}
-			`)
-
-			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
-		})
-
 		t.Run("testcase", func(t *testing.T) {
 			n, src := mustParseCode(`
 				manifest {}
@@ -2721,21 +2710,6 @@ func TestCheck(t *testing.T) {
 					testcase {
 						%ns1.
 						%ns2.
-					}
-				}
-			`)
-
-			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
-		})
-
-		t.Run("testcase should inherit host aliases of the test suite", func(t *testing.T) {
-			n, src := mustParseCode(`
-				@host1 = https://localhost:8081
-				testsuite { 
-					@host2 = https://localhost:8082
-					testcase {
-						val1 = @host1/index.html
-						val2 = @host2/index.html
 					}
 				}
 			`)
@@ -3928,67 +3902,6 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
-	})
-
-	t.Run("host alias definition", func(t *testing.T) {
-		t.Run("redeclaration", func(t *testing.T) {
-			n, src := mustParseCode(`
-				@host = https://localhost
-				@host = https://localhost
-			`)
-			def := parse.FindNodes(n, (*parse.HostAliasDefinition)(nil), nil)[1]
-
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
-			expectedErr := utils.CombineErrors(
-				makeError(def, src, fmtHostAliasAlreadyDeclared("host")),
-			)
-			assert.Equal(t, expectedErr, err)
-		})
-
-		t.Run("should be a top-level statement", func(t *testing.T) {
-			n, src := mustParseCode(`
-				fn f(){
-					@host = https://localhost
-				}
-			`)
-			def := parse.FindNode(n, (*parse.HostAliasDefinition)(nil), nil)
-
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
-			expectedErr := utils.CombineErrors(
-				makeError(def, src, MISPLACED_HOST_ALIAS_DEF_STATEMENT_TOP_LEVEL_STMT),
-			)
-			assert.Equal(t, expectedErr, err)
-		})
-
-		t.Run("definitions are not allowed after a call to a function declared below", func(t *testing.T) {
-			n, src := mustParseCode(`
-				f()
-				
-				@host = https://localhost
-
-				fn f(){}
-			`)
-			def := parse.FindNode(n, (*parse.HostAliasDefinition)(nil), nil)
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
-			expectedErr := utils.CombineErrors(
-				makeError(def, src, MISPLACED_HOST_ALIAS_DEF_AFTER_FN_DECL_OR_REF_TO_FN),
-			)
-			assert.Equal(t, expectedErr, err)
-		})
-
-		t.Run("definition are not allowed after a function definition", func(t *testing.T) {
-			n, src := mustParseCode(`
-				fn f(){}
-				
-				@host = https://localhost
-			`)
-			def := parse.FindNode(n, (*parse.HostAliasDefinition)(nil), nil)
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
-			expectedErr := utils.CombineErrors(
-				makeError(def, src, MISPLACED_HOST_ALIAS_DEF_AFTER_FN_DECL_OR_REF_TO_FN),
-			)
-			assert.Equal(t, expectedErr, err)
-		})
 	})
 
 	t.Run("pattern definition", func(t *testing.T) {

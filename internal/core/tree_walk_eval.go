@@ -792,15 +792,6 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		}
 
 		return Nil, nil
-	case *parse.HostAliasDefinition:
-		name := n.Left.Value[1:]
-		value, err := TreeWalkEval(n.Right, state)
-		if err != nil {
-			return nil, err
-		}
-		state.Global.Ctx.AddHostAlias(name, value.(Host))
-
-		return Nil, nil
 	case *parse.Chunk:
 		manageLocalScope := !n.IsShellChunk && len(state.chunkStack) <= 1
 

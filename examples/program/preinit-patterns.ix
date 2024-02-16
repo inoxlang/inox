@@ -1,0 +1,11 @@
+preinit {
+    pattern root-prefix = %/...
+}
+
+manifest {
+    permissions: {
+        read: %root-prefix
+    }
+}
+
+print(%root-prefix)

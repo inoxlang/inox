@@ -385,8 +385,6 @@ func (c *compiler) Compile(node parse.Node) error {
 	case *parse.FlagLiteral:
 		val := Option{Name: node.Name, Value: Bool(true)}
 		c.emit(node, OpPushConstant, c.addConstant(val))
-	case *parse.AtHostLiteral:
-		c.emit(node, OpResolveHost, c.addConstant(String(node.Value)))
 	case *parse.ByteSliceLiteral:
 		byteSlice := NewMutableByteSlice(slices.Clone(node.Value), "")
 		c.emit(node, OpPushConstant, c.addConstant(byteSlice))
@@ -1321,11 +1319,6 @@ func (c *compiler) Compile(node parse.Node) error {
 			c.emit(node, OpPushNil)
 		}
 		c.emit(node, OpSlice)
-	case *parse.HostAliasDefinition:
-		if err := c.Compile(node.Right); err != nil {
-			return err
-		}
-		c.emit(node, OpAddHostAlias, c.addConstant(String(node.Left.Value)))
 	case *parse.ListPatternLiteral:
 		hasGeneralElem := 0
 

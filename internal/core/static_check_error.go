@@ -126,9 +126,6 @@ const (
 	MISPLACED_PATTERN_NS_DEF_NOT_TOP_LEVEL_STMT         = "misplaced pattern namespace definition: it should be located at the top level"
 	MISPLACED_PATTERN_NS_DEF_AFTER_FN_DECL_OR_REF_TO_FN = "misplaced pattern namespace definition: definitions are not allowed after a function declaration, or after a reference to a function that is declared further below"
 
-	MISPLACED_HOST_ALIAS_DEF_STATEMENT_TOP_LEVEL_STMT   = "misplaced host alias definition statement: it should be located at the top level"
-	MISPLACED_HOST_ALIAS_DEF_AFTER_FN_DECL_OR_REF_TO_FN = "misplaced host alias definition statement: definitions are not allowed after a function declaration, or after a reference to a function that is declared further below"
-
 	MISPLACED_READONLY_PATTERN_EXPRESSION                 = "misplaced readonly pattern expression: they are only allowed as the type of function parameters"
 	MISPLACED_EXTEND_STATEMENT_TOP_LEVEL_STMT             = "misplaced extend statement: it should be located at the top level"
 	MISPLACED_STRUCT_DEF_TOP_LEVEL_STMT                   = "misplaced struct definition: it should be located at the top level"
@@ -352,10 +349,6 @@ func fmtInvalidStructDefAlreadyDeclared(name string) string {
 
 func fmtAnXFieldOrMethodIsAlreadyDefined(name string) string {
 	return fmt.Sprintf("a field or method named '%s' is already defined ", name)
-}
-
-func fmtHostAliasAlreadyDeclared(name string) string {
-	return fmt.Sprintf("host alias @%s is already declared", name)
 }
 
 func fmtPatternAlreadyDeclared(name string) string {

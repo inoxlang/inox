@@ -228,7 +228,6 @@ const (
 	OpGetSelf
 	OpSetSelf
 	OpResolveHost
-	OpAddHostAlias
 	OpResolvePattern
 	OpAddPattern
 	OpResolvePatternNamespace
@@ -390,7 +389,6 @@ var OpcodeNames = [...]string{
 	OpGetSelf:                      "GET_SELF",
 	OpSetSelf:                      "SET_SELF",
 	OpResolveHost:                  "RSLV_HOST",
-	OpAddHostAlias:                 "ADD_HALIAS",
 	OpResolvePattern:               "RSLV_PATT",
 	OpAddPattern:                   "ADD_PATT",
 	OpResolvePatternNamespace:      "RSLV_PNS",
@@ -536,7 +534,6 @@ var OpcodeOperands = [...][]int{
 	OpGetSelf:                      {},
 	OpSetSelf:                      {},
 	OpResolveHost:                  {2},
-	OpAddHostAlias:                 {2},
 	OpResolvePattern:               {2},
 	OpAddPattern:                   {2},
 	OpResolvePatternNamespace:      {2},
@@ -690,7 +687,6 @@ var OpcodeConstantIndexes = [...][]bool{
 	OpGetSelf:                      {},
 	OpSetSelf:                      {},
 	OpResolveHost:                  {true},
-	OpAddHostAlias:                 {true},
 	OpResolvePattern:               {true},
 	OpAddPattern:                   {true},
 	OpResolvePatternNamespace:      {true},

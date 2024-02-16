@@ -655,26 +655,6 @@ func (URLPatternLiteral) Kind() NodeKind {
 	return Expr
 }
 
-type AtHostLiteral struct {
-	NodeBase
-	Value string
-}
-
-func (l AtHostLiteral) ValueString() string {
-	return l.Value
-}
-
-func (l AtHostLiteral) Name() string {
-	if l.Value == "" {
-		panic(ErrUnreachable)
-	}
-	return l.Value[1:]
-}
-
-func (AtHostLiteral) Kind() NodeKind {
-	return Expr
-}
-
 type AbsolutePathLiteral struct {
 	NodeBase
 	Raw   string
@@ -1361,16 +1341,6 @@ type MultiAssignment struct {
 }
 
 func (MultiAssignment) Kind() NodeKind {
-	return Stmt
-}
-
-type HostAliasDefinition struct {
-	NodeBase
-	Left  *AtHostLiteral
-	Right Node
-}
-
-func (HostAliasDefinition) Kind() NodeKind {
 	return Stmt
 }
 
@@ -2767,9 +2737,6 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 		for _, vr := range n.Variables {
 			walk(vr, node, ancestorChain, fn, afterFn)
 		}
-		walk(n.Right, node, ancestorChain, fn, afterFn)
-	case *HostAliasDefinition:
-		walk(n.Left, node, ancestorChain, fn, afterFn)
 		walk(n.Right, node, ancestorChain, fn, afterFn)
 	case *CallExpression:
 		walk(n.Callee, node, ancestorChain, fn, afterFn)

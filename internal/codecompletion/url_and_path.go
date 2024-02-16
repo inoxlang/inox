@@ -246,17 +246,18 @@ func findHostCompletions(ctx *core.Context, prefix string, parent parse.Node) []
 func findHostAliasCompletions(ctx *core.Context, prefix string, parent parse.Node) []Completion {
 	var completions []Completion
 
-	for alias, host := range ctx.GetHostAliases() {
-		if strings.HasPrefix(alias, prefix) {
-			str := "@" + alias
-			completions = append(completions, Completion{
-				ShownString: str,
-				Value:       str,
-				Kind:        defines.CompletionItemKindConstant,
-				LabelDetail: "%" + core.HOST_PATTERN.Name + " (" + string(host) + ")",
-			})
-		}
-	}
+	//TODO
+	// for alias, host := range ctx.GetHostAliases() {
+	// 	if strings.HasPrefix(alias, prefix) {
+	// 		str := "@" + alias
+	// 		completions = append(completions, Completion{
+	// 			ShownString: str,
+	// 			Value:       str,
+	// 			Kind:        defines.CompletionItemKindConstant,
+	// 			LabelDetail: "%" + core.HOST_PATTERN.Name + " (" + string(host) + ")",
+	// 		})
+	// 	}
+	// }
 
 	return completions
 }

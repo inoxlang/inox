@@ -406,16 +406,6 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		return NewScheme(n.ValueString()), nil
 	case *parse.HostLiteral:
 		return NewHost(n.Value), nil
-	case *parse.AtHostLiteral:
-		if n.Value == "" {
-			return ANY_HOST, nil
-		}
-		value := state.ctx.ResolveHostAlias(n.Name())
-		if value == nil {
-			state.addError(makeSymbolicEvalError(n, state, fmtHostAliasIsNotDeclared(n.Name())))
-			return ANY_HOST, nil
-		}
-		return value, nil
 	case *parse.HostPatternLiteral:
 		return NewHostPattern(n.Value), nil
 	case *parse.URLPatternLiteral:
@@ -502,22 +492,6 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		return evalAssignment(n, state)
 	case *parse.MultiAssignment:
 		return evalMultiAssignment(n, state)
-	case *parse.HostAliasDefinition:
-		name := n.Left.Value[1:]
-		value, err := symbolicEval(n.Right, state)
-		if err != nil {
-			return nil, err
-		}
-
-		if host, ok := value.(*Host); ok {
-			state.ctx.AddHostAlias(name, host, state.inPreinit)
-			state.symbolicData.SetMostSpecificNodeValue(n.Left, host)
-		} else {
-			state.addError(makeSymbolicEvalError(node, state, fmtCannotCreateHostAliasWithA(value)))
-			state.ctx.AddHostAlias(name, &Host{}, state.inPreinit)
-		}
-
-		return nil, nil
 	case *parse.EmbeddedModule:
 		return &AstNode{Node: n.ToChunk()}, nil
 	case *parse.Block:
@@ -1168,12 +1142,17 @@ func evalChunk(n *parse.Chunk, state *State) (_ Value, finalErr error) {
 
 func evalURLExpression(n *parse.URLExpression, state *State) (_ Value, finalErr error) {
 
-	_, err := _symbolicEval(n.HostPart, state, evalOptions{ignoreNodeValue: true})
+	host, err := _symbolicEval(n.HostPart, state, evalOptions{ignoreNodeValue: true})
 	if err != nil {
 		return nil, err
 	}
 
-	state.symbolicData.SetMostSpecificNodeValue(n.HostPart, ANY_URL)
+	if !ImplementsOrIsMultivalueWithAllValuesImplementing[*Host](host) {
+		state.addError(makeSymbolicEvalError(n.HostPart, state, HOST_PART_SHOULD_HAVE_A_HOST_VALUE))
+		state.symbolicData.SetMostSpecificNodeValue(n.HostPart, ANY_HOST)
+	} else {
+		state.symbolicData.SetMostSpecificNodeValue(n.HostPart, host)
+	}
 
 	//path evaluation
 
@@ -5078,7 +5057,6 @@ func evalTestsuiteExpression(n *parse.TestSuiteExpression, state *State, options
 	modCtx := NewSymbolicContext(state.ctx.startingConcreteContext, state.ctx.startingConcreteContext, state.ctx)
 	state.ctx.CopyNamedPatternsIn(modCtx)
 	state.ctx.CopyPatternNamespacesIn(modCtx)
-	state.ctx.CopyHostAliasesIn(modCtx)
 
 	modState := newSymbolicState(modCtx, &parse.ParsedChunkSource{
 		Node:   embeddedModule,
@@ -5136,7 +5114,6 @@ func evalTestcaseExpression(n *parse.TestCaseExpression, state *State, options e
 	modCtx := NewSymbolicContext(state.ctx.startingConcreteContext, state.ctx.startingConcreteContext, state.ctx)
 	state.ctx.CopyNamedPatternsIn(modCtx)
 	state.ctx.CopyPatternNamespacesIn(modCtx)
-	state.ctx.CopyHostAliasesIn(modCtx)
 
 	modState := newSymbolicState(modCtx, &parse.ParsedChunkSource{
 		Node:   embeddedModule,

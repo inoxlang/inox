@@ -45,7 +45,6 @@ manifest {
 The code in the preinit statement is heavily restricted, only a few constructs
 are allowed:
 
-- **host alias definitions**
 - **pattern** and **pattern namespace definitions**
 - **inclusion imports** of files subject to the same constraints as the preinit
   statement.

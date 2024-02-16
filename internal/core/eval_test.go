@@ -665,14 +665,16 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Equal(t, URL("https://example.com/@domain.zip"), res)
 		})
 
-		t.Run("host alias", func(t *testing.T) {
+		t.Run("host interpolation", func(t *testing.T) {
 			code := `@api/index.html`
 
 			ctx := NewContext(ContextConfig{})
+			state := NewGlobalState(ctx)
 			defer ctx.CancelGracefully()
-			ctx.AddHostAlias("api", Host("https://example.com"))
 
-			res, err := Eval(code, NewGlobalState(ctx), false)
+			state.Globals.Set("api", Host("https://example.com"))
+
+			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
 			assert.Equal(t, URL("https://example.com/index.html"), res)
@@ -3784,7 +3786,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			checkResult           func(t *testing.T, result Value, state *GlobalState)
 			isShared              bool
 			isolatedCaseArguments func() []Value
-			doAnalysis       bool
+			doAnalysis            bool
 		}{
 			{
 
@@ -3795,7 +3797,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						return 1
 					}
 				`,
-				result:          Int(1),
+				result:     Int(1),
 				doAnalysis: true,
 			},
 			{
@@ -3947,7 +3949,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return f()
 				`,
 				isolatedCaseArguments: noargs,
-				doAnalysis:       true,
+				doAnalysis:            true,
 				checkResult: func(t *testing.T, result Value, state *GlobalState) {
 					assert.IsType(t, (*InoxFunction)(nil), result)
 				},
@@ -4008,7 +4010,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return f()
 				`,
 				isolatedCaseArguments: noargs,
-				doAnalysis:       true,
+				doAnalysis:            true,
 				checkResult: func(t *testing.T, result Value, state *GlobalState) {
 					assert.IsType(t, (*InoxFunction)(nil), result)
 				},
@@ -4117,7 +4119,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				`,
 				isolatedCaseArguments: func() []Value { return []Value{Int(3)} },
 				result:                Int(6),
-				doAnalysis:       true,
+				doAnalysis:            true,
 			},
 			{
 				name: "recursive function accessing a global",
@@ -4132,7 +4134,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					result = rec(2)
 					return [result, a] # we also check that a is still accessible
 				`,
-				result:          NewWrappedValueList(Int(6), Int(3)),
+				result:     NewWrappedValueList(Int(6), Int(3)),
 				doAnalysis: true,
 			},
 			{
@@ -4153,7 +4155,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				`,
 				isolatedCaseArguments: noargs,
 				result:                NewWrappedValueList(Int(6), Int(3)),
-				doAnalysis:       true,
+				doAnalysis:            true,
 			},
 			{
 				name: "extension method calling a recursive function accessing a global",
@@ -4179,7 +4181,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					
 					return obj::f()
 				`,
-				result:          NewWrappedValueList(Int(6), Int(3)),
+				result:     NewWrappedValueList(Int(6), Int(3)),
 				doAnalysis: true,
 			},
 			{
@@ -7326,18 +7328,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		assert.NoError(t, err)
 	})
 
-	t.Run("host alias definition", func(t *testing.T) {
-		code := `@localhost = https://localhost`
-
-		state := NewGlobalState(NewDefaultTestContext())
-		defer state.Ctx.CancelGracefully()
-		res, err := Eval(code, state, false)
-
-		assert.NoError(t, err)
-		assert.Equal(t, Nil, res)
-		assert.Equal(t, Host("https://localhost"), state.Ctx.ResolveHostAlias("localhost"))
-	})
-
 	t.Run("pattern conversion expression,", func(t *testing.T) {
 		t.Run("int literal", func(t *testing.T) {
 			code := `%(1)`
@@ -8760,10 +8750,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Len(t, state.TestingState.SuiteResults, 1)
 		})
 
-		t.Run("should inherit host aliases", func(t *testing.T) {
+		t.Run("should inherit global variables", func(t *testing.T) {
 
 			src := makeSourceFile(`
-				@host = https://localhost
+				globalvar host = https://localhost
 				testsuite "name" {
 					assert (@host/index.html == https://localhost/index.html)
 				}
@@ -9305,16 +9295,16 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Equal(t, Nil, res)
 		})
 
-		t.Run("test cases should inherit the host aliases of the parent testsuite", func(t *testing.T) {
+		t.Run("test cases should inherit the global variables of the parent testsuite", func(t *testing.T) {
 			src := makeSourceFile(`
-				@host1 = https://localhost:8081
+				globalvar host1 = https://localhost:8081
 
 				testsuite "name" {
-					@host2 = https://localhost:8082
+					globalvar host2 = https://localhost:8082
 
 					testcase {
 						assert (@host1/index.html == https://localhost:8081/index.html)
-						assert (@host1/index.html == https://localhost:8081/index.html)
+						assert (@host2/index.html == https://localhost:8082/index.html)
 					}
 				}
 			`)

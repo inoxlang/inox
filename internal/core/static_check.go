@@ -96,7 +96,6 @@ func StaticCheck(input StaticCheckInput) (*StaticCheckData, error) {
 		localVars:         localVars,
 		shellLocalVars:    shellLocalVars,
 		properties:        make(map[*parse.ObjectLiteral]*propertyInfo),
-		hostAliases:       make(map[parse.Node]map[string]int),
 		patterns:          patterns,
 		patternNamespaces: patternNamespaces,
 		currentModule:     input.Module,
@@ -149,9 +148,6 @@ type checker struct {
 	localVars map[parse.Node]map[string]localVarInfo
 
 	properties map[*parse.ObjectLiteral]*propertyInfo
-
-	//key: *parse.Chunk|*parse.EmbeddedModule
-	hostAliases map[parse.Node]map[string]int
 
 	//key: *parse.Chunk|*parse.EmbeddedModule
 	patterns map[parse.Node]map[string]int
@@ -402,15 +398,6 @@ func (checker *checker) getModStructDefs(mod parse.Node) map[string]int {
 	return defs
 }
 
-func (checker *checker) getModHostAliases(mod parse.Node) map[string]int {
-	aliases, ok := checker.hostAliases[mod]
-	if !ok {
-		aliases = make(map[string]int)
-		checker.hostAliases[mod] = aliases
-	}
-	return aliases
-}
-
 func (checker *checker) getModPatterns(mod parse.Node) map[string]int {
 	patterns, ok := checker.patterns[mod]
 	if !ok {
@@ -490,7 +477,7 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 			//variables
 			*parse.Variable, *parse.GlobalVariable, *parse.IdentifierLiteral,
 
-			*parse.BinaryExpression, *parse.UnaryExpression, *parse.URLExpression, *parse.AtHostLiteral,
+			*parse.BinaryExpression, *parse.UnaryExpression, *parse.URLExpression,
 			parse.SimpleValueLiteral, *parse.IntegerRangeLiteral, *parse.FloatRangeLiteral,
 
 			//data structure literals
@@ -649,8 +636,6 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 		return c.checkIdentifier(node, parent, scopeNode, closestModule, ancestorChain)
 	case *parse.SelfExpression, *parse.SendValueExpression:
 		return c.checkSelfExprAndSendValExpr(n, parent, ancestorChain)
-	case *parse.HostAliasDefinition:
-		return c.checkHostAlisDef(node, parent, closestModule, inPreinitBlock)
 	case *parse.PatternDefinition:
 		return c.checkPatternDef(node, parent, closestModule, inPreinitBlock)
 	case *parse.PatternNamespaceDefinition:
@@ -718,7 +703,6 @@ func (c *checker) precheckTopLevelStatements(module parse.Node) {
 		//definitions
 		case *parse.PatternDefinition:
 		case *parse.PatternNamespaceDefinition:
-		case *parse.HostAliasDefinition:
 		case *parse.StructDefinition:
 		case *parse.FunctionDeclaration:
 			c.precheckTopLevelFuncDecl(stmt, module)
@@ -1446,7 +1430,7 @@ func (c *checker) checkGlobalConstDecls(node *parse.GlobalConstantDeclarations, 
 				//variables
 				*parse.Variable, *parse.GlobalVariable, *parse.IdentifierLiteral,
 
-				*parse.BinaryExpression, *parse.UnaryExpression, *parse.URLExpression, *parse.AtHostLiteral,
+				*parse.BinaryExpression, *parse.UnaryExpression, *parse.URLExpression,
 				parse.SimpleValueLiteral, *parse.IntegerRangeLiteral, *parse.FloatRangeLiteral,
 
 				//data structure literals
@@ -2050,7 +2034,7 @@ func (c *checker) checkGlobalVar(node *parse.GlobalVariable, parent, scopeNode, 
 
 	if fnDecls[node.Name] != nil && fnDecls[node.Name].chunk == c.chunk.Node &&
 		SamePointer(scopeNode, closestModule) {
-		//If the global variable is a function then no global declarations (patterns, host aliases, global variables)
+		//If the global variable is a function then no global declarations (patterns, global variables)
 		//should be located after this reference.
 
 		if _, ok := c.data.firstForbiddenPosForGlobalElementDecls[closestModule]; !ok {
@@ -2222,7 +2206,7 @@ func (c *checker) checkIdentifier(node *parse.IdentifierLiteral, parent, scopeNo
 		if fnDecls[node.Name] != nil && fnDecls[node.Name].chunk == c.chunk.Node &&
 			SamePointer(scopeNode, closestModule) {
 
-			//If the identifier references a  function then no global declarations (patterns, host aliases, global variables)
+			//If the identifier references a  function then no global declarations (patterns, global variables)
 			//should be located after this reference.
 
 			if _, ok := c.data.firstForbiddenPosForGlobalElementDecls[closestModule]; !ok {
@@ -2395,34 +2379,6 @@ loop:
 				c.addError(p, fmtObjectDoesNotHaveProp(p.PropertyName.Name))
 			}
 		}
-	}
-
-	return parse.ContinueTraversal
-}
-
-func (c *checker) checkHostAlisDef(node *parse.HostAliasDefinition, parent, closestModule parse.Node, inPreinitBlock bool) parse.TraversalAction {
-	switch parent.(type) {
-	case *parse.Chunk, *parse.EmbeddedModule:
-	default:
-		if !inPreinitBlock {
-			c.addError(node, MISPLACED_HOST_ALIAS_DEF_STATEMENT_TOP_LEVEL_STMT)
-			return parse.Prune
-		}
-	}
-
-	firstForbiddenPos := c.data.firstForbiddenPosForGlobalElementDecls[closestModule]
-	if firstForbiddenPos != 0 && node.Base().Span.Start >= firstForbiddenPos {
-		c.addError(node, MISPLACED_HOST_ALIAS_DEF_AFTER_FN_DECL_OR_REF_TO_FN)
-		return parse.Prune
-	}
-
-	aliasName := node.Left.Value[1:]
-	hostAliases := c.getModHostAliases(closestModule)
-
-	if _, alreadyDefined := hostAliases[aliasName]; alreadyDefined && !inPreinitBlock {
-		c.addError(node, fmtHostAliasAlreadyDeclared(aliasName))
-	} else {
-		hostAliases[aliasName] = 0
 	}
 
 	return parse.ContinueTraversal
@@ -2724,12 +2680,10 @@ func (c *checker) checkEmbeddedModule(node *parse.EmbeddedModule, parent, parent
 	globals := c.getModGlobalVars(node)
 	patterns := c.getModPatterns(node)
 	patternNamespaces := c.getModPatternNamespaces(node)
-	hostAliases := c.getModHostAliases(node)
 
 	parentModuleGlobals := c.getModGlobalVars(parentModule)
 	parentModulePatterns := c.getModPatterns(parentModule)
 	parentModulePatternNamespaces := c.getModPatternNamespaces(parentModule)
-	parentModuleHostAliases := c.getModHostAliases(parentModule)
 
 	switch parent.(type) {
 	case *parse.TestSuiteExpression:
@@ -2749,10 +2703,6 @@ func (c *checker) checkEmbeddedModule(node *parse.EmbeddedModule, parent, parent
 			patternNamespaces[name] = info
 		}
 
-		//inherit host aliases
-		for name, info := range parentModuleHostAliases {
-			hostAliases[name] = info
-		}
 	case *parse.TestCaseExpression:
 		globals[globalnames.CURRENT_TEST] = globalVarInfo{isConst: true, isStartConstant: true}
 
@@ -2770,11 +2720,6 @@ func (c *checker) checkEmbeddedModule(node *parse.EmbeddedModule, parent, parent
 		}
 		for name, info := range parentModulePatternNamespaces {
 			patternNamespaces[name] = info
-		}
-
-		//inherit host aliases
-		for name, info := range parentModuleHostAliases {
-			hostAliases[name] = info
 		}
 	}
 

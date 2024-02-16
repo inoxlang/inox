@@ -204,7 +204,7 @@ func ImportModule(config ImportConfig) (*LThread, error) {
 		globals = GlobalVariablesFromMap(map[string]Value{}, nil)
 	}
 
-	// pass patterns & host aliases of the preinit state to the context
+	// pass patterns of the preinit state to the context
 	if preinitState != nil {
 		for name, patt := range preinitState.Global.Ctx.GetNamedPatterns() {
 			if _, ok := basePatterns[name]; ok {
@@ -217,9 +217,6 @@ func ImportModule(config ImportConfig) (*LThread, error) {
 				continue
 			}
 			routineCtx.AddPatternNamespace(name, ns)
-		}
-		for name, val := range preinitState.Global.Ctx.GetHostAliases() {
-			routineCtx.AddHostAlias(name, val)
 		}
 	}
 

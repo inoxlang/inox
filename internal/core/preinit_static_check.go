@@ -32,10 +32,8 @@ func checkPreinitBlock(args preinitBlockCheckParams) {
 			*parse.ComplexStringPatternPiece, *parse.PatternPieceElement,
 			*parse.ObjectPatternLiteral, *parse.RecordPatternLiteral, *parse.ObjectPatternProperty,
 			*parse.PatternCallExpression, *parse.PatternGroupName,
-			*parse.PatternUnion, *parse.ListPatternLiteral, *parse.TuplePatternLiteral,
+			*parse.PatternUnion, *parse.ListPatternLiteral, *parse.TuplePatternLiteral:
 
-			//host alias
-			*parse.HostAliasDefinition, *parse.AtHostLiteral:
 			//ok
 		case *parse.InclusionImportStatement:
 			includedChunk := args.module.InclusionStatementMap[n]
@@ -68,10 +66,7 @@ func checkPatternOnlyIncludedChunk(chunk *parse.Chunk, onError func(n parse.Node
 			*parse.ComplexStringPatternPiece, *parse.PatternPieceElement,
 			*parse.ObjectPatternLiteral, *parse.RecordPatternLiteral, *parse.ObjectPatternProperty,
 			*parse.PatternCallExpression, *parse.PatternGroupName,
-			*parse.PatternUnion, *parse.ListPatternLiteral, *parse.TuplePatternLiteral,
-
-			//host alias
-			*parse.HostAliasDefinition, *parse.AtHostLiteral:
+			*parse.PatternUnion, *parse.ListPatternLiteral, *parse.TuplePatternLiteral:
 		default:
 			onError(n, fmt.Sprintf("%s: %T", FORBIDDEN_NODE_TYPE_IN_INCLUDABLE_CHUNK_IMPORTED_BY_PREINIT, n))
 			return parse.Prune, nil

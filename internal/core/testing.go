@@ -205,7 +205,7 @@ func (s *TestSuite) FilesystemSnapshot() (FilesystemSnapshot, bool) {
 func (s *TestSuite) Run(ctx *Context, options ...Option) (*LThread, error) {
 	if !s.node.IsStatement {
 		//TODO: if the TestSuiteExpression node is not a statement,
-		//the global variables, patterns and host aliases should be captured in the TestSuite.
+		//the global variables and patterns should be captured in the TestSuite.
 		return nil, errors.New("running free test suites is not supported yet")
 	}
 
@@ -427,7 +427,7 @@ func (c *TestCase) Run(ctx *Context, options ...Option) (*LThread, error) {
 
 	if !c.node.IsStatement {
 		//TODO: if the TestCaseExpression node is not a statement,
-		//the global variables, patterns and host aliases should be captured in the TestCase.
+		//the global variables and patterns should be captured in the TestCase.
 		return nil, errors.New("running free test cases is not supported yet")
 	}
 
@@ -702,7 +702,7 @@ func runTestItem(
 		lthreadCtx.SetProtocolClientForHost(host, client)
 	}
 
-	//Inherit patterns and host aliases.
+	//Inherit patterns and pattern namespaces.
 	spawnerState.Ctx.ForEachNamedPattern(func(name string, pattern Pattern) error {
 		lthreadCtx.AddNamedPattern(name, pattern)
 		return nil
@@ -710,11 +710,6 @@ func runTestItem(
 
 	spawnerState.Ctx.ForEachPatternNamespace(func(name string, namespace *PatternNamespace) error {
 		lthreadCtx.AddPatternNamespace(name, namespace)
-		return nil
-	})
-
-	spawnerState.Ctx.ForEachHostAlias(func(name string, value Host) error {
-		lthreadCtx.AddHostAlias(name, value)
 		return nil
 	})
 

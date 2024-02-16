@@ -701,9 +701,7 @@
           }
       }
 
-      # Create a host alias @host
-      @host = HOST
-      url = @host/posts/1
+      url = @HOST/posts/1
 
       assign resp err = http.get(url)
       if err? {
@@ -733,17 +731,15 @@
           }
       }
 
-      @host = HOST
-
       # The http.read function directly reads and parses the body.
       # By default the type of content is determined by looking at the Content-Type header.
 
-      parsed_json = http.read!(@host/posts/1)
+      parsed_json = http.read!(@HOST/posts/1)
       print("value:", parsed_json)
 
       # You can specify a content type by adding a mimetype value.
 
-      text = http.read!(@host/posts/1, mime"text")
+      text = http.read!(@HOST/posts/1, mime"text")
       print("text:", text)
   - name: POST & PATCH Requests
     id: http-post-patch-reqs

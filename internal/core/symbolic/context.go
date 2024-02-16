@@ -52,41 +52,6 @@ func (ctx *Context) EvalState() *State {
 	return ctx.associatedState
 }
 
-func (ctx *Context) AddHostAlias(name string, val *Host, ignoreError bool) {
-	_, ok := ctx.hostAliases[name]
-	if ok && !ignoreError {
-		panic(fmt.Errorf("cannot register a host alias more than once: %s", name))
-	}
-	ctx.hostAliases[name] = val
-}
-
-func (ctx *Context) ResolveHostAlias(alias string) Value {
-	host, ok := ctx.hostAliases[alias]
-	if !ok {
-		if ctx.forkingParent != nil {
-			host, ok := ctx.forkingParent.hostAliases[alias]
-			if ok {
-				return host
-			}
-		}
-		return nil
-	}
-	return host
-}
-
-func (ctx *Context) CopyHostAliasesIn(destCtx *Context) {
-	if ctx.forkingParent != nil {
-		ctx.forkingParent.CopyHostAliasesIn(destCtx)
-	}
-
-	for name, value := range ctx.hostAliases {
-		if _, alreadyDefined := destCtx.hostAliases[name]; alreadyDefined {
-			panic(fmt.Errorf("host alias %q already defined", name))
-		}
-		destCtx.hostAliases[name] = value
-	}
-}
-
 func (ctx *Context) ResolveNamedPattern(name string) Pattern {
 	pattern, ok := ctx.namedPatterns[name]
 	if !ok {

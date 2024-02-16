@@ -74,10 +74,10 @@ https://google.com/?q={param_value}hub
 # result: https://google.com?q=github
 ```
 
-Host aliases:
-
+Host part interpolation:
 ```
-@host = https://example.com   # host literal
+host = https://example.com  # host literal
+
 @host/index.html
 ```
 

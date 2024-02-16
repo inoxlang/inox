@@ -14,9 +14,7 @@ manifest {
     }
 }
 
-# Create a host alias @host
-@host = HOST
-url = @host/posts/1
+url = @HOST/posts/1
 
 assign resp err = http.get(url)
 if err? {

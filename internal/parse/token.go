@@ -201,7 +201,6 @@ const (
 	DATETIME_LITERAL
 	FLAG_LITERAL
 	RUNE_LITERAL
-	AT_HOST_LITERAL
 	SCHEME_LITERAL
 	HOST_LITERAL
 	URL_LITERAL
@@ -437,7 +436,6 @@ var tokenStrings = [...]string{
 	DATETIME_LITERAL:                      "<?>",
 	FLAG_LITERAL:                          "<?>",
 	RUNE_LITERAL:                          "<?>",
-	AT_HOST_LITERAL:                       "<?>",
 	HOST_LITERAL:                          "<?>",
 	URL_LITERAL:                           "<?>",
 	URL_PATTERN_LITERAL:                   "<?>",
@@ -603,7 +601,6 @@ var tokenTypenames = [...]string{
 	DATETIME_LITERAL:                      "DATETIME_LITERAL",
 	FLAG_LITERAL:                          "FLAG_LITERAL",
 	RUNE_LITERAL:                          "RUNE_LITERAL",
-	AT_HOST_LITERAL:                       "AT_HOST_LITERAL",
 	SCHEME_LITERAL:                        "SCHEME_LITERAL",
 	HOST_LITERAL:                          "HOST_LITERAL",
 	URL_LITERAL:                           "URL_LITERAL",
@@ -737,6 +734,13 @@ func GetTokens(node Node, chunk *Chunk, addMeta bool) []Token {
 			}
 			return ContinueTraversal, nil
 		case *URLExpression:
+
+			if _, ok := n.HostPart.(*IdentifierLiteral); ok {
+				tokens = append(tokens, Token{
+					Type: AT_SIGN,
+					Span: NodeSpan{n.Span.Start, n.Span.Start + 1},
+				})
+			}
 
 			for i, r := range n.Raw {
 				switch r {
@@ -897,9 +901,6 @@ func GetTokens(node Node, chunk *Chunk, addMeta bool) []Token {
 		case *RuneLiteral:
 			tokenType = RUNE_LITERAL
 			raw = "'" + string(n.Value) + "'"
-		case *AtHostLiteral:
-			tokenType = AT_HOST_LITERAL
-			raw = n.Value
 		case *SchemeLiteral:
 			tokenType = SCHEME_LITERAL
 			raw = n.Name + "://"

@@ -434,19 +434,19 @@ func TestPrepareLocalModule(t *testing.T) {
 		assert.False(t, state.SymbolicData.IsEmpty())
 	})
 
-	t.Run("preinit block defines a host alias used in the manifest", func(t *testing.T) {
+	t.Run("the manifest contains a URL expression using a global constant", func(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
 		defer compilationCtx.CancelGracefully()
 
 		os.WriteFile(file, []byte(`
-			preinit {
-				@host = https://localhost
-			}
+			const (
+				HOST = https://localhost
+			)
 			manifest {
 				permissions: {
-					read: @host/
+					read: @HOST/
 				}
 			}
 		`), 0o600)

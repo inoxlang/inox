@@ -180,8 +180,8 @@ const (
 	UNTERMINATED_OPION_EXPR_EQUAL_ASSIGN_SHOULD_BE_FOLLOWED_BY_EXPR  = "unterminated option expression, '=' should be followed by an expression"
 	UNTERMINATED_OPION_PATT_EQUAL_ASSIGN_SHOULD_BE_FOLLOWED_BY_EXPR  = "unterminated option pattern, '=' should be followed by an expression"
 	UNTERMINATED_OPION_PATTERN_A_VALUE_IS_EXPECTED_AFTER_EQUAKL_SIGN = "unterminated option pattern, a value is expected after '='"
-	AT_SYMBOL_SHOULD_BE_FOLLOWED_BY                                  = "'@' should be followed by '(' <expr> ')' or a host alias (@api/path)"
-	UNTERMINATED_ALIAS_RELATED_LITERAL                               = "unterminated at-host literal, url expression or host alias definition"
+	AT_SYMBOL_SHOULD_BE_FOLLOWED_BY                                  = "'@' should be followed by '(' <expr> ')' or by the name of variable (@host/path)"
+	UNTERMINATED_URL_EXPRESSION                                      = "unterminated url expression"
 	INVALID_HOST_ALIAS_DEF_MISSING_VALUE_AFTER_EQL_SIGN              = "unterminated HostAliasDefinition, missing value after '='"
 
 	//parenthesized expression

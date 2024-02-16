@@ -642,28 +642,6 @@ func TestPreInit(t *testing.T) {
 			},
 		},
 		{
-			name: "inclusion import: host alias definition",
-			module: `
-				preinit {
-					import /hosts.ix
-				}
-
-				manifest {
-					permissions: {
-						read: @host/index.html
-					}
-				}`,
-			setupFilesystem: func(fls afs.Filesystem) {
-				util.WriteFile(fls, "/hosts.ix", []byte(`
-					includable-chunk
-
-					@host = https://localhost:8080
-				`), 0600)
-			},
-			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
-			expectedPermissions: []Permission{HttpPermission{Kind_: permkind.Read, Entity: URL("https://localhost:8080/index.html")}},
-		},
-		{
 			name: "inclusion import: forbidden node in chunk",
 			module: `
 				preinit {
@@ -1732,7 +1710,7 @@ func TestPreInit(t *testing.T) {
 				parsedChunk := parse.NewParsedChunkSource(chunk, srcFile)
 				mod := &Module{
 					MainChunk:        parsedChunk,
-					TopLevelNode: parsedChunk.Node,
+					TopLevelNode:     parsedChunk.Node,
 					ManifestTemplate: chunk.Manifest,
 				}
 
@@ -1781,7 +1759,7 @@ func TestPreInit(t *testing.T) {
 						CodeString:             testCase.module,
 					},
 				),
-				TopLevelNode: chunk,
+				TopLevelNode:          chunk,
 				ModuleKind:            testCase.moduleKind,
 				ManifestTemplate:      chunk.Manifest,
 				InclusionStatementMap: map[*parse.InclusionImportStatement]*IncludedChunk{},

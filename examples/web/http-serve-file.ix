@@ -9,8 +9,6 @@ manifest {
     }
 }
 
-@host = HOST
-
 fn handle(rw http.resp-writer, r http.req){
     path = r.path
 
@@ -27,7 +25,7 @@ fn handle(rw http.resp-writer, r http.req){
 
 server = http.Server!(HOST, handle)
 
-body = http.read!(@host/index.js, --insecure)
+body = http.read!(@HOST/index.js, --insecure)
 print(body)
 
 server.close()

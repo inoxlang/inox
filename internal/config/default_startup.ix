@@ -85,9 +85,6 @@ manifest {
     }
 }
 
-@loc = https://localhost
-
-
 return {
     builtin-commands: [#cd, #pwd, #whoami, #hostname]
     trusted-commands: [#echo, #go, #git, #less, #grep, #cat]

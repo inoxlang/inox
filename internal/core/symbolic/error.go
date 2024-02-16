@@ -137,6 +137,9 @@ const (
 
 	THIS_VAL_IS_AN_OPT_LIT_DID_YOU_FORGET_A_SPACE = "this value is an option literal, did you forget a space between '-' and the variable name ?"
 
+	//URL expressions
+	HOST_PART_SHOULD_HAVE_A_HOST_VALUE = "host part should have a host value (e.g. https://example.com)"
+
 	//database
 	CURRENT_DATABASE_SCHEMA_SAME_AS_PASSED = //
 	"the current database schema is the same as the passed schema, no schema update is needed (make sure to remove `expected-schema-update` from the manifest)"
@@ -472,10 +475,6 @@ func fmtPatternNamespaceHasNotMember(namespace string, name string) string {
 	return fmt.Sprintf("pattern namespace %%%s has not a member named %q", namespace, name)
 }
 
-func fmtHostAliasIsNotDeclared(name string) string {
-	return fmt.Sprintf("host alias @%s is not declared", name)
-}
-
 func fmtVarIsNotDeclared(name string) string {
 	return fmt.Sprintf("variable '%s' is not declared", name)
 }
@@ -567,10 +566,6 @@ func fmtPatternSpreadInRecordPatternShouldBeAnRecordPatternNot(v Value) string {
 
 func fmtPropertyShouldNotBePresentInSeveralSpreadPatterns(name string) string {
 	return fmt.Sprintf("property '%s' should not be present in several spread patterns", name)
-}
-
-func fmtCannotCreateHostAliasWithA(value Value) string {
-	return fmt.Sprintf("cannot create a host alias with a value of type %s", Stringify(value))
 }
 
 func fmtPatternNamespaceShouldBeInitWithNot(v Value) string {

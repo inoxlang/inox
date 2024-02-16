@@ -1038,15 +1038,13 @@ func (p *parser) parseLazyAndHostAliasStuff() Node {
 			},
 			Expression: e,
 		}
-	} else if p.s[p.i] >= 'a' && p.s[p.i] <= 'z' { //host alias definition | url expression starting with an alias
+	} else if IsFirstIdentChar(p.s[p.i]) { //url expression starting with a variable
 		j := p.i
 		p.i--
 
 		for j < p.len && IsIdentChar(p.s[j]) {
 			j++
 		}
-
-		aliasEndIndex := j
 
 		for j < p.len && isSpaceNotLF(p.s[j]) {
 			j++
@@ -1057,51 +1055,10 @@ func (p *parser) parseLazyAndHostAliasStuff() Node {
 			return &InvalidAliasRelatedNode{
 				NodeBase: NodeBase{
 					NodeSpan{start, j},
-					&ParsingError{UnspecifiedParsingError, UNTERMINATED_ALIAS_RELATED_LITERAL},
+					&ParsingError{UnspecifiedParsingError, UNTERMINATED_URL_EXPRESSION},
 					false,
 				},
 				Raw: string(p.s[start:j]),
-			}
-		}
-
-		//@alias = <host>
-		if p.s[j] == '=' {
-			equalPos := j
-
-			left := &AtHostLiteral{
-				NodeBase: NodeBase{
-					NodeSpan{start, aliasEndIndex},
-					nil,
-					false,
-				},
-				Value: string(p.s[start:aliasEndIndex]),
-			}
-
-			p.i = j + 1
-
-			p.eatSpace()
-			var parsingErr *ParsingError
-			var right Node
-			var end int32
-
-			if p.i >= p.len {
-				parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_HOST_ALIAS_DEF_MISSING_VALUE_AFTER_EQL_SIGN}
-				end = p.len
-			} else {
-				right, _ = p.parseExpression()
-				end = right.Base().Span.End
-			}
-
-			p.tokens = append(p.tokens, Token{Type: EQUAL, SubType: ASSIGN_EQUAL, Span: NodeSpan{equalPos, equalPos + 1}})
-
-			return &HostAliasDefinition{
-				NodeBase: NodeBase{
-					NodeSpan{start, end},
-					parsingErr,
-					false,
-				},
-				Left:  left,
-				Right: right,
 			}
 		}
 
@@ -1766,9 +1723,11 @@ loop:
 				Value:    hostPartString,
 			}
 		} else {
-			hostPart = &AtHostLiteral{
-				NodeBase: hostPartBase,
-				Value:    hostPartString,
+			hostPart = &IdentifierLiteral{
+				NodeBase: NodeBase{
+					Span: NodeSpan{hostPartBase.Span.Start + 1, hostPartBase.Span.End},
+				},
+				Name: hostPartString[1:],
 			}
 		}
 

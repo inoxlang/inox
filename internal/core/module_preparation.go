@@ -463,7 +463,7 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 		state.Globals.Set(globalnames.PROJECT_SECRETS, record)
 	}
 
-	//pass patterns & host aliases of the preinit state to the state
+	//pass patterns of the preinit state to the state
 	if preinitState != nil {
 		state.Ctx.Update(func(ctxData LockedContextData) error {
 			preinitCtx := preinitState.Global.Ctx
@@ -481,11 +481,6 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 					return nil
 				}
 				ctxData.PatternNamespaces[name] = namespace
-				return nil
-			})
-
-			preinitCtx.ForEachHostAlias(func(name string, value Host) error {
-				ctxData.HostAliases[name] = value
 				return nil
 			})
 

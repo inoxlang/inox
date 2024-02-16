@@ -35,7 +35,6 @@ var (
 	ErrImpossibleToDeterminateInitialWorkingDir = errors.New("impossible to determinate initial working directory")
 
 	ErrNonExistingNamedPattern                 = errors.New("non existing named pattern")
-	ErrNotUniqueAliasDefinition                = errors.New("cannot register a host alias more than once")
 	ErrNotUniquePatternDefinition              = errors.New("cannot register a pattern more than once")
 	ErrNotUniquePatternNamespaceDefinition     = errors.New("cannot register a pattern namespace more than once")
 	ErrNotUniqueHostDefinitionDefinition       = errors.New("cannot set host definition data more than once")
@@ -55,7 +54,7 @@ var (
 // when the context is cancelled all descendant contexts are cancelled as well.
 // All *GlobalState instances have a context.
 // An Inox Context have several roles:
-// - It stores named patterns, pattern namespaces, host aliases and other module's data.
+// - It stores named patterns, pattern namespaces and other module's data.
 // - It is called by the runtime and native functions to check permissions and enforce limits.
 // - It has a reference to the current transaction.
 // - During graceful teardown it calls functions registered with OnGracefulTearDown.
@@ -94,7 +93,6 @@ type Context struct {
 	limiters             map[string]*limiter //the map is not changed after context creation
 
 	//values
-	hostAliases         map[string]Host
 	namedPatterns       map[string]Pattern
 	patternNamespaces   map[string]*PatternNamespace
 	urlProtocolClients  map[URL]ProtocolClient
@@ -395,7 +393,6 @@ func NewContext(config ContextConfig) *Context {
 		forbiddenPermissions:    slices.Clone(config.ForbiddenPermissions),
 		limits:                  limits,
 		limiters:                limiters,
-		hostAliases:             map[string]Host{},
 		namedPatterns:           map[string]Pattern{},
 		patternNamespaces:       map[string]*PatternNamespace{},
 		urlProtocolClients:      map[URL]ProtocolClient{},
@@ -771,7 +768,7 @@ type BoundChildContextOptions struct {
 	Filesystem afs.Filesystem
 }
 
-// BoundChild creates a child of the context that also inherits callbacks, named patterns, host aliases and protocol clients.
+// BoundChild creates a child of the context that also inherits callbacks, named patterns, and protocol clients.
 func (ctx *Context) BoundChild() *Context {
 	return ctx.boundChild(BoundChildContextOptions{})
 }
@@ -796,7 +793,6 @@ func (ctx *Context) boundChild(opts BoundChildContextOptions) *Context {
 
 	child.namedPatterns = ctx.namedPatterns
 	child.patternNamespaces = ctx.patternNamespaces
-	child.hostAliases = ctx.hostAliases
 	child.hostProtocolClients = ctx.hostProtocolClients
 	child.urlProtocolClients = ctx.urlProtocolClients
 	child.userData = ctx.userData
@@ -835,7 +831,6 @@ func (ctx *Context) New() *Context {
 
 	clone.namedPatterns = maps.Clone(ctx.namedPatterns)
 	clone.patternNamespaces = maps.Clone(ctx.patternNamespaces)
-	clone.hostAliases = maps.Clone(ctx.hostAliases)
 	//TODO: clone clients ?
 	clone.hostProtocolClients = maps.Clone(ctx.hostProtocolClients)
 	clone.urlProtocolClients = maps.Clone(ctx.urlProtocolClients)
@@ -1065,53 +1060,7 @@ func (ctx *Context) Update(fn func(ctxData LockedContextData) error) error {
 	return fn(LockedContextData{
 		NamedPatterns:     ctx.namedPatterns,
 		PatternNamespaces: ctx.patternNamespaces,
-		HostAliases:       ctx.hostAliases,
 	})
-}
-
-// ResolveHostAlias returns the Host associated with the passed alias name, if the alias does not exist nil is returned.
-func (ctx *Context) ResolveHostAlias(alias string) Host {
-	ctx.lock.RLock()
-	defer ctx.lock.RUnlock()
-
-	host, ok := ctx.hostAliases[alias]
-	if !ok {
-		return ""
-	}
-	return host
-}
-
-// AddHostAlias associates a Host with the passed alias name, if the alias is already defined the function will panic.
-func (ctx *Context) AddHostAlias(alias string, host Host) {
-	ctx.lock.Lock()
-	defer ctx.lock.Unlock()
-	ctx.assertNotDone()
-
-	_, ok := ctx.hostAliases[alias]
-	if ok {
-		panic(fmt.Errorf("%w: %s", ErrNotUniqueAliasDefinition, alias))
-	}
-	ctx.hostAliases[alias] = host
-}
-
-func (ctx *Context) GetHostAliases() map[string]Host {
-	ctx.lock.RLock()
-	defer ctx.lock.RUnlock()
-
-	return maps.Clone(ctx.hostAliases)
-}
-
-func (ctx *Context) ForEachHostAlias(fn func(name string, value Host) error) error {
-	ctx.lock.RLock()
-	defer ctx.lock.RUnlock()
-
-	for k, v := range ctx.hostAliases {
-		err := fn(k, v)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // ResolveNamedPattern returns the pattern associated with the passed name, if the pattern does not exist nil is returned.
@@ -1522,15 +1471,6 @@ func (ctx *Context) ToSymbolicValue() (*symbolic.Context, error) {
 		}
 
 		symbolicCtx.AddPatternNamespace(k, symbolicVal.(*symbolic.PatternNamespace), false)
-	}
-
-	for k, v := range ctx.hostAliases {
-		symbolicVal, err := ToSymbolicValue(ctx, v, false)
-		if err != nil {
-			return nil, fmt.Errorf("cannot convert host alias %s: %s", k, err)
-		}
-
-		symbolicCtx.AddHostAlias(k, symbolicVal.(*symbolic.Host), false)
 	}
 
 	return symbolicCtx, nil

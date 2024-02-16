@@ -10787,19 +10787,6 @@ func TestSymbolicEval(t *testing.T) {
 		})
 	})
 
-	t.Run("host alias definition: RHS is not a host", func(t *testing.T) {
-		n, state := MakeTestStateAndChunk(`
-			@h = int
-		`)
-
-		res, err := symbolicEval(n, state)
-		assert.NoError(t, err)
-		assert.Equal(t, []SymbolicEvaluationError{
-			makeSymbolicEvalError(n.Statements[0], state, fmtCannotCreateHostAliasWithA(ANY_INT)),
-		}, state.errors())
-		assert.Nil(t, res)
-	})
-
 	t.Run("assertion statement", func(t *testing.T) {
 		t.Run("value is a boolean", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
@@ -10950,20 +10937,6 @@ func TestSymbolicEval(t *testing.T) {
 				pattern p = 1
 				return testsuite "name" {
 					val = %p
-				}
-			`)
-
-			res, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Empty(t, state.errors())
-			assert.Equal(t, ANY_TEST_SUITE, res)
-		})
-
-		t.Run("tests suite should inherit host aliases defined by the parent state", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				@host = https://localhost
-				return testsuite "name" {
-					val = @host/index.html
 				}
 			`)
 
@@ -11514,37 +11487,6 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, ANY_TEST_SUITE, res)
 		})
 
-		t.Run("testcase should inherit host aliases defined by the parent test suite", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				return testsuite {
-					@host = https://localhost
-					testcase {
-						val = @host/index.html
-					}
-				}
-			`)
-
-			res, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Empty(t, state.errors())
-			assert.Equal(t, ANY_TEST_SUITE, res)
-		})
-
-		t.Run("testcase should inherit host aliases defined in the top-level scope", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				@host = https://localhost
-				return testsuite {
-					testcase {
-						val = @host/index.html
-					}
-				}
-			`)
-
-			res, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Empty(t, state.errors())
-			assert.Equal(t, ANY_TEST_SUITE, res)
-		})
 	})
 
 	t.Run("lifetimejob expression", func(t *testing.T) {
@@ -12468,6 +12410,22 @@ func TestSymbolicEval(t *testing.T) {
 	})
 
 	t.Run("URL expressions", func(t *testing.T) {
+
+		t.Run("invalid value for the host part", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				a = 1
+				return @a/index.html
+			`)
+
+			hostPart := parse.FindNode(n, (*parse.URLExpression)(nil), nil).HostPart
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(hostPart, state, HOST_PART_SHOULD_HAVE_A_HOST_VALUE),
+			}, state.errors())
+			assert.Equal(t, ANY_URL, res)
+		})
 
 		t.Run("invalid query parameter value", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`

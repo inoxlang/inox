@@ -5980,6 +5980,54 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("whole host interpolation", func(t *testing.T) {
+			n := mustparseChunk(t, `@host/`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 6}, nil, false},
+				Statements: []Node{
+					&URLExpression{
+						NodeBase: NodeBase{Span: NodeSpan{0, 6}},
+						Raw:      "@host/",
+						HostPart: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{1, 5}, nil, false},
+							Name:     "host",
+						},
+						Path: []Node{
+							&PathSlice{
+								NodeBase: NodeBase{NodeSpan{5, 6}, nil, false},
+								Value:    "/",
+							},
+						},
+						QueryParams: []Node{},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("whole host interpolation: uppercase", func(t *testing.T) {
+			n := mustparseChunk(t, `@HOST/`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 6}, nil, false},
+				Statements: []Node{
+					&URLExpression{
+						NodeBase: NodeBase{Span: NodeSpan{0, 6}},
+						Raw:      "@HOST/",
+						HostPart: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{1, 5}, nil, false},
+							Name:     "HOST",
+						},
+						Path: []Node{
+							&PathSlice{
+								NodeBase: NodeBase{NodeSpan{5, 6}, nil, false},
+								Value:    "/",
+							},
+						},
+						QueryParams: []Node{},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("no query, single trailing path interpolation, no '/'", func(t *testing.T) {
 			n := mustparseChunk(t, `https://example.com{$path}`)
 			assert.EqualValues(t, &Chunk{
@@ -7161,7 +7209,7 @@ func testParse(
 					&InvalidAliasRelatedNode{
 						NodeBase: NodeBase{
 							NodeSpan{0, 2},
-							&ParsingError{UnspecifiedParsingError, UNTERMINATED_ALIAS_RELATED_LITERAL},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_URL_EXPRESSION},
 							false,
 						},
 						Raw: "@a",
@@ -7189,34 +7237,11 @@ func testParse(
 							&InvalidAliasRelatedNode{
 								NodeBase: NodeBase{
 									NodeSpan{1, 3},
-									&ParsingError{UnspecifiedParsingError, UNTERMINATED_ALIAS_RELATED_LITERAL},
+									&ParsingError{UnspecifiedParsingError, UNTERMINATED_URL_EXPRESSION},
 									false,
 								},
 								Raw: "@a",
 							},
-						},
-					},
-				},
-			}, n)
-		})
-	})
-
-	t.Run("host alias definition", func(t *testing.T) {
-		t.Run("missing value after equal sign", func(t *testing.T) {
-			n, err := parseChunk(t, `@a =`, "")
-			assert.Error(t, err)
-			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 4}, nil, false},
-				Statements: []Node{
-					&HostAliasDefinition{
-						NodeBase: NodeBase{
-							NodeSpan{0, 4},
-							&ParsingError{UnspecifiedParsingError, INVALID_HOST_ALIAS_DEF_MISSING_VALUE_AFTER_EQL_SIGN},
-							false,
-						},
-						Left: &AtHostLiteral{
-							NodeBase: NodeBase{Span: NodeSpan{0, 2}},
-							Value:    "@a",
 						},
 					},
 				},

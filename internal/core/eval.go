@@ -320,12 +320,6 @@ func EvalSimpleValueLiteral(n parse.SimpleValueLiteral, global *GlobalState) (Se
 		return Scheme(node.Name), nil
 	case *parse.HostLiteral:
 		return Host(node.Value), nil
-	case *parse.AtHostLiteral:
-		res := global.Ctx.ResolveHostAlias(node.Value[1:])
-		if res == "" {
-			return nil, fmt.Errorf("host alias '%s' is not defined", node.Value)
-		}
-		return res, nil
 	case *parse.HostPatternLiteral:
 		return HostPattern(node.Value), nil
 	case *parse.RuneLiteral:

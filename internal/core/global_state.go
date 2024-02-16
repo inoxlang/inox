@@ -32,7 +32,7 @@ var (
 )
 
 // A GlobalState represents the global state of a module (or the shell loop), most exported fields should be set once.
-// Patterns, host aliases and host definition data are stored in the context.
+// Patterns and host definition data are stored in the context.
 type GlobalState struct {
 	id     StateId
 	Module *Module //nil in some cases (e.g. shell, mapping entry's state), TODO: check for usage

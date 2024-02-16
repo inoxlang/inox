@@ -2418,22 +2418,6 @@ func (v *VM) handleOtherOpcodes(op byte) (_continue bool) {
 
 			// v.sp -= 3
 		}
-	//HOST ALIAS
-	case OpResolveHost:
-		v.ip += 2
-		aliasIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-		aliasName := string(v.constants[aliasIndex].(String))[1:]
-		val := v.global.Ctx.ResolveHostAlias(aliasName)
-		v.stack[v.sp] = val
-		v.sp++
-	case OpAddHostAlias:
-		v.ip += 2
-		aliasIndex := int(v.curInsts[v.ip]) | int(v.curInsts[v.ip-1])<<8
-		aliasName := string(v.constants[aliasIndex].(String))[1:]
-		val := v.stack[v.sp-1].(Host)
-		v.sp--
-
-		v.global.Ctx.AddHostAlias(aliasName, val)
 	//CHILD MODULE
 	case OpImport:
 		v.ip += 2
