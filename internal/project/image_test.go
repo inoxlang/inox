@@ -151,7 +151,31 @@ func TestBaseImage(t *testing.T) {
 		assert.ErrorIs(t, err, os.ErrNotExist)
 	})
 
-	t.Run("dot dir at root level", func(t *testing.T) {
+	t.Run("empty dot dir at root level", func(t *testing.T) {
+		project := createProject()
+
+		fls := project.LiveFilesystem()
+		utils.PanicIfErrAmong(
+			fls.MkdirAll("/.dir", fs_ns.DEFAULT_DIR_FMODE),
+		)
+
+		img, err := project.BaseImage()
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		snapshot := img.FilesystemSnapshot()
+		entries := snapshot.RootDirEntries()
+
+		if !assert.Empty(t, entries) {
+			return
+		}
+
+		_, err = snapshot.Metadata("/.dir")
+		assert.ErrorIs(t, err, os.ErrNotExist)
+	})
+
+	t.Run("non-empty dot dir at root level", func(t *testing.T) {
 		project := createProject()
 
 		fls := project.LiveFilesystem()
@@ -177,10 +201,38 @@ func TestBaseImage(t *testing.T) {
 
 		_, err = snapshot.Metadata("/.dir/script.ix")
 		assert.ErrorIs(t, err, os.ErrNotExist)
-
 	})
 
-	t.Run("dot file in an arbitrary sub dir", func(t *testing.T) {
+	t.Run("empty dot dir in an arbitrary sub dir", func(t *testing.T) {
+		project := createProject()
+
+		fls := project.LiveFilesystem()
+		utils.PanicIfErrAmong(
+			fls.MkdirAll("/x/.dir", fs_ns.DEFAULT_DIR_FMODE),
+		)
+
+		img, err := project.BaseImage()
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		snapshot := img.FilesystemSnapshot()
+		entries := snapshot.RootDirEntries()
+
+		if !assert.NotEmpty(t, entries) {
+			return
+		}
+
+		assert.Equal(t, "x", entries[0])
+
+		_, err = snapshot.Metadata("/x/.dir")
+		assert.ErrorIs(t, err, os.ErrNotExist)
+
+		_, err = snapshot.Metadata("/x/.dir/script.ix")
+		assert.ErrorIs(t, err, os.ErrNotExist)
+	})
+
+	t.Run("non-empty dot dir in an arbitrary sub dir", func(t *testing.T) {
 		project := createProject()
 
 		fls := project.LiveFilesystem()
