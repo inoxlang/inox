@@ -359,25 +359,60 @@ h.close()
 
 ### Composable String Patterns
 
-Here is the regex for a made up identifier type:
-`(?<name>[a-z]+)#(?<numA>\d+)-(?<letters>[a-z]+)-(?<numB>\d+)`
+```js
+//Regexp for matching time (e.g. 01:45 AM).
+/^(?<hour>(1[0-2]|0?[1-9])):(?<minute>[0-5][0-9]) (?<period>AM|PM)$/
 
-Same RegExp without group names: `([a-z]+)#(\d+)-([a-z]+)-(\d+)`
+//Same regexp but without group names.
+/^(1[0-2]|0?[1-9]):([0-5][0-9]) (AM|PM)$/
+```
 
 Inox's version:
 
-![image](https://github.com/inoxlang/inox/assets/113632189/0027a873-a957-401e-9efb-f6d9fdf57a64)
+![image](https://github.com/inoxlang/inox/assets/113632189/684b91f3-e7e1-42a1-86b1-60283ec3b038)
 
-String patterns can also be composed:
+<!--
+pattern time = str(
+    hour: (
+      | '1' '0'..'2'
+      | '0'? '1'..'9'
+    )
+    ':'
+    minute: ('0'..'5' '0'..'9')
+    ' '
+    period: (| "AM" | "PM")
+)
+-->
 
-![image](https://github.com/inoxlang/inox/assets/113632189/8a6ffb9a-0250-447b-8d46-e53f3becadd9)
+Composed Inox's version:
+
+![image](https://github.com/inoxlang/inox/assets/113632189/9cf6751f-6137-4249-8fa8-20aaf40847b3)
+
+<!--
+pattern time-hour = str(
+   | '1' '0'..'2'
+   | '0'? '1'..'9'
+)
+
+pattern time-minute = str('0'..'5' '0'..'9')
+
+pattern time-period = str(| "AM" | "PM")
+
+pattern time = str(
+    hour: time-hour
+    ':'
+    minute: time-minute
+    ' '
+    period: time-period
+)
+-->
 
 <details>
 
 **<summary>Recursive string patterns (WIP)</summary>**
 
 ```
-pattern json-list = @ %str( 
+pattern json-list = @ str( 
     '[' 
         (| atomic-json-val
          | json-val 
@@ -386,7 +421,7 @@ pattern json-list = @ %str(
     ']'
 )
 
-pattern json-val = @ %str(| json-list | atomic-json-val)
+pattern json-val = @ str(| json-list | atomic-json-val)
 pattern atomic-json-val = "1"
 ```
 
