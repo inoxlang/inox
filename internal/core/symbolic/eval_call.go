@@ -175,7 +175,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 
 					if addWarning {
 						isGlobal := state.hasGlobal(ident.Name)
-						state.addWarning(makeSymbolicEvalWarning(argNode, state, fmtDidYouMeanDollarName(ident.Name, isGlobal)))
+						state.addWarning(makeSymbolicEvalWarning(argNode, state, fmtDidYouMeanDollarNameInCLI(ident.Name, isGlobal)))
 					}
 				}
 

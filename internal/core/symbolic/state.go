@@ -640,6 +640,12 @@ func (state *State) addError(err SymbolicEvaluationError) {
 	state.symbolicData.AddError(err)
 }
 
+func (state *State) addErrorIf(cond bool, err SymbolicEvaluationError) {
+	if cond {
+		state.symbolicData.AddError(err)
+	}
+}
+
 func (state *State) addWarning(warning SymbolicEvaluationWarning) {
 	state.symbolicData.AddWarning(warning)
 }

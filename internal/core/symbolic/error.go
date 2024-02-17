@@ -507,7 +507,7 @@ func fmtSpreadArgumentShouldBeIterable(v Value) string {
 	return fmt.Sprintf("a spread argument should be iterable but is a(n) %s", Stringify(v))
 }
 
-func fmtDidYouMeanDollarName(name string, doubleDollar bool) string {
+func fmtDidYouMeanDollarNameInCLI(name string, doubleDollar bool) string {
 	if doubleDollar {
 		name = "$$" + name
 	} else {
@@ -733,4 +733,16 @@ func fmtExpectedLeftOperandForArithmetic(left Value, operator parse.BinaryOperat
 		panic(ErrUnreachable)
 	}
 	return fmtLeftOperandOfBinaryShouldBe(operator, s, Stringify(left))
+}
+
+func fmtDidYouMeanPercentName(name string) string {
+	return fmt.Sprintf("; did you mean %%%s ? In this location patterns require a leading '%%'.", name)
+}
+
+func fmtDidYouMeanDollarName(name string) string {
+	return fmt.Sprintf("; did you mean $%s ? In this location local variable names require a leading `$`", name)
+}
+
+func fmtDidYouMeanDollarDollarName(name string) string {
+	return fmt.Sprintf("; did you mean $^%s ? In this location global variable names require a `$$` prefix", name)
 }

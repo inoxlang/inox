@@ -211,10 +211,16 @@ func symbolicEval(node parse.Node, state *State) (result Value, finalErr error) 
 }
 
 type evalOptions struct {
-	ignoreNodeValue     bool
-	expectedValue       Value
+	ignoreNodeValue bool
+	expectedValue   Value
+
+	//used to report info to the caller, the primary use is to avoid showing irrelevant errors
 	actualValueMismatch *bool
-	reEval              bool
+
+	//used to report info to the caller, the primary use is to avoid showing irrelevant errors
+	hasShallowError *bool
+
+	reEval bool
 
 	//used for checking that double-colon expressions are not misplaced
 	doubleColonExprAncestorChain []parse.Node
@@ -225,6 +231,12 @@ type evalOptions struct {
 func (opts evalOptions) setActualValueMismatchIfNotNil() {
 	if opts.actualValueMismatch != nil {
 		*opts.actualValueMismatch = true
+	}
+}
+
+func (opts evalOptions) setHasShallowErrors() {
+	if opts.hasShallowError != nil {
+		*opts.hasShallowError = true
 	}
 }
 
@@ -429,6 +441,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 				msg += fmt.Sprintf("; did you mean %%%s instead of $%s ?", n.Name, n.Name)
 			}
 
+			options.setHasShallowErrors()
 			state.addError(makeSymbolicEvalError(node, state, msg))
 			return ANY, nil
 		}
@@ -785,6 +798,14 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 				msg = fmtPatternIsNotDeclaredYouProbablyMeant(n.Name, closestString)
 			} else {
 				msg = fmtPatternIsNotDeclared(n.Name)
+			}
+
+			if n.Unprefixed {
+				if _, ok := state.getLocal(n.Name); ok {
+					msg += fmtDidYouMeanDollarName(n.Name)
+				} else if _, ok := state.getGlobal(n.Name); ok {
+					msg += fmtDidYouMeanDollarDollarName(n.Name)
+				}
 			}
 
 			state.addError(makeSymbolicEvalError(node, state, msg))
@@ -1197,8 +1218,10 @@ func evalIdentifier(node *parse.IdentifierLiteral, state *State, evalOptions eva
 		msg := fmtVarIsNotDeclared(node.Name)
 
 		if pattern := state.ctx.ResolveNamedPattern(node.Name); pattern != nil {
-			msg += fmt.Sprintf("; did you mean %%%s ? In this location patterns require a leading '%%'.", node.Name)
+			msg += fmtDidYouMeanPercentName(node.Name)
 		}
+
+		evalOptions.setHasShallowErrors()
 
 		state.addError(makeSymbolicEvalError(node, state, msg))
 		return ANY, nil
@@ -1225,6 +1248,8 @@ func evalGlobalVariable(node *parse.GlobalVariable, state *State, evalOptions ev
 	info, ok := state.getGlobal(node.Name)
 
 	if !ok {
+		evalOptions.setHasShallowErrors()
+
 		state.addError(makeSymbolicEvalError(node, state, fmtGlobalVarIsNotDeclared(node.Name)))
 		return ANY, nil
 	}
@@ -3911,16 +3936,21 @@ func evalObjectLiteral(n *parse.ObjectLiteral, state *State, options evalOptions
 		}
 
 		var (
-			propVal      Value
-			err          error
-			serializable Serializable
+			propVal         Value
+			err             error
+			serializable    Serializable
+			hasShallowError = false
 		)
 
 		if p.Value == nil {
 			propVal = ANY_SERIALIZABLE
 			serializable = ANY_SERIALIZABLE
 		} else {
-			propVal, err = _symbolicEval(p.Value, state, evalOptions{expectedValue: expectedPropVal, actualValueMismatch: &deeperMismatch})
+			propVal, err = _symbolicEval(p.Value, state, evalOptions{
+				expectedValue:       expectedPropVal,
+				actualValueMismatch: &deeperMismatch,
+				hasShallowError:     &hasShallowError,
+			})
 			if err != nil {
 				return nil, err
 			}
@@ -3933,27 +3963,27 @@ func evalObjectLiteral(n *parse.ObjectLiteral, state *State, options evalOptions
 				static = _propType.(Pattern)
 				if !static.TestValue(propVal, RecTestCallState{}) {
 					expected := static.SymbolicValue()
-					state.addError(makeSymbolicEvalError(p.Value, state, fmtNotAssignableToPropOfType(propVal, expected)))
+					state.addErrorIf(!hasShallowError, makeSymbolicEvalError(p.Value, state, fmtNotAssignableToPropOfType(propVal, expected)))
 					propVal = expected
 				}
 			} else if deeperMismatch {
 				options.setActualValueMismatchIfNotNil()
 			} else if expectedPropVal != nil && !deeperMismatch && !expectedPropVal.Test(propVal, RecTestCallState{}) {
 				options.setActualValueMismatchIfNotNil()
-				state.addError(makeSymbolicEvalError(p.Value, state, fmtNotAssignableToPropOfType(propVal, expectedPropVal)))
+				state.addErrorIf(!hasShallowError, makeSymbolicEvalError(p.Value, state, fmtNotAssignableToPropOfType(propVal, expectedPropVal)))
 			}
 
 			serializable, ok = propVal.(Serializable)
 			if !ok {
-				state.addError(makeSymbolicEvalError(p, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE))
+				state.addErrorIf(!hasShallowError, makeSymbolicEvalError(p, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE))
 				serializable = ANY_SERIALIZABLE
 			} else if _, ok := asWatchable(propVal).(Watchable); !ok && propVal.IsMutable() {
-				state.addError(makeSymbolicEvalError(p, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_WATCHABLE))
+				state.addErrorIf(!hasShallowError, makeSymbolicEvalError(p, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_WATCHABLE))
 			}
 
 			//additional checks if expected object is readonly
 			if expectedObj.readonly && !IsReadonlyOrImmutable(propVal) {
-				state.addError(makeSymbolicEvalError(p.Key, state, PROPERTY_VALUES_OF_READONLY_OBJECTS_SHOULD_BE_READONLY_OR_IMMUTABLE))
+				state.addErrorIf(!hasShallowError, makeSymbolicEvalError(p.Key, state, PROPERTY_VALUES_OF_READONLY_OBJECTS_SHOULD_BE_READONLY_OR_IMMUTABLE))
 			}
 		}
 
@@ -4078,11 +4108,16 @@ func evalRecordLiteral(n *parse.RecordLiteral, state *State, options evalOptions
 
 		expectedPropVal := expectedRecord.entries[key]
 		deeperMismatch := false
+		hasShallowError := false
 
 		if p.Value == nil {
 			entries[key] = ANY_SERIALIZABLE
 		} else {
-			v, err := _symbolicEval(p.Value, state, evalOptions{expectedValue: expectedPropVal, actualValueMismatch: &deeperMismatch})
+			v, err := _symbolicEval(p.Value, state, evalOptions{
+				expectedValue:       expectedPropVal,
+				actualValueMismatch: &deeperMismatch,
+				hasShallowError:     &hasShallowError,
+			})
 			if err != nil {
 				return nil, err
 			}
@@ -4091,15 +4126,15 @@ func evalRecordLiteral(n *parse.RecordLiteral, state *State, options evalOptions
 				options.setActualValueMismatchIfNotNil()
 			} else if expectedPropVal != nil && !deeperMismatch && !expectedPropVal.Test(v, RecTestCallState{}) {
 				options.setActualValueMismatchIfNotNil()
-				state.addError(makeSymbolicEvalError(p.Value, state, fmtNotAssignableToPropOfType(v, expectedPropVal)))
+				state.addErrorIf(!hasShallowError, makeSymbolicEvalError(p.Value, state, fmtNotAssignableToPropOfType(v, expectedPropVal)))
 			}
 
 			serializable, ok := AsSerializable(v).(Serializable)
 			if !ok {
-				state.addError(makeSymbolicEvalError(p, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE))
+				state.addErrorIf(!hasShallowError, makeSymbolicEvalError(p, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE))
 				entries[key] = ANY_SERIALIZABLE
 			} else if v.IsMutable() {
-				state.addError(makeSymbolicEvalError(p.Value, state, fmtValuesOfRecordShouldBeImmutablePropHasMutable(key)))
+				state.addErrorIf(!hasShallowError, makeSymbolicEvalError(p.Value, state, fmtValuesOfRecordShouldBeImmutablePropHasMutable(key)))
 				entries[key] = ANY_SERIALIZABLE
 			} else {
 				entries[key] = serializable
@@ -4110,18 +4145,21 @@ func evalRecordLiteral(n *parse.RecordLiteral, state *State, options evalOptions
 	//evaluate elements.
 	var noKeyValues []Serializable
 	for _, p := range noKeyProps {
-		propVal, err := symbolicEval(p.Value, state)
+		hasShallowError := false
+
+		propVal, err := _symbolicEval(p.Value, state, evalOptions{hasShallowError: &hasShallowError})
 		if err != nil {
 			return nil, err
 		}
+
 		state.symbolicData.SetMostSpecificNodeValue(p.Key, propVal)
 
 		serializable, ok := AsSerializable(propVal).(Serializable)
 		if !ok {
-			state.addError(makeSymbolicEvalError(p, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE))
+			state.addErrorIf(!hasShallowError, makeSymbolicEvalError(p, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE))
 			serializable = ANY_SERIALIZABLE
 		} else if propVal.IsMutable() {
-			state.addError(makeSymbolicEvalError(p.Value, state, INVALID_ELEM_ELEMS_OF_RECORD_SHOULD_BE_IMMUTABLE))
+			state.addErrorIf(!hasShallowError, makeSymbolicEvalError(p.Value, state, INVALID_ELEM_ELEMS_OF_RECORD_SHOULD_BE_IMMUTABLE))
 			serializable = ANY_SERIALIZABLE
 		}
 
@@ -4171,10 +4209,15 @@ func evalListLiteral(n *parse.ListLiteral, state *State, options evalOptions) (V
 
 		for _, elemNode := range n.Elements {
 			var e Value
+			hasShallowError := false
 
 			spreadElemNode, ok := elemNode.(*parse.ElementSpreadElement)
 			if ok {
-				val, err := _symbolicEval(spreadElemNode.Expr, state, evalOptions{expectedValue: resultList, actualValueMismatch: &deeperMismatch})
+				val, err := _symbolicEval(spreadElemNode.Expr, state, evalOptions{
+					expectedValue:       resultList,
+					actualValueMismatch: &deeperMismatch,
+					hasShallowError:     &hasShallowError,
+				})
 				if err != nil {
 					return nil, err
 				}
@@ -4183,27 +4226,35 @@ func evalListLiteral(n *parse.ListLiteral, state *State, options evalOptions) (V
 				if isList {
 					e = list.Element()
 				} else {
-					state.addError(makeSymbolicEvalError(spreadElemNode.Expr, state, SPREAD_ELEMENT_SHOULD_BE_A_LIST))
+					state.addErrorIf(!hasShallowError, makeSymbolicEvalError(spreadElemNode.Expr, state, SPREAD_ELEMENT_SHOULD_BE_A_LIST))
 					e = generalElem
 				}
 			} else {
-				e, err = _symbolicEval(elemNode, state, evalOptions{expectedValue: generalElem, actualValueMismatch: &deeperMismatch})
+				e, err = _symbolicEval(elemNode, state, evalOptions{
+					expectedValue:       generalElem,
+					actualValueMismatch: &deeperMismatch,
+					hasShallowError:     &hasShallowError,
+				})
 				if err != nil {
 					return nil, err
 				}
 			}
 
+			if hasShallowError {
+				continue
+			}
+
 			if !generalElem.Test(e, RecTestCallState{}) && !deeperMismatch {
-				state.addError(makeSymbolicEvalError(elemNode, state, fmtUnexpectedElemInListAnnotated(e, generalElemPattern.(Pattern))))
+				state.addErrorIf(!hasShallowError, makeSymbolicEvalError(elemNode, state, fmtUnexpectedElemInListAnnotated(e, generalElemPattern.(Pattern))))
 			}
 
 			e = AsSerializable(e)
 			_, ok = e.(Serializable)
 			if !ok {
-				state.addError(makeSymbolicEvalError(elemNode, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
+				state.addErrorIf(!hasShallowError, makeSymbolicEvalError(elemNode, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
 				e = ANY_SERIALIZABLE
 			} else if _, ok := asWatchable(e).(Watchable); !ok && e.IsMutable() {
-				state.addError(makeSymbolicEvalError(elemNode, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE))
+				state.addErrorIf(!hasShallowError, makeSymbolicEvalError(elemNode, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE))
 			}
 		}
 
@@ -4231,10 +4282,15 @@ func evalListLiteral(n *parse.ListLiteral, state *State, options evalOptions) (V
 	for _, elemNode := range n.Elements {
 		var e Value
 		deeperMismatch := false
+		hasShallowError := false
 
 		spreadElemNode, ok := elemNode.(*parse.ElementSpreadElement)
 		if ok {
-			val, err := _symbolicEval(spreadElemNode.Expr, state, evalOptions{expectedValue: expectedElement, actualValueMismatch: &deeperMismatch})
+			val, err := _symbolicEval(spreadElemNode.Expr, state, evalOptions{
+				expectedValue:       expectedElement,
+				actualValueMismatch: &deeperMismatch,
+				hasShallowError:     &hasShallowError,
+			})
 			if err != nil {
 				return nil, err
 			}
@@ -4243,7 +4299,7 @@ func evalListLiteral(n *parse.ListLiteral, state *State, options evalOptions) (V
 			if isList {
 				e = list.Element()
 			} else {
-				state.addError(makeSymbolicEvalError(spreadElemNode.Expr, state, SPREAD_ELEMENT_SHOULD_BE_A_LIST))
+				state.addErrorIf(!hasShallowError, makeSymbolicEvalError(spreadElemNode.Expr, state, SPREAD_ELEMENT_SHOULD_BE_A_LIST))
 				if expectedElement != nil {
 					e = expectedElement
 				} else {
@@ -4252,7 +4308,11 @@ func evalListLiteral(n *parse.ListLiteral, state *State, options evalOptions) (V
 			}
 		} else {
 			var err error
-			e, err = _symbolicEval(elemNode, state, evalOptions{expectedValue: expectedElement, actualValueMismatch: &deeperMismatch})
+			e, err = _symbolicEval(elemNode, state, evalOptions{
+				expectedValue:       expectedElement,
+				actualValueMismatch: &deeperMismatch,
+				hasShallowError:     &hasShallowError,
+			})
 			if err != nil {
 				return nil, err
 			}
@@ -4262,16 +4322,16 @@ func evalListLiteral(n *parse.ListLiteral, state *State, options evalOptions) (V
 			options.setActualValueMismatchIfNotNil()
 		} else if expectedElement != nil && !expectedElement.Test(e, RecTestCallState{}) && !deeperMismatch {
 			options.setActualValueMismatchIfNotNil()
-			state.addError(makeSymbolicEvalError(elemNode, state, fmtUnexpectedElemInListofValues(e, expectedElement)))
+			state.addErrorIf(!hasShallowError, makeSymbolicEvalError(elemNode, state, fmtUnexpectedElemInListofValues(e, expectedElement)))
 		}
 
 		e = AsSerializable(e)
 		_, ok = e.(Serializable)
 		if !ok {
-			state.addError(makeSymbolicEvalError(elemNode, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
+			state.addErrorIf(!hasShallowError, makeSymbolicEvalError(elemNode, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
 			e = ANY_SERIALIZABLE
 		} else if _, ok := asWatchable(e).(Watchable); !ok && e.IsMutable() {
-			state.addError(makeSymbolicEvalError(elemNode, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE))
+			state.addErrorIf(!hasShallowError, makeSymbolicEvalError(elemNode, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE))
 		}
 
 		elements = append(elements, AsSerializableChecked(e))
@@ -4295,12 +4355,13 @@ func evalTupleLiteral(n *parse.TupleLiteral, state *State, options evalOptions) 
 
 		generalElem := generalElemPattern.(Pattern).SymbolicValue().(Serializable)
 		deeperMismatch := false
+		hasShallowError := false
 
 		for _, elemNode := range n.Elements {
 			spreadElemNode, ok := elemNode.(*parse.ElementSpreadElement)
 			var e Value
 			if ok {
-				val, err := _symbolicEval(spreadElemNode.Expr, state, evalOptions{})
+				val, err := _symbolicEval(spreadElemNode.Expr, state, evalOptions{hasShallowError: &hasShallowError})
 				if err != nil {
 					return nil, err
 				}
@@ -4309,7 +4370,7 @@ func evalTupleLiteral(n *parse.TupleLiteral, state *State, options evalOptions) 
 				if isTuple {
 					e = tuple.Element()
 				} else {
-					state.addError(makeSymbolicEvalError(spreadElemNode.Expr, state, SPREAD_ELEMENT_SHOULD_BE_A_TUPLE))
+					state.addErrorIf(!hasShallowError, makeSymbolicEvalError(spreadElemNode.Expr, state, SPREAD_ELEMENT_SHOULD_BE_A_TUPLE))
 					e = generalElem
 				}
 			} else {
@@ -4320,19 +4381,19 @@ func evalTupleLiteral(n *parse.TupleLiteral, state *State, options evalOptions) 
 			}
 
 			if e.IsMutable() {
-				state.addError(makeSymbolicEvalError(elemNode, state, ELEMS_OF_TUPLE_SHOUD_BE_IMMUTABLE))
+				state.addErrorIf(!hasShallowError, makeSymbolicEvalError(elemNode, state, ELEMS_OF_TUPLE_SHOUD_BE_IMMUTABLE))
 				e = ANY_SERIALIZABLE
 			}
 
 			e = AsSerializable(e)
 			_, ok = e.(Serializable)
 			if !ok {
-				state.addError(makeSymbolicEvalError(elemNode, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
+				state.addErrorIf(!hasShallowError, makeSymbolicEvalError(elemNode, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
 				e = ANY_SERIALIZABLE
 			}
 
 			if !generalElem.Test(e, RecTestCallState{}) {
-				state.addError(makeSymbolicEvalError(elemNode, state, fmtUnexpectedElemInTupleAnnotated(e, generalElemPattern.(Pattern))))
+				state.addErrorIf(!hasShallowError, makeSymbolicEvalError(elemNode, state, fmtUnexpectedElemInTupleAnnotated(e, generalElemPattern.(Pattern))))
 			}
 		}
 
@@ -4358,10 +4419,15 @@ func evalTupleLiteral(n *parse.TupleLiteral, state *State, options evalOptions) 
 	for _, elemNode := range n.Elements {
 		var e Value
 		deeperMismatch := false
+		hasShallowError := false
 
 		spreadElemNode, ok := elemNode.(*parse.ElementSpreadElement)
 		if ok {
-			val, err := _symbolicEval(spreadElemNode.Expr, state, evalOptions{expectedValue: expectedElement, actualValueMismatch: &deeperMismatch})
+			val, err := _symbolicEval(spreadElemNode.Expr, state, evalOptions{
+				expectedValue:       expectedElement,
+				actualValueMismatch: &deeperMismatch,
+				hasShallowError:     &hasShallowError,
+			})
 			if err != nil {
 				return nil, err
 			}
@@ -4370,7 +4436,7 @@ func evalTupleLiteral(n *parse.TupleLiteral, state *State, options evalOptions) 
 			if isTuple {
 				e = tuple.Element()
 			} else {
-				state.addError(makeSymbolicEvalError(spreadElemNode.Expr, state, SPREAD_ELEMENT_SHOULD_BE_A_TUPLE))
+				state.addErrorIf(!hasShallowError, makeSymbolicEvalError(spreadElemNode.Expr, state, SPREAD_ELEMENT_SHOULD_BE_A_TUPLE))
 				if expectedElement != nil {
 					e = expectedElement
 				} else {
@@ -4379,7 +4445,11 @@ func evalTupleLiteral(n *parse.TupleLiteral, state *State, options evalOptions) 
 			}
 		} else {
 			var err error
-			e, err = _symbolicEval(elemNode, state, evalOptions{expectedValue: expectedElement, actualValueMismatch: &deeperMismatch})
+			e, err = _symbolicEval(elemNode, state, evalOptions{
+				expectedValue:       expectedElement,
+				actualValueMismatch: &deeperMismatch,
+				hasShallowError:     &hasShallowError,
+			})
 			if err != nil {
 				return nil, err
 			}
@@ -4389,18 +4459,18 @@ func evalTupleLiteral(n *parse.TupleLiteral, state *State, options evalOptions) 
 			options.setActualValueMismatchIfNotNil()
 		} else if expectedElement != nil && !expectedElement.Test(e, RecTestCallState{}) && !deeperMismatch {
 			options.setActualValueMismatchIfNotNil()
-			state.addError(makeSymbolicEvalError(elemNode, state, fmtUnexpectedElemInListofValues(e, expectedElement)))
+			state.addErrorIf(!hasShallowError, makeSymbolicEvalError(elemNode, state, fmtUnexpectedElemInListofValues(e, expectedElement)))
 		}
 
 		if e.IsMutable() {
-			state.addError(makeSymbolicEvalError(elemNode, state, ELEMS_OF_TUPLE_SHOUD_BE_IMMUTABLE))
+			state.addErrorIf(!hasShallowError, makeSymbolicEvalError(elemNode, state, ELEMS_OF_TUPLE_SHOUD_BE_IMMUTABLE))
 			e = ANY_SERIALIZABLE
 		}
 
 		e = AsSerializable(e)
 		_, ok = e.(Serializable)
 		if !ok {
-			state.addError(makeSymbolicEvalError(elemNode, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
+			state.addErrorIf(!hasShallowError, makeSymbolicEvalError(elemNode, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
 			e = ANY_SERIALIZABLE
 		}
 
