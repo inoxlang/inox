@@ -22,7 +22,7 @@ type preinitBlockCheckParams struct {
 func checkPreinitBlock(args preinitBlockCheckParams) {
 	parse.Walk(args.node.Block, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
 		switch n := node.(type) {
-		case *parse.Block, *parse.IdentifierLiteral,
+		case *parse.Block, *parse.IdentifierLiteral, *parse.GlobalVariable,
 			parse.SimpleValueLiteral, *parse.URLExpression,
 			*parse.IntegerRangeLiteral, *parse.FloatRangeLiteral,
 

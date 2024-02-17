@@ -144,7 +144,7 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 			ctxPerms = append(ctxPerms, GlobalVarPermission{permkind.Use, name})
 		}
 
-		//Allow using user-defined global constants (direct call or method call).
+		//Allow using additional globals and user-defined global constants (direct call or method call).
 		if preinitArgs.GlobalConsts != nil {
 			for _, decl := range preinitArgs.GlobalConsts.Declarations {
 				ident, ok := decl.Left.(*parse.IdentifierLiteral)
@@ -152,6 +152,10 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 					ctxPerms = append(ctxPerms, GlobalVarPermission{permkind.Use, ident.Name})
 				}
 			}
+		}
+
+		for k := range preinitArgs.AdditionalGlobals {
+			ctxPerms = append(ctxPerms, GlobalVarPermission{permkind.Use, k})
 		}
 
 		ctx := NewContext(ContextConfig{
@@ -178,7 +182,7 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 		global.Module = m
 		state = NewTreeWalkStateWithGlobal(global)
 
-		// pre evaluate the env section of the manifest
+		//Pre-evaluate the env section of the manifest.
 		envSection, ok := manifestObjLiteral.PropValue(MANIFEST_ENV_SECTION_NAME)
 		if ok {
 			v, err := TreeWalkEval(envSection, state)
@@ -190,7 +194,13 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 			envPattern = v.(*ObjectPattern)
 		}
 
-		//evaluate & declare the global constants.
+		//Declare additional globals. This is done before evaluating global constant declarations
+		//because additional globals may be used in those declarations.
+		for k, v := range preinitArgs.AdditionalGlobals {
+			state.SetGlobal(k, v, GlobalConst)
+		}
+
+		//Evaluate & declare the global constants.
 		if preinitArgs.GlobalConsts != nil {
 			for _, decl := range preinitArgs.GlobalConsts.Declarations {
 				//ignore declaration if incomplete
@@ -322,9 +332,6 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 			}
 		}
 
-		for k, v := range preinitArgs.AdditionalGlobals {
-			state.SetGlobal(k, v, GlobalConst)
-		}
 	} else {
 		if preinitArgs.GlobalConsts != nil {
 			return nil, nil, nil, fmt.Errorf(".GlobalConstants argument should not have been passed")

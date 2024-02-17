@@ -71,6 +71,7 @@ func TestPreInit(t *testing.T) {
 		name                string
 		moduleKind          ModuleKind //ok if not set, should be set to the same vale as expectedModuleKind if expectedModuleKind is set
 		module              string
+		additionalGlobals   map[string]Value
 		setup               func() error
 		teardown            func()
 		setupFilesystem     func(fls afs.Filesystem) //called after setup
@@ -248,6 +249,31 @@ func TestPreInit(t *testing.T) {
 			expectedPermissions: []Permission{FilesystemPermission{Kind_: permkind.Read, Entity: Path("/a/b")}},
 			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
 			expectedResolutions: nil,
+		},
+		{
+			name: "additional globals are accessible by the manifest",
+			module: `
+				manifest {
+					permissions: { read: PATH }
+				}`,
+			expectedPermissions: []Permission{FilesystemPermission{Kind_: permkind.Read, Entity: Path("/file.txt")}},
+			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
+			expectedResolutions: nil,
+			additionalGlobals:   map[string]Value{"PATH": Path("/file.txt")},
+		},
+		{
+			name: "additional globals are accessible from within the preinit statement",
+			module: `
+				preinit {
+					pattern p = $$PATH_PATTERN
+				}
+				manifest {
+					permissions: { read: %p }
+				}`,
+			expectedPermissions: []Permission{FilesystemPermission{Kind_: permkind.Read, Entity: PathPattern("/...")}},
+			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
+			expectedResolutions: nil,
+			additionalGlobals:   map[string]Value{"PATH_PATTERN": PathPattern("/...")},
 		},
 		{
 			name: "host definition",
@@ -1787,6 +1813,7 @@ func TestPreInit(t *testing.T) {
 				RunningState:          nil,
 				ParentState:           parentState,
 				AddDefaultPermissions: true,
+				AdditionalGlobals:     testCase.additionalGlobals,
 			})
 
 			//PreInit should be fast
