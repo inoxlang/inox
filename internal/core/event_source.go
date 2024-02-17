@@ -155,10 +155,12 @@ type IdleEventSourceHandler struct {
 	//Should be >= HARD_MINIMUM_LAST_EVENT_AGE and <= MAX_MINIMUM_LAST_EVENT_AGE
 	MinimumLastEventAge time.Duration
 
+	//IsIgnoredEvent should tell whether an event should be ignored.
 	//If nil defaults to a function always returning false.
 	IsIgnoredEvent func(*Event) Bool
 
-	//If false the handler is called after the next IDLE phase.
+	//If true the handler can be called early if no relvant events are emitted.
+	//If false the handler is called after the next IDLE phase (AFTER a first event has been received).
 	DontWaitForFirstEvent bool
 
 	//Microtask to execute, the execution should take less than a millisecond.
