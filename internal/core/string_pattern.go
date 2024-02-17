@@ -345,6 +345,8 @@ func NewSequenceStringPattern(
 		lengthRange:          lengthRange,
 		effectiveLengthRange: lengthRange,
 		groupNames:           slices.Clone(groupNames),
+
+		nodeChunk: nodeChunk,
 	}, nil
 }
 
