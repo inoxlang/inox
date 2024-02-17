@@ -359,15 +359,17 @@ h.close()
 
 ### Composable String Patterns
 
+Inox has composable string patterns that are more readable than regular expressions (Inox still supports regexps though).
+Let's see an example, here is the regexp for matching time (e.g. 01:45 AM).
+
 ```js
-//Regexp for matching time (e.g. 01:45 AM).
 /^(?<hour>(1[0-2]|0?[1-9])):(?<minute>[0-5][0-9]) (?<period>AM|PM)$/
 
 //Same regexp but without group names.
 /^(1[0-2]|0?[1-9]):([0-5][0-9]) (AM|PM)$/
 ```
 
-Inox's version:
+Inox string pattern:
 
 ![image](https://github.com/inoxlang/inox/assets/113632189/684b91f3-e7e1-42a1-86b1-60283ec3b038)
 
@@ -384,9 +386,9 @@ pattern time = str(
 )
 -->
 
-Composed Inox's version:
+Composed Inox string pattern:
 
-![image](https://github.com/inoxlang/inox/assets/113632189/9cf6751f-6137-4249-8fa8-20aaf40847b3)
+![image](https://github.com/inoxlang/inox/assets/113632189/fa78ec91-4794-45e1-bb17-1b0d4ea40af8)
 
 <!--
 pattern time-hour = str(
@@ -406,6 +408,10 @@ pattern time = str(
     period: time-period
 )
 -->
+
+Pattern equivalent to the regex `^a+b{8}c*$`.
+
+![image](https://github.com/inoxlang/inox/assets/113632189/a0b71d3c-7cd6-4ba4-b794-eb9cd955cf33)
 
 <details>
 
