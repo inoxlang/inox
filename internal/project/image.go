@@ -13,3 +13,25 @@ type Image struct {
 func (img *Image) FilesystemSnapshot() core.FilesystemSnapshot {
 	return img.filesystem
 }
+
+func (p *Project) BaseImage() (core.Image, error) {
+	snapshot, err := p.liveFilesystem.TakeFilesystemSnapshot(core.FilesystemSnapshotConfig{
+		GetContent: func(ChecksumSHA256 [32]byte) core.AddressableContent {
+			return nil
+		},
+		InclusionFilters: []core.PathPattern{"/..."},
+		ExclusionFilters: []core.PathPattern{
+			"/**/.*",   //files whose name starts with a dot
+			"/**/.*/",  //directories whose name starts with a dot
+			"/**/.*/*", //files in directories whose name starts with a dot
+		},
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &Image{
+		filesystem: snapshot,
+	}, nil
+}

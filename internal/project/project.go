@@ -161,22 +161,6 @@ func (p *Project) LiveFilesystem() core.SnapshotableFilesystem {
 	return p.liveFilesystem
 }
 
-func (p *Project) BaseImage() (core.Image, error) {
-	snapshot, err := p.liveFilesystem.TakeFilesystemSnapshot(core.FilesystemSnapshotConfig{
-		GetContent: func(ChecksumSHA256 [32]byte) core.AddressableContent {
-			return nil
-		},
-		InclusionFilters: []core.PathPattern{"/**/*.ix", "/static/..."},
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &Image{
-		filesystem: snapshot,
-	}, nil
-}
 
 func (p *Project) Configuration() core.ProjectConfiguration {
 	return p.config

@@ -1,6 +1,7 @@
 package project
 
 import (
+	"os"
 	"testing"
 
 	"github.com/go-git/go-billy/v5/util"
@@ -50,7 +51,7 @@ func TestBaseImage(t *testing.T) {
 		assert.Empty(t, snapshot.RootDirEntries())
 	})
 
-	t.Run(".ix file at root level", func(t *testing.T) {
+	t.Run("regular file at root level", func(t *testing.T) {
 		project := createProject()
 
 		fls := project.LiveFilesystem()
@@ -71,13 +72,13 @@ func TestBaseImage(t *testing.T) {
 		assert.Equal(t, "x.ix", entries[0])
 	})
 
-	t.Run(".ix file in an arbitrary sub dir", func(t *testing.T) {
+	t.Run("regular file in an arbitrary sub dir", func(t *testing.T) {
 		project := createProject()
 
 		fls := project.LiveFilesystem()
 		utils.PanicIfErrAmong(
-			fls.MkdirAll("/xxx", fs_ns.DEFAULT_DIR_FMODE),
-			util.WriteFile(fls, "/xxx/x.ix", []byte("manifest {}"), 0600),
+			fls.MkdirAll("/x", fs_ns.DEFAULT_DIR_FMODE),
+			util.WriteFile(fls, "/x/x.ix", []byte("manifest {}"), 0600),
 		)
 
 		img, err := project.BaseImage()
@@ -86,18 +87,126 @@ func TestBaseImage(t *testing.T) {
 		}
 
 		snapshot := img.FilesystemSnapshot()
-		dir, err := snapshot.Metadata("/xxx")
+		dir, err := snapshot.Metadata("/x")
 		if !assert.NoError(t, err) {
 			return
 		}
-		if !assert.Equal(t, core.Path("/xxx/"), dir.AbsolutePath) {
+		if !assert.Equal(t, core.Path("/x/"), dir.AbsolutePath) {
 			return
 		}
 
-		file, err := snapshot.Metadata("/xxx/x.ix")
+		file, err := snapshot.Metadata("/x/x.ix")
 		if !assert.NoError(t, err) {
 			return
 		}
-		assert.Equal(t, core.Path("/xxx/x.ix"), file.AbsolutePath)
+		assert.Equal(t, core.Path("/x/x.ix"), file.AbsolutePath)
+	})
+
+	t.Run("dot file at root level", func(t *testing.T) {
+		project := createProject()
+
+		fls := project.LiveFilesystem()
+		utils.PanicIfErr(util.WriteFile(fls, "/.file", []byte("hello"), 0600))
+
+		img, err := project.BaseImage()
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		snapshot := img.FilesystemSnapshot()
+		entries := snapshot.RootDirEntries()
+
+		if !assert.Empty(t, entries) {
+			return
+		}
+
+		_, err = snapshot.Metadata("/.file")
+		assert.ErrorIs(t, err, os.ErrNotExist)
+	})
+
+	t.Run("dot file in an arbitrary sub dir", func(t *testing.T) {
+		project := createProject()
+
+		fls := project.LiveFilesystem()
+		utils.PanicIfErrAmong(
+			fls.MkdirAll("/x", fs_ns.DEFAULT_DIR_FMODE),
+			util.WriteFile(fls, "/x/.file", []byte("hello"), 0600),
+		)
+
+		img, err := project.BaseImage()
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		snapshot := img.FilesystemSnapshot()
+		entries := snapshot.RootDirEntries()
+
+		if !assert.NotEmpty(t, entries) {
+			return
+		}
+
+		assert.Equal(t, "x", entries[0])
+
+		_, err = snapshot.Metadata("/x/.file")
+		assert.ErrorIs(t, err, os.ErrNotExist)
+	})
+
+	t.Run("dot dir at root level", func(t *testing.T) {
+		project := createProject()
+
+		fls := project.LiveFilesystem()
+		utils.PanicIfErrAmong(
+			fls.MkdirAll("/.dir", fs_ns.DEFAULT_DIR_FMODE),
+			util.WriteFile(fls, "/.dir/script.ix", []byte("manifest {}"), 0600),
+		)
+
+		img, err := project.BaseImage()
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		snapshot := img.FilesystemSnapshot()
+		entries := snapshot.RootDirEntries()
+
+		if !assert.Empty(t, entries) {
+			return
+		}
+
+		_, err = snapshot.Metadata("/.dir")
+		assert.ErrorIs(t, err, os.ErrNotExist)
+
+		_, err = snapshot.Metadata("/.dir/script.ix")
+		assert.ErrorIs(t, err, os.ErrNotExist)
+
+	})
+
+	t.Run("dot file in an arbitrary sub dir", func(t *testing.T) {
+		project := createProject()
+
+		fls := project.LiveFilesystem()
+		utils.PanicIfErrAmong(
+			fls.MkdirAll("/x/.dir", fs_ns.DEFAULT_DIR_FMODE),
+			util.WriteFile(fls, "/.dir/script.ix", []byte("manifest {}"), 0600),
+		)
+
+		img, err := project.BaseImage()
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		snapshot := img.FilesystemSnapshot()
+		entries := snapshot.RootDirEntries()
+
+		if !assert.NotEmpty(t, entries) {
+			return
+		}
+
+		assert.Equal(t, "x", entries[0])
+
+		_, err = snapshot.Metadata("/x/.dir")
+		assert.ErrorIs(t, err, os.ErrNotExist)
+
+		_, err = snapshot.Metadata("/x/.dir/script.ix")
+		assert.ErrorIs(t, err, os.ErrNotExist)
 	})
 }
