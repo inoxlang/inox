@@ -1271,6 +1271,16 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
+		t.Run("invalid element in capture list", func(t *testing.T) {
+			n, src, err := parseCode(`
+				fn[1](){
+
+				}
+			`)
+			assert.Error(t, err)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
 		t.Run("globals captured by function should be listed", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
 			defer ctx.CancelGracefully()
@@ -1862,6 +1872,14 @@ func TestCheck(t *testing.T) {
 			)
 			assert.Equal(t, expectedErr, err)
 		})
+
+		t.Run("invalid LHS", func(t *testing.T) {
+			n, src, err := parseCode(`
+				var (1 = 1)
+			`)
+			assert.Error(t, err)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
 	})
 
 	t.Run("global variable declaration", func(t *testing.T) {
@@ -2002,6 +2020,14 @@ func TestCheck(t *testing.T) {
 			})
 
 			assert.NoError(t, err)
+		})
+
+		t.Run("invalid LHS", func(t *testing.T) {
+			n, src, err := parseCode(`
+				var (1 = 1)
+			`)
+			assert.Error(t, err)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 	})
 
@@ -2252,6 +2278,14 @@ func TestCheck(t *testing.T) {
 				makeError(assignment, src, fmtCannotShadowGlobalVariable("a")),
 			)
 			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("invalid LHS", func(t *testing.T) {
+			n, src, err := parseCode(`
+				assign 1 = 1
+			`)
+			assert.Error(t, err)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 	})
 

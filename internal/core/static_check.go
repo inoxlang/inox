@@ -1479,7 +1479,11 @@ func (c *checker) checkLocalVarDecls(node *parse.LocalVariableDeclarations, scop
 	localVars := c.getLocalVarsInScope(scopeNode)
 
 	for _, decl := range node.Declarations {
-		name := decl.Left.(*parse.IdentifierLiteral).Name
+		ident, ok := decl.Left.(*parse.IdentifierLiteral)
+		if !ok { //invalid
+			continue
+		}
+		name := ident.Name
 
 		globalVariables := c.getModGlobalVars(closestModule)
 
@@ -1517,7 +1521,11 @@ func (c *checker) checkGlobalVarDecls(node *parse.GlobalVariableDeclarations, pa
 	//Check each declaration.
 
 	for _, decl := range node.Declarations {
-		name := decl.Left.(*parse.IdentifierLiteral).Name
+		ident, ok := decl.Left.(*parse.IdentifierLiteral)
+		if !ok { //invalid
+			continue
+		}
+		name := ident.Name
 
 		localVariables := c.getLocalVarsInScope(scopeNode)
 
@@ -1656,7 +1664,11 @@ func (c *checker) checkAssignment(node parse.Node, parentNode, scopeNode, closes
 		assignment := node.(*parse.MultiAssignment)
 
 		for _, variable := range assignment.Variables {
-			name := variable.(*parse.IdentifierLiteral).Name
+			ident, ok := variable.(*parse.IdentifierLiteral)
+			if !ok { //invalid
+				continue
+			}
+			name := ident.Name
 
 			globalVariables := c.getModGlobalVars(closestModule)
 
@@ -1829,7 +1841,11 @@ func (c *checker) checkFuncExpr(node *parse.FunctionExpression, closestModule pa
 
 	//we check that the captured variable exists & is a local
 	for _, e := range node.CaptureList {
-		name := e.(*parse.IdentifierLiteral).Name
+		ident, ok := e.(*parse.IdentifierLiteral)
+		if !ok { //invalid
+			continue
+		}
+		name := ident.Name
 
 		if !c.varExists(name, ancestorChain) {
 			c.addError(e, fmtVarIsNotDeclared(name))
