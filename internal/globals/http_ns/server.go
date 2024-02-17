@@ -459,8 +459,10 @@ func (serv *HttpsServer) onIdleFilesystem(handler idleFilesystemHandler) {
 			return false
 		}
 
+		eventPath := fsEvent.Path()
+
 		for _, pathPattern := range handler.watchedPaths {
-			if pathPattern.Test(nil, fsEvent.Path()) {
+			if pathPattern.Test(nil, eventPath) {
 				return true
 			}
 		}
@@ -469,9 +471,11 @@ func (serv *HttpsServer) onIdleFilesystem(handler idleFilesystemHandler) {
 	}
 
 	serv.fsEventSource.OnIDLE(core.IdleEventSourceHandler{
-		MinimumLastEventAge: core.HARD_MINIMUM_LAST_EVENT_AGE,
-		IsIgnoredEvent: func(e *core.Event) core.Bool {
-			return !core.Bool(isRelevantEvent(e))
+		//Using core.HARD_MINIMUM_LAST_EVENT_AGE does not seem to work well (the microtask is not called).
+		//Should core.HARD_MINIMUM_LAST_EVENT_AGE always be >= 2 * core.IDLE_EVENT_SOURCE_HANDLING_TICK_INTERVAL ?
+		MinimumLastEventAge: 2 * core.HARD_MINIMUM_LAST_EVENT_AGE,
+		IsIgnoredEvent: func(e *core.Event) bool {
+			return !isRelevantEvent(e)
 		},
 		Microtask: func() {
 			defer func() {

@@ -157,7 +157,7 @@ type IdleEventSourceHandler struct {
 
 	//IsIgnoredEvent should tell whether an event should be ignored.
 	//If nil defaults to a function always returning false.
-	IsIgnoredEvent func(*Event) Bool
+	IsIgnoredEvent func(*Event) bool
 
 	//If true the handler can be called early if no relvant events are emitted.
 	//If false the handler is called after the next IDLE phase (AFTER a first event has been received).
@@ -192,7 +192,7 @@ func (evs *EventSourceBase) OnIDLE(handler IdleEventSourceHandler) {
 	}
 
 	if handler.IsIgnoredEvent == nil {
-		handler.IsIgnoredEvent = func(e *Event) Bool {
+		handler.IsIgnoredEvent = func(e *Event) bool {
 			return false
 		}
 	}

@@ -122,7 +122,7 @@ func TestEventSourceBase(t *testing.T) {
 				Microtask: func() {
 					callCount.Add(1)
 				},
-				IsIgnoredEvent: func(e *Event) Bool {
+				IsIgnoredEvent: func(e *Event) bool {
 					return e.Value().(Int) == 1
 				},
 			})
@@ -268,7 +268,7 @@ func TestEventSourceBase(t *testing.T) {
 				Microtask: func() {
 					callCount.Add(1)
 				},
-				IsIgnoredEvent: func(e *Event) Bool {
+				IsIgnoredEvent: func(e *Event) bool {
 					return e.Value().(Int) == 1
 				},
 			})
