@@ -196,6 +196,13 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			if !assert.Contains(t, api.endpoints, "/") {
 				return
 			}
+
+			endpt := api.endpoints["/"]
+			if !assert.Len(t, endpt.operations, 1) {
+				return
+			}
+
+			assert.NotNil(t, endpt.operations[0].handlerModule)
 		})
 
 		t.Run("non root GET.ix", func(t *testing.T) {
@@ -218,6 +225,13 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			if !assert.Contains(t, api.endpoints, "/users") {
 				return
 			}
+
+			endpt := api.endpoints["/users"]
+			if !assert.Len(t, endpt.operations, 1) {
+				return
+			}
+
+			assert.NotNil(t, endpt.operations[0].handlerModule)
 		})
 
 		t.Run("root GET-users.ix", func(t *testing.T) {
@@ -240,6 +254,13 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			if !assert.Contains(t, api.endpoints, "/users") {
 				return
 			}
+
+			endpt := api.endpoints["/users"]
+			if !assert.Len(t, endpt.operations, 1) {
+				return
+			}
+
+			assert.NotNil(t, endpt.operations[0].handlerModule)
 		})
 
 		t.Run("non root GET-users.ix", func(t *testing.T) {
@@ -262,9 +283,16 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			if !assert.Contains(t, api.endpoints, "/users") {
 				return
 			}
+
+			endpt := api.endpoints["/users"]
+			if !assert.Len(t, endpt.operations, 1) {
+				return
+			}
+
+			assert.NotNil(t, endpt.operations[0].handlerModule)
 		})
 
-		t.Run("deep GET.ix", func(t *testing.T) {
+		t.Run("deep catch-all handler", func(t *testing.T) {
 			testconfig.AllowParallelization(t)
 
 			ctx := setup(map[string]string{
@@ -284,6 +312,13 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			if !assert.Contains(t, api.endpoints, "/x/users") {
 				return
 			}
+
+			endpt := api.endpoints["/x/users"]
+			if !assert.Zero(t, endpt.operations) {
+				return
+			}
+
+			assert.NotNil(t, endpt.catchAllHandler)
 
 			assert.Nil(t, api.tree.endpoint)
 			assert.Equal(t, "/", api.tree.path)
@@ -386,6 +421,13 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			if !assert.Contains(t, api.endpoints, "/users/{user-id}") {
 				return
 			}
+
+			endpt := api.endpoints["/users/{user-id}"]
+			if !assert.Len(t, endpt.operations, 1) {
+				return
+			}
+
+			assert.NotNil(t, endpt.operations[0].handlerModule)
 		})
 	})
 

@@ -193,51 +193,49 @@ func addFilesysteDirEndpoints(
 		}
 		pState.lock.Unlock()
 
-		err = func() error {
-			endpointLock.Lock()
-			defer endpointLock.Unlock()
+		//The endpoint is locked, and $endpointLock is passed to the goroutine preparing the module
+		//so that it can unlock the endpoint when it is done.
+		endpointLock.Lock()
 
-			//Check the same operation is not already defined.
-			for _, op := range endpt.operations {
-				if op.httpMethod == method || method == "" {
-					if op.handlerModule != nil {
-						return fmt.Errorf(
-							"operation %s %q is already implemented by the module %q; unexpected module %q",
-							op.httpMethod, endpointPath, op.handlerModule.Name(), absEntryPath)
-					}
+		//Check the same operation is not already defined.
+		for _, op := range endpt.operations {
+			if op.httpMethod == method || method == "" {
+				if op.handlerModule != nil {
+					endpointLock.Unlock()
 					return fmt.Errorf(
-						"operation %s %q is already implemented; unexpected module %q",
-						op.httpMethod, endpointPath, absEntryPath)
+						"operation %s %q is already implemented by the module %q; unexpected module %q",
+						op.httpMethod, endpointPath, op.handlerModule.Name(), absEntryPath)
 				}
+				endpointLock.Unlock()
+
+				return fmt.Errorf(
+
+					"operation %s %q is already implemented; unexpected module %q",
+					op.httpMethod, endpointPath, absEntryPath)
 			}
-
-			endpt.operations = append(endpt.operations, ApiOperation{
-				httpMethod: method,
-			})
-
-			operation := &endpt.operations[len(endpt.operations)-1]
-
-			wg.Add(1)
-			go addHandlerModule(
-				ctx.BoundChild(), parentState,
-
-				//handler
-				method, fls, absEntryPath, chunk,
-
-				preparedModuleCache, config,
-
-				//parallelization
-				wg, endpointLock, pState,
-
-				//API components
-				endpt, operation,
-			)
-			return nil
-		}()
-
-		if err != nil {
-			return err
 		}
+
+		endpt.operations = append(endpt.operations, ApiOperation{
+			httpMethod: method,
+		})
+
+		operation := &endpt.operations[len(endpt.operations)-1]
+
+		wg.Add(1)
+		go addHandlerModule(
+			ctx.BoundChild(), parentState,
+
+			//handler
+			method, fls, absEntryPath, chunk,
+
+			preparedModuleCache, config,
+
+			//parallelization
+			wg, endpointLock, pState,
+
+			//API components
+			endpt, operation,
+		)
 	}
 
 	wg.Wait() //TODO: prevent blocking + add a timeout (kill context)
@@ -273,7 +271,9 @@ func addFilesysteDirEndpoints(
 		pState.lock.Unlock()
 
 		func() {
-			endpointLock.Lock() //We need to lock because the same endpoint can be mutated by a goroutine created by the caller.
+			//We need to lock because the same endpoint can be mutated by a goroutine created by the caller.
+			//This also ensures that all goroutines created to prepare the handler modules are finished.
+			endpointLock.Lock()
 			defer endpointLock.Unlock()
 
 			if len(endpt.operations) == 1 && endpt.operations[0].httpMethod == "" {
@@ -322,6 +322,7 @@ func addHandlerModule(
 ) {
 
 	defer wg.Done()
+	defer endpointLock.Unlock()
 
 	errorIndex := -1
 
@@ -421,9 +422,7 @@ func addHandlerModule(
 		return
 	}
 
-	endpointLock.Lock()
 	operation.handlerModule = mod
-	endpointLock.Unlock()
 
 	bodyParams := utils.FilterSlice(state.Manifest.Parameters.NonPositionalParameters(), func(p core.ModuleParameter) bool {
 		return !strings.HasPrefix(p.Name(), "_")
