@@ -113,11 +113,17 @@ func handleHttpRequest(goCtx context.Context, req interface{}) (interface{}, err
 			return nil, nil
 		}
 
-		session.Notify(jsonrpc.NotificationMessage{
-			Method: HTTP_RESPONSE_EVENT_METHOD,
-			Params: json.RawMessage(notifParams),
-		})
+		go func() {
+			defer utils.Recover()
+
+			session.Notify(jsonrpc.NotificationMessage{
+				Method: HTTP_RESPONSE_EVENT_METHOD,
+				Params: json.RawMessage(notifParams),
+			})
+		}()
+
 		//client = data.secureHttpClient
+		return nil, nil
 	}
 
 	var body io.Reader
