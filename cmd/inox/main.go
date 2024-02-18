@@ -92,9 +92,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 	}
 
 	//abort execution if the command is not allowed to be runned as root.
-	if mainSubCommand != ADD_SERVICE_SUBCMD && mainSubCommand != REMOVE_SERVICE_SUBCMD && mainSubCommand != UPGRADE_INOX_SUBCMD &&
-		mainSubCommand != HELP_SUBCMD && !showCommandSpecificHelp &&
-		!checkNotRunningAsRoot(errW) {
+	if !showCommandSpecificHelp && !slices.Contains(ROOT_ALLOWED_SUBCMDS, mainSubCommand) && !checkNotRunningAsRoot(errW) {
 		return ERROR_STATUS_CODE
 	}
 
