@@ -1,6 +1,8 @@
 package project
 
-import "github.com/inoxlang/inox/internal/core"
+import (
+	"github.com/inoxlang/inox/internal/core"
+)
 
 var (
 	_ = core.Image((*Image)(nil))
@@ -8,6 +10,11 @@ var (
 
 type Image struct {
 	filesystem core.FilesystemSnapshot
+	info       ImageInfo
+}
+
+func (img *Image) ProjectID() core.ProjectID {
+	return img.info.ProjectID
 }
 
 func (img *Image) FilesystemSnapshot() core.FilesystemSnapshot {
@@ -33,5 +40,8 @@ func (p *Project) BaseImage() (core.Image, error) {
 
 	return &Image{
 		filesystem: snapshot,
+		info: ImageInfo{
+			ProjectID: p.id,
+		},
 	}, nil
 }

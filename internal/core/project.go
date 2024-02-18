@@ -1,8 +1,11 @@
 package core
 
 import (
+	"errors"
 	"fmt"
+	"strings"
 	"time"
+	"unicode"
 
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/oklog/ulid/v2"
@@ -36,6 +39,36 @@ type ProjectID string
 
 func RandomProjectID(projectName string) ProjectID {
 	return ProjectID(projectName + "-" + ulid.Make().String())
+}
+
+func (id ProjectID) Validate() error {
+	s := string(id)
+
+	for _, r := range s {
+		if unicode.IsSpace(r) {
+			return errors.New("unexpected space(s) in project ID")
+		}
+	}
+
+	lastDashIndex := strings.LastIndex(s, "-")
+	if lastDashIndex < 0 {
+		return errors.New("missing `-<ULID>` (e.g. `-01HPWQNC2Q6Y8NJKWR24TJK9NE`) at end of project ID")
+	}
+	if lastDashIndex == len(s)-1 {
+		return errors.New("missing <ULID> (e.g. `01HPWQNC2Q6Y8NJKWR24TJK9NE`) after last `-` in project ID")
+	}
+
+	if lastDashIndex == 0 {
+		return errors.New("missing name before `-` in project ID")
+	}
+
+	projectULID := s[lastDashIndex+1:]
+	_, err := ulid.ParseStrict(projectULID)
+	if err != nil {
+		return errors.New("invalid ULID in project ID")
+	}
+
+	return nil
 }
 
 type ProjectConfiguration interface {

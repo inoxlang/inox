@@ -10422,12 +10422,15 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.IsImportTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
+
+			projectID := RandomProjectID("test")
 			state.Project = &TestProject{
-				ID: RandomProjectID("test"),
+				ID: projectID,
 				Img: &testImage{
 					snapshot: &memFilesystemSnapshot{
 						fls: copyMemFs(fls),
 					},
+					projectID: projectID,
 				},
 			}
 
@@ -10481,12 +10484,15 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.IsImportTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
+
+			projectID := RandomProjectID("test")
 			state.Project = &TestProject{
-				ID: RandomProjectID("test"),
+				ID: projectID,
 				Img: &testImage{
 					snapshot: &memFilesystemSnapshot{
 						fls: copyMemFs(fls),
 					},
+					projectID: projectID,
 				},
 			}
 
@@ -10544,12 +10550,15 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.IsImportTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
+
+			projectID := RandomProjectID("test")
 			state.Project = &TestProject{
-				ID: RandomProjectID("test"),
+				ID: projectID,
 				Img: &testImage{
 					snapshot: &memFilesystemSnapshot{
 						fls: copyMemFs(fls),
 					},
+					projectID: projectID,
 				},
 			}
 			state.Globals.Set("check_program_not_nil", WrapGoFunction(func(ctx *Context, v Value) {
@@ -10620,12 +10629,15 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.IsImportTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
+
+			projectID := RandomProjectID("test")
 			state.Project = &TestProject{
-				ID: RandomProjectID("test"),
+				ID: projectID,
 				Img: &testImage{
 					snapshot: &memFilesystemSnapshot{
 						fls: copyMemFs(fls),
 					},
+					projectID: projectID,
 				},
 			}
 			state.Globals.Set("sleep10ms", WrapGoFunction(func(ctx *Context) {
@@ -10700,12 +10712,15 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.IsImportTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
+
+			projectID := RandomProjectID("test")
 			state.Project = &TestProject{
-				ID: RandomProjectID("test"),
+				ID: projectID,
 				Img: &testImage{
 					snapshot: &memFilesystemSnapshot{
 						fls: copyMemFs(fls),
 					},
+					projectID: projectID,
 				},
 			}
 
@@ -10791,12 +10806,15 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.IsImportTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
+
+			projectID := RandomProjectID("test")
 			state.Project = &TestProject{
-				ID: RandomProjectID("test"),
+				ID: projectID,
 				Img: &testImage{
 					snapshot: &memFilesystemSnapshot{
 						fls: copyMemFs(fls),
 					},
+					projectID: projectID,
 				},
 			}
 
@@ -10897,12 +10915,15 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.IsImportTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
+
+			projectID := RandomProjectID("test")
 			state.Project = &TestProject{
-				ID: RandomProjectID("test"),
+				ID: projectID,
 				Img: &testImage{
 					snapshot: &memFilesystemSnapshot{
 						fls: copyMemFs(fls),
 					},
+					projectID: projectID,
 				},
 			}
 			state.Globals.Set("check_databases", WrapGoFunction(func(ctx *Context, ns *Namespace) {
@@ -11013,12 +11034,15 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.IsImportTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
+
+			projectID := RandomProjectID("test")
 			state.Project = &TestProject{
-				ID: RandomProjectID("test"),
+				ID: projectID,
 				Img: &testImage{
 					snapshot: &memFilesystemSnapshot{
 						fls: copyMemFs(fls),
 					},
+					projectID: projectID,
 				},
 			}
 			state.Globals.Set("check_databases", WrapGoFunction(func(ctx *Context, ns *Namespace) {
@@ -12685,11 +12709,20 @@ func (p *TestProject) GetS3CredentialsForBucket(ctx *Context, bucketName string,
 }
 
 type testImage struct {
-	snapshot FilesystemSnapshot
+	snapshot  FilesystemSnapshot
+	projectID ProjectID
+}
+
+func (img testImage) ProjectID() ProjectID {
+	return img.projectID
 }
 
 func (img testImage) FilesystemSnapshot() FilesystemSnapshot {
 	return img.snapshot
+}
+
+func (img *testImage) Zip(ctx *Context, w io.Writer) error {
+	panic(ErrNotImplemented)
 }
 
 func toByte(ctx *Context, i Int) Byte {

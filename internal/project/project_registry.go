@@ -146,10 +146,11 @@ func (r *Registry) getCreateDevDatabasesDir(id core.ProjectID) (projectDevDataba
 }
 
 type OpenProjectParams struct {
-	Id               core.ProjectID
-	DevSideConfig    DevSideProjectConfig `json:"config"`
-	TempTokens       *TempProjectTokens   `json:"tempTokens,omitempty"`
-	ExposeWebServers bool
+	Id                core.ProjectID
+	DevSideConfig     DevSideProjectConfig `json:"config"`
+	TempTokens        *TempProjectTokens   `json:"tempTokens,omitempty"`
+	MaxFilesystemSize core.ByteCount       `json:"-"`
+	ExposeWebServers  bool
 }
 
 func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Project, error) {
@@ -211,7 +212,8 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 
 	projectDir := r.filesystem.Join(r.projectsDir, string(params.Id))
 	projectFS, err := fs_ns.OpenMetaFilesystem(r.openProjectsContext, r.filesystem, fs_ns.MetaFilesystemParams{
-		Dir: projectDir,
+		Dir:            projectDir,
+		MaxUsableSpace: params.MaxFilesystemSize,
 	})
 
 	if err != nil {
