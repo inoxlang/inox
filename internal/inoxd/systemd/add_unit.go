@@ -107,6 +107,16 @@ func WriteInoxUnitFile(args InoxUnitParams) (unitName string, _ error) {
 				Name:  "After",
 				Value: "multi-user.target",
 			},
+			{
+				//https://www.freedesktop.org/software/systemd/man/latest/systemd.unit.html#StartLimitIntervalSec=interval
+				Name:  "StartLimitIntervalSec",
+				Value: "300",
+			},
+			{
+				//https://www.freedesktop.org/software/systemd/man/latest/systemd.unit.html#StartLimitIntervalSec=interval
+				Name:  "StartLimitBurst",
+				Value: "5",
+			},
 		},
 	}
 
@@ -167,15 +177,6 @@ func WriteInoxUnitFile(args InoxUnitParams) (unitName string, _ error) {
 				Value: "1s",
 			},
 
-			{
-				//https://www.freedesktop.org/software/systemd/man/latest/systemd.unit.html#StartLimitIntervalSec=interval
-				Name:  "StartLimitIntervalSec",
-				Value: "300",
-			},
-			{
-				Name:  "StartLimitBurst",
-				Value: "5",
-			},
 			{
 				Name:  "CPUQuota",
 				Value: strconv.Itoa(cpuQuota) + "%",
