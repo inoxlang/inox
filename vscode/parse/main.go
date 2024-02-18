@@ -8,6 +8,7 @@ import (
 	"math"
 	"syscall/js"
 
+	"github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/oklog/ulid/v2"
 )
@@ -22,6 +23,8 @@ type parsedChunk struct {
 	*parse.ParsedChunkSource
 	id string
 }
+
+var tokenSerializationBuf [5_000_000]byte
 
 func main() {
 	lastParsedChunks = lastParsedChunks[0:0:len(lastParsedChunks)]
@@ -77,6 +80,64 @@ func main() {
 		}
 
 		return makeResult(nil, errors.New("invalid start or end index"))
+	}))
+
+	exports.Set("parse_get_tokens", js.FuncOf(func(this js.Value, args []js.Value) any {
+		fpath := args[0].String()
+
+		//we avoid computing the directory's path on purpose.
+		dirpath := args[1].String()
+		content := args[2].String()
+
+		chunk, _ := parse.ParseChunk(content, fpath, parse.ParserOptions{})
+
+		if chunk == nil {
+			return makeResult("[]", nil)
+		}
+
+		parsedChunkSource := parse.NewParsedChunkSource(chunk, parse.SourceFile{
+			NameString:             fpath,
+			UserFriendlyNameString: fpath,
+			Resource:               fpath,
+			IsResourceURL:          false,
+			CodeString:             content,
+			ResourceDir:            dirpath,
+		})
+
+		resultTokens := makeResultTokens(parsedChunkSource)
+		return makeResult(string(marshalTokens(resultTokens, tokenSerializationBuf[:0])), nil)
+	}))
+
+	exports.Set("get_tokens_of_chunk", js.FuncOf(func(this js.Value, args []js.Value) any {
+		chunkId := args[0].String()
+
+		for _, chunk := range lastParsedChunks {
+			if chunk.id != chunkId {
+				continue
+			}
+
+			tokens := parse.GetTokens(chunk.Node, chunk.Node, false)
+
+			resultTokens := make([]resultToken, len(tokens))
+
+			for i, token := range tokens {
+				resultToken := resultToken{Token: token}
+
+				line, col := chunk.GetSpanLineColumn(token.Span)
+				resultToken.StartLine = line
+				resultToken.StartColumn = col
+
+				endLine, endCol := chunk.GetEndSpanLineColumn(token.Span)
+				resultToken.EndLine = endLine
+				resultToken.EndColumn = endCol
+
+				resultTokens[i] = resultToken
+			}
+
+			return makeResult(string(marshalTokens(resultTokens, tokenSerializationBuf[:0])), nil)
+		}
+
+		return makeResult(nil, errors.New("unknown chunk"))
 	}))
 
 	exports.Set("parse_chunk", js.FuncOf(func(this js.Value, args []js.Value) any {
@@ -148,4 +209,95 @@ func makeResult(value any, error error) any {
 		return js.ValueOf([]any{value, nil})
 	}
 	return js.ValueOf([]any{nil, error})
+}
+
+type resultToken struct {
+	parse.Token
+	StartLine   int32 `json:"startLine"`
+	EndLine     int32 `json:"endLine"`
+	StartColumn int32 `json:"startColumn"`
+	EndColumn   int32 `json:"endColumn"`
+}
+
+func makeResultTokens(chunk *parse.ParsedChunkSource) []resultToken {
+	tokens := parse.GetTokens(chunk.Node, chunk.Node, false)
+	resultTokens := make([]resultToken, len(tokens))
+
+	for i, token := range tokens {
+		resultToken := resultToken{Token: token}
+
+		line, col := chunk.GetSpanLineColumn(token.Span)
+		resultToken.StartLine = line
+		resultToken.StartColumn = col
+
+		endLine, endCol := chunk.GetEndSpanLineColumn(token.Span)
+		resultToken.EndLine = endLine
+		resultToken.EndColumn = endCol
+
+		resultTokens[i] = resultToken
+	}
+
+	return resultTokens
+
+}
+
+func marshalTokens(tokens []resultToken, buffer []byte) string {
+	w := jsoniter.NewStream(jsoniter.ConfigDefault, nil, 0)
+	w.SetBuffer(buffer)
+
+	w.WriteArrayStart()
+	for i, token := range tokens {
+
+		if i != 0 {
+			w.WriteMore()
+		}
+		w.WriteObjectStart()
+
+		w.WriteObjectField("type")
+		w.WriteUint64(uint64(token.Type))
+
+		w.WriteMore()
+		w.WriteObjectField("span")
+		{
+			w.WriteObjectStart()
+
+			w.WriteObjectField("start")
+			w.WriteInt32(token.Span.Start)
+
+			w.WriteMore()
+			w.WriteObjectField("end")
+			w.WriteInt32(token.Span.End)
+
+			w.WriteObjectEnd()
+		}
+
+		w.WriteMore()
+		w.WriteObjectField("raw")
+		w.WriteString(token.Raw)
+
+		w.WriteMore()
+		w.WriteObjectField("meta")
+		w.WriteUint(uint(token.Meta))
+
+		w.WriteMore()
+		w.WriteObjectField("startLine")
+		w.WriteInt32(token.StartLine)
+
+		w.WriteMore()
+		w.WriteObjectField("startColumn")
+		w.WriteInt32(token.StartColumn)
+
+		w.WriteMore()
+		w.WriteObjectField("endLine")
+		w.WriteInt32(token.EndLine)
+
+		w.WriteMore()
+		w.WriteObjectField("endColumn")
+		w.WriteInt32(token.EndColumn)
+
+		w.WriteObjectEnd()
+	}
+	w.WriteArrayEnd()
+
+	return string(w.Buffer())
 }
