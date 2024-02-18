@@ -149,6 +149,7 @@ func StartLSPServer(ctx *core.Context, serverConfig LSPServerConfiguration) (fin
 		registerDebugMethodHandlers(server, serverConfig)
 		registerLearningMethodHandlers(server)
 		registerTestingMethodHandlers(server, serverConfig)
+		registerHttpClientMethods(server, serverConfig)
 	}
 
 	logs.Println("LSP server configured, start listening")

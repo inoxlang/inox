@@ -408,7 +408,7 @@ func (s *Session) Notify(notif NotificationMessage) error {
 	if err != nil {
 		return err
 	}
-	logs.Printf("Notification: [%v]\n", string(notifBytes))
+	logs.Printf("Notification: [%v]\n", string(notif.Method))
 
 	if s.msgConn != nil {
 		return s.msgConn.WriteMessage(notifBytes)

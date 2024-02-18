@@ -26,6 +26,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/utils"
 
+	"net/http"
 	"net/url"
 
 	"github.com/inoxlang/inox/internal/codecompletion"
@@ -68,6 +69,10 @@ type additionalSessionData struct {
 
 	//debug adapter protocol
 	debugSessions *DebugSessions
+
+	//server-side HTTP client
+	secureHttpClient   *http.Client
+	insecureHttpClient *http.Client //used for requests to localhost
 }
 
 func (d *additionalSessionData) Scheme() string {
