@@ -82,4 +82,6 @@ func (resp *Response) Status(ctx *core.Context) string {
 	return resp.wrapped.Status
 }
 
-//
+func (resp *Response) StdlibResponse() *http.Response {
+	return resp.wrapped
+}

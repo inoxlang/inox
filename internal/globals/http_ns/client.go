@@ -102,8 +102,7 @@ func NewClientWithConfig(config ClientConfig) (*Client, error) {
 				InsecureSkipVerify: config.Insecure,
 			},
 		},
-		//Timeout: options.Timeout,
-		Jar: client.options.Jar,
+		Jar:     client.options.Jar,
 	}
 
 	return client, nil
@@ -222,10 +221,14 @@ func (c *Client) MakeRequest(ctx *core.Context, method string, u core.URL, body 
 }
 
 func (c *Client) DoRequest(ctx *core.Context, req *Request) (*Response, error) {
+	return c.DoStdlibRequest(ctx, req.Request())
+}
+
+func (c *Client) DoStdlibRequest(ctx *core.Context, req *http.Request) (*Response, error) {
 	ctx.PauseCPUTimeDepletion()
 	defer ctx.ResumeCPUTimeDepletion()
 
-	resp, err := c.client.Do(req.Request())
+	resp, err := c.client.Do(req)
 	if resp == nil {
 		return nil, err
 	}
