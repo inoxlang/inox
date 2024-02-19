@@ -5,6 +5,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/inoxd/node"
 	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/project/access"
@@ -152,6 +153,8 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 				}
 			}
 
+			//TODO: limit the number of concurrent sessions for the same member.
+
 			sessionCtx.PutUserData(CURRENT_PROJECT_CTX_DATA_PATH, project)
 
 			tokens, err := project.TempProjectTokens(sessionCtx)
@@ -166,9 +169,14 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 
 			sessionData := getLockedSessionData(session)
 			defer sessionData.lock.Unlock()
+
+			sessionData.projectDevSessionKey = http_ns.RandomDevSessionKey()
+			sessionCtx.PutUserData(http_ns.CTX_DATA_KEY_FOR_DEV_SESSION_KEY, core.String(sessionData.projectDevSessionKey))
+
 			sessionData.filesystem = lspFilesystem
 			sessionData.project = project
 			sessionData.serverAPI = newServerAPI(lspFilesystem, session)
+
 			go sessionData.serverAPI.tryUpdateAPI() //use a goroutine to avoid deadlock
 
 			err = startNotifyingFilesystemStructureEvents(session, project.LiveFilesystem(), func(event fs_ns.Event) {

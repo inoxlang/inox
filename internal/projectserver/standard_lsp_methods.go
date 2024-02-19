@@ -16,6 +16,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
@@ -56,11 +57,12 @@ type additionalSessionData struct {
 	unsavedDocumentSyncData  map[string] /* fpath */ *unsavedDocumentSyncData
 	preparedSourceFilesCache *preparedFileCache
 
-	filesystem         *Filesystem
-	clientCapabilities defines.ClientCapabilities
-	serverCapabilities defines.ServerCapabilities
-	projectMode        bool
-	project            *project.Project
+	filesystem           *Filesystem
+	clientCapabilities   defines.ClientCapabilities
+	serverCapabilities   defines.ServerCapabilities
+	projectMode          bool
+	project              *project.Project
+	projectDevSessionKey http_ns.DevSessionKey //set after project is open
 
 	serverAPI *serverAPI //set during project opening
 

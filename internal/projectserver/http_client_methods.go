@@ -14,6 +14,9 @@ import (
 	"runtime/debug"
 	"time"
 
+	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/globals/http_ns"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/projectserver/logs"
 	"github.com/inoxlang/inox/internal/projectserver/lsp"
@@ -64,6 +67,7 @@ func registerHttpClientMethods(server *lsp.Server, opts LSPServerConfiguration) 
 func handleHttpRequest(goCtx context.Context, req interface{}) (interface{}, error) {
 	session := jsonrpc.GetSession(goCtx)
 	params := req.(*HttpRequestParams)
+	ctx := session.Context()
 
 	data := getLockedSessionData(session)
 	var client *http.Client
@@ -154,8 +158,14 @@ func handleHttpRequest(goCtx context.Context, req interface{}) (interface{}, err
 			httpReq.Header.Add(headerName, val)
 		}
 	}
+
 	httpReq.Header.Del("host")
 	httpReq.Header.Del("connection")
+
+	devSessionKey, ok := ctx.ResolveUserData(http_ns.CTX_DATA_KEY_FOR_DEV_SESSION_KEY).(core.String)
+	if ok {
+		httpReq.Header.Set(inoxconsts.DEV_SESSION_KEY_HEADER, string(devSessionKey))
+	}
 
 	//Create goroutine that will send the request and notify the response.
 

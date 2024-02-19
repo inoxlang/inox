@@ -24,6 +24,7 @@ const (
 
 	DEV_OS_DIR           = "dev"
 	DEV_DATABASES_OS_DIR = "databases"
+	DEV_SERVERS_OS_DIR   = "servers"
 
 	OWNER_MEMBER_NAME = "owner"
 )
@@ -141,13 +142,33 @@ func (r *Registry) CreateProject(ctx *core.Context, params CreateProjectParams) 
 	return id, ownerMember.ID, nil
 }
 
+func (r *Registry) DevDir() (string, error) {
+	devDir := filepath.Join(r.projectsDir, DEV_OS_DIR)
+
+	err := r.filesystem.MkdirAll(devDir, fs_ns.DEFAULT_DIR_FMODE)
+	if err != nil {
+		return "", err
+	}
+
+	return devDir, nil
+}
+
+func (r *Registry) DevServersDir() (string, error) {
+	devDir, err := r.DevDir()
+
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Join(devDir, DEV_SERVERS_OS_DIR), nil
+}
+
 func (r *Registry) getCreateDevDatabasesDir(id core.ProjectID) (projectDevDatabasesDir string, err error) {
 	//create the dev dir that will store the dev databases
 
-	devDir := filepath.Join(r.projectsDir, DEV_OS_DIR)
-	err = r.filesystem.MkdirAll(devDir, fs_ns.DEFAULT_DIR_FMODE)
+	devDir, err := r.DevDir()
 	if err != nil {
-		return
+		return "", err
 	}
 
 	//create the <dev dir>/<project id>/databases dir

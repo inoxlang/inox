@@ -147,7 +147,7 @@ func ProjectServer(mainSubCommand string, mainSubCommandArgs []string, outW, err
 
 	//create context & state
 	perms := []core.Permission{
-		//TODO: change path pattern
+		//TODO: change path patterns
 		core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
 		core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")},
 		core.FilesystemPermission{Kind_: permkind.Delete, Entity: core.PathPattern("/...")},
@@ -202,6 +202,7 @@ func ProjectServer(mainSubCommand string, mainSubCommandArgs []string, outW, err
 
 		ProjectsDirFilesystem: ctx.GetFileSystem(),
 		OnSession: func(rpcCtx *core.Context, s *jsonrpc.Session) error {
+			//Create the core.Context for the LSP session.
 			sessionCtx := core.NewContext(core.ContextConfig{
 				Permissions:          rpcCtx.GetGrantedPermissions(),
 				ForbiddenPermissions: rpcCtx.GetForbiddenPermissions(),
@@ -257,7 +258,7 @@ func ProjectServer(mainSubCommand string, mainSubCommandArgs []string, outW, err
 		node.SetAgent(nodeAgent)
 	}
 
-	//start the browser proxy
+	//Start the browser proxy.
 
 	if projectServerConfig.AllowBrowserAutomation {
 		err = chrome_ns.StartSharedProxy(ctx)
@@ -267,7 +268,7 @@ func ProjectServer(mainSubCommand string, mainSubCommandArgs []string, outW, err
 		}
 	}
 
-	//start server
+	//Start the project server and development servers.
 
 	if err := projectserver.StartLSPServer(ctx, opts); err != nil {
 		fmt.Fprintln(errW, "failed to start LSP server:", err)

@@ -2,6 +2,7 @@ package projectserver
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"runtime/debug"
@@ -9,6 +10,8 @@ import (
 
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/globals/http_ns"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
@@ -131,6 +134,25 @@ func StartLSPServer(ctx *core.Context, serverConfig LSPServerConfiguration) (fin
 
 	if err != nil {
 		return err
+	}
+
+	defer projectRegistry.Close(ctx)
+
+	devServersDir, err := projectRegistry.DevServersDir()
+	if err != nil {
+		return fmt.Errorf("failed to get dev dir of projects: %w", err)
+	}
+
+	// Start the development server(s).
+
+	earlyErr := http_ns.StartDevServer(ctx.BoundChild(), http_ns.DevServerConfig{
+		DevServersDir:       devServersDir,
+		Port:                inoxconsts.DEV_PORT_0,
+		BindToAllInterfaces: serverConfig.ExposeWebServers,
+	})
+
+	if earlyErr != nil {
+		return fmt.Errorf("failed to start dev server on port %s", inoxconsts.DEV_PORT_0)
 	}
 
 	//Create and start the LSP server.
