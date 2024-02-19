@@ -127,6 +127,15 @@ func TestTargetServerCreationAndDevServerForwarding(t *testing.T) {
 
 		body = utils.Must(io.ReadAll(resp.Body))
 		assert.NotEqual(t, NO_HANDLER_PLACEHOLDER_MESSAGE, string(body))
+
+		//The dev server should not be running after the context cancellation.
+
+		rootCtx.CancelGracefully()
+
+		time.Sleep(50 * time.Millisecond)
+
+		_, ok = GetDevServer(port)
+		assert.False(t, ok)
 	})
 
 }

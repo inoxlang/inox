@@ -104,7 +104,7 @@ var (
 
 // HttpsServer implements the GoValue interface.
 type HttpsServer struct {
-	//Virtual HTTPS servers does not bind to a port. Instead, they inform a development server
+	//Virtual HTTPS servers do not bind to a port. Instead, they inform a development server
 	//that will redirect specific traffic to them.
 	isVirtual     bool
 	devServer     *DevServer    //set if the server is virtual

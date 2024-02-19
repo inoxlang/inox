@@ -115,7 +115,7 @@ func StartDevServer(ctx *core.Context, config DevServerConfig) error {
 
 	devServer.server = server
 
-	var earlyErrorChan chan error
+	earlyErrorChan := make(chan error, 1)
 
 	//Close the server when $ctx is done.
 	go func() {
