@@ -10,6 +10,7 @@ import (
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	netaddr "github.com/inoxlang/inox/internal/netaddr"
 	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/inoxlang/inox/internal/utils"
@@ -42,7 +43,7 @@ func TestGolangHttpServer(t *testing.T) {
 			return
 		}
 
-		prevCert, err := util.ReadFile(fls, "/"+RELATIVE_SELF_SIGNED_CERT_FILEPATH)
+		prevCert, err := util.ReadFile(fls, "/"+inoxconsts.DEV_DIR_NAME+"/"+RELATIVE_SELF_SIGNED_CERT_FILENAME)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -63,7 +64,7 @@ func TestGolangHttpServer(t *testing.T) {
 
 		defer server.Close()
 
-		currentCert, err := util.ReadFile(fls, "/"+RELATIVE_SELF_SIGNED_CERT_FILEPATH)
+		currentCert, err := util.ReadFile(fls, "/"+inoxconsts.DEV_DIR_NAME+"/"+RELATIVE_SELF_SIGNED_CERT_FILENAME)
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -87,7 +88,7 @@ func TestGolangHttpServer(t *testing.T) {
 
 		defer server.Close()
 
-		currentCert, err = util.ReadFile(fls, "/"+RELATIVE_SELF_SIGNED_CERT_FILEPATH)
+		currentCert, err = util.ReadFile(fls, "/"+inoxconsts.DEV_DIR_NAME+"/"+RELATIVE_SELF_SIGNED_CERT_FILENAME)
 		if !assert.NoError(t, err) {
 			return
 		}

@@ -105,7 +105,7 @@ func StartDevServer(ctx *core.Context, config DevServerConfig) error {
 		Addr:                                     addr,
 		PersistCreatedLocalCert:                  true,
 		AllowSelfSignedCertCreationEvenIfExposed: true,
-		GeneratedCertDir:                         core.DirPathFrom(devServersDir),
+		GeneratedCertDir:                         core.DirPathFrom(serverDir),
 		Handler:                                  http.HandlerFunc(devServer.Handle),
 	})
 

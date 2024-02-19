@@ -18,8 +18,8 @@ import (
 
 const (
 	DEFAULT_SELF_SIGNED_CERT_VALIDITY_DURATION = time.Hour * 24 * 180
-	RELATIVE_SELF_SIGNED_CERT_FILEPATH         = "./" + inoxconsts.DEV_DIR_NAME + "/self_signed.cert"
-	RELATIVE_SELF_SIGNED_CERT_KEY_FILEPATH     = "./" + inoxconsts.DEV_DIR_NAME + "/self_signed.key"
+	RELATIVE_SELF_SIGNED_CERT_FILENAME         = "self_signed.cert"
+	RELATIVE_SELF_SIGNED_CERT_KEY_FILENAME     = "self_signed.key"
 )
 
 type GolangHttpServerConfig struct {
@@ -31,7 +31,7 @@ type GolangHttpServerConfig struct {
 	PemEncodedKey  string
 
 	//Directory where to store any generated self-signed certificate.
-	//Defaults to the context's initial working directory.
+	//Defaults to inoxconsts.DEV_DIR_NAME in the context's initial working directory.
 	GeneratedCertDir core.Path
 
 	AllowSelfSignedCertCreationEvenIfExposed bool
@@ -53,10 +53,15 @@ func NewGolangHttpServer(ctx *core.Context, config GolangHttpServerConfig) (*htt
 
 	//if no certificate is provided by the user we create one
 	if config.PemEncodedCert == "" && (isLocalhostOr127001Addr(config.Addr) || (isBindAllAddress(config.Addr) && config.AllowSelfSignedCertCreationEvenIfExposed)) {
-		certDir := utils.DefaultIfEmptyString(config.GeneratedCertDir, ctx.InitialWorkingDirectory())
+		certDir := config.GeneratedCertDir
+		if certDir == "" {
+			initialWorkingDir := ctx.InitialWorkingDirectory().UnderlyingString()
+			certDir = core.DirPathFrom(fls.Join(initialWorkingDir, inoxconsts.DEV_DIR_NAME))
+		}
+
 		var (
-			CERT_FILEPATH     = certDir.Join(RELATIVE_SELF_SIGNED_CERT_FILEPATH, fls).UnderlyingString()
-			CERT_KEY_FILEPATH = certDir.Join(RELATIVE_SELF_SIGNED_CERT_KEY_FILEPATH, fls).UnderlyingString()
+			CERT_FILEPATH     = certDir.JoinEntry(RELATIVE_SELF_SIGNED_CERT_FILENAME).UnderlyingString()
+			CERT_KEY_FILEPATH = certDir.JoinEntry(RELATIVE_SELF_SIGNED_CERT_KEY_FILENAME).UnderlyingString()
 		)
 
 		validityDuration := utils.DefaultIfZero(config.SelfSignedCertValidityDuration, DEFAULT_SELF_SIGNED_CERT_VALIDITY_DURATION)
