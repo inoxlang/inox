@@ -101,7 +101,8 @@ func (a *Agent) GetOrCreateApplication(name node.ApplicationName) (node.Applicat
 
 				core.WebsocketPermission{Kind_: permkind.Provide},
 				core.HttpPermission{Kind_: permkind.Provide, Entity: core.ANY_HTTPS_HOST_PATTERN},
-				core.HttpPermission{Kind_: permkind.Provide, Entity: core.HostPattern("https://**:" + inoxconsts.DEFAULT_DEV_APP_PORT)},
+				//TODO: the port should be in the application configuration (it should default to 443).
+				core.HttpPermission{Kind_: permkind.Provide, Entity: core.HostPattern("https://**:" + inoxconsts.DEV_PORT_0)},
 
 				core.HttpPermission{Kind_: permkind.Read, AnyEntity: true},
 				core.HttpPermission{Kind_: permkind.Write, AnyEntity: true},

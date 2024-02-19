@@ -154,7 +154,7 @@ func ProjectServer(mainSubCommand string, mainSubCommandArgs []string, outW, err
 
 		core.WebsocketPermission{Kind_: permkind.Provide},
 		core.HttpPermission{Kind_: permkind.Provide, Entity: core.ANY_HTTPS_HOST_PATTERN},
-		core.HttpPermission{Kind_: permkind.Provide, Entity: core.HostPattern("https://**:" + inoxconsts.DEFAULT_DEV_APP_PORT)},
+		core.HttpPermission{Kind_: permkind.Provide, Entity: core.HostPattern("https://**:" + inoxconsts.DEV_PORT_0)},
 		core.HttpPermission{Kind_: permkind.Provide, Entity: core.HostPattern("http://" + chrome_ns.BROWSER_PROXY_ADDR)},
 
 		core.HttpPermission{Kind_: permkind.Read, AnyEntity: true},

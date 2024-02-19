@@ -189,9 +189,9 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 	if project != nil {
 		//TODO: get available port in a range dedicated to dev.
 
-		applicationListeningAddr = Host("https://localhost:" + inoxconsts.DEFAULT_DEV_APP_PORT)
+		applicationListeningAddr = Host("https://localhost:" + inoxconsts.DEV_PORT_0)
 		if project.Configuration().AreExposedWebServersAllowed() {
-			applicationListeningAddr = Host("https://0.0.0.0:" + inoxconsts.DEFAULT_DEV_APP_PORT)
+			applicationListeningAddr = Host("https://0.0.0.0:" + inoxconsts.DEV_PORT_0)
 		}
 	}
 
