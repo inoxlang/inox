@@ -188,6 +188,11 @@ type LthreadWithStateSpawnArgs struct {
 	StartPaused     bool
 
 	Self Value
+
+	//(optional) Function called by the lthread when its execution is finished.
+	//$result is nil if and only if $err is not nil. The function should not
+	//mutate the result or store a reference to it.
+	OnResultMicrotask func(result Value, err error)
 }
 
 func SpawnLthreadWithState(args LthreadWithStateSpawnArgs) (*LThread, error) {
@@ -251,11 +256,20 @@ func SpawnLthreadWithState(args LthreadWithStateSpawnArgs) (*LThread, error) {
 				lthread.result = Nil
 				lthread.err = ValOf(err).(Error)
 				lthread.wait_result <- struct{}{}
+
+				if args.OnResultMicrotask != nil {
+					args.OnResultMicrotask(nil, err)
+				}
+
 				return
 			}
 
 			lthread.result = res
 			lthread.wait_result <- struct{}{}
+
+			if args.OnResultMicrotask != nil {
+				args.OnResultMicrotask(res, nil)
+			}
 		}()
 
 		defer func() {

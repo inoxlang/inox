@@ -1,6 +1,7 @@
 package core
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"reflect"
@@ -765,6 +766,24 @@ func runTestItem(
 		testedProgramThread, err = SpawnLthreadWithState(LthreadWithStateSpawnArgs{
 			SpawnerState: spawnerState,
 			State:        programState,
+
+			//If the tested program stopped with an error, log it.
+			OnResultMicrotask: func(result Value, err error) {
+				if lthreadCtx.IsDoneSlowCheck() || errors.Is(err, context.Canceled) {
+					return
+				}
+
+				//Log in a goroutine because we are in a microtask.
+				go func() {
+					defer utils.Recover()
+
+					if err == nil {
+						lthreadCtx.Logger().Warn().Msg("tested program finished")
+					} else {
+						lthreadCtx.Logger().Err(err).Msg("tested program stopped with an error")
+					}
+				}()
+			},
 		})
 
 		if err != nil {
@@ -772,6 +791,7 @@ func runTestItem(
 		}
 
 		time.Sleep(DEFAULT_WAIT_DURATION_FOR_TESTED_PROGRAM_STARTUP)
+
 	}
 
 	//Spawn the lthread
