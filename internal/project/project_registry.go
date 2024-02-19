@@ -91,7 +91,7 @@ func (r *Registry) CreateProject(ctx *core.Context, params CreateProjectParams) 
 
 	ownerMember := access.MemberData{
 		Name: OWNER_MEMBER_NAME,
-		ID:   core.NewUUIDv4().String(),
+		ID:   access.RandomMemberID(),
 	}
 
 	projectData := projectData{

@@ -168,7 +168,7 @@ func (p *Project) Configuration() core.ProjectConfiguration {
 	return p.config
 }
 
-func (p *Project) GetMemberByID(ctx *core.Context, id string) (*access.Member, bool) {
+func (p *Project) GetMemberByID(ctx *core.Context, id access.MemberID) (*access.Member, bool) {
 	closestState := ctx.GetClosestState()
 	p.lock.Lock(closestState, p)
 	defer p.lock.Unlock(closestState, p)

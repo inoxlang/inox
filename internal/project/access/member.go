@@ -1,6 +1,11 @@
 package access
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+
+	"github.com/inoxlang/inox/internal/core"
+)
 
 type Member struct {
 	data MemberData
@@ -19,22 +24,40 @@ func (m Member) Name() string {
 	return m.data.Name
 }
 
-func (m Member) ID() string {
+func (m Member) ID() MemberID {
 	return m.data.ID
 }
 
 // Persisted member data.
 type MemberData struct {
-	Name string `json:"name"`
-	ID   string `json:"id"`
+	Name string   `json:"name"`
+	ID   MemberID `json:"id"`
+}
+
+type MemberID string //uuidv4
+
+func RandomMemberID() MemberID {
+	return MemberID(core.NewUUIDv4().String())
+}
+
+func (id MemberID) Validate() error {
+	if id == "" {
+		return errors.New("invalid member data: empty id")
+	}
+
+	_, err := core.ParseUUIDv4(string(id))
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (data MemberData) Validate() error {
 	if data.Name == "" {
 		return errors.New("invalid member data: empty name")
 	}
-	if data.ID == "" {
-		return errors.New("invalid member data: empty id")
+	if err := data.ID.Validate(); err != nil {
+		return fmt.Errorf("invalid member data: invalid id: %w", err)
 	}
 	return nil
 }
