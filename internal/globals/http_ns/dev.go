@@ -194,17 +194,29 @@ func (s *DevServer) Handle(rw http.ResponseWriter, req *http.Request) {
 	targetServer.wrappedServer.Handler.ServeHTTP(rw, req)
 }
 
-func (s *DevServer) AddTargetServer(devSessionKey DevSessionKey, server *HttpsServer) {
+func (s *DevServer) SetTargetServer(devSessionKey DevSessionKey, server *HttpsServer) bool {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
 	//Do no add (or remove) the server if its context is done.
 	if server.state.Ctx.IsDoneSlowCheck() {
 		delete(s.targetServers, devSessionKey)
-		return
+		return false
+	}
+
+	if s.targetServers[devSessionKey] != nil {
+		return false
 	}
 
 	s.targetServers[devSessionKey] = server
+	return true
+}
+
+func (s *DevServer) UnsetTargetServer(devSessionKey DevSessionKey) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	delete(s.targetServers, devSessionKey)
 }
 
 func (s *DevServer) GetTargetServer(devSessionKey DevSessionKey) (*HttpsServer, bool) {

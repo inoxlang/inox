@@ -138,4 +138,96 @@ func TestTargetServerCreationAndDevServerForwarding(t *testing.T) {
 		assert.False(t, ok)
 	})
 
+	t.Run("set a new target server after the first one is closed", func(t *testing.T) {
+		port := inoxconsts.DEV_PORT_1
+		host := core.Host("https://localhost:" + port)
+
+		fls := fs_ns.NewMemFilesystem(1_000_000)
+
+		rootCtx := core.NewContexWithEmptyState(core.ContextConfig{
+			Filesystem:  fls,
+			Permissions: []core.Permission{core.HttpPermission{Kind_: permkind.Provide, Entity: host}},
+		}, nil)
+
+		defer rootCtx.CancelGracefully()
+
+		err := StartDevServer(rootCtx, DevServerConfig{
+			Port:                port,
+			DevServersDir:       "/",
+			BindToAllInterfaces: false,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		//Wait for the dev server to start.
+
+		time.Sleep(50 * time.Millisecond)
+
+		firstTargetServerCtx := core.NewContexWithEmptyState(core.ContextConfig{
+			ParentContext: rootCtx,
+			Permissions:   rootCtx.GetGrantedPermissions(),
+		}, nil)
+
+		sessionKey := RandomDevSessionKey()
+		firstTargetServerCtx.PutUserData(CTX_DATA_KEY_FOR_DEV_SESSION_KEY, core.String(sessionKey))
+
+		//Create the first server that.
+		server, err := NewHttpsServer(firstTargetServerCtx, host)
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		//Wait for the server to start.
+
+		time.Sleep(50 * time.Millisecond)
+
+		//Check that the target server is registered.
+
+		devServer, ok := GetDevServer(port)
+		if !assert.True(t, ok) {
+			return
+		}
+
+		targetServer, ok := devServer.GetTargetServer(sessionKey)
+		if !assert.True(t, ok) {
+			return
+		}
+
+		if !assert.Same(t, server, targetServer) {
+			return
+		}
+
+		//Close the first server.
+		firstTargetServerCtx.CancelGracefully()
+
+		//Create the second server.
+
+		secondTargetServerCtx := core.NewContexWithEmptyState(core.ContextConfig{
+			ParentContext: rootCtx,
+			Permissions:   rootCtx.GetGrantedPermissions(),
+		}, nil)
+
+		secondTargetServerCtx.PutUserData(CTX_DATA_KEY_FOR_DEV_SESSION_KEY, core.String(sessionKey))
+
+		secondServer, err := NewHttpsServer(secondTargetServerCtx, host)
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		//Wait for the server to start.
+
+		time.Sleep(50 * time.Millisecond)
+
+		//Check that the new target server is registered.
+
+		targetServer, ok = devServer.GetTargetServer(sessionKey)
+		if !assert.True(t, ok) {
+			return
+		}
+
+		assert.Same(t, secondServer, targetServer)
+	})
+
 }

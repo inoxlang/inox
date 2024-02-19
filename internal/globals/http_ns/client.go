@@ -13,6 +13,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/utils"
 	"golang.org/x/net/context"
 	"golang.org/x/net/publicsuffix"
@@ -178,6 +179,10 @@ func (c *Client) MakeRequest(ctx *core.Context, method string, u core.URL, body 
 
 	req, err := http.NewRequest(method, string(u), body)
 
+	if err != nil {
+		return nil, fmt.Errorf("failed to make request: %s", err.Error())
+	}
+
 	if contentType != "" {
 		if utils.SliceContains(spec.METHODS_WITH_NO_BODY, method) {
 			req.Header.Add("Accept", string(contentType))
@@ -186,15 +191,16 @@ func (c *Client) MakeRequest(ctx *core.Context, method string, u core.URL, body 
 		}
 	}
 
-	if err != nil {
-		return nil, fmt.Errorf("failed to make request: %s", err.Error())
-	}
-
 	if opts.Timeout != 0 {
 		newCtx, _ := context.WithTimeout(ctx, opts.Timeout)
 		req = req.WithContext(newCtx)
 	} else {
 		req = req.WithContext(ctx)
+	}
+
+	devSessionKey, ok := ctx.ResolveUserData(CTX_DATA_KEY_FOR_DEV_SESSION_KEY).(core.String)
+	if ok {
+		req.Header.Set(inoxconsts.DEV_SESSION_KEY_HEADER, string(devSessionKey))
 	}
 
 	wrapped, err := NewClientSideRequest(req)

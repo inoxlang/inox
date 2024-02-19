@@ -183,6 +183,12 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 			return nil, fmt.Errorf("cannot create virtual server: potential implementation error: development session key is invalid")
 		}
 
+		_, ok = devServer.GetTargetServer(devSessionKey)
+
+		if ok {
+			return nil, fmt.Errorf("a virtual server is already running on the port %s for the current session", params.port)
+		}
+
 		server.devSessionKey = devSessionKey
 		server.devServer = devServer
 	}
@@ -343,6 +349,9 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 	go func() {
 		defer func() {
 			recover()
+			if server.devServer != nil {
+				server.devServer.UnsetTargetServer(server.devSessionKey)
+			}
 			server.endChan <- struct{}{}
 		}()
 
@@ -368,7 +377,13 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 
 		//If the server is virtual we inform the corresponding developement server instead of binding to a port.
 		if server.isVirtual {
-			server.devServer.AddTargetServer(server.devSessionKey, server)
+			if !server.devServer.SetTargetServer(server.devSessionKey, server) {
+				if ctx.IsDoneSlowCheck() {
+					return
+				}
+				server.serverLogger.Info().Msgf("a virtual server is already running on the port %s for the current session", params.port)
+				return
+			}
 			<-ctx.Done()
 			return
 		}
