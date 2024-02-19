@@ -53,7 +53,7 @@ rendering)</summary>**
 
 ---
 
-**I have been working 2 years full time on Inox.** There is still a lot to do in
+I have been working 2 years full time on Inox. There is still a lot to do in
 order to make Inox usable in real world applications. If you believe this
 project has potential, **consider donating** through
 [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or
@@ -130,34 +130,39 @@ Inox (check see 'What is planned' and [Other features](#other-features)).
 
 ## Development Environment - Inox Project Server
 
-**There is no true local development environment when developping Inox projects.** 
-The code editor (VSCode) connects to a **project server** (included in the Inox binary) and the code is edited and tested inside a virtual workspace.
-The server does not yet integrate git yet, but this is planned, https://github.com/go-git/go-git.
+**There is no true local development environment when developping Inox
+projects.** The code editor (VSCode) connects to a **project server** (included
+in the Inox binary) and the code is edited and tested inside a virtual
+workspace. The server does not yet integrate git yet, but this is planned,
+https://github.com/go-git/go-git.
 
-Each developer in the project will ultimately have a its own copy. As of now the project server only supports projects with a single developer.
+Each developer in the project will ultimately have a its own copy. As of now the
+project server only supports projects with a single developer.
 
 **Pros**
 
 - All developers in the project will have an identical development environment.
-- Dependency downloads should be faster because they are made by the project server (most of the time: a virtual machine in a datacenter).
-  Also downloaded dependencies can be shared between developers.
+- Dependency downloads should be faster because they are made by the project
+  server (most of the time: a virtual machine in a datacenter). Also downloaded
+  dependencies can be shared between developers.
 - The project does not need to be downloaded by the developer.
 - Code conflicts could be detected early, even before a developer commmits.
 
 **Cons**
 
-- An Internet connection is required. However code files are cached on the developer machine for offline access (read only for now).
+- An Internet connection is required. However code files are cached on the
+  developer machine for offline access (read only for now).
 
-Project servers are expected to run on a dedicated machine. They will support automatic infrastructure management in the near future.
+Project servers are expected to run on a dedicated machine. They will support
+automatic infrastructure management in the near future.
 
 <details>
 
-
 **<summary>⚙️ Details</summary>**
 
-The project server is a LSP server with additional custom methods. It enables the developer
-to develop, debug, test, deploy and manage secrets, all from VSCode. 
-
+The project server is a LSP server with additional custom methods. It enables
+the developer to develop, debug, test, deploy and manage secrets, all from
+VSCode.
 
 ```mermaid
 flowchart TB
@@ -316,7 +321,6 @@ To learn scripting go [here](./docs/scripting-basics.md). View
 - [More secure URL interpolations](#more-secure-url-interpolations)
 - [Per-module limits](#per-module-limits)
 
-
 ### Structured Logging
 
 ![structured logging demo](./docs/img/structured-logs.png)
@@ -376,8 +380,9 @@ h.close()
 
 ### Composable String Patterns
 
-Inox has composable string patterns that are more readable than regular expressions (Inox still supports regexps though).
-Let's see an example, here is the regexp for matching time (e.g. 01:45 AM).
+Inox has composable string patterns that are more readable than regular
+expressions (Inox still supports regexps though). Let's see an example, here is
+the regexp for matching time (e.g. 01:45 AM).
 
 ```js
 /^(?<hour>(1[0-2]|0?[1-9])):(?<minute>[0-5][0-9]) (?<period>AM|PM)$/
@@ -721,22 +726,23 @@ a bytecode interpreter.
 
 <details>
 
-Each Inoxlang module is executed by a bytecode interpreter. This interpreter is
-not super fast because it is intended to execute businness logic: among other
-things it always checks for integer overflow/underflow, which has a cost.
+Each Inoxlang module is executed by a bytecode interpreter. As of now this
+interpreter is not optimized, yet. Also since it is intended to execute
+businness logic it always checks for integer overflow/underflow in arithmetic
+operation. Doing this has a cost.
 
-I plan to improve the interpreter and add an additional, lower-level,
+I plan to optimize the interpreter and add an additional, lower-level,
 [interpreter](https://github.com/inoxlang/inox/issues/32) that will execute
 **low-level** mode code only. This includes struct methods and low-level
 functions. In this mode only a few types are available (structs, int, float,
 bool, string, ...). High-level data structures such as objects and lists are
-primarly designed to represent **domain data** and to interact with the database. They are not designed to be ultra fast.
+primarly designed to represent **domain data** and to interact with the
+database. They are not designed to be ultra fast.
 
 I also need to improve the creation of interpreters for request handlers so that
 it's fast and cheap in memory.
 
 </details>
-
 
 ### Is Inoxlang sound ?
 
@@ -760,20 +766,24 @@ resolved by testing extensively._
 
 </details>
 
+### What architectures and operating systems are supported ?
+
+<details>
+
+As of now, only Linux distributions on the `AMD64` architecture are supported.
+
+- Support for Linux and MacOS on `ARM64` will likely be implemented.
+- Windows support will not be implemented. If you use this OS you should be able
+  to run Inox on WSL.
+
+</details>
+
 ### What is the state of the codebase (quality, documentation, tests) ?
 
 <details>
 
 As of now, certain parts of the codebase are not optimally written, lack
 sufficient comments and documentation, and do not have robust test coverage.
-
-</details>
-
-### Where do you come from ?
-
-<details>
-
-I am French 🇫🇷, and I live in France.
 
 </details>
 
