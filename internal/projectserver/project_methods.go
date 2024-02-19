@@ -7,6 +7,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/inoxd/node"
 	"github.com/inoxlang/inox/internal/project"
+	"github.com/inoxlang/inox/internal/project/access"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/projectserver/lsp"
 )
@@ -27,8 +28,14 @@ type CreateProjectParams struct {
 	Template   string `json:"template"`
 }
 
+type CreateProjectResponse struct {
+	ProjectID string `json:"projectId"`
+	OwnerID   string `json:"ownerId"`
+}
+
 type OpenProjectParams struct {
-	ProjectId     core.ProjectID               `json:"projectId"`
+	ProjectID     string                       `json:"projectId"`
+	MemberID      string                       `json:"memberId"`
 	DevSideConfig project.DevSideProjectConfig `json:"config"`
 	TempTokens    *project.TempProjectTokens   `json:"tempTokens,omitempty"`
 }
@@ -67,7 +74,7 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 			sessionCtx := session.Context()
 			params := req.(*CreateProjectParams)
 
-			projectId, _, err := projectRegistry.CreateProject(sessionCtx, project.CreateProjectParams{
+			projectId, ownerID, err := projectRegistry.CreateProject(sessionCtx, project.CreateProjectParams{
 				Name:       params.Name,
 				AddTutFile: params.AddTutFile,
 				Template:   params.Template,
@@ -80,7 +87,10 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 				}
 			}
 
-			return projectId, nil
+			return CreateProjectResponse{
+				ProjectID: string(projectId),
+				OwnerID:   string(ownerID),
+			}, nil
 		},
 	})
 
@@ -104,8 +114,24 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 				}
 			}
 
+			projectId := core.ProjectID(params.ProjectID)
+			if err := projectId.Validate(); err != nil {
+				return nil, jsonrpc.ResponseError{
+					Code:    jsonrpc.InternalError.Code,
+					Message: "invalid project ID",
+				}
+			}
+
+			memberId := access.MemberID(params.MemberID)
+			if err := memberId.Validate(); err != nil {
+				return nil, jsonrpc.ResponseError{
+					Code:    jsonrpc.InternalError.Code,
+					Message: "invalid member ID",
+				}
+			}
+
 			project, err := projectRegistry.OpenProject(sessionCtx, project.OpenProjectParams{
-				Id:               params.ProjectId,
+				Id:               projectId,
 				DevSideConfig:    params.DevSideConfig,
 				TempTokens:       params.TempTokens,
 				ExposeWebServers: opts.ExposeWebServers,
@@ -115,6 +141,14 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 				return nil, jsonrpc.ResponseError{
 					Code:    jsonrpc.InternalError.Code,
 					Message: err.Error(),
+				}
+			}
+
+			_, ok = project.AuthenticateMember(sessionCtx, memberId)
+			if !ok {
+				return nil, jsonrpc.ResponseError{
+					Code:    jsonrpc.InternalError.Code,
+					Message: "failed authentication",
 				}
 			}
 
