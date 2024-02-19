@@ -30,6 +30,10 @@ type GolangHttpServerConfig struct {
 	PemEncodedCert string
 	PemEncodedKey  string
 
+	//Directory where to store any generated self-signed certificate.
+	//Defaults to the context's initial working directory.
+	GeneratedCertDir core.Path
+
 	AllowSelfSignedCertCreationEvenIfExposed bool
 	//if true the certificate and key files are persisted on the filesystem for later reuse.
 	PersistCreatedLocalCert        bool
@@ -49,10 +53,10 @@ func NewGolangHttpServer(ctx *core.Context, config GolangHttpServerConfig) (*htt
 
 	//if no certificate is provided by the user we create one
 	if config.PemEncodedCert == "" && (isLocalhostOr127001Addr(config.Addr) || (isBindAllAddress(config.Addr) && config.AllowSelfSignedCertCreationEvenIfExposed)) {
-		initialWorkingDir := ctx.InitialWorkingDirectory()
+		certDir := utils.DefaultIfEmptyString(config.GeneratedCertDir, ctx.InitialWorkingDirectory())
 		var (
-			CERT_FILEPATH     = initialWorkingDir.Join(RELATIVE_SELF_SIGNED_CERT_FILEPATH, fls).UnderlyingString()
-			CERT_KEY_FILEPATH = initialWorkingDir.Join(RELATIVE_SELF_SIGNED_CERT_KEY_FILEPATH, fls).UnderlyingString()
+			CERT_FILEPATH     = certDir.Join(RELATIVE_SELF_SIGNED_CERT_FILEPATH, fls).UnderlyingString()
+			CERT_KEY_FILEPATH = certDir.Join(RELATIVE_SELF_SIGNED_CERT_KEY_FILEPATH, fls).UnderlyingString()
 		)
 
 		validityDuration := utils.DefaultIfZero(config.SelfSignedCertValidityDuration, DEFAULT_SELF_SIGNED_CERT_VALIDITY_DURATION)

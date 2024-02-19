@@ -102,7 +102,7 @@ func NewClientWithConfig(config ClientConfig) (*Client, error) {
 				InsecureSkipVerify: config.Insecure,
 			},
 		},
-		Jar:     client.options.Jar,
+		Jar: client.options.Jar,
 	}
 
 	return client, nil
@@ -120,6 +120,17 @@ func NewClientFromGolangHTTPClient(client *http.Client, insecure bool) *Client {
 			InsecureSkipVerify: insecure,
 			Jar:                client.Jar,
 		},
+	}
+}
+
+func newInsecureGolangHttpClient() *http.Client {
+	return &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
+		Timeout: 30 * time.Second,
 	}
 }
 

@@ -15,6 +15,7 @@ import (
 	"github.com/inoxlang/inox/internal/compressarch"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/mimeconsts"
 	"github.com/inoxlang/inox/internal/netaddr"
 	"github.com/inoxlang/inox/internal/utils"
@@ -103,6 +104,12 @@ var (
 
 // HttpsServer implements the GoValue interface.
 type HttpsServer struct {
+	//Virtual HTTPS servers does not bind to a port. Instead, they inform a development server
+	//that will redirect specific traffic to them.
+	isVirtual     bool
+	devServer     *DevServer    //set if the server is virtual
+	devSessionKey DevSessionKey //set if the server is virtual
+
 	listeningAddr core.Host
 	wrappedServer *http.Server
 	initialized   atomic.Bool
@@ -159,8 +166,28 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 	if server.sessions != nil {
 		server.sessions.Share(server.state)
 	}
+	server.isVirtual = inoxconsts.IsDevPort(params.port)
+	if server.isVirtual {
+		devServer, ok := GetDevServer(params.port)
+		if !ok {
+			return nil, fmt.Errorf("cannot create virtual server: development server listening on port %s does not exist", params.port)
+		}
 
-	//create logger and security engine
+		value, ok := ctx.ResolveUserData(CTX_DATA_KEY_FOR_DEV_SESSION_KEY).(core.String)
+		if !ok {
+			return nil, fmt.Errorf("cannot create virtual server: potential implementation error: development session key was not set")
+		}
+
+		devSessionKey, err := DevSessionKeyFrom(string(value))
+		if err != nil {
+			return nil, fmt.Errorf("cannot create virtual server: potential implementation error: development session key is invalid")
+		}
+
+		server.devSessionKey = devSessionKey
+		server.devServer = devServer
+	}
+
+	//Create logger and security engine.
 	{
 		logSrc := HTTP_SERVER_SRC + "/" + params.effectiveAddr
 		server.serverLogger = ctx.NewChildLoggerForInternalSource(logSrc)
@@ -169,7 +196,7 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 		server.securityEngine = newSecurityEngine(securityLogSrc)
 	}
 
-	//last handler function
+	//Create and add the last handler function to the server.
 	if params.handlerValProvided {
 		err := addHandlerFunction(params.userProvidedHandler, false, server)
 		if err != nil {
@@ -182,7 +209,7 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 		}
 	}
 
-	// create the http.HandlerFunc that will call lastHandlerFn & middlewares
+	//Ceate the http.HandlerFunc that will call lastHandlerFn & middlewares.
 	topHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		serverLogger := server.serverLogger
 
@@ -339,7 +366,12 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 
 		server.serverLogger.Info().Msgf("start HTTPS server on %s (%s)", params.effectiveAddr, strings.Join(urls, ", "))
 
-		//start listening
+		//If the server is virtual we inform the corresponding developement server instead of binding to a port.
+		if server.isVirtual {
+			server.devServer.AddTargetServer(server.devSessionKey, server)
+			<-ctx.Done()
+			return
+		}
 
 		err = goServer.ListenAndServeTLS("", "")
 		if err != nil {

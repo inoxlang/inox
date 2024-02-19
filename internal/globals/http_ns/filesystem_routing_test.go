@@ -46,21 +46,7 @@ func TestFilesystemRouting(t *testing.T) {
 	}
 
 	//set default request handling limits: cpuTimeLimit
-	if core.AreDefaultRequestHandlingLimitsSet() {
-		save := core.GetDefaultRequestHandlingLimits()
-		core.UnsetDefaultRequestHandlingLimits()
-		core.SetDefaultRequestHandlingLimits([]core.Limit{cpuTimeLimit})
-		t.Cleanup(func() {
-			core.UnsetDefaultRequestHandlingLimits()
-			core.SetDefaultRequestHandlingLimits(save)
-		})
-
-	} else {
-		core.SetDefaultRequestHandlingLimits([]core.Limit{cpuTimeLimit})
-		t.Cleanup(func() {
-			core.UnsetDefaultRequestHandlingLimits()
-		})
-	}
+	registerDefaultRequestLimits(t, cpuTimeLimit)
 
 	//set default max request handler limits
 	const maxCpuTime = 100 * time.Millisecond
@@ -69,21 +55,7 @@ func TestFilesystemRouting(t *testing.T) {
 		return
 	}
 
-	if core.AreDefaultMaxRequestHandlerLimitsSet() {
-		save := core.GetDefaultMaxRequestHandlerLimits()
-		core.UnsetDefaultMaxRequestHandlerLimits()
-		core.SetDefaultMaxRequestHandlerLimits([]core.Limit{maxCpuTimeLimit})
-		t.Cleanup(func() {
-			core.UnsetDefaultMaxRequestHandlerLimits()
-			core.SetDefaultMaxRequestHandlerLimits(save)
-		})
-
-	} else {
-		core.SetDefaultMaxRequestHandlerLimits([]core.Limit{maxCpuTimeLimit})
-		t.Cleanup(func() {
-			core.UnsetDefaultMaxRequestHandlerLimits()
-		})
-	}
+	registerDefaultMaxRequestHandlerLimits(t, maxCpuTimeLimit)
 
 	t.Run("GET /x.html should return the content of /static/x.html and the CSP header should be set", func(t *testing.T) {
 		runServerTest(t,

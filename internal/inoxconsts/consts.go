@@ -18,6 +18,8 @@ const (
 
 	DEV_PORT_0 string = "8080"
 	DEV_PORT_1 string = "8081"
+
+	DEV_SESSION_KEY_HEADER = "X-Dev-Session-Key"
 )
 
 func IsDevPort(s string) bool {

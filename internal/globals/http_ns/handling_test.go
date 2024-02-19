@@ -49,21 +49,7 @@ func TestHandling(t *testing.T) {
 	}
 
 	//set default request handling limits: cpuTimeLimit
-	if core.AreDefaultRequestHandlingLimitsSet() {
-		save := core.GetDefaultRequestHandlingLimits()
-		core.UnsetDefaultRequestHandlingLimits()
-		core.SetDefaultRequestHandlingLimits([]core.Limit{cpuTimeLimit})
-		t.Cleanup(func() {
-			core.UnsetDefaultRequestHandlingLimits()
-			core.SetDefaultRequestHandlingLimits(save)
-		})
-
-	} else {
-		core.SetDefaultRequestHandlingLimits([]core.Limit{cpuTimeLimit})
-		t.Cleanup(func() {
-			core.UnsetDefaultRequestHandlingLimits()
-		})
-	}
+	registerDefaultRequestLimits(t, cpuTimeLimit)
 
 	//set default max request handler limits
 	const maxCpuTime = 100 * time.Millisecond

@@ -69,22 +69,18 @@ func determineHttpServerParams(ctx *core.Context, server *HttpsServer, providedH
 		}
 
 		if isBindAllAddress(params.effectiveAddr) {
-
 			if server.state.Project == nil || !server.state.Project.Configuration().AreExposedWebServersAllowed() {
 				//if exposing web servers is not allowed we only bind to localhost.
 				params.effectiveAddr = "localhost"
 				params.effectiveAddr += ":" + params.port
 				params.effectiveListeningAddrHost = core.Host("https://" + params.effectiveAddr)
-				server.listeningAddr = params.effectiveListeningAddrHost
 				server.state.Ctx.Logger().
 					Warn().Msgf("exposing web servers is not allowed, change listening address from %s to %s", originalAddress, params.effectiveAddr)
 			} else {
-				server.listeningAddr = params.effectiveListeningAddrHost
 				params.effectiveListeningAddrHost = providedHost
 				params.exposingAllowed = true
 			}
 		} else {
-			server.listeningAddr = params.effectiveListeningAddrHost
 			params.effectiveListeningAddrHost = providedHost
 		}
 	}

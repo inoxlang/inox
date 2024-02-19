@@ -111,6 +111,9 @@ func SetDefaultRequestHandlingLimits(limits []Limit) {
 	if defaultRequestHandlingLimits != nil {
 		panic(errors.New("default request handling limits already set"))
 	}
+	if limits == nil {
+		limits = make([]Limit, 0)
+	}
 	defaultRequestHandlingLimits = limits
 }
 
@@ -132,6 +135,9 @@ func UnsetDefaultRequestHandlingLimits() {
 func SetDefaultMaxRequestHandlerLimits(limits []Limit) {
 	if defaultMaxRequestHandlerLimits != nil {
 		panic(errors.New("default max request handler limits already set"))
+	}
+	if limits == nil {
+		limits = make([]Limit, 0)
 	}
 	defaultMaxRequestHandlerLimits = limits
 }

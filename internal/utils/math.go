@@ -22,6 +22,13 @@ func DefaultIfZero[T constraints.Integer](v, defaultValue T) T {
 	return v
 }
 
+func DefaultIfEmptyString[T ~string](v, defaultValue T) T {
+	if v == "" {
+		return defaultValue
+	}
+	return v
+}
+
 func Abs[T constraints.Integer](a T) T {
 	if a < 0 {
 		if a == -a {
