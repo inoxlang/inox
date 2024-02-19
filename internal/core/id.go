@@ -98,3 +98,7 @@ func ParseUUIDv4(s string) (UUIDv4, error) {
 func (id UUIDv4) libValue() uuid.UUID {
 	return uuid.UUID(id)
 }
+
+func (id UUIDv4) String() string {
+	return id.libValue().String()
+}

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sync"
 
 	"github.com/go-git/go-billy/v5/util"
@@ -13,6 +14,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/inoxd/node"
+	"github.com/inoxlang/inox/internal/project/access"
 	"github.com/inoxlang/inox/internal/project/cloudflareprovider"
 	"github.com/inoxlang/inox/internal/project/scaffolding"
 )
@@ -22,6 +24,8 @@ const (
 
 	DEV_OS_DIR           = "dev"
 	DEV_DATABASES_OS_DIR = "databases"
+
+	OWNER_MEMBER_NAME = "owner"
 )
 
 var (
@@ -77,17 +81,29 @@ func (r *Registry) CreateProject(ctx *core.Context, params CreateProjectParams) 
 	}
 	id := core.RandomProjectID(params.Name)
 
-	// create the directory for storing projects if necessary
+	//Create the directory for storing projects if necessary.
 	err := r.filesystem.MkdirAll(r.projectsDir, fs_ns.DEFAULT_DIR_FMODE)
 	if err != nil {
 		return "", fmt.Errorf("failed to create directory to store projects: %w", err)
 	}
 
+	//Initialize project data.
+
+	ownerMember := access.MemberData{
+		Name: OWNER_MEMBER_NAME,
+		ID:   core.NewUUIDv4().String(),
+	}
+
+	projectData := projectData{
+		CreationParams: params,
+		Members:        []access.MemberData{ownerMember},
+	}
+
 	// persist data
 
-	r.persistProjectData(ctx, id, projectData{CreationParams: params})
+	r.persistProjectData(ctx, id, projectData)
 
-	// create the project's directory
+	//Create the project's directory.
 	projectDir := r.filesystem.Join(r.projectsDir, string(id))
 	err = r.filesystem.MkdirAll(projectDir, fs_ns.DEFAULT_DIR_FMODE)
 
@@ -95,7 +111,7 @@ func (r *Registry) CreateProject(ctx *core.Context, params CreateProjectParams) 
 		return "", fmt.Errorf("failed to create directory for project %s: %w", id, err)
 	}
 
-	// create initial files
+	//Create initial files.
 	projectFS, err := fs_ns.OpenMetaFilesystem(ctx, r.filesystem, fs_ns.MetaFilesystemParams{
 		Dir: projectDir,
 	})
@@ -115,7 +131,7 @@ func (r *Registry) CreateProject(ctx *core.Context, params CreateProjectParams) 
 		util.WriteFile(projectFS, DEFAULT_TUT_FILENAME, []byte(nil), fs_ns.DEFAULT_DIR_FMODE)
 	}
 
-	//create a directory for storing the project's dev databases
+	//Create a directory for storing the project's dev databases.
 
 	_, err = r.getCreateDevDatabasesDir(id)
 	if err != nil {
@@ -163,6 +179,8 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 		return project, nil
 	}
 
+	// Get project data from the database.
+
 	var serializedProjectData string
 	var found bool
 
@@ -192,8 +210,6 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 		ExposeWebServers: params.ExposeWebServers,
 	}
 
-	// get project data from the database
-
 	var projectData projectData
 	err = json.Unmarshal([]byte(serializedProjectData), &projectData)
 	if err != nil {
@@ -208,7 +224,7 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 		projectData.Secrets = map[core.SecretName]localSecret{}
 	}
 
-	// open the project's filesystem
+	// Open the project's filesystem
 
 	projectDir := r.filesystem.Join(r.projectsDir, string(params.Id))
 	projectFS, err := fs_ns.OpenMetaFilesystem(r.openProjectsContext, r.filesystem, fs_ns.MetaFilesystemParams{
@@ -219,6 +235,15 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 	if err != nil {
 		return nil, fmt.Errorf("failed to open filesystem of project %s: %w", params.Id, err)
 	}
+
+	closeProjectFSBecauseOfError := true
+	defer func() {
+		if closeProjectFSBecauseOfError {
+			projectFS.Close(ctx)
+		}
+	}()
+
+	// Create and initialize a *Project.
 
 	project := &Project{
 		id:             params.Id,
@@ -240,6 +265,22 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 		project.cloudflare = cf
 	}
 
+	project.members = make([]*access.Member, 0, len(project.data.Members))
+	for _, data := range project.data.Members {
+		member, err := access.MemberFromData(data)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create project member from data: %w", err)
+		}
+
+		if slices.ContainsFunc(project.members, func(m *access.Member) bool {
+			return m.Name() == member.Name()
+		}) {
+			return nil, fmt.Errorf("invalid project member data: at least two members have the same name: %s", member.Name())
+		}
+
+		project.members = append(project.members, member)
+	}
+
 	project.Share(nil)
 	r.openProjects[project.id] = project
 
@@ -250,6 +291,7 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 
 	project.devDatabasesDirOnOsFs.Store(projectDevDatabasesDir)
 
+	closeProjectFSBecauseOfError = false
 	return project, nil
 }
 

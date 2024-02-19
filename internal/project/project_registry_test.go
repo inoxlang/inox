@@ -134,6 +134,26 @@ func TestOpenProject(t *testing.T) {
 		assert.Equal(t, id, project.id)
 		assert.Equal(t, params, project.data.CreationParams)
 		assert.NotContains(t, project.DevDatabasesDirOnOsFs(), DEV_DATABASES_FOLDER_NAME_IN_PROCESS_TEMPDIR)
+
+		//Check members.
+
+		if !assert.NotEmpty(t, project.members) {
+			return
+		}
+
+		member, ok := project.GetMemberByID(ctx, project.members[0].ID())
+		if !assert.True(t, ok) {
+			return
+		}
+
+		assert.Equal(t, OWNER_MEMBER_NAME, member.Name())
+
+		member, ok = project.GetMemberByName(ctx, OWNER_MEMBER_NAME)
+		if !assert.True(t, ok) {
+			return
+		}
+
+		assert.Equal(t, OWNER_MEMBER_NAME, member.Name())
 	})
 
 	t.Run("with ExposeWebServers: true", func(t *testing.T) {
@@ -165,6 +185,26 @@ func TestOpenProject(t *testing.T) {
 		assert.Equal(t, id, project.id)
 		assert.Equal(t, params, project.data.CreationParams)
 		assert.True(t, project.Configuration().AreExposedWebServersAllowed())
+
+		//Check members.
+
+		if !assert.NotEmpty(t, project.members) {
+			return
+		}
+
+		member, ok := project.GetMemberByID(ctx, project.members[0].ID())
+		if !assert.True(t, ok) {
+			return
+		}
+
+		assert.Equal(t, OWNER_MEMBER_NAME, member.Name())
+
+		member, ok = project.GetMemberByName(ctx, OWNER_MEMBER_NAME)
+		if !assert.True(t, ok) {
+			return
+		}
+
+		assert.Equal(t, OWNER_MEMBER_NAME, member.Name())
 	})
 
 	t.Run("re opening a project should not change the returned value", func(t *testing.T) {

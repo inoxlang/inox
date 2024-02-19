@@ -11,6 +11,7 @@ import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/inoxd/node"
+	"github.com/inoxlang/inox/internal/project/access"
 	"github.com/inoxlang/inox/internal/project/cloudflareprovider"
 	"github.com/inoxlang/inox/internal/secrets"
 )
@@ -42,9 +43,12 @@ var (
 )
 
 type Project struct {
-	id     core.ProjectID
-	lock   core.SmartLock
-	config ProjectConfiguration
+	data projectData
+
+	id      core.ProjectID
+	lock    core.SmartLock
+	config  ProjectConfiguration
+	members []*access.Member
 
 	//filesystems and images
 
@@ -62,7 +66,6 @@ type Project struct {
 	//providers
 
 	cloudflare *cloudflareprovider.Cloudflare //can be nil
-	data       projectData
 
 	persistFn func(ctx *core.Context, id core.ProjectID, data projectData) error //optional
 }
@@ -161,9 +164,36 @@ func (p *Project) LiveFilesystem() core.SnapshotableFilesystem {
 	return p.liveFilesystem
 }
 
-
 func (p *Project) Configuration() core.ProjectConfiguration {
 	return p.config
+}
+
+func (p *Project) GetMemberByID(ctx *core.Context, id string) (*access.Member, bool) {
+	closestState := ctx.GetClosestState()
+	p.lock.Lock(closestState, p)
+	defer p.lock.Unlock(closestState, p)
+
+	for _, member := range p.members {
+		if member.ID() == id {
+			return member, true
+		}
+	}
+
+	return nil, false
+}
+
+func (p *Project) GetMemberByName(ctx *core.Context, name string) (*access.Member, bool) {
+	closestState := ctx.GetClosestState()
+	p.lock.Lock(closestState, p)
+	defer p.lock.Unlock(closestState, p)
+
+	for _, member := range p.members {
+		if member.Name() == name {
+			return member, true
+		}
+	}
+
+	return nil, false
 }
 
 func (p *Project) DevDatabasesDirOnOsFs() string {
@@ -232,4 +262,5 @@ type projectData struct {
 	CreationParams CreateProjectParams                       `json:"creationParams"`
 	Applications   map[node.ApplicationName]*applicationData `json:"applications,omitempty"`
 	Secrets        map[core.SecretName]localSecret           `json:"secrets,omitempty"`
+	Members        []access.MemberData                       `json:"members,omitempty"` //names should be unique
 }
