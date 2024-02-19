@@ -73,6 +73,7 @@ Inox (check see 'What is planned' and [Other features](#other-features)).
 **<summary>🗓️ What is planned ?</summary>**
 
 - Automated database backups in S3-compatible storage
+- A user interface for viewing and modifying the schema and data of databases.
 - Log persistence in S3 (note that Inox has builtins for
   [structured logging](#structured-logging).
 - Support automated deployments on popular cloud providers
@@ -129,18 +130,34 @@ Inox (check see 'What is planned' and [Other features](#other-features)).
 
 ## Development Environment - Inox Project Server
 
-The Inox binary comes with a **project server** that your IDE connects to. This
-server is a LSP server that implements custom methods. It enables the developer
-to develop, debug, test, deploy and manage secrets, all from VsCode. The project
-server will also provide automatic infrastructure management in the **near
-future**.
+**There is no true local development environment when developping Inox projects.** 
+The code editor (VSCode) connects to a **project server** (included in the Inox binary) and the code is edited and tested inside a virtual workspace.
+The server does not yet integrate git yet, but this is planned, https://github.com/go-git/go-git.
 
-**Note that there is no local development environment.** Code files are cached
-on the IDE for offline access (read only).
+Each developer in the project will ultimately have a its own copy. As of now the project server only supports projects with a single developer.
+
+**Pros**
+
+- All developers in the project will have an identical development environment.
+- Dependency downloads should be faster because they are made by the project server (most of the time: a virtual machine in a datacenter).
+  Also downloaded dependencies can be shared between developers.
+- The project does not need to be downloaded by the developer.
+- Code conflicts could be detected early, even before a developer commmits.
+
+**Cons**
+
+- An Internet connection is required. However code files are cached on the developer machine for offline access (read only for now).
+
+Project servers are expected to run on a dedicated machine. They will support automatic infrastructure management in the near future.
 
 <details>
 
-**<summary>⚙️ Diagram</summary>**
+
+**<summary>⚙️ Details</summary>**
+
+The project server is a LSP server with additional custom methods. It enables the developer
+to develop, debug, test, deploy and manage secrets, all from VSCode. 
+
 
 ```mermaid
 flowchart TB
@@ -154,13 +171,13 @@ end
 
 Editor(Editor) --> |standard LSP methods| ProjectServer
 
-VSCodeVFS --> |"custom methods (LSP)"| ProjImage
+VSCodeVFS --> |"custom methods (LSP)"| DeveloperCopy
 
 DebugAdapter(Debug Adapter) -->|"Debug Adapter Protocol (LSP wrapped)"| Runtime(Inox Runtime)
 
 subgraph ProjectServer[Project Server]
   Runtime
-  ProjImage(Project Image)
+  DeveloperCopy(Developer Copy)
 end
 
 ProjectServer -->|manages| Infrastructure(Infrastructure)
