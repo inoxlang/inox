@@ -533,6 +533,9 @@ func (serv *HttpsServer) onIdleFilesystem(handler idleFilesystemHandler) {
 					logger.Err(err).Msg("error in on-idle microtask")
 				}
 			}()
+			if serverCtx.IsDoneSlowCheck() {
+				return
+			}
 			handler.microtask(serverCtx)
 		},
 	})
