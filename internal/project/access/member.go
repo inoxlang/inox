@@ -42,7 +42,7 @@ func RandomMemberID() MemberID {
 
 func (id MemberID) Validate() error {
 	if id == "" {
-		return errors.New("invalid member data: empty id")
+		return errors.New("empty member id")
 	}
 
 	_, err := core.ParseUUIDv4(string(id))

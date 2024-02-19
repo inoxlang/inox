@@ -23,7 +23,7 @@ func TestBaseImage(t *testing.T) {
 		params := CreateProjectParams{
 			Name: "myproject",
 		}
-		id := utils.Must(reg.CreateProject(ctx, params))
+		id, _ := utils.Must2(reg.CreateProject(ctx, params))
 
 		assert.NotEmpty(t, id)
 

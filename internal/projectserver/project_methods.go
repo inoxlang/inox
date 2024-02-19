@@ -67,7 +67,7 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 			sessionCtx := session.Context()
 			params := req.(*CreateProjectParams)
 
-			projectId, err := projectRegistry.CreateProject(sessionCtx, project.CreateProjectParams{
+			projectId, _, err := projectRegistry.CreateProject(sessionCtx, project.CreateProjectParams{
 				Name:       params.Name,
 				AddTutFile: params.AddTutFile,
 				Template:   params.Template,

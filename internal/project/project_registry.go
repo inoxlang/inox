@@ -74,17 +74,17 @@ type CreateProjectParams struct {
 	AddTutFile bool   `json:"addTutFile,omitempty"`
 }
 
-// CreateProject
-func (r *Registry) CreateProject(ctx *core.Context, params CreateProjectParams) (core.ProjectID, error) {
+// CreateProject creates a project and returns the project ID and the ID the owner member.
+func (r *Registry) CreateProject(ctx *core.Context, params CreateProjectParams) (core.ProjectID, access.MemberID, error) {
 	if matched, err := regexp.MatchString(PROJECT_NAME_REGEX, params.Name); !matched || err != nil {
-		return "", ErrInvalidProjectName
+		return "", "", ErrInvalidProjectName
 	}
 	id := core.RandomProjectID(params.Name)
 
 	//Create the directory for storing projects if necessary.
 	err := r.filesystem.MkdirAll(r.projectsDir, fs_ns.DEFAULT_DIR_FMODE)
 	if err != nil {
-		return "", fmt.Errorf("failed to create directory to store projects: %w", err)
+		return "", "", fmt.Errorf("failed to create directory to store projects: %w", err)
 	}
 
 	//Initialize project data.
@@ -108,7 +108,7 @@ func (r *Registry) CreateProject(ctx *core.Context, params CreateProjectParams) 
 	err = r.filesystem.MkdirAll(projectDir, fs_ns.DEFAULT_DIR_FMODE)
 
 	if err != nil {
-		return "", fmt.Errorf("failed to create directory for project %s: %w", id, err)
+		return "", "", fmt.Errorf("failed to create directory for project %s: %w", id, err)
 	}
 
 	//Create initial files.
@@ -116,14 +116,14 @@ func (r *Registry) CreateProject(ctx *core.Context, params CreateProjectParams) 
 		Dir: projectDir,
 	})
 	if err != nil {
-		return "", fmt.Errorf("failed to open the project filesystem to write initial files %s: %w", id, err)
+		return "", "", fmt.Errorf("failed to open the project filesystem to write initial files %s: %w", id, err)
 	}
 
 	defer projectFS.Close(ctx)
 
 	if params.Template != "" {
 		if err := scaffolding.WriteTemplate(params.Template, projectFS); err != nil {
-			return "", fmt.Errorf("failed to write template %q to the project filesystem: %w", params.Template, err)
+			return "", "", fmt.Errorf("failed to write template %q to the project filesystem: %w", params.Template, err)
 		}
 	}
 
@@ -135,10 +135,10 @@ func (r *Registry) CreateProject(ctx *core.Context, params CreateProjectParams) 
 
 	_, err = r.getCreateDevDatabasesDir(id)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
-	return id, nil
+	return id, ownerMember.ID, nil
 }
 
 func (r *Registry) getCreateDevDatabasesDir(id core.ProjectID) (projectDevDatabasesDir string, err error) {

@@ -24,7 +24,7 @@ func TestLocalSecretStorage(t *testing.T) {
 		}
 		defer registry.Close(ctx)
 
-		id, err := registry.CreateProject(ctx, CreateProjectParams{
+		id, _, err := registry.CreateProject(ctx, CreateProjectParams{
 			Name: projectName,
 		})
 
@@ -70,7 +70,7 @@ func TestLocalSecretStorage(t *testing.T) {
 		}
 		defer registry.Close(ctx)
 
-		id, err := registry.CreateProject(ctx, CreateProjectParams{
+		id, _, err := registry.CreateProject(ctx, CreateProjectParams{
 			Name: projectName,
 		})
 
@@ -119,7 +119,7 @@ func TestLocalSecretStorage(t *testing.T) {
 		}
 		defer registry.Close(ctx)
 
-		id, err := registry.CreateProject(ctx, CreateProjectParams{
+		id, _, err := registry.CreateProject(ctx, CreateProjectParams{
 			Name: projectName,
 		})
 
@@ -180,7 +180,7 @@ func TestLocalSecretStorage(t *testing.T) {
 		}
 		defer registry.Close(ctx)
 
-		id, err := registry.CreateProject(ctx, CreateProjectParams{
+		id, _, err := registry.CreateProject(ctx, CreateProjectParams{
 			Name: projectName,
 		})
 
@@ -254,7 +254,7 @@ func TestLocalSecretStorage(t *testing.T) {
 			return
 		}
 
-		id, err := registry.CreateProject(ctx, CreateProjectParams{
+		id, _, err := registry.CreateProject(ctx, CreateProjectParams{
 			Name: projectName,
 		})
 
@@ -401,7 +401,7 @@ func TestLocalSecretStorage(t *testing.T) {
 		}
 		defer registry.Close(ctx)
 
-		id, err := registry.CreateProject(ctx, CreateProjectParams{
+		id, _, err := registry.CreateProject(ctx, CreateProjectParams{
 			Name: projectName,
 		})
 

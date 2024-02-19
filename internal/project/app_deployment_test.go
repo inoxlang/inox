@@ -61,7 +61,7 @@ func TestSameProcessDeployment(t *testing.T) {
 	reg := utils.Must(project.OpenRegistry(t.TempDir(), ctx))
 	defer reg.Close(ctx)
 
-	id, err := reg.CreateProject(ctx, project.CreateProjectParams{
+	id, _, err := reg.CreateProject(ctx, project.CreateProjectParams{
 		Name: "myproject",
 	})
 

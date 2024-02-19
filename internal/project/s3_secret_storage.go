@@ -44,7 +44,7 @@ func TestUpsertListSecrets(t *testing.T) {
 			return
 		}
 
-		id, err := registry.CreateProject(ctx, CreateProjectParams{
+		id, _, err := registry.CreateProject(ctx, CreateProjectParams{
 			Name: projectName,
 		})
 
@@ -108,7 +108,7 @@ func TestUpsertListSecrets(t *testing.T) {
 			return
 		}
 
-		id, err := registry.CreateProject(ctx, CreateProjectParams{
+		id, _, err := registry.CreateProject(ctx, CreateProjectParams{
 			Name: projectName,
 		})
 
@@ -176,7 +176,7 @@ func TestUpsertListSecrets(t *testing.T) {
 			return
 		}
 
-		id, err := registry.CreateProject(ctx, CreateProjectParams{
+		id, _, err := registry.CreateProject(ctx, CreateProjectParams{
 			Name: projectName,
 		})
 
@@ -255,7 +255,7 @@ func TestUpsertListSecrets(t *testing.T) {
 			return
 		}
 
-		id, err := registry.CreateProject(ctx, CreateProjectParams{
+		id, _, err := registry.CreateProject(ctx, CreateProjectParams{
 			Name: projectName,
 		})
 
@@ -347,7 +347,7 @@ func TestUpsertListSecrets(t *testing.T) {
 			return
 		}
 
-		id, err := registry.CreateProject(ctx, CreateProjectParams{
+		id, _, err := registry.CreateProject(ctx, CreateProjectParams{
 			Name: projectName,
 		})
 

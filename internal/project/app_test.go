@@ -21,7 +21,7 @@ func TestRegisterApplication(t *testing.T) {
 	reg := utils.Must(OpenRegistry(tempDir, ctx))
 	defer reg.Close(ctx)
 
-	id, err := reg.CreateProject(ctx, CreateProjectParams{
+	id, _, err := reg.CreateProject(ctx, CreateProjectParams{
 		Name: "myproject",
 	})
 

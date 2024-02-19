@@ -1417,7 +1417,7 @@ func TestPrepareLocalModule(t *testing.T) {
 				return
 			}
 
-			id, err := registry.CreateProject(tempCtx, project.CreateProjectParams{
+			id, _, err := registry.CreateProject(tempCtx, project.CreateProjectParams{
 				Name: projectName,
 			})
 
@@ -1545,7 +1545,7 @@ func TestPrepareLocalModule(t *testing.T) {
 				return
 			}
 
-			id, err := registry.CreateProject(tempCtx, project.CreateProjectParams{
+			id, _, err := registry.CreateProject(tempCtx, project.CreateProjectParams{
 				Name: projectName,
 			})
 

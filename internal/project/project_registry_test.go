@@ -55,7 +55,7 @@ func TestCreateProject(t *testing.T) {
 		reg := utils.Must(OpenRegistry(t.TempDir(), ctx))
 		defer reg.Close(ctx)
 
-		id, err := reg.CreateProject(ctx, CreateProjectParams{
+		id, _, err := reg.CreateProject(ctx, CreateProjectParams{
 			Name: " myproject",
 		})
 
@@ -70,7 +70,7 @@ func TestCreateProject(t *testing.T) {
 		reg := utils.Must(OpenRegistry(t.TempDir(), ctx))
 		defer reg.Close(ctx)
 
-		id, err := reg.CreateProject(ctx, CreateProjectParams{
+		id, _, err := reg.CreateProject(ctx, CreateProjectParams{
 			Name: "myproject",
 		})
 
@@ -94,7 +94,7 @@ func TestCreateProject(t *testing.T) {
 			Name: "myproject",
 		})
 
-		id, err := reg.CreateProject(ctx, CreateProjectParams{
+		id, _, err := reg.CreateProject(ctx, CreateProjectParams{
 			Name: "myproject",
 		})
 
@@ -117,7 +117,7 @@ func TestOpenProject(t *testing.T) {
 			Name:     "myproject",
 			Template: scaffolding.MINIMAL_WEB_APP_TEMPLATE_NAME,
 		}
-		id := utils.Must(reg.CreateProject(ctx, params))
+		id, ownerID := utils.Must2(reg.CreateProject(ctx, params))
 
 		assert.NotEmpty(t, id)
 
@@ -137,11 +137,7 @@ func TestOpenProject(t *testing.T) {
 
 		//Check members.
 
-		if !assert.NotEmpty(t, project.members) {
-			return
-		}
-
-		member, ok := project.GetMemberByID(ctx, project.members[0].ID())
+		member, ok := project.GetMemberByID(ctx, ownerID)
 		if !assert.True(t, ok) {
 			return
 		}
@@ -167,7 +163,7 @@ func TestOpenProject(t *testing.T) {
 			Name:     "myproject",
 			Template: scaffolding.MINIMAL_WEB_APP_TEMPLATE_NAME,
 		}
-		id := utils.Must(reg.CreateProject(ctx, params))
+		id, ownerID := utils.Must2(reg.CreateProject(ctx, params))
 
 		assert.NotEmpty(t, id)
 
@@ -188,11 +184,7 @@ func TestOpenProject(t *testing.T) {
 
 		//Check members.
 
-		if !assert.NotEmpty(t, project.members) {
-			return
-		}
-
-		member, ok := project.GetMemberByID(ctx, project.members[0].ID())
+		member, ok := project.GetMemberByID(ctx, ownerID)
 		if !assert.True(t, ok) {
 			return
 		}
@@ -218,7 +210,7 @@ func TestOpenProject(t *testing.T) {
 			Name:     "myproject",
 			Template: scaffolding.MINIMAL_WEB_APP_TEMPLATE_NAME,
 		}
-		id := utils.Must(reg.CreateProject(ctx, params))
+		id, _ := utils.Must2(reg.CreateProject(ctx, params))
 
 		assert.NotEmpty(t, id)
 
@@ -257,7 +249,7 @@ func TestOpenProject(t *testing.T) {
 		ctx1 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx1.CancelGracefully()
 
-		id := utils.Must(reg.CreateProject(ctx1, CreateProjectParams{
+		id, _ := utils.Must2(reg.CreateProject(ctx1, CreateProjectParams{
 			Name:     "myproject",
 			Template: scaffolding.MINIMAL_WEB_APP_TEMPLATE_NAME,
 		}))
@@ -313,7 +305,7 @@ func TestOpenProject(t *testing.T) {
 
 		reg := utils.Must(OpenRegistry(tempDir, ctx))
 
-		id := utils.Must(reg.CreateProject(ctx, CreateProjectParams{
+		id, _ := utils.Must2(reg.CreateProject(ctx, CreateProjectParams{
 			Name:     "myproject",
 			Template: scaffolding.MINIMAL_WEB_APP_TEMPLATE_NAME,
 		}))
