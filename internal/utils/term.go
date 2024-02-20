@@ -18,6 +18,11 @@ func StripANSISequences(str string) string {
 	return ANSI_ESCAPE_SEQUENCE_REGEX.ReplaceAllString(str, "")
 }
 
+// StripANSISequencesInBytes strips ANSI sequences in a copy of $p and returns the result.
+func StripANSISequencesInBytes(p []byte) []byte {
+	return ANSI_ESCAPE_SEQUENCE_REGEX.ReplaceAll(p, []byte{})
+}
+
 func MoveCursorNextLine(writer io.Writer, n int) {
 	if n == 0 {
 		return

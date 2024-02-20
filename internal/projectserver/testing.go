@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/oklog/ulid/v2"
@@ -43,6 +44,9 @@ func testModuleAsync(path string, filters core.TestFilters, session *jsonrpc.Ses
 		Filesystem: fls,
 	})
 
+	//Set or override the dev session key entry of context data.
+	handlingCtx.PutUserData(http_ns.CTX_DATA_KEY_FOR_DEV_SESSION_KEY, core.String(http_ns.RandomDevSessionKey()))
+
 	// data := getLockedSessionData(session)
 
 	state, _, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
@@ -63,6 +67,7 @@ func testModuleAsync(path string, filters core.TestFilters, session *jsonrpc.Ses
 
 		Out: utils.FnWriter{
 			WriteFn: func(p []byte) (n int, err error) {
+				p = utils.StripANSISequencesInBytes(p)
 				sendTestOutput(p, session)
 				return len(p), nil
 			},
