@@ -23,7 +23,7 @@ default**.
 
 The builtin `http.Server` function creates a listening HTTP**S** server.\
 The first parameter is the [listening address](#listening-address): it should be
-a HTTPS host such as `https://localhost:8080` or `https://0.0.0.0:8080`.
+an HTTPS host such as `https://localhost:8080` or `https://0.0.0.0:8080`.
 
 ```
 server = http.Server!(https://localhost:8080)
@@ -44,8 +44,9 @@ The listening address is a Inox HTTPS host such as `https://localhost:8080` or
   the [inox daemon](./inox-daemon.md) does not allow exposing web servers the
   server will listen on `localhost` as a fallback.
 
-- In each development environment or test a HTTPS Server is able to listen to
-  `localhost:8080` because HTTP servers never really bind to 'development ports'. (See [Development servers](#development-servers)).
+- In each development environment and test run an HTTP Server is able to listen
+  to `localhost:8080`. This is possible because HTTP servers never really bind
+  to 'development ports'. (See [Development servers](#development-servers)).
 
 - The global constant `APP_LISTENING_ADDR` is equal to `https://localhost:8080`
   in development environments and in tests.
@@ -263,12 +264,12 @@ If the filesystem router is used, a nonce is **always added** to the
 
 ## Development Servers
 
-A development server is a HTTPS server that binds to `localhost:8080` (or
-`localhost:8081`). HTTP servers in development environments that are configured
-to listen on localhost:8080 do not bind to anything. Instead each server informs
-the corresponding **development server** that it is the target server for requests
-with a specific value for the header `X-Dev-Session-Key`. Each development
-environment has its own development session key.
+A development server is an HTTP server that binds to `localhost:8080` (or
+`localhost:8081`). HTTP servers in development environments (and test runs) that
+are configured to listen on localhost:8080 do not bind to anything. Instead each
+server informs the corresponding **development server** that it is the target
+server for requests with a specific value for the header `X-Dev-Session-Key`.
+Each development environment has its own development session key.
 
 ```mermaid
 flowchart LR

@@ -35,16 +35,13 @@ testsuite "my test suite" {
 ```
 
 Tests are allowed in any Inox file but it is recommended to write them in
-`*.spec.ix` files. The modules whose filename matches `*.spec.ix` are granted
-the following permissions by default in test mode:
+`*.spec.ix` modules: in test mode the following permissions are implicty added to the manifest of such modules:
 
 - **read, write, delete all files**
 - **read, write, delete all values in the ldb://main database**
-- **read any http(s) resource**
 - **create lightweight threads (always required for testing)**
 
-The metadata and parameters of the test suites and test cases are specified in
-an object:
+The metadata and parameters of the test suites and test cases are specified in an object:
 
 ```
 manifest {}
@@ -60,6 +57,8 @@ testsuite ({
 
 }
 ```
+
+For convenience sake, HTTP requests to a `localhost` host present in a `provide` permission are made with an HTTP client created by the current test case. This client ignores certificate errors and it saves cookies. You don't have to add the --insecure flag when making requests to the tested program.
 
 ## Custom Filesystem
 
@@ -158,8 +157,6 @@ testsuite({
 The short-lived filesystem is created from the current project's
 [base image](#project-images).
 
-
-**For convenience sake, HTTP requests to a `localhost` host present in a `provide` permission are made with a HTTP client created by the current test case. This client ignores certificate errors and it saves cookies. You don't have to add the --insecure flag when making requests to the tested program.**
 
 **Database initialization**:
 
