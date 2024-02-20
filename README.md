@@ -2,9 +2,9 @@
 
 <img src="https://avatars.githubusercontent.com/u/122291844?s=200&v=4" alt="a shield"></img>
 
-Inox is a **single-binary platform** that will ultimately contain all you need to develop,
+Inox is a single-binary platform that will ultimately contain all you need to develop,
 test, and deploy web apps that are primarily rendered server-side. Applications
-are developped using **Inoxlang**, a sandboxed programming language that deeply
+are developped using **Inoxlang**, a high-level programming language that deeply
 integrates with several components:
 
 - A built-in database that stores data structures (e.g. objects, lists, sets, maps, message threads)
@@ -13,6 +13,8 @@ integrates with several components:
   (completely transparent for application code).
 - An in-process container engine: each application runs in a dedicated virtual
   filesystem, and is subject to permissions. _This is not related to Linux containers._
+
+**Zero boilerplate and no glue code. Dead simple configuration. Secure by default.**
 
 Here are a few example files that are part of a basic todo app.
 
@@ -47,9 +49,12 @@ rendering)</summary>**
 
 </details>
 
+_I don't claim Inox is, or will be, a suitable solution for 100% of real-world web projects._
+
 ---
 
-I have been working 2 years full time on Inox. There is still a lot to do in
+
+I have been working 2 years full time on Inox. There is still work to do in
 order to make Inox usable in real world applications. If you believe this
 project has potential, **consider donating** through
 [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or
@@ -68,7 +73,9 @@ Inox (check see 'What is planned' and [Other features](#other-features)).
 
 **<summary>🗓️ What is planned ?</summary>**
 
-- Automated database backups in S3-compatible storage
+- Finish the transaction system and support persisting most data-structure types
+  with accepable performance.
+- Automated database backups in S3-compatible storage.
 - A user interface for viewing and modifying the schema and data of databases.
 - Log persistence in S3 (note that Inox has builtins for
   [structured logging](#structured-logging).
@@ -81,8 +88,6 @@ Inox (check see 'What is planned' and [Other features](#other-features)).
   https://code.visualstudio.com/api/extension-guides/scm-provider)
 - Support no-downtime upgrades
 - **WebAssembly support** using https://github.com/tetratelabs/wazero
-- Finish the transaction system and support persisting most data-structure types
-  with accepable performance
 - Team access control for Inox projects
 - Improve execution performance and memory usage
 - Finalize the implementation of
@@ -105,7 +110,7 @@ Inox (check see 'What is planned' and [Other features](#other-features)).
 - Secure by default
 - Low maintenance
 - A programming language as simple as possible
-- Multi-node support 
+- Multi-node support that is almost transparent for application code
 
 </details>
 
@@ -117,7 +122,7 @@ Inox (check see 'What is planned' and [Other features](#other-features)).
 - Support any database for storing domain data (`users`, ...).
 - Be super fast
 - Be able to store several tera bytes of non-blob data. Note that blob data and backups will be stored in S3 buckets.
-- Support a very high number of concurrent users (> 100 000).
+- Support more than ~ 10k concurrent users
 
 </details>
 
@@ -690,6 +695,15 @@ Each application or service will ultimately run in a separate process:
   cgroups
 - module-level resource allocation and limitation is performed by Inox's limit
   system
+
+</details>
+
+
+### Can native binaries be executed inside the virtual filesystem ?
+
+<details>
+
+No but executing WebAssembly modules and programs will be possible.
 
 </details>
 
