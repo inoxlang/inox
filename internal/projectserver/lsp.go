@@ -152,7 +152,7 @@ func StartLSPServer(ctx *core.Context, serverConfig LSPServerConfiguration) (fin
 	})
 
 	if earlyErr != nil {
-		return fmt.Errorf("failed to start dev server on port %s", inoxconsts.DEV_PORT_0)
+		return fmt.Errorf("failed to start dev server on port %s: %w", inoxconsts.DEV_PORT_0, earlyErr)
 	}
 
 	//Create and start the LSP server.
