@@ -2,21 +2,17 @@
 
 <img src="https://avatars.githubusercontent.com/u/122291844?s=200&v=4" alt="a shield"></img>
 
-Inox is a **single-binary platform** that will contain all you need to develop,
+Inox is a **single-binary platform** that will ultimately contain all you need to develop,
 test, and deploy web apps that are primarily rendered server-side. Applications
 are developped using **Inoxlang**, a sandboxed programming language that deeply
 integrates with several components:
 
-- A built-in database engine
-- HTTP server with filesystem routing
-- Testing engine supporting virtual filesystems and temporary databases
+- A built-in database that stores data structures (e.g. objects, lists, sets, maps, message threads)
+- An HTTP server with filesystem routing
+- A testing engine supporting virtual filesystems and temporary databases
   (completely transparent for application code).
 - An in-process container engine: each application runs in a dedicated virtual
-  filesystem, and is subject to permissions (unrelated to Linux containers).
-
-**Even though you can already develop web apps using Inox, keep in mind that the
-current version of Inox is 0.2, not 1.0. Also the first stable versions of Inox
-won't support high-scalability applications.**
+  filesystem, and is subject to permissions. _This is not related to Linux containers._
 
 Here are a few example files that are part of a basic todo app.
 
@@ -94,6 +90,7 @@ Inox (check see 'What is planned' and [Other features](#other-features)).
   a [Low Level VM](https://github.com/inoxlang/inox/issues/32).
 - Allow developers to define custom builtins written in Go (note: building inox
   is just `go build ./cmd/inox`)
+- Analytics
 - And more !
 
 </details>
@@ -108,8 +105,7 @@ Inox (check see 'What is planned' and [Other features](#other-features)).
 - Secure by default
 - Low maintenance
 - A programming language as simple as possible
-- (Not in the near future) Support 100k+ requests per second (combined request
-  throughput of several nodes).
+- Multi-node support 
 
 </details>
 
@@ -117,12 +113,11 @@ Inox (check see 'What is planned' and [Other features](#other-features)).
 
 **<summary>❌ Non Goals </summary>**
 
-- Be a suitable solution for 100% of real-world web projects
-- Support any database for storing domain data (`users`, ...) (however
-  WebAssembly support is planned and will at least enable the use of SQLite and
-  DuckDB).
-- Be extremely fast
-- Be very highly scalable (Multi-node support is planned though)
+- Be a suitable solution for 100% of real-world web projects.
+- Support any database for storing domain data (`users`, ...).
+- Be super fast
+- Be able to store several tera bytes of non-blob data. Note that blob data and backups will be stored in S3 buckets.
+- Support a very high number of concurrent users (> 100 000).
 
 </details>
 
@@ -315,6 +310,7 @@ To learn scripting go [here](./docs/scripting-basics.md). View
 - [Built-in browser automation](#built-in-browser-automation)
 - [Composable string patterns](#composable-string-patterns)
 - [Context data](#context-data)
+- [Recursive execution cancellation](#recursive-execution-cancellation)
 - [Lightweight threads](#lightweight-threads)
 - [Lightweight thread groups](#lthread-groups)
 - [More secure path interpolations](#more-secure-path-interpolations)
@@ -477,6 +473,15 @@ fn print_error(){
 
 The HTTP server adds a `/session` entry to the handling context of a request if
 the `session-id` cookie is present.
+
+### Recursive Execution Cancellation
+
+The [context](docs/language-reference/context.md) of each module instance can be cancelled.
+If you are familliar with Golang: this is analogous to the cancellation of a `context.Context`.
+
+The cancellation of a context causes all operations to stop:
+- Pending I/O operations such as HTTP requests and filesystem operations are cancelled
+- Child modules are recursively cancelled. Lightweight threads are stopped.
 
 ### Lightweight threads
 
