@@ -126,7 +126,7 @@ Inox (check see 'What is planned' and [Other features](#other-features)).
 ## Development Environment - Inox Project Server
 
 **There is no true local development environment when developping Inox
-projects.** The code editor (VSCode) connects to a **project server** (included
+projects.** The code editor connects to a **project server** (included
 in the Inox binary) and the code is edited and tested inside a virtual
 workspace. The server does not yet integrate git yet, but this is planned,
 https://github.com/go-git/go-git.
@@ -137,11 +137,11 @@ project server only supports projects with a single developer.
 **Pros**
 
 - All developers in the project will have an identical development environment.
+- Code conflicts could be detected early, even before a developer commmits.
 - Dependency downloads should be faster because they are made by the project
-  server (most of the time: a virtual machine in a datacenter). Also downloaded
+  server, which is expected to run on machine in a datacenter. Also downloaded
   dependencies can be shared between developers.
 - The project does not need to be downloaded by the developer.
-- Code conflicts could be detected early, even before a developer commmits.
 
 **Cons**
 
@@ -177,7 +177,7 @@ DebugAdapter(Debug Adapter) -->|"Debug Adapter Protocol (LSP wrapped)"| Runtime(
 
 subgraph ProjectServer[Project Server]
   Runtime
-  DeveloperCopy(Developer Copy)
+  DeveloperCopy(Developer's Copy)
 end
 
 ProjectServer -->|manages| Infrastructure(Infrastructure)
@@ -480,8 +480,9 @@ The [context](docs/language-reference/context.md) of each module instance can be
 If you are familliar with Golang: this is analogous to the cancellation of a `context.Context`.
 
 The cancellation of a context causes all operations to stop:
-- Pending I/O operations such as HTTP requests and filesystem operations are cancelled
-- Child modules are recursively cancelled. Lightweight threads are stopped.
+- Execution of the module.
+- Pending I/O operations such as HTTP requests and filesystem operations are cancelled.
+- Child modules are recursively cancelled as well. Lightweight threads are stopped.
 
 ### Lightweight threads
 
