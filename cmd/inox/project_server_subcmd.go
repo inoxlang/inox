@@ -17,7 +17,6 @@ import (
 	"github.com/inoxlang/inox/internal/globals/chrome_ns"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/s3_ns"
-	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/inoxd/node"
 	"github.com/inoxlang/inox/internal/inoxd/nodeimpl"
 	"github.com/inoxlang/inox/internal/inoxprocess"
@@ -146,25 +145,8 @@ func ProjectServer(mainSubCommand string, mainSubCommandArgs []string, outW, err
 	}
 
 	//create context & state
-	perms := []core.Permission{
-		//TODO: change path patterns
-		core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
-		core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")},
-		core.FilesystemPermission{Kind_: permkind.Delete, Entity: core.PathPattern("/...")},
 
-		core.WebsocketPermission{Kind_: permkind.Provide},
-		core.HttpPermission{Kind_: permkind.Provide, Entity: core.ANY_HTTPS_HOST_PATTERN},
-		core.HttpPermission{Kind_: permkind.Provide, Entity: core.HostPattern("https://**:" + inoxconsts.DEV_PORT_0)},
-		core.HttpPermission{Kind_: permkind.Provide, Entity: core.HostPattern("http://" + chrome_ns.BROWSER_PROXY_ADDR)},
-
-		core.HttpPermission{Kind_: permkind.Read, AnyEntity: true},
-		core.HttpPermission{Kind_: permkind.Write, AnyEntity: true},
-		core.HttpPermission{Kind_: permkind.Delete, AnyEntity: true},
-
-		core.LThreadPermission{Kind_: permkind.Create},
-	}
-
-	perms = append(perms, core.GetDefaultGlobalVarPermissions()...)
+	perms := determineProjectServerPermissions(projectServerConfig)
 
 	filesystem := fs_ns.GetOsFilesystem()
 	ctx := core.NewContext(core.ContextConfig{
@@ -275,4 +257,63 @@ func ProjectServer(mainSubCommand string, mainSubCommandArgs []string, outW, err
 		return ERROR_STATUS_CODE
 	}
 	return 0
+}
+
+func determineProjectServerPermissions(projectServerConfig projectserver.IndividualServerConfig) []core.Permission {
+
+	perms := []core.Permission{
+		//TODO: change path patterns
+		core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
+		core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")},
+		core.FilesystemPermission{Kind_: permkind.Delete, Entity: core.PathPattern("/...")},
+
+		core.WebsocketPermission{Kind_: permkind.Provide},
+		core.HttpPermission{Kind_: permkind.Provide, Entity: core.ANY_HTTPS_HOST_PATTERN},
+		core.HttpPermission{Kind_: permkind.Provide, Entity: core.HostPattern("http://" + chrome_ns.BROWSER_PROXY_ADDR)},
+
+		core.LThreadPermission{Kind_: permkind.Create},
+	}
+
+	perms = append(perms, core.GetDefaultGlobalVarPermissions()...)
+
+	for _, domain := range projectServerConfig.DomainAllowList {
+		httpsHost := core.Host("https://" + domain)
+		httpHost := core.Host("http://" + domain)
+
+		perms = append(perms,
+			core.HttpPermission{
+				Kind_:  permkind.Read,
+				Entity: httpsHost,
+			},
+			core.HttpPermission{
+				Kind_:  permkind.Read,
+				Entity: httpHost,
+			},
+			core.HttpPermission{
+				Kind_:  permkind.Write,
+				Entity: httpsHost,
+			},
+			core.HttpPermission{
+				Kind_:  permkind.Write,
+				Entity: httpHost,
+			},
+			core.HttpPermission{
+				Kind_:  permkind.Delete,
+				Entity: httpsHost,
+			},
+			core.HttpPermission{
+				Kind_:  permkind.Delete,
+				Entity: httpHost,
+			},
+		)
+	}
+
+	if len(projectServerConfig.DomainAllowList) == 0 {
+		perms = append(perms,
+			core.HttpPermission{Kind_: permkind.Read, AnyEntity: true},
+			core.HttpPermission{Kind_: permkind.Write, AnyEntity: true},
+			core.HttpPermission{Kind_: permkind.Delete, AnyEntity: true})
+	}
+
+	return perms
 }
