@@ -18,6 +18,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/chrome_ns"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/s3_ns"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/inoxd/node"
 	"github.com/inoxlang/inox/internal/inoxd/nodeimpl"
 	"github.com/inoxlang/inox/internal/inoxprocess"
@@ -285,6 +286,8 @@ func determineProjectServerPermissions(projectServerConfig projectserver.Individ
 
 		core.WebsocketPermission{Kind_: permkind.Provide},
 		core.HttpPermission{Kind_: permkind.Provide, Entity: core.ANY_HTTPS_HOST_PATTERN},
+		core.HttpPermission{Kind_: permkind.Provide, Entity: core.HostPattern("https://**:" + inoxconsts.DEV_PORT_0)},
+		core.HttpPermission{Kind_: permkind.Provide, Entity: core.HostPattern("https://**:" + inoxconsts.DEV_PORT_1)},
 		core.HttpPermission{Kind_: permkind.Provide, Entity: core.HostPattern("http://" + chrome_ns.BROWSER_PROXY_ADDR)},
 
 		core.LThreadPermission{Kind_: permkind.Create},
