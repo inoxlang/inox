@@ -159,24 +159,27 @@ func GetDevServer(port string) (*DevServer, bool) {
 }
 
 func (s *DevServer) Handle(rw http.ResponseWriter, req *http.Request) {
+
+	const ERROR_MSG_PREFIX_FMT = "[Dev server on port %s. This server is not expected to receive requests from a browser.]\n\n"
+
 	keys := req.Header.Values(inoxconsts.DEV_SESSION_KEY_HEADER)
 	switch len(keys) {
 	case 0:
 		rw.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(rw, "(Dev server on port %s) Missing %s header.", s.port, inoxconsts.DEV_SESSION_KEY_HEADER)
+		fmt.Fprintf(rw, ERROR_MSG_PREFIX_FMT+"Missing %s header.", s.port, inoxconsts.DEV_SESSION_KEY_HEADER)
 		return
 	case 1:
 		break //ok
 	default:
 		rw.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(rw, "(Dev server on port %s) Duplicate %s header.", s.port, inoxconsts.DEV_SESSION_KEY_HEADER)
+		fmt.Fprintf(rw, ERROR_MSG_PREFIX_FMT+"Duplicate %s header.", s.port, inoxconsts.DEV_SESSION_KEY_HEADER)
 		return
 	}
 
 	key, err := DevSessionKeyFrom(keys[0])
 	if err != nil {
 		rw.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(rw, "(Dev server on port %s) Invalid %s header.", s.port, inoxconsts.DEV_SESSION_KEY_HEADER)
+		fmt.Fprintf(rw, ERROR_MSG_PREFIX_FMT+"Invalid %s header.", s.port, inoxconsts.DEV_SESSION_KEY_HEADER)
 		return
 	}
 
@@ -187,7 +190,7 @@ func (s *DevServer) Handle(rw http.ResponseWriter, req *http.Request) {
 
 	if !ok {
 		rw.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(rw, "(Dev server on port %s) No target server found. Have you started it ?", s.port)
+		fmt.Fprintf(rw, ERROR_MSG_PREFIX_FMT+"No target server found. Have you started it ?", s.port)
 		return
 	}
 
