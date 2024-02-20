@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/inoxlang/inox/internal/config"
 	"github.com/inoxlang/inox/internal/core"
@@ -26,6 +27,10 @@ import (
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
+)
+
+const (
+	LSP_SESSION_INIT_TIMEOUT = 1500 * time.Millisecond //The websocket is closed if the session is not initialized after this duration.
 )
 
 func ProjectServer(mainSubCommand string, mainSubCommandArgs []string, outW, errW io.Writer) (exitCode int) {
@@ -197,6 +202,17 @@ func ProjectServer(mainSubCommand string, mainSubCommandArgs []string, outW, err
 			tempState.Logger = zerolog.New(out)
 			tempState.OutputFieldsInitialized.Store(true)
 			s.SetContextOnce(sessionCtx)
+
+			//Close the websocket if the session is not initialized after LSP_SESSION_INIT_TIMEOUT.
+			go func() {
+				defer utils.Recover()
+
+				time.Sleep(LSP_SESSION_INIT_TIMEOUT)
+
+				if !projectserver.IsLspSessionInitialized(s) {
+					s.Close()
+				}
+			}()
 			return nil
 		},
 	}

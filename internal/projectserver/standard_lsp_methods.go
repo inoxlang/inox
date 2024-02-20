@@ -924,3 +924,11 @@ func handleDidCloseDocument(ctx context.Context, req *defines.DidCloseTextDocume
 	}
 	return nil
 }
+
+// IsLspSessionInitialized tells whether the 'initialize' method has been called by the client.
+// Important: IsLspSessionInitialized locks/unlocks the session's data.
+func IsLspSessionInitialized(session *jsonrpc.Session) bool {
+	sessionData := getLockedSessionData(session)
+	defer sessionData.lock.Unlock()
+	return sessionData.clientCapabilities != (defines.ClientCapabilities{})
+}
