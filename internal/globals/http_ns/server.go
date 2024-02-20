@@ -166,7 +166,7 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 	if server.sessions != nil {
 		server.sessions.Share(server.state)
 	}
-	server.isVirtual = inoxconsts.IsDevPort(params.port)
+	server.isVirtual = inoxconsts.IsDevPort(params.port) && server.state.MainState != nil && server.state.MainState.Project != nil
 	if server.isVirtual {
 		devServer, ok := GetDevServer(params.port)
 		if !ok {

@@ -10,6 +10,7 @@ import (
 	"github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/inoxconsts"
+	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -19,6 +20,8 @@ func TestTargetServerCreationAndDevServerForwarding(t *testing.T) {
 	registerDefaultMaxRequestHandlerLimits(t)
 
 	//This test suite is not parallelized because we reuse one of the dev port across all tests.
+
+	project := project.NewDummyProject("test", fs_ns.NewMemFilesystem(1_000_000))
 
 	t.Run("base case", func(t *testing.T) {
 		port := inoxconsts.DEV_PORT_1
@@ -31,6 +34,8 @@ func TestTargetServerCreationAndDevServerForwarding(t *testing.T) {
 			Filesystem:  fls,
 			Permissions: []core.Permission{core.HttpPermission{Kind_: permkind.Provide, Entity: host}},
 		}, nil)
+
+		rootCtx.GetClosestState().Project = project
 
 		defer rootCtx.CancelGracefully()
 
@@ -48,13 +53,19 @@ func TestTargetServerCreationAndDevServerForwarding(t *testing.T) {
 
 		time.Sleep(50 * time.Millisecond)
 
-		targetServerCtx := core.NewContexWithEmptyState(core.ContextConfig{
+		//Create the context for the target server.
+
+		targetServerCtx := core.NewContext(core.ContextConfig{
 			ParentContext: rootCtx,
 			Permissions:   rootCtx.GetGrantedPermissions(),
-		}, nil)
+		})
 
 		sessionKey := RandomDevSessionKey()
 		targetServerCtx.PutUserData(CTX_DATA_KEY_FOR_DEV_SESSION_KEY, core.String(sessionKey))
+
+		targetServerState := core.NewGlobalState(targetServerCtx)
+		targetServerState.MainState = targetServerState
+		targetServerState.Project = project
 
 		//Create a server that should return NO_HANDLER_PLACEHOLDER_MESSAGE.
 		server, err := NewHttpsServer(targetServerCtx, host)
@@ -149,6 +160,8 @@ func TestTargetServerCreationAndDevServerForwarding(t *testing.T) {
 			Permissions: []core.Permission{core.HttpPermission{Kind_: permkind.Provide, Entity: host}},
 		}, nil)
 
+		rootCtx.GetClosestState().Project = project
+
 		defer rootCtx.CancelGracefully()
 
 		err := StartDevServer(rootCtx, DevServerConfig{
@@ -165,13 +178,17 @@ func TestTargetServerCreationAndDevServerForwarding(t *testing.T) {
 
 		time.Sleep(50 * time.Millisecond)
 
-		firstTargetServerCtx := core.NewContexWithEmptyState(core.ContextConfig{
+		firstTargetServerCtx := core.NewContext(core.ContextConfig{
 			ParentContext: rootCtx,
 			Permissions:   rootCtx.GetGrantedPermissions(),
-		}, nil)
+		})
 
 		sessionKey := RandomDevSessionKey()
 		firstTargetServerCtx.PutUserData(CTX_DATA_KEY_FOR_DEV_SESSION_KEY, core.String(sessionKey))
+
+		firstTargetServerState := core.NewGlobalState(firstTargetServerCtx)
+		firstTargetServerState.MainState = firstTargetServerState
+		firstTargetServerState.Project = project
 
 		//Create the first server that.
 		server, err := NewHttpsServer(firstTargetServerCtx, host)
@@ -204,12 +221,16 @@ func TestTargetServerCreationAndDevServerForwarding(t *testing.T) {
 
 		//Create the second server.
 
-		secondTargetServerCtx := core.NewContexWithEmptyState(core.ContextConfig{
+		secondTargetServerCtx := core.NewContext(core.ContextConfig{
 			ParentContext: rootCtx,
 			Permissions:   rootCtx.GetGrantedPermissions(),
-		}, nil)
+		})
 
 		secondTargetServerCtx.PutUserData(CTX_DATA_KEY_FOR_DEV_SESSION_KEY, core.String(sessionKey))
+
+		secondTargetServerState := core.NewGlobalState(secondTargetServerCtx)
+		secondTargetServerState.MainState = secondTargetServerState
+		secondTargetServerState.Project = project
 
 		secondServer, err := NewHttpsServer(secondTargetServerCtx, host)
 		if !assert.NoError(t, err) {
