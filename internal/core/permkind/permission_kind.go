@@ -39,13 +39,13 @@ type PermissionKind int
 
 const (
 	//up to 16 major permission kinds
-	Read    PermissionKind = (1 << iota)
-	Write                  = (1 << iota)
-	Delete                 = (1 << iota)
-	Use                    = (1 << iota)
-	Consume                = (1 << iota)
-	Provide                = (1 << iota)
-	See                    = (1 << iota)
+	Read    = PermissionKind(1 << iota)
+	Write   = PermissionKind(1 << iota)
+	Delete  = PermissionKind(1 << iota)
+	Use     = PermissionKind(1 << iota)
+	Consume = PermissionKind(1 << iota)
+	Provide = PermissionKind(1 << iota)
+	See     = PermissionKind(1 << iota)
 
 	//up to 16 minor permission kinds for each major one
 	Update      = Write + (1 << 16)

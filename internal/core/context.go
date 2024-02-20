@@ -795,7 +795,6 @@ func (ctx *Context) boundChild(opts BoundChildContextOptions) *Context {
 	child.patternNamespaces = ctx.patternNamespaces
 	child.hostProtocolClients = ctx.hostProtocolClients
 	child.urlProtocolClients = ctx.urlProtocolClients
-	child.userData = ctx.userData
 	child.typeExtensions = slices.Clone(child.typeExtensions)
 
 	return child
