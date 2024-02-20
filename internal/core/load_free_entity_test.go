@@ -25,7 +25,7 @@ func TestLoadObject(t *testing.T) {
 	}
 
 	t.Run("non existing", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: perms,
 		}, nil)
 		storage := &TestValueStorage{BaseURL_: "ldb://main"}
@@ -46,7 +46,7 @@ func TestLoadObject(t *testing.T) {
 	})
 
 	t.Run("allow missing", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: perms,
 		}, nil)
 		storage := &TestValueStorage{BaseURL_: "ldb://main"}
@@ -67,7 +67,7 @@ func TestLoadObject(t *testing.T) {
 	})
 
 	t.Run("existing", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: perms,
 		}, nil)
 		storage := &TestValueStorage{
@@ -110,7 +110,7 @@ func TestLoadObject(t *testing.T) {
 	})
 
 	t.Run("performing a mutation on a property with a sharable value should cause a save", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: perms,
 		}, nil)
 		storage := &TestValueStorage{
@@ -159,7 +159,7 @@ func TestLoadObject(t *testing.T) {
 	})
 
 	t.Run("performing a mutation on a property with a mutable non-sharable value should cause a save", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: perms,
 		}, nil)
 		StartNewTransaction(ctx)
@@ -208,7 +208,7 @@ func TestLoadObject(t *testing.T) {
 	})
 
 	t.Run("performing a mutation on a property with a mutable non-sharable value should cause a save: object list", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: perms,
 		}, nil)
 		StartNewTransaction(ctx)
@@ -257,7 +257,7 @@ func TestLoadObject(t *testing.T) {
 	})
 
 	t.Run("migration: deletion", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: perms,
 		}, nil)
 		storage := &TestValueStorage{
@@ -288,7 +288,7 @@ func TestLoadObject(t *testing.T) {
 	})
 
 	t.Run("migration: replacement", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: perms,
 		}, nil)
 		storage := &TestValueStorage{
@@ -337,7 +337,7 @@ func TestLoadObject(t *testing.T) {
 	})
 
 	t.Run("migration: new property", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: perms,
 		}, nil)
 		storage := &TestValueStorage{
@@ -389,7 +389,7 @@ func TestLoadObject(t *testing.T) {
 	})
 
 	t.Run("migration: new property + allow missing", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: perms,
 		}, nil)
 		storage := &TestValueStorage{

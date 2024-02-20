@@ -18,7 +18,7 @@ type OSFsWithContextTestSuite struct {
 }
 
 func (s *OSFsWithContextTestSuite) SetUpTest(c *check.C) {
-	ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+	ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 
 	s.BasicTestSuite = BasicTestSuite{
 		FS: GetOsFilesystem().WithSecondaryContext(ctx).(*OsFilesystem),

@@ -91,7 +91,7 @@ type underlyingTestSuiteParams[E Serializable] struct {
 }
 
 func testUnderlyingList[E Serializable](t *testing.T, params underlyingTestSuiteParams[E]) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	getAllElements := func(list underlyingList) []Value {
@@ -114,14 +114,14 @@ func testUnderlyingList[E Serializable](t *testing.T, params underlyingTestSuite
 
 	t.Run("setSlice", func(t *testing.T) {
 		t.Run("single element", func(t *testing.T) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			list := newList(elemA)
 			list.SetSlice(ctx, 0, 1, newList(elemB))
 			assert.Equal(t, []Value{elemB}, getAllElements(list))
 		})
 
 		t.Run("several elements", func(t *testing.T) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			list := newList(elemA, elemB)
 			list.SetSlice(ctx, 0, 2, newList(elemC, elemD))
 			assert.Equal(t, []Value{elemC, elemD}, getAllElements(list))
@@ -129,7 +129,7 @@ func testUnderlyingList[E Serializable](t *testing.T, params underlyingTestSuite
 	})
 
 	t.Run("insertElement", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		list := newList(elemA)
 		list.insertElement(ctx, elemB, 0)
 		assert.Equal(t, []Value{elemB, elemA}, getAllElements(list))
@@ -137,13 +137,13 @@ func testUnderlyingList[E Serializable](t *testing.T, params underlyingTestSuite
 
 	t.Run("insertSequence", func(t *testing.T) {
 		t.Run("at existing index", func(t *testing.T) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			list := newList(elemA)
 			list.insertSequence(ctx, newList(elemB, elemC), 0)
 			assert.Equal(t, []Value{elemB, elemC, elemA}, getAllElements(list))
 		})
 		t.Run("at exclusive end", func(t *testing.T) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			list := newList(elemA)
 			list.insertSequence(ctx, newList(elemB, elemC), 1)
 			assert.Equal(t, []Value{elemA, elemB, elemC}, getAllElements(list))
@@ -151,14 +151,14 @@ func testUnderlyingList[E Serializable](t *testing.T, params underlyingTestSuite
 	})
 
 	t.Run("appendSequence", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		list := newList(elemA)
 		list.appendSequence(ctx, newList(elemB, elemC))
 		assert.Equal(t, []Value{elemA, elemB, elemC}, getAllElements(list))
 	})
 
 	t.Run("removePosition", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		list := newList(elemA, elemB, elemC, elemD)
@@ -186,14 +186,14 @@ func testUnderlyingList[E Serializable](t *testing.T, params underlyingTestSuite
 
 	t.Run("removePositionRange", func(t *testing.T) {
 		t.Run("single element", func(t *testing.T) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			list := newList(elemA)
 			list.removePositionRange(ctx, NewIntRange(0, 0))
 			assert.Equal(t, []Value{}, getAllElements(list))
 		})
 
 		t.Run("several elements", func(t *testing.T) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			list := newList(elemA, elemB)
 			list.removePositionRange(ctx, NewIntRange(0, 1))
 			assert.Equal(t, []Value{}, getAllElements(list))

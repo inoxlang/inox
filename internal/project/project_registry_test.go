@@ -14,7 +14,7 @@ import (
 func TestOpenRegistry(t *testing.T) {
 
 	t.Run("once", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		r, err := OpenRegistry(t.TempDir(), ctx)
@@ -26,7 +26,7 @@ func TestOpenRegistry(t *testing.T) {
 	})
 
 	t.Run("twice", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		tempDir := t.TempDir()
@@ -49,7 +49,7 @@ func TestOpenRegistry(t *testing.T) {
 func TestCreateProject(t *testing.T) {
 
 	t.Run("invalid project's name", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		reg := utils.Must(OpenRegistry(t.TempDir(), ctx))
@@ -64,7 +64,7 @@ func TestCreateProject(t *testing.T) {
 	})
 
 	t.Run("once", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		reg := utils.Must(OpenRegistry(t.TempDir(), ctx))
@@ -84,7 +84,7 @@ func TestCreateProject(t *testing.T) {
 
 		tempDir := t.TempDir()
 
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		reg := utils.Must(OpenRegistry(tempDir, ctx))
@@ -107,7 +107,7 @@ func TestCreateProject(t *testing.T) {
 func TestOpenProject(t *testing.T) {
 
 	t.Run("just after creation", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		reg := utils.Must(OpenRegistry(t.TempDir(), ctx))
@@ -153,7 +153,7 @@ func TestOpenProject(t *testing.T) {
 	})
 
 	t.Run("with ExposeWebServers: true", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		reg := utils.Must(OpenRegistry(t.TempDir(), ctx))
@@ -200,7 +200,7 @@ func TestOpenProject(t *testing.T) {
 	})
 
 	t.Run("re opening a project should not change the returned value", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		reg := utils.Must(OpenRegistry(t.TempDir(), ctx))
@@ -240,13 +240,13 @@ func TestOpenProject(t *testing.T) {
 	})
 
 	t.Run("after closing the ctx that opened the project, re-opening with another ctx should be okay and the FS should be working", func(t *testing.T) {
-		projectRegistryCtx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		projectRegistryCtx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer projectRegistryCtx.CancelGracefully()
 
 		reg := utils.Must(OpenRegistry(t.TempDir(), projectRegistryCtx))
 		defer reg.Close(projectRegistryCtx)
 
-		ctx1 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx1 := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx1.CancelGracefully()
 
 		id, _ := utils.Must2(reg.CreateProject(ctx1, CreateProjectParams{
@@ -273,7 +273,7 @@ func TestOpenProject(t *testing.T) {
 
 		//second open
 
-		ctx2 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx2 := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx2.CancelGracefully()
 
 		project2, err := reg.OpenProject(ctx2, OpenProjectParams{
@@ -300,7 +300,7 @@ func TestOpenProject(t *testing.T) {
 
 	t.Run("re-open registry", func(t *testing.T) {
 		tempDir := t.TempDir()
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		reg := utils.Must(OpenRegistry(tempDir, ctx))

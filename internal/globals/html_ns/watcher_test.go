@@ -11,7 +11,7 @@ import (
 
 func TestNodeWatcher(t *testing.T) {
 	t.Run("SetAttribute", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 
 		node := utils.Must(ParseSingleNodeHTML("<div></div>"))
 		called := false
@@ -37,7 +37,7 @@ func TestNodeWatcher(t *testing.T) {
 	})
 
 	t.Run("RemoveAttribute", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 
 		node := utils.Must(ParseSingleNodeHTML("<div id=\"x\"></div>"))
 		called := false
@@ -63,7 +63,7 @@ func TestNodeWatcher(t *testing.T) {
 	})
 
 	t.Run("ReplaceChildHTML", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 
 		node := utils.Must(ParseSingleNodeHTML("<div id=\"x\"><span></span></div>"))
 		called := false

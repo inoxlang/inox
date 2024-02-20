@@ -50,7 +50,7 @@ func TestSameProcessDeployment(t *testing.T) {
 
 	// create project
 
-	ctx := core.NewContexWithEmptyState(core.ContextConfig{
+	ctx := core.NewContextWithEmptyState(core.ContextConfig{
 		Permissions: []core.Permission{
 			core.FilesystemPermission{Kind_: permkind.Read, Entity: core.ROOT_PREFIX_PATH_PATTERN},
 		},

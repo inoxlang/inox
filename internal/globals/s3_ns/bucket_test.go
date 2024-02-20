@@ -21,7 +21,7 @@ var (
 		"provider":   core.String("cloudflare"),
 		"access-key": core.String(S3_FS_TEST_ACCESS_KEY),
 		"secret-key": utils.Must(core.SECRET_STRING_PATTERN.NewSecret(
-			core.NewContexWithEmptyState(core.ContextConfig{}, nil),
+			core.NewContextWithEmptyState(core.ContextConfig{}, nil),
 			S3_FS_TEST_SECRET_KEY,
 		)),
 	})

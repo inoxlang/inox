@@ -146,7 +146,7 @@ func TestAccountCreation(t *testing.T) {
 
 	host := core.Host("wss://localhost:" + projectserver.DEFAULT_PROJECT_SERVER_PORT)
 
-	ctx := core.NewContexWithEmptyState(core.ContextConfig{
+	ctx := core.NewContextWithEmptyState(core.ContextConfig{
 		Permissions: []core.Permission{
 			core.WebsocketPermission{Kind_: permkind.Read, Endpoint: host},
 			core.WebsocketPermission{Kind_: permkind.Write, Endpoint: host},

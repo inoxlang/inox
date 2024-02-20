@@ -75,7 +75,7 @@ func TestObjectPatternRandom(t *testing.T) {
 func TestRegexPatternRandom(t *testing.T) {
 
 	t.Run("2-elem character class", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 
 		r := NewRegexPattern("[ab]")
 
@@ -86,7 +86,7 @@ func TestRegexPatternRandom(t *testing.T) {
 	})
 
 	t.Run("3-elem character class", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 
 		r := NewRegexPattern("[abc]")
 
@@ -101,7 +101,7 @@ func TestRegexPatternRandom(t *testing.T) {
 	})
 
 	t.Run("2-elem alternate", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 
 		r := NewRegexPattern("(a1|b2)")
 
@@ -112,7 +112,7 @@ func TestRegexPatternRandom(t *testing.T) {
 	})
 
 	t.Run("3-elem altenate", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 
 		r := NewRegexPattern("(a1|b2|c3)")
 

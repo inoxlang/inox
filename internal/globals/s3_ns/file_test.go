@@ -53,7 +53,7 @@ func TestS3WriteFileSeek(t *testing.T) {
 	}
 
 	t.Run("Seek should be thread safe", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		file, bucket := setup(ctx)
@@ -93,7 +93,7 @@ func TestS3WriteFileSeek(t *testing.T) {
 	})
 
 	t.Run("file should be persisted if dirty when context done", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 
 		file, bucket := setup(ctx)
 		defer bucket.RemoveAllObjects(ctx)

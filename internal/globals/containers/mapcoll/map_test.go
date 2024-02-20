@@ -14,7 +14,7 @@ import (
 func TestNewMap(t *testing.T) {
 
 	t.Run("no elements", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, io.Discard)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, io.Discard)
 		m := NewMap(ctx, core.NewWrappedValueList(), nil)
 
 		assert.Equal(t, MapConfig{
@@ -25,7 +25,7 @@ func TestNewMap(t *testing.T) {
 	})
 
 	t.Run("single entry", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, io.Discard)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, io.Discard)
 		m := NewMap(ctx, core.NewWrappedValueList(INT_1, STRING_A), nil)
 
 		assert.Equal(t, MapConfig{
@@ -37,7 +37,7 @@ func TestNewMap(t *testing.T) {
 	})
 
 	t.Run("element with no representation yet", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, io.Discard)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, io.Discard)
 
 		node := core.AstNode{Node: parse.MustParseChunk("")}
 
@@ -50,7 +50,7 @@ func TestNewMap(t *testing.T) {
 	})
 
 	t.Run("element with representation should be immutable ", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, io.Discard)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, io.Discard)
 
 		obj := core.NewObjectFromMap(core.ValMap{}, ctx)
 
@@ -63,7 +63,7 @@ func TestNewMap(t *testing.T) {
 	})
 
 	t.Run("key pattern", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, io.Discard)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, io.Discard)
 
 		keyPattern := core.INT_PATTERN
 
@@ -80,7 +80,7 @@ func TestNewMap(t *testing.T) {
 	})
 
 	t.Run("value pattern", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, io.Discard)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, io.Discard)
 
 		valuePattern := core.INT_PATTERN
 
@@ -97,7 +97,7 @@ func TestNewMap(t *testing.T) {
 	})
 
 	t.Run("value pattern: element does not match", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, io.Discard)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, io.Discard)
 
 		valuePattern := core.INT_PATTERN
 
@@ -116,7 +116,7 @@ func TestNewMap(t *testing.T) {
 }
 
 func TestUnsharedMapAddRemove(t *testing.T) {
-	ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+	ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 
 	t.Run("representation uniqueness", func(t *testing.T) {
 		m := NewMapWithConfig(ctx, nil, MapConfig{

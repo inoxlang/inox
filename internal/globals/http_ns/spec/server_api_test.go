@@ -85,7 +85,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 	setup := func(files map[string]string) *core.Context {
 		fls := fs_ns.NewMemFilesystem(10_000)
 
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{
 			Permissions: append(core.GetDefaultGlobalVarPermissions(),
 				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
 				core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")},

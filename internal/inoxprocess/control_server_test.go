@@ -27,7 +27,7 @@ func TestControlServer(t *testing.T) {
 			t.Skipf("the inox binary has not been found: %s", err.Error())
 		}
 
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{
 			Permissions: []core.Permission{
 				core.WebsocketPermission{Kind_: permkind.Provide},
 			},

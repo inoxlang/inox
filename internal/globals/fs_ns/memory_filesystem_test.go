@@ -88,7 +88,7 @@ func TestMemoryFilesystemTakeFilesystemSnapshot(t *testing.T) {
 	const MAX_STORAGE_SIZE = 10_000
 
 	testSnapshoting(t, func(t *testing.T) (*core.Context, core.SnapshotableFilesystem) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 
 		return ctx, NewMemFilesystem(MAX_STORAGE_SIZE)
 	})

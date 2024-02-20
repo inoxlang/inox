@@ -193,7 +193,7 @@ func TestObjectPattern(t *testing.T) {
 				},
 			)
 
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			DoNotSpawnDoneGoroutine: true,
 		}, nil)
 		defer ctx.CancelGracefully()

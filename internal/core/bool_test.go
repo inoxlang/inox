@@ -7,7 +7,7 @@ import (
 )
 
 func TestCoerceToBool(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	testCases := []struct {

@@ -1261,7 +1261,7 @@ func TestPrepareLocalModule(t *testing.T) {
 			AdditionalGlobalsTestOnly: map[string]core.Value{
 				"access-key": core.String(OS_DB_TEST_ACCESS_KEY),
 				"secret-key": utils.Must(core.SECRET_STRING_PATTERN.NewSecret(
-					core.NewContexWithEmptyState(core.ContextConfig{}, nil),
+					core.NewContextWithEmptyState(core.ContextConfig{}, nil),
 					OS_DB_TEST_SECRET_KEY,
 				)),
 			},
@@ -1361,7 +1361,7 @@ func TestPrepareLocalModule(t *testing.T) {
 			AdditionalGlobalsTestOnly: map[string]core.Value{
 				"access-key": core.String(OS_DB_TEST_ACCESS_KEY),
 				"secret-key": utils.Must(core.SECRET_STRING_PATTERN.NewSecret(
-					core.NewContexWithEmptyState(core.ContextConfig{}, nil),
+					core.NewContextWithEmptyState(core.ContextConfig{}, nil),
 					OS_DB_TEST_SECRET_KEY,
 				)),
 			},
@@ -1410,7 +1410,7 @@ func TestPrepareLocalModule(t *testing.T) {
 		var proj *project.Project
 		projectName := "test-mod-prep"
 		{
-			tempCtx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+			tempCtx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 			defer tempCtx.CancelGracefully()
 			registry, err := project.OpenRegistry(t.TempDir(), tempCtx)
 			if !assert.NoError(t, err) {
@@ -1483,7 +1483,7 @@ func TestPrepareLocalModule(t *testing.T) {
 			return `+globalnames.PROJECT_SECRETS+`.my-secret
 		`), 0o600)
 
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{
 			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
 			Filesystem:  fs,
 		}, nil)
@@ -1538,7 +1538,7 @@ func TestPrepareLocalModule(t *testing.T) {
 		var proj *project.Project
 		projectName := "test-mod-prep-creds-from-project"
 		{
-			tempCtx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+			tempCtx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 			defer tempCtx.CancelGracefully()
 			registry, err := project.OpenRegistry(t.TempDir(), tempCtx)
 			if !assert.NoError(t, err) {
@@ -1614,7 +1614,7 @@ func TestPrepareLocalModule(t *testing.T) {
 			}
 		`), 0o600)
 
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{
 			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
 			Filesystem:  fs,
 		}, nil)
@@ -2344,7 +2344,7 @@ func TestPrepareLocalModule(t *testing.T) {
 	t.Run("program testing should be allowed in project mode", func(t *testing.T) {
 		fls := fs_ns.NewMemFilesystem(100_000)
 
-		compilationCtx := core.NewContexWithEmptyState(core.ContextConfig{
+		compilationCtx := core.NewContextWithEmptyState(core.ContextConfig{
 			Permissions: []core.Permission{
 				core.CreateFsReadPerm(core.PathPattern("/...")),
 			},
@@ -2413,7 +2413,7 @@ func TestPrepareLocalModule(t *testing.T) {
 	t.Run("program testing should not be allowed when not in project mode", func(t *testing.T) {
 		fls := fs_ns.NewMemFilesystem(100_000)
 
-		compilationCtx := core.NewContexWithEmptyState(core.ContextConfig{
+		compilationCtx := core.NewContextWithEmptyState(core.ContextConfig{
 			Permissions: []core.Permission{
 				core.CreateFsReadPerm(core.PathPattern("/...")),
 			},
@@ -2584,7 +2584,7 @@ func TestPrepareDevModeIncludableChunkFile(t *testing.T) {
 		
 		`), 0o600)
 
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{
 			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
 			Filesystem:  fs,
 		}, nil)
@@ -2630,7 +2630,7 @@ func TestPrepareDevModeIncludableChunkFile(t *testing.T) {
 			(b + "string") 	# symbolic check error
 		`), 0o600)
 
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{
 			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
 			Filesystem:  fs,
 		}, nil)

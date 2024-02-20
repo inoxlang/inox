@@ -11,11 +11,11 @@ import (
 func TestLiteTransactionIsolator(t *testing.T) {
 
 	t.Run("a readonly transaction should not have to wait for other read transactions to finish", func(t *testing.T) {
-		readCtx1 := NewContexWithEmptyState(ContextConfig{}, nil)
+		readCtx1 := NewContextWithEmptyState(ContextConfig{}, nil)
 		StartNewReadonlyTransaction(readCtx1)
 		defer readCtx1.CancelGracefully()
 
-		readCtx2 := NewContexWithEmptyState(ContextConfig{}, nil)
+		readCtx2 := NewContextWithEmptyState(ContextConfig{}, nil)
 		StartNewReadonlyTransaction(readCtx2)
 		defer readCtx2.CancelGracefully()
 
@@ -28,11 +28,11 @@ func TestLiteTransactionIsolator(t *testing.T) {
 	})
 
 	t.Run("a write transaction should wait for the current writr transaction to finish", func(t *testing.T) {
-		writeCtx1 := NewContexWithEmptyState(ContextConfig{}, nil)
+		writeCtx1 := NewContextWithEmptyState(ContextConfig{}, nil)
 		writeTx1 := StartNewTransaction(writeCtx1)
 		defer writeCtx1.CancelGracefully()
 
-		writeCtx2 := NewContexWithEmptyState(ContextConfig{}, nil)
+		writeCtx2 := NewContextWithEmptyState(ContextConfig{}, nil)
 		StartNewTransaction(writeCtx2)
 		defer writeCtx2.CancelGracefully()
 
@@ -68,11 +68,11 @@ func TestLiteTransactionIsolator(t *testing.T) {
 	})
 
 	t.Run("a readonly transaction should not wait for the current write transaction to finish", func(t *testing.T) {
-		writeCtx := NewContexWithEmptyState(ContextConfig{}, nil)
+		writeCtx := NewContextWithEmptyState(ContextConfig{}, nil)
 		writeTx := StartNewTransaction(writeCtx)
 		defer writeCtx.CancelGracefully()
 
-		readCtx := NewContexWithEmptyState(ContextConfig{}, nil)
+		readCtx := NewContextWithEmptyState(ContextConfig{}, nil)
 		StartNewReadonlyTransaction(readCtx)
 		defer readCtx.CancelGracefully()
 
@@ -86,15 +86,15 @@ func TestLiteTransactionIsolator(t *testing.T) {
 	})
 
 	t.Run("a write transaction should not wait for readonly transactions to finish", func(t *testing.T) {
-		readCtx1 := NewContexWithEmptyState(ContextConfig{}, nil)
+		readCtx1 := NewContextWithEmptyState(ContextConfig{}, nil)
 		readTx1 := StartNewReadonlyTransaction(readCtx1)
 		defer readCtx1.CancelGracefully()
 
-		readCtx2 := NewContexWithEmptyState(ContextConfig{}, nil)
+		readCtx2 := NewContextWithEmptyState(ContextConfig{}, nil)
 		readTx2 := StartNewReadonlyTransaction(readCtx2)
 		defer readCtx2.CancelGracefully()
 
-		writeCtx := NewContexWithEmptyState(ContextConfig{}, nil)
+		writeCtx := NewContextWithEmptyState(ContextConfig{}, nil)
 		StartNewTransaction(writeCtx)
 		defer writeCtx.CancelGracefully()
 
@@ -117,11 +117,11 @@ func TestLiteTransactionIsolator(t *testing.T) {
 func TestStrongTransactionIsolator(t *testing.T) {
 
 	t.Run("a readonly transaction should not have to wait for other read transactions to finish", func(t *testing.T) {
-		readCtx1 := NewContexWithEmptyState(ContextConfig{}, nil)
+		readCtx1 := NewContextWithEmptyState(ContextConfig{}, nil)
 		StartNewReadonlyTransaction(readCtx1)
 		defer readCtx1.CancelGracefully()
 
-		readCtx2 := NewContexWithEmptyState(ContextConfig{}, nil)
+		readCtx2 := NewContextWithEmptyState(ContextConfig{}, nil)
 		StartNewReadonlyTransaction(readCtx2)
 		defer readCtx2.CancelGracefully()
 
@@ -134,11 +134,11 @@ func TestStrongTransactionIsolator(t *testing.T) {
 	})
 
 	t.Run("a write transaction should wait for the current write transaction to finish", func(t *testing.T) {
-		writeCtx1 := NewContexWithEmptyState(ContextConfig{}, nil)
+		writeCtx1 := NewContextWithEmptyState(ContextConfig{}, nil)
 		writeTx1 := StartNewTransaction(writeCtx1)
 		defer writeCtx1.CancelGracefully()
 
-		writeCtx2 := NewContexWithEmptyState(ContextConfig{}, nil)
+		writeCtx2 := NewContextWithEmptyState(ContextConfig{}, nil)
 		StartNewTransaction(writeCtx2)
 		defer writeCtx2.CancelGracefully()
 
@@ -174,11 +174,11 @@ func TestStrongTransactionIsolator(t *testing.T) {
 	})
 
 	t.Run("a readonly transaction should wait for the current write transaction to finish", func(t *testing.T) {
-		writeCtx := NewContexWithEmptyState(ContextConfig{}, nil)
+		writeCtx := NewContextWithEmptyState(ContextConfig{}, nil)
 		writeTx := StartNewTransaction(writeCtx)
 		defer writeCtx.CancelGracefully()
 
-		readCtx := NewContexWithEmptyState(ContextConfig{}, nil)
+		readCtx := NewContextWithEmptyState(ContextConfig{}, nil)
 		StartNewReadonlyTransaction(readCtx)
 		defer readCtx.CancelGracefully()
 
@@ -222,15 +222,15 @@ func TestStrongTransactionIsolator(t *testing.T) {
 	})
 
 	t.Run("a write transaction should wait for readonly transactions to finish", func(t *testing.T) {
-		readCtx1 := NewContexWithEmptyState(ContextConfig{}, nil)
+		readCtx1 := NewContextWithEmptyState(ContextConfig{}, nil)
 		readTx1 := StartNewReadonlyTransaction(readCtx1)
 		defer readCtx1.CancelGracefully()
 
-		readCtx2 := NewContexWithEmptyState(ContextConfig{}, nil)
+		readCtx2 := NewContextWithEmptyState(ContextConfig{}, nil)
 		readTx2 := StartNewReadonlyTransaction(readCtx2)
 		defer readCtx2.CancelGracefully()
 
-		writeCtx := NewContexWithEmptyState(ContextConfig{}, nil)
+		writeCtx := NewContextWithEmptyState(ContextConfig{}, nil)
 		StartNewTransaction(writeCtx)
 		defer writeCtx.CancelGracefully()
 
@@ -276,15 +276,15 @@ func TestStrongTransactionIsolator(t *testing.T) {
 	})
 
 	t.Run("a write transaction should time out waiting for readonly transactions to finish", func(t *testing.T) {
-		readCtx1 := NewContexWithEmptyState(ContextConfig{}, nil)
+		readCtx1 := NewContextWithEmptyState(ContextConfig{}, nil)
 		StartNewReadonlyTransaction(readCtx1)
 		defer readCtx1.CancelGracefully()
 
-		readCtx2 := NewContexWithEmptyState(ContextConfig{}, nil)
+		readCtx2 := NewContextWithEmptyState(ContextConfig{}, nil)
 		StartNewReadonlyTransaction(readCtx2)
 		defer readCtx2.CancelGracefully()
 
-		writeCtx := NewContexWithEmptyState(ContextConfig{}, nil)
+		writeCtx := NewContextWithEmptyState(ContextConfig{}, nil)
 		StartNewTransaction(writeCtx)
 		defer writeCtx.CancelGracefully()
 

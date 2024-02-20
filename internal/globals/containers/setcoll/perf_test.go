@@ -9,7 +9,7 @@ import (
 )
 
 func BenchmarkAddElemToUnsharedSet(b *testing.B) {
-	ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+	ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	b.Run("repr", func(b *testing.B) {
@@ -82,7 +82,7 @@ func BenchmarkAddElemToUnsharedSet(b *testing.B) {
 }
 
 func BenchmarkAddElemToSharedSet(b *testing.B) {
-	ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+	ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	set := NewSetWithConfig(ctx, nil, SetConfig{

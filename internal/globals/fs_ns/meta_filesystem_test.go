@@ -76,7 +76,7 @@ type MetaFsWithUnderlyingFsTestSuite struct {
 func (s *MetaFsWithUnderlyingFsTestSuite) SetUpTest(c *check.C) {
 
 	createMetaFS := func() *MetaFilesystem {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		s.contexts = append(s.contexts, ctx)
 		underlyingFS := NewMemFilesystem(100_000_000)
 
@@ -117,7 +117,7 @@ type MetaFsTestSuite struct {
 func (s *MetaFsTestSuite) SetUpTest(c *check.C) {
 
 	createMetaFS := func() *MetaFilesystem {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		s.contexts = append(s.contexts, ctx)
 		underlyingFS := NewMemFilesystem(100_000_000)
 
@@ -148,7 +148,7 @@ func (s *MetaFsTestSuite) TearDownTest(c *check.C) {
 
 func TestOpenMetaFilesystem(t *testing.T) {
 	t.Run("once", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 		underlyingFS := NewMemFilesystem(100_000_000)
 
@@ -163,7 +163,7 @@ func TestOpenMetaFilesystem(t *testing.T) {
 	})
 
 	t.Run("re-open", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 		underlyingFS := NewMemFilesystem(100_000_000)
 
@@ -454,7 +454,7 @@ func TestOpenMetaFilesystem(t *testing.T) {
 
 		for _, testCase := range cases {
 			t.Run(testCase.name, func(t *testing.T) {
-				ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+				ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 				defer ctx.CancelGracefully()
 				underlyingFS := NewMemFilesystem(100_000_000)
 
@@ -481,7 +481,7 @@ func TestOpenMetaFilesystem(t *testing.T) {
 }
 
 func TestMetaFilesystemRemoveShouldRemoveConcreteFile(t *testing.T) {
-	ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+	ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 	underlyingFS := NewMemFilesystem(100_000_000)
 
@@ -531,7 +531,7 @@ func TestMetaFilesystemRemoveShouldRemoveConcreteFile(t *testing.T) {
 
 func TestMetaFilesystemFileCountValidation(t *testing.T) {
 	t.Run("exceeding the limit by creating files one by one should be an error", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 		underlyingFS := NewMemFilesystem(100_000_000)
 
@@ -567,7 +567,7 @@ func TestMetaFilesystemFileCountValidation(t *testing.T) {
 		//flaky test
 		t.Skip()
 
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 		underlyingFS := NewMemFilesystem(100_000_000)
 
@@ -614,7 +614,7 @@ func TestMetaFilesystemFileCountValidation(t *testing.T) {
 
 func TestMetaFilesystemParallelFileCreationValidation(t *testing.T) {
 
-	ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+	ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 	underlyingFS := NewMemFilesystem(100_000_000)
 
@@ -662,7 +662,7 @@ func TestMetaFilesystemUsedSpaceValidation(t *testing.T) {
 	//TODO: do the tests without Dir: "/fs"
 
 	t.Run("the maxUsableSpace value should be greater than "+strconv.Itoa(METAFS_MIN_USABLE_SPACE), func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 		underlyingFS := NewMemFilesystem(100_000_000)
 
@@ -679,7 +679,7 @@ func TestMetaFilesystemUsedSpaceValidation(t *testing.T) {
 	})
 
 	t.Run("writing MaxUsableSpace bytes in a file in a single .Write() call should be an error", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 		underlyingFS := NewMemFilesystem(10 * METAFS_MIN_USABLE_SPACE)
 
@@ -710,7 +710,7 @@ func TestMetaFilesystemUsedSpaceValidation(t *testing.T) {
 	})
 
 	t.Run("writing MaxUsableSpace bytes in a file in two .Write() calls (MaxUsableSpace / 2 in each call, no delay) should be an error", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 		underlyingFS := NewMemFilesystem(10 * METAFS_MIN_USABLE_SPACE)
 
@@ -750,7 +750,7 @@ func TestMetaFilesystemUsedSpaceValidation(t *testing.T) {
 	})
 
 	t.Run("allocating MaxUsableSpace bytes in a file in a single .Truncate() call should be an error", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 		underlyingFS := NewMemFilesystem(10 * METAFS_MIN_USABLE_SPACE)
 
@@ -777,7 +777,7 @@ func TestMetaFilesystemUsedSpaceValidation(t *testing.T) {
 	})
 
 	t.Run("allocating MaxUsableSpace bytes in a file in two .Truncate() calls (MaxUsableSpace / 2 in each call, no delay) should be an error", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 		underlyingFS := NewMemFilesystem(10 * METAFS_MIN_USABLE_SPACE)
 
@@ -812,7 +812,7 @@ func TestMetaFilesystemUsedSpaceValidation(t *testing.T) {
 func TestMetaFilesystemTakeSnapshot(t *testing.T) {
 
 	createEmptyMetaFS := func(t *testing.T) (*core.Context, core.SnapshotableFilesystem) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		underlyingFS := GetOsFilesystem()
 		dir := t.TempDir()
 
@@ -1137,7 +1137,7 @@ func TestMetaFilesystemWalk(t *testing.T) {
 
 	for _, testCase := range cases {
 		t.Run("files: "+strings.Join(testCase.files, " & ")+", empty dirs: "+strings.Join(testCase.emptyDirs, " & "), func(t *testing.T) {
-			ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+			ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 			underlyingFS := NewMemFilesystem(100_000_000)
 

@@ -10,7 +10,7 @@ import (
 func TestGraphIteration(t *testing.T) {
 
 	t.Run("empty", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		graph := NewGraph(ctx, core.NewWrappedValueList(), core.NewWrappedValueList())
@@ -24,7 +24,7 @@ func TestGraphIteration(t *testing.T) {
 	})
 
 	t.Run("single element", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		graph := NewGraph(ctx, core.NewWrappedValueList(core.String("1")), core.NewWrappedValueList())
@@ -50,7 +50,7 @@ func TestGraphIteration(t *testing.T) {
 	})
 
 	t.Run("two elements", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		graph := NewGraph(ctx, core.NewWrappedValueList(core.String("1"), core.String("2")), core.NewWrappedValueList())

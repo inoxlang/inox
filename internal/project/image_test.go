@@ -12,7 +12,7 @@ import (
 )
 
 func TestBaseImage(t *testing.T) {
-	ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+	ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	reg := utils.Must(OpenRegistry(t.TempDir(), ctx))

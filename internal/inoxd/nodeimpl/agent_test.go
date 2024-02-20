@@ -12,7 +12,7 @@ import (
 func TestNewAgent(t *testing.T) {
 	t.Run("create", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		_, err := NewAgent(AgentParameters{
@@ -27,7 +27,7 @@ func TestNewAgent(t *testing.T) {
 	})
 
 	t.Run("create: non-existing prod dir", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		_, err := NewAgent(AgentParameters{
@@ -43,7 +43,7 @@ func TestNewAgent(t *testing.T) {
 	t.Run("get/create application", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		const APP_NAME = "myapp"
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		agent, err := NewAgent(AgentParameters{

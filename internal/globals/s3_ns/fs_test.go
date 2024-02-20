@@ -34,7 +34,7 @@ type S3FsWithSecondaryContextTestSuite struct {
 
 func (s *S3FsTestSuite) setUpTest(c *check.C) {
 	testId := strconv.Itoa(int(rand.Int31()))
-	ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+	ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 	bucket, err := OpenBucketWithCredentials(ctx,
 		OpenBucketWithCredentialsInput{
 			Provider:   "cloudflare",
@@ -66,7 +66,7 @@ func (s *S3FsTestSuite) TearDownTest(c *check.C) {
 
 func (s *S3FsWithSecondaryContextTestSuite) SetUpTest(c *check.C) {
 	s.S3FsTestSuite.setUpTest(c)
-	s.secondaryContext = core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+	s.secondaryContext = core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 	s.BasicTestSuite = fs_ns.BasicTestSuite{
 		FS: NewS3Filesystem(s.creatorContext, s.bucket).WithSecondaryContext(s.secondaryContext).(*S3Filesystem),
 	}

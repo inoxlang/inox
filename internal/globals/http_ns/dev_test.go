@@ -30,7 +30,7 @@ func TestTargetServerCreationAndDevServerForwarding(t *testing.T) {
 
 		fls := fs_ns.NewMemFilesystem(1_000_000)
 
-		rootCtx := core.NewContexWithEmptyState(core.ContextConfig{
+		rootCtx := core.NewContextWithEmptyState(core.ContextConfig{
 			Filesystem:  fls,
 			Permissions: []core.Permission{core.HttpPermission{Kind_: permkind.Provide, Entity: host}},
 		}, nil)
@@ -155,7 +155,7 @@ func TestTargetServerCreationAndDevServerForwarding(t *testing.T) {
 
 		fls := fs_ns.NewMemFilesystem(1_000_000)
 
-		rootCtx := core.NewContexWithEmptyState(core.ContextConfig{
+		rootCtx := core.NewContextWithEmptyState(core.ContextConfig{
 			Filesystem:  fls,
 			Permissions: []core.Permission{core.HttpPermission{Kind_: permkind.Provide, Entity: host}},
 		}, nil)

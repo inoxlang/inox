@@ -31,7 +31,7 @@ func TestDatabaseIL(t *testing.T) {
 		resetLoadFreeEntityFnRegistry()
 		defer resetLoadFreeEntityFnRegistry()
 
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				DatabasePermission{
 					Kind_:  permkind.Read,
@@ -95,7 +95,7 @@ func TestDatabaseIL(t *testing.T) {
 		resetLoadFreeEntityFnRegistry()
 		defer resetLoadFreeEntityFnRegistry()
 
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				DatabasePermission{
 					Kind_:  permkind.Read,
@@ -164,7 +164,7 @@ func TestDatabaseIL(t *testing.T) {
 			return nil, nil
 		})
 
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				DatabasePermission{
 					Kind_:  permkind.Read,
@@ -201,7 +201,7 @@ func TestDatabaseIL(t *testing.T) {
 			return nil, nil
 		})
 
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				DatabasePermission{
 					Kind_:  permkind.Read,
@@ -234,7 +234,7 @@ func TestDatabaseIL(t *testing.T) {
 	})
 
 	t.Run("if the current schema is not equal to the expected schema an error should be returned", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				DatabasePermission{
 					Kind_:  permkind.Read,
@@ -270,7 +270,7 @@ func TestDatabaseIL(t *testing.T) {
 	})
 
 	t.Run("if the current schema is not equal to the expected schema in dev mode the expected schema should be used", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				DatabasePermission{
 					Kind_:  permkind.Read,
@@ -310,7 +310,7 @@ func TestDatabaseIL(t *testing.T) {
 	})
 
 	t.Run("if a schema update is expected top level entities should not be loaded", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				DatabasePermission{
 					Kind_:  permkind.Read,
@@ -346,7 +346,7 @@ func TestDatabaseIL(t *testing.T) {
 			return nil, nil
 		})
 
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				DatabasePermission{
 					Kind_:  permkind.Read,
@@ -383,7 +383,7 @@ func TestDatabaseIL(t *testing.T) {
 			return nil, nil
 		})
 
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				DatabasePermission{
 					Kind_:  permkind.Read,
@@ -423,7 +423,7 @@ func TestDatabaseIL(t *testing.T) {
 			return nil, nil
 		})
 
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				DatabasePermission{
 					Kind_:  permkind.Read,
@@ -453,7 +453,7 @@ func TestDatabaseIL(t *testing.T) {
 	})
 
 	t.Run("only the owner state should be able to update the schema", func(t *testing.T) {
-		ctx1 := NewContexWithEmptyState(ContextConfig{
+		ctx1 := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				DatabasePermission{
 					Kind_:  permkind.Read,
@@ -475,7 +475,7 @@ func TestDatabaseIL(t *testing.T) {
 			Name:                 "main",
 		}))
 
-		ctx2 := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx2 := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx2.CancelGracefully()
 
 		assert.PanicsWithValue(t, ErrDatabaseSchemaOnlyUpdatableByOwnerState, func() {
@@ -484,7 +484,7 @@ func TestDatabaseIL(t *testing.T) {
 	})
 
 	t.Run("updating the schema while it not expected should cause a panic", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				DatabasePermission{
 					Kind_:  permkind.Read,
@@ -511,7 +511,7 @@ func TestDatabaseIL(t *testing.T) {
 	})
 
 	t.Run("updating the schema twice should cause a panic", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				DatabasePermission{
 					Kind_:  permkind.Read,
@@ -544,7 +544,7 @@ func TestDatabaseIL(t *testing.T) {
 	})
 
 	t.Run("accessing the database while its schema is not yet updated should cause a panic", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				DatabasePermission{
 					Kind_:  permkind.Read,
@@ -582,7 +582,7 @@ func TestDatabaseIL(t *testing.T) {
 			return nil, nil
 		})
 
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				DatabasePermission{
 					Kind_:  permkind.Read,
@@ -646,7 +646,7 @@ func TestDatabaseIL(t *testing.T) {
 			return nil, nil
 		})
 
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				DatabasePermission{
 					Kind_:  permkind.Read,
@@ -706,7 +706,7 @@ func TestDatabaseIL(t *testing.T) {
 
 	t.Run("gracefully cancelling the context should close the database", func(t *testing.T) {
 		t.Run("owner state set during WrapDatabase call", func(t *testing.T) {
-			ctx := NewContexWithEmptyState(ContextConfig{
+			ctx := NewContextWithEmptyState(ContextConfig{
 				Permissions: []Permission{
 					DatabasePermission{
 						Kind_:  permkind.Read,
@@ -734,7 +734,7 @@ func TestDatabaseIL(t *testing.T) {
 		})
 
 		t.Run("owner state set during WrapDatabase call", func(t *testing.T) {
-			ctx := NewContexWithEmptyState(ContextConfig{
+			ctx := NewContextWithEmptyState(ContextConfig{
 				Permissions: []Permission{
 					DatabasePermission{
 						Kind_:  permkind.Read,
@@ -768,7 +768,7 @@ func TestDatabaseILGetOrLoad(t *testing.T) {
 	resetLoadFreeEntityFnRegistry()
 	defer resetLoadFreeEntityFnRegistry()
 
-	ctx := NewContexWithEmptyState(ContextConfig{
+	ctx := NewContextWithEmptyState(ContextConfig{
 		Permissions: []Permission{
 			DatabasePermission{
 				Kind_:  permkind.Read,

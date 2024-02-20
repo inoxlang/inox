@@ -210,10 +210,10 @@ outer_loop:
 	return nil, true
 }
 
-// NewContexWithEmptyState creates a context & an empty state,
+// NewContextWithEmptyState creates a context & an empty state,
 // out is used as the state's output (or io.Discard if nil),
 // OutputFieldsInitialized is set to true.
-func NewContexWithEmptyState(config ContextConfig, out io.Writer) *Context {
+func NewContextWithEmptyState(config ContextConfig, out io.Writer) *Context {
 	ctx := NewContext(config)
 	state := NewGlobalState(ctx)
 

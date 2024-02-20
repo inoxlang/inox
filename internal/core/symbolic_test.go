@@ -11,7 +11,7 @@ import (
 )
 
 func TestSymbolicEvalCheck(t *testing.T) {
-	noPermsCtx := NewContexWithEmptyState(ContextConfig{}, nil)
+	noPermsCtx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer noPermsCtx.CancelGracefully()
 
 	t.Run("predefined global variables do not cause an error", func(t *testing.T) {
@@ -156,7 +156,7 @@ func TestBidirectionalSymbolicConversion(t *testing.T) {
 
 	t.Run("object", func(t *testing.T) {
 		t.Run("empty", func(t *testing.T) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
 			obj := NewObject()
@@ -178,7 +178,7 @@ func TestBidirectionalSymbolicConversion(t *testing.T) {
 		})
 
 		t.Run("single property", func(t *testing.T) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
 			obj := NewObjectFromMapNoInit(ValMap{"a": Int(1)})
@@ -200,7 +200,7 @@ func TestBidirectionalSymbolicConversion(t *testing.T) {
 		})
 
 		t.Run("two properties", func(t *testing.T) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
 			obj := NewObjectFromMapNoInit(ValMap{"a": Int(1), "b": String("a")})
@@ -224,7 +224,7 @@ func TestBidirectionalSymbolicConversion(t *testing.T) {
 
 	t.Run("record", func(t *testing.T) {
 		t.Run("empty", func(t *testing.T) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
 			record := NewEmptyRecord()
@@ -246,7 +246,7 @@ func TestBidirectionalSymbolicConversion(t *testing.T) {
 		})
 
 		t.Run("single property", func(t *testing.T) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
 			record := NewRecordFromMap(ValMap{"a": Int(1)})
@@ -268,7 +268,7 @@ func TestBidirectionalSymbolicConversion(t *testing.T) {
 		})
 
 		t.Run("two properties", func(t *testing.T) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
 			record := NewRecordFromMap(ValMap{"a": Int(1), "b": String("a")})
@@ -292,7 +292,7 @@ func TestBidirectionalSymbolicConversion(t *testing.T) {
 
 	t.Run("tuple", func(t *testing.T) {
 		t.Run("empty", func(t *testing.T) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
 			tuple := NewTuple([]Serializable{})
@@ -315,7 +315,7 @@ func TestBidirectionalSymbolicConversion(t *testing.T) {
 	})
 
 	t.Run("ordered pair", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		pair := NewOrderedPair(Int(1), Int(2))
@@ -338,7 +338,7 @@ func TestBidirectionalSymbolicConversion(t *testing.T) {
 
 	t.Run("dictionary", func(t *testing.T) {
 		t.Run("empty", func(t *testing.T) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
 			dict := NewDictionary(map[string]Serializable{})
@@ -361,7 +361,7 @@ func TestBidirectionalSymbolicConversion(t *testing.T) {
 		})
 
 		t.Run("single entry", func(t *testing.T) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
 			stringJSONRepr := GetJSONRepresentation(String("name"), nil, nil)
@@ -388,7 +388,7 @@ func TestBidirectionalSymbolicConversion(t *testing.T) {
 		})
 
 		t.Run("two entries", func(t *testing.T) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
 			stringRepr := GetJSONRepresentation(String("name"), nil, nil)
@@ -424,7 +424,7 @@ func TestBidirectionalSymbolicConversion(t *testing.T) {
 	})
 
 	t.Run("object pattern", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		patt := NewInexactObjectPattern([]ObjectPatternEntry{

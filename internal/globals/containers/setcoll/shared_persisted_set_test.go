@@ -889,7 +889,7 @@ func TestInteractWithElementsOfLoadedSet(t *testing.T) {
 }
 
 func sharedSetTestSetup(t *testing.T) (*core.Context, core.DataStore) {
-	ctx := core.NewContexWithEmptyState(core.ContextConfig{
+	ctx := core.NewContextWithEmptyState(core.ContextConfig{
 		Permissions: []core.Permission{
 			core.DatabasePermission{
 				Kind_:  permkind.Read,
@@ -922,8 +922,8 @@ func sharedSetTestSetup2(t *testing.T) (*core.Context, *core.Context, core.DataS
 		},
 	}
 
-	ctx1 := core.NewContexWithEmptyState(config, nil)
-	ctx2 := core.NewContexWithEmptyState(config, nil)
+	ctx1 := core.NewContextWithEmptyState(config, nil)
+	ctx2 := core.NewContextWithEmptyState(config, nil)
 
 	kv := utils.Must(filekv.OpenSingleFileKV(filekv.KvStoreConfig{
 		Path: core.PathFrom(filepath.Join(t.TempDir(), "kv")),

@@ -34,7 +34,7 @@ func TestEvents(t *testing.T) {
 	})
 
 	t.Run("Meta filesystem", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		testEvents(t, func(t *testing.T) (fls afs.Filesystem, tempDir string) {
@@ -620,7 +620,7 @@ func testEvents(t *testing.T, setup func(t *testing.T) (fls afs.Filesystem, temp
 			}
 		}
 
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{
 			Permissions: []core.Permission{
 				core.FilesystemPermission{Kind_: permkind.Read, Entity: filepth},
 			},

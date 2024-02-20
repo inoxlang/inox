@@ -43,7 +43,7 @@ func TestSignatureHelpAt(t *testing.T) {
 		fls := fs_ns.NewMemFilesystem(1_000)
 		util.WriteFile(fls, "/main.ix", []byte(code), 0600)
 
-		parsingCtx := core.NewContexWithEmptyState(core.ContextConfig{
+		parsingCtx := core.NewContextWithEmptyState(core.ContextConfig{
 			Filesystem:  fls,
 			Permissions: []core.Permission{core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")}},
 		}, nil)

@@ -18,7 +18,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 	//tested, this will require analyzing the structure of the JSON.
 
 	t.Run("strings", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		v, err := ParseJSONRepresentation(ctx, `{"str__value":"a"}`, nil)
@@ -33,7 +33,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("booleans", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		//boolean
@@ -54,7 +54,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("integers", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		v, err := ParseJSONRepresentation(ctx, `{"int__value":1}`, nil)
@@ -102,7 +102,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("floats", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		v, err := ParseJSONRepresentation(ctx, `{"float__value":1}`, nil)
@@ -133,7 +133,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("line counts", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		v, err := ParseJSONRepresentation(ctx, `{"line-count__value":"1ln"}`, nil)
@@ -148,7 +148,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("byte counts", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		v, err := ParseJSONRepresentation(ctx, `{"byte-count__value":"1B"}`, nil)
@@ -163,7 +163,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("rune counts", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		v, err := ParseJSONRepresentation(ctx, `{"rune-count__value":"1rn"}`, nil)
@@ -178,7 +178,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("paths", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		t.Run("base cases", func(t *testing.T) {
@@ -231,7 +231,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("schemes", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		t.Run("base cases", func(t *testing.T) {
@@ -278,7 +278,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("hosts", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		t.Run("base cases", func(t *testing.T) {
@@ -350,7 +350,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("urls", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		t.Run("base cases", func(t *testing.T) {
@@ -422,7 +422,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("path patterns", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		v, err := ParseJSONRepresentation(ctx, `{"path-pattern__value":"/..."}`, nil)
@@ -437,7 +437,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("host patterns", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		v, err := ParseJSONRepresentation(ctx, `{"host-pattern__value":"https://*.com"}`, nil)
@@ -452,7 +452,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("url patterns", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		v, err := ParseJSONRepresentation(ctx, `{"url-pattern__value":"https://example.com/..."}`, nil)
@@ -467,7 +467,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("property names", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		v, err := ParseJSONRepresentation(ctx, `{"propname__value":"len"}`, nil)
@@ -488,7 +488,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("long value-paths", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		v, err := ParseJSONRepresentation(ctx, `{"long-value-path__value":[{"propname__value":"name"}, {"propname__value":"len"}]}`, nil)
@@ -509,7 +509,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("objects", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		//no pattern
@@ -624,7 +624,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("records", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		//no pattern
@@ -723,7 +723,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("lists", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		//no pattern
@@ -842,7 +842,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("tuples", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		//no pattern
@@ -944,7 +944,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("integer ranges", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		config := JSONSerializationConfig{ReprConfig: ALL_VISIBLE_REPR_CONFIG, Pattern: INT_RANGE_PATTERN}
@@ -977,7 +977,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("float ranges", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		config := JSONSerializationConfig{ReprConfig: ALL_VISIBLE_REPR_CONFIG, Pattern: FLOAT_RANGE_PATTERN}
@@ -1019,7 +1019,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("integer range patterns", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		config := JSONSerializationConfig{ReprConfig: ALL_VISIBLE_REPR_CONFIG, Pattern: INT_RANGE_PATTERN_PATTERN}
@@ -1071,7 +1071,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("float range patterns", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		config := JSONSerializationConfig{ReprConfig: ALL_VISIBLE_REPR_CONFIG, Pattern: FLOAT_RANGE_PATTERN_PATTERN}
@@ -1133,7 +1133,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("integer range string patterns", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		config := JSONSerializationConfig{ReprConfig: ALL_VISIBLE_REPR_CONFIG, Pattern: INT_RANGE_STRING_PATTERN_PATTERN}
@@ -1156,7 +1156,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("float range string patterns", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		config := JSONSerializationConfig{ReprConfig: ALL_VISIBLE_REPR_CONFIG, Pattern: FLOAT_RANGE_STRING_PATTERN_PATTERN}
@@ -1179,7 +1179,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("secret patterns", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		config := JSONSerializationConfig{ReprConfig: ALL_VISIBLE_REPR_CONFIG, Pattern: SECRET_PATTERN_PATTERN}
@@ -1212,7 +1212,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("regex patterns", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		config := JSONSerializationConfig{ReprConfig: ALL_VISIBLE_REPR_CONFIG, Pattern: REGEX_PATTERN_PATTERN}
@@ -1235,7 +1235,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("event patterns", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		config := JSONSerializationConfig{ReprConfig: ALL_VISIBLE_REPR_CONFIG, Pattern: EVENT_PATTERN_PATTERN}
@@ -1258,7 +1258,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("unions", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		t.Run("integers & strings", func(t *testing.T) {
@@ -1349,7 +1349,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("disjoint unions", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		t.Run("integers & strings", func(t *testing.T) {
@@ -1448,7 +1448,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("exact value patterns", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		v, err := ParseJSONRepresentation(ctx, `{"exact-value-pattern__value":{"float__value":0.1}}`, nil)
@@ -1463,7 +1463,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("exact string patterns", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		v, err := ParseJSONRepresentation(ctx, `{"exact-string-pattern__value":"x"}`, nil)
@@ -1478,7 +1478,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("frequencies", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		v, err := ParseJSONRepresentation(ctx, `{"frequency__value":0.1}`, nil)
@@ -1493,7 +1493,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("byte-rates", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		v, err := ParseJSONRepresentation(ctx, `{"byte-rate__value":1}`, nil)
@@ -1508,7 +1508,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("durations", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		v, err := ParseJSONRepresentation(ctx, `{"duration__value":0.1}`, nil)
@@ -1525,7 +1525,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 	t.Run("object patterns", func(t *testing.T) {
 		//TODO: add tests for patterns with complex constraints.
 
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		config := JSONSerializationConfig{ReprConfig: ALL_VISIBLE_REPR_CONFIG, Pattern: OBJECT_PATTERN_PATTERN}
@@ -1681,7 +1681,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("record patterns", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		config := JSONSerializationConfig{ReprConfig: ALL_VISIBLE_REPR_CONFIG, Pattern: RECORD_PATTERN_PATTERN}
@@ -1784,7 +1784,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("list patterns", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		config := JSONSerializationConfig{ReprConfig: ALL_VISIBLE_REPR_CONFIG, Pattern: LIST_PATTERN_PATTERN}
@@ -1888,7 +1888,7 @@ func TestParseJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("list patterns", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		config := JSONSerializationConfig{ReprConfig: ALL_VISIBLE_REPR_CONFIG, Pattern: TUPLE_PATTERN_PATTERN}

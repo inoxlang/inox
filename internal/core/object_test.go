@@ -15,7 +15,7 @@ func TestObject(t *testing.T) {
 	t.Run("SetProp", func(t *testing.T) {
 
 		{
-			ctx := NewContexWithEmptyState(ContextConfig{
+			ctx := NewContextWithEmptyState(ContextConfig{
 				Permissions: GetDefaultGlobalVarPermissions(),
 			}, nil)
 			defer ctx.CancelGracefully()
@@ -28,7 +28,7 @@ func TestObject(t *testing.T) {
 		}
 
 		{
-			ctx := NewContexWithEmptyState(ContextConfig{
+			ctx := NewContextWithEmptyState(ContextConfig{
 				Permissions: GetDefaultGlobalVarPermissions(),
 			}, nil)
 			defer ctx.CancelGracefully()
@@ -57,13 +57,13 @@ func TestObject(t *testing.T) {
 		}
 
 		t.Run("sould wait current transaction to be finished", func(t *testing.T) {
-			ctx1 := NewContexWithEmptyState(ContextConfig{
+			ctx1 := NewContextWithEmptyState(ContextConfig{
 				Permissions: GetDefaultGlobalVarPermissions(),
 			}, nil)
 			defer ctx1.CancelGracefully()
 
 			tx1 := StartNewTransaction(ctx1)
-			ctx2 := NewContexWithEmptyState(ContextConfig{
+			ctx2 := NewContextWithEmptyState(ContextConfig{
 				Permissions: GetDefaultGlobalVarPermissions(),
 			}, nil)
 			defer ctx2.CancelGracefully()
@@ -112,7 +112,7 @@ func TestObject(t *testing.T) {
 	t.Run("Prop", func(t *testing.T) {
 
 		t.Run("call after invalid PropNotStored call", func(t *testing.T) {
-			ctx1 := NewContexWithEmptyState(ContextConfig{
+			ctx1 := NewContextWithEmptyState(ContextConfig{
 				Permissions: GetDefaultGlobalVarPermissions(),
 			}, nil)
 			defer ctx1.CancelGracefully()
@@ -127,7 +127,7 @@ func TestObject(t *testing.T) {
 				return
 			}
 
-			ctx2 := NewContexWithEmptyState(ContextConfig{
+			ctx2 := NewContextWithEmptyState(ContextConfig{
 				Permissions: GetDefaultGlobalVarPermissions(),
 			}, nil)
 			defer ctx2.CancelGracefully()
@@ -137,7 +137,7 @@ func TestObject(t *testing.T) {
 		})
 
 		t.Run("call after adding a non-shared object to a list property obtained using PropNotStored", func(t *testing.T) {
-			ctx1 := NewContexWithEmptyState(ContextConfig{
+			ctx1 := NewContextWithEmptyState(ContextConfig{
 				Permissions: GetDefaultGlobalVarPermissions(),
 			}, nil)
 			defer ctx1.CancelGracefully()
@@ -154,7 +154,7 @@ func TestObject(t *testing.T) {
 
 			list.append(ctx1, nonSharedObject)
 
-			ctx2 := NewContexWithEmptyState(ContextConfig{
+			ctx2 := NewContextWithEmptyState(ContextConfig{
 				Permissions: GetDefaultGlobalVarPermissions(),
 			}, nil)
 			defer ctx2.CancelGracefully()

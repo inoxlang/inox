@@ -7,7 +7,7 @@ import (
 )
 
 func TestGetAtMost(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{DoNotSpawnDoneGoroutine: true}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{DoNotSpawnDoneGoroutine: true}, nil)
 	defer ctx.CancelGracefully()
 
 	//empty list

@@ -29,7 +29,7 @@ var jsonSchemaData embed.FS
 
 func TestConvertJsonSchemaToPattern(t *testing.T) {
 
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	runTestSuites := func(t *testing.T, suites []jsonDrafTestSuite, notSupportedTests [][2]string) {

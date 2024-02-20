@@ -26,7 +26,7 @@ func TestNewContext(t *testing.T) {
 	defer time.Sleep(100 * time.Millisecond)
 
 	t.Run(".ParentContext & .ParentStdLibContext should not be both set", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		func() {
@@ -68,7 +68,7 @@ func TestNewContext(t *testing.T) {
 	})
 
 	t.Run("if both .InitialWorkingDirectory and .Filesystem are set InitialWorkingDirectory() should return the provided directory ", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		func() {
@@ -110,7 +110,7 @@ func TestNewContext(t *testing.T) {
 	t.Run("child context should inherit all limits of its parent", func(t *testing.T) {
 
 		ctxCreationStart := time.Now()
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Limits: []Limit{
 				{
 					Name:  "my-total-limit",
@@ -174,7 +174,7 @@ func TestNewContext(t *testing.T) {
 
 	t.Run("limits of child context should not be less restrictive than its parent's limits", func(t *testing.T) {
 
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Limits: []Limit{
 				{
 					Name:  "my-total-limit",
@@ -211,7 +211,7 @@ func TestNewContext(t *testing.T) {
 	t.Run("child context should inherit all host definitions of its parent", func(t *testing.T) {
 
 		ctxCreationStart := time.Now()
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			HostDefinitions: map[Host]Value{
 				"ldb://db1": Path("/tmp/db1/"),
 			},
@@ -253,7 +253,7 @@ func TestNewContext(t *testing.T) {
 
 	t.Run("a panic is expected if the child context overrides one if its parent's hosts", func(t *testing.T) {
 
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			HostDefinitions: map[Host]Value{
 				"ldb://db1": Path("/tmp/db1/"),
 			},
@@ -287,7 +287,7 @@ func TestBoundChild(t *testing.T) {
 
 	t.Run("child context should inherit all limits of its parent", func(t *testing.T) {
 
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Limits: []Limit{
 				{
 					Name:  "my-total-limit",
@@ -324,7 +324,7 @@ func TestBoundChild(t *testing.T) {
 
 	t.Run("child context should inherit all host definitions of its parent", func(t *testing.T) {
 
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			HostDefinitions: map[Host]Value{
 				"ldb://db1": Path("/tmp/db1/"),
 			},
@@ -345,7 +345,7 @@ func TestBoundChild(t *testing.T) {
 func TestContextBuckets(t *testing.T) {
 	t.Run("buckets for limit of kind 'total' do not fill over time", func(t *testing.T) {
 		const LIMIT_NAME = "foo"
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Limits: []Limit{{Name: LIMIT_NAME, Kind: TotalLimit, Value: 1}},
 		}, nil)
 		defer ctx.CancelGracefully()
@@ -406,7 +406,7 @@ func TestContextForbiddenPermissions(t *testing.T) {
 	readGoFiles := FilesystemPermission{permkind.Read, PathPattern("./*.go")}
 	readFile := FilesystemPermission{permkind.Read, Path("./file.go")}
 
-	ctx := NewContexWithEmptyState(ContextConfig{
+	ctx := NewContextWithEmptyState(ContextConfig{
 		Permissions:          []Permission{readGoFiles},
 		ForbiddenPermissions: []Permission{readFile},
 	}, nil)
@@ -420,7 +420,7 @@ func TestContextDropPermissions(t *testing.T) {
 	readGoFiles := FilesystemPermission{permkind.Read, PathPattern("./*.go")}
 	readFile := FilesystemPermission{permkind.Read, Path("./file.go")}
 
-	ctx := NewContexWithEmptyState(ContextConfig{
+	ctx := NewContextWithEmptyState(ContextConfig{
 		Permissions:          []Permission{readGoFiles},
 		ForbiddenPermissions: []Permission{readFile},
 	}, nil)
@@ -439,7 +439,7 @@ func TestContextLimiters(t *testing.T) {
 	}
 
 	t.Run("byte rate", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Limits: []Limit{
 				{Name: "fs/read", Kind: ByteRateLimit, Value: 1_000},
 			},
@@ -462,7 +462,7 @@ func TestContextLimiters(t *testing.T) {
 	})
 
 	t.Run("waiting for bucket to refill should not lock the context", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Limits: []Limit{
 				{Name: "fs/read", Kind: ByteRateLimit, Value: 1_000},
 			},
@@ -506,7 +506,7 @@ func TestContextLimiters(t *testing.T) {
 	})
 
 	t.Run("frequency", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Limits: []Limit{
 				{Name: "fs/read-file", Kind: FrequencyLimit, Value: FREQ_LIMIT_SCALE},
 			},
@@ -525,7 +525,7 @@ func TestContextLimiters(t *testing.T) {
 	})
 
 	t.Run("total", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Limits: []Limit{
 				{Name: "fs/total-read-files", Kind: TotalLimit, Value: 1},
 			},
@@ -591,7 +591,7 @@ func TestContextLimiters(t *testing.T) {
 	})
 
 	t.Run("child should share limiters of common limits with parent", func(t *testing.T) {
-		parentCtx := NewContexWithEmptyState(ContextConfig{
+		parentCtx := NewContextWithEmptyState(ContextConfig{
 			Limits: []Limit{
 				{Name: "fs/read", Kind: ByteRateLimit, Value: 1_000},
 			},
@@ -648,7 +648,7 @@ func TestGracefulContextTearDown(t *testing.T) {
 	}
 
 	t.Run("callback functions should all be called", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		firstCall := false
 		secondCall := false
 		var statusInDoneCallback atomic.Int32
@@ -691,7 +691,7 @@ func TestGracefulContextTearDown(t *testing.T) {
 	})
 
 	t.Run("callback functions should all be called even if one function returns an error", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		firstCall := false
 		secondCall := false
 		var statusInDoneCallback atomic.Int32
@@ -733,7 +733,7 @@ func TestGracefulContextTearDown(t *testing.T) {
 	})
 
 	t.Run("callback functions should all be called even if one function panics", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		firstCall := false
 		secondCall := false
 		var statusInDoneCallback atomic.Int32
@@ -838,7 +838,7 @@ func TestGracefulContextTearDown(t *testing.T) {
 	})
 
 	t.Run("two subsequent CancelGracefully calls should not cause an immediate true cancellation and callback funcs should be called once", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		firstCallback := 0
 		secondCallback := 0
 		var statusInDoneCallback atomic.Int32
@@ -896,7 +896,7 @@ func TestContextDone(t *testing.T) {
 		}
 
 		t.Run("callback functions should all be called", func(t *testing.T) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			firstCall := false
 			secondCall := false
 
@@ -922,7 +922,7 @@ func TestContextDone(t *testing.T) {
 		})
 
 		t.Run("callback functions should all be called even if one function returns an error", func(t *testing.T) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			firstCall := false
 			secondCall := false
 
@@ -946,7 +946,7 @@ func TestContextDone(t *testing.T) {
 		})
 
 		t.Run("callback functions should all be called even if one function panics", func(t *testing.T) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			firstCall := false
 			secondCall := false
 
@@ -1018,7 +1018,7 @@ func TestContextDone(t *testing.T) {
 }
 
 func TestContextPutResolveUserData(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	t.Run("base case", func(t *testing.T) {

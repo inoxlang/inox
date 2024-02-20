@@ -5681,7 +5681,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return nil, err
 			}
 
-			ctx := NewContexWithEmptyState(ContextConfig{
+			ctx := NewContextWithEmptyState(ContextConfig{
 				Permissions: []Permission{
 					CreateFsReadPerm(PathPattern("/...")),
 					CreateHttpReadPerm(ANY_HTTPS_HOST_PATTERN),
@@ -5919,7 +5919,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			parsingCtx := NewContexWithEmptyState(ContextConfig{
+			parsingCtx := NewContextWithEmptyState(ContextConfig{
 				Permissions: []Permission{
 					CreateFsReadPerm(PathPattern("/...")),
 					CreateHttpReadPerm(ANY_HTTPS_HOST_PATTERN),
@@ -5997,7 +5997,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			parsingCtx := NewContexWithEmptyState(ContextConfig{
+			parsingCtx := NewContextWithEmptyState(ContextConfig{
 				Permissions: []Permission{
 					CreateFsReadPerm(PathPattern("/...")),
 					CreateHttpReadPerm(ANY_HTTPS_HOST_PATTERN),
@@ -8651,7 +8651,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			}
 
-			ctx := NewContexWithEmptyState(ContextConfig{
+			ctx := NewContextWithEmptyState(ContextConfig{
 				Permissions: []Permission{
 					CreateFsReadPerm(PathPattern("/...")),
 				},

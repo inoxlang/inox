@@ -11,7 +11,7 @@ import (
 func TestMapIteration(t *testing.T) {
 
 	t.Run("empty", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		set := NewMapWithConfig(ctx, nil, MapConfig{})
@@ -25,7 +25,7 @@ func TestMapIteration(t *testing.T) {
 	})
 
 	t.Run("single entry", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		set := NewMapWithConfig(ctx, core.NewWrappedValueList(INT_1, STRING_A), MapConfig{})
@@ -44,7 +44,7 @@ func TestMapIteration(t *testing.T) {
 	})
 
 	t.Run("two entries", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		set := NewMapWithConfig(ctx, core.NewWrappedValueList(INT_1, STRING_A, INT_2, STRING_B), MapConfig{})

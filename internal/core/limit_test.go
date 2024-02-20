@@ -28,7 +28,7 @@ func TestExecutionTimeLimitIntegration(t *testing.T) {
 		start := time.Now()
 		eval := makeTreeWalkEvalFunc(t)
 
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				LThreadPermission{
 					Kind_: permkind.Create,
@@ -83,7 +83,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 		start := time.Now()
 		eval := makeTreeWalkEvalFunc(t)
 
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Limits: []Limit{cpuLimit, permissiveLthreadLimit},
 		}, nil)
 		defer ctx.CancelGracefully()
@@ -112,7 +112,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 			return
 		}
 
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Limits: []Limit{cpuLimit, permissiveLthreadLimit},
 		}, nil)
 		defer ctx.CancelGracefully()
@@ -125,7 +125,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 		locked := make(chan struct{})
 
 		go func() {
-			otherCtx := NewContexWithEmptyState(ContextConfig{}, nil)
+			otherCtx := NewContextWithEmptyState(ContextConfig{}, nil)
 			defer func() {
 				time.Sleep(time.Second)
 				ctx.CancelGracefully()
@@ -165,7 +165,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 			return
 		}
 
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Limits: []Limit{cpuLimit, permissiveLthreadLimit},
 		}, nil)
 		defer ctx.CancelGracefully()
@@ -214,9 +214,9 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 			SpawnerState: state,
 			Globals:      GlobalVariablesFromMap(map[string]Value{}, nil),
 			Module: &Module{
-				MainChunk:  chunk,
+				MainChunk:    chunk,
 				TopLevelNode: chunk.Node,
-				ModuleKind: UserLThreadModule,
+				ModuleKind:   UserLThreadModule,
 			},
 			//prevent the lthread to continue after yielding
 			PauseAfterYield: true,
@@ -262,7 +262,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 			return
 		}
 
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Limits: []Limit{cpuLimit, myLimit},
 		}, nil)
 		defer ctx.CancelGracefully()
@@ -306,7 +306,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 		start := time.Now()
 		eval := makeTreeWalkEvalFunc(t)
 
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				LThreadPermission{
 					Kind_: permkind.Create,
@@ -366,7 +366,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 		start := time.Now()
 		eval := makeTreeWalkEvalFunc(t)
 
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				LThreadPermission{
 					Kind_: permkind.Create,
@@ -405,7 +405,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 		start := time.Now()
 		eval := makeTreeWalkEvalFunc(t)
 
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				LThreadPermission{
 					Kind_: permkind.Create,
@@ -448,7 +448,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 		start := time.Now()
 		eval := makeTreeWalkEvalFunc(t)
 
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				LThreadPermission{
 					Kind_: permkind.Create,
@@ -485,7 +485,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 		start := time.Now()
 		eval := makeTreeWalkEvalFunc(t)
 
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				LThreadPermission{
 					Kind_: permkind.Create,
@@ -532,7 +532,7 @@ func TestThreadSimultaneousInstancesLimitIntegration(t *testing.T) {
 		start := time.Now()
 		eval := makeTreeWalkEvalFunc(t)
 
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: append(GetDefaultGlobalVarPermissions(), LThreadPermission{
 				Kind_: permkind.Create,
 			}),
@@ -592,7 +592,7 @@ func TestThreadSimultaneousInstancesLimitIntegration(t *testing.T) {
 		start := time.Now()
 		eval := makeTreeWalkEvalFunc(t)
 
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: append(GetDefaultGlobalVarPermissions(), LThreadPermission{
 				Kind_: permkind.Create,
 			}),
@@ -669,7 +669,7 @@ func TestThreadSimultaneousInstancesLimitIntegration(t *testing.T) {
 			return
 		}
 
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: append(
 				GetDefaultGlobalVarPermissions(),
 				LThreadPermission{

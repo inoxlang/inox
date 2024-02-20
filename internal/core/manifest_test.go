@@ -10,7 +10,7 @@ import (
 func TestModuleParameters(t *testing.T) {
 	testconfig.AllowParallelization(t)
 
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	t.Run("one non positional parameter with no default value", func(t *testing.T) {

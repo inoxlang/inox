@@ -22,7 +22,7 @@ func TestExtremeCases(t *testing.T) {
 	t.Run("Memory filesystem", func(t *testing.T) {
 
 		testExtremeCases(t, func() (ClosableFilesystem, *core.Context) {
-			ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+			ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 			fls := NewMemFilesystem(10_000_000)
 
@@ -33,7 +33,7 @@ func TestExtremeCases(t *testing.T) {
 	t.Run("Meta filesystem", func(t *testing.T) {
 
 		testExtremeCases(t, func() (ClosableFilesystem, *core.Context) {
-			ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+			ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 
 			underlying := NewMemFilesystem(10_000_000)
 

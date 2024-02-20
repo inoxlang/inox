@@ -25,7 +25,7 @@ func TestNewCSP(t *testing.T) {
 	testconfig.AllowParallelization(t)
 
 	t.Run("string value", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		csp, err := NewCSP(ctx, core.NewObjectFromMap(core.ValMap{
 			"default-src": core.String("https://example.com"),
 		}, ctx))
@@ -39,7 +39,7 @@ func TestNewCSP(t *testing.T) {
 	})
 
 	t.Run("list value", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		csp, err := NewCSP(ctx, core.NewObjectFromMap(core.ValMap{
 			"default-src": core.NewWrappedValueList(core.String("https://example.com")),
 		}, ctx))

@@ -25,7 +25,7 @@ func TestGolangHttpServer(t *testing.T) {
 		testconfig.AllowParallelization(t)
 
 		fls := fs_ns.NewMemFilesystem(1_000_000)
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{
 			Filesystem: fls,
 		}, nil)
 		defer ctx.CancelGracefully()
@@ -100,7 +100,7 @@ func TestGolangHttpServer(t *testing.T) {
 		testconfig.AllowParallelization(t)
 
 		fls := fs_ns.NewMemFilesystem(1_000_000)
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{
 			Filesystem: fls,
 		}, nil)
 		defer ctx.CancelGracefully()

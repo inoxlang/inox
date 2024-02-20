@@ -367,7 +367,7 @@ func TestDatabasePermission(t *testing.T) {
 	})
 
 	createObjectWithURL := func(perms []Permission) (*Context, *Object) {
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: perms,
 			Filesystem:  newMemFilesystem(),
 		}, nil)
@@ -432,7 +432,7 @@ func TestDatabasePermission(t *testing.T) {
 	})
 
 	t.Run("missing permission to get top-level entity of database", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		db := &dummyDatabase{
 			resource: Host("ldb://main"),
 			topLevelEntities: map[string]Serializable{"a": &loadableTestValue{
@@ -463,7 +463,7 @@ func TestDatabasePermission(t *testing.T) {
 	})
 
 	t.Run("granted permission to get top-level entity of database", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				DatabasePermission{
 					Kind_:  permkind.Read,

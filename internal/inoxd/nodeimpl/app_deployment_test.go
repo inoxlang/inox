@@ -30,7 +30,7 @@ func TestApplicationDeployment(t *testing.T) {
 		fls := proj.(*project.Project).LiveFilesystem()
 		utils.PanicIfErr(util.WriteFile(fls, "/main.ix", []byte(mainix), 0600))
 
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{
 			Permissions: []core.Permission{
 				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.ROOT_PREFIX_PATH_PATTERN},
 			},
@@ -67,7 +67,7 @@ func TestApplicationDeployment(t *testing.T) {
 
 	t.Run("initial status: undeployed application", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		agent, err := NewAgent(AgentParameters{
@@ -119,7 +119,7 @@ func TestApplicationDeployment(t *testing.T) {
 
 	t.Run("expected preparation error + initial status: undeployed application", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		agent, err := NewAgent(AgentParameters{
@@ -172,7 +172,7 @@ func TestApplicationDeployment(t *testing.T) {
 
 	t.Run("initial status: deployed application", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		agent, err := NewAgent(AgentParameters{

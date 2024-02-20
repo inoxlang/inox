@@ -752,7 +752,7 @@ func TestRuneRangeStringPattern(t *testing.T) {
 }
 
 func TestIntRangeStringPattern(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	max := int64(math.MaxInt64)
@@ -1035,7 +1035,7 @@ func TestIntRangeStringPattern(t *testing.T) {
 }
 
 func TestFloatRangeStringPattern(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	max := float64(math.MaxFloat64)

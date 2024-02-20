@@ -21,7 +21,7 @@ func TestCreation(t *testing.T) {
 	hoster := Github
 
 	fls := fs_ns.NewMemFilesystem(1_000_000)
-	ctx := core.NewContexWithEmptyState(core.ContextConfig{
+	ctx := core.NewContextWithEmptyState(core.ContextConfig{
 		Permissions: []core.Permission{
 			core.HttpPermission{Kind_: permkind.Read, AnyEntity: true},
 			core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},

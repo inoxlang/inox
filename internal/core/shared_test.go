@@ -19,7 +19,7 @@ func TestSharable(t *testing.T) {
 	}
 
 	t.Run("object", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 		state := ctx.GetClosestState()
 

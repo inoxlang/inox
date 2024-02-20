@@ -10,7 +10,7 @@ import (
 
 func TestAddModuleTreeToResourceGraph(t *testing.T) {
 	t.Run("empty module", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		mod := utils.Must(ParseInMemoryModule("manifest {}", InMemoryModuleParsingConfig{
@@ -40,7 +40,7 @@ func TestAddModuleTreeToResourceGraph(t *testing.T) {
 		utils.PanicIfErr(util.WriteFile(fls, "/main.ix", []byte("manifest {}; import ./chunk.ix"), 0600))
 		utils.PanicIfErr(util.WriteFile(fls, "/chunk.ix", []byte("includable-chunk"), 0600))
 
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Filesystem:  fls,
 			Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
 		}, nil)
@@ -92,7 +92,7 @@ func TestAddModuleTreeToResourceGraph(t *testing.T) {
 		utils.PanicIfErr(util.WriteFile(fls, "/chunk1.ix", []byte("includable-chunk"), 0600))
 		utils.PanicIfErr(util.WriteFile(fls, "/chunk2.ix", []byte("includable-chunk"), 0600))
 
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Filesystem:  fls,
 			Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
 		}, nil)
@@ -160,7 +160,7 @@ func TestAddModuleTreeToResourceGraph(t *testing.T) {
 		utils.PanicIfErr(util.WriteFile(fls, "/chunk1.ix", []byte("includable-chunk\n import ./chunk2.ix"), 0600))
 		utils.PanicIfErr(util.WriteFile(fls, "/chunk2.ix", []byte("includable-chunk"), 0600))
 
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Filesystem:  fls,
 			Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
 		}, nil)
@@ -227,7 +227,7 @@ func TestAddModuleTreeToResourceGraph(t *testing.T) {
 		utils.PanicIfErr(util.WriteFile(fls, "/main.ix", []byte("manifest {}; import lib /lib.ix {}"), 0600))
 		utils.PanicIfErr(util.WriteFile(fls, "/lib.ix", []byte("manifest {}"), 0600))
 
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Filesystem:  fls,
 			Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
 		}, nil)

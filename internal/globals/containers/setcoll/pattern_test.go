@@ -75,7 +75,7 @@ func TestSetPattern(t *testing.T) {
 	t.Run(".GetMigrationOperations", func(t *testing.T) {
 
 		t.Run("uniqueness change", func(t *testing.T) {
-			ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+			ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 			patt1, err1 := SET_PATTERN.Call([]core.Serializable{core.INT_PATTERN, common.REPR_UNIQUENESS_IDENT})
 			patt2, err2 := SET_PATTERN.Call([]core.Serializable{core.INT_PATTERN, common.URL_UNIQUENESS_IDENT})
 
@@ -103,7 +103,7 @@ func TestSetPattern(t *testing.T) {
 		})
 
 		t.Run("element pattern replaced with different type", func(t *testing.T) {
-			ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+			ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 			patt1, err1 := SET_PATTERN.Call([]core.Serializable{core.INT_PATTERN, common.REPR_UNIQUENESS_IDENT})
 			patt2, err2 := SET_PATTERN.Call([]core.Serializable{core.STR_PATTERN, common.REPR_UNIQUENESS_IDENT})
 
@@ -131,7 +131,7 @@ func TestSetPattern(t *testing.T) {
 		})
 
 		t.Run("element pattern replaced with super type", func(t *testing.T) {
-			ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+			ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 			patt1, err1 := SET_PATTERN.Call([]core.Serializable{core.INT_PATTERN, common.REPR_UNIQUENESS_IDENT})
 			patt2, err2 := SET_PATTERN.Call([]core.Serializable{core.SERIALIZABLE_PATTERN, common.REPR_UNIQUENESS_IDENT})
 
@@ -153,7 +153,7 @@ func TestSetPattern(t *testing.T) {
 		})
 
 		t.Run("element pattern replaced with sub type", func(t *testing.T) {
-			ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+			ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 			patt1, err1 := SET_PATTERN.Call([]core.Serializable{core.SERIALIZABLE_PATTERN, common.REPR_UNIQUENESS_IDENT})
 			patt2, err2 := SET_PATTERN.Call([]core.Serializable{core.INT_PATTERN, common.REPR_UNIQUENESS_IDENT})
 
@@ -184,7 +184,7 @@ func TestSetPattern(t *testing.T) {
 }
 
 func TestSymbolicSetPattern(t *testing.T) {
-	ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+	ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 	symbolicCtx := symbolic.NewSymbolicContext(ctx, nil, nil)
 
 	t.Run("valid", func(t *testing.T) {

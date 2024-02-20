@@ -9,7 +9,7 @@ import (
 func TestList(t *testing.T) {
 
 	t.Run("append", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		list := NewWrappedValueList()
@@ -20,7 +20,7 @@ func TestList(t *testing.T) {
 	})
 
 	t.Run("pop", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		list := NewWrappedValueList(Int(1), Int(2))

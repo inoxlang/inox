@@ -12,7 +12,7 @@ import (
 func TestSecrets(t *testing.T) {
 
 	t.Run("printing a secret should not leak its value", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		const secretValue = "mysecret"
@@ -48,7 +48,7 @@ func TestSecrets(t *testing.T) {
 	})
 
 	t.Run("serializing a secret to JSON should return an error", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		const secretValue = "mysecret"
@@ -96,7 +96,7 @@ func TestSecrets(t *testing.T) {
 	})
 
 	t.Run("serializing to JSON an object only containing a secret should not leak its value", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		const secretValue = "mysecret"
@@ -189,7 +189,7 @@ func TestSecrets(t *testing.T) {
 	})
 
 	t.Run("serializing to JSON an object containing a secret & a visible property should not leak its value", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		const secretValue = "mysecret"
@@ -283,7 +283,7 @@ func TestSecrets(t *testing.T) {
 	})
 
 	t.Run("serializing to JSON a record only containing a secret should not leak its value", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		const secretValue = "mysecret"
@@ -376,7 +376,7 @@ func TestSecrets(t *testing.T) {
 	})
 
 	t.Run("serializing to JSON a list containing a secret should return an error", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		const secretValue = "mysecret"
@@ -467,7 +467,7 @@ func TestSecrets(t *testing.T) {
 	})
 
 	t.Run("serializing to JSON a tuple containing a secret should return an error", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		const secretValue = "mysecret"

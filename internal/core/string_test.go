@@ -47,7 +47,7 @@ func TestRuneSlice(t *testing.T) {
 }
 
 func TestStringConcatenation(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	t.Run("At", func(t *testing.T) {
@@ -179,7 +179,7 @@ func BenchmarkConcatenateStringLikes(b *testing.B) {
 }
 
 func TestIsSubstrof(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	AB_CD_CONCATENATION := NewStringConcatenation(String("ab"), String("cd"))

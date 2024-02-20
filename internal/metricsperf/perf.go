@@ -49,7 +49,7 @@ func StartPeriodicPerfProfilesCollection(ctx *core.Context, conf PerfDataCollect
 	lastMutexProfileSaveAck := make(chan struct{}, 1)
 	lastGoroutineStackProfileSaveAck := make(chan struct{}, 1)
 
-	childCtx := core.NewContexWithEmptyState(core.ContextConfig{
+	childCtx := core.NewContextWithEmptyState(core.ContextConfig{
 		ParentContext: ctx,
 		Limits: []core.Limit{
 			{Name: s3_ns.OBJECT_STORAGE_REQUEST_RATE_LIMIT_NAME, Kind: core.FrequencyLimit, Value: 50 * core.FREQ_LIMIT_SCALE},

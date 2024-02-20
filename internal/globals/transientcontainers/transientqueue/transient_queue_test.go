@@ -8,7 +8,7 @@ import (
 )
 
 func TestTransientQueue(t *testing.T) {
-	ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+	ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	q := NewQueue(ctx, core.NewWrappedValueList())

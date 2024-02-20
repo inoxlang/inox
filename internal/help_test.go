@@ -26,7 +26,7 @@ func TestCheckHelpDataOnBuiltins(t *testing.T) {
 			testconfig.AllowParallelization(t)
 
 			fls := fs_ns.NewMemFilesystem(1_000)
-			ctx := core.NewContexWithEmptyState(core.ContextConfig{
+			ctx := core.NewContextWithEmptyState(core.ContextConfig{
 				Permissions: []core.Permission{core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")}},
 				Filesystem:  fls,
 			}, nil)

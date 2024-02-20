@@ -23,7 +23,7 @@ func TestParseModuleFromSource(t *testing.T) {
 
 	t.Run("no imports", func(t *testing.T) {
 		fls := newMemFilesystem()
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
 			Filesystem:  fls,
 		}, nil)
@@ -48,7 +48,7 @@ func TestParseModuleFromSource(t *testing.T) {
 
 	t.Run("application kind", func(t *testing.T) {
 		fls := newMemFilesystem()
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
 			Filesystem:  fls,
 		}, nil)
@@ -75,7 +75,7 @@ func TestParseModuleFromSource(t *testing.T) {
 
 	t.Run("spec.ix file", func(t *testing.T) {
 		fls := newMemFilesystem()
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
 			Filesystem:  fls,
 		}, nil)
@@ -104,7 +104,7 @@ func TestParseModuleFromSource(t *testing.T) {
 		t.Run("absolute path", func(t *testing.T) {
 			fls := newMemFilesystem()
 			util.WriteFile(fls, "/lib.ix", []byte("manifest {}"), 0600)
-			ctx := NewContexWithEmptyState(ContextConfig{
+			ctx := NewContextWithEmptyState(ContextConfig{
 				Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
 				Filesystem:  fls,
 			}, nil)
@@ -139,7 +139,7 @@ func TestParseModuleFromSource(t *testing.T) {
 		t.Run("relative path", func(t *testing.T) {
 			fls := newMemFilesystem()
 			util.WriteFile(fls, "/lib.ix", []byte("manifest {}"), 0600)
-			ctx := NewContexWithEmptyState(ContextConfig{
+			ctx := NewContextWithEmptyState(ContextConfig{
 				Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
 				Filesystem:  fls,
 			}, nil)
@@ -176,7 +176,7 @@ func TestParseModuleFromSource(t *testing.T) {
 
 			fls := newMemFilesystem()
 			util.WriteFile(fls, "/mod.ix", []byte(modContent), 0600)
-			ctx := NewContexWithEmptyState(ContextConfig{
+			ctx := NewContextWithEmptyState(ContextConfig{
 				Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
 				Filesystem:  fls,
 			}, nil)
@@ -202,7 +202,7 @@ func TestParseModuleFromSource(t *testing.T) {
 
 			fls := newMemFilesystem()
 			util.WriteFile(fls, "/mod.ix", []byte(modContent), 0600)
-			ctx := NewContexWithEmptyState(ContextConfig{
+			ctx := NewContextWithEmptyState(ContextConfig{
 				Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
 				Filesystem:  fls,
 			}, nil)
@@ -230,7 +230,7 @@ func TestParseModuleFromSource(t *testing.T) {
 			fls := newMemFilesystem()
 			util.WriteFile(fls, "/mod.ix", []byte(modContent), 0600)
 			util.WriteFile(fls, "/child.ix", []byte(childContent), 0600)
-			ctx := NewContexWithEmptyState(ContextConfig{
+			ctx := NewContextWithEmptyState(ContextConfig{
 				Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
 				Filesystem:  fls,
 			}, nil)
@@ -258,7 +258,7 @@ func TestParseModuleFromSource(t *testing.T) {
 			fls := newMemFilesystem()
 			util.WriteFile(fls, "/mod.ix", []byte(modContent), 0600)
 			util.WriteFile(fls, "/child.ix", []byte(childContent), 0600)
-			ctx := NewContexWithEmptyState(ContextConfig{
+			ctx := NewContextWithEmptyState(ContextConfig{
 				Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
 				Filesystem:  fls,
 			}, nil)
@@ -299,7 +299,7 @@ func TestParseModuleFromSource(t *testing.T) {
 			util.WriteFile(fls, "/depth5.ix", []byte(depth5), 0600)
 			util.WriteFile(fls, "/depth6.ix", []byte(depth6), 0600)
 
-			ctx := NewContexWithEmptyState(ContextConfig{
+			ctx := NewContextWithEmptyState(ContextConfig{
 				Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
 				Filesystem:  fls,
 			}, nil)
@@ -323,7 +323,7 @@ func TestParseModuleFromSource(t *testing.T) {
 
 	t.Run("parameters", func(t *testing.T) {
 		fls := newMemFilesystem()
-		ctx := NewContexWithEmptyState(ContextConfig{
+		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
 			Filesystem:  fls,
 		}, nil)
@@ -370,7 +370,7 @@ func TestParseLocalModule(t *testing.T) {
 	t.Run("base case", func(t *testing.T) {
 		modpath := writeModuleAndIncludedFiles(t, moduleName, `manifest {}`, nil)
 
-		parsingCtx := NewContexWithEmptyState(ContextConfig{
+		parsingCtx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{CreateFsReadPerm(Path(modpath))},
 			Filesystem:  newOsFilesystem(),
 		}, nil)
@@ -390,7 +390,7 @@ func TestParseLocalModule(t *testing.T) {
 		util.WriteFile(fls, modpath, []byte(`manifest {}`), 0o400)
 		relpath := "./main.ix"
 
-		parsingCtx := NewContexWithEmptyState(ContextConfig{
+		parsingCtx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{CreateFsReadPerm(Path(modpath))},
 			Filesystem:  fls,
 		}, nil)
@@ -417,7 +417,7 @@ func TestParseLocalModule(t *testing.T) {
 	t.Run("missing manifest", func(t *testing.T) {
 		modpath := writeModuleAndIncludedFiles(t, moduleName, ``, nil)
 
-		parsingCtx := NewContexWithEmptyState(ContextConfig{
+		parsingCtx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{CreateFsReadPerm(Path(modpath))},
 			Filesystem:  newOsFilesystem(),
 		}, nil)
@@ -434,7 +434,7 @@ func TestParseLocalModule(t *testing.T) {
 
 	t.Run("the file should read in the context's filesystem", func(t *testing.T) {
 		modPath := "/" + moduleName
-		ctx1 := NewContexWithEmptyState(ContextConfig{
+		ctx1 := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{CreateFsReadPerm(Path(modPath))},
 			Filesystem:  newMemFilesystem(),
 		}, nil)
@@ -453,7 +453,7 @@ func TestParseLocalModule(t *testing.T) {
 
 		//this time we create an empty file in the memory filesystem.
 
-		ctx2 := NewContexWithEmptyState(ContextConfig{
+		ctx2 := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{CreateFsReadPerm(Path(modPath))},
 			Filesystem:  newMemFilesystem(),
 		}, nil)
@@ -476,7 +476,7 @@ func TestParseLocalModule(t *testing.T) {
 	t.Run("no dependencies + parsing error", func(t *testing.T) {
 		modpath := writeModuleAndIncludedFiles(t, moduleName, "manifest {}\n(", nil)
 
-		parsingCtx := NewContexWithEmptyState(ContextConfig{
+		parsingCtx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{CreateFsReadPerm(Path(modpath))},
 			Filesystem:  newOsFilesystem(),
 		}, nil)
@@ -509,7 +509,7 @@ func TestParseLocalModule(t *testing.T) {
 
 		importedModPath := filepath.Join(filepath.Dir(modpath), "/dep.ix")
 
-		parsingCtx := NewContexWithEmptyState(ContextConfig{
+		parsingCtx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				CreateFsReadPerm(Path(modpath)),
 				CreateFsReadPerm(Path(importedModPath)),
@@ -546,7 +546,7 @@ func TestParseLocalModule(t *testing.T) {
 			import ./dep.ix
 		`, map[string]string{"./dep.ix": "includable-chunk\n("})
 
-		parsingCtx := NewContexWithEmptyState(ContextConfig{
+		parsingCtx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
 			Filesystem:  newOsFilesystem(),
 		}, nil)
@@ -584,7 +584,7 @@ func TestParseLocalModule(t *testing.T) {
 
 		importedModPath := filepath.Join(filepath.Dir(modpath), "/dep.ix")
 
-		parsingCtx := NewContexWithEmptyState(ContextConfig{
+		parsingCtx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				CreateFsReadPerm(Path(modpath)),
 				CreateFsReadPerm(Path(importedModPath)),
@@ -624,7 +624,7 @@ func TestParseLocalModule(t *testing.T) {
 			"./dep1.ix": "includable-chunk",
 		})
 
-		parsingCtx := NewContexWithEmptyState(ContextConfig{
+		parsingCtx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
 			Filesystem:  newOsFilesystem(),
 		}, nil)
@@ -659,7 +659,7 @@ func TestParseLocalModule(t *testing.T) {
 			"./dep1.ix": "includable-chunk \n(",
 		})
 
-		parsingCtx := NewContexWithEmptyState(ContextConfig{
+		parsingCtx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
 			Filesystem:  newOsFilesystem(),
 		}, nil)
@@ -696,7 +696,7 @@ func TestParseLocalModule(t *testing.T) {
 			"./dep2.ix": "includable-chunk",
 		})
 
-		parsingCtx := NewContexWithEmptyState(ContextConfig{
+		parsingCtx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
 			Filesystem:  newOsFilesystem(),
 		}, nil)
@@ -726,7 +726,7 @@ func TestParseLocalModule(t *testing.T) {
 			import ./dep.ix
 		`, map[string]string{"./dep.ix": "manifest {}"})
 
-		parsingCtx := NewContexWithEmptyState(ContextConfig{
+		parsingCtx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
 			Filesystem:  newOsFilesystem(),
 		}, nil)
@@ -758,7 +758,7 @@ func TestParseLocalModule(t *testing.T) {
 
 			importedModPath := filepath.Join(filepath.Dir(modpath), "/lib.ix")
 
-			parsingCtx := NewContexWithEmptyState(ContextConfig{
+			parsingCtx := NewContextWithEmptyState(ContextConfig{
 				Permissions: []Permission{
 					CreateFsReadPerm(Path(modpath)),
 					CreateFsReadPerm(Path(importedModPath)),
@@ -799,7 +799,7 @@ func TestParseLocalModule(t *testing.T) {
 
 			util.WriteFile(fls, "/lib.ix", []byte(`manifest {}`), 0600)
 
-			parsingCtx := NewContexWithEmptyState(ContextConfig{
+			parsingCtx := NewContextWithEmptyState(ContextConfig{
 				Permissions: []Permission{
 					CreateFsReadPerm(Path(modpath)),
 					CreateFsReadPerm(Path("/lib.ix")),
@@ -840,7 +840,7 @@ func TestParseLocalModule(t *testing.T) {
 
 			util.WriteFile(fls, "/lib.ix", []byte("manifest {}\n; a ="), 0600)
 
-			parsingCtx := NewContexWithEmptyState(ContextConfig{
+			parsingCtx := NewContextWithEmptyState(ContextConfig{
 				Permissions: []Permission{
 					CreateFsReadPerm(Path(modpath)),
 					CreateFsReadPerm(Path("/lib.ix")),
@@ -892,7 +892,7 @@ func TestParseLocalModule(t *testing.T) {
 			util.WriteFile(fls, "/lib.ix", []byte("manifest {}\nimport /included.ix"), 0600)
 			util.WriteFile(fls, "/included.ix", []byte(`includable-chunk`), 0600)
 
-			parsingCtx := NewContexWithEmptyState(ContextConfig{
+			parsingCtx := NewContextWithEmptyState(ContextConfig{
 				Permissions: []Permission{
 					CreateFsReadPerm(Path(modpath)),
 					CreateFsReadPerm(Path("/lib.ix")),
@@ -939,7 +939,7 @@ func TestParseLocalModule(t *testing.T) {
 			util.WriteFile(fls, "/lib.ix", []byte("manifest {}\nimport /included.ix"), 0600)
 			util.WriteFile(fls, "/included.ix", []byte("includable-chunk\na ="), 0600)
 
-			parsingCtx := NewContexWithEmptyState(ContextConfig{
+			parsingCtx := NewContextWithEmptyState(ContextConfig{
 				Permissions: []Permission{
 					CreateFsReadPerm(Path(modpath)),
 					CreateFsReadPerm(Path("/lib.ix")),
@@ -998,7 +998,7 @@ func TestParseLocalModule(t *testing.T) {
 				import ./dep.ix
 			`, nil)
 
-			parsingCtx := NewContexWithEmptyState(ContextConfig{
+			parsingCtx := NewContextWithEmptyState(ContextConfig{
 				Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
 				Filesystem:  newOsFilesystem(),
 			}, nil)
@@ -1039,7 +1039,7 @@ func TestParseLocalModule(t *testing.T) {
 				import ./dep2.ix
 			`, map[string]string{"./dep2.ix": "includable-chunk"})
 
-			parsingCtx := NewContexWithEmptyState(ContextConfig{
+			parsingCtx := NewContextWithEmptyState(ContextConfig{
 				Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
 				Filesystem:  newOsFilesystem(),
 			}, nil)
@@ -1084,7 +1084,7 @@ func TestParseLocalModule(t *testing.T) {
 				import ./dep2.ix
 			`, nil)
 
-			parsingCtx := NewContexWithEmptyState(ContextConfig{
+			parsingCtx := NewContextWithEmptyState(ContextConfig{
 				Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
 				Filesystem:  newOsFilesystem(),
 			}, nil)
@@ -1147,7 +1147,7 @@ func writeModuleAndIncludedFiles(t *testing.T, mod string, modContent string, de
 
 func createParsingContext(modpath string) *Context {
 	pathPattern := PathPattern(Path(modpath).DirPath() + "...")
-	return NewContexWithEmptyState(ContextConfig{
+	return NewContextWithEmptyState(ContextConfig{
 		Permissions: []Permission{CreateFsReadPerm(pathPattern)},
 		Filesystem:  newOsFilesystem(),
 	}, nil)

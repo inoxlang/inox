@@ -12,7 +12,7 @@ func TestCreateHTMLNodeFromXMLElement(t *testing.T) {
 	testconfig.AllowParallelization(t)
 
 	t.Run("script tag", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		element := CreateHTMLNodeFromXMLElement(ctx, core.NewRawTextXmlElement("script", nil, "<a>"))
@@ -24,7 +24,7 @@ func TestCreateHTMLNodeFromXMLElement(t *testing.T) {
 	})
 
 	t.Run("pseudo htmx attributes", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		t.Run("hx-lazy-load", func(t *testing.T) {

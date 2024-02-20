@@ -26,7 +26,7 @@ func TestCreateS3CredentialsForSingleBucket(t *testing.T) {
 		return
 	}
 
-	ctx := core.NewContexWithEmptyState(core.ContextConfig{
+	ctx := core.NewContextWithEmptyState(core.ContextConfig{
 		Limits: []core.Limit{objectStorageLimit},
 	}, nil)
 	defer ctx.CancelGracefully()

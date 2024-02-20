@@ -41,7 +41,7 @@ func testKvSet(t *testing.T, UseSetSerialized bool) {
 				return
 			}
 
-			ctx := core.NewContexWithEmptyState(core.ContextConfig{
+			ctx := core.NewContextWithEmptyState(core.ContextConfig{
 				Permissions: []core.Permission{core.CreateFsReadPerm(core.PathPattern("/..."))},
 			}, nil)
 			defer ctx.CancelGracefully()
@@ -126,7 +126,7 @@ func testKvSet(t *testing.T, UseSetSerialized bool) {
 			return
 		}
 
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{
 			Permissions: []core.Permission{core.CreateFsReadPerm(core.PathPattern("/..."))},
 		}, nil)
 		defer ctx.CancelGracefully()
@@ -156,7 +156,7 @@ func testKvSet(t *testing.T, UseSetSerialized bool) {
 			return
 		}
 
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{
 			Permissions: []core.Permission{core.CreateFsReadPerm(core.PathPattern("/..."))},
 		}, nil)
 		defer ctx.CancelGracefully()

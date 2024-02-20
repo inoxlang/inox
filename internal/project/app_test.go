@@ -15,7 +15,7 @@ func TestRegisterApplication(t *testing.T) {
 
 	tempDir := t.TempDir()
 
-	ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+	ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	reg := utils.Must(OpenRegistry(tempDir, ctx))

@@ -55,7 +55,7 @@ func registerProdMethodHandlers(server *lsp.Server, opts LSPServerConfiguration)
 
 			//TODO: in nodeimpl/app.go return an error on startup burst and add a specific status.
 
-			handlerCtx := core.NewContexWithEmptyState(core.ContextConfig{
+			handlerCtx := core.NewContextWithEmptyState(core.ContextConfig{
 				ParentContext: session.Context(),
 			}, nil)
 			defer handlerCtx.CancelGracefully()
@@ -101,7 +101,7 @@ func registerProdMethodHandlers(server *lsp.Server, opts LSPServerConfiguration)
 				}, nil
 			}
 
-			handlerCtx := core.NewContexWithEmptyState(core.ContextConfig{
+			handlerCtx := core.NewContextWithEmptyState(core.ContextConfig{
 				ParentContext: session.Context(),
 			}, nil)
 			defer handlerCtx.CancelGracefully()

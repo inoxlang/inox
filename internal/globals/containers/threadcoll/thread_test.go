@@ -19,10 +19,10 @@ func TestThreadAdd(t *testing.T) {
 
 	t.Run("elements should be visible by the tx that added them and should be visible to all txs after their tx is commited", func(t *testing.T) {
 		t.Run("one element added by tx1", func(t *testing.T) {
-			ctx1 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+			ctx1 := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 			defer ctx1.CancelGracefully()
 
-			ctx2 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+			ctx2 := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 			defer ctx2.CancelGracefully()
 
 			thread := newEmptyThread(ctx1, THREAD_URL, threadPattern)
@@ -61,10 +61,10 @@ func TestThreadAdd(t *testing.T) {
 		})
 
 		t.Run("two elements added by tx1", func(t *testing.T) {
-			ctx1 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+			ctx1 := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 			defer ctx1.CancelGracefully()
 
-			ctx2 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+			ctx2 := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 			defer ctx2.CancelGracefully()
 
 			thread := newEmptyThread(ctx1, THREAD_URL, threadPattern)
@@ -112,10 +112,10 @@ func TestThreadAdd(t *testing.T) {
 		})
 
 		t.Run("one element added by each tx", func(t *testing.T) {
-			ctx1 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+			ctx1 := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 			defer ctx1.CancelGracefully()
 
-			ctx2 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+			ctx2 := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 			defer ctx2.CancelGracefully()
 
 			thread := newEmptyThread(ctx1, THREAD_URL, threadPattern)
@@ -167,10 +167,10 @@ func TestThreadAdd(t *testing.T) {
 
 	t.Run("elements should not be visible if their tx was roll backed", func(t *testing.T) {
 		t.Run("elem added by tx1", func(t *testing.T) {
-			ctx1 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+			ctx1 := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 			defer ctx1.CancelGracefully()
 
-			ctx2 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+			ctx2 := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 			defer ctx2.CancelGracefully()
 
 			thread := newEmptyThread(ctx1, THREAD_URL, threadPattern)
@@ -209,10 +209,10 @@ func TestThreadAdd(t *testing.T) {
 		})
 
 		t.Run("two elements added by tx1", func(t *testing.T) {
-			ctx1 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+			ctx1 := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 			defer ctx1.CancelGracefully()
 
-			ctx2 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+			ctx2 := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 			defer ctx2.CancelGracefully()
 
 			thread := newEmptyThread(ctx1, THREAD_URL, threadPattern)
@@ -258,10 +258,10 @@ func TestThreadAdd(t *testing.T) {
 		})
 
 		t.Run("one element added by each tx", func(t *testing.T) {
-			ctx1 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+			ctx1 := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 			defer ctx1.CancelGracefully()
 
-			ctx2 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+			ctx2 := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 			defer ctx2.CancelGracefully()
 
 			thread := newEmptyThread(ctx1, THREAD_URL, threadPattern)
@@ -385,7 +385,7 @@ func TestThreadAdd(t *testing.T) {
 }
 
 func sharedThreadTestSetup(t *testing.T) (*core.Context, core.DataStore) {
-	ctx := core.NewContexWithEmptyState(core.ContextConfig{
+	ctx := core.NewContextWithEmptyState(core.ContextConfig{
 		Permissions: []core.Permission{
 			core.DatabasePermission{
 				Kind_:  permkind.Read,
@@ -418,8 +418,8 @@ func sharedThreadTestSetup2(t *testing.T) (*core.Context, *core.Context, core.Da
 		},
 	}
 
-	ctx1 := core.NewContexWithEmptyState(config, nil)
-	ctx2 := core.NewContexWithEmptyState(config, nil)
+	ctx1 := core.NewContextWithEmptyState(config, nil)
+	ctx2 := core.NewContextWithEmptyState(config, nil)
 
 	kv := utils.Must(filekv.OpenSingleFileKV(filekv.KvStoreConfig{
 		Path: core.PathFrom(filepath.Join(t.TempDir(), "kv")),

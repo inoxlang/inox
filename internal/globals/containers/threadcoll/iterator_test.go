@@ -14,7 +14,7 @@ func TestThreadIteration(t *testing.T) {
 	const THREAD_URL = core.URL("ldb://main/threads/58585")
 
 	t.Run("empty", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		thread := newEmptyThread(ctx, THREAD_URL, NewThreadPattern(ThreadConfig{}))
@@ -29,7 +29,7 @@ func TestThreadIteration(t *testing.T) {
 	})
 
 	t.Run("single element", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		elem1 := core.NewObject()
@@ -55,7 +55,7 @@ func TestThreadIteration(t *testing.T) {
 	})
 
 	t.Run("two elements", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		elem1 := core.NewObjectFromMapNoInit(core.ValMap{"a": core.Int(1)})
@@ -94,7 +94,7 @@ func TestThreadIteration(t *testing.T) {
 	})
 
 	t.Run("MAX_ITERATOR_THREAD_SEGMENT_SIZE + 1 elements", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		elements := make([]*core.Object, MAX_ITERATOR_THREAD_SEGMENT_SIZE+1)
@@ -136,10 +136,10 @@ func TestThreadIteration(t *testing.T) {
 	})
 
 	t.Run("iteration should be thread safe", func(t *testing.T) {
-		ctx1 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx1 := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx1.CancelGracefully()
 
-		ctx2 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx2 := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx2.CancelGracefully()
 
 		core.StartNewReadonlyTransaction(ctx1)

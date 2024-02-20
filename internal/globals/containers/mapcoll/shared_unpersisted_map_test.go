@@ -46,11 +46,11 @@ func TestSharedUnpersistedMapSet(t *testing.T) {
 	//Tests with several transactions.
 
 	t.Run("transactions should wait for the previous transaction to finish", func(t *testing.T) {
-		ctx1 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx1 := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx1.CancelGracefully()
 		tx1 := core.StartNewTransaction(ctx1)
 
-		ctx2 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx2 := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx2.CancelGracefully()
 		core.StartNewTransaction(ctx2)
 
@@ -81,15 +81,15 @@ func TestSharedUnpersistedMapSet(t *testing.T) {
 	})
 
 	t.Run("writes in subsequent transactions", func(t *testing.T) {
-		ctx1 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx1 := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx1.CancelGracefully()
 		tx1 := core.StartNewTransaction(ctx1)
 
-		ctx2 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx2 := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx2.CancelGracefully()
 		tx2 := core.StartNewTransaction(ctx2)
 
-		ctx3 := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx3 := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx3.CancelGracefully()
 		core.StartNewTransaction(ctx3)
 
@@ -456,7 +456,7 @@ func TestSharedUnpersistedMapRemove(t *testing.T) {
 }
 
 func sharedMapTestSetup(t *testing.T) (*core.Context, core.DataStore) {
-	ctx := core.NewContexWithEmptyState(core.ContextConfig{
+	ctx := core.NewContextWithEmptyState(core.ContextConfig{
 		Permissions: []core.Permission{
 			core.DatabasePermission{
 				Kind_:  permkind.Read,
@@ -489,8 +489,8 @@ func sharedMapTestSetup2(t *testing.T) (*core.Context, *core.Context, core.DataS
 		},
 	}
 
-	ctx1 := core.NewContexWithEmptyState(config, nil)
-	ctx2 := core.NewContexWithEmptyState(config, nil)
+	ctx1 := core.NewContextWithEmptyState(config, nil)
+	ctx2 := core.NewContextWithEmptyState(config, nil)
 
 	kv := utils.Must(filekv.OpenSingleFileKV(filekv.KvStoreConfig{
 		Path: core.PathFrom(filepath.Join(t.TempDir(), "kv")),

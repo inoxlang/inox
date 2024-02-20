@@ -11,7 +11,7 @@ import (
 func BenchmarkWriteIntJSONRepresentation(b *testing.B) {
 
 	b.Run("small", func(b *testing.B) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		stream := jsoniter.NewStream(jsoniter.ConfigDefault, nil, 0)
@@ -25,7 +25,7 @@ func BenchmarkWriteIntJSONRepresentation(b *testing.B) {
 	})
 
 	b.Run("medium", func(b *testing.B) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		stream := jsoniter.NewStream(jsoniter.ConfigDefault, nil, 0)
@@ -40,7 +40,7 @@ func BenchmarkWriteIntJSONRepresentation(b *testing.B) {
 	})
 
 	b.Run("large", func(b *testing.B) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		stream := jsoniter.NewStream(jsoniter.ConfigDefault, nil, 0)
@@ -58,7 +58,7 @@ func BenchmarkWriteIntJSONRepresentation(b *testing.B) {
 func BenchmarkWriteFloatJSONRepresentation(b *testing.B) {
 
 	b.Run("small", func(b *testing.B) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		stream := jsoniter.NewStream(jsoniter.ConfigDefault, nil, 0)
@@ -73,7 +73,7 @@ func BenchmarkWriteFloatJSONRepresentation(b *testing.B) {
 	})
 
 	b.Run("medium repr length", func(b *testing.B) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		stream := jsoniter.NewStream(jsoniter.ConfigDefault, nil, 0)
@@ -88,7 +88,7 @@ func BenchmarkWriteFloatJSONRepresentation(b *testing.B) {
 	})
 
 	b.Run("long repr length", func(b *testing.B) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		stream := jsoniter.NewStream(jsoniter.ConfigDefault, nil, 0)
@@ -109,7 +109,7 @@ func BenchmarkWriteObjectJSONRepresentation(b *testing.B) {
 	//in order to ignore any future optimization.
 
 	b.Run("small", func(b *testing.B) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		stream := jsoniter.NewStream(jsoniter.ConfigDefault, nil, 0)
@@ -129,7 +129,7 @@ func BenchmarkWriteObjectJSONRepresentation(b *testing.B) {
 
 	b.Run("medium size", func(b *testing.B) {
 		b.Run("single property", func(b *testing.B) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
 			stream := jsoniter.NewStream(jsoniter.ConfigDefault, nil, 0)
@@ -147,7 +147,7 @@ func BenchmarkWriteObjectJSONRepresentation(b *testing.B) {
 			}
 		})
 		b.Run("two properties", func(b *testing.B) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
 			stream := jsoniter.NewStream(jsoniter.ConfigDefault, nil, 0)
@@ -169,7 +169,7 @@ func BenchmarkWriteObjectJSONRepresentation(b *testing.B) {
 
 	b.Run("long repr length", func(b *testing.B) {
 		b.Run("single property", func(b *testing.B) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
 			stream := jsoniter.NewStream(jsoniter.ConfigDefault, nil, 0)
@@ -187,7 +187,7 @@ func BenchmarkWriteObjectJSONRepresentation(b *testing.B) {
 			}
 		})
 		b.Run("two properties", func(b *testing.B) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
 			stream := jsoniter.NewStream(jsoniter.ConfigDefault, nil, 0)
@@ -206,7 +206,7 @@ func BenchmarkWriteObjectJSONRepresentation(b *testing.B) {
 			}
 		})
 		b.Run("many properties", func(b *testing.B) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
 			stream := jsoniter.NewStream(jsoniter.ConfigDefault, nil, 0)
@@ -241,7 +241,7 @@ func BenchmarkWriteRecordJSONRepresentation(b *testing.B) {
 	//in order to ignore any future optimization.
 
 	b.Run("small", func(b *testing.B) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		stream := jsoniter.NewStream(jsoniter.ConfigDefault, nil, 0)
@@ -261,7 +261,7 @@ func BenchmarkWriteRecordJSONRepresentation(b *testing.B) {
 
 	b.Run("medium size", func(b *testing.B) {
 		b.Run("single property", func(b *testing.B) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
 			stream := jsoniter.NewStream(jsoniter.ConfigDefault, nil, 0)
@@ -279,7 +279,7 @@ func BenchmarkWriteRecordJSONRepresentation(b *testing.B) {
 			}
 		})
 		b.Run("two properties", func(b *testing.B) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
 			stream := jsoniter.NewStream(jsoniter.ConfigDefault, nil, 0)
@@ -301,7 +301,7 @@ func BenchmarkWriteRecordJSONRepresentation(b *testing.B) {
 
 	b.Run("long repr length", func(b *testing.B) {
 		b.Run("single property", func(b *testing.B) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
 			stream := jsoniter.NewStream(jsoniter.ConfigDefault, nil, 0)
@@ -319,7 +319,7 @@ func BenchmarkWriteRecordJSONRepresentation(b *testing.B) {
 			}
 		})
 		b.Run("two properties", func(b *testing.B) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
 			stream := jsoniter.NewStream(jsoniter.ConfigDefault, nil, 0)
@@ -338,7 +338,7 @@ func BenchmarkWriteRecordJSONRepresentation(b *testing.B) {
 			}
 		})
 		b.Run("many properties", func(b *testing.B) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
 			stream := jsoniter.NewStream(jsoniter.ConfigDefault, nil, 0)

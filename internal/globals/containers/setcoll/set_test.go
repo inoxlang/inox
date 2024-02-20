@@ -14,7 +14,7 @@ import (
 func TestNewSet(t *testing.T) {
 
 	t.Run("no elements", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, io.Discard)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, io.Discard)
 		set := NewSet(ctx, core.NewWrappedValueList(), nil)
 
 		assert.Equal(t, SetConfig{
@@ -26,7 +26,7 @@ func TestNewSet(t *testing.T) {
 	})
 
 	t.Run("single element", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, io.Discard)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, io.Discard)
 		set := NewSet(ctx, core.NewWrappedValueList(core.Int(1)), nil)
 
 		assert.Equal(t, SetConfig{
@@ -38,7 +38,7 @@ func TestNewSet(t *testing.T) {
 	})
 
 	t.Run("element with no representation yet", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, io.Discard)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, io.Discard)
 
 		node := core.AstNode{Node: parse.MustParseChunk("")}
 
@@ -51,7 +51,7 @@ func TestNewSet(t *testing.T) {
 	})
 
 	t.Run("element with representation should be immutable ", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, io.Discard)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, io.Discard)
 
 		obj := core.NewObjectFromMap(core.ValMap{}, ctx)
 
@@ -64,7 +64,7 @@ func TestNewSet(t *testing.T) {
 	})
 
 	t.Run("uniqueness of property's value", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, io.Discard)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, io.Discard)
 
 		elemPattern := core.NewInexactObjectPattern([]core.ObjectPatternEntry{{Name: "id", Pattern: core.STRING_PATTERN}})
 
@@ -85,7 +85,7 @@ func TestNewSet(t *testing.T) {
 	})
 
 	t.Run("uniqueness of property's value: element has no properties", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, io.Discard)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, io.Discard)
 
 		config := core.NewObjectFromMap(core.ValMap{
 			coll_symbolic.SET_CONFIG_UNIQUE_PROP_KEY: core.PropertyName("id"),
@@ -100,7 +100,7 @@ func TestNewSet(t *testing.T) {
 	})
 
 	t.Run("element pattern", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, io.Discard)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, io.Discard)
 
 		elementPattern := core.NewInexactObjectPattern([]core.ObjectPatternEntry{
 			{Name: "a", Pattern: core.INT_PATTERN},
@@ -121,7 +121,7 @@ func TestNewSet(t *testing.T) {
 	})
 
 	t.Run("element pattern: element does not match", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, io.Discard)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, io.Discard)
 
 		elementPattern := core.NewInexactObjectPattern([]core.ObjectPatternEntry{
 			{Name: "a", Pattern: core.INT_PATTERN},
@@ -143,7 +143,7 @@ func TestNewSet(t *testing.T) {
 }
 
 func TestUnsharedSetAddRemove(t *testing.T) {
-	ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+	ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 
 	t.Run("representation uniqueness", func(t *testing.T) {
 		set := NewSetWithConfig(ctx, nil, SetConfig{

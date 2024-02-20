@@ -13,7 +13,7 @@ import (
 func TestSetIteration(t *testing.T) {
 
 	t.Run("empty", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		set := NewSetWithConfig(ctx, nil, SetConfig{
@@ -32,7 +32,7 @@ func TestSetIteration(t *testing.T) {
 	})
 
 	t.Run("single element", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		set := NewSetWithConfig(ctx, core.NewWrappedValueList(core.Int(1)), SetConfig{
@@ -56,7 +56,7 @@ func TestSetIteration(t *testing.T) {
 	})
 
 	t.Run("two elements", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		set := NewSetWithConfig(ctx, core.NewWrappedValueList(core.Int(1), core.Int(2)), SetConfig{
@@ -101,7 +101,7 @@ func TestSetIteration(t *testing.T) {
 		tuple := core.NewTuple(elements)
 
 		go func() {
-			ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+			ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
 			set := NewSetWithConfig(ctx, tuple, SetConfig{
@@ -121,7 +121,7 @@ func TestSetIteration(t *testing.T) {
 
 		time.Sleep(time.Microsecond)
 
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		set := NewSetWithConfig(ctx, tuple, SetConfig{
@@ -155,7 +155,7 @@ func TestSetIteration(t *testing.T) {
 		tuple := core.NewTuple(elements)
 
 		go func() {
-			ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+			ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
 			set := NewSetWithConfig(ctx, tuple, SetConfig{
@@ -174,7 +174,7 @@ func TestSetIteration(t *testing.T) {
 
 		for index := 0; index < 5; index++ {
 
-			ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+			ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
 			set := NewSetWithConfig(ctx, tuple, SetConfig{

@@ -15,7 +15,7 @@ func TestPersistLoadThread(t *testing.T) {
 	const THREAD_PATH = core.Path("/threads/58585")
 
 	setup := func() (*core.Context, core.DataStore) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		kv := utils.Must(filekv.OpenSingleFileKV(filekv.KvStoreConfig{
 			Path: core.PathFrom(filepath.Join(t.TempDir(), "data.kv")),
 		}))

@@ -13,7 +13,7 @@ import (
 )
 
 func TestNilPrettyPrint(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	assert.Equal(t, "nil", Stringify(Nil, ctx))
@@ -22,7 +22,7 @@ func TestNilPrettyPrint(t *testing.T) {
 }
 
 func TestBoolPrettyPrint(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	assert.Equal(t, "true", Stringify(True, ctx))
@@ -31,7 +31,7 @@ func TestBoolPrettyPrint(t *testing.T) {
 }
 
 func TestRunePrettyPrint(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	assert.Equal(t, "'a'", Stringify(Rune('a'), ctx))
@@ -40,7 +40,7 @@ func TestRunePrettyPrint(t *testing.T) {
 }
 
 func TestIntPrettyPrint(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	assert.Equal(t, "2", Stringify(Int(2), ctx))
@@ -49,7 +49,7 @@ func TestIntPrettyPrint(t *testing.T) {
 }
 
 func TestFloatPrettyPrint(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	testCases := []struct {
@@ -76,7 +76,7 @@ func TestFloatPrettyPrint(t *testing.T) {
 }
 
 func TestStrPrettyPrint(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	t.Run("newline character", func(t *testing.T) {
@@ -100,7 +100,7 @@ func TestStrPrettyPrint(t *testing.T) {
 
 func TestObjectPrettyPrint(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		obj := &Object{}
@@ -113,7 +113,7 @@ func TestObjectPrettyPrint(t *testing.T) {
 	})
 
 	t.Run("single key", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		obj := objFrom(ValMap{"a\nb": Int(1)})
@@ -127,7 +127,7 @@ func TestObjectPrettyPrint(t *testing.T) {
 	})
 
 	t.Run("two keys", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		obj := objFrom(ValMap{"a\nb": Int(1), "c\nd": Int(2)})
@@ -145,7 +145,7 @@ func TestObjectPrettyPrint(t *testing.T) {
 	})
 
 	t.Run("deep", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		obj := objFrom(ValMap{
@@ -161,7 +161,7 @@ func TestObjectPrettyPrint(t *testing.T) {
 	})
 
 	t.Run("cycle", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		obj := &Object{}
@@ -169,7 +169,7 @@ func TestObjectPrettyPrint(t *testing.T) {
 	})
 
 	t.Run("sensitive properties", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		obj := objFrom(ValMap{
@@ -183,7 +183,7 @@ func TestObjectPrettyPrint(t *testing.T) {
 	})
 
 	t.Run("sensitive properties: config with .allVisible == true", func(t *testing.T) {
-		reprTestCtx := NewContexWithEmptyState(ContextConfig{}, nil)
+		reprTestCtx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer reprTestCtx.CancelGracefully()
 
 		obj := objFrom(ValMap{
@@ -198,7 +198,7 @@ func TestObjectPrettyPrint(t *testing.T) {
 	})
 
 	t.Run("sensitive properties: value visibility with all keys to public", func(t *testing.T) {
-		reprTestCtx := NewContexWithEmptyState(ContextConfig{}, nil)
+		reprTestCtx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer reprTestCtx.CancelGracefully()
 
 		obj := objFrom(ValMap{
@@ -217,7 +217,7 @@ func TestObjectPrettyPrint(t *testing.T) {
 	})
 
 	t.Run("id", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		obj := objFrom(ValMap{})
@@ -225,7 +225,7 @@ func TestObjectPrettyPrint(t *testing.T) {
 		url := URL("https://example.com/objects/98484")
 		utils.PanicIfErr(obj.SetURLOnce(ctx, url))
 
-		reprTestCtx := NewContexWithEmptyState(ContextConfig{}, nil)
+		reprTestCtx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer reprTestCtx.CancelGracefully()
 
 		//TODO: show _url_
@@ -239,7 +239,7 @@ func TestObjectPrettyPrint(t *testing.T) {
 
 func TestRecordPrettyPrint(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		rec := NewRecordFromMap(nil)
@@ -252,12 +252,12 @@ func TestRecordPrettyPrint(t *testing.T) {
 	})
 
 	t.Run("single key", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		rec := NewRecordFromMap(ValMap{"a\nb": Int(1)})
 
-		reprTestCtx := NewContexWithEmptyState(ContextConfig{}, nil)
+		reprTestCtx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer reprTestCtx.CancelGracefully()
 
 		expectedRepr := `#{"a\nb": 1}`
@@ -271,7 +271,7 @@ func TestRecordPrettyPrint(t *testing.T) {
 	t.Run("two keys", func(t *testing.T) {
 		rec := NewRecordFromMap(ValMap{"a\nb": Int(1), "c\nd": Int(2)})
 
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		expectedRepr := `#{"a\nb": 1, "c\nd": 2}`
@@ -293,7 +293,7 @@ func TestRecordPrettyPrint(t *testing.T) {
 			},
 		})
 
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		expectedRepr := `#{"a": #[1, #{"b": 2}]}`
@@ -305,7 +305,7 @@ func TestRecordPrettyPrint(t *testing.T) {
 	})
 
 	t.Run("sensitive properties", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		rec := NewRecordFromMap(ValMap{
@@ -323,7 +323,7 @@ func TestRecordPrettyPrint(t *testing.T) {
 
 func TestDictPrettyPrint(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		dict := NewDictionary(nil)
@@ -336,7 +336,7 @@ func TestDictPrettyPrint(t *testing.T) {
 	})
 
 	t.Run("single string key", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		dict := NewDictionary(map[string]Serializable{
@@ -352,7 +352,7 @@ func TestDictPrettyPrint(t *testing.T) {
 	})
 
 	t.Run("two keys: one string & a path", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		dict := NewDictionary(map[string]Serializable{
@@ -382,7 +382,7 @@ func TestDictPrettyPrint(t *testing.T) {
 
 func TestKeyListPrettyPrint(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		list := KeyList{}
@@ -395,7 +395,7 @@ func TestKeyListPrettyPrint(t *testing.T) {
 	})
 
 	t.Run("single key", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		list := KeyList{"a"}
@@ -409,7 +409,7 @@ func TestKeyListPrettyPrint(t *testing.T) {
 	})
 
 	t.Run("two keys: one string & a path", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		list := KeyList{"a", "b"}
@@ -426,7 +426,7 @@ func TestKeyListPrettyPrint(t *testing.T) {
 
 func TestListPrettyPrint(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		list := NewWrappedValueList()
@@ -440,7 +440,7 @@ func TestListPrettyPrint(t *testing.T) {
 	})
 
 	t.Run("single element", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		list := NewWrappedValueList(Int(2))
@@ -454,7 +454,7 @@ func TestListPrettyPrint(t *testing.T) {
 	})
 
 	t.Run("two elements", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		list := NewWrappedValueList(Int(2), Path("./path"))
@@ -467,7 +467,7 @@ func TestListPrettyPrint(t *testing.T) {
 	})
 
 	t.Run("deep", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		list := NewWrappedValueList(NewWrappedValueList(Int(2), objFrom(ValMap{"a": Int(1)})))
@@ -490,7 +490,7 @@ func TestListPrettyPrint(t *testing.T) {
 
 func TestObjectPatternPrettyPrint(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		patt := NewInexactObjectPattern(nil)
@@ -503,7 +503,7 @@ func TestObjectPatternPrettyPrint(t *testing.T) {
 	})
 
 	t.Run("single key", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		patt := NewInexactObjectPattern([]ObjectPatternEntry{
@@ -522,7 +522,7 @@ func TestObjectPatternPrettyPrint(t *testing.T) {
 	})
 
 	t.Run("two keys", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		patt := NewInexactObjectPattern([]ObjectPatternEntry{
@@ -553,7 +553,7 @@ func TestObjectPatternPrettyPrint(t *testing.T) {
 	})
 
 	t.Run("deep", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		patt := NewInexactObjectPattern([]ObjectPatternEntry{
@@ -578,7 +578,7 @@ func TestObjectPatternPrettyPrint(t *testing.T) {
 
 func TestListPatternPrettyPrint(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		pattern := NewListPattern(nil)
@@ -592,7 +592,7 @@ func TestListPatternPrettyPrint(t *testing.T) {
 	})
 
 	t.Run("single element", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		pattern := NewListPattern([]Pattern{NewExactValuePattern(Int(2))})
@@ -623,7 +623,7 @@ func TestListPatternPrettyPrint(t *testing.T) {
 	})
 
 	t.Run("deep", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		pattern := NewListPattern([]Pattern{
@@ -644,7 +644,7 @@ func TestListPatternPrettyPrint(t *testing.T) {
 }
 
 func TestByteSlicePrettyPrint(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	assert.Equal(t, "0x[]", Stringify(&ByteSlice{}, ctx))
@@ -654,7 +654,7 @@ func TestByteSlicePrettyPrint(t *testing.T) {
 
 func TestOptionPrettyPrint(t *testing.T) {
 	t.Run("single letter name", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		opt := Option{Name: "v", Value: True}
@@ -668,7 +668,7 @@ func TestOptionPrettyPrint(t *testing.T) {
 	})
 
 	t.Run("multi letter name", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		opt := Option{Name: "verbose", Value: True}
@@ -697,7 +697,7 @@ func TestPathPrettyPrint(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.value, func(t *testing.T) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
 			pth := Path(testCase.value)
@@ -725,7 +725,7 @@ func TestPathPatternPrettyPrint(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.value, func(t *testing.T) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
 			patt := PathPattern(testCase.value)
@@ -740,7 +740,7 @@ func TestPathPatternPrettyPrint(t *testing.T) {
 }
 
 func TestURLPrettyPrint(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	url := URL("https://example.com/")
@@ -763,7 +763,7 @@ func TestURLPatternPrettyPrint(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.value, func(t *testing.T) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
 			patt := URLPattern(testCase.value)
@@ -777,7 +777,7 @@ func TestURLPatternPrettyPrint(t *testing.T) {
 }
 
 func TestHostPrettyPrint(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	host := Host("https://example.com")
@@ -800,7 +800,7 @@ func TestHostPatternPrettyPrint(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.value, func(t *testing.T) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
 			patt := HostPattern(testCase.value)
@@ -820,7 +820,7 @@ func TestEmailAddressPrettyPrint(t *testing.T) {
 
 	for i, testCase := range testCases {
 		t.Run(testCase, func(t *testing.T) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
 			addr := EmailAddress(testCase)
@@ -833,7 +833,7 @@ func TestEmailAddressPrettyPrint(t *testing.T) {
 }
 
 func TestIdentifierPrettyPrint(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	ident := Identifier("a")
@@ -844,7 +844,7 @@ func TestIdentifierPrettyPrint(t *testing.T) {
 }
 
 func TestCheckedStringPrettyPrint(t *testing.T) {
-	reprTestCtx := NewContexWithEmptyState(ContextConfig{}, nil)
+	reprTestCtx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer reprTestCtx.CancelGracefully()
 
 	pattern := &ExactValuePattern{value: String("foo")}
@@ -881,7 +881,7 @@ var byteCountReprTestCases = []struct {
 }
 
 func TestByteCountPrettyPrint(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	negative := ByteCount(-1)
@@ -900,7 +900,7 @@ func TestByteCountPrettyPrint(t *testing.T) {
 }
 
 func TestLineCountPrettyPrint(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	n := LineCount(3)
@@ -931,7 +931,7 @@ var byteRateReprTestCases = []struct {
 }
 
 func TestByteRatePrettyPrint(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	negative := ByteRate(-1)
@@ -967,7 +967,7 @@ var freqReprTestCases = []struct {
 }
 
 func TestFrequencyPrettyPrint(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	negative := Frequency(-1)
@@ -1012,7 +1012,7 @@ var durationReprTestCases = []struct {
 
 func TestDurationPrettyPrint(t *testing.T) {
 	for _, testCase := range durationReprTestCases {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		t.Run(strconv.Itoa(int(testCase.value)), func(t *testing.T) {
@@ -1026,7 +1026,7 @@ func TestDurationPrettyPrint(t *testing.T) {
 }
 
 func TestRuneRangePrettyPrint(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	runeRange := RuneRange{Start: 'a', End: 'z'}
@@ -1040,7 +1040,7 @@ func TestRuneRangePrettyPrint(t *testing.T) {
 }
 
 func TestQuantityRangePrettyPrint(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	t.Run("unknown start", func(t *testing.T) {
@@ -1062,7 +1062,7 @@ func TestQuantityRangePrettyPrint(t *testing.T) {
 
 func TestIntRangePrettyPrint(t *testing.T) {
 	t.Run("known start", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		intRange := IntRange{start: 0, end: 100, step: 1}
@@ -1076,7 +1076,7 @@ func TestIntRangePrettyPrint(t *testing.T) {
 	})
 
 	t.Run("unknown start", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		intRange := IntRange{start: 0, end: 100, unknownStart: true, step: 1}
@@ -1092,7 +1092,7 @@ func TestIntRangePrettyPrint(t *testing.T) {
 
 func TestFloatRangePrettyPrint(t *testing.T) {
 	t.Run("known start", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		floatRange := FloatRange{start: 0, end: 100, inclusiveEnd: true}
@@ -1106,7 +1106,7 @@ func TestFloatRangePrettyPrint(t *testing.T) {
 	})
 
 	t.Run("unknown start", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		floatRange := FloatRange{start: 0, end: 100, unknownStart: true, inclusiveEnd: true}
@@ -1122,7 +1122,7 @@ func TestFloatRangePrettyPrint(t *testing.T) {
 
 func TestTreedataPrettyPrint(t *testing.T) {
 	t.Run("only root", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		treedata := &Treedata{Root: Int(1)}
@@ -1135,7 +1135,7 @@ func TestTreedataPrettyPrint(t *testing.T) {
 	})
 
 	t.Run("single hiearchy entry with no children", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		treedata := &Treedata{Root: Int(1), HiearchyEntries: []TreedataHiearchyEntry{{Value: Int(2)}}}
@@ -1149,7 +1149,7 @@ func TestTreedataPrettyPrint(t *testing.T) {
 	})
 
 	t.Run("two hiearchy entries with no children", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		treedata := &Treedata{
@@ -1170,7 +1170,7 @@ func TestTreedataPrettyPrint(t *testing.T) {
 	})
 
 	t.Run("deep", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		treedata := &Treedata{
@@ -1220,7 +1220,7 @@ func TestIntRangePatternPrettyPrint(t *testing.T) {
 }
 
 func TestFileModePrettyPrint(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	fileMode := FileMode(os.ModeDir | 0o777)

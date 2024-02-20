@@ -7,7 +7,7 @@ import (
 )
 
 func TestLongValuePath(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	pAB := NewLongValuePath([]ValuePathSegment{PropertyName("a"), PropertyName("b")})

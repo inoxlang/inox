@@ -15,7 +15,7 @@ import (
 
 func TestPersistLoadSet(t *testing.T) {
 	setup := func() (*core.Context, core.DataStore) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		kv := utils.Must(filekv.OpenSingleFileKV(filekv.KvStoreConfig{
 			Path: core.PathFrom(filepath.Join(t.TempDir(), "data.kv")),
 		}))
@@ -333,7 +333,7 @@ func TestPersistLoadSet(t *testing.T) {
 	})
 
 	t.Run("migration: deletion", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		storage := &core.TestValueStorage{
 			BaseURL_: "ldb://main/",
 			Data:     map[core.Path]string{"/x": `[]`},
@@ -366,7 +366,7 @@ func TestPersistLoadSet(t *testing.T) {
 	})
 
 	t.Run("migration: replacement", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		storage := &core.TestValueStorage{
 			BaseURL_: "ldb://main/",
 			Data:     map[core.Path]string{"/x": `[]`},
@@ -427,7 +427,7 @@ func TestSetMigrate(t *testing.T) {
 			Uniqueness: common.UniquenessConstraint{Type: common.UniqueRepr},
 		}
 
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		set := NewSetWithConfig(ctx, nil, config)
 		val, err := set.Migrate(ctx, "/", &core.FreeEntityMigrationArgs{
 			NextPattern: nil,
@@ -450,7 +450,7 @@ func TestSetMigrate(t *testing.T) {
 			Uniqueness: common.UniquenessConstraint{Type: common.UniqueRepr},
 		}
 
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		set := NewSetWithConfig(ctx, nil, config)
 		val, err := set.Migrate(ctx, "/x", &core.FreeEntityMigrationArgs{
 			NextPattern: nil,
@@ -473,7 +473,7 @@ func TestSetMigrate(t *testing.T) {
 			Uniqueness: common.UniquenessConstraint{Type: common.UniqueRepr},
 		}
 
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		element := core.Int(0)
 		set := NewSetWithConfig(ctx, core.NewWrappedValueList(element), config)
 
@@ -499,7 +499,7 @@ func TestSetMigrate(t *testing.T) {
 			Uniqueness: common.UniquenessConstraint{Type: common.UniqueRepr},
 		}
 
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		set := NewSetWithConfig(ctx, core.NewWrappedValueList(core.Int(0), core.Int(1)), config)
 
 		val, err := set.Migrate(ctx, "/", &core.FreeEntityMigrationArgs{
@@ -524,7 +524,7 @@ func TestSetMigrate(t *testing.T) {
 			Uniqueness: common.UniquenessConstraint{Type: common.UniqueRepr},
 		}
 
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		set := NewSetWithConfig(ctx, core.NewWrappedValueList(core.Int(0)), config)
 
 		pathPattern := "/" + core.PathPattern(common.GetElementPathKeyFromKey("1", common.UniqueRepr))
@@ -550,7 +550,7 @@ func TestSetMigrate(t *testing.T) {
 			Uniqueness: common.UniquenessConstraint{Type: common.UniqueRepr},
 		}
 
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		elements := core.NewWrappedValueList(core.NewRecordFromMap(core.ValMap{"b": core.Int(0)}))
 		set := NewSetWithConfig(ctx, elements, config)
 
@@ -579,7 +579,7 @@ func TestSetMigrate(t *testing.T) {
 			Uniqueness: common.UniquenessConstraint{Type: common.UniqueRepr},
 		}
 
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		set := NewSetWithConfig(ctx, core.NewWrappedValueList(), config)
 		replacement := core.NewWrappedValueList()
 
@@ -607,7 +607,7 @@ func TestSetMigrate(t *testing.T) {
 			Uniqueness: common.UniquenessConstraint{Type: common.UniqueRepr},
 		}
 
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		set := NewSetWithConfig(ctx, core.NewWrappedValueList(), config)
 		replacement := core.NewWrappedValueList()
 
@@ -635,7 +635,7 @@ func TestSetMigrate(t *testing.T) {
 			Uniqueness: common.UniquenessConstraint{Type: common.UniqueRepr},
 		}
 
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		elements := core.NewWrappedValueList(
 			core.NewRecordFromMap(core.ValMap{"a": core.Int(1), "b": core.Int(1)}),
 			core.NewRecordFromMap(core.ValMap{"a": core.Int(2), "b": core.Int(2)}),
@@ -673,7 +673,7 @@ func TestSetMigrate(t *testing.T) {
 			Uniqueness: common.UniquenessConstraint{Type: common.UniqueRepr},
 		}
 
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 
 		set := NewSetWithConfig(ctx, nil, config)
 

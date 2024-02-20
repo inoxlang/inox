@@ -43,7 +43,7 @@ func TestControlClient(t *testing.T) {
 		controlChan = make(chan Message, 10)
 		lock.Unlock()
 
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{
 			Permissions: []core.Permission{
 				core.WebsocketPermission{Kind_: permkind.Provide},
 				core.WebsocketPermission{Kind_: permkind.Read, Endpoint: core.Host("wss://localhost:8310")},
@@ -241,7 +241,7 @@ func TestControlClient(t *testing.T) {
 
 		go httpServer.ListenAndServeTLS("", "")
 
-		clientCtx := core.NewContexWithEmptyState(core.ContextConfig{
+		clientCtx := core.NewContextWithEmptyState(core.ContextConfig{
 			Permissions: []core.Permission{
 				core.WebsocketPermission{Kind_: permkind.Read, Endpoint: core.Host("wss://localhost:8310")},
 				core.WebsocketPermission{Kind_: permkind.Write, Endpoint: core.Host("wss://localhost:8310")},

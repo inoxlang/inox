@@ -81,7 +81,7 @@ func TestHttpRequestPattern(t *testing.T) {
 	})
 
 	t.Run("Test", func(t *testing.T) {
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		description := core.NewInexactObjectPattern([]core.ObjectPatternEntry{
 			{
 				Name:    "method",

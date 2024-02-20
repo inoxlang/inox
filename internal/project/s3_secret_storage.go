@@ -34,7 +34,7 @@ func TestUpsertListSecrets(t *testing.T) {
 
 	t.Run("list secrets before any secret creation", func(t *testing.T) {
 		projectName := "test-lists-secrets-before-creation"
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{
 			Limits: []core.Limit{objectStorageLimit},
 		}, nil)
 		defer ctx.CancelGracefully()
@@ -97,7 +97,7 @@ func TestUpsertListSecrets(t *testing.T) {
 
 	t.Run("listing secrets while calling getCreateSecretsBucket() should be thread safe", func(t *testing.T) {
 		projectName := "test-lists-secrets-before-creation"
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{
 			Limits: []core.Limit{objectStorageLimit},
 		}, nil)
 
@@ -166,7 +166,7 @@ func TestUpsertListSecrets(t *testing.T) {
 	t.Run("listing secrets in parallel before any creation should be thread safe", func(t *testing.T) {
 
 		projectName := "test-para-sec-list-bef-crea"
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{
 			Limits: []core.Limit{objectStorageLimit},
 		}, nil)
 		defer ctx.CancelGracefully()
@@ -245,7 +245,7 @@ func TestUpsertListSecrets(t *testing.T) {
 
 	t.Run("list secrets after creation and after deletion", func(t *testing.T) {
 		projectName := "test-sec-list-after-crea"
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{
 			Limits: []core.Limit{objectStorageLimit},
 		}, nil)
 		defer ctx.CancelGracefully()
@@ -337,7 +337,7 @@ func TestUpsertListSecrets(t *testing.T) {
 	t.Run("listing secrets in parallel should be thread safe", func(t *testing.T) {
 
 		projectName := "test-para-sec-list-aft-crea"
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{
 			Limits: []core.Limit{objectStorageLimit},
 		}, nil)
 		defer ctx.CancelGracefully()

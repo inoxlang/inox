@@ -31,7 +31,7 @@ func TestStartPeriodicPerfProfilesCollection(t *testing.T) {
 		SecretKey:  METRICS_PERF_TEST_SECRET_KEY,
 	}
 
-	ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+	ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 	s3Client, err := s3_ns.OpenBucketWithCredentials(ctx, bucketConf)
 
 	if !assert.NoError(t, err) {

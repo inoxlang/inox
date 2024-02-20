@@ -43,7 +43,7 @@ func TestOpenDatabase(t *testing.T) {
 			Filesystem: fls,
 		}
 
-		ctx1 := core.NewContexWithEmptyState(ctxConfig, nil)
+		ctx1 := core.NewContextWithEmptyState(ctxConfig, nil)
 		ctx1.GetClosestState().Project = project
 
 		_db, err := OpenDatabase(ctx1, HOST, false)
@@ -52,7 +52,7 @@ func TestOpenDatabase(t *testing.T) {
 		}
 		defer _db.Close(ctx1)
 
-		ctx2 := core.NewContexWithEmptyState(ctxConfig, nil)
+		ctx2 := core.NewContextWithEmptyState(ctxConfig, nil)
 		ctx2.GetClosestState().Project = project
 
 		db, err := OpenDatabase(ctx2, HOST, false)
@@ -82,7 +82,7 @@ func TestOpenDatabase(t *testing.T) {
 			Filesystem: fls,
 		}
 
-		ctx1 := core.NewContexWithEmptyState(ctxConfig, nil)
+		ctx1 := core.NewContextWithEmptyState(ctxConfig, nil)
 		ctx1.GetClosestState().Project = project
 
 		_db, err := OpenDatabase(ctx1, HOST, false)
@@ -91,7 +91,7 @@ func TestOpenDatabase(t *testing.T) {
 		}
 		_db.Close(ctx1)
 
-		ctx2 := core.NewContexWithEmptyState(ctxConfig, nil)
+		ctx2 := core.NewContextWithEmptyState(ctxConfig, nil)
 		ctx2.GetClosestState().Project = project
 
 		db, err := OpenDatabase(ctx2, HOST, false)
@@ -144,7 +144,7 @@ func TestOpenDatabase(t *testing.T) {
 			}()
 
 			//open database in first context
-			ctx1 = core.NewContexWithEmptyState(ctxConfig, nil)
+			ctx1 = core.NewContextWithEmptyState(ctxConfig, nil)
 			ctx1.GetClosestState().Project = project
 
 			_db1, err := OpenDatabase(ctx1, HOST, false)
@@ -162,7 +162,7 @@ func TestOpenDatabase(t *testing.T) {
 		}
 
 		//open same database in second context
-		ctx2 = core.NewContexWithEmptyState(ctxConfig, nil)
+		ctx2 = core.NewContextWithEmptyState(ctxConfig, nil)
 		ctx2.GetClosestState().Project = project
 
 		_db2, err := OpenDatabase(ctx2, HOST, false)
@@ -220,7 +220,7 @@ func TestOpenDatabase(t *testing.T) {
 			}()
 
 			//open database in first context
-			ctx1 = core.NewContexWithEmptyState(ctxConfig, nil)
+			ctx1 = core.NewContextWithEmptyState(ctxConfig, nil)
 			ctx1.GetClosestState().Project = project
 			ctx1.AddNamedPattern("int", core.INT_PATTERN)
 
@@ -243,7 +243,7 @@ func TestOpenDatabase(t *testing.T) {
 		}
 
 		//open same database in second context but in restricted mode
-		ctx2 = core.NewContexWithEmptyState(ctxConfig, nil)
+		ctx2 = core.NewContextWithEmptyState(ctxConfig, nil)
 		ctx2.GetClosestState().Project = project
 		ctx2.AddNamedPattern("int", core.INT_PATTERN)
 
@@ -282,7 +282,7 @@ func TestOpenDatabase(t *testing.T) {
 				Filesystem: fls,
 			}
 
-			ctx := core.NewContexWithEmptyState(ctxConfig, nil)
+			ctx := core.NewContextWithEmptyState(ctxConfig, nil)
 			ctx.AddNamedPattern("Set", setcoll.SET_PATTERN)
 			ctx.AddNamedPattern("str", setcoll.SET_PATTERN)
 			ctx.GetClosestState().Project = project
@@ -365,7 +365,7 @@ func TestLocalDatabase(t *testing.T) {
 		config.Host = HOST
 		config.OsFsDir = core.DirPathFrom(osDir)
 
-		ctx := core.NewContexWithEmptyState(ctxConfig, nil)
+		ctx := core.NewContextWithEmptyState(ctxConfig, nil)
 		ctx.GetClosestState().Project = project
 
 		var tx *core.Transaction
@@ -421,7 +421,7 @@ func TestLocalDatabase(t *testing.T) {
 			// core.ReleaseConcreteResource(r)
 
 			//we check that the database transaction is commited
-			otherCtx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+			otherCtx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 			v, ok, err := ldb.mainKV.Get(otherCtx, key, ldb)
 
 			if !assert.NoError(t, err) {
@@ -498,7 +498,7 @@ func TestLocalDatabase(t *testing.T) {
 			assert.Equal(t, core.Int(1), v)
 
 			//we check that the database transaction is commited
-			otherCtx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+			otherCtx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 
 			v, ok, err := ldb.mainKV.Get(otherCtx, key, ldb)
 
@@ -564,7 +564,7 @@ func TestUpdateSchema(t *testing.T) {
 		config.Host = HOST
 		config.OsFsDir = core.DirPathFrom(filepath.Join(tempdir, "data"))
 
-		ctx := core.NewContexWithEmptyState(ctxConfig, nil)
+		ctx := core.NewContextWithEmptyState(ctxConfig, nil)
 		ctx.AddNamedPattern("int", core.INT_PATTERN)
 		ctx.AddNamedPattern("str", core.STR_PATTERN)
 		ctx.AddNamedPattern("Set", setcoll.SET_PATTERN)

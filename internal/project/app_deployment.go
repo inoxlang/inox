@@ -42,7 +42,7 @@ func (p *Project) PrepareApplicationDeployment(ctx *core.Context, args Applicati
 	//TODO: This can be difficult because the parsing and analysis may require non-code files.
 	fls := fs_ns.NewMemFilesystemFromSnapshot(baseImg.FilesystemSnapshot(), 10_000_000)
 
-	parsingCtx := core.NewContexWithEmptyState(core.ContextConfig{
+	parsingCtx := core.NewContextWithEmptyState(core.ContextConfig{
 		Permissions: []core.Permission{
 			core.FilesystemPermission{Kind_: permkind.Read, Entity: core.ROOT_PREFIX_PATH_PATTERN},
 		},

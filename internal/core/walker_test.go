@@ -9,7 +9,7 @@ import (
 func TestTreedataWalker(t *testing.T) {
 
 	t.Run("single node", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		treedata := &Treedata{
 			Root: Int(0),
 		}
@@ -40,7 +40,7 @@ func TestTreedataWalker(t *testing.T) {
 	})
 
 	t.Run("root + child", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		treedata := &Treedata{
 			Root: Int(0),
 			HiearchyEntries: []TreedataHiearchyEntry{
@@ -93,7 +93,7 @@ func TestTreedataWalker(t *testing.T) {
 	})
 
 	t.Run("root + two children", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		treedata := &Treedata{
 			Root: Int(0),
 			HiearchyEntries: []TreedataHiearchyEntry{
@@ -163,7 +163,7 @@ func TestTreedataWalker(t *testing.T) {
 	})
 
 	t.Run("root + child + grand child", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		treedata := &Treedata{
 			Root: Int(0),
 			HiearchyEntries: []TreedataHiearchyEntry{
@@ -235,7 +235,7 @@ func TestTreedataWalker(t *testing.T) {
 	})
 
 	t.Run("root + child + child with grandchild", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		treedata := &Treedata{
 			Root: Int(0),
 			HiearchyEntries: []TreedataHiearchyEntry{
@@ -324,7 +324,7 @@ func TestTreedataWalker(t *testing.T) {
 	})
 
 	t.Run("root + child + child with grandchild", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		treedata := &Treedata{
 			Root: Int(0),
 			HiearchyEntries: []TreedataHiearchyEntry{
@@ -413,7 +413,7 @@ func TestTreedataWalker(t *testing.T) {
 	})
 
 	t.Run("root + both children with grandchild", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		treedata := &Treedata{
 			Root: Int(0),
 			HiearchyEntries: []TreedataHiearchyEntry{

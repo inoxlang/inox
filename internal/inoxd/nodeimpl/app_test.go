@@ -30,7 +30,7 @@ func TestAppStop(t *testing.T) {
 		fls := proj.(*project.Project).LiveFilesystem()
 		utils.PanicIfErr(util.WriteFile(fls, "/main.ix", []byte(mainix), 0600))
 
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{
 			Permissions: []core.Permission{
 				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.ROOT_PREFIX_PATH_PATTERN},
 			},
@@ -66,7 +66,7 @@ func TestAppStop(t *testing.T) {
 	}
 	t.Run("graceful stop of an undeployed application", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		agent, err := NewAgent(AgentParameters{
@@ -94,7 +94,7 @@ func TestAppStop(t *testing.T) {
 
 	t.Run("ungraceful stop of an undeployed application", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		agent, err := NewAgent(AgentParameters{
@@ -122,7 +122,7 @@ func TestAppStop(t *testing.T) {
 
 	t.Run("graceful stop of a deployed application", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		agent, err := NewAgent(AgentParameters{
@@ -192,7 +192,7 @@ func TestAppStop(t *testing.T) {
 
 	t.Run("ungraceful stop of a deployed application", func(t *testing.T) {
 		tmpDir := t.TempDir()
-		ctx := core.NewContexWithEmptyState(core.ContextConfig{}, nil)
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		agent, err := NewAgent(AgentParameters{

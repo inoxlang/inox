@@ -13,21 +13,21 @@ import (
 )
 
 func TestNilJSONRepresentation(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	assert.Equal(t, "null", getJSONRepr(t, Nil, ctx))
 }
 
 func TestBoolJSONRepresentation(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	assert.Equal(t, "true", getJSONRepr(t, True, ctx))
 }
 
 func TestRuneJSONRepresentation(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	assert.Equal(t, `{"rune__value":"a"}`, getJSONRepr(t, Rune('a'), ctx))
@@ -39,7 +39,7 @@ func TestRuneJSONRepresentation(t *testing.T) {
 }
 
 func TestIntJSONRepresentation(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	assert.Equal(t, `{"int__value":2}`, getJSONRepr(t, Int(2), ctx))
@@ -75,7 +75,7 @@ func TestIntJSONRepresentation(t *testing.T) {
 }
 
 func TestFloatJSONRepresentation(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	testCases := []struct {
@@ -91,7 +91,7 @@ func TestFloatJSONRepresentation(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(strconv.Itoa(int(testCase.value)), func(t *testing.T) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
 			repr := getJSONRepr(t, testCase.value, ctx)
@@ -106,7 +106,7 @@ func TestFloatJSONRepresentation(t *testing.T) {
 }
 
 func TestStrJSONRepresentation(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	s := String("a\nb")
@@ -122,11 +122,11 @@ func TestStrJSONRepresentation(t *testing.T) {
 }
 
 func TestObjectJSONRepresentation(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	t.Run("empty", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		obj := &Object{}
@@ -141,7 +141,7 @@ func TestObjectJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("single key: ambiguous value", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		obj := objFrom(ValMap{"a\nb": Path("/")})
@@ -161,7 +161,7 @@ func TestObjectJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("two keys", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		obj := objFrom(ValMap{"a\nb": Int(1), "c\nd": Int(2)})
@@ -181,7 +181,7 @@ func TestObjectJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("deep", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		obj := objFrom(ValMap{
@@ -202,7 +202,7 @@ func TestObjectJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("cycle", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		obj := &Object{}
@@ -211,7 +211,7 @@ func TestObjectJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("sensitive properties", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		obj := objFrom(ValMap{
@@ -228,7 +228,7 @@ func TestObjectJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("sensitive properties: config with .allVisible == true", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		obj := objFrom(ValMap{
@@ -247,7 +247,7 @@ func TestObjectJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("sensitive properties: value visibility with all keys to public", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		obj := objFrom(ValMap{
@@ -270,13 +270,13 @@ func TestObjectJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("url", func(t *testing.T) {
-		reprTestCtx := NewContexWithEmptyState(ContextConfig{}, nil)
+		reprTestCtx := NewContextWithEmptyState(ContextConfig{}, nil)
 		obj := objFrom(ValMap{})
 
 		url := URL("https://example.com/objects/98484")
 		utils.PanicIfErr(obj.SetURLOnce(reprTestCtx, url))
 
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		expectedRepr := `{"object__value":{"_url_":"` + string(url) + `"}}`
@@ -285,11 +285,11 @@ func TestObjectJSONRepresentation(t *testing.T) {
 }
 
 func TestRecordJSONRepresentation(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	t.Run("empty", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		rec := NewRecordFromMap(nil)
@@ -301,7 +301,7 @@ func TestRecordJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("single key: ambiguous value", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		obj := NewRecordFromMap(ValMap{"a\nb": Path("/")})
@@ -321,7 +321,7 @@ func TestRecordJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("two keys", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		rec := NewRecordFromMap(ValMap{"a\nb": String("1"), "c\nd": String("2")})
@@ -332,7 +332,7 @@ func TestRecordJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("deep", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		rec := NewRecordFromMap(ValMap{
@@ -355,7 +355,7 @@ func TestRecordJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("sensitive properties", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		rec := NewRecordFromMap(ValMap{
@@ -439,11 +439,11 @@ func TestKeyListJSONRepresentation(t *testing.T) {
 }
 
 func TestListJSONRepresentation(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	t.Run("empty", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		list := NewWrappedValueList()
@@ -453,7 +453,7 @@ func TestListJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("single element: ambiguous", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		list := NewWrappedValueList(Path("/"))
@@ -483,7 +483,7 @@ func TestListJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("two elements", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		list := NewWrappedValueList(String("2"), String("a"))
@@ -492,7 +492,7 @@ func TestListJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("deep", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		list := NewWrappedValueList(NewWrappedValueList(Int(2), objFrom(ValMap{"a": Int(1)})))
@@ -502,7 +502,7 @@ func TestListJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("cycle", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		list := NewWrappedValueList(Int(0))
@@ -513,21 +513,21 @@ func TestListJSONRepresentation(t *testing.T) {
 }
 
 func TestByteSliceJSONRepresentation(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	//TODO
 }
 
 func TestOptionJSONRepresentation(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	//TODO
 }
 
 func TestPathJSONRepresentation(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	testCases := []struct {
@@ -543,7 +543,7 @@ func TestPathJSONRepresentation(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.value, func(t *testing.T) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
 			pth := Path(testCase.value)
@@ -557,7 +557,7 @@ func TestPathJSONRepresentation(t *testing.T) {
 
 }
 func TestPathPatternJSONRepresentation(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	testCases := []struct {
@@ -573,7 +573,7 @@ func TestPathPatternJSONRepresentation(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.value, func(t *testing.T) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
 			patt := PathPattern(testCase.value)
@@ -588,7 +588,7 @@ func TestPathPatternJSONRepresentation(t *testing.T) {
 }
 
 func TestURLRJSONepresentation(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	url := URL("https://example.com/")
@@ -600,7 +600,7 @@ func TestURLRJSONepresentation(t *testing.T) {
 }
 
 func TestURLPatternJSONRepresentation(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	testCases := []struct {
@@ -612,7 +612,7 @@ func TestURLPatternJSONRepresentation(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.value, func(t *testing.T) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
 			patt := URLPattern(testCase.value)
@@ -626,7 +626,7 @@ func TestURLPatternJSONRepresentation(t *testing.T) {
 }
 
 func TestHostJSONRepresentation(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	host := Host("https://example.com")
@@ -638,7 +638,7 @@ func TestHostJSONRepresentation(t *testing.T) {
 }
 
 func TestHostPatternJSONRepresentation(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	testCases := []struct {
@@ -650,7 +650,7 @@ func TestHostPatternJSONRepresentation(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.value, func(t *testing.T) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
 			patt := HostPattern(testCase.value)
@@ -664,14 +664,14 @@ func TestHostPatternJSONRepresentation(t *testing.T) {
 }
 
 func TestEmailAddressJSONRepresentation(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	testCases := []string{"foo@example.com", "foo.e.9@example.com", "foo+e%9@example.com", "foo%e+9@example.com"}
 
 	for _, testCase := range testCases {
 		t.Run(testCase, func(t *testing.T) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
 			addr := EmailAddress(testCase)
@@ -686,7 +686,7 @@ func TestEmailAddressJSONRepresentation(t *testing.T) {
 }
 
 func TestIdentifierJSONRepresentation(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	ident := Identifier("a")
@@ -698,14 +698,14 @@ func TestIdentifierJSONRepresentation(t *testing.T) {
 }
 
 func TestCheckedStringJSONRepresentation(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	//TODO
 }
 
 func TestByteCountJSONRepresentation(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	negative := ByteCount(-1)
@@ -714,7 +714,7 @@ func TestByteCountJSONRepresentation(t *testing.T) {
 
 	for _, testCase := range byteCountReprTestCases {
 		t.Run(strconv.Itoa(int(testCase.value)), func(t *testing.T) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
 			assert.Equal(t, `{"byte-count__value":"`+testCase.representation+`"}`, getJSONRepr(t, testCase.value, ctx))
@@ -726,7 +726,7 @@ func TestByteCountJSONRepresentation(t *testing.T) {
 }
 
 func TestLineCountJSONRepresentation(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	n := LineCount(3)
@@ -755,7 +755,7 @@ var byteRateJSONReprTestCases = []struct {
 }
 
 func TestByteRateJSONRepresentation(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	negative := ByteRate(-1)
@@ -764,7 +764,7 @@ func TestByteRateJSONRepresentation(t *testing.T) {
 
 	for _, testCase := range byteRateJSONReprTestCases {
 		t.Run(strconv.Itoa(int(testCase.value)), func(t *testing.T) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
 			assert.Equal(t, `{"byte-rate__value":`+testCase.representation+"}", getJSONRepr(t, testCase.value, ctx))
@@ -793,13 +793,13 @@ var freqJSONReprTestCases = []struct {
 }
 
 func TestFrequencyJSONRepresentation(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	for _, testCase := range freqJSONReprTestCases {
 
 		t.Run(strconv.Itoa(int(testCase.value)), func(t *testing.T) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
 			assert.Equal(t, `{"frequency__value":`+testCase.expectedRepresentation+`}`, getJSONRepr(t, testCase.value, ctx))
@@ -834,12 +834,12 @@ var durationJSONReprTestCases = []struct {
 }
 
 func TestDurationJSONRepresentation(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	for _, testCase := range durationJSONReprTestCases {
 		t.Run(strconv.Itoa(int(testCase.value)), func(t *testing.T) {
-			ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+			ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 			defer ctx.CancelGracefully()
 
 			assert.Equal(t, `{"duration__value":`+testCase.representation+`}`, getJSONRepr(t, testCase.value, ctx))
@@ -851,7 +851,7 @@ func TestDurationJSONRepresentation(t *testing.T) {
 }
 
 func TestRuneRangeJSONRepresentation(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	runeRange := RuneRange{Start: 'a', End: 'z'}
@@ -863,18 +863,18 @@ func TestRuneRangeJSONRepresentation(t *testing.T) {
 }
 
 func TestQuantityRangeJSONRepresentation(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	//TODO
 }
 
 func TestIntRangeJSONRepresentation(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	t.Run("known start", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		intRange := IntRange{start: 0, end: 100, step: 1}
@@ -886,7 +886,7 @@ func TestIntRangeJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("unknown start", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		intRange := IntRange{start: 0, end: 100, unknownStart: true, step: 1}
@@ -900,11 +900,11 @@ func TestIntRangeJSONRepresentation(t *testing.T) {
 }
 
 func TestFloatRangeJSONRepresentation(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	t.Run("known start", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		floatRange := FloatRange{start: 0, end: 100, inclusiveEnd: true}
@@ -916,7 +916,7 @@ func TestFloatRangeJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("unknown start", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		floatRange := FloatRange{start: 0, end: 100, unknownStart: true, inclusiveEnd: true}
@@ -928,7 +928,7 @@ func TestFloatRangeJSONRepresentation(t *testing.T) {
 	})
 
 	t.Run("exclusive end", func(t *testing.T) {
-		ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
 		floatRange := FloatRange{start: 0, end: 100, inclusiveEnd: false}
@@ -941,7 +941,7 @@ func TestFloatRangeJSONRepresentation(t *testing.T) {
 }
 
 func TestTreedataJSONRepresentation(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	//TODO
@@ -949,7 +949,7 @@ func TestTreedataJSONRepresentation(t *testing.T) {
 }
 
 func TestNamedSegmentPathPatternJSONRepresentation(t *testing.T) {
-	ctx := NewContexWithEmptyState(ContextConfig{}, nil)
+	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
 	//TODO

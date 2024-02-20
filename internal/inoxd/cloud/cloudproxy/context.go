@@ -32,13 +32,13 @@ func createContexts(host core.Host, proxyArgs CloudProxyArgs) (ctx, topCtx *core
 		},
 	}
 
-	topCtx = core.NewContexWithEmptyState(core.ContextConfig{
+	topCtx = core.NewContextWithEmptyState(core.ContextConfig{
 		Filesystem:          proxyArgs.Filesystem,
 		Permissions:         perms,
 		ParentStdLibContext: proxyArgs.GoContext,
 	}, proxyArgs.OutW)
 
-	ctx = core.NewContexWithEmptyState(core.ContextConfig{
+	ctx = core.NewContextWithEmptyState(core.ContextConfig{
 		ParentContext: topCtx,
 		Permissions:   perms,
 	}, proxyArgs.OutW)
