@@ -145,6 +145,18 @@ func (g *GlobalState) IsMain() bool {
 	return g.MainState == g
 }
 
+func (g *GlobalState) InProjectMode() bool {
+	//Check if $g has .Project set.
+	if g.Project != nil && !reflect.ValueOf(g.MainState.Project).IsNil() {
+		return true
+	}
+
+	//Check if the main state has .Project set.
+	return g.MainState != nil &&
+		g.MainState.Project != nil &&
+		!reflect.ValueOf(g.MainState.Project).IsNil()
+}
+
 func (g *GlobalState) SetDescendantState(src ResourceName, state *GlobalState) {
 	g.descendantStatesLock.Lock()
 	defer g.descendantStatesLock.Unlock()
