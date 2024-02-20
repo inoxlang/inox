@@ -1,6 +1,7 @@
 # HTTP Server Reference
 
-Inox's HTTP server provides several high-level features and is **secure by default**.
+Inox's HTTP server provides several high-level features and is **secure by
+default**.
 
 **WORK IN PROGRESS**
 
@@ -14,14 +15,15 @@ Inox's HTTP server provides several high-level features and is **secure by defau
 - [Request handling](#request-handling)
 - [Handler module](#handler-module)
 - [Content Security Policy](#content-security-policy)
+- [Development servers](#development-servers)
 
 ---
 
 ## Creation
 
 The builtin `http.Server` function creates a listening HTTP**S** server.\
-The first parameter is the [listening address](#listening-address): it should be a HTTPS host such
-as `https://localhost:8080` or `https://0.0.0.0:8080`.
+The first parameter is the [listening address](#listening-address): it should be
+a HTTPS host such as `https://localhost:8080` or `https://0.0.0.0:8080`.
 
 ```
 server = http.Server!(https://localhost:8080)
@@ -35,17 +37,25 @@ The second parameter is a handler ([function](#handler-function) or
 
 ## Listening Address
 
-The listening address is a Inox HTTPS host such as `https://localhost:8080` or `https://0.0.0.0:8080`.
-If the host (standard definition) is `0.0.0.0` the server will listen on all public interfaces.
+The listening address is a Inox HTTPS host such as `https://localhost:8080` or
+`https://0.0.0.0:8080`. If the host (standard definition) is `0.0.0.0` the
+server will listen on all public interfaces.
 
-⚠️ If the [inox daemon](./inox-daemon.md) does not allow exposing web servers the server will listen
-on `localhost` as a fallback.
+⚠️ If the [inox daemon](./inox-daemon.md) does not allow exposing web servers the
+server will listen on `localhost` as a fallback.
+
+The global constant `APP_LISTENING_ADDR` is equal to `https://localhost:8080` in
+the development environment and in tests. Several environments and tests can
+listen to `localhost:8080` in parallel because in this situation Inox HTTP
+servers never really bind to `localhost:8080` (see
+[Development servers](#development-servers)).
 
 ---
 
 ## Certificate
 
-Inox's HTTP server automatically generates a self-signed certificate for `localhost` and public IPs.
+Inox's HTTP server automatically generates a self-signed certificate for
+`localhost` and public IPs.
 
 ---
 
@@ -96,23 +106,23 @@ following:
 
 | Request's path | HTTP method | Possible handler paths                                        |
 | -------------- | ----------- | ------------------------------------------------------------- |
-| `/`              | `GET`         | `/GET-index.ix , /index.ix`                                   |
-| `/about`         | `GET`         | `/GET-about.ix , /about.ix , /about/GET.ix , /about/index.ix` |
-| `/users`         | `POST`        | `/POST-users.ix , /users/POST.ix , /users.ix`                  |
-| `/users/0`       | `POST`        | `/users/:user-id/GET.ix , /users/:user-id/index.ix`           |
+| `/`            | `GET`       | `/GET-index.ix , /index.ix`                                   |
+| `/about`       | `GET`       | `/GET-about.ix , /about.ix , /about/GET.ix , /about/index.ix` |
+| `/users`       | `POST`      | `/POST-users.ix , /users/POST.ix , /users.ix`                 |
+| `/users/0`     | `POST`      | `/users/:user-id/GET.ix , /users/:user-id/index.ix`           |
 
-A **single handler module** should be defined for each endpoint/METHOD pair. The `http.Server` function panics
-if there are two or more handlers for the same endpoint/METHOD pair.
+A **single handler module** should be defined for each endpoint/METHOD pair. The
+`http.Server` function panics if there are two or more handlers for the same
+endpoint/METHOD pair.
 
 ---
 
 ### Context Data
 
-The filesystem router adds a context data entry for each **path parameter**. 
-The **key** of the entry is `/path-params/<parameter name>`.
+The filesystem router adds a context data entry for each **path parameter**. The
+**key** of the entry is `/path-params/<parameter name>`.
 
 Let's say that we have the following filesystem structure:
-
 
 ```
 routes/
@@ -121,9 +131,9 @@ routes/
             GET.ix
 ```
 
-
-If a request of path `/users/123` is received the `GET.ix` handler module will be invoked.
-The call to `ctx_data(/path-params/user-id)` will return the string `123`.
+If a request of path `/users/123` is received the `GET.ix` handler module will
+be invoked. The call to `ctx_data(/path-params/user-id)` will return the string
+`123`.
 
 ---
 
@@ -200,14 +210,13 @@ The handler is invoked, it can be a **function**, a **Mapping** or a **module**.
 
 - Handler functions are executed using the state created at
   [step 3](#3-routing).
-- Mapping computations and nested handlers are executed with
-  the state created at [step 3](#3-routing).
+- Mapping computations and nested handlers are executed with the state created
+  at [step 3](#3-routing).
 - The handler module selected by the **filesystem router** is executed using a
   state created by **preparing** the module. It is a child of the state at
   [step 3](#3-routing).
 
 ---
-
 
 ## Handler Module
 
@@ -215,7 +224,10 @@ The handler is invoked, it can be a **function**, a **Mapping** or a **module**.
 
 ## Content Security Policy
 
-The default [Content Security Policy]((https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP).) used by the HTTP server is the following:
+The default
+[Content Security Policy]((https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP).)
+used by the HTTP server is the following:
+
 - `default-src 'none';`
 - `frame-ancestors 'none';`
 - `frame-src 'none';`
@@ -225,7 +237,8 @@ The default [Content Security Policy]((https://developer.mozilla.org/en-US/docs/
 - `img-src 'self';`
 - `style-src-elem 'self' 'unsafe-inline';`.
 
-Directives can be **individually** overriden or added by passing a CSP to the server:
+Directives can be **individually** overriden or added by passing a CSP to the
+server:
 
 ```
 server = http.Server!(APP_LISTENING_ADDR {
@@ -243,4 +256,25 @@ server = http.Server!(APP_LISTENING_ADDR {
 
 ### Page Nonce
 
-If the filesystem router is used, a nonce is **always added** to the `script-src-elem` directive and to all `<script>` elements in the page's HTML.
+If the filesystem router is used, a nonce is **always added** to the
+`script-src-elem` directive and to all `<script>` elements in the page's HTML.
+
+---
+
+## Development Servers
+
+A development server is a HTTP**S** server that binds to `localhost:8080` (or
+`localhost:8081`). HTTP servers that are created in development environments
+and that listen to `localhost:8080` **do not bind to anything.** Instead each server informs
+the corresponding development server that it is the target server for requests with a specific value for the header `X-Dev-Session-Key` to them. Each development environment has its own development session key.
+
+```mermaid
+flowchart LR
+
+Request1(Request 1, X-Dev-Session-Key A) --> DevServer(Development server on localhost:8080)
+Request2(Request 2, X-Dev-Session-Key B) --> DevServer
+
+
+DevServer --> TargetServerA(Target server A)
+DevServer --> TargetServerB(Target server B)
+```

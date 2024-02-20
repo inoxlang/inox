@@ -131,7 +131,7 @@ in the Inox binary) and the code is edited and tested inside a virtual
 workspace. The server does not yet integrate git yet, but this is planned,
 https://github.com/go-git/go-git.
 
-Each developer in the project will ultimately have a its own copy. As of now the
+Each developer in the project will ultimately have its own copy. As of now the
 project server only supports projects with a single developer.
 
 **Pros**
@@ -146,7 +146,7 @@ project server only supports projects with a single developer.
 **Cons**
 
 - An Internet connection is required. However code files are cached on the
-  developer machine for offline access (read only for now).
+  developer's machine for offline access (read only for now).
 
 Project servers are expected to run on a dedicated machine. They will support
 automatic infrastructure management in the near future.
@@ -258,7 +258,7 @@ leaks.**
 </details>
 
 If you have any questions you are welcome to join the
-[Discord Server](https://discord.gg/53YGx8GzgE) and the
+[Discord Server](https://discord.gg/53YGx8GzgE) or the
 [Subreddit](https://www.reddit.com/r/inoxlang/). If you want to build Inox from
 source go [here](#build-from-source).
 
