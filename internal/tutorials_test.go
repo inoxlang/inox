@@ -12,6 +12,8 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/globals/http_ns"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/learn"
 	"github.com/inoxlang/inox/internal/mod"
 	"github.com/inoxlang/inox/internal/project"
@@ -57,6 +59,23 @@ func testTutorial(t *testing.T, series learn.TutorialSeries, tut learn.Tutorial,
 			//cancel after 3 seconds.
 			stdlibCtx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
 			defer cancel()
+
+			//Start the dev server.
+
+			devServerCtx := core.NewContextWithEmptyState(core.ContextConfig{
+				Filesystem: fs_ns.NewMemFilesystem(1_000_000),
+			}, nil)
+
+			err := http_ns.StartDevServer(devServerCtx, http_ns.DevServerConfig{
+				DevServersDir: "/",
+				Port:          inoxconsts.DEV_PORT_0,
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			defer devServerCtx.CancelGracefully()
 		} else {
 			testconfig.AllowParallelization(t)
 			stdlibCtx, cancel = context.WithCancel(context.Background())
@@ -117,6 +136,14 @@ func testTutorial(t *testing.T, series learn.TutorialSeries, tut learn.Tutorial,
 				IgnoreHighRiskScore: true,
 
 				Project: project.NewDummyProject("proj", fls),
+				OnPrepared: func(state *core.GlobalState) error {
+					if hasHttpServer {
+						//Add a dev session key entry in order to allow the creation of a virtual HTTP server.
+						state.Ctx.PutUserData(http_ns.CTX_DATA_KEY_FOR_DEV_SESSION_KEY, core.String(http_ns.RandomDevSessionKey()))
+					}
+
+					return nil
+				},
 			})
 
 			if hasHttpServer {
