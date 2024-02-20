@@ -233,8 +233,6 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 				FilesystemPermission{Kind_: permkind.Write, Entity: PathPattern("/...")},
 				FilesystemPermission{Kind_: permkind.Delete, Entity: PathPattern("/...")},
 
-				HttpPermission{Kind_: permkind.Read, AnyEntity: true},
-
 				DatabasePermission{Kind_: permkind.Read, Entity: LDB_MAIN_HOST},
 				DatabasePermission{Kind_: permkind.Write, Entity: LDB_MAIN_HOST},
 				DatabasePermission{Kind_: permkind.Delete, Entity: LDB_MAIN_HOST},
