@@ -3,6 +3,7 @@ package compressarch
 import (
 	"bytes"
 	"context"
+	"strconv"
 	"testing"
 	"time"
 
@@ -11,7 +12,7 @@ import (
 
 func TestFileCompressor(t *testing.T) {
 
-	t.Run("", func(t *testing.T) {
+	t.Run("base case", func(t *testing.T) {
 		ctx := context.Background()
 		compressor := NewFileCompressor()
 		fpath := "/index.js"
@@ -101,4 +102,52 @@ func TestFileCompressor(t *testing.T) {
 		assert.Equal(t, secondContent, buf.Bytes())
 	})
 
+	t.Run("parallel", func(t *testing.T) {
+
+		ctx := context.Background()
+		compressor := NewFileCompressor()
+
+		updateCount := 10_000
+		content := bytes.Repeat([]byte("1"), 100)
+
+		//Create a goroutine that will compress a large amount of files (single time per file).
+		go func() {
+			for i := 0; i < updateCount; i++ {
+				compressor.CompressFileContent(ContentCompressionParams{
+					Ctx:           ctx,
+					ContentReader: bytes.NewReader(content),
+					Path:          "/file" + strconv.Itoa(i) + ".js",
+					LastMtime:     time.Now(),
+				})
+			}
+		}()
+
+		//Compress a large amount of files (single time per file).
+		for i := 0; i < updateCount; i++ {
+
+			reader, isCompressed, err := compressor.CompressFileContent(ContentCompressionParams{
+				Ctx:           ctx,
+				ContentReader: bytes.NewReader(content),
+				Path:          "/file" + strconv.Itoa(i) + ".css",
+				LastMtime:     time.Now(),
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			if !assert.True(t, isCompressed) {
+				return
+			}
+
+			buf := bytes.NewBuffer(nil)
+			err = UnGzip(buf, reader)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Equal(t, content, buf.Bytes())
+		}
+
+	})
 }

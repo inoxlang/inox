@@ -76,9 +76,10 @@ func (c *FileCompressor) CompressFileContent(args ContentCompressionParams) (_ i
 
 	c.cacheLock.Lock()
 	entry, found := c.cache[path]
-	c.cacheLock.Unlock()
 
 	if found {
+		c.cacheLock.Unlock()
+
 		entry.lock.Lock()
 		defer entry.lock.Unlock()
 
@@ -92,11 +93,14 @@ func (c *FileCompressor) CompressFileContent(args ContentCompressionParams) (_ i
 		entry.lastFileMtime = lastMtime
 		entry.isCompressedContentLarger = false
 	} else {
+		//We keep c.cacheLock locked because we create a new entry.
+
 		entry = &compressedFile{lastFileMtime: lastMtime}
 		entry.lock.Lock()
 		defer entry.lock.Unlock()
 
 		c.cache[path] = entry
+		c.cacheLock.Unlock()
 	}
 
 	buf := bytes.NewBuffer(nil)
