@@ -9,6 +9,7 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
@@ -204,7 +205,7 @@ func addFilesysteDirEndpoints(
 					endpointLock.Unlock()
 					return fmt.Errorf(
 						"operation %s %q is already implemented by the module %q; unexpected module %q",
-						op.httpMethod, endpointPath, op.handlerModule.Name(), absEntryPath)
+						op.httpMethod, endpointPath, op.handlerModule.ModuleName(), absEntryPath)
 				}
 				endpointLock.Unlock()
 
@@ -391,6 +392,8 @@ func addHandlerModule(
 		}
 	}
 
+	preparationStartTime := time.Now()
+
 	state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 		Fpath:                     absEntryPath,
 		ParsingCompilationContext: parentCtx,
@@ -422,7 +425,13 @@ func addHandlerModule(
 		return
 	}
 
-	operation.handlerModule = mod
+	operation.handlerModule = core.NewModulePreparationCache(core.ModulePreparationCacheUpdate{
+		Time:            preparationStartTime,
+		Module:          mod,
+		StaticCheckData: state.StaticCheckData,
+		SymbolicData:    state.SymbolicData.Data,
+		//There should not be a symbolic check error because we handle the error returned by PrepareLocalModule.
+	})
 
 	bodyParams := utils.FilterSlice(state.Manifest.Parameters.NonPositionalParameters(), func(p core.ModuleParameter) bool {
 		return !strings.HasPrefix(p.Name(), "_")

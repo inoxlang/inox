@@ -19,7 +19,7 @@ type ApiEndpoint struct {
 	catchAll     bool
 
 	//Only set if filesystem routing is used. If set .operations is nil.
-	catchAllHandler *core.Module
+	catchAllHandler *core.ModulePreparationCache
 
 	operations []ApiOperation
 }
@@ -32,7 +32,7 @@ func (e ApiEndpoint) CatchAll() bool {
 	return e.catchAll
 }
 
-func (e ApiEndpoint) CatchAllHandler() (*core.Module, bool) {
+func (e ApiEndpoint) CatchAllHandler() (*core.ModulePreparationCache, bool) {
 	return e.catchAllHandler, e.catchAllHandler != nil
 }
 
@@ -92,14 +92,14 @@ type ApiOperation struct {
 	jsonRequestBody    core.Pattern
 	jsonResponseBodies map[uint16]core.Pattern
 
-	handlerModule *core.Module //only set if filesystem routing is used.
+	handlerModule *core.ModulePreparationCache //only set if filesystem routing is used.
 }
 
 func (op ApiOperation) HttpMethod() string {
 	return op.httpMethod
 }
 
-func (op ApiOperation) HandlerModule() (*core.Module, bool) {
+func (op ApiOperation) HandlerModule() (*core.ModulePreparationCache, bool) {
 	return op.handlerModule, op.handlerModule != nil
 }
 

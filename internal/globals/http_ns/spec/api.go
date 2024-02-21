@@ -172,7 +172,7 @@ func (api *API) GetEndpoint(path string) (*ApiEndpoint, error) {
 }
 
 type HandlerModuleVisitFn func(
-	mod *core.Module,
+	mod *core.ModulePreparationCache,
 	endpoint *ApiEndpoint,
 	//not set if $endpoint.CatchAll() is true.
 	operation ApiOperation,

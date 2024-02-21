@@ -157,7 +157,7 @@ func findHtmlAttributeValueCompletions(
 		api := inputData.ServerAPI
 
 		var endpointPaths []string
-		api.ForEachHandlerModule(func(mod *core.Module, endpoint *spec.ApiEndpoint, operation spec.ApiOperation) error {
+		api.ForEachHandlerModule(func(mod *core.ModulePreparationCache, endpoint *spec.ApiEndpoint, operation spec.ApiOperation) error {
 			addEndpoint := false
 
 			switch attrName {
@@ -208,7 +208,7 @@ func findWholeHTMLTagCompletions(tagName string, ancestors []parse.Node, include
 			prefix = "<"
 		}
 
-		api.ForEachHandlerModule(func(mod *core.Module, endpoint *spec.ApiEndpoint, operation spec.ApiOperation) error {
+		api.ForEachHandlerModule(func(mod *core.ModulePreparationCache, endpoint *spec.ApiEndpoint, operation spec.ApiOperation) error {
 			//ignore non-mutating methods.
 			if !endpoint.CatchAll() && !http_ns.IsMutationMethod(operation.HttpMethod()) {
 				return nil

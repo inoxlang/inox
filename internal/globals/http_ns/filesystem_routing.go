@@ -234,7 +234,7 @@ func (router *filesystemRouter) handleDynamic(req *Request, rw *ResponseWriter, 
 
 	//Determine the module to execute.
 	methodSpecificModule := true
-	var module *core.Module
+	var module *core.ModulePreparationCache
 
 	if endpt.CatchAll() {
 		methodSpecificModule = false
@@ -256,7 +256,7 @@ func (router *filesystemRouter) handleDynamic(req *Request, rw *ResponseWriter, 
 	//Prepare the module
 	//TODO: check the file is not writable
 
-	modulePath := module.Name()
+	modulePath := module.ModuleName()
 	handlerCtx := handlerGlobalState.Ctx
 
 	preparationStart := time.Now()
@@ -266,11 +266,9 @@ func (router *filesystemRouter) handleDynamic(req *Request, rw *ResponseWriter, 
 	moduleLogger := handlerGlobalState.Logger
 
 	state, _, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
-		Fpath: modulePath,
-		Cache: core.NewModulePreparationCache(core.ModulePreparationCacheUpdate{
-			Module: module,
-			Time:   time.Now(),
-		}),
+		Fpath:                 modulePath,
+		Cache:                 module,
+		ForceUseCache:         true,
 		ParentContext:         handlerCtx,
 		ParentContextRequired: true,
 		DefaultLimits:         core.GetDefaultRequestHandlingLimits(),
