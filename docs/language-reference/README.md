@@ -24,7 +24,7 @@
 - [Context](./context.md)
 - [Databases](./databases.md)
 - [Permissions](./permissions.md)
-- [Limits](./permissions.md)
+- [Limits](./limits.md)
 - [Transaction](./transaction.md)
 - [Secrets](./secrets.md)
 

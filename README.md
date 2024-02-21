@@ -14,32 +14,29 @@ integrates with several components:
 - An in-process container engine: each application runs in a dedicated virtual
   filesystem, and is subject to permissions. _This is not related to Linux containers._
 
-**Zero boilerplate and no glue code. Dead simple configuration. Secure by default.**
+Here are a few example files that are part of a basic todo app with accounts and persistence.
 
-Here are a few example files that are part of a basic todo app.
-
-![image](https://github.com/inoxlang/inox/assets/113632189/f6aed69d-ff30-428e-ba5b-042f72ac329e)
+![image](https://github.com/inoxlang/inox/assets/113632189/baaf934a-011e-4a7e-87a5-04174d81c800)
 
 **Database schema**
 
-![image](https://github.com/inoxlang/inox/assets/113632189/5f07deb5-56ec-42e7-a550-bdc4e613336d)
+![image](https://github.com/inoxlang/inox/assets/113632189/dd2a1dc2-ae0a-4886-966d-0dac5387fa58)
 
 **A request handler (filesystem routing).** Each handler module runs in a
 dedicated execution context with its own permissions.
 
-![image](https://github.com/inoxlang/inox/assets/113632189/6e632f71-8a01-4cde-b5d7-239a52942e58)
+![image](https://github.com/inoxlang/inox/assets/113632189/b4289888-a87f-47fb-bcbd-5934451ce0ef)
 
 _Note: the permissions granted to imported modules (local or third-party) are
 **explicit**: `import lib ./malicious-lib.ix { allow: {} }`_
 
 <details>
 
-**<summary>⚙️ Another request handler (GET request with HTML
-rendering)</summary>**
-
-![image](https://github.com/inoxlang/inox/assets/113632189/85772ae4-4025-4aef-94c8-15b624580285)
+**<summary>⚙️ HTTP GET handler with HTML rendering </summary>**
 
 </details>
+
+![image](https://github.com/inoxlang/inox/assets/113632189/3038d6a5-ca8b-4724-b783-11009fd2ce1e)
 
 <details>
 
@@ -49,10 +46,9 @@ rendering)</summary>**
 
 </details>
 
-_I don't claim Inox is, or will be, a suitable solution for 100% of real-world web projects._
+_I don't claim Inox is, or will be, a suitable solution for 100% of web projects._
 
 ---
-
 
 I have been working 2 years full time on Inox. There is still work to do in
 order to make Inox usable in real world applications. If you believe this
@@ -281,7 +277,7 @@ You can learn the language directly in VSCode by creating a file with a
 ![tutorial-demo](https://github.com/inoxlang/inox-vscode/raw/master/assets/docs/tutorial-demo.gif)
 
 📚 [Tutorials](docs/tutorials/README.md)\
-🌐 [Frontend dev](./docs/frontend-development.md)\
+🌐 [Frontend development](./docs/frontend-development.md)\
 🧰 [Builtins](docs/builtins.md)\
 🗂️ [Collections](docs/collections.md)\
 📖 [Language reference](docs/language-reference/README.md)\
@@ -672,7 +668,7 @@ manifest {
 By default strict limits are applied on HTTP request handlers in order to
 mitigate some types of DoS.
 
-[Learn More](./docs/language-reference/README.md#limits)
+[Learn more](./docs/language-reference/limits.md)
 
 ## Questions You May Have
 
