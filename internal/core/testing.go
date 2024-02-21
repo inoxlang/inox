@@ -724,9 +724,12 @@ func runTestItem(
 			FullAccessToDatabases:   true,
 			ForceExpectSchemaUpdate: true,
 
-			Fpath:        string(programToExecute),
-			Project:      programProject,
-			CachedModule: programModuleCache,
+			Fpath:   string(programToExecute),
+			Project: programProject,
+			Cache: NewModulePreparationCache(ModulePreparationCacheUpdate{
+				Module: programModuleCache,
+				Time:   time.Now(),
+			}),
 
 			ParsingCompilationContext: parentCtx,
 			ParentContext:             lthreadCtx, //TODO: gracefully stops the program

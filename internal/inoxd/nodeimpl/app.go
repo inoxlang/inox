@@ -259,8 +259,11 @@ func (app *Application) AutorestartLoop( /*temporary solution*/ project core.Pro
 		filesystem := app.ctx.GetFileSystem()
 
 		state, _, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
-			Fpath:                     modPath.UnderlyingString(),
-			CachedModule:              appMod,
+			Fpath: modPath.UnderlyingString(),
+			Cache: core.NewModulePreparationCache(core.ModulePreparationCacheUpdate{
+				Module: appMod,
+				Time:   time.Now(),
+			}),
 			ParentContext:             app.ctx,
 			ParsingCompilationContext: app.ctx,
 			ParentContextRequired:     true,

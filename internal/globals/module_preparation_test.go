@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/cloudflare/cloudflare-go"
 	"github.com/go-git/go-billy/v5/util"
@@ -139,7 +140,7 @@ func TestPrepareLocalModule(t *testing.T) {
 		assert.True(t, state.SymbolicData.IsEmpty())
 	})
 
-	t.Run("cached module", func(t *testing.T) {
+	t.Run("with cache: module only", func(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
@@ -155,6 +156,8 @@ func TestPrepareLocalModule(t *testing.T) {
 			a = 1
 			b = c 		  	# static check error
 		`), 0o600)
+
+		//First preparation: we create the cache.
 
 		ctx1 := core.NewContext(core.ContextConfig{
 			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
@@ -182,7 +185,12 @@ func TestPrepareLocalModule(t *testing.T) {
 			return
 		}
 
-		//second parsing but with the cache
+		cache := core.NewModulePreparationCache(core.ModulePreparationCacheUpdate{
+			Module: module,
+			Time:   time.Now(),
+		})
+
+		//Second preparation but with the cache.
 
 		ctx2 := core.NewContext(core.ContextConfig{
 			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
@@ -199,7 +207,7 @@ func TestPrepareLocalModule(t *testing.T) {
 			ParentContextRequired:     true,
 			Out:                       io.Discard,
 
-			CachedModule:            module,
+			Cache:                   cache,
 			ScriptContextFileSystem: fs_ns.GetOsFilesystem(),
 		})
 
@@ -239,7 +247,225 @@ func TestPrepareLocalModule(t *testing.T) {
 		assert.False(t, state2.SymbolicData.IsEmpty())
 	})
 
-	t.Run("cached module with different path", func(t *testing.T) {
+	t.Run("with cache: module and static check data", func(t *testing.T) {
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
+
+		os.WriteFile(file, []byte(`
+			manifest {
+				permissions: {
+					read: %/...
+				}
+			}
+		
+			a = 1
+			b = c 		  	# static check error
+		`), 0o600)
+
+		//First preparation: we create the cache.
+
+		ctx1 := core.NewContext(core.ContextConfig{
+			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
+			Filesystem:  fs_ns.GetOsFilesystem(),
+		})
+		core.NewGlobalState(ctx1)
+		defer ctx1.CancelGracefully()
+		defer ctx1.CancelGracefully()
+
+		state1, module, _, err1 := core.PrepareLocalModule(core.ModulePreparationArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             ctx1,
+			ParentContextRequired:     true,
+			Out:                       io.Discard,
+			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
+		})
+
+		if !assert.Error(t, err1) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, module) {
+			return
+		}
+
+		cache := core.NewModulePreparationCache(core.ModulePreparationCacheUpdate{
+			Module:          module,
+			Time:            time.Now(),
+			StaticCheckData: state1.StaticCheckData,
+		})
+
+		//Second preparation but with the cache.
+
+		ctx2 := core.NewContext(core.ContextConfig{
+			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
+			Filesystem:  fs_ns.GetOsFilesystem(),
+		})
+		core.NewGlobalState(ctx2)
+		defer ctx2.CancelGracefully()
+		defer ctx2.CancelGracefully()
+
+		state2, module2, _, err2 := core.PrepareLocalModule(core.ModulePreparationArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             ctx2,
+			ParentContextRequired:     true,
+			Out:                       io.Discard,
+
+			Cache:                   cache,
+			ScriptContextFileSystem: fs_ns.GetOsFilesystem(),
+		})
+
+		if !assert.Error(t, err2) {
+			return
+		}
+
+		if !assert.Equal(t, err1.Error(), err2.Error()) {
+			return
+		}
+
+		// the module should be present
+		if !assert.Same(t, module, module2) {
+			return
+		}
+
+		// the state should be present because we can still perform static check
+		if !assert.NotNil(t, state2) {
+			return
+		}
+
+		// the state should not the previous state
+		if !assert.NotSame(t, state1, state2) {
+			return
+		}
+
+		if !assert.True(t, state2.Ctx.HasPermission(core.CreateFsReadPerm(core.PathPattern("/...")))) {
+			return
+		}
+
+		// static check data should have been re-used
+		if !assert.NotEmpty(t, state2.StaticCheckData.Errors()) {
+			return
+		}
+
+		// symbolic check data should have been re-used
+		assert.False(t, state2.SymbolicData.IsEmpty())
+	})
+
+	t.Run("with cache: module and static check data", func(t *testing.T) {
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
+
+		os.WriteFile(file, []byte(`
+			manifest {
+				permissions: {
+					read: %/...
+				}
+			}
+		
+			a = 1
+			b = c 		  	# static check error
+		`), 0o600)
+
+		//First preparation: we create the cache.
+
+		ctx1 := core.NewContext(core.ContextConfig{
+			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
+			Filesystem:  fs_ns.GetOsFilesystem(),
+		})
+		core.NewGlobalState(ctx1)
+		defer ctx1.CancelGracefully()
+		defer ctx1.CancelGracefully()
+
+		state1, module, _, err1 := core.PrepareLocalModule(core.ModulePreparationArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             ctx1,
+			ParentContextRequired:     true,
+			Out:                       io.Discard,
+			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
+		})
+
+		if !assert.Error(t, err1) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, module) {
+			return
+		}
+
+		cache := core.NewModulePreparationCache(core.ModulePreparationCacheUpdate{
+			Module:                module,
+			Time:                  time.Now(),
+			StaticCheckData:       state1.StaticCheckData,
+			SymbolicData:          state1.SymbolicData.Data,
+			FinalSymbolicCheckErr: state1.FinalSymbolicCheckError,
+		})
+
+		//Second preparation but with the cache.
+
+		ctx2 := core.NewContext(core.ContextConfig{
+			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
+			Filesystem:  fs_ns.GetOsFilesystem(),
+		})
+		core.NewGlobalState(ctx2)
+		defer ctx2.CancelGracefully()
+		defer ctx2.CancelGracefully()
+
+		state2, module2, _, err2 := core.PrepareLocalModule(core.ModulePreparationArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             ctx2,
+			ParentContextRequired:     true,
+			Out:                       io.Discard,
+
+			Cache:                   cache,
+			ScriptContextFileSystem: fs_ns.GetOsFilesystem(),
+		})
+
+		if !assert.Error(t, err2) {
+			return
+		}
+
+		if !assert.Equal(t, err1.Error(), err2.Error()) {
+			return
+		}
+
+		// the module should be present
+		if !assert.Same(t, module, module2) {
+			return
+		}
+
+		// the state should be present because we can still perform static check
+		if !assert.NotNil(t, state2) {
+			return
+		}
+
+		// the state should not the previous state
+		if !assert.NotSame(t, state1, state2) {
+			return
+		}
+
+		if !assert.True(t, state2.Ctx.HasPermission(core.CreateFsReadPerm(core.PathPattern("/...")))) {
+			return
+		}
+
+		// static check data should have been re-used
+		if !assert.NotEmpty(t, state2.StaticCheckData.Errors()) {
+			return
+		}
+
+		// symbolic check data should have been re-used
+		assert.False(t, state2.SymbolicData.IsEmpty())
+	})
+
+	t.Run("with cache but different path", func(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		otherFile := filepath.Join(dir, "script2.ix")
@@ -301,7 +527,10 @@ func TestPrepareLocalModule(t *testing.T) {
 			ParentContextRequired:     true,
 			Out:                       io.Discard,
 
-			CachedModule: module,
+			Cache: core.NewModulePreparationCache(core.ModulePreparationCacheUpdate{
+				Module: module,
+				Time:   time.Now(),
+			}),
 		})
 
 		if !assert.ErrorIs(t, err2, core.ErrNonMatchingCachedModulePath) {

@@ -41,7 +41,8 @@ type ModulePreparationArgs struct {
 	Fpath string
 
 	//if not nil the module is not parsed and this value is used.
-	CachedModule *Module
+	Cache         *ModulePreparationCache
+	ForceUseCache bool //if true .Cache is assumed to be valid
 
 	IsUnderTest bool
 
@@ -120,16 +121,24 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 		return nil, nil, nil, errors.New(".UseParentStateAsMainState is true but .Project was set")
 	}
 
-	absPath, err := args.ParsingCompilationContext.GetFileSystem().Absolute(args.Fpath)
+	fls := args.ParsingCompilationContext.GetFileSystem()
+	absPath, err := fls.Absolute(args.Fpath)
 	if err != nil {
 		finalErr = fmt.Errorf("failed to get absolute path of module: %w", err)
 		return
 	}
 	args.Fpath = absPath
 
-	if args.CachedModule != nil && args.CachedModule.Name() != absPath {
-		finalErr = fmt.Errorf("%w: (%q != %q)", ErrNonMatchingCachedModulePath, args.CachedModule.Name(), absPath)
-		return
+	cache := args.Cache //$cache may be nil or invalid.
+	isCacheValid := false
+
+	if cache != nil {
+		if cache.ModuleName() != absPath {
+			finalErr = fmt.Errorf("%w: (%q != %q)", ErrNonMatchingCachedModulePath, cache.ModuleName(), absPath)
+			return
+		}
+
+		isCacheValid = args.ForceUseCache || cache.CheckValidity(fls)
 	}
 
 	//the src field is not added to the logger because it is very likely present.
@@ -139,8 +148,8 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 
 	var parsingErr error
 
-	if args.CachedModule != nil {
-		mod = args.CachedModule
+	if isCacheValid {
+		mod = cache.module
 	} else {
 		start := time.Now()
 
@@ -518,30 +527,39 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 		state.Globals.Set(MOD_ARGS_VARNAME, modArgs)
 	}
 
-	// static check
+	// Static check
 
 	staticCheckStart := time.Now()
 
-	staticCheckData, staticCheckErr := StaticCheck(StaticCheckInput{
-		State:   state,
-		Module:  mod,
-		Node:    mod.MainChunk.Node,
-		Chunk:   mod.MainChunk,
-		Globals: state.Globals,
-		AdditionalGlobalConsts: func() []string {
-			if modArgsError != nil {
-				return []string{MOD_ARGS_VARNAME}
-			}
-			return nil
-		}(),
-		Patterns:          state.Ctx.GetNamedPatterns(),
-		PatternNamespaces: state.Ctx.GetPatternNamespaces(),
-	})
+	var staticCheckData *StaticCheckData
+	var staticCheckErr error
+
+	if isCacheValid && cache.staticCheckData != nil {
+		staticCheckData = cache.staticCheckData
+		staticCheckErr = cache.staticCheckData.CombinedErrors()
+	} else {
+		staticCheckData, staticCheckErr = StaticCheck(StaticCheckInput{
+			State:   state,
+			Module:  mod,
+			Node:    mod.MainChunk.Node,
+			Chunk:   mod.MainChunk,
+			Globals: state.Globals,
+			AdditionalGlobalConsts: func() []string {
+				if modArgsError != nil {
+					return []string{MOD_ARGS_VARNAME}
+				}
+				return nil
+			}(),
+			Patterns:          state.Ctx.GetNamedPatterns(),
+			PatternNamespaces: state.Ctx.GetPatternNamespaces(),
+		})
+	}
+
 	preparationLogger.Debug().Dur("static-check-dur", time.Since(staticCheckStart)).Send()
 
 	state.StaticCheckData = staticCheckData
 
-	if finalErr == nil && staticCheckErr != nil && staticCheckData == nil {
+	if finalErr == nil && staticCheckErr != nil && staticCheckData == nil { //critical static check error.
 		finalErr = staticCheckErr
 		return
 	}
@@ -562,55 +580,66 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 
 	// symbolic check
 
-	globals := map[string]symbolic.ConcreteGlobalValue{}
-	state.Globals.Foreach(func(k string, v Value, isConst bool) error {
-		globals[k] = symbolic.ConcreteGlobalValue{
-			Value:      v,
-			IsConstant: isConst,
-		}
-		return nil
-	})
-
-	delete(globals, MOD_ARGS_VARNAME)
-	additionalSymbolicGlobals := map[string]symbolic.Value{
-		MOD_ARGS_VARNAME: manifest.Parameters.GetSymbolicArguments(ctx),
-	}
-
-	symbolicCtx, symbolicCheckError := state.Ctx.ToSymbolicValue()
-	if symbolicCheckError != nil {
-		finalErr = parsingErr
-		return
-	}
-
-	basePatterns, basePatternNamespaces := state.GetBasePatternsForImportedModule()
-	symbolicBasePatterns := map[string]symbolic.Pattern{}
-	symbolicBasePatternNamespaces := map[string]*symbolic.PatternNamespace{}
-
-	encountered := map[uintptr]symbolic.Value{}
-	for k, v := range basePatterns {
-		symbolicBasePatterns[k] = utils.Must(v.ToSymbolicValue(ctx, encountered)).(symbolic.Pattern)
-	}
-	for k, v := range basePatternNamespaces {
-		symbolicBasePatternNamespaces[k] = utils.Must(v.ToSymbolicValue(ctx, encountered)).(*symbolic.PatternNamespace)
-	}
-
 	symbolicCheckStart := time.Now()
-	symbolicData, symbolicCheckError := symbolic.EvalCheck(symbolic.EvalCheckInput{
-		Node:                           mod.MainChunk.Node,
-		Module:                         state.Module.ToSymbolic(),
-		Globals:                        globals,
-		AdditionalSymbolicGlobalConsts: additionalSymbolicGlobals,
 
-		SymbolicBaseGlobals:           state.SymbolicBaseGlobalsForImportedModule,
-		SymbolicBasePatterns:          symbolicBasePatterns,
-		SymbolicBasePatternNamespaces: symbolicBasePatternNamespaces,
+	var symbolicData *symbolic.Data
+	var symbolicCheckError error
 
-		ProjectFilesystem: utils.If[billy.Filesystem](state.Project != nil, ctx.GetFileSystem(), nil),
+	if isCacheValid && cache.symbolicData != nil {
+		symbolicData = cache.symbolicData
+		symbolicCheckError = cache.finalSymbolicCheckErr
+	} else {
+		globals := map[string]symbolic.ConcreteGlobalValue{}
+		state.Globals.Foreach(func(k string, v Value, isConst bool) error {
+			globals[k] = symbolic.ConcreteGlobalValue{
+				Value:      v,
+				IsConstant: isConst,
+			}
+			return nil
+		})
 
-		Context: symbolicCtx,
-	})
+		delete(globals, MOD_ARGS_VARNAME)
+		additionalSymbolicGlobals := map[string]symbolic.Value{
+			MOD_ARGS_VARNAME: manifest.Parameters.GetSymbolicArguments(ctx),
+		}
+
+		symbolicCtx, err := state.Ctx.ToSymbolicValue()
+		if err != nil {
+			finalErr = parsingErr
+			return
+		}
+
+		basePatterns, basePatternNamespaces := state.GetBasePatternsForImportedModule()
+		symbolicBasePatterns := map[string]symbolic.Pattern{}
+		symbolicBasePatternNamespaces := map[string]*symbolic.PatternNamespace{}
+
+		encountered := map[uintptr]symbolic.Value{}
+		for k, v := range basePatterns {
+			symbolicBasePatterns[k] = utils.Must(v.ToSymbolicValue(ctx, encountered)).(symbolic.Pattern)
+		}
+		for k, v := range basePatternNamespaces {
+			symbolicBasePatternNamespaces[k] = utils.Must(v.ToSymbolicValue(ctx, encountered)).(*symbolic.PatternNamespace)
+		}
+
+		symbolicData, symbolicCheckError = symbolic.EvalCheck(symbolic.EvalCheckInput{
+			Node:                           mod.MainChunk.Node,
+			Module:                         state.Module.ToSymbolic(),
+			Globals:                        globals,
+			AdditionalSymbolicGlobalConsts: additionalSymbolicGlobals,
+
+			SymbolicBaseGlobals:           state.SymbolicBaseGlobalsForImportedModule,
+			SymbolicBasePatterns:          symbolicBasePatterns,
+			SymbolicBasePatternNamespaces: symbolicBasePatternNamespaces,
+
+			ProjectFilesystem: utils.If[billy.Filesystem](state.Project != nil, ctx.GetFileSystem(), nil),
+
+			Context: symbolicCtx,
+		})
+	}
+
 	preparationLogger.Debug().Dur("symb-check-dur", time.Since(symbolicCheckStart)).Send()
 
+	state.FinalSymbolicCheckError = symbolicCheckError
 	isCriticalSymbolicCheckError := symbolicCheckError != nil && symbolicData == nil
 
 	if symbolicData != nil {
@@ -635,6 +664,19 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 		case dbOpeningError != nil:
 			finalErr = dbOpeningError
 		}
+	}
+
+	//At this point we know there is no critical error.
+
+	//Update cache.
+	if cache != nil {
+		cache.Refresh(ModulePreparationCacheUpdate{
+			Module:                mod,
+			Time:                  time.Now(),
+			StaticCheckData:       staticCheckData,
+			SymbolicData:          symbolicData,
+			FinalSymbolicCheckErr: symbolicCheckError,
+		})
 	}
 
 	return state, mod, manifest, finalErr

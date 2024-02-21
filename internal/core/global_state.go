@@ -85,6 +85,7 @@ type GlobalState struct {
 	FirstDatabaseOpeningError error
 	StaticCheckData           *StaticCheckData
 	SymbolicData              *SymbolicData
+	FinalSymbolicCheckError   error
 }
 
 type StateId int64

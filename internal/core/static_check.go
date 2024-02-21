@@ -123,7 +123,9 @@ func StaticCheck(input StaticCheckInput) (*StaticCheckData, error) {
 	if err != nil {
 		return nil, err
 	}
-	return checker.data, combineStaticCheckErrors(checker.data.errors...)
+
+	checker.data.combinedErrors = combineStaticCheckErrors(checker.data.errors...)
+	return checker.data, checker.data.combinedErrors
 }
 
 // see Check function.

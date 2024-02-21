@@ -10,10 +10,11 @@ import (
 
 // A StaticCheckData is the immutable data produced by statically checking a module.
 type StaticCheckData struct {
-	errors      []*StaticCheckError
-	warnings    []*StaticCheckWarning
-	fnData      map[*parse.FunctionExpression]*FunctionStaticData
-	mappingData map[*parse.MappingExpression]*MappingStaticData
+	combinedErrors error
+	errors         []*StaticCheckError
+	warnings       []*StaticCheckWarning
+	fnData         map[*parse.FunctionExpression]*FunctionStaticData
+	mappingData    map[*parse.MappingExpression]*MappingStaticData
 
 	//key: *parse.Chunk|*parse.EmbeddedModule
 	firstForbiddenPosForGlobalElementDecls map[parse.Node]int32
@@ -31,6 +32,10 @@ type StaticCheckData struct {
 // Errors returns all errors in the code after a static check, the result should not be modified.
 func (d *StaticCheckData) Errors() []*StaticCheckError {
 	return d.errors
+}
+
+func (d *StaticCheckData) CombinedErrors() error {
+	return d.combinedErrors
 }
 
 func (d *StaticCheckData) ErrorTuple() *Tuple {
