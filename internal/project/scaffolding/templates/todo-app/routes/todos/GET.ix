@@ -1,0 +1,58 @@
+# GET /todos renders the todo list.
+manifest {
+    databases: /main.ix
+
+    permissions: {
+        read: ldb://main
+    }
+}
+
+import /schema.ix
+import /components/todo.ix
+
+# Check that the user is logged-in.
+session = ctx_data(/session)
+
+if (session == nil){
+    return http.Result{
+        status: http.status.FORBIDDEN
+    }
+} 
+
+# Load the user.
+assert (session match session) 
+user = get!(session.user-url)
+
+# Render the todo items and the item creation form.
+return html<div>
+    <form hx-post-json="/todos">
+        <input name="title" type="text" placeholder="new item" minlength="1" required/>
+        <button type="submit">Add</button>
+    </form>
+
+    <ul>
+        {
+            map_iterable(user.todo-items, fn(item todo-item) => html<li> {Todo(item)} </li>)
+        }
+    </ul>
+
+    <style>
+        me {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        me > form input {
+            border: 1px solid grey;
+            border-radius: 3px;
+            padding: 7px;
+        }
+
+        me > ul {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+    </style>
+</div>

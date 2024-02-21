@@ -1,0 +1,44 @@
+# POST /todos creates a new todo item.
+manifest {
+    # Schema of the request body.
+    parameters: {
+        title: %string
+    }
+
+    databases: /main.ix
+
+    # The module is only allowed to access
+    # the `users` Set.
+    permissions: {
+        read: %ldb://main/users/...
+        write: %ldb://main/users/...
+    }
+}
+
+import /schema.ix
+
+# Check that the user is logged-in.
+session = ctx_data(/session)
+
+if (session == nil){
+    return http.Result{
+        status: http.status.FORBIDDEN
+    }
+} 
+
+# Get the user by URL.
+assert (session match session) 
+user = get!(session.user-url)
+
+# Add the item.
+user::todo-items.append({
+    title: mod-args.title
+    done: false
+    key: tostring(rand(%int))
+})
+
+return http.Result{
+    headers: {
+        HX-Trigger: "newTodo" # Rerender the todo list.
+    }
+}

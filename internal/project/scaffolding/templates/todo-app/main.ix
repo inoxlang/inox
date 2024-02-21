@@ -1,0 +1,33 @@
+# /main.ix
+manifest {
+    kind: "application"
+    permissions: {
+        # Allow the HTTP server to listen.
+        provide: APP_LISTENING_ADDR
+        
+         # Allow the module to read any file in the virtual filesystem.
+        read: %/...
+    }
+    databases: {
+        main: {
+            # Define a local database. 
+            resource: ldb://main
+            resolution-data: nil
+        }
+    }
+}
+
+server = http.Server!(APP_LISTENING_ADDR, {
+    routing: {
+        # Directory for static resources such as CSS and JS files. 
+        static: /static/
+
+        # Directory containing handler modules (filesystem routing).
+        dynamic: /routes/
+    }
+    sessions: {
+        collection: dbs.main.sessions
+    }
+})
+
+server.wait_closed()

@@ -1,0 +1,42 @@
+const (
+    HOST = APP_LISTENING_ADDR
+)
+
+manifest {
+    permissions: {
+        read: HOST
+        write: HOST
+        provide: HOST
+    }
+}
+
+import /schema.ix
+
+# A program instance is created for each test case in this suite.
+# Each program runs in a new virtual filesystem, and uses a temporary database.
+testsuite({
+    name: "test app"
+    program: /main.ix
+    main-db-schema: %db-schema
+    main-db-migrations: {
+        # Initialize the database.
+        inclusions: :{%/sessions: [], %/users: []} 
+    }
+}) {
+
+    testcase "user creation" {
+        assign result err = http.post(@HOST/users, {username: "test"})
+
+        assert (err == nil)
+        assert (result.status-code == http.status.OK)
+    }
+
+    testcase "login" {
+        http.post!(@HOST/users, {username: "test"})
+
+        assign result err = http.post(@HOST/sessions, {username: "test"})
+
+        assert (err == nil)
+        assert (result.status-code == http.status.OK)
+    }
+}

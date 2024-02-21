@@ -1,0 +1,20 @@
+# /routes/index.ix handles GET requests to `/`.
+# Each GET|HEAD request is handled in a read-only transaction.
+manifest {}
+
+import /components/common.ix
+import /components/login.ix
+import /schema.ix
+
+# The HTTP server adds a /session entry in the context's data
+# if the request has a valid `session-id` cookie.
+session = ctx_data(/session)
+
+# Check that the value is nil or matches the `session` pattern.
+assert (session match session?)
+
+if (session == nil)  {
+    return Page(Login())
+} else {
+    return Page(html<div id="todos" hx-get="/todos" hx-trigger="load, newTodo from:body, updatedTodo from:body"></div>)
+}

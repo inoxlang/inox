@@ -1,0 +1,35 @@
+includable-file
+
+fn Page(content html.node){
+
+    return html<html>
+    <head>
+        <meta charset="utf-8"/>
+        <title></title>
+        <meta name="viewport" content="width=device-width, initial-scale=1"/>
+        <link rel="stylesheet" href="/base.css"/>
+        <script src="/htmx.min.js"></script>
+        <script src="/inox.js"></script>
+        <script src="https://unpkg.com/htmx.org/dist/ext/response-targets.js"></script>
+    </head>
+    <body>
+        <style>
+            header {
+                font-weight: 700;
+                font-size: 20px;
+            }
+            body {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                padding: 20px;
+                gap: 20px;
+            }
+        </style>
+
+        <header> ToDo App </header>
+        {content}
+    </body>
+    </html>
+
+}

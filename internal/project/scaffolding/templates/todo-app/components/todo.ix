@@ -1,0 +1,35 @@
+includable-file
+
+fn Todo(item {title: str, done: bool, key: string}){
+    form_payload = asjson({
+        updates: [{ key: item.key, done: !item.done}]
+    })
+
+    return html<div>
+        <form hx-patch-json="/todos" jsonform-payload=form_payload>
+            <button>
+                {(if item.done "✅" else "⬜")}
+            </button>
+        </form>
+        
+        <span class="title">
+            {item.title}
+        </span>
+
+        <style>
+            me {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+
+                border: 1px solid grey;
+                border-radius: 5px;
+                padding: 7px;
+            }
+
+            me button {
+                background: none;
+            }
+        </style>
+    </div>
+}

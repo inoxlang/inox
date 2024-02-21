@@ -1,0 +1,45 @@
+includable-file
+
+fn Login(){
+    return html<div>
+        <div id="sign-up">
+            <form hx-post="/users" hx-ext="json-form,response-targets" hx-target-error="#signup-errors">
+                <input name="username" type="text" placeholder="name" />
+                <button type="submit">Create Account</button>
+                <div id="signup-errors"></div>
+
+                <a href="#login">Already have an account ?</a>
+            </form>
+        </div>
+
+        <div id="login">
+            <form hx-post="/sessions" hx-ext="json-form,response-targets" hx-target-error="#login-errors">
+                <input name="username" type="text" placeholder="name" />
+                <button type="submit">Log In</button>
+                <div id="login-errors"></div>
+
+                <a href="#sign-up">Do not have an account ?</a>
+            </form>
+        </div>
+
+        <style>
+            me form {
+                display: flex;
+                flex-direction: column;
+                gap: 7px;
+            }
+
+            #sign-up:target + #login {
+                display: none;
+            }
+
+            #sign-up:not(:target) {
+                display: none;
+            }
+
+            #signup-errors, #login-errors {
+                color: red;
+            }
+        </style>
+    </div>
+}
