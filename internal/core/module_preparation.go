@@ -129,16 +129,35 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 	}
 	args.Fpath = absPath
 
-	cache := args.Cache //$cache may be nil or invalid.
 	isCacheValid := false
 
-	if cache != nil {
+	//Some of the following variables will be set if the cache is valid.
+	var (
+		cachedModule                *Module
+		cachedStaticCheckData       *StaticCheckData
+		cachedSymbolicData          *symbolic.Data
+		cachedFinalSymbolicCheckErr error
+	)
+
+	if args.Cache != nil {
+		cache := args.Cache
 		if cache.ModuleName() != absPath {
 			finalErr = fmt.Errorf("%w: (%q != %q)", ErrNonMatchingCachedModulePath, cache.ModuleName(), absPath)
 			return
 		}
 
 		isCacheValid = args.ForceUseCache || cache.CheckValidity(fls)
+
+		if isCacheValid {
+			func() {
+				cache.lock.Lock()
+				defer cache.lock.Unlock()
+				cachedModule = cache.module
+				cachedStaticCheckData = cache.staticCheckData
+				cachedSymbolicData = cache.symbolicData
+				cachedFinalSymbolicCheckErr = cache.finalSymbolicCheckErr
+			}()
+		}
 	}
 
 	//the src field is not added to the logger because it is very likely present.
@@ -149,7 +168,7 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 	var parsingErr error
 
 	if isCacheValid {
-		mod = cache.module
+		mod = cachedModule
 	} else {
 		start := time.Now()
 
@@ -534,9 +553,9 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 	var staticCheckData *StaticCheckData
 	var staticCheckErr error
 
-	if isCacheValid && cache.staticCheckData != nil {
-		staticCheckData = cache.staticCheckData
-		staticCheckErr = cache.staticCheckData.CombinedErrors()
+	if isCacheValid && cachedStaticCheckData != nil {
+		staticCheckData = cachedStaticCheckData
+		staticCheckErr = cachedStaticCheckData.CombinedErrors()
 	} else {
 		staticCheckData, staticCheckErr = StaticCheck(StaticCheckInput{
 			State:   state,
@@ -585,9 +604,9 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 	var symbolicData *symbolic.Data
 	var symbolicCheckError error
 
-	if isCacheValid && cache.symbolicData != nil {
-		symbolicData = cache.symbolicData
-		symbolicCheckError = cache.finalSymbolicCheckErr
+	if isCacheValid && cachedSymbolicData != nil {
+		symbolicData = cachedSymbolicData
+		symbolicCheckError = cachedFinalSymbolicCheckErr
 	} else {
 		globals := map[string]symbolic.ConcreteGlobalValue{}
 		state.Globals.Foreach(func(k string, v Value, isConst bool) error {
@@ -669,8 +688,8 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 	//At this point we know there is no critical error.
 
 	//Update cache.
-	if cache != nil {
-		cache.Refresh(ModulePreparationCacheUpdate{
+	if args.Cache != nil {
+		args.Cache.Refresh(ModulePreparationCacheUpdate{
 			Module:                mod,
 			Time:                  time.Now(),
 			StaticCheckData:       staticCheckData,

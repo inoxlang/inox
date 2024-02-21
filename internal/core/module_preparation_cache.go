@@ -118,6 +118,10 @@ func (c *ModulePreparationCache) haveChunkChanged(chunk *parse.ParsedChunkSource
 }
 
 func (c *ModulePreparationCache) Refresh(update ModulePreparationCacheUpdate) {
+
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
 	if c.module.Name() != update.Module.Name() {
 		panic(fmt.Errorf("incorrect attempt to refresh a module preparation cache (module %s) with data for a different module (%s)", c.ModuleName(), update.Module.Name()))
 	}
@@ -125,9 +129,6 @@ func (c *ModulePreparationCache) Refresh(update ModulePreparationCacheUpdate) {
 	if update.Time.Before(c.time) {
 		panic(fmt.Errorf("incorrect attempt to refresh a module preparation cache (module %s) with older data", c.ModuleName()))
 	}
-
-	c.lock.Lock()
-	defer c.lock.Unlock()
 
 	c.update(update)
 }
