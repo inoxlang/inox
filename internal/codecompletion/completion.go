@@ -63,90 +63,51 @@ func FindCompletions(args SearchArgs) []Completion {
 
 	state := args.State
 	chunk := args.Chunk
-	cursorIndex := args.CursorIndex
+	cursorIndex := int32(args.CursorIndex)
 	mode := args.Mode
 
 	//Determine if the cursor is inside a comment.
-	isCursorInsideComment := false
+	isCursorInsideOrAtEndOfComment := false
 
-	for _, token := range args.Chunk.Node.Tokens {
-		if cursorIndex >= int(token.Span.Start) && cursorIndex < int(token.Span.End) {
-			if token.Type != parse.COMMENT {
-				break
-			}
-			isCursorInsideComment = true
+	tokens := args.Chunk.Node.Tokens //never modified
+
+	for tokenIndex, token := range tokens {
+		if cursorIndex > token.Span.End || cursorIndex < token.Span.Start {
+			continue
 		}
+
+		if token.Type != parse.COMMENT {
+			break
+		}
+
+		isAtEndOfLine := cursorIndex >= token.Span.End && tokenIndex < len(tokens)-1 && tokens[tokenIndex+1].Type == parse.NEWLINE
+
+		if cursorIndex < token.Span.End || isAtEndOfLine {
+			isCursorInsideOrAtEndOfComment = true
+		}
+
+		break
 	}
 
-	var completions []Completion
-	var nodeAtCursor parse.Node
-	var _parent parse.Node
-	var deepestCall *parse.CallExpression
-	var _ancestorChain []parse.Node
-
-	//search node at cursor
-	parse.Walk(chunk.Node, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, _ bool) (parse.TraversalAction, error) {
-		span := node.Base().Span
-
-		//if the cursor is not in the node's span we don't check the descendants of the node
-		if int(span.Start) > cursorIndex || int(span.End) < cursorIndex {
-			return parse.Prune, nil
-		}
-
-		if nodeAtCursor == nil || node.Base().IncludedIn(nodeAtCursor) {
-			nodeAtCursor = node
-
-			switch p := parent.(type) {
-			case *parse.MemberExpression, *parse.IdentifierMemberExpression:
-				nodeAtCursor = parent
-				if len(ancestorChain) > 1 {
-					_parent = ancestorChain[len(ancestorChain)-2]
-				}
-				_ancestorChain = slices.Clone(ancestorChain[:len(ancestorChain)-1])
-			case *parse.DoubleColonExpression:
-				if nodeAtCursor == p.Element {
-					nodeAtCursor = parent
-					if len(ancestorChain) > 1 {
-						_parent = ancestorChain[len(ancestorChain)-2]
-					}
-					_ancestorChain = slices.Clone(ancestorChain[:len(ancestorChain)-1])
-				}
-			case *parse.PatternNamespaceMemberExpression:
-				nodeAtCursor = parent
-				if len(ancestorChain) > 1 {
-					_parent = ancestorChain[len(ancestorChain)-2]
-				}
-				_ancestorChain = slices.Clone(ancestorChain[:len(ancestorChain)-1])
-			default:
-				_parent = parent
-				_ancestorChain = slices.Clone(ancestorChain)
-			}
-
-			switch n := nodeAtCursor.(type) {
-			case *parse.CallExpression:
-				deepestCall = n
-			}
-
-		}
-
-		return parse.ContinueTraversal, nil
-	}, nil)
+	nodeAtCursor, parent, ancestors, deepestCall := getNodeAtCursor(cursorIndex, chunk.Node)
 
 	if nodeAtCursor == nil {
 		return nil
 	}
+
+	var completions []Completion
 
 	search := completionSearch{
 		state:         state,
 		chunk:         chunk,
 		cursorIndex:   cursorIndex,
 		mode:          mode,
-		parent:        _parent,
-		ancestorChain: _ancestorChain,
+		parent:        parent,
+		ancestorChain: ancestors,
 		inputData:     args.InputData,
 	}
 
-	if isCursorInsideComment {
+	if isCursorInsideOrAtEndOfComment {
 		completions = handleCompletionInsideComment()
 	} else {
 		switch n := nodeAtCursor.(type) {
@@ -179,12 +140,12 @@ func FindCompletions(args SearchArgs) []Completion {
 		case *parse.URLPatternLiteral:
 			completions = findURLPatternCompletions(state.Global.Ctx, n, search)
 		case *parse.HostLiteral:
-			completions = findHostCompletions(state.Global.Ctx, n.Value, _parent)
+			completions = findHostCompletions(state.Global.Ctx, n.Value, parent)
 		case *parse.SchemeLiteral:
-			completions = findHostCompletions(state.Global.Ctx, n.Name, _parent)
+			completions = findHostCompletions(state.Global.Ctx, n.Name, parent)
 		case *parse.InvalidAliasRelatedNode:
 			if len(n.Raw) > 0 && !strings.Contains(n.Raw, "/") {
-				completions = findHostAliasCompletions(state.Global.Ctx, n.Raw[1:], _parent)
+				completions = findHostAliasCompletions(state.Global.Ctx, n.Raw[1:], parent)
 			}
 		case *parse.ObjectLiteral:
 			completions = findObjectInteriorCompletions(n, search)
@@ -216,7 +177,7 @@ func FindCompletions(args SearchArgs) []Completion {
 type completionSearch struct {
 	state         *core.TreeWalkState
 	chunk         *parse.ParsedChunkSource
-	cursorIndex   int
+	cursorIndex   int32
 	mode          Mode
 	parent        parse.Node
 	ancestorChain []parse.Node
@@ -1767,4 +1728,55 @@ func findStringCompletions(strLit *parse.QuotedStringLiteral, search completionS
 
 func hasPrefixCaseInsensitive(s, prefix string) bool {
 	return strings.HasPrefix(strings.ToLower(s), strings.ToLower(prefix))
+}
+
+func getNodeAtCursor(cursorIndex int32, chunk *parse.Chunk) (nodeAtCursor, _parent parse.Node, ancestors []parse.Node, deepestCall *parse.CallExpression) {
+	//search node at cursor
+	parse.Walk(chunk, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, _ bool) (parse.TraversalAction, error) {
+		span := node.Base().Span
+
+		//if the cursor is not in the node's span we don't check the descendants of the node
+		if span.Start > cursorIndex || span.End < cursorIndex {
+			return parse.Prune, nil
+		}
+
+		if nodeAtCursor == nil || node.Base().IncludedIn(nodeAtCursor) {
+			nodeAtCursor = node
+
+			switch p := parent.(type) {
+			case *parse.MemberExpression, *parse.IdentifierMemberExpression:
+				nodeAtCursor = parent
+				if len(ancestorChain) > 1 {
+					_parent = ancestorChain[len(ancestorChain)-2]
+				}
+				ancestors = slices.Clone(ancestorChain[:len(ancestorChain)-1])
+			case *parse.DoubleColonExpression:
+				if nodeAtCursor == p.Element {
+					nodeAtCursor = parent
+					if len(ancestorChain) > 1 {
+						_parent = ancestorChain[len(ancestorChain)-2]
+					}
+					ancestors = slices.Clone(ancestorChain[:len(ancestorChain)-1])
+				}
+			case *parse.PatternNamespaceMemberExpression:
+				nodeAtCursor = parent
+				if len(ancestorChain) > 1 {
+					_parent = ancestorChain[len(ancestorChain)-2]
+				}
+				ancestors = slices.Clone(ancestorChain[:len(ancestorChain)-1])
+			default:
+				_parent = parent
+				ancestors = slices.Clone(ancestorChain)
+			}
+
+			switch n := nodeAtCursor.(type) {
+			case *parse.CallExpression:
+				deepestCall = n
+			}
+		}
+
+		return parse.ContinueTraversal, nil
+	}, nil)
+
+	return
 }
