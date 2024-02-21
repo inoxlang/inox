@@ -15,7 +15,7 @@ require (
 	github.com/caddyserver/certmagic v0.20.0
 	github.com/chromedp/cdproto v0.0.0-20231205062650-00455a960d61
 	github.com/chromedp/chromedp v0.9.3
-	github.com/cloudflare/cloudflare-go v0.83.0
+	github.com/cloudflare/cloudflare-go v0.88.0
 	github.com/containerd/cgroups/v3 v3.0.3
 	github.com/coreos/go-systemd/v22 v22.5.0
 	github.com/dimuska139/go-email-normalizer/v2 v2.0.0
@@ -27,7 +27,7 @@ require (
 	github.com/google/go-dap v0.11.0
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.1
-	github.com/johannesboyne/gofakes3 v0.0.0-20230914150226-f005f5cc03aa
+	github.com/johannesboyne/gofakes3 v0.0.0-20240217095638-c55a48f17be6
 	github.com/maruel/natural v1.1.1
 	github.com/miekg/dns v1.1.58
 	github.com/minio/minio-go/v7 v7.0.67
@@ -37,10 +37,10 @@ require (
 	github.com/orcaman/concurrent-map/v2 v2.0.1
 	github.com/pb33f/libopenapi v0.13.9
 	github.com/posener/complete/v2 v2.1.0
-	github.com/rs/zerolog v1.31.0
+	github.com/rs/zerolog v1.32.0
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
-	github.com/shirou/gopsutil/v3 v3.23.11
-	github.com/shoenig/go-landlock v1.2.0
+	github.com/shirou/gopsutil/v3 v3.24.1
+	github.com/shoenig/go-landlock v1.2.1
 	github.com/stretchr/testify v1.8.4
 	github.com/tidwall/btree v1.7.0
 	github.com/tidwall/gjson v1.17.1
@@ -63,7 +63,7 @@ require (
 
 require (
 	github.com/andybalholm/cascadia v1.3.2 // indirect
-	github.com/aws/aws-sdk-go v1.49.4 // indirect
+	github.com/aws/aws-sdk-go v1.50.22 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/chromedp/sysutil v1.0.0 // indirect
 	github.com/cilium/ebpf v0.11.0 // indirect
