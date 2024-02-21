@@ -52,9 +52,9 @@ type preparationResult struct {
 	cachedOrGotCache                 bool
 }
 
-// prepareSourceFileInExtractionMode prepares a module or includable-chunk file:
+// prepareSourceFileInExtractionMode prepares a module or includable-file file:
 // - if requiresState is true & state failed to be created ok is false.
-// - if the file at fpath is an includable-chunk the returned module is a fake module.
+// - if the file at fpath is an includable-file the returned module is a fake module.
 // - success is false if params.requiresCache is true and the file is not cached.
 // The returned values SHOULD NOT BE MODIFIED.
 func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparationParams) (prepResult preparationResult, success bool) {
@@ -136,7 +136,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 	}
 
 	if chunk.Node.IncludableChunkDesc != nil {
-		state, mod, includedChunk, err := core.PrepareExtractionModeIncludableChunkfile(core.IncludableChunkfilePreparationArgs{
+		state, mod, includedChunk, err := core.PrepareExtractionModeIncludableFile(core.IncludableChunkfilePreparationArgs{
 			Fpath:                          fpath,
 			ParsingContext:                 ctx,
 			Out:                            io.Discard,
@@ -151,7 +151,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 		}
 
 		if requiresState && (state == nil || state.SymbolicData == nil) {
-			logs.Println("failed to prepare includable-chunk", err.Error())
+			logs.Println("failed to prepare includable-file", err.Error())
 
 			if state != nil {
 				//teardown

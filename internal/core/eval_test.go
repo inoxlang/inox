@@ -5492,7 +5492,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				manifest {}
 				import ./dep.ix
 				return a
-			`, map[string]string{"./dep.ix": "includable-chunk \n a = 1"})
+			`, map[string]string{"./dep.ix": "includable-file \n a = 1"})
 
 			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
 			if !assert.NoError(t, err) {
@@ -5515,11 +5515,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return a
 			`, map[string]string{
 				"./dep2.ix": `
-					includable-chunk
+					includable-file
 					import ./dep1.ix
 				`,
 				"./dep1.ix": `
-					includable-chunk
+					includable-file
 					a = 1
 				`,
 			})
@@ -5545,8 +5545,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				import ./dep2.ix
 				return (a + b)
 			`, map[string]string{
-				"./dep1.ix": "includable-chunk\n a = 1",
-				"./dep2.ix": "includable-chunk\n b = 2",
+				"./dep1.ix": "includable-file\n a = 1",
+				"./dep2.ix": "includable-file\n b = 2",
 			})
 
 			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
@@ -5568,7 +5568,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				manifest {}
 				import ./dep.ix
 				return a
-			`, map[string]string{"./dep.ix": "includable-chunk\n a = myglobal"})
+			`, map[string]string{"./dep.ix": "includable-file\n a = myglobal"})
 
 			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
 			if !assert.NoError(t, err) {
@@ -5591,7 +5591,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				import ./dep.ix
 				return f()
 			`, map[string]string{"./dep.ix": `
-				includable-chunk
+				includable-file
 				fn f(){
 					return myglobal
 				}
@@ -5619,7 +5619,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				sleep 10ms
 				return obj.a
 			`, map[string]string{"./dep.ix": `
-				includable-chunk
+				includable-file
 				obj = {
 					a: 0
 					lifetimejob #job {
@@ -5650,7 +5650,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				import ./dep.ix
 				return %p
 			`, map[string]string{"./dep.ix": `
-				includable-chunk
+				includable-file
 				pattern p = str
 			`})
 
@@ -6666,7 +6666,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				import ./dep.ix
 				return lthread
 			`, map[string]string{"./dep.ix": `
-				includable-chunk
+				includable-file
 				lthread = go do {}
 			`})
 
@@ -6694,7 +6694,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				import ./dep.ix
 				return f()
 			`, map[string]string{"./dep.ix": `
-				includable-chunk
+				includable-file
 				fn f(){
 					return go do {}
 				}
@@ -8395,7 +8395,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				import ./dep.ix
 				return case
 			`, map[string]string{"./dep.ix": `
-				includable-chunk
+				includable-file
 				case = testsuite "name" {}
 			`})
 
@@ -8423,7 +8423,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				import ./dep.ix
 				return f()
 			`, map[string]string{"./dep.ix": `
-				includable-chunk
+				includable-file
 				fn f(){
 					return testsuite "name" {}
 				}
@@ -8488,7 +8488,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				import ./dep.ix
 				return case
 			`, map[string]string{"./dep.ix": `
-				includable-chunk
+				includable-file
 				case = testcase "name" {}
 			`})
 
@@ -8516,7 +8516,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				import ./dep.ix
 				return f()
 			`, map[string]string{"./dep.ix": `
-				includable-chunk
+				includable-file
 				fn f(){
 					return testcase "name" {}
 				}
@@ -8565,7 +8565,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				import ./dep.ix
 				return job
 			`, map[string]string{"./dep.ix": `
-				includable-chunk
+				includable-file
 				job = lifetimejob "name" {}
 			`})
 
@@ -8593,7 +8593,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				import ./dep.ix
 				return f()
 			`, map[string]string{"./dep.ix": `
-				includable-chunk
+				includable-file
 				fn f(){
 					return lifetimejob "name" {}
 				}
@@ -8929,7 +8929,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				import /included.ix
 			`, map[string]string{
 				"/included.ix": `
-					includable-chunk
+					includable-file
 
 					testsuite "name" {}
 				`,
@@ -8971,7 +8971,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				import /included.ix
 			`, map[string]string{
 				"/included.ix": `
-					includable-chunk
+					includable-file
 
 					testsuite "name" {}
 				`,
@@ -9010,12 +9010,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				import /included1.ix
 			`, map[string]string{
 				"/included1.ix": `
-					includable-chunk
+					includable-file
 
 					import /included2.ix
 				`,
 				"/included2.ix": `
-					includable-chunk
+					includable-file
 
 					testsuite "name" {}
 				`,
@@ -9057,12 +9057,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			import /included1.ix
 		`, map[string]string{
 				"/included1.ix": `
-				includable-chunk
+				includable-file
 
 				import /included2.ix
 			`,
 				"/included2.ix": `
-				includable-chunk
+				includable-file
 
 				testsuite "name" {}
 			`,
@@ -9210,7 +9210,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				import /included.ix
 			`, map[string]string{
 				"/included.ix": `
-					includable-chunk
+					includable-file
 
 					testsuite "name" {
 						testcase {}
@@ -11948,7 +11948,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			moduleName := "mymod.ix"
 			modpath := writeModuleAndIncludedFiles(t, moduleName, "manifest {}\nimport ./dep.ix", map[string]string{
 				"./dep.ix": joinLines(
-					"includable-chunk",
+					"includable-file",
 					"a = (1 / 0)",
 				),
 			})
@@ -11997,11 +11997,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			moduleName := "mymod.ix"
 			modpath := writeModuleAndIncludedFiles(t, moduleName, "manifest {}\nimport ./dep1.ix", map[string]string{
 				"./dep1.ix": joinLines(
-					"includable-chunk",
+					"includable-file",
 					"import ./dep2.ix",
 				),
 				"./dep2.ix": joinLines(
-					"includable-chunk",
+					"includable-file",
 					"a = (1 / 0)",
 				),
 			})
@@ -12064,7 +12064,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			moduleName := "mymod.ix"
 			modpath := writeModuleAndIncludedFiles(t, moduleName, "manifest {}\nimport ./dep.ix", map[string]string{
 				"./dep.ix": joinLines(
-					"includable-chunk",
+					"includable-file",
 					"fn f(){ return (1 / 0) }",
 					"return f()",
 				),
@@ -12141,7 +12141,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					"return f()",
 				), map[string]string{
 					"./dep.ix": joinLines(
-						"includable-chunk",
+						"includable-file",
 						"fn f(){ return (1 / 0) }",
 					),
 				})
@@ -12202,11 +12202,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			moduleName := "mymod.ix"
 			modpath := writeModuleAndIncludedFiles(t, moduleName, "manifest {}\nimport ./dep1.ix", map[string]string{
 				"./dep1.ix": joinLines(
-					"includable-chunk",
+					"includable-file",
 					"import ./dep2.ix",
 				),
 				"./dep2.ix": joinLines(
-					"includable-chunk",
+					"includable-file",
 					"fn f(){ return (1 / 0) }",
 					"return f()",
 				),
@@ -12291,12 +12291,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			moduleName := "mymod.ix"
 			modpath := writeModuleAndIncludedFiles(t, moduleName, "manifest {}\nimport ./dep1.ix", map[string]string{
 				"./dep1.ix": joinLines(
-					"includable-chunk",
+					"includable-file",
 					"import ./dep2.ix",
 					"return f()",
 				),
 				"./dep2.ix": joinLines(
-					"includable-chunk",
+					"includable-file",
 					"fn f(){ return (1 / 0) }",
 				),
 			})
@@ -12375,11 +12375,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					"return f()",
 				), map[string]string{
 					"./dep1.ix": joinLines(
-						"includable-chunk",
+						"includable-file",
 						"import ./dep2.ix",
 					),
 					"./dep2.ix": joinLines(
-						"includable-chunk",
+						"includable-file",
 						"fn f(){ return (1 / 0) }",
 					),
 				})

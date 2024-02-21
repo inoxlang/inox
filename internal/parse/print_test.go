@@ -14,9 +14,9 @@ func TestPrint(t *testing.T) {
 		"manifest",
 		"manifest ",
 		//
-		"includable-chunk",
-		"includable-chunk {",
-		"includable-chunk {}",
+		"includable-file",
+		"includable-file {",
+		"includable-file {}",
 		//simple literals
 		"1",
 		" 1",

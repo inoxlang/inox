@@ -118,7 +118,7 @@ following example is only provided as a demonstration.**
 
 ```html
 # /client/counter.ix
-includable-chunk
+includable-file
 
 fn Counter(){
     return html<div class="counter">

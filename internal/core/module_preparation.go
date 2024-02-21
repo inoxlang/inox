@@ -714,13 +714,13 @@ type IncludableChunkfilePreparationArgs struct {
 	IncludedChunkContextFileSystem afs.Filesystem
 }
 
-// PrepareExtractionModeIncludableChunkfile parses & checks an includable-chunk file located in the filesystem and initializes its state.
-func PrepareExtractionModeIncludableChunkfile(args IncludableChunkfilePreparationArgs) (state *GlobalState, _ *Module, _ *IncludedChunk, finalErr error) {
+// PrepareExtractionModeIncludableFile parses & checks an includable file located in the filesystem and initializes its state.
+func PrepareExtractionModeIncludableFile(args IncludableChunkfilePreparationArgs) (state *GlobalState, _ *Module, _ *IncludedChunk, finalErr error) {
 	// parse module
 
 	absPath, err := args.ParsingContext.GetFileSystem().Absolute(args.Fpath)
 	if err != nil {
-		finalErr = fmt.Errorf("failed to get absolute path of includable chunk: %w", err)
+		finalErr = fmt.Errorf("failed to get absolute path of includable file: %w", err)
 		return
 	}
 	args.Fpath = absPath

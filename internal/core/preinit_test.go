@@ -652,7 +652,7 @@ func TestPreInit(t *testing.T) {
 				}`,
 			setupFilesystem: func(fls afs.Filesystem) {
 				util.WriteFile(fls, "/models.ix", []byte(`
-					includable-chunk
+					includable-file
 
 					pattern username = str
 				`), 0600)

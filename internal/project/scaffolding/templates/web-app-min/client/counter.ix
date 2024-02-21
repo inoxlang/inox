@@ -1,4 +1,4 @@
-includable-chunk
+includable-file
 
 # Client-side component example with locality of behavior.
 # The /static/inox.js script is required to create client-side components in a given page.

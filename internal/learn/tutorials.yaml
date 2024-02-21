@@ -962,7 +962,7 @@
         # An inclusion import includes the content of a file in the current module.
         # Inclusion imports are useful to decompose a module or regroup pattern definitions 
         # and functions shared between modules.
-        # In order to be includable a file should start with the `includable-chunk` keyword:
+        # In order to be includable a file should start with the `includable-file` keyword:
 
         import /.tutorial-files/schema.ix
 
@@ -973,7 +973,7 @@
     other-files: 
         /.tutorial-files/schema.ix: |
             # In order to be includable a file should start with the following keyword.
-            includable-chunk
+            includable-file
 
             const (
                 CONST_FROM_FILE = 1

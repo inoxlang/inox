@@ -19,7 +19,7 @@ const (
 	IF_KEYWORD_STRING               = "if"
 	STRUCT_KEYWORD_STRING           = "struct"
 	NEW_KEYWORD_STRING              = "new"
-	INCLUDABLE_CHUNK_KEYWORD_STRING = "includable-chunk"
+	INCLUDABLE_CHUNK_KEYWORD_STRING = "includable-file"
 )
 
 var (

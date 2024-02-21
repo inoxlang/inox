@@ -40,7 +40,7 @@ const (
 	PARAMS_SECTION_SHOULD_BE_AN_OBJECT                        = "the '" + MANIFEST_PARAMS_SECTION_NAME + "' section of the manifest should be an object literal"
 	PARAMS_SECTION_NOT_AVAILABLE_IN_EMBEDDED_MODULE_MANIFESTS = "the '" + MANIFEST_PARAMS_SECTION_NAME + "' section is not available in embedded module manifests"
 
-	FORBIDDEN_NODE_TYPE_IN_INCLUDABLE_CHUNK_IMPORTED_BY_PREINIT = "forbidden node type in includable chunk imported by preinit"
+	FORBIDDEN_NODE_TYPE_IN_INCLUDABLE_CHUNK_IMPORTED_BY_PREINIT = "forbidden node type in includable file imported by preinit"
 
 	//permissions
 	NO_PERM_DESCRIBED_BY_THIS_TYPE_OF_VALUE         = "there is no permission described by this type of value"

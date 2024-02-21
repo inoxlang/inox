@@ -110,7 +110,7 @@ manifest {}
 import ./patterns.ix
 
 # patterns.ix
-includable-chunk
+includable-file
 
 pattern user = {
     name: str

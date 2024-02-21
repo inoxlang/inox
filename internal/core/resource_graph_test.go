@@ -38,7 +38,7 @@ func TestAddModuleTreeToResourceGraph(t *testing.T) {
 	t.Run("module includes a chunk", func(t *testing.T) {
 		fls := newMemFilesystem()
 		utils.PanicIfErr(util.WriteFile(fls, "/main.ix", []byte("manifest {}; import ./chunk.ix"), 0600))
-		utils.PanicIfErr(util.WriteFile(fls, "/chunk.ix", []byte("includable-chunk"), 0600))
+		utils.PanicIfErr(util.WriteFile(fls, "/chunk.ix", []byte("includable-file"), 0600))
 
 		ctx := NewContextWithEmptyState(ContextConfig{
 			Filesystem:  fls,
@@ -89,8 +89,8 @@ func TestAddModuleTreeToResourceGraph(t *testing.T) {
 	t.Run("module includes two chunks", func(t *testing.T) {
 		fls := newMemFilesystem()
 		utils.PanicIfErr(util.WriteFile(fls, "/main.ix", []byte("manifest {}; import ./chunk1.ix; import ./chunk2.ix"), 0600))
-		utils.PanicIfErr(util.WriteFile(fls, "/chunk1.ix", []byte("includable-chunk"), 0600))
-		utils.PanicIfErr(util.WriteFile(fls, "/chunk2.ix", []byte("includable-chunk"), 0600))
+		utils.PanicIfErr(util.WriteFile(fls, "/chunk1.ix", []byte("includable-file"), 0600))
+		utils.PanicIfErr(util.WriteFile(fls, "/chunk2.ix", []byte("includable-file"), 0600))
 
 		ctx := NewContextWithEmptyState(ContextConfig{
 			Filesystem:  fls,
@@ -157,8 +157,8 @@ func TestAddModuleTreeToResourceGraph(t *testing.T) {
 	t.Run("module includes a chunk that includes a chunk", func(t *testing.T) {
 		fls := newMemFilesystem()
 		utils.PanicIfErr(util.WriteFile(fls, "/main.ix", []byte("manifest {}; import ./chunk1.ix"), 0600))
-		utils.PanicIfErr(util.WriteFile(fls, "/chunk1.ix", []byte("includable-chunk\n import ./chunk2.ix"), 0600))
-		utils.PanicIfErr(util.WriteFile(fls, "/chunk2.ix", []byte("includable-chunk"), 0600))
+		utils.PanicIfErr(util.WriteFile(fls, "/chunk1.ix", []byte("includable-file\n import ./chunk2.ix"), 0600))
+		utils.PanicIfErr(util.WriteFile(fls, "/chunk2.ix", []byte("includable-file"), 0600))
 
 		ctx := NewContextWithEmptyState(ContextConfig{
 			Filesystem:  fls,

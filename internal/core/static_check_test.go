@@ -2006,7 +2006,7 @@ func TestCheck(t *testing.T) {
 
 				f()
 				globalvar a = 0
-			`, map[string]string{"./dep.ix": "includable-chunk\n fn f(){}"})
+			`, map[string]string{"./dep.ix": "includable-file\n fn f(){}"})
 
 			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
 			if !assert.NoError(t, err) {
@@ -2248,7 +2248,7 @@ func TestCheck(t *testing.T) {
 
 				f()
 				$$a = 0
-			`, map[string]string{"./dep.ix": "includable-chunk\n fn f(){}"})
+			`, map[string]string{"./dep.ix": "includable-file\n fn f(){}"})
 
 			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
 			if !assert.NoError(t, err) {
@@ -2974,7 +2974,7 @@ func TestCheck(t *testing.T) {
 					import ./dep.ix
 					return $a
 				}
-			`, map[string]string{"./dep.ix": "includable-chunk\n a = 1"})
+			`, map[string]string{"./dep.ix": "includable-file\n a = 1"})
 
 			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
 			assert.NoError(t, err)
@@ -3001,7 +3001,7 @@ func TestCheck(t *testing.T) {
 				manifest {}
 				import ./dep.ix
 				return a
-			`, map[string]string{"./dep.ix": "includable-chunk\n a = 1"})
+			`, map[string]string{"./dep.ix": "includable-file\n a = 1"})
 
 			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
 			assert.NoError(t, err)
@@ -3022,11 +3022,11 @@ func TestCheck(t *testing.T) {
 				return (a + b)
 			`, map[string]string{
 				"./dep1.ix": `
-					includable-chunk
+					includable-file
 					a = 1
 				`,
 				"./dep2.ix": `
-					includable-chunk
+					includable-file
 					b = 2
 				`,
 			})
@@ -3046,7 +3046,7 @@ func TestCheck(t *testing.T) {
 				manifest {}
 				import ./dep.ix
 				return a
-			`, map[string]string{"./dep.ix": "includable-chunk\n a = b"})
+			`, map[string]string{"./dep.ix": "includable-file\n a = b"})
 
 			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
 			assert.NoError(t, err)
@@ -3080,7 +3080,7 @@ func TestCheck(t *testing.T) {
 				manifest {}
 				import ./dep.ix
 				return a
-			`, map[string]string{"./dep.ix": "includable-chunk\n const a = 2"})
+			`, map[string]string{"./dep.ix": "includable-file\n const a = 2"})
 
 			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
 			assert.NoError(t, err)
@@ -3110,11 +3110,11 @@ func TestCheck(t *testing.T) {
 				return a
 			`, map[string]string{
 				"./dep2.ix": `
-					includable-chunk
+					includable-file
 					import ./dep1.ix
 				`,
 				"./dep1.ix": `
-					includable-chunk
+					includable-file
 					a = 1
 				`,
 			})
@@ -3135,7 +3135,7 @@ func TestCheck(t *testing.T) {
 				import ./dep.ix
 			`, map[string]string{
 				"./dep.ix": `
-					includable-chunk
+					includable-file
 					import res ./lib.ix {}
 				`,
 			})
@@ -3453,7 +3453,7 @@ func TestCheck(t *testing.T) {
 					import ./dep1.ix
 				`,
 				"./dep1.ix": `
-					includable-chunk
+					includable-file
 					a = 1
 				`,
 			})
@@ -3485,7 +3485,7 @@ func TestCheck(t *testing.T) {
 					import ./dep1.ix
 				`,
 				"./dep1.ix": `
-					includable-chunk
+					includable-file
 					a = b
 				`,
 			})
@@ -4690,7 +4690,7 @@ func TestCheck(t *testing.T) {
 				struct MyStruct {
 
 				}
-			`, map[string]string{"./dep.ix": "includable-chunk\n struct MyStruct {}"})
+			`, map[string]string{"./dep.ix": "includable-file\n struct MyStruct {}"})
 
 			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
 			assert.NoError(t, err)
@@ -4719,7 +4719,7 @@ func TestCheck(t *testing.T) {
 
 				}
 				import ./dep.ix
-			`, map[string]string{"./dep.ix": "includable-chunk\n struct MyStruct {}"})
+			`, map[string]string{"./dep.ix": "includable-file\n struct MyStruct {}"})
 
 			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
 			assert.NoError(t, err)

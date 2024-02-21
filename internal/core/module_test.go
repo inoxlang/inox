@@ -505,7 +505,7 @@ func TestParseLocalModule(t *testing.T) {
 			manifest {}
 			import ./dep.ix
 		`), 0o400)
-		util.WriteFile(fls, "/dep.ix", []byte(`includable-chunk`), 0o400)
+		util.WriteFile(fls, "/dep.ix", []byte(`includable-file`), 0o400)
 
 		importedModPath := filepath.Join(filepath.Dir(modpath), "/dep.ix")
 
@@ -536,7 +536,7 @@ func TestParseLocalModule(t *testing.T) {
 			UserFriendlyNameString: "/dep.ix",
 			Resource:               "/dep.ix",
 			ResourceDir:            filepath.Dir(modpath),
-			CodeString:             "includable-chunk",
+			CodeString:             "includable-file",
 		}, includedChunk1.Source)
 	})
 
@@ -544,7 +544,7 @@ func TestParseLocalModule(t *testing.T) {
 		modpath := writeModuleAndIncludedFiles(t, moduleName, `
 			manifest {}
 			import ./dep.ix
-		`, map[string]string{"./dep.ix": "includable-chunk\n("})
+		`, map[string]string{"./dep.ix": "includable-file\n("})
 
 		parsingCtx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
@@ -580,7 +580,7 @@ func TestParseLocalModule(t *testing.T) {
 			}
 			manifest {}
 		`), 0o400)
-		util.WriteFile(fls, "/dep.ix", []byte(`includable-chunk`), 0o400)
+		util.WriteFile(fls, "/dep.ix", []byte(`includable-file`), 0o400)
 
 		importedModPath := filepath.Join(filepath.Dir(modpath), "/dep.ix")
 
@@ -611,7 +611,7 @@ func TestParseLocalModule(t *testing.T) {
 			UserFriendlyNameString: "/dep.ix",
 			Resource:               "/dep.ix",
 			ResourceDir:            filepath.Dir(modpath),
-			CodeString:             "includable-chunk",
+			CodeString:             "includable-file",
 		}, includedChunk1.Source)
 	})
 
@@ -620,8 +620,8 @@ func TestParseLocalModule(t *testing.T) {
 			manifest {}
 			import ./dep2.ix
 		`, map[string]string{
-			"./dep2.ix": "includable-chunk \nimport ./dep1.ix \"\"",
-			"./dep1.ix": "includable-chunk",
+			"./dep2.ix": "includable-file \nimport ./dep1.ix \"\"",
+			"./dep1.ix": "includable-file",
 		})
 
 		parsingCtx := NewContextWithEmptyState(ContextConfig{
@@ -655,8 +655,8 @@ func TestParseLocalModule(t *testing.T) {
 			manifest {}
 			import ./dep2.ix
 		`, map[string]string{
-			"./dep2.ix": "includable-chunk \nimport ./dep1.ix \"\"",
-			"./dep1.ix": "includable-chunk \n(",
+			"./dep2.ix": "includable-file \nimport ./dep1.ix \"\"",
+			"./dep1.ix": "includable-file \n(",
 		})
 
 		parsingCtx := NewContextWithEmptyState(ContextConfig{
@@ -692,8 +692,8 @@ func TestParseLocalModule(t *testing.T) {
 			import ./dep1.ix
 			import ./dep2.ix
 		`, map[string]string{
-			"./dep1.ix": "includable-chunk",
-			"./dep2.ix": "includable-chunk",
+			"./dep1.ix": "includable-file",
+			"./dep2.ix": "includable-file",
 		})
 
 		parsingCtx := NewContextWithEmptyState(ContextConfig{
@@ -890,7 +890,7 @@ func TestParseLocalModule(t *testing.T) {
 			`), 0600)
 
 			util.WriteFile(fls, "/lib.ix", []byte("manifest {}\nimport /included.ix"), 0600)
-			util.WriteFile(fls, "/included.ix", []byte(`includable-chunk`), 0600)
+			util.WriteFile(fls, "/included.ix", []byte(`includable-file`), 0600)
 
 			parsingCtx := NewContextWithEmptyState(ContextConfig{
 				Permissions: []Permission{
@@ -937,7 +937,7 @@ func TestParseLocalModule(t *testing.T) {
 			`), 0600)
 
 			util.WriteFile(fls, "/lib.ix", []byte("manifest {}\nimport /included.ix"), 0600)
-			util.WriteFile(fls, "/included.ix", []byte("includable-chunk\na ="), 0600)
+			util.WriteFile(fls, "/included.ix", []byte("includable-file\na ="), 0600)
 
 			parsingCtx := NewContextWithEmptyState(ContextConfig{
 				Permissions: []Permission{
@@ -1037,7 +1037,7 @@ func TestParseLocalModule(t *testing.T) {
 				manifest {}
 				import ./dep1.ix
 				import ./dep2.ix
-			`, map[string]string{"./dep2.ix": "includable-chunk"})
+			`, map[string]string{"./dep2.ix": "includable-file"})
 
 			parsingCtx := NewContextWithEmptyState(ContextConfig{
 				Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},

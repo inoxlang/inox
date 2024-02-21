@@ -12856,7 +12856,7 @@ func TestSymbolicEval(t *testing.T) {
 						NameString:  "/included.ix",
 						Resource:    "/included.ix",
 						ResourceDir: "/",
-						CodeString:  "includable-chunk\n(1+\"a\")",
+						CodeString:  "includable-file\n(1+\"a\")",
 					})),
 				},
 			}
@@ -12894,7 +12894,7 @@ func TestSymbolicEval(t *testing.T) {
 				StartColumn: 4,
 				EndLine:     2,
 				EndColumn:   7,
-				Span:        parse.NodeSpan{Start: 20, End: 23},
+				Span:        parse.NodeSpan{Start: 19, End: 22},
 			}, evalErr.Location[2])
 
 			assert.Equal(t, fmtRightOperandOfBinaryShouldBe(parse.Add, "int", "\"a\""), evalErr.Message)
@@ -14323,7 +14323,7 @@ func TestSymbolicEval(t *testing.T) {
 				}
 			`, map[string]string{
 				"./dep.ix": `
-					includable-chunk
+					includable-file
 					struct Int {
 						val int
 					}

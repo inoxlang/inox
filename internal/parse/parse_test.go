@@ -236,16 +236,16 @@ func TestParseChunkStart(t *testing.T) {
 	assert.NotNil(t, chunk.GlobalConstantDeclarations)
 	assert.Empty(t, chunk.Statements)
 
-	chunk = MustParseChunk("includable-chunk", opts)
+	chunk = MustParseChunk("includable-file", opts)
 	assert.NotNil(t, chunk.IncludableChunkDesc)
 	assert.Empty(t, chunk.Statements)
 
-	chunk = MustParseChunk("includable-chunk\nconst(A = 1)\na = 1", opts)
+	chunk = MustParseChunk("includable-file\nconst(A = 1)\na = 1", opts)
 	assert.NotNil(t, chunk.IncludableChunkDesc)
 	assert.NotNil(t, chunk.GlobalConstantDeclarations)
 	assert.Empty(t, chunk.Statements)
 
-	chunk = MustParseChunk("includable-chunk;const(A = 1)\na = 1", opts)
+	chunk = MustParseChunk("includable-file;const(A = 1)\na = 1", opts)
 	assert.NotNil(t, chunk.IncludableChunkDesc)
 	assert.NotNil(t, chunk.GlobalConstantDeclarations)
 	assert.Empty(t, chunk.Statements)
@@ -730,25 +730,25 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("includable-chunk", func(t *testing.T) {
-			n := mustparseChunk(t, "includable-chunk")
+		t.Run("includable-file", func(t *testing.T) {
+			n := mustparseChunk(t, "includable-file")
 			assert.EqualValues(t, &Chunk{
-				NodeBase:   NodeBase{NodeSpan{0, 16}, nil, false},
+				NodeBase:   NodeBase{NodeSpan{0, 15}, nil, false},
 				Statements: nil,
 				IncludableChunkDesc: &IncludableChunkDescription{
 					NodeBase: NodeBase{
-						Span:            NodeSpan{0, 16},
+						Span:            NodeSpan{0, 15},
 						IsParenthesized: false,
 					},
 				},
 			}, n)
 		})
 
-		t.Run("includable-chunk after line feed", func(t *testing.T) {
-			n := mustparseChunk(t, "\nincludable-chunk")
+		t.Run("includable-file after line feed", func(t *testing.T) {
+			n := mustparseChunk(t, "\nincludable-file")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{
-					NodeSpan{0, 17},
+					NodeSpan{0, 16},
 					nil,
 					false,
 					/*[]Token{
@@ -758,7 +758,7 @@ func testParse(
 				Statements: nil,
 				IncludableChunkDesc: &IncludableChunkDescription{
 					NodeBase: NodeBase{
-						Span:            NodeSpan{1, 17},
+						Span:            NodeSpan{1, 16},
 						IsParenthesized: false,
 					},
 				},

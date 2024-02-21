@@ -2804,7 +2804,7 @@ func TestPrepareDevModeIncludableChunkFile(t *testing.T) {
 		fs := fs_ns.NewMemFilesystem(10000)
 
 		util.WriteFile(fs, "/included.ix", []byte(`
-			includable-chunk
+			includable-file
 
 			a = ;
 			b = 1
@@ -2818,7 +2818,7 @@ func TestPrepareDevModeIncludableChunkFile(t *testing.T) {
 			Filesystem:  fs,
 		}, nil)
 
-		state, _, _, err := core.PrepareExtractionModeIncludableChunkfile(core.IncludableChunkfilePreparationArgs{
+		state, _, _, err := core.PrepareExtractionModeIncludableFile(core.IncludableChunkfilePreparationArgs{
 			Fpath:                          "/included.ix",
 			ParsingContext:                 ctx,
 			LogOut:                         io.Discard,
@@ -2852,7 +2852,7 @@ func TestPrepareDevModeIncludableChunkFile(t *testing.T) {
 		fs := fs_ns.NewMemFilesystem(10000)
 
 		util.WriteFile(fs, "/included.ix", []byte(`
-			includable-chunk
+			includable-file
 
 			b = 1
 			c = d 		  	# static check error
@@ -2864,7 +2864,7 @@ func TestPrepareDevModeIncludableChunkFile(t *testing.T) {
 			Filesystem:  fs,
 		}, nil)
 
-		state, _, _, err := core.PrepareExtractionModeIncludableChunkfile(core.IncludableChunkfilePreparationArgs{
+		state, _, _, err := core.PrepareExtractionModeIncludableFile(core.IncludableChunkfilePreparationArgs{
 			Fpath:                          "/included.ix",
 			ParsingContext:                 ctx,
 			LogOut:                         io.Discard,

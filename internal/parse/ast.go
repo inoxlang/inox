@@ -1878,7 +1878,7 @@ type Manifest struct {
 }
 
 type IncludableChunkDescription struct {
-	NodeBase `json:"includable-chunk-desc"`
+	NodeBase `json:"includable-file-desc"`
 }
 
 type PermissionDroppingStatement struct {
