@@ -17,6 +17,7 @@ import (
 	"github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/globalnames"
+	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/project/cloudflareprovider"
 	"github.com/inoxlang/inox/internal/utils"
@@ -358,510 +359,6 @@ func TestPrepareLocalModule(t *testing.T) {
 		assert.Nil(t, state)
 	})
 
-	t.Run("local database", func(t *testing.T) {
-		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
-		compilationCtx := createCompilationCtx(dir)
-		defer compilationCtx.CancelGracefully()
-
-		os.WriteFile(file, []byte(`
-			manifest {
-				permissions: {
-					read: %/...
-					write: %/...
-				}
-				databases: {
-					local: {
-						resource: ldb://main
-						resolution-data: nil
-					}
-				}
-			}
-		`), 0o600)
-
-		fs := fs_ns.NewMemFilesystem(1000)
-
-		ctx := core.NewContext(core.ContextConfig{
-			Permissions: append(
-				core.GetDefaultGlobalVarPermissions(),
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
-				core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")},
-			),
-			Filesystem: fs,
-		})
-		core.NewGlobalState(ctx)
-		defer ctx.CancelGracefully()
-
-		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
-			Fpath:                     file,
-			ParsingCompilationContext: compilationCtx,
-			ParentContext:             ctx,
-			ParentContextRequired:     true,
-			Out:                       io.Discard,
-
-			PreinitFilesystem:       fs,
-			ScriptContextFileSystem: fs,
-			FullAccessToDatabases:   true,
-			Project:                 project.NewDummyProject("proj", fs),
-		})
-
-		if !assert.NoError(t, err) {
-			return
-		}
-
-		// the module should be present
-		if !assert.NotNil(t, mod) {
-			return
-		}
-
-		// the state should be present
-		if !assert.NotNil(t, state) {
-			return
-		}
-
-		// static check should have been performed
-		if !assert.Empty(t, state.StaticCheckData.Errors()) {
-			return
-		}
-
-		// symbolic check should have been performed
-		assert.False(t, state.SymbolicData.IsEmpty())
-
-		//the state should contain the database.
-
-		if !assert.Contains(t, state.Databases, "local") {
-			return
-		}
-
-		assert.Equal(t, core.Host("ldb://main"), state.Databases["local"].Resource())
-	})
-
-	t.Run("if the current schema of a database does not match the expected schema, only an error should be returned", func(t *testing.T) {
-		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
-		compilationCtx := createCompilationCtx(dir)
-		defer compilationCtx.CancelGracefully()
-
-		os.WriteFile(file, []byte(`
-			preinit {
-				pattern expected-schema = %{
-					user: {name: "foo"}
-				}
-			}
-			manifest {
-				permissions: {
-					read: %/...
-					write: %/...
-				}
-				databases: {
-					local: {
-						resource: ldb://main
-						resolution-data: nil
-						assert-schema: %expected-schema
-					}
-				}
-			}
-		`), 0o600)
-
-		fs := fs_ns.NewMemFilesystem(1000)
-
-		ctx := core.NewContext(core.ContextConfig{
-			Permissions: append(
-				core.GetDefaultGlobalVarPermissions(),
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
-				core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")},
-			),
-			Filesystem: fs,
-		})
-		core.NewGlobalState(ctx)
-		defer ctx.CancelGracefully()
-
-		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
-			Fpath:                     file,
-			ParsingCompilationContext: compilationCtx,
-			ParentContext:             ctx,
-			ParentContextRequired:     true,
-			Out:                       io.Discard,
-
-			PreinitFilesystem:       fs,
-			ScriptContextFileSystem: fs,
-			FullAccessToDatabases:   true,
-			Project:                 project.NewDummyProject("proj", fs),
-		})
-
-		if !assert.ErrorIs(t, err, core.ErrCurrentSchemaNotEqualToExpectedSchema) {
-			return
-		}
-
-		// the module should not be present
-		if !assert.Nil(t, mod) {
-			return
-		}
-
-		// the state should not be present
-		if !assert.Nil(t, state) {
-			return
-		}
-	})
-
-	t.Run("in data extraction mode if the current schema of a database does not match the expected schema, the state and an error should be returned", func(t *testing.T) {
-		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
-		compilationCtx := createCompilationCtx(dir)
-		defer compilationCtx.CancelGracefully()
-
-		os.WriteFile(file, []byte(`
-			preinit {
-				pattern expected-schema = %{
-					user: {name: "foo"}
-				}
-			}
-			manifest {
-				permissions: {
-					read: %/...
-					write: %/...
-				}
-				databases: {
-					local: {
-						resource: ldb://main
-						resolution-data: nil
-						assert-schema: %expected-schema
-					}
-				}
-			}
-		`), 0o600)
-
-		fs := fs_ns.NewMemFilesystem(1000)
-
-		ctx := core.NewContext(core.ContextConfig{
-			Permissions: append(
-				core.GetDefaultGlobalVarPermissions(),
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
-				core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")},
-			),
-			Filesystem: fs,
-		})
-		core.NewGlobalState(ctx)
-		defer ctx.CancelGracefully()
-
-		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
-			Fpath:                     file,
-			ParsingCompilationContext: compilationCtx,
-			ParentContext:             ctx,
-			ParentContextRequired:     true,
-			Out:                       io.Discard,
-
-			PreinitFilesystem:       fs,
-			ScriptContextFileSystem: fs,
-			FullAccessToDatabases:   true,
-
-			DataExtractionMode: true,
-			Project:            project.NewDummyProject("proj", fs),
-		})
-
-		if !assert.NoError(t, err) {
-			return
-		}
-
-		// the module should be present
-		if !assert.NotNil(t, mod) {
-			return
-		}
-
-		// the state should be present
-		if !assert.NotNil(t, state) {
-			return
-		}
-
-		// static check should have been performed
-		if !assert.Empty(t, state.StaticCheckData.Errors()) {
-			return
-		}
-
-		// symbolic check should have been performed
-		assert.False(t, state.SymbolicData.IsEmpty())
-
-		//the state should contain the database.
-
-		if !assert.Contains(t, state.Databases, "local") {
-			return
-		}
-
-		schema := core.NewInexactObjectPattern([]core.ObjectPatternEntry{
-			{
-				Name: "user",
-				Pattern: core.NewInexactObjectPattern([]core.ObjectPatternEntry{
-					{
-						Name:    "name",
-						Pattern: core.NewExactStringPattern("foo"),
-					},
-				}),
-			},
-		})
-
-		assert.Equal(t, schema, state.Databases["local"].Prop(ctx, "schema"))
-		assert.Equal(t, core.Host("ldb://main"), state.Databases["local"].Resource())
-	})
-
-	t.Run("local database + assert-schema matching the current schema", func(t *testing.T) {
-		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
-		compilationCtx := createCompilationCtx(dir)
-		defer compilationCtx.CancelGracefully()
-
-		os.WriteFile(file, []byte(`
-			preinit {
-				pattern expected-schema = %{}
-			}
-			manifest {
-				permissions: {
-					read: %/...
-					write: %/...
-				}
-				databases: {
-					local: {
-						resource: ldb://main
-						resolution-data: nil
-						assert-schema: %expected-schema
-					}
-				}
-			}
-		`), 0o600)
-
-		fs := fs_ns.NewMemFilesystem(1000)
-
-		ctx := core.NewContext(core.ContextConfig{
-			Permissions: append(
-				core.GetDefaultGlobalVarPermissions(),
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
-				core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")},
-			),
-			Filesystem: fs,
-		})
-		core.NewGlobalState(ctx)
-		defer ctx.CancelGracefully()
-
-		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
-			Fpath:                     file,
-			ParsingCompilationContext: compilationCtx,
-			ParentContext:             ctx,
-			ParentContextRequired:     true,
-			Out:                       io.Discard,
-
-			PreinitFilesystem:       fs,
-			ScriptContextFileSystem: fs,
-			FullAccessToDatabases:   true,
-			Project:                 project.NewDummyProject("proj", fs),
-		})
-
-		if !assert.NoError(t, err) {
-			return
-		}
-
-		// the module should be present
-		if !assert.NotNil(t, mod) {
-			return
-		}
-
-		// the state should be present
-		if !assert.NotNil(t, state) {
-			return
-		}
-
-		// static check should have been performed
-		if !assert.Empty(t, state.StaticCheckData.Errors()) {
-			return
-		}
-
-		// symbolic check should have been performed
-		assert.False(t, state.SymbolicData.IsEmpty())
-
-		//the state should contain the database.
-
-		if !assert.Contains(t, state.Databases, "local") {
-			return
-		}
-
-		assert.Equal(t, core.Host("ldb://main"), state.Databases["local"].Resource())
-	})
-
-	t.Run("local database + expected schema update: the entities should not be loaded yet", func(t *testing.T) {
-		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
-		compilationCtx := createCompilationCtx(dir)
-		defer compilationCtx.CancelGracefully()
-
-		os.WriteFile(file, []byte(`
-			manifest {
-				permissions: {
-					read: %/...
-					write: %/...
-				}
-				databases: {
-					local: {
-						resource: ldb://main
-						resolution-data: nil
-						expected-schema-update: true
-					}
-				}
-			}
-
-			dbs.local.update_schema(%{})
-		`), 0o600)
-
-		fs := fs_ns.NewMemFilesystem(1000)
-
-		ctx := core.NewContext(core.ContextConfig{
-			Permissions: append(
-				core.GetDefaultGlobalVarPermissions(),
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
-				core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")},
-			),
-			Filesystem: fs,
-		})
-		core.NewGlobalState(ctx)
-		defer ctx.CancelGracefully()
-
-		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
-			Fpath:                     file,
-			ParsingCompilationContext: compilationCtx,
-			ParentContext:             ctx,
-			ParentContextRequired:     true,
-			Out:                       io.Discard,
-
-			PreinitFilesystem:       fs,
-			ScriptContextFileSystem: fs,
-			FullAccessToDatabases:   true,
-			Project:                 project.NewDummyProject("proj", fs),
-		})
-
-		if !assert.NoError(t, err) {
-			return
-		}
-
-		// the module should be present
-		if !assert.NotNil(t, mod) {
-			return
-		}
-
-		// the state should be present
-		if !assert.NotNil(t, state) {
-			return
-		}
-
-		// static check should have been performed
-		if !assert.Empty(t, state.StaticCheckData.Errors()) {
-			return
-		}
-
-		// symbolic check should have been performed
-		assert.False(t, state.SymbolicData.IsEmpty())
-
-		//the state should contain the database.
-
-		if !assert.Contains(t, state.Databases, "local") {
-			return
-		}
-		db := state.Databases["local"]
-
-		assert.Equal(t, core.Host("ldb://main"), db.Resource())
-		assert.False(t, db.TopLevelEntitiesLoaded())
-	})
-
-	t.Run("local database set by main module and accessed by external module", func(t *testing.T) {
-		fls := fs_ns.NewMemFilesystem(10_000)
-
-		util.WriteFile(fls, "/main.ix", []byte(`
-			manifest {
-				permissions: {
-					read: %/...
-					write: %/...
-				}
-				databases: {
-					local: {
-						resource: ldb://main
-						resolution-data: nil
-					}
-				}
-			}
-		`), 0o600)
-
-		util.WriteFile(fls, "/executed.ix", []byte(`
-			manifest {
-				databases: /main.ix
-			}
-		`), 0o600)
-
-		ctx := core.NewContext(core.ContextConfig{
-			Permissions: append(
-				core.GetDefaultGlobalVarPermissions(),
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
-				core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")},
-			),
-			Filesystem: fls,
-		})
-		core.NewGlobalState(ctx)
-		defer ctx.CancelGracefully()
-
-		mainState, _, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
-			Fpath:                     "/main.ix",
-			ParsingCompilationContext: ctx,
-			ParentContext:             ctx,
-			ParentContextRequired:     true,
-			Out:                       io.Discard,
-
-			PreinitFilesystem:     fls,
-			FullAccessToDatabases: true,
-			Project:               project.NewDummyProject("proj", fls),
-		})
-
-		if !assert.NoError(t, err) {
-			return
-		}
-
-		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
-			Fpath:                     "/executed.ix",
-			ParsingCompilationContext: mainState.Ctx,
-			ParentContext:             mainState.Ctx,
-			UseParentStateAsMainState: true,
-			ParentContextRequired:     true,
-			Out:                       io.Discard,
-
-			PreinitFilesystem:     fls,
-			FullAccessToDatabases: true,
-		})
-
-		if !assert.NoError(t, err) {
-			return
-		}
-
-		// the module should be present
-		if !assert.NotNil(t, mod) {
-			return
-		}
-
-		// the state should be present
-		if !assert.NotNil(t, state) {
-			return
-		}
-
-		// static check should have been performed
-		if !assert.Empty(t, state.StaticCheckData.Errors()) {
-			return
-		}
-
-		// symbolic check should have been performed
-		assert.False(t, state.SymbolicData.IsEmpty())
-
-		//the state should contain the database.
-
-		if !assert.Contains(t, state.Databases, "local") {
-			return
-		}
-
-		assert.Equal(t, core.Host("ldb://main"), state.Databases["local"].Resource())
-	})
-
 	t.Run("manifest eval & symbolic eval should be ignored when there is a preinit check error: data extraction mode", func(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
@@ -924,204 +421,6 @@ func TestPrepareLocalModule(t *testing.T) {
 
 		// symbolic check should not have been performed
 		assert.True(t, state.SymbolicData.IsEmpty())
-	})
-
-	t.Run("object storage database", func(t *testing.T) {
-		if OS_DB_TEST_ACCESS_KEY == "" {
-			t.SkipNow()
-			return
-		}
-
-		s3Host := randS3Host()
-		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
-		compilationCtx := createCompilationCtx(dir)
-		defer compilationCtx.CancelGracefully()
-
-		os.WriteFile(file, []byte(`
-			manifest {
-				permissions: {}
-				host-definitions: :{
-					`+string(s3Host)+` : {
-						bucket: "test"
-						provider: "cloudflare"
-						host: `+OS_DB_TEST_ENDPOINT+`
-						access-key: access-key
-						secret-key: secret-key
-					}
-				}
-				databases: {
-					db: {
-						resource: odb://main
-						resolution-data: `+string(s3Host)+`
-					}
-				}
-			}
-		`), 0o600)
-
-		fs := fs_ns.NewMemFilesystem(1000)
-
-		ctx := core.NewContext(core.ContextConfig{
-			Permissions: append(
-				core.GetDefaultGlobalVarPermissions(),
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
-			),
-			Filesystem: fs,
-		})
-		core.NewGlobalState(ctx)
-		defer ctx.CancelGracefully()
-
-		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
-			Fpath:                     file,
-			Project:                   project.NewDummyProject("test", fs),
-			ParsingCompilationContext: compilationCtx,
-			ParentContext:             ctx,
-			ParentContextRequired:     true,
-			Out:                       io.Discard,
-
-			PreinitFilesystem:       fs,
-			ScriptContextFileSystem: fs,
-			FullAccessToDatabases:   true,
-			AdditionalGlobalsTestOnly: map[string]core.Value{
-				"access-key": core.String(OS_DB_TEST_ACCESS_KEY),
-				"secret-key": utils.Must(core.SECRET_STRING_PATTERN.NewSecret(
-					core.NewContextWithEmptyState(core.ContextConfig{}, nil),
-					OS_DB_TEST_SECRET_KEY,
-				)),
-			},
-		})
-
-		if !assert.NoError(t, err) {
-			return
-		}
-
-		// the module should be present
-		if !assert.NotNil(t, mod) {
-			return
-		}
-
-		// the state should be present
-		if !assert.NotNil(t, state) {
-			return
-		}
-
-		// static check should have been performed
-		if !assert.Empty(t, state.StaticCheckData.Errors()) {
-			return
-		}
-
-		// symbolic check should have been performed
-		assert.False(t, state.SymbolicData.IsEmpty())
-
-		//the state should contain the database.
-
-		if !assert.Contains(t, state.Databases, "db") {
-			return
-		}
-
-		assert.Equal(t, core.Host("odb://main"), state.Databases["db"].Resource())
-	})
-
-	t.Run("object storage database + expected schema update: the entities should not be loaded", func(t *testing.T) {
-		if OS_DB_TEST_ACCESS_KEY == "" {
-			t.SkipNow()
-			return
-		}
-
-		s3Host := randS3Host()
-		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
-		compilationCtx := createCompilationCtx(dir)
-		defer compilationCtx.CancelGracefully()
-
-		os.WriteFile(file, []byte(`
-			manifest {
-				permissions: {}
-				host-definitions: :{
-					`+string(s3Host)+` : {
-						bucket: "test"
-						provider: "cloudflare"
-						host: `+OS_DB_TEST_ENDPOINT+`
-						access-key: access-key
-						secret-key: secret-key
-					}
-				}
-				databases: {
-					db: {
-						resource: odb://main
-						resolution-data: `+string(s3Host)+`
-						expected-schema-update: true
-					}
-				}
-			}
-
-			dbs.db.update_schema(%{})
-		`), 0o600)
-
-		fs := fs_ns.NewMemFilesystem(1000)
-
-		ctx := core.NewContext(core.ContextConfig{
-			Permissions: append(
-				core.GetDefaultGlobalVarPermissions(),
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
-			),
-			Filesystem: fs,
-		})
-		core.NewGlobalState(ctx)
-		defer ctx.CancelGracefully()
-
-		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
-			Fpath:                     file,
-			Project:                   project.NewDummyProject("test", fs),
-			ParsingCompilationContext: compilationCtx,
-			ParentContext:             ctx,
-			ParentContextRequired:     true,
-			Out:                       io.Discard,
-
-			PreinitFilesystem:       fs,
-			ScriptContextFileSystem: fs,
-			FullAccessToDatabases:   true,
-
-			AdditionalGlobalsTestOnly: map[string]core.Value{
-				"access-key": core.String(OS_DB_TEST_ACCESS_KEY),
-				"secret-key": utils.Must(core.SECRET_STRING_PATTERN.NewSecret(
-					core.NewContextWithEmptyState(core.ContextConfig{}, nil),
-					OS_DB_TEST_SECRET_KEY,
-				)),
-			},
-		})
-
-		if !assert.NoError(t, err) {
-			return
-		}
-
-		// the module should be present
-		if !assert.NotNil(t, mod) {
-			return
-		}
-
-		// the state should be present
-		if !assert.NotNil(t, state) {
-			return
-		}
-
-		// static check should have been performed
-		if !assert.Empty(t, state.StaticCheckData.Errors()) {
-			return
-		}
-
-		// symbolic check should have been performed
-		assert.False(t, state.SymbolicData.IsEmpty())
-
-		//the state should contain the database.
-
-		if !assert.Contains(t, state.Databases, "db") {
-			return
-		}
-		db := state.Databases["db"]
-
-		assert.Equal(t, core.Host("odb://main"), db.Resource())
-		assert.False(t, db.TopLevelEntitiesLoaded())
 	})
 
 	t.Run("project", func(t *testing.T) {
@@ -1250,142 +549,6 @@ func TestPrepareLocalModule(t *testing.T) {
 		}
 
 		assert.Equal(t, []string{"my-secret"}, projectSecrets.(*core.Record).Keys())
-	})
-
-	t.Run("object storage database with credentials provided by the project", func(t *testing.T) {
-		if CLOUDFLARE_ACCOUNT_ID == "" {
-			t.Skip()
-			return
-		}
-
-		//create project
-		var proj *project.Project
-		projectName := "test-mod-prep-creds-from-project"
-		{
-			tempCtx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
-			defer tempCtx.CancelGracefully()
-			registry, err := project.OpenRegistry(t.TempDir(), tempCtx)
-			if !assert.NoError(t, err) {
-				return
-			}
-
-			id, _, err := registry.CreateProject(tempCtx, project.CreateProjectParams{
-				Name: projectName,
-			})
-
-			if !assert.NoError(t, err) {
-				return
-			}
-
-			p, err := registry.OpenProject(tempCtx, project.OpenProjectParams{
-				Id: id,
-				DevSideConfig: project.DevSideProjectConfig{
-					Cloudflare: &cloudflareprovider.DevSideConfig{
-						AdditionalTokensApiToken: CLOUDFLARE_ADDITIONAL_TOKENS_API_TOKEN,
-						AccountID:                CLOUDFLARE_ACCOUNT_ID,
-					},
-				},
-			})
-
-			if !assert.NoError(t, err) {
-				return
-			}
-
-			proj = p
-
-			defer func() {
-				//delete tokens & bucket
-				api, err := cloudflare.NewWithAPIToken(CLOUDFLARE_ADDITIONAL_TOKENS_API_TOKEN)
-				if err != nil {
-					return
-				}
-
-				apiTokens, err := api.APITokens(tempCtx)
-				if err != nil {
-					return
-				}
-
-				for _, token := range apiTokens {
-					if strings.Contains(token.Name, projectName) {
-						err := api.DeleteAPIToken(tempCtx, token.ID)
-						if err != nil {
-							t.Log(err)
-						}
-					}
-				}
-
-			}()
-		}
-
-		fs := fs_ns.NewMemFilesystem(10000)
-		s3Host := randS3Host()
-
-		util.WriteFile(fs, "/script.ix", []byte(`
-			manifest {
-				permissions: {}
-				host-definitions: :{
-					`+string(s3Host)+` : {
-						bucket: "test"
-						provider: "cloudflare"
-					}
-				}
-				databases: {
-					db: {
-						resource: odb://main
-						resolution-data: `+string(s3Host)+`
-					}
-				}
-			}
-		`), 0o600)
-
-		ctx := core.NewContextWithEmptyState(core.ContextConfig{
-			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
-			Filesystem:  fs,
-		}, nil)
-
-		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
-			Fpath:                     "/script.ix",
-			ParsingCompilationContext: ctx,
-			ParentContext:             ctx,
-			ParentContextRequired:     true,
-			Out:                       io.Discard,
-
-			PreinitFilesystem:       fs,
-			ScriptContextFileSystem: fs,
-			FullAccessToDatabases:   true,
-
-			Project: proj,
-		})
-
-		if !assert.NoError(t, err) {
-			return
-		}
-
-		// the module should be present
-		if !assert.NotNil(t, mod) {
-			return
-		}
-
-		// the state should be present
-		if !assert.NotNil(t, state) {
-			return
-		}
-
-		// static check should have been performed
-		if !assert.Empty(t, state.StaticCheckData.Errors()) {
-			return
-		}
-
-		// symbolic check should have been performed
-		assert.False(t, state.SymbolicData.IsEmpty())
-
-		//the state should contain the database.
-
-		if !assert.Contains(t, state.Databases, "db") {
-			return
-		}
-
-		assert.Equal(t, core.Host("odb://main"), state.Databases["db"].Resource())
 	})
 
 	t.Run("manifest & symbolic eval should be ignored when there is a preinit check error: regular mode", func(t *testing.T) {
@@ -1825,9 +988,66 @@ func TestPrepareLocalModule(t *testing.T) {
 		assert.Contains(t, perms, core.FilesystemPermission{Kind_: permkind.Read, Entity: IWD.(core.Path)})
 	})
 
+	t.Run("function requiring an early declaration", func(t *testing.T) {
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
+
+		os.WriteFile(file, []byte(`
+			manifest {}
+		
+			return f()
+
+			fn f(){
+				return 1
+			}
+		`), 0o600)
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
+			Filesystem:  fs_ns.GetOsFilesystem(),
+		})
+		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
+
+		outBuf := bytes.NewBuffer(nil)
+		logLevel := zerolog.WarnLevel
+
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             ctx,
+			ParentContextRequired:     true,
+			Out:                       outBuf,
+			LogLevels:                 core.NewLogLevels(core.LogLevelsInitialization{DefaultLevel: logLevel}),
+			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// The state should be present.
+		if !assert.NotNil(t, state) {
+			return
+		}
+
+		assert.Same(t, state.Module, mod)
+
+		earlyDeclarationPosition, ok := state.StaticCheckData.GetEarlyFunctionDeclarationsPosition(mod.MainChunk.Node)
+		if !assert.True(t, ok) {
+			return
+		}
+
+		returnStmt := mod.MainChunk.Node.Statements[0].(*parse.ReturnStatement)
+
+		assert.Equal(t, returnStmt.Span.Start, earlyDeclarationPosition)
+	})
 }
 
 func TestPrepareLocalModuleWithInvalidInputs(t *testing.T) {
+
 	t.Run(".ParentContext & .StdlibCtx should not be both set", func(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
@@ -2395,8 +1615,849 @@ func TestPrepareLocalModuleWithInvalidInputs(t *testing.T) {
 
 }
 
+func TestPrepareLocalModuleWithDatabases(t *testing.T) {
+	t.Run("local database", func(t *testing.T) {
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
+
+		os.WriteFile(file, []byte(`
+			manifest {
+				permissions: {
+					read: %/...
+					write: %/...
+				}
+				databases: {
+					local: {
+						resource: ldb://main
+						resolution-data: nil
+					}
+				}
+			}
+		`), 0o600)
+
+		fs := fs_ns.NewMemFilesystem(1000)
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: append(
+				core.GetDefaultGlobalVarPermissions(),
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
+				core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")},
+			),
+			Filesystem: fs,
+		})
+		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
+
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             ctx,
+			ParentContextRequired:     true,
+			Out:                       io.Discard,
+
+			PreinitFilesystem:       fs,
+			ScriptContextFileSystem: fs,
+			FullAccessToDatabases:   true,
+			Project:                 project.NewDummyProject("proj", fs),
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		// the state should be present
+		if !assert.NotNil(t, state) {
+			return
+		}
+
+		// static check should have been performed
+		if !assert.Empty(t, state.StaticCheckData.Errors()) {
+			return
+		}
+
+		// symbolic check should have been performed
+		assert.False(t, state.SymbolicData.IsEmpty())
+
+		//the state should contain the database.
+
+		if !assert.Contains(t, state.Databases, "local") {
+			return
+		}
+
+		assert.Equal(t, core.Host("ldb://main"), state.Databases["local"].Resource())
+	})
+
+	t.Run("if the current schema of a database does not match the expected schema, only an error should be returned", func(t *testing.T) {
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
+
+		os.WriteFile(file, []byte(`
+			preinit {
+				pattern expected-schema = %{
+					user: {name: "foo"}
+				}
+			}
+			manifest {
+				permissions: {
+					read: %/...
+					write: %/...
+				}
+				databases: {
+					local: {
+						resource: ldb://main
+						resolution-data: nil
+						assert-schema: %expected-schema
+					}
+				}
+			}
+		`), 0o600)
+
+		fs := fs_ns.NewMemFilesystem(1000)
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: append(
+				core.GetDefaultGlobalVarPermissions(),
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
+				core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")},
+			),
+			Filesystem: fs,
+		})
+		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
+
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             ctx,
+			ParentContextRequired:     true,
+			Out:                       io.Discard,
+
+			PreinitFilesystem:       fs,
+			ScriptContextFileSystem: fs,
+			FullAccessToDatabases:   true,
+			Project:                 project.NewDummyProject("proj", fs),
+		})
+
+		if !assert.ErrorIs(t, err, core.ErrCurrentSchemaNotEqualToExpectedSchema) {
+			return
+		}
+
+		// the module should not be present
+		if !assert.Nil(t, mod) {
+			return
+		}
+
+		// the state should not be present
+		if !assert.Nil(t, state) {
+			return
+		}
+	})
+
+	t.Run("in data extraction mode if the current schema of a database does not match the expected schema, the state and an error should be returned", func(t *testing.T) {
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
+
+		os.WriteFile(file, []byte(`
+			preinit {
+				pattern expected-schema = %{
+					user: {name: "foo"}
+				}
+			}
+			manifest {
+				permissions: {
+					read: %/...
+					write: %/...
+				}
+				databases: {
+					local: {
+						resource: ldb://main
+						resolution-data: nil
+						assert-schema: %expected-schema
+					}
+				}
+			}
+		`), 0o600)
+
+		fs := fs_ns.NewMemFilesystem(1000)
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: append(
+				core.GetDefaultGlobalVarPermissions(),
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
+				core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")},
+			),
+			Filesystem: fs,
+		})
+		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
+
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             ctx,
+			ParentContextRequired:     true,
+			Out:                       io.Discard,
+
+			PreinitFilesystem:       fs,
+			ScriptContextFileSystem: fs,
+			FullAccessToDatabases:   true,
+
+			DataExtractionMode: true,
+			Project:            project.NewDummyProject("proj", fs),
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		// the state should be present
+		if !assert.NotNil(t, state) {
+			return
+		}
+
+		// static check should have been performed
+		if !assert.Empty(t, state.StaticCheckData.Errors()) {
+			return
+		}
+
+		// symbolic check should have been performed
+		assert.False(t, state.SymbolicData.IsEmpty())
+
+		//the state should contain the database.
+
+		if !assert.Contains(t, state.Databases, "local") {
+			return
+		}
+
+		schema := core.NewInexactObjectPattern([]core.ObjectPatternEntry{
+			{
+				Name: "user",
+				Pattern: core.NewInexactObjectPattern([]core.ObjectPatternEntry{
+					{
+						Name:    "name",
+						Pattern: core.NewExactStringPattern("foo"),
+					},
+				}),
+			},
+		})
+
+		assert.Equal(t, schema, state.Databases["local"].Prop(ctx, "schema"))
+		assert.Equal(t, core.Host("ldb://main"), state.Databases["local"].Resource())
+	})
+
+	t.Run("local database + assert-schema matching the current schema", func(t *testing.T) {
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
+
+		os.WriteFile(file, []byte(`
+			preinit {
+				pattern expected-schema = %{}
+			}
+			manifest {
+				permissions: {
+					read: %/...
+					write: %/...
+				}
+				databases: {
+					local: {
+						resource: ldb://main
+						resolution-data: nil
+						assert-schema: %expected-schema
+					}
+				}
+			}
+		`), 0o600)
+
+		fs := fs_ns.NewMemFilesystem(1000)
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: append(
+				core.GetDefaultGlobalVarPermissions(),
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
+				core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")},
+			),
+			Filesystem: fs,
+		})
+		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
+
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             ctx,
+			ParentContextRequired:     true,
+			Out:                       io.Discard,
+
+			PreinitFilesystem:       fs,
+			ScriptContextFileSystem: fs,
+			FullAccessToDatabases:   true,
+			Project:                 project.NewDummyProject("proj", fs),
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		// the state should be present
+		if !assert.NotNil(t, state) {
+			return
+		}
+
+		// static check should have been performed
+		if !assert.Empty(t, state.StaticCheckData.Errors()) {
+			return
+		}
+
+		// symbolic check should have been performed
+		assert.False(t, state.SymbolicData.IsEmpty())
+
+		//the state should contain the database.
+
+		if !assert.Contains(t, state.Databases, "local") {
+			return
+		}
+
+		assert.Equal(t, core.Host("ldb://main"), state.Databases["local"].Resource())
+	})
+
+	t.Run("local database + expected schema update: the entities should not be loaded yet", func(t *testing.T) {
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
+
+		os.WriteFile(file, []byte(`
+			manifest {
+				permissions: {
+					read: %/...
+					write: %/...
+				}
+				databases: {
+					local: {
+						resource: ldb://main
+						resolution-data: nil
+						expected-schema-update: true
+					}
+				}
+			}
+
+			dbs.local.update_schema(%{})
+		`), 0o600)
+
+		fs := fs_ns.NewMemFilesystem(1000)
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: append(
+				core.GetDefaultGlobalVarPermissions(),
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
+				core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")},
+			),
+			Filesystem: fs,
+		})
+		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
+
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             ctx,
+			ParentContextRequired:     true,
+			Out:                       io.Discard,
+
+			PreinitFilesystem:       fs,
+			ScriptContextFileSystem: fs,
+			FullAccessToDatabases:   true,
+			Project:                 project.NewDummyProject("proj", fs),
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		// the state should be present
+		if !assert.NotNil(t, state) {
+			return
+		}
+
+		// static check should have been performed
+		if !assert.Empty(t, state.StaticCheckData.Errors()) {
+			return
+		}
+
+		// symbolic check should have been performed
+		assert.False(t, state.SymbolicData.IsEmpty())
+
+		//the state should contain the database.
+
+		if !assert.Contains(t, state.Databases, "local") {
+			return
+		}
+		db := state.Databases["local"]
+
+		assert.Equal(t, core.Host("ldb://main"), db.Resource())
+		assert.False(t, db.TopLevelEntitiesLoaded())
+	})
+
+	t.Run("local database set by main module and accessed by external module", func(t *testing.T) {
+		fls := fs_ns.NewMemFilesystem(10_000)
+
+		util.WriteFile(fls, "/main.ix", []byte(`
+			manifest {
+				permissions: {
+					read: %/...
+					write: %/...
+				}
+				databases: {
+					local: {
+						resource: ldb://main
+						resolution-data: nil
+					}
+				}
+			}
+		`), 0o600)
+
+		util.WriteFile(fls, "/executed.ix", []byte(`
+			manifest {
+				databases: /main.ix
+			}
+		`), 0o600)
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: append(
+				core.GetDefaultGlobalVarPermissions(),
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
+				core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")},
+			),
+			Filesystem: fls,
+		})
+		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
+
+		mainState, _, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
+			Fpath:                     "/main.ix",
+			ParsingCompilationContext: ctx,
+			ParentContext:             ctx,
+			ParentContextRequired:     true,
+			Out:                       io.Discard,
+
+			PreinitFilesystem:     fls,
+			FullAccessToDatabases: true,
+			Project:               project.NewDummyProject("proj", fls),
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
+			Fpath:                     "/executed.ix",
+			ParsingCompilationContext: mainState.Ctx,
+			ParentContext:             mainState.Ctx,
+			UseParentStateAsMainState: true,
+			ParentContextRequired:     true,
+			Out:                       io.Discard,
+
+			PreinitFilesystem:     fls,
+			FullAccessToDatabases: true,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		// the state should be present
+		if !assert.NotNil(t, state) {
+			return
+		}
+
+		// static check should have been performed
+		if !assert.Empty(t, state.StaticCheckData.Errors()) {
+			return
+		}
+
+		// symbolic check should have been performed
+		assert.False(t, state.SymbolicData.IsEmpty())
+
+		//the state should contain the database.
+
+		if !assert.Contains(t, state.Databases, "local") {
+			return
+		}
+
+		assert.Equal(t, core.Host("ldb://main"), state.Databases["local"].Resource())
+	})
+
+	t.Run("object storage database", func(t *testing.T) {
+		if OS_DB_TEST_ACCESS_KEY == "" {
+			t.SkipNow()
+			return
+		}
+
+		s3Host := randS3Host()
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
+
+		os.WriteFile(file, []byte(`
+			manifest {
+				permissions: {}
+				host-definitions: :{
+					`+string(s3Host)+` : {
+						bucket: "test"
+						provider: "cloudflare"
+						host: `+OS_DB_TEST_ENDPOINT+`
+						access-key: access-key
+						secret-key: secret-key
+					}
+				}
+				databases: {
+					db: {
+						resource: odb://main
+						resolution-data: `+string(s3Host)+`
+					}
+				}
+			}
+		`), 0o600)
+
+		fs := fs_ns.NewMemFilesystem(1000)
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: append(
+				core.GetDefaultGlobalVarPermissions(),
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
+			),
+			Filesystem: fs,
+		})
+		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
+
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
+			Fpath:                     file,
+			Project:                   project.NewDummyProject("test", fs),
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             ctx,
+			ParentContextRequired:     true,
+			Out:                       io.Discard,
+
+			PreinitFilesystem:       fs,
+			ScriptContextFileSystem: fs,
+			FullAccessToDatabases:   true,
+			AdditionalGlobalsTestOnly: map[string]core.Value{
+				"access-key": core.String(OS_DB_TEST_ACCESS_KEY),
+				"secret-key": utils.Must(core.SECRET_STRING_PATTERN.NewSecret(
+					core.NewContextWithEmptyState(core.ContextConfig{}, nil),
+					OS_DB_TEST_SECRET_KEY,
+				)),
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		// the state should be present
+		if !assert.NotNil(t, state) {
+			return
+		}
+
+		// static check should have been performed
+		if !assert.Empty(t, state.StaticCheckData.Errors()) {
+			return
+		}
+
+		// symbolic check should have been performed
+		assert.False(t, state.SymbolicData.IsEmpty())
+
+		//the state should contain the database.
+
+		if !assert.Contains(t, state.Databases, "db") {
+			return
+		}
+
+		assert.Equal(t, core.Host("odb://main"), state.Databases["db"].Resource())
+	})
+
+	t.Run("object storage database + expected schema update: the entities should not be loaded", func(t *testing.T) {
+		if OS_DB_TEST_ACCESS_KEY == "" {
+			t.SkipNow()
+			return
+		}
+
+		s3Host := randS3Host()
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
+
+		os.WriteFile(file, []byte(`
+			manifest {
+				permissions: {}
+				host-definitions: :{
+					`+string(s3Host)+` : {
+						bucket: "test"
+						provider: "cloudflare"
+						host: `+OS_DB_TEST_ENDPOINT+`
+						access-key: access-key
+						secret-key: secret-key
+					}
+				}
+				databases: {
+					db: {
+						resource: odb://main
+						resolution-data: `+string(s3Host)+`
+						expected-schema-update: true
+					}
+				}
+			}
+
+			dbs.db.update_schema(%{})
+		`), 0o600)
+
+		fs := fs_ns.NewMemFilesystem(1000)
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: append(
+				core.GetDefaultGlobalVarPermissions(),
+				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
+			),
+			Filesystem: fs,
+		})
+		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
+
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
+			Fpath:                     file,
+			Project:                   project.NewDummyProject("test", fs),
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             ctx,
+			ParentContextRequired:     true,
+			Out:                       io.Discard,
+
+			PreinitFilesystem:       fs,
+			ScriptContextFileSystem: fs,
+			FullAccessToDatabases:   true,
+
+			AdditionalGlobalsTestOnly: map[string]core.Value{
+				"access-key": core.String(OS_DB_TEST_ACCESS_KEY),
+				"secret-key": utils.Must(core.SECRET_STRING_PATTERN.NewSecret(
+					core.NewContextWithEmptyState(core.ContextConfig{}, nil),
+					OS_DB_TEST_SECRET_KEY,
+				)),
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		// the state should be present
+		if !assert.NotNil(t, state) {
+			return
+		}
+
+		// static check should have been performed
+		if !assert.Empty(t, state.StaticCheckData.Errors()) {
+			return
+		}
+
+		// symbolic check should have been performed
+		assert.False(t, state.SymbolicData.IsEmpty())
+
+		//the state should contain the database.
+
+		if !assert.Contains(t, state.Databases, "db") {
+			return
+		}
+		db := state.Databases["db"]
+
+		assert.Equal(t, core.Host("odb://main"), db.Resource())
+		assert.False(t, db.TopLevelEntitiesLoaded())
+	})
+
+	t.Run("object storage database with credentials provided by the project", func(t *testing.T) {
+		if CLOUDFLARE_ACCOUNT_ID == "" {
+			t.Skip()
+			return
+		}
+
+		//create project
+		var proj *project.Project
+		projectName := "test-mod-prep-creds-from-project"
+		{
+			tempCtx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
+			defer tempCtx.CancelGracefully()
+			registry, err := project.OpenRegistry(t.TempDir(), tempCtx)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			id, _, err := registry.CreateProject(tempCtx, project.CreateProjectParams{
+				Name: projectName,
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			p, err := registry.OpenProject(tempCtx, project.OpenProjectParams{
+				Id: id,
+				DevSideConfig: project.DevSideProjectConfig{
+					Cloudflare: &cloudflareprovider.DevSideConfig{
+						AdditionalTokensApiToken: CLOUDFLARE_ADDITIONAL_TOKENS_API_TOKEN,
+						AccountID:                CLOUDFLARE_ACCOUNT_ID,
+					},
+				},
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			proj = p
+
+			defer func() {
+				//delete tokens & bucket
+				api, err := cloudflare.NewWithAPIToken(CLOUDFLARE_ADDITIONAL_TOKENS_API_TOKEN)
+				if err != nil {
+					return
+				}
+
+				apiTokens, err := api.APITokens(tempCtx)
+				if err != nil {
+					return
+				}
+
+				for _, token := range apiTokens {
+					if strings.Contains(token.Name, projectName) {
+						err := api.DeleteAPIToken(tempCtx, token.ID)
+						if err != nil {
+							t.Log(err)
+						}
+					}
+				}
+
+			}()
+		}
+
+		fs := fs_ns.NewMemFilesystem(10000)
+		s3Host := randS3Host()
+
+		util.WriteFile(fs, "/script.ix", []byte(`
+			manifest {
+				permissions: {}
+				host-definitions: :{
+					`+string(s3Host)+` : {
+						bucket: "test"
+						provider: "cloudflare"
+					}
+				}
+				databases: {
+					db: {
+						resource: odb://main
+						resolution-data: `+string(s3Host)+`
+					}
+				}
+			}
+		`), 0o600)
+
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{
+			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
+			Filesystem:  fs,
+		}, nil)
+
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
+			Fpath:                     "/script.ix",
+			ParsingCompilationContext: ctx,
+			ParentContext:             ctx,
+			ParentContextRequired:     true,
+			Out:                       io.Discard,
+
+			PreinitFilesystem:       fs,
+			ScriptContextFileSystem: fs,
+			FullAccessToDatabases:   true,
+
+			Project: proj,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		// the state should be present
+		if !assert.NotNil(t, state) {
+			return
+		}
+
+		// static check should have been performed
+		if !assert.Empty(t, state.StaticCheckData.Errors()) {
+			return
+		}
+
+		// symbolic check should have been performed
+		assert.False(t, state.SymbolicData.IsEmpty())
+
+		//the state should contain the database.
+
+		if !assert.Contains(t, state.Databases, "db") {
+			return
+		}
+
+		assert.Equal(t, core.Host("odb://main"), state.Databases["db"].Resource())
+	})
+
+}
+
 func TestPrepareLocalModuleWithCache(t *testing.T) {
-	t.Run("with cache: module only", func(t *testing.T) {
+	t.Run("module only", func(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
@@ -2503,7 +2564,7 @@ func TestPrepareLocalModuleWithCache(t *testing.T) {
 		assert.False(t, state2.SymbolicData.IsEmpty())
 	})
 
-	t.Run("with cache: module and static check data", func(t *testing.T) {
+	t.Run("module and static check data", func(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
@@ -2611,7 +2672,7 @@ func TestPrepareLocalModuleWithCache(t *testing.T) {
 		assert.False(t, state2.SymbolicData.IsEmpty())
 	})
 
-	t.Run("with cache: module and static check data", func(t *testing.T) {
+	t.Run("module and static check data", func(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
@@ -2721,7 +2782,7 @@ func TestPrepareLocalModuleWithCache(t *testing.T) {
 		assert.False(t, state2.SymbolicData.IsEmpty())
 	})
 
-	t.Run("with cache but different path", func(t *testing.T) {
+	t.Run("cache has an unexpected path", func(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		otherFile := filepath.Join(dir, "script2.ix")
