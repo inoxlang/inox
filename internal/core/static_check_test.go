@@ -1708,145 +1708,272 @@ func TestCheck(t *testing.T) {
 
 		t.Run("the early declarations of functions that don't capture any local should happen at the top-level statement that is the closest"+
 			" to the first reference to one of the functions", func(t *testing.T) {
-			chunk, src := mustParseCode(`
-				for true {
-					f()
-				}
-
-				fn f(){
-					return 1
-				}
-			`)
-
-			ctx := NewContext(ContextConfig{})
-			defer ctx.CancelGracefully()
-
-			data, err := StaticCheck(StaticCheckInput{Node: chunk, Chunk: src, State: NewGlobalState(ctx)})
-			if !assert.NoError(t, err) {
-				return
-			}
-
-			forStmt := parse.FindNode(chunk, (*parse.ForStatement)(nil), nil)
-
-			pos, _ := data.GetEarlyFunctionDeclarationsPosition(chunk)
-			assert.Equal(t, forStmt.Base().Span.Start, pos)
-
-			decls := data.GetFunctionsToDeclareEarly(chunk)
-			assert.Len(t, decls, 1)
-		})
-
-		t.Run("in an embdded module the early declarations of functions that don't capture any local should happen at the top-level statement that is the closest"+
-			" to the first reference to one of the functions", func(t *testing.T) {
-			chunk, src := mustParseCode(`
-				go do {
+			t.Run("base case", func(t *testing.T) {
+				chunk, src := mustParseCode(`
 					for true {
 						f()
 					}
-	
+
 					fn f(){
 						return 1
 					}
-				}
-			`)
+				`)
 
-			ctx := NewContext(ContextConfig{})
-			defer ctx.CancelGracefully()
+				ctx := NewContext(ContextConfig{})
+				defer ctx.CancelGracefully()
 
-			data, err := StaticCheck(StaticCheckInput{Node: chunk, Chunk: src, State: NewGlobalState(ctx)})
-			if !assert.NoError(t, err) {
-				return
-			}
-
-			//Check data for the embedded module.
-
-			embeddedModule := chunk.Statements[0].(*parse.SpawnExpression).Module
-			forStmt := parse.FindNode(chunk, (*parse.ForStatement)(nil), nil)
-
-			pos, _ := data.GetEarlyFunctionDeclarationsPosition(embeddedModule)
-			assert.Equal(t, forStmt.Base().Span.Start, pos)
-
-			decls := data.GetFunctionsToDeclareEarly(embeddedModule)
-			assert.Len(t, decls, 1)
-
-			//Nothing should be defined in the top-level chunk.
-
-			_, ok := data.GetEarlyFunctionDeclarationsPosition(chunk)
-			assert.False(t, ok)
-
-			decls = data.GetFunctionsToDeclareEarly(chunk)
-			assert.Empty(t, decls)
-		})
-
-		t.Run("the early declarations of functions that don't capture any local should happen at the top-level statement that is the closest"+
-			" to the first reference to one of the functions: reference in function expression", func(t *testing.T) {
-			chunk, src := mustParseCode(`
-				for true {
-					fn(){ return f() }
+				data, err := StaticCheck(StaticCheckInput{Node: chunk, Chunk: src, State: NewGlobalState(ctx)})
+				if !assert.NoError(t, err) {
+					return
 				}
 
-				fn f(){
-					return 1
-				}
-			`)
+				forStmt := parse.FindNode(chunk, (*parse.ForStatement)(nil), nil)
 
-			ctx := NewContext(ContextConfig{})
-			defer ctx.CancelGracefully()
+				pos, _ := data.GetEarlyFunctionDeclarationsPosition(chunk)
+				assert.Equal(t, forStmt.Base().Span.Start, pos)
 
-			data, err := StaticCheck(StaticCheckInput{Node: chunk, Chunk: src, State: NewGlobalState(ctx)})
-			if !assert.NoError(t, err) {
-				return
-			}
+				decls := data.GetFunctionsToDeclareEarly(chunk)
+				assert.Len(t, decls, 1)
+			})
 
-			forStmt := parse.FindNode(chunk, (*parse.ForStatement)(nil), nil)
-
-			pos, _ := data.GetEarlyFunctionDeclarationsPosition(chunk)
-			assert.Equal(t, forStmt.Base().Span.Start, pos)
-
-			decls := data.GetFunctionsToDeclareEarly(chunk)
-			assert.Len(t, decls, 1)
-		})
-
-		t.Run("identical function declaration in an embedded module", func(t *testing.T) {
-			chunk, src := mustParseCode(`
-				go do {
-					fn f(){
-						return 2
+			t.Run("reference in a function expression", func(t *testing.T) {
+				chunk, src := mustParseCode(`
+					for true {
+						fn(){ return f() }
 					}
+
+					fn f(){
+						return 1
+					}
+				`)
+
+				ctx := NewContext(ContextConfig{})
+				defer ctx.CancelGracefully()
+
+				data, err := StaticCheck(StaticCheckInput{Node: chunk, Chunk: src, State: NewGlobalState(ctx)})
+				if !assert.NoError(t, err) {
+					return
 				}
 
-				fn f(){
-					return 1
+				forStmt := parse.FindNode(chunk, (*parse.ForStatement)(nil), nil)
+
+				pos, _ := data.GetEarlyFunctionDeclarationsPosition(chunk)
+				assert.Equal(t, forStmt.Base().Span.Start, pos)
+
+				decls := data.GetFunctionsToDeclareEarly(chunk)
+				assert.Len(t, decls, 1)
+			})
+
+			t.Run("reference in a return statement before the declaration", func(t *testing.T) {
+				chunk, src := mustParseCode(`
+					return f()
+
+					fn f(){
+						return 1
+					}
+				`)
+
+				ctx := NewContext(ContextConfig{})
+				defer ctx.CancelGracefully()
+
+				data, err := StaticCheck(StaticCheckInput{Node: chunk, Chunk: src, State: NewGlobalState(ctx)})
+				if !assert.NoError(t, err) {
+					return
 				}
-			`)
 
-			ctx := NewContext(ContextConfig{})
-			defer ctx.CancelGracefully()
+				returnStmt := chunk.Statements[0]
 
-			data, err := StaticCheck(StaticCheckInput{Node: chunk, Chunk: src, State: NewGlobalState(ctx)})
-			if !assert.NoError(t, err) {
-				return
-			}
+				pos, _ := data.GetEarlyFunctionDeclarationsPosition(chunk)
+				assert.Equal(t, returnStmt.Base().Span.Start, pos)
 
-			//Check the declaration that is inside the embedded module.
+				decls := data.GetFunctionsToDeclareEarly(chunk)
+				assert.Len(t, decls, 1)
+			})
 
-			embeddedModule := chunk.Statements[0].(*parse.SpawnExpression).Module
-			fnDeclInEmbeddedModule := embeddedModule.Statements[0]
+			t.Run("reference in a function expression in a return statement before the declaration", func(t *testing.T) {
+				chunk, src := mustParseCode(`
+					return fn(){ f() }
 
-			pos, _ := data.GetEarlyFunctionDeclarationsPosition(embeddedModule)
-			assert.Equal(t, fnDeclInEmbeddedModule.Base().Span.Start, pos)
+					fn f(){
+						return 1
+					}
+				`)
 
-			decls := data.GetFunctionsToDeclareEarly(embeddedModule)
-			assert.Len(t, decls, 1)
+				ctx := NewContext(ContextConfig{})
+				defer ctx.CancelGracefully()
 
-			//Check the other declaration.
+				data, err := StaticCheck(StaticCheckInput{Node: chunk, Chunk: src, State: NewGlobalState(ctx)})
+				if !assert.NoError(t, err) {
+					return
+				}
 
-			topLevelFnDecl := chunk.Statements[1]
+				returnStmt := chunk.Statements[0]
 
-			pos, _ = data.GetEarlyFunctionDeclarationsPosition(chunk)
-			assert.Equal(t, topLevelFnDecl.Base().Span.Start, pos)
+				pos, _ := data.GetEarlyFunctionDeclarationsPosition(chunk)
+				assert.Equal(t, returnStmt.Base().Span.Start, pos)
 
-			decls = data.GetFunctionsToDeclareEarly(chunk)
-			assert.Len(t, decls, 1)
+				decls := data.GetFunctionsToDeclareEarly(chunk)
+				assert.Len(t, decls, 1)
+			})
+
+			t.Run("reference in an XML interpolation", func(t *testing.T) {
+				chunk, src := mustParseCode(`
+					html<div> {f()} </div>
+
+					fn f(){
+						return 1
+					}
+				`)
+
+				ctx := NewContext(ContextConfig{})
+				defer ctx.CancelGracefully()
+				state := NewGlobalState(ctx)
+
+				data, err := StaticCheck(StaticCheckInput{
+					Node:  chunk,
+					Chunk: src,
+					State: state,
+					Globals: GlobalVariablesFromMap(
+						map[string]Value{
+							"html": NewNamespace("html", nil),
+						},
+						[]string{"html"},
+					),
+				})
+				if !assert.NoError(t, err) {
+					return
+				}
+
+				xmlExpression := chunk.Statements[0]
+
+				pos, _ := data.GetEarlyFunctionDeclarationsPosition(chunk)
+				assert.Equal(t, xmlExpression.Base().Span.Start, pos)
+
+				decls := data.GetFunctionsToDeclareEarly(chunk)
+				assert.Len(t, decls, 1)
+			})
+
+			t.Run("reference in an XML interpolation in a return statement", func(t *testing.T) {
+				chunk, src := mustParseCode(`
+					return html<div> {f()} </div>
+
+					fn f(){
+						return 1
+					}
+				`)
+
+				ctx := NewContext(ContextConfig{})
+				defer ctx.CancelGracefully()
+				state := NewGlobalState(ctx)
+
+				data, err := StaticCheck(StaticCheckInput{
+					Node:  chunk,
+					Chunk: src,
+					State: state,
+					Globals: GlobalVariablesFromMap(
+						map[string]Value{
+							"html": NewNamespace("html", nil),
+						},
+						[]string{"html"},
+					),
+				})
+				if !assert.NoError(t, err) {
+					return
+				}
+
+				returnStmt := chunk.Statements[0]
+
+				pos, _ := data.GetEarlyFunctionDeclarationsPosition(chunk)
+				assert.Equal(t, returnStmt.Base().Span.Start, pos)
+
+				decls := data.GetFunctionsToDeclareEarly(chunk)
+				assert.Len(t, decls, 1)
+			})
+
+			t.Run("embedded module", func(t *testing.T) {
+				chunk, src := mustParseCode(`
+				go do {
+						for true {
+							f()
+						}
+		
+						fn f(){
+							return 1
+						}
+					}
+				`)
+
+				ctx := NewContext(ContextConfig{})
+				defer ctx.CancelGracefully()
+
+				data, err := StaticCheck(StaticCheckInput{Node: chunk, Chunk: src, State: NewGlobalState(ctx)})
+				if !assert.NoError(t, err) {
+					return
+				}
+
+				//Check data for the embedded module.
+
+				embeddedModule := chunk.Statements[0].(*parse.SpawnExpression).Module
+				forStmt := parse.FindNode(chunk, (*parse.ForStatement)(nil), nil)
+
+				pos, _ := data.GetEarlyFunctionDeclarationsPosition(embeddedModule)
+				assert.Equal(t, forStmt.Base().Span.Start, pos)
+
+				decls := data.GetFunctionsToDeclareEarly(embeddedModule)
+				assert.Len(t, decls, 1)
+
+				//Nothing should be defined in the top-level chunk.
+
+				_, ok := data.GetEarlyFunctionDeclarationsPosition(chunk)
+				assert.False(t, ok)
+
+				decls = data.GetFunctionsToDeclareEarly(chunk)
+				assert.Empty(t, decls)
+			})
+
+			t.Run("identical function declaration in an embedded module", func(t *testing.T) {
+				chunk, src := mustParseCode(`
+					go do {
+						fn f(){
+							return 2
+						}
+					}
+
+					fn f(){
+						return 1
+					}
+				`)
+
+				ctx := NewContext(ContextConfig{})
+				defer ctx.CancelGracefully()
+
+				data, err := StaticCheck(StaticCheckInput{Node: chunk, Chunk: src, State: NewGlobalState(ctx)})
+				if !assert.NoError(t, err) {
+					return
+				}
+
+				//Check the declaration that is inside the embedded module.
+
+				embeddedModule := chunk.Statements[0].(*parse.SpawnExpression).Module
+				fnDeclInEmbeddedModule := embeddedModule.Statements[0]
+
+				pos, _ := data.GetEarlyFunctionDeclarationsPosition(embeddedModule)
+				assert.Equal(t, fnDeclInEmbeddedModule.Base().Span.Start, pos)
+
+				decls := data.GetFunctionsToDeclareEarly(embeddedModule)
+				assert.Len(t, decls, 1)
+
+				//Check the other declaration.
+
+				topLevelFnDecl := chunk.Statements[1]
+
+				pos, _ = data.GetEarlyFunctionDeclarationsPosition(chunk)
+				assert.Equal(t, topLevelFnDecl.Base().Span.Start, pos)
+
+				decls = data.GetFunctionsToDeclareEarly(chunk)
+				assert.Len(t, decls, 1)
+			})
+
 		})
 
 		t.Run("a function that captures a local variable should be declared after the declaration of the variable", func(t *testing.T) {
