@@ -276,6 +276,28 @@ required to have specific attributes that enable JSON encoding.
 }
 ```
 
+### Directly Specifying A Payload
+
+You can use the `jsonform-payload` attribute to specify the JSON payload directly.
+
+```html
+fn TodoItem(){
+    payload = asjson({
+        updates: [{ key: item.key, done: !item.done}]
+    })
+
+    return html<div>
+        <form hx-patch-json="/todos" jsonform-payload=payload>
+            <button>
+                {(if item.done "✅" else "⬜")}
+            </button>
+        </form>
+
+        ...
+    </div>
+}
+```
+
 ## Planned HTML and HTMX Integrations
 
 **Implementation has begun.**
