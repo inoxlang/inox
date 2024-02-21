@@ -66,6 +66,18 @@ func FindCompletions(args SearchArgs) []Completion {
 	cursorIndex := args.CursorIndex
 	mode := args.Mode
 
+	//Determine if the cursor is inside a comment.
+	isCursorInsideComment := false
+
+	for _, token := range args.Chunk.Node.Tokens {
+		if cursorIndex >= int(token.Span.Start) && cursorIndex < int(token.Span.End) {
+			if token.Type != parse.COMMENT {
+				break
+			}
+			isCursorInsideComment = true
+		}
+	}
+
 	var completions []Completion
 	var nodeAtCursor parse.Node
 	var _parent parse.Node
@@ -134,52 +146,58 @@ func FindCompletions(args SearchArgs) []Completion {
 		inputData:     args.InputData,
 	}
 
-	switch n := nodeAtCursor.(type) {
-	case *parse.PatternIdentifierLiteral:
-		completions = handlePatternIdentCompletions(n, search)
-	case *parse.PatternNamespaceIdentifierLiteral, *parse.PatternNamespaceMemberExpression:
-		completions = handlePatternNamespaceCompletions(n, search)
-	case *parse.Variable:
-		completions = handleLocalVariableCompletions(n, search)
-	case *parse.GlobalVariable:
-		completions = handleGlobalVariableCompletions(n, search)
-	case *parse.IdentifierLiteral:
-		completions = handleIdentifierAndKeywordCompletions(n, deepestCall, search)
-	case *parse.IdentifierMemberExpression:
-		completions = handleIdentifierMemberCompletions(n, search)
-	case *parse.MemberExpression:
-		completions = handleMemberExpressionCompletions(n, search)
-	case *parse.DoubleColonExpression:
-		completions = handleDoubleColonExpressionCompletions(n, search)
-	case *parse.CallExpression: //if a call is the deepest node at cursor it means we are not in an argument
-		completions = handleNewCallArgumentCompletions(n, search)
-	case *parse.QuotedStringLiteral:
-		completions = findStringCompletions(n, search)
-	case *parse.RelativePathLiteral:
-		completions = findPathCompletions(state.Global.Ctx, n.Raw)
-	case *parse.AbsolutePathLiteral:
-		completions = findPathCompletions(state.Global.Ctx, n.Raw)
-	case *parse.URLLiteral:
-		completions = findURLCompletions(state.Global.Ctx, n, search)
-	case *parse.URLPatternLiteral:
-		completions = findURLPatternCompletions(state.Global.Ctx, n, search)
-	case *parse.HostLiteral:
-		completions = findHostCompletions(state.Global.Ctx, n.Value, _parent)
-	case *parse.SchemeLiteral:
-		completions = findHostCompletions(state.Global.Ctx, n.Name, _parent)
-	case *parse.InvalidAliasRelatedNode:
-		if len(n.Raw) > 0 && !strings.Contains(n.Raw, "/") {
-			completions = findHostAliasCompletions(state.Global.Ctx, n.Raw[1:], _parent)
+	if isCursorInsideComment {
+		completions = handleCompletionInsideComment()
+	} else {
+		switch n := nodeAtCursor.(type) {
+		case *parse.PatternIdentifierLiteral:
+			completions = handlePatternIdentCompletions(n, search)
+		case *parse.PatternNamespaceIdentifierLiteral, *parse.PatternNamespaceMemberExpression:
+			completions = handlePatternNamespaceCompletions(n, search)
+		case *parse.Variable:
+			completions = handleLocalVariableCompletions(n, search)
+		case *parse.GlobalVariable:
+			completions = handleGlobalVariableCompletions(n, search)
+		case *parse.IdentifierLiteral:
+			completions = handleIdentifierAndKeywordCompletions(n, deepestCall, search)
+		case *parse.IdentifierMemberExpression:
+			completions = handleIdentifierMemberCompletions(n, search)
+		case *parse.MemberExpression:
+			completions = handleMemberExpressionCompletions(n, search)
+		case *parse.DoubleColonExpression:
+			completions = handleDoubleColonExpressionCompletions(n, search)
+		case *parse.CallExpression: //if a call is the deepest node at cursor it means we are not in an argument
+			completions = handleNewCallArgumentCompletions(n, search)
+		case *parse.QuotedStringLiteral:
+			completions = findStringCompletions(n, search)
+		case *parse.RelativePathLiteral:
+			completions = findPathCompletions(state.Global.Ctx, n.Raw)
+		case *parse.AbsolutePathLiteral:
+			completions = findPathCompletions(state.Global.Ctx, n.Raw)
+		case *parse.URLLiteral:
+			completions = findURLCompletions(state.Global.Ctx, n, search)
+		case *parse.URLPatternLiteral:
+			completions = findURLPatternCompletions(state.Global.Ctx, n, search)
+		case *parse.HostLiteral:
+			completions = findHostCompletions(state.Global.Ctx, n.Value, _parent)
+		case *parse.SchemeLiteral:
+			completions = findHostCompletions(state.Global.Ctx, n.Name, _parent)
+		case *parse.InvalidAliasRelatedNode:
+			if len(n.Raw) > 0 && !strings.Contains(n.Raw, "/") {
+				completions = findHostAliasCompletions(state.Global.Ctx, n.Raw[1:], _parent)
+			}
+		case *parse.ObjectLiteral:
+			completions = findObjectInteriorCompletions(n, search)
+		case *parse.RecordLiteral:
+			completions = findRecordInteriorCompletions(n, search)
+		case *parse.DictionaryLiteral:
+			completions = findDictionaryInteriorCompletions(n, search)
+		case *parse.XMLOpeningElement:
+			completions = findXMLOpeningElementInteriorCompletions(n, search)
 		}
-	case *parse.ObjectLiteral:
-		completions = findObjectInteriorCompletions(n, search)
-	case *parse.RecordLiteral:
-		completions = findRecordInteriorCompletions(n, search)
-	case *parse.DictionaryLiteral:
-		completions = findDictionaryInteriorCompletions(n, search)
-	case *parse.XMLOpeningElement:
-		completions = findXMLOpeningElementInteriorCompletions(n, search)
 	}
+
+	//Set unitialized .ReplacedRange fields of completions.
 
 	for i, completion := range completions {
 		if completion.ReplacedRange.Span == (parse.NodeSpan{}) {
