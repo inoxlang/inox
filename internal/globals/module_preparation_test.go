@@ -41,511 +41,6 @@ var (
 
 func TestPrepareLocalModule(t *testing.T) {
 
-	t.Run(".ParentContext & .StdlibCtx should not be both set", func(t *testing.T) {
-		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
-		compilationCtx := createCompilationCtx(dir)
-		defer compilationCtx.CancelGracefully()
-
-		os.WriteFile(file, []byte(`
-			manifest {
-				permissions: {
-					read: %/...
-				}
-			}
-		`), 0o600)
-
-		ctx := core.NewContext(core.ContextConfig{
-			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
-			Filesystem:  fs_ns.GetOsFilesystem(),
-		})
-		core.NewGlobalState(ctx)
-		defer ctx.CancelGracefully()
-
-		stdlibCtx, cancel := context.WithCancel(context.Background())
-		defer cancel()
-
-		assert.PanicsWithError(t, core.ErrBothParentCtxArgsProvided.Error(), func() {
-			core.PrepareLocalModule(core.ModulePreparationArgs{
-				Fpath:                     file,
-				ParsingCompilationContext: compilationCtx,
-				ParentContext:             ctx,
-				StdlibCtx:                 stdlibCtx,
-				ParentContextRequired:     true,
-				Out:                       io.Discard,
-				ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
-			})
-		})
-
-	})
-
-	t.Run("recoverable parsing error", func(t *testing.T) {
-		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
-		compilationCtx := createCompilationCtx(dir)
-		defer compilationCtx.CancelGracefully()
-
-		os.WriteFile(file, []byte(`
-			manifest {
-				permissions: {
-					read: %/...
-				}
-			}
-			a = ;
-			b = 1
-			c = d 		  	# static check error
-			(b + "string") 	# symbolic check error
-		
-		`), 0o600)
-
-		ctx := core.NewContext(core.ContextConfig{
-			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
-			Filesystem:  fs_ns.GetOsFilesystem(),
-		})
-		core.NewGlobalState(ctx)
-		defer ctx.CancelGracefully()
-
-		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
-			Fpath:                     file,
-			ParsingCompilationContext: compilationCtx,
-			ParentContext:             ctx,
-			ParentContextRequired:     true,
-			Out:                       io.Discard,
-			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
-		})
-
-		if !assert.Error(t, err) {
-			return
-		}
-
-		// the module should be present
-		if !assert.NotNil(t, mod) {
-			return
-		}
-
-		// the state should be present because we can still perform static check
-		if !assert.NotNil(t, state) {
-			return
-		}
-		if !assert.True(t, state.Ctx.HasPermission(core.CreateFsReadPerm(core.PathPattern("/...")))) {
-			return
-		}
-
-		// static check should have been performed
-		if !assert.NotEmpty(t, state.StaticCheckData.Errors()) {
-			return
-		}
-
-		// symbolic check should not have been performed
-		assert.True(t, state.SymbolicData.IsEmpty())
-	})
-
-	t.Run("with cache: module only", func(t *testing.T) {
-		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
-		compilationCtx := createCompilationCtx(dir)
-		defer compilationCtx.CancelGracefully()
-
-		os.WriteFile(file, []byte(`
-			manifest {
-				permissions: {
-					read: %/...
-				}
-			}
-		
-			a = 1
-			b = c 		  	# static check error
-		`), 0o600)
-
-		//First preparation: we create the cache.
-
-		ctx1 := core.NewContext(core.ContextConfig{
-			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
-			Filesystem:  fs_ns.GetOsFilesystem(),
-		})
-		core.NewGlobalState(ctx1)
-		defer ctx1.CancelGracefully()
-		defer ctx1.CancelGracefully()
-
-		state1, module, _, err1 := core.PrepareLocalModule(core.ModulePreparationArgs{
-			Fpath:                     file,
-			ParsingCompilationContext: compilationCtx,
-			ParentContext:             ctx1,
-			ParentContextRequired:     true,
-			Out:                       io.Discard,
-			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
-		})
-
-		if !assert.Error(t, err1) {
-			return
-		}
-
-		// the module should be present
-		if !assert.NotNil(t, module) {
-			return
-		}
-
-		cache := core.NewModulePreparationCache(core.ModulePreparationCacheUpdate{
-			Module: module,
-			Time:   time.Now(),
-		})
-
-		//Second preparation but with the cache.
-
-		ctx2 := core.NewContext(core.ContextConfig{
-			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
-			Filesystem:  fs_ns.GetOsFilesystem(),
-		})
-		core.NewGlobalState(ctx2)
-		defer ctx2.CancelGracefully()
-		defer ctx2.CancelGracefully()
-
-		state2, module2, _, err2 := core.PrepareLocalModule(core.ModulePreparationArgs{
-			Fpath:                     file,
-			ParsingCompilationContext: compilationCtx,
-			ParentContext:             ctx2,
-			ParentContextRequired:     true,
-			Out:                       io.Discard,
-
-			Cache:                   cache,
-			ScriptContextFileSystem: fs_ns.GetOsFilesystem(),
-		})
-
-		if !assert.Error(t, err2) {
-			return
-		}
-
-		if !assert.Equal(t, err1.Error(), err2.Error()) {
-			return
-		}
-
-		// the module should be present
-		if !assert.Same(t, module, module2) {
-			return
-		}
-
-		// the state should be present because we can still perform static check
-		if !assert.NotNil(t, state2) {
-			return
-		}
-
-		// the state should not the previous state
-		if !assert.NotSame(t, state1, state2) {
-			return
-		}
-
-		if !assert.True(t, state2.Ctx.HasPermission(core.CreateFsReadPerm(core.PathPattern("/...")))) {
-			return
-		}
-
-		// static check should have been performed
-		if !assert.NotEmpty(t, state2.StaticCheckData.Errors()) {
-			return
-		}
-
-		// symbolic check should have been performed
-		assert.False(t, state2.SymbolicData.IsEmpty())
-	})
-
-	t.Run("with cache: module and static check data", func(t *testing.T) {
-		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
-		compilationCtx := createCompilationCtx(dir)
-		defer compilationCtx.CancelGracefully()
-
-		os.WriteFile(file, []byte(`
-			manifest {
-				permissions: {
-					read: %/...
-				}
-			}
-		
-			a = 1
-			b = c 		  	# static check error
-		`), 0o600)
-
-		//First preparation: we create the cache.
-
-		ctx1 := core.NewContext(core.ContextConfig{
-			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
-			Filesystem:  fs_ns.GetOsFilesystem(),
-		})
-		core.NewGlobalState(ctx1)
-		defer ctx1.CancelGracefully()
-		defer ctx1.CancelGracefully()
-
-		state1, module, _, err1 := core.PrepareLocalModule(core.ModulePreparationArgs{
-			Fpath:                     file,
-			ParsingCompilationContext: compilationCtx,
-			ParentContext:             ctx1,
-			ParentContextRequired:     true,
-			Out:                       io.Discard,
-			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
-		})
-
-		if !assert.Error(t, err1) {
-			return
-		}
-
-		// the module should be present
-		if !assert.NotNil(t, module) {
-			return
-		}
-
-		cache := core.NewModulePreparationCache(core.ModulePreparationCacheUpdate{
-			Module:          module,
-			Time:            time.Now(),
-			StaticCheckData: state1.StaticCheckData,
-		})
-
-		//Second preparation but with the cache.
-
-		ctx2 := core.NewContext(core.ContextConfig{
-			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
-			Filesystem:  fs_ns.GetOsFilesystem(),
-		})
-		core.NewGlobalState(ctx2)
-		defer ctx2.CancelGracefully()
-		defer ctx2.CancelGracefully()
-
-		state2, module2, _, err2 := core.PrepareLocalModule(core.ModulePreparationArgs{
-			Fpath:                     file,
-			ParsingCompilationContext: compilationCtx,
-			ParentContext:             ctx2,
-			ParentContextRequired:     true,
-			Out:                       io.Discard,
-
-			Cache:                   cache,
-			ScriptContextFileSystem: fs_ns.GetOsFilesystem(),
-		})
-
-		if !assert.Error(t, err2) {
-			return
-		}
-
-		if !assert.Equal(t, err1.Error(), err2.Error()) {
-			return
-		}
-
-		// the module should be present
-		if !assert.Same(t, module, module2) {
-			return
-		}
-
-		// the state should be present because we can still perform static check
-		if !assert.NotNil(t, state2) {
-			return
-		}
-
-		// the state should not the previous state
-		if !assert.NotSame(t, state1, state2) {
-			return
-		}
-
-		if !assert.True(t, state2.Ctx.HasPermission(core.CreateFsReadPerm(core.PathPattern("/...")))) {
-			return
-		}
-
-		// static check data should have been re-used
-		if !assert.NotEmpty(t, state2.StaticCheckData.Errors()) {
-			return
-		}
-
-		// symbolic check data should have been re-used
-		assert.False(t, state2.SymbolicData.IsEmpty())
-	})
-
-	t.Run("with cache: module and static check data", func(t *testing.T) {
-		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
-		compilationCtx := createCompilationCtx(dir)
-		defer compilationCtx.CancelGracefully()
-
-		os.WriteFile(file, []byte(`
-			manifest {
-				permissions: {
-					read: %/...
-				}
-			}
-		
-			a = 1
-			b = c 		  	# static check error
-		`), 0o600)
-
-		//First preparation: we create the cache.
-
-		ctx1 := core.NewContext(core.ContextConfig{
-			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
-			Filesystem:  fs_ns.GetOsFilesystem(),
-		})
-		core.NewGlobalState(ctx1)
-		defer ctx1.CancelGracefully()
-		defer ctx1.CancelGracefully()
-
-		state1, module, _, err1 := core.PrepareLocalModule(core.ModulePreparationArgs{
-			Fpath:                     file,
-			ParsingCompilationContext: compilationCtx,
-			ParentContext:             ctx1,
-			ParentContextRequired:     true,
-			Out:                       io.Discard,
-			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
-		})
-
-		if !assert.Error(t, err1) {
-			return
-		}
-
-		// the module should be present
-		if !assert.NotNil(t, module) {
-			return
-		}
-
-		cache := core.NewModulePreparationCache(core.ModulePreparationCacheUpdate{
-			Module:                module,
-			Time:                  time.Now(),
-			StaticCheckData:       state1.StaticCheckData,
-			SymbolicData:          state1.SymbolicData.Data,
-			FinalSymbolicCheckErr: state1.FinalSymbolicCheckError,
-		})
-
-		//Second preparation but with the cache.
-
-		ctx2 := core.NewContext(core.ContextConfig{
-			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
-			Filesystem:  fs_ns.GetOsFilesystem(),
-		})
-		core.NewGlobalState(ctx2)
-		defer ctx2.CancelGracefully()
-		defer ctx2.CancelGracefully()
-
-		state2, module2, _, err2 := core.PrepareLocalModule(core.ModulePreparationArgs{
-			Fpath:                     file,
-			ParsingCompilationContext: compilationCtx,
-			ParentContext:             ctx2,
-			ParentContextRequired:     true,
-			Out:                       io.Discard,
-
-			Cache:                   cache,
-			ScriptContextFileSystem: fs_ns.GetOsFilesystem(),
-		})
-
-		if !assert.Error(t, err2) {
-			return
-		}
-
-		if !assert.Equal(t, err1.Error(), err2.Error()) {
-			return
-		}
-
-		// the module should be present
-		if !assert.Same(t, module, module2) {
-			return
-		}
-
-		// the state should be present because we can still perform static check
-		if !assert.NotNil(t, state2) {
-			return
-		}
-
-		// the state should not the previous state
-		if !assert.NotSame(t, state1, state2) {
-			return
-		}
-
-		if !assert.True(t, state2.Ctx.HasPermission(core.CreateFsReadPerm(core.PathPattern("/...")))) {
-			return
-		}
-
-		// static check data should have been re-used
-		if !assert.NotEmpty(t, state2.StaticCheckData.Errors()) {
-			return
-		}
-
-		// symbolic check data should have been re-used
-		assert.False(t, state2.SymbolicData.IsEmpty())
-	})
-
-	t.Run("with cache but different path", func(t *testing.T) {
-		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
-		otherFile := filepath.Join(dir, "script2.ix")
-
-		compilationCtx := createCompilationCtx(dir)
-		defer compilationCtx.CancelGracefully()
-
-		os.WriteFile(file, []byte(`
-			manifest {
-				permissions: {
-					read: %/...
-				}
-			}
-		
-			a = 1
-			b = c 		  	# static check error
-		`), 0o600)
-
-		ctx1 := core.NewContext(core.ContextConfig{
-			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
-			Filesystem:  fs_ns.GetOsFilesystem(),
-		})
-		core.NewGlobalState(ctx1)
-		defer ctx1.CancelGracefully()
-		defer ctx1.CancelGracefully()
-
-		_, module, _, err1 := core.PrepareLocalModule(core.ModulePreparationArgs{
-			Fpath:                     file,
-			ParsingCompilationContext: compilationCtx,
-			ParentContext:             ctx1,
-			ParentContextRequired:     true,
-			Out:                       io.Discard,
-			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
-		})
-
-		if !assert.Error(t, err1) {
-			return
-		}
-
-		// the module should be present
-		if !assert.NotNil(t, module) {
-			return
-		}
-
-		//second parsing but with the cache
-
-		ctx2 := core.NewContext(core.ContextConfig{
-			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
-			Filesystem:  fs_ns.GetOsFilesystem(),
-		})
-		core.NewGlobalState(ctx2)
-		defer ctx2.CancelGracefully()
-		defer ctx2.CancelGracefully()
-
-		state2, module2, _, err2 := core.PrepareLocalModule(core.ModulePreparationArgs{
-			Fpath:                     otherFile, //path is different
-			ParsingCompilationContext: compilationCtx,
-			ParentContext:             ctx2,
-			ParentContextRequired:     true,
-			Out:                       io.Discard,
-
-			Cache: core.NewModulePreparationCache(core.ModulePreparationCacheUpdate{
-				Module: module,
-				Time:   time.Now(),
-			}),
-		})
-
-		if !assert.ErrorIs(t, err2, core.ErrNonMatchingCachedModulePath) {
-			return
-		}
-
-		// the module should not be present
-		if !assert.Nil(t, module2) {
-			return
-		}
-
-		// the state should not be present
-		assert.Nil(t, state2)
-	})
-
 	t.Run("specified log level", func(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
@@ -2062,6 +1557,376 @@ func TestPrepareLocalModule(t *testing.T) {
 		assert.Nil(t, state)
 	})
 
+	t.Run(".spec.ix modules should be granted wide implicit permissions if testing is enabled", func(t *testing.T) {
+
+		dir := t.TempDir()
+		file := filepath.Join(dir, "file.spec.ix")
+		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
+
+		os.WriteFile(file, []byte(`
+			manifest {
+			}
+		
+		`), 0o600)
+
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: compilationCtx,
+			Out:                       io.Discard,
+			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
+
+			EnableTesting: true,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		// the state should be present
+		if !assert.NotNil(t, state) {
+			return
+		}
+
+		perms := state.Ctx.GetGrantedPermissions()
+		assert.Contains(t, perms, core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")})
+		assert.Contains(t, perms, core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")})
+		assert.Contains(t, perms, core.LThreadPermission{Kind_: permkind.Create})
+	})
+
+	t.Run("program testing should be allowed in project mode", func(t *testing.T) {
+		fls := fs_ns.NewMemFilesystem(100_000)
+
+		compilationCtx := core.NewContextWithEmptyState(core.ContextConfig{
+			Permissions: []core.Permission{
+				core.CreateFsReadPerm(core.PathPattern("/...")),
+			},
+			Filesystem: fls,
+		}, nil)
+		defer compilationCtx.CancelGracefully()
+
+		util.WriteFile(fls, "/main.spec.ix", []byte(`
+			manifest {
+
+			}
+
+			testsuite({
+				program: /main.ix
+			}){
+
+				testcase {
+
+				}
+			}
+		
+		`), 0o600)
+
+		util.WriteFile(fls, "/main.ix", []byte(`
+			manifest {
+
+			}
+			
+			testsuite()
+		
+		`), 0o600)
+
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
+			Fpath:                     "/main.spec.ix",
+			ParsingCompilationContext: compilationCtx,
+			Out:                       io.Discard,
+			Project:                   project.NewDummyProject("project", fls),
+			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
+
+			EnableTesting: true,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		// the state should be present
+		if !assert.NotNil(t, state) {
+			return
+		}
+
+		// static check should have been performed
+		if !assert.Empty(t, state.StaticCheckData.Errors()) {
+			return
+		}
+
+		// symbolic check should have been performed
+		assert.False(t, state.SymbolicData.IsEmpty())
+	})
+
+	t.Run("program testing should not be allowed when not in project mode", func(t *testing.T) {
+		fls := fs_ns.NewMemFilesystem(100_000)
+
+		compilationCtx := core.NewContextWithEmptyState(core.ContextConfig{
+			Permissions: []core.Permission{
+				core.CreateFsReadPerm(core.PathPattern("/...")),
+			},
+			Filesystem: fls,
+		}, nil)
+		defer compilationCtx.CancelGracefully()
+
+		util.WriteFile(fls, "/main.spec.ix", []byte(`
+			manifest {
+
+			}
+
+			testsuite({
+				program: /main.ix
+			}){
+
+				testcase {
+
+				}
+			}
+		
+		`), 0o600)
+
+		util.WriteFile(fls, "/main.ix", []byte(`
+			manifest {
+
+			}
+			
+			testsuite()
+		
+		`), 0o600)
+
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
+			Fpath:                     "/main.spec.ix",
+			ParsingCompilationContext: compilationCtx,
+			Out:                       io.Discard,
+			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
+
+			EnableTesting: true,
+		})
+
+		if !assert.ErrorContains(t, err, symbolic.PROGRAM_TESTING_ONLY_SUPPORTED_IN_PROJECTS) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		// the state should be present
+		if !assert.NotNil(t, state) {
+			return
+		}
+
+		// static check should have been performed
+		if !assert.Empty(t, state.StaticCheckData.Errors()) {
+			return
+		}
+
+		// symbolic check should have been performed
+		assert.False(t, state.SymbolicData.IsEmpty())
+	})
+
+	t.Run(".spec.ix modules should not be granted wide implicit permissions if testing is disabled", func(t *testing.T) {
+
+		dir := t.TempDir()
+		file := filepath.Join(dir, "file.spec.ix")
+		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
+
+		os.WriteFile(file, []byte(`
+			manifest {
+			}
+		
+		`), 0o600)
+
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: compilationCtx,
+			Out:                       io.Discard,
+			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
+
+			EnableTesting: false,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		// the state should be present
+		if !assert.NotNil(t, state) {
+			return
+		}
+
+		perms := state.Ctx.GetGrantedPermissions()
+		assert.NotContains(t, perms, core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")})
+	})
+
+	t.Run("if the OS filesystem used the IWD should be the current working directory", func(t *testing.T) {
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
+
+		os.WriteFile(file, []byte(`
+			manifest {
+				permissions: {
+					read: IWD
+				}
+			}
+		`), 0o600)
+
+		parsingCompilationCtx := core.NewContext(core.ContextConfig{
+			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
+			Filesystem:  fs_ns.GetOsFilesystem(),
+		})
+
+		core.NewGlobalState(parsingCompilationCtx)
+		defer parsingCompilationCtx.CancelGracefully()
+
+		state, _, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             parsingCompilationCtx,
+			ParentContextRequired:     true,
+			Out:                       io.Discard,
+			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		wd := utils.Must(os.Getwd())
+
+		IWD := state.Globals.Get(core.INITIAL_WORKING_DIR_VARNAME)
+		IWD_PREFIX_PATTERN := state.Globals.Get(core.INITIAL_WORKING_DIR_PREFIX_VARNAME)
+
+		if !assert.EqualValues(t, wd+"/", IWD) {
+			return
+		}
+		assert.EqualValues(t, wd+"/...", IWD_PREFIX_PATTERN)
+
+		perms := state.Ctx.GetGrantedPermissions()
+		assert.Contains(t, perms, core.FilesystemPermission{Kind_: permkind.Read, Entity: IWD.(core.Path)})
+	})
+
+}
+
+func TestPrepareLocalModuleWithInvalidInputs(t *testing.T) {
+	t.Run(".ParentContext & .StdlibCtx should not be both set", func(t *testing.T) {
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
+
+		os.WriteFile(file, []byte(`
+			manifest {
+				permissions: {
+					read: %/...
+				}
+			}
+		`), 0o600)
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
+			Filesystem:  fs_ns.GetOsFilesystem(),
+		})
+		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
+
+		stdlibCtx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		assert.PanicsWithError(t, core.ErrBothParentCtxArgsProvided.Error(), func() {
+			core.PrepareLocalModule(core.ModulePreparationArgs{
+				Fpath:                     file,
+				ParsingCompilationContext: compilationCtx,
+				ParentContext:             ctx,
+				StdlibCtx:                 stdlibCtx,
+				ParentContextRequired:     true,
+				Out:                       io.Discard,
+				ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
+			})
+		})
+
+	})
+
+	t.Run("recoverable parsing error", func(t *testing.T) {
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
+
+		os.WriteFile(file, []byte(`
+			manifest {
+				permissions: {
+					read: %/...
+				}
+			}
+			a = ;
+			b = 1
+			c = d 		  	# static check error
+			(b + "string") 	# symbolic check error
+		
+		`), 0o600)
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
+			Filesystem:  fs_ns.GetOsFilesystem(),
+		})
+		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
+
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             ctx,
+			ParentContextRequired:     true,
+			Out:                       io.Discard,
+			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
+		})
+
+		if !assert.Error(t, err) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		// the state should be present because we can still perform static check
+		if !assert.NotNil(t, state) {
+			return
+		}
+		if !assert.True(t, state.Ctx.HasPermission(core.CreateFsReadPerm(core.PathPattern("/...")))) {
+			return
+		}
+
+		// static check should have been performed
+		if !assert.NotEmpty(t, state.StaticCheckData.Errors()) {
+			return
+		}
+
+		// symbolic check should not have been performed
+		assert.True(t, state.SymbolicData.IsEmpty())
+	})
+
 	t.Run("invalid CLI arguments: missing positional argument", func(t *testing.T) {
 
 		dir := t.TempDir()
@@ -2528,226 +2393,10 @@ func TestPrepareLocalModule(t *testing.T) {
 		}
 	})
 
-	t.Run(".spec.ix modules should be granted wide implicit permissions if testing is enabled", func(t *testing.T) {
+}
 
-		dir := t.TempDir()
-		file := filepath.Join(dir, "file.spec.ix")
-		compilationCtx := createCompilationCtx(dir)
-		defer compilationCtx.CancelGracefully()
-
-		os.WriteFile(file, []byte(`
-			manifest {
-			}
-		
-		`), 0o600)
-
-		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
-			Fpath:                     file,
-			ParsingCompilationContext: compilationCtx,
-			Out:                       io.Discard,
-			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
-
-			EnableTesting: true,
-		})
-
-		if !assert.NoError(t, err) {
-			return
-		}
-
-		// the module should be present
-		if !assert.NotNil(t, mod) {
-			return
-		}
-
-		// the state should be present
-		if !assert.NotNil(t, state) {
-			return
-		}
-
-		perms := state.Ctx.GetGrantedPermissions()
-		assert.Contains(t, perms, core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")})
-		assert.Contains(t, perms, core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")})
-		assert.Contains(t, perms, core.LThreadPermission{Kind_: permkind.Create})
-	})
-
-	t.Run("program testing should be allowed in project mode", func(t *testing.T) {
-		fls := fs_ns.NewMemFilesystem(100_000)
-
-		compilationCtx := core.NewContextWithEmptyState(core.ContextConfig{
-			Permissions: []core.Permission{
-				core.CreateFsReadPerm(core.PathPattern("/...")),
-			},
-			Filesystem: fls,
-		}, nil)
-		defer compilationCtx.CancelGracefully()
-
-		util.WriteFile(fls, "/main.spec.ix", []byte(`
-			manifest {
-
-			}
-
-			testsuite({
-				program: /main.ix
-			}){
-
-				testcase {
-
-				}
-			}
-		
-		`), 0o600)
-
-		util.WriteFile(fls, "/main.ix", []byte(`
-			manifest {
-
-			}
-			
-			testsuite()
-		
-		`), 0o600)
-
-		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
-			Fpath:                     "/main.spec.ix",
-			ParsingCompilationContext: compilationCtx,
-			Out:                       io.Discard,
-			Project:                   project.NewDummyProject("project", fls),
-			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
-
-			EnableTesting: true,
-		})
-
-		if !assert.NoError(t, err) {
-			return
-		}
-
-		// the module should be present
-		if !assert.NotNil(t, mod) {
-			return
-		}
-
-		// the state should be present
-		if !assert.NotNil(t, state) {
-			return
-		}
-
-		// static check should have been performed
-		if !assert.Empty(t, state.StaticCheckData.Errors()) {
-			return
-		}
-
-		// symbolic check should have been performed
-		assert.False(t, state.SymbolicData.IsEmpty())
-	})
-
-	t.Run("program testing should not be allowed when not in project mode", func(t *testing.T) {
-		fls := fs_ns.NewMemFilesystem(100_000)
-
-		compilationCtx := core.NewContextWithEmptyState(core.ContextConfig{
-			Permissions: []core.Permission{
-				core.CreateFsReadPerm(core.PathPattern("/...")),
-			},
-			Filesystem: fls,
-		}, nil)
-		defer compilationCtx.CancelGracefully()
-
-		util.WriteFile(fls, "/main.spec.ix", []byte(`
-			manifest {
-
-			}
-
-			testsuite({
-				program: /main.ix
-			}){
-
-				testcase {
-
-				}
-			}
-		
-		`), 0o600)
-
-		util.WriteFile(fls, "/main.ix", []byte(`
-			manifest {
-
-			}
-			
-			testsuite()
-		
-		`), 0o600)
-
-		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
-			Fpath:                     "/main.spec.ix",
-			ParsingCompilationContext: compilationCtx,
-			Out:                       io.Discard,
-			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
-
-			EnableTesting: true,
-		})
-
-		if !assert.ErrorContains(t, err, symbolic.PROGRAM_TESTING_ONLY_SUPPORTED_IN_PROJECTS) {
-			return
-		}
-
-		// the module should be present
-		if !assert.NotNil(t, mod) {
-			return
-		}
-
-		// the state should be present
-		if !assert.NotNil(t, state) {
-			return
-		}
-
-		// static check should have been performed
-		if !assert.Empty(t, state.StaticCheckData.Errors()) {
-			return
-		}
-
-		// symbolic check should have been performed
-		assert.False(t, state.SymbolicData.IsEmpty())
-	})
-
-	t.Run(".spec.ix modules should not be granted wide implicit permissions if testing is disabled", func(t *testing.T) {
-
-		dir := t.TempDir()
-		file := filepath.Join(dir, "file.spec.ix")
-		compilationCtx := createCompilationCtx(dir)
-		defer compilationCtx.CancelGracefully()
-
-		os.WriteFile(file, []byte(`
-			manifest {
-			}
-		
-		`), 0o600)
-
-		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
-			Fpath:                     file,
-			ParsingCompilationContext: compilationCtx,
-			Out:                       io.Discard,
-			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
-
-			EnableTesting: false,
-		})
-
-		if !assert.NoError(t, err) {
-			return
-		}
-
-		// the module should be present
-		if !assert.NotNil(t, mod) {
-			return
-		}
-
-		// the state should be present
-		if !assert.NotNil(t, state) {
-			return
-		}
-
-		perms := state.Ctx.GetGrantedPermissions()
-		assert.NotContains(t, perms, core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")})
-	})
-
-	t.Run("if the OS filesystem used the IWD should be the current working directory", func(t *testing.T) {
+func TestPrepareLocalModuleWithCache(t *testing.T) {
+	t.Run("with cache: module only", func(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
@@ -2756,46 +2405,402 @@ func TestPrepareLocalModule(t *testing.T) {
 		os.WriteFile(file, []byte(`
 			manifest {
 				permissions: {
-					read: IWD
+					read: %/...
 				}
 			}
+		
+			a = 1
+			b = c 		  	# static check error
 		`), 0o600)
 
-		parsingCompilationCtx := core.NewContext(core.ContextConfig{
+		//First preparation: we create the cache.
+
+		ctx1 := core.NewContext(core.ContextConfig{
 			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
 			Filesystem:  fs_ns.GetOsFilesystem(),
 		})
+		core.NewGlobalState(ctx1)
+		defer ctx1.CancelGracefully()
+		defer ctx1.CancelGracefully()
 
-		core.NewGlobalState(parsingCompilationCtx)
-		defer parsingCompilationCtx.CancelGracefully()
-
-		state, _, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
+		state1, module, _, err1 := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     file,
 			ParsingCompilationContext: compilationCtx,
-			ParentContext:             parsingCompilationCtx,
+			ParentContext:             ctx1,
 			ParentContextRequired:     true,
 			Out:                       io.Discard,
 			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
 		})
 
-		if !assert.NoError(t, err) {
+		if !assert.Error(t, err1) {
 			return
 		}
 
-		wd := utils.Must(os.Getwd())
-
-		IWD := state.Globals.Get(core.INITIAL_WORKING_DIR_VARNAME)
-		IWD_PREFIX_PATTERN := state.Globals.Get(core.INITIAL_WORKING_DIR_PREFIX_VARNAME)
-
-		if !assert.EqualValues(t, wd+"/", IWD) {
+		// the module should be present
+		if !assert.NotNil(t, module) {
 			return
 		}
-		assert.EqualValues(t, wd+"/...", IWD_PREFIX_PATTERN)
 
-		perms := state.Ctx.GetGrantedPermissions()
-		assert.Contains(t, perms, core.FilesystemPermission{Kind_: permkind.Read, Entity: IWD.(core.Path)})
+		cache := core.NewModulePreparationCache(core.ModulePreparationCacheUpdate{
+			Module: module,
+			Time:   time.Now(),
+		})
+
+		//Second preparation but with the cache.
+
+		ctx2 := core.NewContext(core.ContextConfig{
+			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
+			Filesystem:  fs_ns.GetOsFilesystem(),
+		})
+		core.NewGlobalState(ctx2)
+		defer ctx2.CancelGracefully()
+		defer ctx2.CancelGracefully()
+
+		state2, module2, _, err2 := core.PrepareLocalModule(core.ModulePreparationArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             ctx2,
+			ParentContextRequired:     true,
+			Out:                       io.Discard,
+
+			Cache:                   cache,
+			ScriptContextFileSystem: fs_ns.GetOsFilesystem(),
+		})
+
+		if !assert.Error(t, err2) {
+			return
+		}
+
+		if !assert.Equal(t, err1.Error(), err2.Error()) {
+			return
+		}
+
+		// the module should be present
+		if !assert.Same(t, module, module2) {
+			return
+		}
+
+		// the state should be present because we can still perform static check
+		if !assert.NotNil(t, state2) {
+			return
+		}
+
+		// the state should not the previous state
+		if !assert.NotSame(t, state1, state2) {
+			return
+		}
+
+		if !assert.True(t, state2.Ctx.HasPermission(core.CreateFsReadPerm(core.PathPattern("/...")))) {
+			return
+		}
+
+		// static check should have been performed
+		if !assert.NotEmpty(t, state2.StaticCheckData.Errors()) {
+			return
+		}
+
+		// symbolic check should have been performed
+		assert.False(t, state2.SymbolicData.IsEmpty())
 	})
 
+	t.Run("with cache: module and static check data", func(t *testing.T) {
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
+
+		os.WriteFile(file, []byte(`
+			manifest {
+				permissions: {
+					read: %/...
+				}
+			}
+		
+			a = 1
+			b = c 		  	# static check error
+		`), 0o600)
+
+		//First preparation: we create the cache.
+
+		ctx1 := core.NewContext(core.ContextConfig{
+			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
+			Filesystem:  fs_ns.GetOsFilesystem(),
+		})
+		core.NewGlobalState(ctx1)
+		defer ctx1.CancelGracefully()
+		defer ctx1.CancelGracefully()
+
+		state1, module, _, err1 := core.PrepareLocalModule(core.ModulePreparationArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             ctx1,
+			ParentContextRequired:     true,
+			Out:                       io.Discard,
+			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
+		})
+
+		if !assert.Error(t, err1) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, module) {
+			return
+		}
+
+		cache := core.NewModulePreparationCache(core.ModulePreparationCacheUpdate{
+			Module:          module,
+			Time:            time.Now(),
+			StaticCheckData: state1.StaticCheckData,
+		})
+
+		//Second preparation but with the cache.
+
+		ctx2 := core.NewContext(core.ContextConfig{
+			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
+			Filesystem:  fs_ns.GetOsFilesystem(),
+		})
+		core.NewGlobalState(ctx2)
+		defer ctx2.CancelGracefully()
+		defer ctx2.CancelGracefully()
+
+		state2, module2, _, err2 := core.PrepareLocalModule(core.ModulePreparationArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             ctx2,
+			ParentContextRequired:     true,
+			Out:                       io.Discard,
+
+			Cache:                   cache,
+			ScriptContextFileSystem: fs_ns.GetOsFilesystem(),
+		})
+
+		if !assert.Error(t, err2) {
+			return
+		}
+
+		if !assert.Equal(t, err1.Error(), err2.Error()) {
+			return
+		}
+
+		// the module should be present
+		if !assert.Same(t, module, module2) {
+			return
+		}
+
+		// the state should be present because we can still perform static check
+		if !assert.NotNil(t, state2) {
+			return
+		}
+
+		// the state should not the previous state
+		if !assert.NotSame(t, state1, state2) {
+			return
+		}
+
+		if !assert.True(t, state2.Ctx.HasPermission(core.CreateFsReadPerm(core.PathPattern("/...")))) {
+			return
+		}
+
+		// static check data should have been re-used
+		if !assert.NotEmpty(t, state2.StaticCheckData.Errors()) {
+			return
+		}
+
+		// symbolic check data should have been re-used
+		assert.False(t, state2.SymbolicData.IsEmpty())
+	})
+
+	t.Run("with cache: module and static check data", func(t *testing.T) {
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
+
+		os.WriteFile(file, []byte(`
+			manifest {
+				permissions: {
+					read: %/...
+				}
+			}
+		
+			a = 1
+			b = c 		  	# static check error
+		`), 0o600)
+
+		//First preparation: we create the cache.
+
+		ctx1 := core.NewContext(core.ContextConfig{
+			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
+			Filesystem:  fs_ns.GetOsFilesystem(),
+		})
+		core.NewGlobalState(ctx1)
+		defer ctx1.CancelGracefully()
+		defer ctx1.CancelGracefully()
+
+		state1, module, _, err1 := core.PrepareLocalModule(core.ModulePreparationArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             ctx1,
+			ParentContextRequired:     true,
+			Out:                       io.Discard,
+			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
+		})
+
+		if !assert.Error(t, err1) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, module) {
+			return
+		}
+
+		cache := core.NewModulePreparationCache(core.ModulePreparationCacheUpdate{
+			Module:                module,
+			Time:                  time.Now(),
+			StaticCheckData:       state1.StaticCheckData,
+			SymbolicData:          state1.SymbolicData.Data,
+			FinalSymbolicCheckErr: state1.FinalSymbolicCheckError,
+		})
+
+		//Second preparation but with the cache.
+
+		ctx2 := core.NewContext(core.ContextConfig{
+			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
+			Filesystem:  fs_ns.GetOsFilesystem(),
+		})
+		core.NewGlobalState(ctx2)
+		defer ctx2.CancelGracefully()
+		defer ctx2.CancelGracefully()
+
+		state2, module2, _, err2 := core.PrepareLocalModule(core.ModulePreparationArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             ctx2,
+			ParentContextRequired:     true,
+			Out:                       io.Discard,
+
+			Cache:                   cache,
+			ScriptContextFileSystem: fs_ns.GetOsFilesystem(),
+		})
+
+		if !assert.Error(t, err2) {
+			return
+		}
+
+		if !assert.Equal(t, err1.Error(), err2.Error()) {
+			return
+		}
+
+		// the module should be present
+		if !assert.Same(t, module, module2) {
+			return
+		}
+
+		// the state should be present because we can still perform static check
+		if !assert.NotNil(t, state2) {
+			return
+		}
+
+		// the state should not the previous state
+		if !assert.NotSame(t, state1, state2) {
+			return
+		}
+
+		if !assert.True(t, state2.Ctx.HasPermission(core.CreateFsReadPerm(core.PathPattern("/...")))) {
+			return
+		}
+
+		// static check data should have been re-used
+		if !assert.NotEmpty(t, state2.StaticCheckData.Errors()) {
+			return
+		}
+
+		// symbolic check data should have been re-used
+		assert.False(t, state2.SymbolicData.IsEmpty())
+	})
+
+	t.Run("with cache but different path", func(t *testing.T) {
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+		otherFile := filepath.Join(dir, "script2.ix")
+
+		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
+
+		os.WriteFile(file, []byte(`
+			manifest {
+				permissions: {
+					read: %/...
+				}
+			}
+		
+			a = 1
+			b = c 		  	# static check error
+		`), 0o600)
+
+		ctx1 := core.NewContext(core.ContextConfig{
+			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
+			Filesystem:  fs_ns.GetOsFilesystem(),
+		})
+		core.NewGlobalState(ctx1)
+		defer ctx1.CancelGracefully()
+		defer ctx1.CancelGracefully()
+
+		_, module, _, err1 := core.PrepareLocalModule(core.ModulePreparationArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             ctx1,
+			ParentContextRequired:     true,
+			Out:                       io.Discard,
+			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
+		})
+
+		if !assert.Error(t, err1) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, module) {
+			return
+		}
+
+		//second parsing but with the cache
+
+		ctx2 := core.NewContext(core.ContextConfig{
+			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
+			Filesystem:  fs_ns.GetOsFilesystem(),
+		})
+		core.NewGlobalState(ctx2)
+		defer ctx2.CancelGracefully()
+		defer ctx2.CancelGracefully()
+
+		state2, module2, _, err2 := core.PrepareLocalModule(core.ModulePreparationArgs{
+			Fpath:                     otherFile, //path is different
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             ctx2,
+			ParentContextRequired:     true,
+			Out:                       io.Discard,
+
+			Cache: core.NewModulePreparationCache(core.ModulePreparationCacheUpdate{
+				Module: module,
+				Time:   time.Now(),
+			}),
+		})
+
+		if !assert.ErrorIs(t, err2, core.ErrNonMatchingCachedModulePath) {
+			return
+		}
+
+		// the module should not be present
+		if !assert.Nil(t, module2) {
+			return
+		}
+
+		// the state should not be present
+		assert.Nil(t, state2)
+	})
 }
 
 func TestPrepareDevModeIncludableChunkFile(t *testing.T) {
