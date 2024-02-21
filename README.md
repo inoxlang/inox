@@ -18,14 +18,14 @@ Here are a few example files that are part of a basic todo app with accounts and
 
 ![image](https://github.com/inoxlang/inox/assets/113632189/baaf934a-011e-4a7e-87a5-04174d81c800)
 
-**Database schema**
+**File /schema.ix - database schema**
 
-![image](https://github.com/inoxlang/inox/assets/113632189/dd2a1dc2-ae0a-4886-966d-0dac5387fa58)
+![image](https://github.com/inoxlang/inox/assets/113632189/43c79c60-32bb-4d25-b2e8-0ced6d6304be)
 
 **A request handler (filesystem routing).** Each handler module runs in a
 dedicated execution context with its own permissions.
 
-![image](https://github.com/inoxlang/inox/assets/113632189/b4289888-a87f-47fb-bcbd-5934451ce0ef)
+![image](https://github.com/inoxlang/inox/assets/113632189/2bf945cf-afe8-4894-9496-522b6ae8a1b0)
 
 _Note: the permissions granted to imported modules (local or third-party) are
 **explicit**: `import lib ./malicious-lib.ix { allow: {} }`_
@@ -34,9 +34,9 @@ _Note: the permissions granted to imported modules (local or third-party) are
 
 **<summary>⚙️ HTTP GET handler with HTML rendering </summary>**
 
-</details>
+![image](https://github.com/inoxlang/inox/assets/113632189/99187f68-97ea-4d16-b8fb-839d782294cc)
 
-![image](https://github.com/inoxlang/inox/assets/113632189/3038d6a5-ca8b-4724-b783-11009fd2ce1e)
+</details>
 
 <details>
 
