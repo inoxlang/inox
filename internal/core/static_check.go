@@ -167,7 +167,7 @@ type checker struct {
 type fnDeclInfo struct {
 	node           *parse.FunctionDeclaration
 	capturedLocals []string
-	chunk          *parse.Chunk
+	module         parse.Node //*parse.Chunk|*parse.EmbeddedModule
 }
 
 // globalVarInfo represents the information stored about a global variable during checking.
@@ -1780,7 +1780,7 @@ func (c *checker) precheckTopLevelFuncDecl(stmt *parse.FunctionDeclaration, modu
 		}
 		*fns = append(*fns, stmt)
 
-		info := &fnDeclInfo{node: stmt, chunk: c.chunk.Node}
+		info := &fnDeclInfo{node: stmt, module: module}
 		fnDecls[stmt.Name.Name] = info
 	}
 }
@@ -1809,7 +1809,7 @@ func (c *checker) checkFuncDecl(node *parse.FunctionDeclaration, parent, closest
 				c.data.firstForbiddenPosForGlobalElementDecls[closestModule] = node.Span.Start
 			}
 		} else {
-			declInfo := &fnDeclInfo{node: node, chunk: c.chunk.Node}
+			declInfo := &fnDeclInfo{node: node, module: closestModule}
 
 			for _, captured := range node.Function.CaptureList {
 				if ident, ok := captured.(*parse.IdentifierLiteral); ok {
@@ -2050,8 +2050,7 @@ func (c *checker) checkGlobalVar(node *parse.GlobalVariable, parent, scopeNode, 
 
 	fnDecls := c.getModFunctionDecls(closestModule)
 
-	if fnDecls[node.Name] != nil && fnDecls[node.Name].chunk == c.chunk.Node &&
-		SamePointer(scopeNode, closestModule) {
+	if fnDecls[node.Name] != nil && fnDecls[node.Name].module == closestModule {
 		//If the global variable is a function then no global declarations (patterns, global variables)
 		//should be located after this reference.
 
@@ -2221,8 +2220,7 @@ func (c *checker) checkIdentifier(node *parse.IdentifierLiteral, parent, scopeNo
 	if c.doGlobalVarExist(node.Name, closestModule) {
 		fnDecls := c.getModFunctionDecls(closestModule)
 
-		if fnDecls[node.Name] != nil && fnDecls[node.Name].chunk == c.chunk.Node &&
-			SamePointer(scopeNode, closestModule) {
+		if fnDecls[node.Name] != nil && fnDecls[node.Name].module == closestModule {
 
 			//If the identifier references a  function then no global declarations (patterns, global variables)
 			//should be located after this reference.
