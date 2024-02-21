@@ -2,19 +2,22 @@
 
 <img src="https://avatars.githubusercontent.com/u/122291844?s=200&v=4" alt="a shield"></img>
 
-Inox is a single-binary platform that will ultimately contain all you need to develop,
-test, and deploy web apps that are primarily rendered server-side. Applications
-are developped using **Inoxlang**, a high-level programming language that deeply
-integrates with several components:
+Inox is a single-binary platform that will ultimately contain all you need to
+develop, test, and deploy web apps. Applications are developped using
+**Inoxlang**, a high-level programming language that deeply integrates with
+several components:
 
-- A built-in database that stores data structures (e.g. objects, lists, sets, maps, message threads)
+- A built-in database that stores data structures (e.g. objects, lists, sets,
+  maps, message threads)
 - An HTTP server with filesystem routing
 - A testing engine supporting virtual filesystems and temporary databases
   (completely transparent for application code).
 - An in-process container engine: each application runs in a dedicated virtual
-  filesystem, and is subject to permissions. _This is not related to Linux containers._
+  filesystem, and is subject to permissions. _This is not related to Linux
+  containers._
 
-Here are a few example files that are part of a basic todo app with accounts and persistence.
+Here are a few example files that are part of a basic todo app with accounts and
+persistence.
 
 ![image](https://github.com/inoxlang/inox/assets/113632189/baaf934a-011e-4a7e-87a5-04174d81c800)
 
@@ -46,7 +49,9 @@ _Note: the permissions granted to imported modules (local or third-party) are
 
 </details>
 
-_I don't claim Inox is, or will be, a suitable solution for 100% of web projects._
+_Inox is intended to be used for developping web applications that are primarily rendered
+server-side. Cient-side components are also supported, see here for more information:
+[frontend development](./docs/frontend-development.md)._
 
 ---
 
@@ -117,7 +122,8 @@ Inox (check see 'What is planned' and [Other features](#other-features)).
 - Be a suitable solution for 100% of real-world web projects.
 - Support any database for storing domain data (`users`, ...).
 - Be super fast
-- Be able to store several tera bytes of non-blob data. Note that blob data and backups will be stored in S3 buckets.
+- Be able to store several tera bytes of non-blob data. Note that blob data and
+  backups will be stored in S3 buckets.
 - Support more than ~ 10k concurrent users
 
 </details>
@@ -127,9 +133,9 @@ Inox (check see 'What is planned' and [Other features](#other-features)).
 ## Development Environment - Inox Project Server
 
 **There is no true local development environment when developping Inox
-projects.** The code editor connects to a **project server** (included
-in the Inox binary) and the code is edited and tested inside a virtual
-workspace. The server does not yet integrate git yet, but this is planned,
+projects.** The code editor connects to a **project server** (included in the
+Inox binary) and the code is edited and tested inside a virtual workspace. The
+server does not yet integrate git yet, but this is planned,
 https://github.com/go-git/go-git.
 
 Each developer in the project will ultimately have its own copy. As of now the
@@ -477,13 +483,17 @@ the `session-id` cookie is present.
 
 ### Recursive Execution Cancellation
 
-The [context](docs/language-reference/context.md) of each module instance can be cancelled.
-If you are familliar with Golang: this is analogous to the cancellation of a `context.Context`.
+The [context](docs/language-reference/context.md) of each module instance can be
+cancelled. If you are familliar with Golang: this is analogous to the
+cancellation of a `context.Context`.
 
 The cancellation of a context causes all operations to stop:
+
 - Execution of the module.
-- Pending I/O operations such as HTTP requests and filesystem operations are cancelled.
-- Child modules are recursively cancelled as well. Lightweight threads are stopped.
+- Pending I/O operations such as HTTP requests and filesystem operations are
+  cancelled.
+- Child modules are recursively cancelled as well. Lightweight threads are
+  stopped.
 
 ### Lightweight threads
 
@@ -693,7 +703,6 @@ Each application or service will ultimately run in a separate process:
   system
 
 </details>
-
 
 ### Can native binaries be executed inside the virtual filesystem ?
 
