@@ -26,7 +26,7 @@ persistence.
 
 **<summary>📜 Database schema</summary>**
 
-![image](https://github.com/inoxlang/inox/assets/113632189/e74447bd-ef6c-4e69-85ca-0e9bb28d01d1)
+![image](https://github.com/inoxlang/inox/assets/113632189/43c79c60-32bb-4d25-b2e8-0ced6d6304be)
 
 
 </details>
