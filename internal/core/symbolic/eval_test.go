@@ -5805,7 +5805,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, NewListOf(ANY_INT), res)
 		})
 
-		t.Run("it should be an error for a Go method to its receiver to an incomptable value", func(t *testing.T) {
+		t.Run("it should be an error for a Go method to update its receiver to an incompatible value", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				var l [1] = [1]
 				l.append(2)
@@ -5817,6 +5817,22 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(callNode, state, INVALID_MUTATION),
+			}, state.errors())
+			assert.Equal(t, NewList(NewInt(1)), res)
+		})
+
+		t.Run("no error should be shown if a Go method updates its receiver to an incompatible value but args have errors", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				var l [1] = [1]
+				l.append(#{a: {}})
+				return l
+			`)
+			recordLiteral := parse.FindNode(n, (*parse.RecordLiteral)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(recordLiteral.Properties[0].Value, state, fmtValuesOfRecordShouldBeImmutablePropHasMutable("a")),
 			}, state.errors())
 			assert.Equal(t, NewList(NewInt(1)), res)
 		})

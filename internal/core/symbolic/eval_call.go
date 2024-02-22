@@ -115,6 +115,8 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 	hasSpreadArg := false
 	var spreadArgNode parse.Node
 
+	errCountBeforeEvaluationOfArguments := len(state.errors())
+
 	for argIndex, argNode := range argNodes {
 
 		if spreadArg, ok := argNode.(*parse.SpreadArgument); ok {
@@ -214,6 +216,8 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 
 	}
 
+	errorsInArguments := len(state.errors()) - errCountBeforeEvaluationOfArguments
+
 	//execution
 
 	var fnExpr *parse.FunctionExpression
@@ -265,7 +269,8 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 
 			if (static != nil && !static.TestValue(updatedSelf, RecTestCallState{})) ||
 				(static == nil && !self.Test(updatedSelf, RecTestCallState{})) {
-				state.addError(makeSymbolicEvalError(callNode, state, INVALID_MUTATION))
+
+				state.addErrorIf(errorsInArguments == 0, makeSymbolicEvalError(callNode, state, INVALID_MUTATION))
 			} else { //ok
 				narrowChain(selfPartialNode, setExactValue, updatedSelf, state, 0)
 				checkNotClonedObjectPropMutation(selfPartialNode, state, false)

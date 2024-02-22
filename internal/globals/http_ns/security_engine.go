@@ -11,20 +11,20 @@ import (
 )
 
 const (
-	//socket
+	//Socket-level rate limiting.
 	SOCKET_RLIMIT_WINDOW       = 10 * time.Second
 	SOCKET_MAX_READ_REQ_COUNT  = 10
-	SOCKET_MAX_WRITE_REQ_COUNT = 5
+	SOCKET_MAX_WRITE_REQ_COUNT = 3
 
-	//ip level
+	//IP-level rate limiting.
 	SHARED_READ_BURST_WINDOW     = 10 * time.Second
 	SHARED_READ_BURST_WINDOW_REQ = 60
 
 	SHARED_WRITE_BURST_WINDOW     = 10 * time.Second
-	SHARED_WRITE_BURST_WINDOW_REQ = 10
+	SHARED_WRITE_BURST_WINDOW_REQ = 15
 )
 
-// the security engine is responsible for IP blacklisting, rate limiting & catpcha verification.
+// The security engine is responsible for IP blacklisting, rate limiting & catpcha verification.
 type securityEngine struct {
 	mutex           sync.Mutex
 	logger          zerolog.Logger
