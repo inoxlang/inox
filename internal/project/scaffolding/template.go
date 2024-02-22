@@ -5,12 +5,14 @@ import (
 	"embed"
 	"io/fs"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/js"
+	"golang.org/x/exp/maps"
 )
 
 const (
@@ -25,22 +27,27 @@ var (
 	COMMON_FILES embed.FS
 
 	BASE_CSS_STYLESHEET string
-	INOX_JS             string //inox.js without any other library
-	HTMX_MIN_JS         string
 
-	JSON_FORM_EXTENSION_JS string
-	JSON_FORM_EXT_MINIFIED string
+	//Inox.js package
+
+	INOX_JS string //inox.js without any other library
 
 	PREACT_SIGNALS_JS       string
 	PREACT_SIGNALS_MINIFIED string
 
-	SURREAL_CSS_INLINE_SCOPE_JS       string
+	SURREAL_CSS_INLINE_SCOPE          string
 	SURREAL_CSS_INLINE_SCOPE_MINIFIED string
-
-	HTMX_MIN_JS_PACKAGE string
 
 	INOX_JS_PACKAGE          string
 	INOX_JS_PACKAGE_MINIFIED string
+
+	//HTMX package
+
+	HTMX_MIN_JS         string
+	HTMX_MIN_JS_PACKAGE string
+
+	HTMX_EXTENSIONS          = map[string]string{}
+	MINIFIED_HTMX_EXTENSIONS = map[string]string{}
 )
 
 func init() {
@@ -57,23 +64,32 @@ func init() {
 		if err != nil {
 			return err
 		}
+		basename := filepath.Base(path)
 
-		switch filepath.Base(path) {
+		switch basename {
+		//Inox.js package
 		case "inox.js":
 			INOX_JS = string(content)
-		case "htmx-1.9.9.min.js":
-			HTMX_MIN_JS = string(content)
-		case "json-form-extension.js":
-			JSON_FORM_EXTENSION_JS = string(content)
-			JSON_FORM_EXT_MINIFIED = js.MustMinify(JSON_FORM_EXTENSION_JS, nil)
 		case "preact-signals.js":
 			PREACT_SIGNALS_JS = string(content)
 			PREACT_SIGNALS_MINIFIED = js.MustMinify(PREACT_SIGNALS_JS, nil)
 		case "base.css":
 			BASE_CSS_STYLESHEET = string(content)
 		case "surreal-css-inline-scope.js":
-			SURREAL_CSS_INLINE_SCOPE_JS = string(content)
-			SURREAL_CSS_INLINE_SCOPE_MINIFIED = js.MustMinify(SURREAL_CSS_INLINE_SCOPE_JS, nil)
+			SURREAL_CSS_INLINE_SCOPE = string(content)
+			SURREAL_CSS_INLINE_SCOPE_MINIFIED = js.MustMinify(SURREAL_CSS_INLINE_SCOPE, nil)
+
+		//HTMX package
+		case "htmx-1.9.9.min.js":
+			HTMX_MIN_JS = string(content)
+		default:
+			//Standard HTMX extensions.
+			if strings.HasSuffix(basename, "-ext.js") {
+				name := strings.TrimSuffix(basename, "-ext.js")
+				s := string(content)
+				HTMX_EXTENSIONS[name] = s
+				MINIFIED_HTMX_EXTENSIONS[name] = js.MustMinify(s, nil)
+			}
 		}
 
 		return nil
@@ -86,13 +102,21 @@ func init() {
 	parts := []string{
 		"{\n" + INOX_JS + "\n}\n",
 		"{\n" + PREACT_SIGNALS_JS + "\n}\n",
-		SURREAL_CSS_INLINE_SCOPE_JS,
+		SURREAL_CSS_INLINE_SCOPE,
 	}
 
 	INOX_JS_PACKAGE = strings.Join(parts, "\n")
 	INOX_JS_PACKAGE_MINIFIED = js.MustMinify(INOX_JS_PACKAGE, nil)
 
-	HTMX_MIN_JS_PACKAGE = HTMX_MIN_JS + "\n" + JSON_FORM_EXT_MINIFIED
+	concatenatedHtmxExtensions := &strings.Builder{}
+	extensionNames := maps.Keys(MINIFIED_HTMX_EXTENSIONS)
+	sort.Strings(extensionNames)
+	for _, extensionName := range extensionNames {
+		concatenatedHtmxExtensions.WriteByte('\n')
+		concatenatedHtmxExtensions.WriteString(MINIFIED_HTMX_EXTENSIONS[extensionName])
+	}
+
+	HTMX_MIN_JS_PACKAGE = HTMX_MIN_JS + concatenatedHtmxExtensions.String()
 }
 
 func WriteTemplate(name string, fls afs.Filesystem) error {
