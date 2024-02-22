@@ -236,9 +236,9 @@ func (router *filesystemRouter) handleDynamic(req *Request, rw *ResponseWriter, 
 	methodSpecificModule := true
 	var module *core.ModulePreparationCache
 
-	if endpt.CatchAll() {
+	if endpt.HasMethodAgnosticHandler() {
 		methodSpecificModule = false
-		module, _ = endpt.CatchAllHandler()
+		module, _ = endpt.MethodAgnosticHandler()
 	} else {
 		for _, operation := range endpt.Operations() {
 			if operation.HttpMethod() == searchedMethod {

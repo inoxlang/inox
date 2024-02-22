@@ -40,7 +40,7 @@ import (
 
 const (
 	IDENTIDAL_SECONDARY_REQ_COUNT = 4
-	REQ_TIMEOUT                   = 2 * time.Second
+	REQ_TIMEOUT                   = 2500 * time.Millisecond
 )
 
 var (

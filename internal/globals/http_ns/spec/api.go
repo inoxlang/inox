@@ -174,16 +174,16 @@ func (api *API) GetEndpoint(path string) (*ApiEndpoint, error) {
 type HandlerModuleVisitFn func(
 	mod *core.ModulePreparationCache,
 	endpoint *ApiEndpoint,
-	//not set if $endpoint.CatchAll() is true.
+	//not set if $endpoint.HasMethodAgnosticHandler() is true.
 	operation ApiOperation,
 ) error
 
 // ForEachHandlerModule visits all handler modules in the API.
-// If $endpoint.CatchAll() is true the handler handles all operations and $operation is not set.
+// If $endpoint.HasMethodAgnosticHandler() is true the handler handles all operations and $operation is not set.
 func (api *API) ForEachHandlerModule(visit HandlerModuleVisitFn) error {
 	for _, endpt := range api.endpoints {
-		if endpt.catchAllHandler != nil {
-			visit(endpt.catchAllHandler, endpt, ApiOperation{})
+		if endpt.methodAgnosticHandler != nil {
+			visit(endpt.methodAgnosticHandler, endpt, ApiOperation{})
 		}
 
 		for _, oper := range endpt.operations {

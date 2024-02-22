@@ -292,7 +292,69 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			assert.NotNil(t, endpt.operations[0].handlerModule)
 		})
 
-		t.Run("deep catch-all handler", func(t *testing.T) {
+		t.Run("GET-users.ix in a `users` directory", func(t *testing.T) {
+			testconfig.AllowParallelization(t)
+
+			ctx := setup(map[string]string{
+				"/routes/users/GET-users.ix": `
+					manifest {
+						parameters: {}
+					}
+				`,
+			})
+			defer ctx.CancelGracefully()
+
+			api, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			if !assert.Contains(t, api.endpoints, "/users") {
+				return
+			}
+
+			endpt := api.endpoints["/users"]
+			if !assert.Len(t, endpt.operations, 1) {
+				return
+			}
+
+			operation := endpt.operations[0]
+			assert.NotNil(t, operation.handlerModule)
+			assert.Equal(t, "GET", operation.httpMethod)
+		})
+
+		t.Run("POST-users.ix in a `users` directory", func(t *testing.T) {
+			testconfig.AllowParallelization(t)
+
+			ctx := setup(map[string]string{
+				"/routes/users/POST-users.ix": `
+					manifest {
+						parameters: {}
+					}
+				`,
+			})
+			defer ctx.CancelGracefully()
+
+			api, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			if !assert.Contains(t, api.endpoints, "/users") {
+				return
+			}
+
+			endpt := api.endpoints["/users"]
+			if !assert.Len(t, endpt.operations, 1) {
+				return
+			}
+
+			operation := endpt.operations[0]
+			assert.NotNil(t, operation.handlerModule)
+			assert.Equal(t, "POST", operation.httpMethod)
+		})
+
+		t.Run("non-root users.ix", func(t *testing.T) {
 			testconfig.AllowParallelization(t)
 
 			ctx := setup(map[string]string{
@@ -314,11 +376,12 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			}
 
 			endpt := api.endpoints["/x/users"]
-			if !assert.Zero(t, endpt.operations) {
+			if !assert.Len(t, endpt.operations, 1) {
 				return
 			}
 
-			assert.NotNil(t, endpt.catchAllHandler)
+			assert.NotNil(t, endpt.operations[0].handlerModule)
+			assert.Nil(t, endpt.methodAgnosticHandler)
 
 			assert.Nil(t, api.tree.endpoint)
 			assert.Equal(t, "/", api.tree.path)

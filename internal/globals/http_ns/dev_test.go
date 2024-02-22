@@ -219,6 +219,8 @@ func TestTargetServerCreationAndDevServerForwarding(t *testing.T) {
 		//Close the first server.
 		firstTargetServerCtx.CancelGracefully()
 
+		time.Sleep(50 * time.Millisecond)
+
 		//Create the second server.
 
 		secondTargetServerCtx := core.NewContext(core.ContextConfig{

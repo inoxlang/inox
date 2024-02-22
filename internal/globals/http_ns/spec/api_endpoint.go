@@ -14,12 +14,12 @@ const (
 // APIEndpoint represents an endpoint and its supported operations (GET, POST, ...).
 // APIEndpoint is immutable.
 type ApiEndpoint struct {
-	path         string                //may have parameters
-	pathSegments []EndpointPathSegment //may have parameters
-	catchAll     bool
+	path                     string                //may have parameters
+	pathSegments             []EndpointPathSegment //may have parameters
+	hasMethodAgnosticHandler bool
 
 	//Only set if filesystem routing is used. If set .operations is nil.
-	catchAllHandler *core.ModulePreparationCache
+	methodAgnosticHandler *core.ModulePreparationCache
 
 	operations []ApiOperation
 }
@@ -28,12 +28,12 @@ func (e ApiEndpoint) PathWithParams() string {
 	return e.path
 }
 
-func (e ApiEndpoint) CatchAll() bool {
-	return e.catchAll
+func (e ApiEndpoint) HasMethodAgnosticHandler() bool {
+	return e.hasMethodAgnosticHandler
 }
 
-func (e ApiEndpoint) CatchAllHandler() (*core.ModulePreparationCache, bool) {
-	return e.catchAllHandler, e.catchAllHandler != nil
+func (e ApiEndpoint) MethodAgnosticHandler() (*core.ModulePreparationCache, bool) {
+	return e.methodAgnosticHandler, e.methodAgnosticHandler != nil
 }
 
 func (e ApiEndpoint) Operations() []ApiOperation {

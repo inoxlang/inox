@@ -26,9 +26,9 @@ const (
 )
 
 var (
-	ErrUnexpectedBodyParamsInGETHandler      = errors.New("unexpected request body parmameters in GET handler")
-	ErrUnexpectedBodyParamsInOPTIONSHandler  = errors.New("unexpected request body parmameters in OPTIONS handler")
-	ErrUnexpectedBodyParamsInCatchAllHandler = errors.New("unexpected request body parmameters in catch-all handler")
+	ErrUnexpectedBodyParamsInGETHandler            = errors.New("unexpected request body parmameters in GET handler")
+	ErrUnexpectedBodyParamsInOPTIONSHandler        = errors.New("unexpected request body parmameters in OPTIONS handler")
+	ErrUnexpectedBodyParamsInMethodAgnosticHandler = errors.New("unexpected request body parmameters in method-agnostic handler")
 )
 
 type ServerApiResolutionConfig struct {
@@ -73,6 +73,7 @@ func addFilesysteDirEndpoints(
 
 	dir = core.AppendTrailingSlashIfNotPresent(dir)
 	urlDirPath = core.AppendTrailingSlashIfNotPresent(urlDirPath)
+	dirBasename := filepath.Base(dir)
 
 	if err != nil {
 		return err
@@ -137,10 +138,18 @@ func addFilesysteDirEndpoints(
 
 			if ok && slices.Contains(FS_ROUTING_METHODS, beforeName) { //POST-... , GET-...
 				method = beforeName
-				endpointPath = filepath.Join(urlDirPath, name)
+
+				if name == dirBasename { //example: POST-users in a 'users' directory
+					endpointPath = urlDirPathNoTrailingSlash
+				} else {
+					endpointPath = filepath.Join(urlDirPath, name)
+				}
+
 			} else if entryName == FS_ROUTING_INDEX_MODULE { //index.ix
+				method = "GET"
 				endpointPath = urlDirPathNoTrailingSlash
 			} else { //example: about.ix
+				method = "GET"
 				endpointPath = filepath.Join(urlDirPath, entryNameNoExt)
 				returnErrIfNotModule = false
 			}
@@ -282,8 +291,8 @@ func addFilesysteDirEndpoints(
 
 					operation := endpt.operations[0]
 					endpt.operations = nil
-					endpt.catchAll = true
-					endpt.catchAllHandler = operation.handlerModule
+					endpt.hasMethodAgnosticHandler = true
+					endpt.methodAgnosticHandler = operation.handlerModule
 				}
 			}
 		}()

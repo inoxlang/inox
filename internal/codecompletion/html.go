@@ -163,18 +163,18 @@ func findHtmlAttributeValueCompletions(
 			switch attrName {
 			case "href":
 				if tagName == "a" {
-					addEndpoint = endpoint.CatchAll() || operation.HttpMethod() == "GET"
+					addEndpoint = endpoint.HasMethodAgnosticHandler() || operation.HttpMethod() == "GET"
 				}
 			case "hx-get":
-				addEndpoint = endpoint.CatchAll() || operation.HttpMethod() == "GET"
+				addEndpoint = endpoint.HasMethodAgnosticHandler() || operation.HttpMethod() == "GET"
 			case "hx-post-json":
-				addEndpoint = endpoint.CatchAll() || operation.HttpMethod() == "POST"
+				addEndpoint = endpoint.HasMethodAgnosticHandler() || operation.HttpMethod() == "POST"
 			case "hx-patch-json":
-				addEndpoint = endpoint.CatchAll() || operation.HttpMethod() == "PATCH"
+				addEndpoint = endpoint.HasMethodAgnosticHandler() || operation.HttpMethod() == "PATCH"
 			case "hx-put-json":
-				addEndpoint = endpoint.CatchAll() || operation.HttpMethod() == "PUT"
+				addEndpoint = endpoint.HasMethodAgnosticHandler() || operation.HttpMethod() == "PUT"
 			case "hx-delete":
-				addEndpoint = endpoint.CatchAll() || operation.HttpMethod() == "DELETE"
+				addEndpoint = endpoint.HasMethodAgnosticHandler() || operation.HttpMethod() == "DELETE"
 			}
 
 			if addEndpoint {
@@ -210,7 +210,7 @@ func findWholeHTMLTagCompletions(tagName string, ancestors []parse.Node, include
 
 		api.ForEachHandlerModule(func(mod *core.ModulePreparationCache, endpoint *spec.ApiEndpoint, operation spec.ApiOperation) error {
 			//ignore non-mutating methods.
-			if !endpoint.CatchAll() && !http_ns.IsMutationMethod(operation.HttpMethod()) {
+			if !endpoint.HasMethodAgnosticHandler() && !http_ns.IsMutationMethod(operation.HttpMethod()) {
 				return nil
 			}
 
@@ -220,7 +220,7 @@ func findWholeHTMLTagCompletions(tagName string, ancestors []parse.Node, include
 
 			inputsBuf := bytes.NewBuffer(nil)
 
-			if !endpoint.CatchAll() { //if operation is defined
+			if !endpoint.HasMethodAgnosticHandler() { //if operation is defined
 				method = operation.HttpMethod()
 				switch method {
 				case "DELETE":
