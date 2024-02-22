@@ -184,6 +184,32 @@ func testUnderlyingList[E Serializable](t *testing.T, params underlyingTestSuite
 		})
 	})
 
+	t.Run("removeAll", func(t *testing.T) {
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		t.Run("first element", func(t *testing.T) {
+			list := newList(elemA, elemB)
+
+			list.removeAll(ctx, NewExactValuePattern(elemA))
+			assert.Equal(t, []Value{elemB}, getAllElements(list))
+		})
+
+		t.Run("second element", func(t *testing.T) {
+			list := newList(elemA, elemB)
+
+			list.removeAll(ctx, NewExactValuePattern(elemB))
+			assert.Equal(t, []Value{elemA}, getAllElements(list))
+		})
+
+		t.Run("all elements", func(t *testing.T) {
+			list := newList(elemA, elemB)
+
+			unionPattern := NewUnionPattern([]Pattern{NewExactValuePattern(elemA), NewExactValuePattern(elemB)}, nil)
+			list.removeAll(ctx, unionPattern)
+		})
+	})
+
 	t.Run("removePositionRange", func(t *testing.T) {
 		t.Run("single element", func(t *testing.T) {
 			ctx := NewContextWithEmptyState(ContextConfig{}, nil)

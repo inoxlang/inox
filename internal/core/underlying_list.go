@@ -2,6 +2,7 @@ package core
 
 import (
 	"errors"
+	"slices"
 
 	"github.com/bits-and-blooms/bitset"
 	"github.com/inoxlang/inox/internal/utils"
@@ -23,6 +24,7 @@ type underlyingList interface {
 	Iterable
 	ContainsSimple(ctx *Context, v Serializable) bool
 	append(ctx *Context, values ...Serializable)
+	removeAll(ctx *Context, filter Pattern) (removedPositions []Int)
 	ConstraintId() ConstraintId
 }
 
@@ -114,6 +116,14 @@ func (l *ValueList) removePosition(ctx *Context, i Int) {
 	}
 	l.elements = l.elements[:len(l.elements)-1]
 	l.elements = utils.ShrinkSliceIfWastedCapacity(l.elements, MIN_SHRINKABLE_LIST_LENGTH, LIST_SHRINK_DIVIDER)
+}
+
+func (l *ValueList) removeAll(ctx *Context, filter Pattern) (removedPositions []Int) {
+	l.elements = slices.DeleteFunc(l.elements, func(s Serializable) bool {
+		return filter.Test(ctx, s)
+	})
+
+	return
 }
 
 func (l *ValueList) removePositionRange(ctx *Context, r IntRange) {
@@ -267,6 +277,14 @@ func (l *NumberList[T]) removePosition(ctx *Context, i Int) {
 	l.elements = utils.ShrinkSliceIfWastedCapacity(l.elements, MIN_SHRINKABLE_LIST_LENGTH, LIST_SHRINK_DIVIDER)
 }
 
+func (l *NumberList[T]) removeAll(ctx *Context, filter Pattern) (removedPositions []Int) {
+	l.elements = slices.DeleteFunc(l.elements, func(s T) bool {
+		return filter.Test(ctx, s)
+	})
+
+	return
+}
+
 func (l *NumberList[T]) removePositionRange(ctx *Context, r IntRange) {
 	end := int(r.InclusiveEnd())
 	start := int(r.start)
@@ -398,6 +416,14 @@ func (l *StringList) removePosition(ctx *Context, i Int) {
 	}
 	l.elements = l.elements[:len(l.elements)-1]
 	l.elements = utils.ShrinkSliceIfWastedCapacity(l.elements, MIN_SHRINKABLE_LIST_LENGTH, LIST_SHRINK_DIVIDER)
+}
+
+func (l *StringList) removeAll(ctx *Context, filter Pattern) (removedPositions []Int) {
+	l.elements = slices.DeleteFunc(l.elements, func(s StringLike) bool {
+		return filter.Test(ctx, s)
+	})
+
+	return
 }
 
 func (l *StringList) removePositionRange(ctx *Context, r IntRange) {
@@ -537,6 +563,20 @@ func (l *BoolList) removePosition(ctx *Context, i Int) {
 		panic(ErrIndexOutOfRange)
 	}
 	l.elements.DeleteAt(uint(i))
+}
+
+func (l *BoolList) removeAll(ctx *Context, filter Pattern) (removedPositions []Int) {
+
+	i := 0
+	for i < int(l.elements.Len()) {
+		if filter.Test(ctx, l.At(ctx, i)) {
+			l.elements.DeleteAt(uint(i))
+		} else {
+			i++
+		}
+	}
+
+	return
 }
 
 func (l *BoolList) removePositionRange(ctx *Context, r IntRange) {

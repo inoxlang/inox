@@ -101,6 +101,8 @@ func (l *List) Prop(ctx *Context, name string) Value {
 		return WrapGoMethod(l.Dequeue)
 	case "pop":
 		return WrapGoMethod(l.Pop)
+	case "remove_all":
+		return WrapGoMethod(l.RemoveAll)
 	case "sorted":
 		return WrapGoMethod(l.Sorted)
 	case "sort_by":
@@ -253,6 +255,32 @@ func (l *List) Pop(ctx *Context) Serializable {
 	elem := l.At(ctx, lastIndex)
 	l.removePosition(ctx, Int(lastIndex))
 	return elem.(Serializable)
+}
+
+func (l *List) RemoveAll(ctx *Context, filter Pattern) {
+	removedPositions := l.underlyingList.removeAll(ctx, filter)
+
+	for _, pos := range removedPositions {
+		if l.elementMutationCallbacks != nil {
+			elem := l.underlyingList.At(ctx, int(pos))
+			l.removeElementMutationCallbackNoLock(ctx, int(pos), elem.(Serializable))
+		}
+	}
+
+	if l.elementMutationCallbacks != nil {
+		index := -1
+		l.elementMutationCallbacks = slices.DeleteFunc(l.elementMutationCallbacks, func(_ CallbackHandle) bool {
+			index++
+			return slices.Contains(removedPositions, Int(index))
+		})
+	}
+
+	path := Path("/")
+	mutation := NewRemovePositionsMutation(ctx, removedPositions, ShallowWatching, path)
+
+	//inform watchers & microtasks about the update
+	l.watchers.InformAboutAsync(ctx, mutation, mutation.Depth, true)
+	l.mutationCallbacks.CallMicrotasks(ctx, mutation)
 }
 
 func (l *List) removePositionRange(ctx *Context, r IntRange) {

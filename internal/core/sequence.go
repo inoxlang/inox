@@ -1,7 +1,7 @@
 package core
 
 var (
-	_ = []MutableLengthSequence{(*List)(nil), (*ByteSlice)(nil), (*RuneSlice)(nil)}
+	_          = []MutableLengthSequence{(*List)(nil), (*ByteSlice)(nil), (*RuneSlice)(nil)}
 	_ Sequence = (*Array)(nil)
 )
 

@@ -341,6 +341,8 @@ func (list *List) Prop(name string) Value {
 		return WrapGoMethod(list.Dequeue)
 	case "pop":
 		return WrapGoMethod(list.Pop)
+	case "remove_all":
+		return WrapGoMethod(list.RemoveAll)
 	case "sorted":
 		return WrapGoMethod(list.Sorted)
 	case "sort_by":
@@ -617,6 +619,10 @@ func (l *List) Pop(ctx *Context) Serializable {
 		return l.ElementAt(l.KnownLen() - 1).(Serializable)
 	}
 	return l.Element().(Serializable)
+}
+
+func (l *List) RemoveAll(ctx *Context, filter Pattern) {
+	ctx.SetUpdatedSelf(NewListOf(l.Element().(Serializable)))
 }
 
 func (l *List) Sorted(ctx *Context, orderIdent *Identifier) *List {

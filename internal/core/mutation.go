@@ -28,8 +28,9 @@ var (
 		SetElemAtIndex:        "set-elem-at-index",
 		SetSliceAtRange:       "set-slice-at-range",
 		InsertSequenceAtIndex: "insert-seq-at-index",
-		RemovePosition:        "remove-pos",
-		RemovePositionRange:   "remove-pos-range",
+		RemovePosition:        "remove-position",
+		RemovePositions:       "remove-positions",
+		RemovePositionRange:   "remove-position-range",
 		SpecificMutation:      "specific-mutation",
 	}
 
@@ -257,6 +258,21 @@ func NewRemovePositionMutation(ctx *Context, index int, depth WatchingDepth, pat
 	}
 }
 
+func NewRemovePositionsMutation(ctx *Context, indexes []Int, depth WatchingDepth, path Path) Mutation {
+	indexList := NewWrappedIntListFrom(indexes)
+	//TODO: do not create a temporary list
+	data, sizes, err := WriteSingleJSONRepresentation(ctx, indexList)
+
+	return Mutation{
+		Kind:               RemovePositions,
+		Complete:           err == nil,
+		Data:               data,
+		DataElementLengths: sizes,
+		Depth:              depth,
+		Path:               path,
+	}
+}
+
 func NewRemovePositionRangeMutation(ctx *Context, intRange IntRange, depth WatchingDepth, path Path) Mutation {
 	data, sizes, err := WriteSingleJSONRepresentation(ctx, intRange)
 
@@ -434,6 +450,7 @@ const (
 	SetSliceAtRange
 	InsertSequenceAtIndex
 	RemovePosition
+	RemovePositions
 	RemovePositionRange
 	SpecificMutation
 )

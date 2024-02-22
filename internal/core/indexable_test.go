@@ -35,4 +35,21 @@ func TestList(t *testing.T) {
 			list.Pop(ctx)
 		})
 	})
+
+	t.Run("remove_all", func(t *testing.T) {
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		list := NewWrappedValueList(Int(1), Int(2))
+
+		list.RemoveAll(ctx, NewExactValuePattern(Int(2)))
+		assert.Equal(t, []Serializable{Int(1)}, list.GetOrBuildElements(ctx))
+
+		list.RemoveAll(ctx, NewExactValuePattern(Int(1)))
+		assert.Equal(t, []Serializable{}, list.GetOrBuildElements(ctx))
+
+		assert.NotPanics(t, func() {
+			list.RemoveAll(ctx, NewExactValuePattern(Int(2)))
+		})
+	})
 }
