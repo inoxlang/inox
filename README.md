@@ -21,17 +21,29 @@ persistence.
 
 ![image](https://github.com/inoxlang/inox/assets/113632189/baaf934a-011e-4a7e-87a5-04174d81c800)
 
-**File /schema.ix - database schema**
+
+<details>
+
+**<summary>📜 Database schema</summary>**
 
 ![image](https://github.com/inoxlang/inox/assets/113632189/43c79c60-32bb-4d25-b2e8-0ced6d6304be)
 
-**A request handler (filesystem routing).** Each handler module runs in a
-dedicated execution context with its own permissions.
+
+</details>
+
+
+<details>
+
+**<summary>⚙️ A request handler (filesystem routing).</summary>** 
+
+Each handler module runs in a dedicated execution context with its own permissions.
 
 ![image](https://github.com/inoxlang/inox/assets/113632189/2bf945cf-afe8-4894-9496-522b6ae8a1b0)
 
 _Note: the permissions granted to imported modules (local or third-party) are
 **explicit**: `import lib ./malicious-lib.ix { allow: {} }`_
+
+</details>
 
 <details>
 
@@ -49,7 +61,7 @@ _Note: the permissions granted to imported modules (local or third-party) are
 
 </details>
 
-_Inox is intended to be used for developping web applications that are primarily rendered
+_Inox is intended to be used for web applications that are primarily rendered
 server-side. Cient-side components are also supported, see here for more information:
 [frontend development](./docs/frontend-development.md)._
 
@@ -132,7 +144,7 @@ Inox (check see 'What is planned' and [Other features](#other-features)).
 
 ## Development Environment - Inox Project Server
 
-**There is no true local development environment when developping Inox
+**There is no true local development environment when developing Inox
 projects.** The code editor connects to a **project server** (included in the
 Inox binary) and the code is edited and tested inside a virtual workspace. The
 server does not yet integrate git yet, but this is planned,
@@ -727,7 +739,7 @@ don't like spending hours configuring stuff, a bit of configuration is fine
 though. Local development environments are also a pain to setup sometimes.
 (There is no true
 [local dev environment](#development-environment---inox-project-server) when
-developping Inox projects).
+developing Inox projects).
 
 Inox being an opinionated **high-level** programming language / high level
 platform it obviously has pros and cons. Also when using a new programming
