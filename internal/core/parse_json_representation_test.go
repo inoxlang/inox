@@ -1961,4 +1961,23 @@ func TestParseJSONRepresentation(t *testing.T) {
 		})
 	})
 
+	t.Run("optional value", func(t *testing.T) {
+		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		//Optional integer.
+
+		optionalInt := utils.Must(NewOptionalPattern(ctx, INT_PATTERN))
+
+		v, err := ParseJSONRepresentation(ctx, `null`, optionalInt)
+		if assert.NoError(t, err) {
+			assert.Equal(t, Nil, v)
+		}
+
+		v, err = ParseJSONRepresentation(ctx, `1`, optionalInt)
+		if assert.NoError(t, err) {
+			assert.Equal(t, Int(1), v)
+		}
+	})
+
 }

@@ -120,7 +120,8 @@ func ParseNextJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pa
 			}
 			return Float(float), nil
 		}
-
+	case *OptionalPattern:
+		return parseOptionalValueJSONRepresentation(ctx, it, p, try)
 	case *IntRangePattern:
 		return parseIntegerJSONRepresentation(ctx, it, pattern, try)
 	case *FloatRangePattern:
@@ -646,6 +647,18 @@ func parseRecordJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern 
 	rec.sortProps()
 
 	return rec, nil
+}
+
+func parseOptionalValueJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern *OptionalPattern, try bool) (value Serializable, finalErr error) {
+	if it.WhatIsNext() == jsoniter.NilValue {
+		it.ReadNil()
+		if it.Error != nil {
+			return nil, fmt.Errorf("failed to read nil: %w", it.Error)
+		}
+		return Nil, nil
+	}
+
+	return ParseNextJSONRepresentation(ctx, it, pattern.pattern, try)
 }
 
 func parseIntegerJSONRepresentation(ctx *Context, it *jsoniter.Iterator, pattern Pattern, try bool) (_ Int, finalErr error) {
