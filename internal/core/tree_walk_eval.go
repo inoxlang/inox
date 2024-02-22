@@ -76,7 +76,8 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		//Declare functions that can be called before their definition statement.
 
-		decls := state.Global.StaticCheckData.GetFunctionsToDeclareEarly(state.currentChunk().Node)
+		decls := state.earlyFunctionDeclarations
+
 		for _, decl := range decls {
 			_, err := TreeWalkEval(decl, state)
 			if err != nil {
@@ -832,6 +833,27 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			}
 		}()
 
+		//Update information about early function declarations.
+
+		earlyFunctionDeclarationsPosition := state.earlyFunctionDeclarationsPosition
+		earlyFunctionDeclarations := state.earlyFunctionDeclarations
+
+		defer func() {
+			state.earlyFunctionDeclarationsPosition = earlyFunctionDeclarationsPosition
+			state.earlyFunctionDeclarations = earlyFunctionDeclarations
+		}()
+		state.earlyFunctionDeclarationsPosition = -1
+		state.earlyFunctionDeclarations = nil
+
+		if staticCheckData := state.Global.StaticCheckData; staticCheckData != nil {
+			earlyDeclarationsPosition, ok := staticCheckData.GetEarlyFunctionDeclarationsPosition(n)
+			if ok {
+				state.earlyFunctionDeclarationsPosition = earlyDeclarationsPosition
+				declarations := slices.Clone(staticCheckData.GetFunctionsToDeclareEarly(n))
+				state.earlyFunctionDeclarations = declarations
+			}
+		}
+
 		//CONSTANTS
 		if n.GlobalConstantDeclarations != nil {
 			for _, decl := range n.GlobalConstantDeclarations.Declarations {
@@ -1198,6 +1220,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			Module:       routineMod,
 			LthreadCtx:   ctx,
 		})
+
 		if err != nil {
 			return nil, err
 		}

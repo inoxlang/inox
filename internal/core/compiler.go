@@ -43,6 +43,7 @@ type compiler struct {
 	constants                         []Value
 	globalSymbols                     *symbolTable
 	earlyFunctionDeclarationsPosition int32 //-1 if no position, specific to the current chunk.
+	earlyFunctionDeclarations         []*parse.FunctionDeclaration
 	localSymbolTableStack             []*symbolTable
 	scopes                            []compilationScope
 	scopeIndex                        int
@@ -122,9 +123,11 @@ func NewCompiler(
 	}
 
 	if staticCheckData != nil {
-		earlyDeclarationsPosition, ok := staticCheckData.GetEarlyFunctionDeclarationsPosition(mod.MainChunk.Node)
+		position, ok := staticCheckData.GetEarlyFunctionDeclarationsPosition(mod.TopLevelNode)
 		if ok {
-			compiler.earlyFunctionDeclarationsPosition = earlyDeclarationsPosition
+			compiler.earlyFunctionDeclarationsPosition = position
+			declarations := slices.Clone(staticCheckData.GetFunctionsToDeclareEarly(mod.TopLevelNode))
+			compiler.earlyFunctionDeclarations = declarations
 		}
 	}
 
@@ -153,7 +156,8 @@ func (c *compiler) Compile(node parse.Node) error {
 
 		//Declare functions that can be called before their definition statement.
 
-		decls := c.staticCheckData.GetFunctionsToDeclareEarly(c.currentChunk().Node)
+		decls := c.earlyFunctionDeclarations
+
 		for _, decl := range decls {
 			if err := c.Compile(decl); err != nil {
 				return fmt.Errorf("failed to compile early declaration of the function `%s`: %w", decl.Name.Name, err)
@@ -1803,6 +1807,26 @@ func (c *compiler) Compile(node parse.Node) error {
 		defer func() {
 			c.chunkStack = c.chunkStack[:len(c.chunkStack)-1]
 		}()
+
+		//Update information about early function declarations.
+
+		earlyFunctionDeclarationsPosition := c.earlyFunctionDeclarationsPosition
+		earlyFunctionDeclarations := c.earlyFunctionDeclarations
+		defer func() {
+			c.earlyFunctionDeclarationsPosition = earlyFunctionDeclarationsPosition
+			c.earlyFunctionDeclarations = earlyFunctionDeclarations
+		}()
+		c.earlyFunctionDeclarationsPosition = -1
+		c.earlyFunctionDeclarations = nil
+
+		if c.staticCheckData != nil {
+			position, ok := c.staticCheckData.GetEarlyFunctionDeclarationsPosition(chunk.Node)
+			if ok {
+				c.earlyFunctionDeclarationsPosition = position
+				declarations := c.staticCheckData.GetFunctionsToDeclareEarly(chunk.Node)
+				c.earlyFunctionDeclarations = declarations
+			}
+		}
 
 		if c.trace != nil {
 			c.printTrace(fmt.Sprintf("ENTER INCLUDED CHUNK  %s", chunk.Name()))

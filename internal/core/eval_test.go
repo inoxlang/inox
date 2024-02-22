@@ -3751,7 +3751,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			_, err := Eval(code, state, false)
-			assert.NoError(t, err)
+			if !assert.NoError(t, err) {
+				return
+			}
 
 			assert.Contains(t, state.Globals.Entries(), "f")
 			assert.IsType(t, &InoxFunction{}, state.Globals.Get("f"))
@@ -3765,7 +3767,63 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, true)
-			assert.NoError(t, err)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.IsType(t, &InoxFunction{}, res)
+		})
+
+		t.Run("function that do not capture locals should be available before the declaration statement: inside and outside included files", func(t *testing.T) {
+			moduleName := "mymod.ix"
+			modpath := writeModuleAndIncludedFiles(t, moduleName, `
+				manifest {}
+				import ./dep.ix
+
+				return [g, fn_in_included_file]
+				fn g(){}
+			`, map[string]string{
+				"./dep.ix": `
+					includable-file
+
+					fn_in_included_file = f
+					fn f(){}
+				`,
+			})
+
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			state := NewGlobalState(NewDefaultTestContext())
+			state.Module = mod
+			defer state.Ctx.CancelGracefully()
+
+			res, err := Eval(mod, state, true)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			list := res.(*List)
+
+			assert.IsType(t, &InoxFunction{}, list.At(state.Ctx, 0))
+			assert.IsType(t, &InoxFunction{}, list.At(state.Ctx, 1))
+		})
+
+		t.Run("function that do not capture locals should be available before the declaration statement: in embedded module of a spawn expr", func(t *testing.T) {
+			code := `
+				thread = go do {
+					return f
+					fn f(){}
+				}
+				return thread.wait_result!()
+			`
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+			res, err := Eval(code, state, true)
+			if !assert.NoError(t, err) {
+				return
+			}
 
 			assert.IsType(t, &InoxFunction{}, res)
 		})
