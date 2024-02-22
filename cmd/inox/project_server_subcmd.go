@@ -31,7 +31,7 @@ import (
 )
 
 const (
-	LSP_SESSION_INIT_TIMEOUT = 1500 * time.Millisecond //The websocket is closed if the session is not initialized after this duration.
+	LSP_SESSION_INIT_TIMEOUT = 2 * time.Second //The websocket is closed if the session is not initialized after this duration.
 )
 
 func ProjectServer(mainSubCommand string, mainSubCommandArgs []string, outW, errW io.Writer) (exitCode int) {
