@@ -25,14 +25,17 @@ libraries:
 ```
 client/      --- client side components
     counter.ix
+
 components/  --- server side components
     login-form.ix
+
 routes/      --- pages and API(s)
     index.ix
     last-news.ix
     users/
         GET.ix
         POST.ix
+
 static/
     base.css
     htmx.min.js
@@ -41,11 +44,17 @@ static/
 
 ## Pages
 
-| Path (URL) | HTTP method | Possible handler paths                                        |
-| ---------- | ----------- | ------------------------------------------------------------- |
-| `/`        | `GET`       | `/index.ix , /GET-index.ix`                                   |
-| `/about`   | `GET`       | `/about.ix , /about/GET.ix , /about/index.ix , /GET-about.ix` |
-| `/users`   | `POST`      | `/POST-users.ix , /users/POST.ix ,  /users.ix`                |
+Inox's HTTP server supports [Filesystem routing](./http-server-reference.md#filesystem-routing).
+
+| Path          | HTTP method | Handler paths (recommended)                           |
+| ------------- | ----------- | ----------------------------------------------------- |
+| `/`           | `GET`       | `/routes/index.ix`                                    |
+| `/about`      | `GET`       | `/routes/about.ix , /routes/about/index.ix`           |
+| `/about/team` | `GET`       | `/routes/about/team.ix`                               |
+| `/users`      | `POST`      | `/routes/users/POST.ix , /routes/users/POST-users.ix` |
+| `/users/0`    | `POST`      | `/routes/users/:user-id/POST.ix`                      |
+| `/users/0`    | `DELETE`    | `/routes/users/:user-id/DELETE.ix`                    |
+
 
 ```html
 # /routes/index.ix
@@ -106,7 +115,7 @@ return html<ul>
 Each Inox project comes with a `/static/` folder that contains, among other
 things, a small experimental library that allows creating client-side components
 with locality of behavior. This library updates a component's view when the state
-changes. It is package with the following micro libraries (all MIT licensed):
+changes. It is packaged with the following micro libraries (all MIT licensed):
 
 - Preact Signals: https://github.com/preactjs/signals/tree/main/packages/core (<
   900 lines)

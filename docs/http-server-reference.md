@@ -101,16 +101,28 @@ server = http.Server!(https://localhost:8080, {
 })
 ```
 
-When the server receives a request it determines what is the handler module
-(file) for the request, and invokes the handler. The routing rules are the
-following:
+When the server receives a request, it invokes the handler module (file) that matches the request's **method** and **path**.
 
-| Request's path | HTTP method | Possible handler paths                                        |
-| -------------- | ----------- | ------------------------------------------------------------- |
-| `/`            | `GET`       | `/GET-index.ix , /index.ix`                                   |
-| `/about`       | `GET`       | `/GET-about.ix , /about.ix , /about/GET.ix , /about/index.ix` |
-| `/users`       | `POST`      | `/POST-users.ix , /users/POST.ix , /users.ix`                 |
-| `/users/0`     | `POST`      | `/users/:user-id/GET.ix , /users/:user-id/index.ix`           |
+| Path          | HTTP method | Handler paths (recommended)                           |
+| ------------- | ----------- | ----------------------------------------------------- |
+| `/`           | `GET`       | `/routes/index.ix`                                    |
+| `/about`      | `GET`       | `/routes/about.ix , /routes/about/index.ix`           |
+| `/about/team` | `GET`       | `/routes/about/team.ix`                               |
+| `/users`      | `POST`      | `/routes/users/POST.ix , /routes/users/POST-users.ix` |
+| `/users/0`    | `POST`      | `/routes/users/:user-id/POST.ix`                      |
+| `/users/0`    | `DELETE`    | `/routes/users/:user-id/DELETE.ix`                    |
+
+<details>
+
+**<summary>Alternative handler paths</summary>**
+
+| Path     | HTTP method | Alternative handler paths                                                  |
+| -------- | ----------- | -------------------------------------------------------------------------- |
+| `/`      | `GET`       | `/routes/GET-index.ix`                                                     |
+| `/about` | `GET`       | `/routes/GET-about.ix , /routes/about/GET.ix , /routes/about/GET-index.ix` |
+| `/users` | `POST`      | `/routes/POST-users.ix`                                                    |
+
+</details>
 
 A **single handler module** should be defined for each endpoint/METHOD pair. The
 `http.Server` function panics if there are two or more handlers for the same
