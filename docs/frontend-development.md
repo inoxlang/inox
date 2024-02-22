@@ -9,24 +9,25 @@
 - 🌐 [Client-Side Components](#client-side-components---inoxjs)
 - 📝 [Forms](#forms)
 - ✨ [Planned HTML & HTMX integrations](#planned-html-and-htmx-integrations)
-- ⚡ [Planned Optimizations](#server-side-optimizations)
 
 The frontend of an Inox application is built using the following features and
-librairies:
+libraries:
 
 - The `filesystem routing` feature of the HTTP server executes modules returning
   the HTML of pages and server side components.
 - [HTMX](https://htmx.org/) allows any HTML element to issue an HTTP request,
   enabling dynamic content updates in web applications without the complexity of
   heavy JavaScript frameworks.
-- [Inox.js](#client-side-components---inoxjs) is a **tiny** (experimental)
+- [Inox.js](#client-side-components---inoxjs) is a **tiny** experimental
   library allowing to develop small client-side components when HTMX is not a
   good fit. You can use another library if you prefer to.
 
 ```
-client/ ------ client side components
+client/      --- client side components
     counter.ix
-routes/ ------ pages and server side components
+components/  --- server side components
+    login-form.ix
+routes/      --- pages and API(s)
     index.ix
     last-news.ix
     users/
@@ -103,9 +104,9 @@ return html<ul>
 ## Client-Side Components - Inox.js
 
 Each Inox project comes with a `/static/` folder that contains, among other
-things, a small experimental library that allow creating client-side components
-with locality of behavior. It updates the component's view when the state
-changes, and includes the following librairies (all MIT licensed):
+things, a small experimental library that allows creating client-side components
+with locality of behavior. This library updates a component's view when the state
+changes. It is package with the following micro libraries (all MIT licensed):
 
 - Preact Signals: https://github.com/preactjs/signals/tree/main/packages/core (<
   900 lines)
@@ -304,40 +305,17 @@ fn TodoItem(){
 
 ### Checks
 
-- Validation of `<input>` elements in forms against the current API
-- Validation of URLs in attributes such as `hx-get` against the current API
+- Validation of `<input>` elements in forms against the current API.
+- Validation of URLs in attributes such as `hx-get` against the current API.
 
 _and more._
 
 ### LSP
 
-- `<form>` and `<input>` completions based on the current API
-- URL completion for attributes such as `hx-get`
+- `<form>` and `<input>` completions based on the current API.
+- URL completion for attributes such as `hx-get`.
 
 _and more._
-
----
-
-## Server-Side Optimizations
-
-**This is not implemented yet.**
-
-### Data Prefetching
-
-During a page or component render `htmx` attributes will be analyzed in order to
-tell the database to pretech some pieces of data.
-
-Let's see an illustration of this. In the following snippet we have the `hx-get`
-attribute that tells us that the browser will make a request to the `/last-news`
-endpoint in a very short time. In order to make this future request fast we
-could tell the database to prefetch the data required by `/last-news`.
-
-```html
-<div hx-get="/last-news" hx-trigger="load"></div>
-```
-
-**General access patterns** during application usage could also be measured to
-enable further optimizations.
 
 ---
 
