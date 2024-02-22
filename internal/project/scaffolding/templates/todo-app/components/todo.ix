@@ -1,12 +1,16 @@
 includable-file
 
 fn Todo(item {title: str, done: bool, key: string}){
-    form_payload = asjson({
+    toggle_item_payload = asjson({
         updates: [{ key: item.key, done: !item.done}]
     })
 
-    return html<div>
-        <form hx-patch-json="/todos" jsonform-payload=form_payload>
+    delete_item_payload = asjson({
+        deletions: [item.key]
+    })
+
+    return html<div class="todo-item">
+        <form hx-patch-json="/todos" jsonform-payload=toggle_item_payload>
             <button>
                 {(if item.done "✅" else "⬜")}
             </button>
@@ -16,20 +20,8 @@ fn Todo(item {title: str, done: bool, key: string}){
             {item.title}
         </span>
 
-        <style>
-            me {
-                display: flex;
-                flex-direction: row;
-                align-items: center;
-
-                border: 1px solid grey;
-                border-radius: 5px;
-                padding: 7px;
-            }
-
-            me button {
-                background: none;
-            }
-        </style>
+        <form class="deletion" hx-patch-json="/todos" jsonform-payload=delete_item_payload>
+            <button >🗑️</button>
+        </form>
     </div>
 }

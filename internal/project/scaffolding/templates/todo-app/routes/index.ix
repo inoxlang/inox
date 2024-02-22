@@ -16,5 +16,5 @@ assert (session match session?)
 if (session == nil)  {
     return Page(Login())
 } else {
-    return Page(html<div id="todos" hx-get="/todos" hx-trigger="load, newTodo from:body, updatedTodo from:body"></div>)
+    return Page(html<div id="todos" hx-get="/todos" hx-trigger="load, listUpdate from:body"></div>)
 }
