@@ -4,6 +4,7 @@
 
 # Frontend Development
 
+- 📁 [Project Layout](#project-layout)
 - 📄 [Pages](#pages)
 - ⚙️ [Server-Side Components](#server-side-components)
 - 🌐 [Client-Side Components](#client-side-components---inoxjs)
@@ -15,12 +16,63 @@ libraries:
 
 - The `filesystem routing` feature of the HTTP server executes modules returning
   the HTML of pages and server side components.
+
 - [HTMX](https://htmx.org/) allows any HTML element to issue an HTTP request,
   enabling dynamic content updates in web applications without the complexity of
   heavy JavaScript frameworks.
-- [Inox.js](#client-side-components---inoxjs) is a **tiny** experimental
+
+- [CSS Scope Inline](https://github.com/gnat/surreal) enables locality of behavior for `<style>` elements.
+    ```html
+    <div class="counter">
+        ....
+        <style>
+            me { background: red; } /* `this` & `self` also work. */
+        </style>
+    </div>
+    ```
+- [Surreal](https://github.com/gnat/surreal) enables locality of behavior for `<script>` elements.
+    ```html
+    <div class="counter">
+        <button class="increment">Increment</button>
+
+        <script>
+            me(".increment").on('click', /* ... */ )    
+        </script>
+    <div>
+    ```
+
+- [Inox.js](#client-side-components---inoxjs) is a tiny **experimental**
   library allowing to develop small client-side components when HTMX is not a
   good fit. You can use another library if you prefer to.
+    ```html
+    <div class="counter">
+         <div class="status">
+            <span>Count:</span>
+            <span> $(count:'0') double: $(double:'0') </span>
+        </div>
+
+        <div class="actions">
+            <button class="increment">Increment</button>
+        </div>
+
+        <script>
+        {
+            //Preact signals https://preactjs.com/blog/introducing-signals.
+
+            const count = signal(0); 
+            const double = computed(() => count.value * 2);
+
+            initComponent({ signals: {count, double} })
+
+            me(".increment").on('click', () => {
+               count.value++
+            })    
+        }
+        </script>
+    <div>
+    ```
+
+# Project Layout
 
 ```
 client/      --- client side components
@@ -31,15 +83,22 @@ components/  --- server side components
 
 routes/      --- pages and API(s)
     index.ix
-    last-news.ix
+    about.ix
     users/
-        GET.ix
-        POST.ix
+        POST-users.ix
 
 static/
     base.css
-    htmx.min.js
-    inox.js
+    htmx.min.js (< 20kB gzipped + minified) 
+        - HTMX
+        - json-form (custom extension)
+        - response-targets extension
+        - debug extension
+    inox.min.js (< 10kB gzipped + minified) 
+        - inox.js 
+        - Surreal 
+        - CSS scope inline 
+        - Preact signals
 ```
 
 ## Pages
@@ -67,7 +126,7 @@ return html<html>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <link rel="stylesheet" href="/base.css"/>
     <script src="/htmx.min.js"></script>
-    <script src="/inox.js"></script>
+    <script src="/inox.min.js"></script>
 </head>
 <body>
     <header> index.ix </header>
@@ -94,7 +153,7 @@ return html<ul>
     <li>News 1</li>
     <li>News 2</li>
 
-    <!-- Local styling enabled by the CSS Scope Inline library (included in inox.js) -->
+    <!-- Local styling enabled by the CSS Scope Inline library (included in inox.min.js) -->
     <style>
         me {
             display: flex;
@@ -117,10 +176,11 @@ things, a small experimental library that allows creating client-side components
 with locality of behavior. This library updates a component's view when the state
 changes. It is packaged with the following micro libraries (all MIT licensed):
 
-- Preact Signals: https://github.com/preactjs/signals/tree/main/packages/core (<
-  900 lines)
-- CSS Scope Inline: https://github.com/gnat/css-scope-inline (< 20 lines)
-- Surreal: https://github.com/gnat/surreal (< 400 lines)
+- Preact Signals: https://github.com/preactjs/signals/tree/main/packages/core
+- CSS Scope Inline: https://github.com/gnat/css-scope-inline
+- Surreal: https://github.com/gnat/surreal
+
+The resulting `inox.min.js` package is less than 10kB when gzipped+minified.
 
 **It is recommended to use client-side components only for functionalities that
 can't be easily implemented with Server-Side Rendering (SSR) and HTMX. The
@@ -145,10 +205,11 @@ fn Counter(){
 
         <script> 
         {
+            //Preact signals.
             const count = signal(0);
             const double = computed(() => count.value * 2);
 
-            // initComponent is provided by inox.js. This function initializes the component in order 
+            // initComponent is provided by inox.min.js. This function initializes the component in order 
             // to update the view when signals change.
             initComponent({ signals: {count, double} })
 

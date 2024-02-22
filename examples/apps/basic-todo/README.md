@@ -7,13 +7,4 @@ this is a limited application example.
 
 ---
 
-**Additional Files (Not Present on GitHub)**
-
-- **static/**
-  - **base.css**
-  - **htmx.min.js**
-  - **inox.js** (< 12kB gzipped, not minified yet),
-    - [Surreal](https://github.com/gnat/surreal) 
-    - [CSS Scope Inline](https://github.com/gnat/css-scope-inline)
-    - [Preact Signals](https://github.com/preactjs/signals/tree/main/packages/core)
-    - [Small client-side component library](../../docs/frontend-development.md#client-side-components---inoxjs)
+[Frontend develoment](../../../docs/frontend-development.md)
