@@ -626,7 +626,7 @@ func (patt PathPattern) Includes(ctx *Context, v Value) bool {
 	}
 }
 
-func (PathPattern) Call(values []Serializable) (Pattern, error) {
+func (PathPattern) Call(ctx *Context, values []Serializable) (Pattern, error) {
 	return nil, ErrPatternNotCallable
 }
 
@@ -1349,7 +1349,7 @@ func (patt HostPattern) Includes(ctx *Context, v Value) bool {
 	return err == nil && ok
 }
 
-func (HostPattern) Call(values []Serializable) (Pattern, error) {
+func (HostPattern) Call(ctx *Context, values []Serializable) (Pattern, error) {
 	return nil, ErrPatternNotCallable
 }
 
@@ -1486,7 +1486,7 @@ func (URLPattern) SetProp(ctx *Context, name string, value Value) error {
 	return ErrCannotSetProp
 }
 
-func (URLPattern) Call(values []Serializable) (Pattern, error) {
+func (URLPattern) Call(ctx *Context, values []Serializable) (Pattern, error) {
 	return nil, ErrPatternNotCallable
 }
 

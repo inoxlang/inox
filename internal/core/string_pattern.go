@@ -653,7 +653,7 @@ func (patt *SequenceStringPattern) EffectiveLengthRange() IntRange {
 	return patt.effectiveLengthRange
 }
 
-func (patt *SequenceStringPattern) Call(values []Serializable) (Pattern, error) {
+func (patt *SequenceStringPattern) Call(ctx *Context, values []Serializable) (Pattern, error) {
 	patt.mustResolve()
 	lenRange, found, err := getNewEffectiveLenRange(values, patt.LengthRange())
 	if err != nil {
@@ -1415,8 +1415,8 @@ func (patt DynamicStringPatternElement) CompiledRegex() *regexp.Regexp {
 	panic("DynamicStringPatternElement cannot have a regex")
 }
 
-func (patt DynamicStringPatternElement) Call(values []Serializable) (Pattern, error) {
-	return patt.mustResolve().Call(values)
+func (patt DynamicStringPatternElement) Call(ctx *Context, values []Serializable) (Pattern, error) {
+	return patt.mustResolve().Call(ctx, values)
 }
 
 func (patt *DynamicStringPatternElement) StringPattern() (StringPattern, bool) {
@@ -2019,7 +2019,7 @@ func (patt *RegexPattern) EffectiveLengthRange() IntRange {
 	return patt.LengthRange()
 }
 
-func (patt *RegexPattern) Call(values []Serializable) (Pattern, error) {
+func (patt *RegexPattern) Call(ctx *Context, values []Serializable) (Pattern, error) {
 	lenRange, found, err := getNewEffectiveLenRange(values, patt.LengthRange())
 	if err != nil {
 		return nil, err
@@ -2190,7 +2190,7 @@ func (patt *PathStringPattern) EffectiveLengthRange() IntRange {
 	return patt.LengthRange()
 }
 
-func (patt *PathStringPattern) Call(values []Serializable) (Pattern, error) {
+func (patt *PathStringPattern) Call(ctx *Context, values []Serializable) (Pattern, error) {
 	lenRange, found, err := getNewEffectiveLenRange(values, patt.LengthRange())
 	if err != nil {
 		return nil, err

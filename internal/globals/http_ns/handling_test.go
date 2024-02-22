@@ -327,7 +327,7 @@ func TestHandling(t *testing.T) {
 						"main": db,
 					}
 
-					setPattern, err := setcoll.SET_PATTERN.CallImpl(setcoll.SET_PATTERN, []core.Serializable{
+					setPattern, err := setcoll.SET_PATTERN.CallImpl(gs.Ctx, setcoll.SET_PATTERN, []core.Serializable{
 						core.NewInexactObjectPattern([]core.ObjectPatternEntry{{Name: SESSION_ID_PROPNAME, Pattern: core.STR_PATTERN}}),
 						core.PropertyName(SESSION_ID_PROPNAME),
 					})
@@ -503,7 +503,7 @@ func TestHandling(t *testing.T) {
 					"main": db,
 				}
 
-				setPattern, err := setcoll.SET_PATTERN.CallImpl(setcoll.SET_PATTERN, []core.Serializable{
+				setPattern, err := setcoll.SET_PATTERN.CallImpl(gs.Ctx, setcoll.SET_PATTERN, []core.Serializable{
 					core.SERIALIZABLE_PATTERN,
 					common.REPR_UNIQUENESS_IDENT,
 				})

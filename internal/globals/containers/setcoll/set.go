@@ -117,7 +117,7 @@ func NewSet(ctx *core.Context, elements core.Iterable, configParam *core.Optiona
 	}
 
 	set := NewSetWithConfig(ctx, elements, config)
-	set.pattern = utils.Must(SET_PATTERN.Call([]core.Serializable{set.config.Element, set.config.Uniqueness.ToValue()})).(*SetPattern)
+	set.pattern = utils.Must(SET_PATTERN.Call(ctx, []core.Serializable{set.config.Element, set.config.Uniqueness.ToValue()})).(*SetPattern)
 	return set
 }
 

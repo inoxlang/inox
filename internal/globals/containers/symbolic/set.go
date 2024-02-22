@@ -276,7 +276,7 @@ func (p *SetPattern) Concretize(ctx symbolic.ConcreteContext) any {
 	}
 
 	concreteElementPattern := utils.Must(symbolic.Concretize(p.elementPattern, ctx))
-	return externalData.CreateConcreteSetPattern(*p.uniqueness, concreteElementPattern)
+	return externalData.CreateConcreteSetPattern(ctx, *p.uniqueness, concreteElementPattern)
 }
 
 func (p *SetPattern) HasUnderlyingPattern() bool {

@@ -301,6 +301,7 @@ func TestOpenDatabase(t *testing.T) {
 
 			setPattern :=
 				utils.Must(setcoll.SET_PATTERN.CallImpl(
+					ctx,
 					setcoll.SET_PATTERN,
 					[]core.Serializable{namedObjectPattern, common.URL_UNIQUENESS_IDENT}),
 				)
@@ -596,7 +597,8 @@ func TestUpdateSchema(t *testing.T) {
 		})
 
 		setPattern :=
-			utils.Must(setcoll.SET_PATTERN.CallImpl(setcoll.SET_PATTERN,
+			utils.Must(setcoll.SET_PATTERN.CallImpl(
+				ctx, setcoll.SET_PATTERN,
 				[]core.Serializable{namedObjectPattern, common.URL_UNIQUENESS_IDENT}))
 
 		schema := core.NewInexactObjectPattern([]core.ObjectPatternEntry{{Name: "users", Pattern: setPattern}})
@@ -641,6 +643,7 @@ func TestUpdateSchema(t *testing.T) {
 
 		setPattern :=
 			utils.Must(setcoll.SET_PATTERN.CallImpl(
+				ctx,
 				setcoll.SET_PATTERN,
 				[]core.Serializable{namedObjectPattern, common.URL_UNIQUENESS_IDENT}))
 
@@ -670,6 +673,7 @@ func TestUpdateSchema(t *testing.T) {
 
 		setPattern :=
 			utils.Must(setcoll.SET_PATTERN.CallImpl(
+				ctx,
 				setcoll.SET_PATTERN,
 				[]core.Serializable{namedObjectPattern, common.URL_UNIQUENESS_IDENT}),
 			)
@@ -724,6 +728,7 @@ func TestUpdateSchema(t *testing.T) {
 
 		setPattern :=
 			utils.Must(setcoll.SET_PATTERN.CallImpl(
+				ctx,
 				setcoll.SET_PATTERN,
 				[]core.Serializable{namedObjectPattern, common.URL_UNIQUENESS_IDENT}),
 			)
@@ -776,6 +781,7 @@ func TestUpdateSchema(t *testing.T) {
 
 		setPattern :=
 			utils.Must(setcoll.SET_PATTERN.CallImpl(
+				ctx,
 				setcoll.SET_PATTERN,
 				[]core.Serializable{namedObjectPattern, common.URL_UNIQUENESS_IDENT}),
 			)
@@ -830,6 +836,7 @@ func TestUpdateSchema(t *testing.T) {
 
 		setPattern :=
 			utils.Must(setcoll.SET_PATTERN.CallImpl(
+				ctx,
 				setcoll.SET_PATTERN,
 				[]core.Serializable{namedObjectPattern, common.URL_UNIQUENESS_IDENT}),
 			)
@@ -890,6 +897,7 @@ func TestUpdateSchema(t *testing.T) {
 
 		setPattern2 :=
 			utils.Must(setcoll.SET_PATTERN.CallImpl(
+				ctx,
 				setcoll.SET_PATTERN,
 				[]core.Serializable{core.INT_PATTERN, common.URL_UNIQUENESS_IDENT}),
 			)

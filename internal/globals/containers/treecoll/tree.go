@@ -23,7 +23,7 @@ var (
 		Type:          reflect.TypeOf(TreeNode{}),
 		Name:          "tree.node",
 		SymbolicValue: &coll_symbolic.TreeNode{},
-		CallImpl: func(typePattern *core.TypePattern, values []core.Serializable) (core.Pattern, error) {
+		CallImpl: func(ctx *core.Context, typePattern *core.TypePattern, values []core.Serializable) (core.Pattern, error) {
 			var valuePattern core.Pattern
 
 			for _, val := range values {

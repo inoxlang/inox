@@ -25,7 +25,7 @@ var (
 		Name:          "Map",
 		Type:          reflect.TypeOf((*Map)(nil)),
 		SymbolicValue: coll_symbolic.ANY_MAP,
-		CallImpl: func(typePattern *core.TypePattern, values []core.Serializable) (core.Pattern, error) {
+		CallImpl: func(ctx *core.Context, typePattern *core.TypePattern, values []core.Serializable) (core.Pattern, error) {
 			switch len(values) {
 			case 0:
 				return nil, commonfmt.FmtMissingArgument("key pattern and value pattern")

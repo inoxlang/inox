@@ -18,11 +18,14 @@ import (
 func TestHttpRequestPattern(t *testing.T) {
 	testconfig.AllowParallelization(t)
 
+	ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
+	defer ctx.CancelGracefully()
+
 	t.Run("creation", func(t *testing.T) {
 		testconfig.AllowParallelization(t)
 
 		t.Run("no argument", func(t *testing.T) {
-			pattern, err := CALLABLE_HTTP_REQUEST_PATTERN.Call([]core.Serializable{})
+			pattern, err := CALLABLE_HTTP_REQUEST_PATTERN.Call(ctx, []core.Serializable{})
 			if !assert.Error(t, err) {
 				return
 			}
@@ -30,7 +33,7 @@ func TestHttpRequestPattern(t *testing.T) {
 		})
 
 		t.Run("argument of invalid type", func(t *testing.T) {
-			pattern, err := CALLABLE_HTTP_REQUEST_PATTERN.Call([]core.Serializable{core.Int(1)})
+			pattern, err := CALLABLE_HTTP_REQUEST_PATTERN.Call(ctx, []core.Serializable{core.Int(1)})
 			if !assert.Error(t, err) {
 				return
 			}
@@ -38,7 +41,7 @@ func TestHttpRequestPattern(t *testing.T) {
 		})
 
 		t.Run("empty description", func(t *testing.T) {
-			pattern, err := CALLABLE_HTTP_REQUEST_PATTERN.Call([]core.Serializable{core.NewInexactObjectPattern(nil)})
+			pattern, err := CALLABLE_HTTP_REQUEST_PATTERN.Call(ctx, []core.Serializable{core.NewInexactObjectPattern(nil)})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -56,7 +59,7 @@ func TestHttpRequestPattern(t *testing.T) {
 				},
 			})
 
-			pattern, err := CALLABLE_HTTP_REQUEST_PATTERN.Call([]core.Serializable{description})
+			pattern, err := CALLABLE_HTTP_REQUEST_PATTERN.Call(ctx, []core.Serializable{description})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -75,7 +78,7 @@ func TestHttpRequestPattern(t *testing.T) {
 			})
 
 			assert.Panics(t, func() {
-				CALLABLE_HTTP_REQUEST_PATTERN.Call([]core.Serializable{description})
+				CALLABLE_HTTP_REQUEST_PATTERN.Call(ctx, []core.Serializable{description})
 			})
 		})
 	})
@@ -89,7 +92,7 @@ func TestHttpRequestPattern(t *testing.T) {
 			},
 		})
 
-		pattern, err := CALLABLE_HTTP_REQUEST_PATTERN.Call([]core.Serializable{description})
+		pattern, err := CALLABLE_HTTP_REQUEST_PATTERN.Call(ctx, []core.Serializable{description})
 		if !assert.NoError(t, err) {
 			return
 		}

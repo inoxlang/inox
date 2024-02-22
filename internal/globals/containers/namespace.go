@@ -40,17 +40,17 @@ func init() {
 	})
 
 	coll_symbolic.SetExternalData(coll_symbolic.ExternalData{
-		CreateConcreteSetPattern: func(uniqueness common.UniquenessConstraint, elementPattern any) any {
-			return utils.Must(setcoll.SET_PATTERN.Call([]core.Serializable{elementPattern.(core.Pattern), uniqueness.ToValue()}))
+		CreateConcreteSetPattern: func(ctx symbolic.ConcreteContext, uniqueness common.UniquenessConstraint, elementPattern any) any {
+			return utils.Must(setcoll.SET_PATTERN.Call(ctx.(*core.Context), []core.Serializable{elementPattern.(core.Pattern), uniqueness.ToValue()}))
 		},
-		CreateConcreteMapPattern: func(keyPattern, valuePattern any) any {
+		CreateConcreteMapPattern: func(ctx symbolic.ConcreteContext, keyPattern, valuePattern any) any {
 			args := []core.Serializable{keyPattern.(core.Pattern), valuePattern.(core.Pattern)}
-			return utils.Must(mapcoll.MAP_PATTERN.Call(args))
+			return utils.Must(mapcoll.MAP_PATTERN.Call(ctx.(*core.Context), args))
 			//return utils.Must(SET_PATTERN.Call([]core.Serializable{elementPattern.(core.Pattern), uniqueness.ToValue()}))
 		},
-		CreateConcreteThreadPattern: func(elementPattern any) any {
+		CreateConcreteThreadPattern: func(ctx symbolic.ConcreteContext, elementPattern any) any {
 			args := []core.Serializable{elementPattern.(core.Pattern)}
-			return utils.Must(threadcoll.MSG_THREAD_PATTERN.Call(args))
+			return utils.Must(threadcoll.MSG_THREAD_PATTERN.Call(ctx.(*core.Context), args))
 		},
 	})
 

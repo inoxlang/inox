@@ -113,7 +113,7 @@ func NewMap(ctx *core.Context, flatEntries *core.List, configParam *core.Optiona
 	}
 
 	m := NewMapWithConfig(ctx, flatEntries, config)
-	m.pattern = utils.Must(MAP_PATTERN.Call([]core.Serializable{
+	m.pattern = utils.Must(MAP_PATTERN.Call(ctx, []core.Serializable{
 		m.config.Key,
 		m.config.Value,
 	})).(*MapPattern)

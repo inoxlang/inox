@@ -15,8 +15,10 @@ import (
 func TestSetPattern(t *testing.T) {
 
 	t.Run("", func(t *testing.T) {
-		//
-		patt, err := SET_PATTERN.Call([]core.Serializable{core.INT_PATTERN, common.REPR_UNIQUENESS_IDENT})
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		patt, err := SET_PATTERN.Call(ctx, []core.Serializable{core.INT_PATTERN, common.REPR_UNIQUENESS_IDENT})
 
 		if assert.NoError(t, err) {
 			uniqueness := common.UniquenessConstraint{
@@ -39,7 +41,7 @@ func TestSetPattern(t *testing.T) {
 		})
 
 		//
-		patt, err = SET_PATTERN.Call([]core.Serializable{objectPattern, common.URL_UNIQUENESS_IDENT})
+		patt, err = SET_PATTERN.Call(ctx, []core.Serializable{objectPattern, common.URL_UNIQUENESS_IDENT})
 
 		if assert.NoError(t, err) {
 			uniqueness := common.UniquenessConstraint{
@@ -55,7 +57,7 @@ func TestSetPattern(t *testing.T) {
 		}
 
 		//
-		patt, err = SET_PATTERN.Call([]core.Serializable{objectPattern, core.PropertyName("a")})
+		patt, err = SET_PATTERN.Call(ctx, []core.Serializable{objectPattern, core.PropertyName("a")})
 
 		if assert.NoError(t, err) {
 			uniqueness := common.UniquenessConstraint{
@@ -76,8 +78,10 @@ func TestSetPattern(t *testing.T) {
 
 		t.Run("uniqueness change", func(t *testing.T) {
 			ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
-			patt1, err1 := SET_PATTERN.Call([]core.Serializable{core.INT_PATTERN, common.REPR_UNIQUENESS_IDENT})
-			patt2, err2 := SET_PATTERN.Call([]core.Serializable{core.INT_PATTERN, common.URL_UNIQUENESS_IDENT})
+			defer ctx.CancelGracefully()
+
+			patt1, err1 := SET_PATTERN.Call(ctx, []core.Serializable{core.INT_PATTERN, common.REPR_UNIQUENESS_IDENT})
+			patt2, err2 := SET_PATTERN.Call(ctx, []core.Serializable{core.INT_PATTERN, common.URL_UNIQUENESS_IDENT})
 
 			if !assert.NoError(t, err1) {
 				return
@@ -104,8 +108,10 @@ func TestSetPattern(t *testing.T) {
 
 		t.Run("element pattern replaced with different type", func(t *testing.T) {
 			ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
-			patt1, err1 := SET_PATTERN.Call([]core.Serializable{core.INT_PATTERN, common.REPR_UNIQUENESS_IDENT})
-			patt2, err2 := SET_PATTERN.Call([]core.Serializable{core.STR_PATTERN, common.REPR_UNIQUENESS_IDENT})
+			defer ctx.CancelGracefully()
+
+			patt1, err1 := SET_PATTERN.Call(ctx, []core.Serializable{core.INT_PATTERN, common.REPR_UNIQUENESS_IDENT})
+			patt2, err2 := SET_PATTERN.Call(ctx, []core.Serializable{core.STR_PATTERN, common.REPR_UNIQUENESS_IDENT})
 
 			if !assert.NoError(t, err1) {
 				return
@@ -132,8 +138,10 @@ func TestSetPattern(t *testing.T) {
 
 		t.Run("element pattern replaced with super type", func(t *testing.T) {
 			ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
-			patt1, err1 := SET_PATTERN.Call([]core.Serializable{core.INT_PATTERN, common.REPR_UNIQUENESS_IDENT})
-			patt2, err2 := SET_PATTERN.Call([]core.Serializable{core.SERIALIZABLE_PATTERN, common.REPR_UNIQUENESS_IDENT})
+			defer ctx.CancelGracefully()
+
+			patt1, err1 := SET_PATTERN.Call(ctx, []core.Serializable{core.INT_PATTERN, common.REPR_UNIQUENESS_IDENT})
+			patt2, err2 := SET_PATTERN.Call(ctx, []core.Serializable{core.SERIALIZABLE_PATTERN, common.REPR_UNIQUENESS_IDENT})
 
 			if !assert.NoError(t, err1) {
 				return
@@ -154,8 +162,10 @@ func TestSetPattern(t *testing.T) {
 
 		t.Run("element pattern replaced with sub type", func(t *testing.T) {
 			ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
-			patt1, err1 := SET_PATTERN.Call([]core.Serializable{core.SERIALIZABLE_PATTERN, common.REPR_UNIQUENESS_IDENT})
-			patt2, err2 := SET_PATTERN.Call([]core.Serializable{core.INT_PATTERN, common.REPR_UNIQUENESS_IDENT})
+			defer ctx.CancelGracefully()
+
+			patt1, err1 := SET_PATTERN.Call(ctx, []core.Serializable{core.SERIALIZABLE_PATTERN, common.REPR_UNIQUENESS_IDENT})
+			patt2, err2 := SET_PATTERN.Call(ctx, []core.Serializable{core.INT_PATTERN, common.REPR_UNIQUENESS_IDENT})
 
 			if !assert.NoError(t, err1) {
 				return

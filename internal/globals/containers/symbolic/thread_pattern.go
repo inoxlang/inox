@@ -57,7 +57,7 @@ func (p *MessageThreadPattern) Concretize(ctx symbolic.ConcreteContext) any {
 	}
 
 	concreteElementPattern := utils.Must(symbolic.Concretize(p.elementPattern, ctx))
-	return externalData.CreateConcreteThreadPattern(concreteElementPattern)
+	return externalData.CreateConcreteThreadPattern(ctx, concreteElementPattern)
 }
 
 func (p *MessageThreadPattern) HasUnderlyingPattern() bool {

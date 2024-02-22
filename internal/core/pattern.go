@@ -33,7 +33,7 @@ var (
 	ErrInconsistentObjectPattern     = errors.New("inconsistent object pattern")
 
 	_ = []GroupPattern{(*NamedSegmentPathPattern)(nil)}
-	_ = []DefaultValuePattern{(*ListPattern)(nil), (*TuplePattern)(nil)}
+	_ = []DefaultValuePattern{(*ListPattern)(nil), (*TuplePattern)(nil), (*OptionalPattern)(nil)}
 	_ = []IPropsPattern{(*ObjectPattern)(nil), (*RecordPattern)(nil)}
 )
 
@@ -62,7 +62,7 @@ type Pattern interface {
 
 	Random(ctx *Context, options ...Option) Value
 
-	Call(values []Serializable) (Pattern, error)
+	Call(ctx *Context, values []Serializable) (Pattern, error)
 
 	StringPattern() (StringPattern, bool)
 }
@@ -126,7 +126,7 @@ type PatternNamespace struct {
 type NotCallablePatternMixin struct {
 }
 
-func (NotCallablePatternMixin) Call(values []Serializable) (Pattern, error) {
+func (NotCallablePatternMixin) Call(ctx *Context, values []Serializable) (Pattern, error) {
 	return nil, ErrPatternNotCallable
 }
 
@@ -185,7 +185,7 @@ type TypePattern struct {
 	SymbolicValue symbolic.Value
 	RandomImpl    func(options ...Option) Value
 
-	CallImpl         func(pattern *TypePattern, values []Serializable) (Pattern, error)
+	CallImpl         func(ctx *Context, pattern *TypePattern, values []Serializable) (Pattern, error)
 	SymbolicCallImpl func(ctx *symbolic.Context, values []symbolic.Value) (symbolic.Pattern, error)
 
 	stringPattern         func() (StringPattern, bool)
@@ -199,11 +199,11 @@ func (pattern *TypePattern) Test(ctx *Context, v Value) bool {
 	return pattern.Type == reflect.TypeOf(v)
 }
 
-func (patt *TypePattern) Call(values []Serializable) (Pattern, error) {
+func (patt *TypePattern) Call(ctx *Context, values []Serializable) (Pattern, error) {
 	if patt.CallImpl == nil {
 		return nil, ErrPatternNotCallable
 	}
-	return patt.CallImpl(patt, values)
+	return patt.CallImpl(ctx, patt, values)
 }
 
 func (patt *TypePattern) StringPattern() (StringPattern, bool) {
@@ -1056,6 +1056,10 @@ func (patt *OptionalPattern) Test(ctx *Context, v Value) bool {
 
 func (patt *OptionalPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
+}
+
+func (patt *OptionalPattern) DefaultValue(ctx *Context) (Value, error) {
+	return Nil, nil
 }
 
 // A FunctionPattern represents a pattern that matches that either matches any function or

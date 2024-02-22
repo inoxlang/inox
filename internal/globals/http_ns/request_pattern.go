@@ -44,7 +44,7 @@ type RequestPattern struct {
 	core.NotCallablePatternMixin
 }
 
-func createRequestPattern(callee *core.TypePattern, values []core.Serializable) (core.Pattern, error) {
+func createRequestPattern(ctx *core.Context, callee *core.TypePattern, values []core.Serializable) (core.Pattern, error) {
 	if len(values) != 1 {
 		return nil, errors.New("a single argument is supported for now, it should be an object pattern")
 	}

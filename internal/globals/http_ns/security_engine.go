@@ -13,8 +13,8 @@ import (
 const (
 	//Socket-level rate limiting.
 	SOCKET_RLIMIT_WINDOW       = 10 * time.Second
-	SOCKET_MAX_READ_REQ_COUNT  = 10
-	SOCKET_MAX_WRITE_REQ_COUNT = 3
+	SOCKET_MAX_READ_REQ_COUNT  = 40
+	SOCKET_MAX_WRITE_REQ_COUNT = 10
 
 	//IP-level rate limiting.
 	SHARED_READ_BURST_WINDOW     = 10 * time.Second

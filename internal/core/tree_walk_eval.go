@@ -432,7 +432,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			args[i] = arg.(Serializable)
 		}
 
-		return callee.(Pattern).Call(args)
+		return callee.(Pattern).Call(state.Global.Ctx, args)
 	case *parse.PipelineStatement, *parse.PipelineExpression:
 		var stages []*parse.PipelineStage
 

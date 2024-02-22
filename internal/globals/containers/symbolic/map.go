@@ -295,7 +295,7 @@ func (p *MapPattern) Concretize(ctx symbolic.ConcreteContext) any {
 	concreteKeyPattern := utils.Must(symbolic.Concretize(p.keyPattern, ctx))
 	concreteValuePattern := utils.Must(symbolic.Concretize(p.valuePattern, ctx))
 
-	return externalData.CreateConcreteMapPattern(concreteKeyPattern, concreteValuePattern)
+	return externalData.CreateConcreteMapPattern(ctx, concreteKeyPattern, concreteValuePattern)
 }
 
 func (p *MapPattern) HasUnderlyingPattern() bool {

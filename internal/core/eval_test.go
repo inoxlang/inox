@@ -5161,7 +5161,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
 
-		expectedPattern, _ := NewRegexPattern(".*").Call([]Serializable{
+		expectedPattern, _ := NewRegexPattern(".*").Call(state.Ctx, []Serializable{
 			IntRange{
 				start: 1,
 				end:   10,

@@ -40,7 +40,7 @@ var (
 		Type:          VALUE_TYPE,
 		Name:          __VAL_PATTERN_NAME,
 		SymbolicValue: symbolic.NEVER,
-		CallImpl: func(typePattern *TypePattern, values []Serializable) (Pattern, error) {
+		CallImpl: func(ctx *Context, typePattern *TypePattern, values []Serializable) (Pattern, error) {
 			if len(values) != 1 {
 				return nil, commonfmt.FmtErrNArgumentsExpected("1")
 			}
@@ -69,7 +69,7 @@ var (
 	STR_PATTERN_PATTERN = &TypePattern{
 		Name:          patternnames.STRING_PATTERN,
 		SymbolicValue: symbolic.NEVER,
-		CallImpl: func(typePattern *TypePattern, values []Serializable) (Pattern, error) {
+		CallImpl: func(ctx *Context, typePattern *TypePattern, values []Serializable) (Pattern, error) {
 			if len(values) != 1 {
 				return nil, commonfmt.FmtErrNArgumentsExpected("1")
 			}
@@ -191,7 +191,7 @@ var (
 	RECORD_PATTERN = &TypePattern{
 		Type: RECORD_TYPE,
 		Name: patternnames.RECORD,
-		CallImpl: func(typePattern *TypePattern, values []Serializable) (Pattern, error) {
+		CallImpl: func(ctx *Context, typePattern *TypePattern, values []Serializable) (Pattern, error) {
 			var recordPattern *RecordPattern
 
 			for _, val := range values {
@@ -271,7 +271,7 @@ var (
 	TUPLE_PATTERN = &TypePattern{
 		Type: TUPLE_TYPE,
 		Name: patternnames.TUPLE,
-		CallImpl: func(typePattern *TypePattern, values []Serializable) (Pattern, error) {
+		CallImpl: func(ctx *Context, typePattern *TypePattern, values []Serializable) (Pattern, error) {
 			var elemPattern Pattern
 
 			for _, val := range values {
@@ -343,7 +343,7 @@ var (
 		Name:          patternnames.INT,
 		RandomImpl:    RandInt,
 		SymbolicValue: symbolic.ANY_INT,
-		CallImpl: func(typePattern *TypePattern, values []Serializable) (Pattern, error) {
+		CallImpl: func(ctx *Context, typePattern *TypePattern, values []Serializable) (Pattern, error) {
 			intRangeProvided := false
 			var intRange IntRange
 
@@ -397,7 +397,7 @@ var (
 		Name:          patternnames.FLOAT,
 		SymbolicValue: symbolic.ANY_FLOAT,
 		RandomImpl:    RandFloat,
-		CallImpl: func(typePattern *TypePattern, values []Serializable) (Pattern, error) {
+		CallImpl: func(ctx *Context, typePattern *TypePattern, values []Serializable) (Pattern, error) {
 			floatRangeProvided := false
 			var floatRange FloatRange
 
@@ -444,6 +444,45 @@ var (
 		symbolicStringPattern: func() (symbolic.StringPattern, bool) {
 			//TODO
 			return symbolic.ANY_STR_PATTERN, true
+		},
+	}
+
+	OPTIONAL_PATTERN = &TypePattern{
+		Type:          reflect.TypeOf(struct{ never int }{}),
+		Name:          patternnames.OPTIONAL,
+		SymbolicValue: symbolic.NEVER,
+		CallImpl: func(ctx *Context, typePattern *TypePattern, values []Serializable) (Pattern, error) {
+			if len(values) == 0 {
+				return nil, errors.New("missing argument")
+			}
+
+			pattern, ok := values[0].(Pattern)
+			if !ok {
+				return nil, errors.New("argument should be a pattern")
+			}
+
+			return NewOptionalPattern(ctx, pattern)
+		},
+		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value) (symbolic.Pattern, error) {
+			if len(values) == 0 {
+				return nil, errors.New("missing argument")
+			}
+
+			pattern, ok := values[0].(symbolic.Pattern)
+
+			if !ok {
+				return nil, errors.New("argument should be a pattern")
+			}
+
+			if pattern.Test(symbolic.Nil, symbolic.RecTestCallState{}) {
+				return nil, errors.New("pattern already matches nil")
+			}
+
+			return symbolic.NewOptionalPattern(pattern), nil
+		},
+
+		stringPattern: func() (StringPattern, bool) {
+			return NewFloatRangeStringPattern(-math.MaxFloat64, math.MaxFloat64, nil), true
 		},
 	}
 
@@ -582,7 +621,7 @@ var (
 	EVENT_PATTERN = &TypePattern{
 		Type: EVENT_TYPE,
 		Name: patternnames.EVENT,
-		CallImpl: func(typePattern *TypePattern, args []Serializable) (Pattern, error) {
+		CallImpl: func(ctx *Context, typePattern *TypePattern, args []Serializable) (Pattern, error) {
 			var valuePattern Pattern
 
 			for _, arg := range args {
@@ -637,7 +676,7 @@ var (
 		Type:          MUTATION_TYPE,
 		Name:          patternnames.MUTATION,
 		SymbolicValue: symbolic.ANY_MUTATION,
-		CallImpl: func(typePattern *TypePattern, args []Serializable) (Pattern, error) {
+		CallImpl: func(ctx *Context, typePattern *TypePattern, args []Serializable) (Pattern, error) {
 			switch len(args) {
 			case 2:
 			case 1:
@@ -780,7 +819,7 @@ var (
 	SECRET_PATTERN = &TypePattern{
 		Type: SECRET_TYPE,
 		Name: patternnames.SECRET,
-		CallImpl: func(typePattern *TypePattern, values []Serializable) (Pattern, error) {
+		CallImpl: func(ctx *Context, typePattern *TypePattern, values []Serializable) (Pattern, error) {
 			var stringPattern StringPattern
 
 			if len(values) == 0 {
@@ -912,6 +951,7 @@ var (
 	DEFAULT_NAMED_PATTERNS = map[string]Pattern{
 		NEVER_PATTERN.Name:          NEVER_PATTERN,
 		NIL_PATTERN.Name:            NIL_PATTERN,
+		OPTIONAL_PATTERN.Name:       OPTIONAL_PATTERN,
 		IDENT_PATTERN.Name:          IDENT_PATTERN,
 		PROPNAME_PATTERN.Name:       PROPNAME_PATTERN,
 		LONG_VALUEPATH_PATTERN.Name: LONG_VALUEPATH_PATTERN,

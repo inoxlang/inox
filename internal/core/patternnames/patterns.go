@@ -48,6 +48,7 @@ const (
 	RECORD_PATTERN             = "record-pattern"
 	TUPLE_PATTERN              = "tuple-pattern"
 	OPT                        = "opt"
+	OPTIONAL                   = "optional"
 	FILEMODE                   = "filemode"
 	YEAR                       = "year"
 	DATE                       = "date"

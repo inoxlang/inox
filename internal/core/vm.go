@@ -1802,7 +1802,7 @@ func (v *VM) handleOtherOpcodes(op byte) (_continue bool) {
 
 		callee := v.stack[v.sp-1].(Pattern)
 
-		patt, err := callee.Call(args)
+		patt, err := callee.Call(v.global.Ctx, args)
 		if err != nil {
 			v.err = err
 			return
