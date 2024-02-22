@@ -27,8 +27,8 @@ func TestWriteTemplate(t *testing.T) {
 		return
 	}
 
-	assert.Equal(t, FULL_HTMX_MIN_JS, string(content))
-	assert.NotEmpty(t, FULL_HTMX_MIN_JS)
+	assert.Equal(t, HTMX_MIN_JS_PACKAGE, string(content))
+	assert.NotEmpty(t, HTMX_MIN_JS_PACKAGE)
 
 	content, err = util.ReadFile(fls, "/static/base.css")
 

@@ -42,6 +42,7 @@ require (
 	github.com/shirou/gopsutil/v3 v3.24.1
 	github.com/shoenig/go-landlock v1.2.1
 	github.com/stretchr/testify v1.8.4
+	github.com/tdewolff/minify/v2 v2.20.17
 	github.com/tidwall/btree v1.7.0
 	github.com/tidwall/gjson v1.17.1
 	github.com/tidwall/grect v0.1.4
@@ -111,6 +112,7 @@ require (
 	github.com/shabbyrobe/gocovmerge v0.0.0-20230507112040-c3350d9342df // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
+	github.com/tdewolff/parse/v2 v2.7.12 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/tidwall/tinyqueue v0.1.1 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect

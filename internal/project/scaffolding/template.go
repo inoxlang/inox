@@ -10,6 +10,7 @@ import (
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/js"
 )
 
 const (
@@ -24,15 +25,22 @@ var (
 	COMMON_FILES embed.FS
 
 	BASE_CSS_STYLESHEET string
-	INOX_JS             string
+	INOX_JS             string //inox.js without any other library
+	HTMX_MIN_JS         string
 
-	HTMX_MIN_JS                 string
-	JSON_FORM_EXTENSION_JS      string
-	PREACT_SIGNALS_JS           string
-	SURREAL_CSS_INLINE_SCOPE_JS string
+	JSON_FORM_EXTENSION_JS string
+	JSON_FORM_EXT_MINIFIED string
 
-	FULL_HTMX_MIN_JS string
-	FULL_INOX_JS     string
+	PREACT_SIGNALS_JS       string
+	PREACT_SIGNALS_MINIFIED string
+
+	SURREAL_CSS_INLINE_SCOPE_JS       string
+	SURREAL_CSS_INLINE_SCOPE_MINIFIED string
+
+	HTMX_MIN_JS_PACKAGE string
+
+	INOX_JS_PACKAGE          string
+	INOX_JS_PACKAGE_MINIFIED string
 )
 
 func init() {
@@ -57,12 +65,15 @@ func init() {
 			HTMX_MIN_JS = string(content)
 		case "json-form-extension.js":
 			JSON_FORM_EXTENSION_JS = string(content)
+			JSON_FORM_EXT_MINIFIED = js.MustMinify(JSON_FORM_EXTENSION_JS, nil)
 		case "preact-signals.js":
 			PREACT_SIGNALS_JS = string(content)
+			PREACT_SIGNALS_MINIFIED = js.MustMinify(PREACT_SIGNALS_JS, nil)
 		case "base.css":
 			BASE_CSS_STYLESHEET = string(content)
 		case "surreal-css-inline-scope.js":
 			SURREAL_CSS_INLINE_SCOPE_JS = string(content)
+			SURREAL_CSS_INLINE_SCOPE_MINIFIED = js.MustMinify(SURREAL_CSS_INLINE_SCOPE_JS, nil)
 		}
 
 		return nil
@@ -78,8 +89,10 @@ func init() {
 		SURREAL_CSS_INLINE_SCOPE_JS,
 	}
 
-	FULL_INOX_JS = strings.Join(parts, "\n")
-	FULL_HTMX_MIN_JS = HTMX_MIN_JS + "\n" + JSON_FORM_EXTENSION_JS
+	INOX_JS_PACKAGE = strings.Join(parts, "\n")
+	INOX_JS_PACKAGE_MINIFIED = js.MustMinify(INOX_JS_PACKAGE, nil)
+
+	HTMX_MIN_JS_PACKAGE = HTMX_MIN_JS + "\n" + JSON_FORM_EXT_MINIFIED
 }
 
 func WriteTemplate(name string, fls afs.Filesystem) error {
@@ -102,9 +115,9 @@ func WriteTemplate(name string, fls afs.Filesystem) error {
 			if len(content) < 20 && bytes.Contains(content, []byte("[auto]")) {
 				switch filepath.Base(pathInFs) {
 				case "htmx.min.js":
-					content = []byte(FULL_HTMX_MIN_JS)
-				case "inox.js":
-					content = []byte(FULL_INOX_JS)
+					content = []byte(HTMX_MIN_JS_PACKAGE)
+				case "inox.min.js":
+					content = []byte(INOX_JS_PACKAGE_MINIFIED)
 				case "base.css":
 					content = []byte(BASE_CSS_STYLESHEET)
 				}
