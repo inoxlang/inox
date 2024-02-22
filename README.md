@@ -26,7 +26,7 @@ persistence.
 
 **<summary>📜 Database schema</summary>**
 
-![image](https://github.com/inoxlang/inox/assets/113632189/43c79c60-32bb-4d25-b2e8-0ced6d6304be)
+![image](https://github.com/inoxlang/inox/assets/113632189/b66e2932-42da-43a3-b176-26cd7c06fd79)
 
 
 </details>
@@ -38,7 +38,7 @@ persistence.
 
 Each handler module runs in a dedicated execution context with its own permissions.
 
-![image](https://github.com/inoxlang/inox/assets/113632189/2bf945cf-afe8-4894-9496-522b6ae8a1b0)
+![image](https://github.com/inoxlang/inox/assets/113632189/c7629a2c-1515-4b09-8b61-587f0e0ecdba)
 
 _Note: the permissions granted to imported modules (local or third-party) are
 **explicit**: `import lib ./malicious-lib.ix { allow: {} }`_
