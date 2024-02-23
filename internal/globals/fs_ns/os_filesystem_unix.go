@@ -17,7 +17,7 @@ import (
 
 var (
 	osFs = &OsFilesystem{
-		OS: *osfs.Default,
+		ChrootOS: osfs.Default,
 	}
 
 	_ afs.Filesystem = osFs
@@ -25,13 +25,13 @@ var (
 )
 
 type OsFilesystem struct {
-	osfs.OS
+	*osfs.ChrootOS
 	ctx *core.Context //used in .DoWithContext
 }
 
 func (fs *OsFilesystem) OsFs() {}
 
-// we override Rename because osfs.OS.Rename is not the same as os.Rename
+// we override Rename because osfs.ChrootOS.Rename is not the same as os.Rename
 func (fs *OsFilesystem) Rename(from, to string) error {
 	if fs.ctx != nil {
 		fs.ctx.PauseCPUTimeDepletion()
@@ -74,7 +74,7 @@ func (fs *OsFilesystem) Create(filename string) (billy.File, error) {
 		fs.ctx.PauseCPUTimeDepletion()
 		defer fs.ctx.ResumeCPUTimeDepletion()
 	}
-	//we don't call fs.OS.Create because it uses a default create mode of 600.
+	//we don't call fs.ChrootOS.Create because it uses a default create mode of 600.
 	return fs.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, afs.DEFAULT_CREATE_FPERM)
 }
 
@@ -83,7 +83,7 @@ func (fs *OsFilesystem) Open(filename string) (billy.File, error) {
 		fs.ctx.PauseCPUTimeDepletion()
 		defer fs.ctx.ResumeCPUTimeDepletion()
 	}
-	return fs.OS.Open(filename)
+	return fs.ChrootOS.Open(filename)
 }
 
 func (fs *OsFilesystem) OpenFile(filename string, flag int, perm fs.FileMode) (billy.File, error) {
@@ -91,7 +91,7 @@ func (fs *OsFilesystem) OpenFile(filename string, flag int, perm fs.FileMode) (b
 		fs.ctx.PauseCPUTimeDepletion()
 		defer fs.ctx.ResumeCPUTimeDepletion()
 	}
-	return fs.OS.OpenFile(filename, flag, perm)
+	return fs.ChrootOS.OpenFile(filename, flag, perm)
 }
 
 func (fs *OsFilesystem) Remove(filename string) error {
@@ -99,7 +99,7 @@ func (fs *OsFilesystem) Remove(filename string) error {
 		fs.ctx.PauseCPUTimeDepletion()
 		defer fs.ctx.ResumeCPUTimeDepletion()
 	}
-	return fs.OS.Remove(filename)
+	return fs.ChrootOS.Remove(filename)
 }
 
 func (fs *OsFilesystem) Stat(filename string) (fs.FileInfo, error) {
@@ -107,7 +107,7 @@ func (fs *OsFilesystem) Stat(filename string) (fs.FileInfo, error) {
 		fs.ctx.PauseCPUTimeDepletion()
 		defer fs.ctx.ResumeCPUTimeDepletion()
 	}
-	return fs.OS.Lstat(filename)
+	return fs.ChrootOS.Lstat(filename)
 }
 
 func (fs *OsFilesystem) Lstat(filename string) (fs.FileInfo, error) {
@@ -115,7 +115,7 @@ func (fs *OsFilesystem) Lstat(filename string) (fs.FileInfo, error) {
 		fs.ctx.PauseCPUTimeDepletion()
 		defer fs.ctx.ResumeCPUTimeDepletion()
 	}
-	return fs.OS.Lstat(filename)
+	return fs.ChrootOS.Lstat(filename)
 }
 
 func (fs *OsFilesystem) MkdirAll(filename string, perm fs.FileMode) error {
@@ -123,7 +123,7 @@ func (fs *OsFilesystem) MkdirAll(filename string, perm fs.FileMode) error {
 		fs.ctx.PauseCPUTimeDepletion()
 		defer fs.ctx.ResumeCPUTimeDepletion()
 	}
-	return fs.OS.MkdirAll(filename, perm)
+	return fs.ChrootOS.MkdirAll(filename, perm)
 }
 
 func (fs *OsFilesystem) ReadDir(path string) ([]fs.FileInfo, error) {
@@ -131,7 +131,7 @@ func (fs *OsFilesystem) ReadDir(path string) ([]fs.FileInfo, error) {
 		fs.ctx.PauseCPUTimeDepletion()
 		defer fs.ctx.ResumeCPUTimeDepletion()
 	}
-	return fs.OS.ReadDir(path)
+	return fs.ChrootOS.ReadDir(path)
 }
 
 func (fs *OsFilesystem) Readlink(link string) (string, error) {
@@ -139,7 +139,7 @@ func (fs *OsFilesystem) Readlink(link string) (string, error) {
 		fs.ctx.PauseCPUTimeDepletion()
 		defer fs.ctx.ResumeCPUTimeDepletion()
 	}
-	return fs.OS.Readlink(link)
+	return fs.ChrootOS.Readlink(link)
 }
 
 func (fs *OsFilesystem) Symlink(target string, link string) error {
@@ -147,7 +147,7 @@ func (fs *OsFilesystem) Symlink(target string, link string) error {
 		fs.ctx.PauseCPUTimeDepletion()
 		defer fs.ctx.ResumeCPUTimeDepletion()
 	}
-	return fs.OS.Symlink(target, link)
+	return fs.ChrootOS.Symlink(target, link)
 }
 
 func (fs *OsFilesystem) TempFile(dir string, prefix string) (billy.File, error) {
@@ -155,7 +155,7 @@ func (fs *OsFilesystem) TempFile(dir string, prefix string) (billy.File, error) 
 		fs.ctx.PauseCPUTimeDepletion()
 		defer fs.ctx.ResumeCPUTimeDepletion()
 	}
-	return fs.OS.TempFile(dir, prefix)
+	return fs.ChrootOS.TempFile(dir, prefix)
 }
 
 func GetOsFilesystem() *OsFilesystem {
