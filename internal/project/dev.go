@@ -9,6 +9,10 @@ import (
 	"github.com/inoxlang/inox/internal/project/access"
 )
 
+const (
+	MEMBER_DEV_DIR_PREFIX = "member-"
+)
+
 func (p *Project) memberAndDevDir(ctx *core.Context, memberAuthToken string) (*access.Member, string, error) {
 	id := access.MemberID(memberAuthToken)
 	if err := id.Validate(); err != nil {
@@ -20,7 +24,7 @@ func (p *Project) memberAndDevDir(ctx *core.Context, memberAuthToken string) (*a
 		return nil, "", err
 	}
 
-	dir := filepath.Join(p.devDirOnOsFs, string(memberAuthToken))
+	dir := filepath.Join(p.devDirOnOsFs, MEMBER_DEV_DIR_PREFIX+string(member.ID()))
 	err = p.osFilesystem.MkdirAll(dir, fs_ns.DEFAULT_DIR_FMODE)
 	if err != nil {
 		return nil, "", err
