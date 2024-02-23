@@ -263,8 +263,8 @@ func (h TopicHelp) Print(w io.Writer, config HelpMessageConfig) {
 		}
 
 		if len(h.RelatedTopics) > 0 {
-			w.Write(utils.StringAsBytes("\nrelated: " + strings.Join(h.RelatedTopics, ", ")))
-			w.Write(utils.StringAsBytes("\n"))
+			w.Write(utils.StringAsBytes("\nRelated: \n- `" + strings.Join(h.RelatedTopics, "`\n- `")))
+			w.Write(utils.StringAsBytes("`\n"))
 		}
 	default:
 		panic(core.ErrUnreachable)
