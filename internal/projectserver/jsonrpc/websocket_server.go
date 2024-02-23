@@ -85,7 +85,7 @@ func (server *JsonRpcWebsocketServer) HandleNew(httpRespWriter http.ResponseWrit
 
 	socket := NewJsonRpcWebsocket(conn, *server.logger)
 	server.rpcServer.MsgConnComeIn(socket, func(session *Session) {
-		logs.Printf("new session at %s (remote)\n", socket.conn.RemoteAddrWithPort())
+		logs.Printf("new session for %s (client)\n", socket.conn.RemoteAddrWithPort())
 		socket.sessionContext = session.Context()
 	})
 }
@@ -101,8 +101,13 @@ func (server *JsonRpcWebsocketServer) allowNewConnection(
 		}
 	}
 
-	if len(currentConns)+1 <= server.config.MaxWebsocketPerIp {
+	currentConnCount := len(currentConns)
+
+	if currentConnCount+1 <= server.config.MaxWebsocketPerIp {
 		return nil
 	}
+
+	const format = "refuse to create RPC session for %s (client) because the maximum number of connections from the same IP is already reached (%d)\n"
+	logs.Printf(format, remoteAddrPort, currentConnCount)
 	return ws_ns.ErrTooManyWsConnectionsOnIp
 }

@@ -327,12 +327,12 @@ func (s *Session) handlerRequest(req RequestMessage) error {
 			params = params[:min(MAX_PARAMS_LOGGING_SIZE, len(req.Params))]
 			suffix = "..." + string(params[len(params)-1])
 		}
-		logs.Printf("Request: [%v] [%s], content: [%s]%s\n", stringifiedID, req.Method, params, suffix)
+		logs.Printf("Request: [%v] [%s] (from %s), content: [%s]%s\n", stringifiedID, req.Method, s.Client(), params, suffix)
 		return MethodNotFound
 	}
 
 	if mtdInfo.SensitiveData || mtdInfo.AvoidLogging {
-		logs.Printf("Request: [%v] [%s], content: ...\n", stringifiedID, req.Method)
+		logs.Printf("Request: [%v] [%s] (from %s), content: ...\n", stringifiedID, req.Method, s.Client())
 	} else {
 		params := req.Params
 		suffix := ""
@@ -384,9 +384,9 @@ func (s *Session) write(resp ResponseMessage, dontLogContent bool) error {
 	}
 
 	if dontLogContent {
-		logs.Printf("Response: [%v] res: ...\n", resp.ID)
+		logs.Printf("Response: [%v] (to %s) res: ...\n", resp.ID, s.Client())
 	} else {
-		logs.Printf("Response: [%v] res: [%v]\n", resp.ID, string(res))
+		logs.Printf("Response: [%v] (to %s) res: [%v]\n", resp.ID, s.Client(), string(res))
 	}
 
 	if s.msgConn != nil {
