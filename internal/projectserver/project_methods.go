@@ -167,7 +167,20 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 				}
 			}
 
-			lspFilesystem := NewFilesystem(project.StagingFilesystem(), fs_ns.NewMemFilesystem(10_000_000))
+			//Update the project copy of the member.
+
+			developerCopyFS, err := project.DevFilesystem(sessionCtx, memberAuthToken)
+
+			if err != nil {
+				return nil, jsonrpc.ResponseError{
+					Code:    jsonrpc.InternalError.Code,
+					Message: err.Error(),
+				}
+			}
+
+			lspFilesystem := NewFilesystem(developerCopyFS, fs_ns.NewMemFilesystem(10_000_000))
+
+			//Update session data.
 
 			sessionData := getLockedSessionData(session)
 			defer sessionData.lock.Unlock()
@@ -182,7 +195,7 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 
 			go sessionData.serverAPI.tryUpdateAPI() //use a goroutine to avoid deadlock
 
-			err = startNotifyingFilesystemStructureEvents(session, project.StagingFilesystem(), func(event fs_ns.Event) {
+			err = startNotifyingFilesystemStructureEvents(session, developerCopyFS, func(event fs_ns.Event) {
 				sessionData.serverAPI.acknowledgeStructureChangeEvent(event)
 			})
 
