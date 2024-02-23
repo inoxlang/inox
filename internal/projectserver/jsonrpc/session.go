@@ -340,7 +340,7 @@ func (s *Session) handlerRequest(req RequestMessage) error {
 			params = params[:min(MAX_PARAMS_LOGGING_SIZE, len(req.Params))]
 			suffix = "..." + string(params[len(params)-1])
 		}
-		logs.Printf("Request: [%v] [%s], content: [%s]%s\n", stringifiedID, req.Method, params, suffix)
+		logs.Printf("Request: [%v] [%s] (from %s), content: [%s]%s\n", stringifiedID, req.Method, s.Client(), params, suffix)
 	}
 
 	if s.IsShuttingDown() && mtdInfo.Name != "exit" {
@@ -408,7 +408,7 @@ func (s *Session) Notify(notif NotificationMessage) error {
 	if err != nil {
 		return err
 	}
-	logs.Printf("Notification: [%v]\n", string(notif.Method))
+	logs.Printf("Notification: [%v] (to %s)\n", string(notif.Method), s.Client())
 
 	if s.msgConn != nil {
 		return s.msgConn.WriteMessage(notifBytes)
@@ -430,7 +430,7 @@ func (s *Session) SendRequest(req RequestMessage) error {
 	if err != nil {
 		return err
 	}
-	logs.Printf("Request To Client: [%v]\n", string(reqBytes))
+	logs.Printf("Request To Client: [%v] (to %s)\n", string(reqBytes), s.Client())
 
 	if s.msgConn != nil {
 		return s.msgConn.WriteMessage(reqBytes)
