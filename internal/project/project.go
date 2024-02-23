@@ -52,6 +52,7 @@ type Project struct {
 	//TODO: add base filesystem (VCS ?)
 	osFilesystem      *fs_ns.OsFilesystem
 	stagingFilesystem core.SnapshotableFilesystem
+	maxFilesystemSize core.ByteCount
 
 	dirOnOsFs    string
 	fsDirOnOsFs  string

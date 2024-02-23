@@ -4,12 +4,16 @@ import (
 	"testing"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestOpenRegistry(t *testing.T) {
+	testconfig.AllowParallelization(t)
 
 	t.Run("once", func(t *testing.T) {
+		testconfig.AllowParallelization(t)
+
 		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
@@ -22,6 +26,8 @@ func TestOpenRegistry(t *testing.T) {
 	})
 
 	t.Run("twice", func(t *testing.T) {
+		testconfig.AllowParallelization(t)
+
 		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 

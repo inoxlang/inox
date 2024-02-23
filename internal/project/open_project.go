@@ -83,9 +83,11 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 	projectDir := r.projectDir(params.Id)
 	projectFsDir := r.projectFsDir(params.Id)
 
+	maxStagingFsSize := params.MaxFilesystemSize
+
 	stagingFS, err := fs_ns.OpenMetaFilesystem(r.openProjectsContext, r.filesystem, fs_ns.MetaFilesystemParams{
 		Dir:            projectFsDir,
-		MaxUsableSpace: params.MaxFilesystemSize,
+		MaxUsableSpace: maxStagingFsSize,
 	})
 
 	if err != nil {
@@ -105,10 +107,12 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 		id:                params.Id,
 		osFilesystem:      r.filesystem,
 		stagingFilesystem: stagingFS,
-		tempTokens:        params.TempTokens,
-		data:              projectData,
-		persistFn:         r.persistProjectData,
-		dirOnOsFs:         projectDir,
+		maxFilesystemSize: maxStagingFsSize,
+
+		tempTokens: params.TempTokens,
+		data:       projectData,
+		persistFn:  r.persistProjectData,
+		dirOnOsFs:  projectDir,
 
 		storeSecretsInProjectData: true,
 

@@ -7,13 +7,17 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/project/scaffolding"
+	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestOpenProject(t *testing.T) {
+	testconfig.AllowParallelization(t)
 
 	t.Run("just after creation", func(t *testing.T) {
+		testconfig.AllowParallelization(t)
+
 		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
@@ -66,9 +70,41 @@ func TestOpenProject(t *testing.T) {
 		}
 
 		assert.Equal(t, OWNER_MEMBER_NAME, member.Name())
+
+		//Check the staging filesystem.
+
+		fls := project.StagingFilesystem()
+		entries, err := fls.ReadDir("/")
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		if !assert.NotZero(t, entries) {
+			return
+		}
+		assert.True(t, utils.Some(entries, func(e fs.FileInfo) bool { return e.Name() == DEFAULT_MAIN_FILENAME }))
+
+		//Check the copy of the owner member.
+
+		fls, err = project.DevFilesystem(ctx, string(ownerID))
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		entries, err = fls.ReadDir("/")
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		if !assert.NotZero(t, entries) {
+			return
+		}
+		assert.True(t, utils.Some(entries, func(e fs.FileInfo) bool { return e.Name() == DEFAULT_MAIN_FILENAME }))
 	})
 
 	t.Run("with ExposeWebServers: true", func(t *testing.T) {
+		testconfig.AllowParallelization(t)
+
 		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
@@ -116,6 +152,8 @@ func TestOpenProject(t *testing.T) {
 	})
 
 	t.Run("re opening a project should not change the returned value", func(t *testing.T) {
+		testconfig.AllowParallelization(t)
+
 		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
@@ -156,6 +194,8 @@ func TestOpenProject(t *testing.T) {
 	})
 
 	t.Run("after closing the ctx that opened the project, re-opening with another ctx should be okay and the FS should be working", func(t *testing.T) {
+		testconfig.AllowParallelization(t)
+
 		projectRegistryCtx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer projectRegistryCtx.CancelGracefully()
 
@@ -202,6 +242,8 @@ func TestOpenProject(t *testing.T) {
 
 		assert.Same(t, project1, project2)
 
+		//Check the staging filesystem.
+
 		fls := project1.StagingFilesystem()
 		entries, err := fls.ReadDir("/")
 		if !assert.NoError(t, err) {
@@ -215,6 +257,8 @@ func TestOpenProject(t *testing.T) {
 	})
 
 	t.Run("re-open registry", func(t *testing.T) {
+		testconfig.AllowParallelization(t)
+
 		tempDir := t.TempDir()
 		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()

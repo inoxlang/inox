@@ -108,18 +108,28 @@ func TestLocalSecretStorage(t *testing.T) {
 	t.Run("listing secrets in parallel before any creation should be thread safe", func(t *testing.T) {
 
 		projectName := "test-para-sec-list-bef-crea"
-		ctx := core.NewContextWithEmptyState(core.ContextConfig{
+		ctx1 := core.NewContextWithEmptyState(core.ContextConfig{
 			Limits: []core.Limit{objectStorageLimit},
 		}, nil)
-		defer ctx.CancelGracefully()
+		defer ctx1.CancelGracefully()
 
-		registry, err := OpenRegistry(t.TempDir(), ctx)
+		ctx2 := core.NewContextWithEmptyState(core.ContextConfig{
+			Limits: []core.Limit{objectStorageLimit},
+		}, nil)
+		defer ctx2.CancelGracefully()
+
+		ctx3 := core.NewContextWithEmptyState(core.ContextConfig{
+			Limits: []core.Limit{objectStorageLimit},
+		}, nil)
+		defer ctx3.CancelGracefully()
+
+		registry, err := OpenRegistry(t.TempDir(), ctx1)
 		if !assert.NoError(t, err) {
 			return
 		}
-		defer registry.Close(ctx)
+		defer registry.Close(ctx1)
 
-		id, _, err := registry.CreateProject(ctx, CreateProjectParams{
+		id, _, err := registry.CreateProject(ctx1, CreateProjectParams{
 			Name: projectName,
 		})
 
@@ -127,7 +137,7 @@ func TestLocalSecretStorage(t *testing.T) {
 			return
 		}
 
-		project, err := registry.OpenProject(ctx, OpenProjectParams{
+		project, err := registry.OpenProject(ctx1, OpenProjectParams{
 			Id: id,
 		})
 
@@ -135,7 +145,7 @@ func TestLocalSecretStorage(t *testing.T) {
 			return
 		}
 
-		listSecrets := func() {
+		listSecrets := func(ctx *core.Context) {
 			secrets, err := project.ListSecrets(ctx)
 			if !assert.NoError(t, err) {
 				return
@@ -156,14 +166,14 @@ func TestLocalSecretStorage(t *testing.T) {
 
 		go func() {
 			defer wg.Done()
-			listSecrets()
+			listSecrets(ctx1)
 		}()
 		go func() {
 			defer wg.Done()
-			listSecrets()
+			listSecrets(ctx2)
 		}()
 		time.Sleep(time.Millisecond)
-		listSecrets()
+		listSecrets(ctx3)
 		wg.Wait()
 	})
 
