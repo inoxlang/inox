@@ -60,7 +60,7 @@ func (fls *MetaFilesystem) getFileMetadata(pth core.Path, usedTx *buntdb.Tx) (*m
 		return nil, false, fmtFailedToGetFileMetadataError(pth, err)
 	}
 
-	err = metadata.initFromJSON(serializedMetadata, hasLastModifTime, lastModificationTime)
+	err = metadata.initFromJSON(serializedMetadata, hasLastModifTime, lastModificationTime, fls.dir)
 	if err != nil {
 		return nil, false, err
 	}
@@ -146,7 +146,7 @@ func (m *metaFsFileMetadata) ChildrenPaths() []core.Path {
 	return children
 }
 
-func (m *metaFsFileMetadata) initFromJSON(serialized string, updateLastModiftime bool, newModifTime core.DateTime) error {
+func (m *metaFsFileMetadata) initFromJSON(serialized string, updateLastModiftime bool, newModifTime core.DateTime, underlyingFsDir *string) error {
 
 	it := jsoniter.NewIterator(jsoniter.ConfigDefault).ResetBytes(utils.StringAsBytes(serialized))
 
@@ -182,7 +182,15 @@ func (m *metaFsFileMetadata) initFromJSON(serialized string, updateLastModiftime
 		case METAFS_UNDERLYING_FILE_PROPNAME:
 			hasUnderlyingFile = true
 
-			path := core.Path(it.ReadString())
+			basename := it.ReadString()
+
+			var path core.Path
+			if underlyingFsDir != nil {
+				path = core.Path(filepath.Join(*underlyingFsDir, basename))
+			} else {
+				path = core.Path("/" + basename)
+			}
+
 			m.concreteFile = &path
 		case METAFS_SYMLINK_TARGET_PROPNAME:
 			path := core.Path(it.ReadString())
@@ -260,7 +268,7 @@ func (m *metaFsFileMetadata) marshalJSON() string {
 		stream.WriteArrayEnd()
 	} else {
 		stream.WriteObjectField(METAFS_UNDERLYING_FILE_PROPNAME)
-		stream.WriteString(m.concreteFile.UnderlyingString())
+		stream.WriteString(string(m.concreteFile.Basename()))
 	}
 
 	stream.WriteObjectEnd()
