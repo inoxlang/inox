@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func testSnapshoting(t *testing.T, createFS func(*testing.T) (*core.Context, core.SnapshotableFilesystem)) {
+func testSnapshot(t *testing.T, testWriteTo bool, createFS func(*testing.T) (*core.Context, core.SnapshotableFilesystem)) {
 
 	t.Helper()
 
@@ -37,6 +37,27 @@ func testSnapshoting(t *testing.T, createFS func(*testing.T) (*core.Context, cor
 			return
 		}
 		assert.Empty(t, snapshot.RootDirEntries())
+
+		//Test WriteTo()
+
+		if !testWriteTo {
+			return
+		}
+
+		emptyFS := NewMemFilesystem(1_000_000)
+		err = snapshot.WriteTo(emptyFS, core.SnapshotWriteToFilesystem{
+			Overwrite: false,
+		})
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		entries := utils.Must(emptyFS.ReadDir("/"))
+		if !assert.Empty(t, entries) {
+			return
+		}
+
+		//TODO: add tests with non-empty FS.
 	})
 
 	t.Run("file in rootdir", func(t *testing.T) {
@@ -85,6 +106,28 @@ func testSnapshoting(t *testing.T, createFS func(*testing.T) (*core.Context, cor
 		}
 
 		assert.Equal(t, "a", string(content))
+
+		//Test WriteTo()
+
+		if !testWriteTo {
+			return
+		}
+
+		emptyFS := NewMemFilesystem(1_000_000)
+		err = snapshot.WriteTo(emptyFS, core.SnapshotWriteToFilesystem{
+			Overwrite: false,
+		})
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		entries := utils.Must(emptyFS.ReadDir("/"))
+		if !assert.Len(t, entries, 1) {
+			return
+		}
+
+		assert.Equal(t, "a.txt", entries[0].Name())
+		//TODO: add tests with non-empty FS.
 	})
 
 	t.Run("empty subdir in root dir", func(t *testing.T) {
@@ -115,6 +158,28 @@ func testSnapshoting(t *testing.T, createFS func(*testing.T) (*core.Context, cor
 			ModificationTime: core.DateTime(modTime),
 			Mode:             core.FileMode(info.Mode()),
 		}, metadata)
+
+		//Test WriteTo()
+
+		if !testWriteTo {
+			return
+		}
+
+		emptyFS := NewMemFilesystem(1_000_000)
+		err = snapshot.WriteTo(emptyFS, core.SnapshotWriteToFilesystem{
+			Overwrite: false,
+		})
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		entries := utils.Must(emptyFS.ReadDir("/"))
+		if !assert.Len(t, entries, 1) {
+			return
+		}
+
+		assert.Equal(t, "dir", entries[0].Name())
+		//TODO: add tests with non-empty FS.
 	})
 
 	t.Run("subdir with file in root dir", func(t *testing.T) {
@@ -180,6 +245,41 @@ func testSnapshoting(t *testing.T, createFS func(*testing.T) (*core.Context, cor
 		}
 
 		assert.Equal(t, "a", string(content))
+
+		//Test WriteTo()
+
+		if !testWriteTo {
+			return
+		}
+
+		emptyFS := NewMemFilesystem(1_000_000)
+		err = snapshot.WriteTo(emptyFS, core.SnapshotWriteToFilesystem{
+			Overwrite: false,
+		})
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		entries := utils.Must(emptyFS.ReadDir("/"))
+		if !assert.Len(t, entries, 1) {
+			return
+		}
+
+		if !assert.Equal(t, "dir", entries[0].Name()) {
+			return
+		}
+
+		entries = utils.Must(emptyFS.ReadDir("/dir"))
+		if !assert.Len(t, entries, 1) {
+			return
+		}
+
+		if !assert.Equal(t, "file.txt", entries[0].Name()) {
+			return
+		}
+
+		//TODO: add tests with non-empty FS.
+
 	})
 
 	t.Run("empty subdir & file in root dir", func(t *testing.T) {
@@ -767,8 +867,4 @@ func testSnapshoting(t *testing.T, createFS func(*testing.T) (*core.Context, cor
 		}
 		assert.Equal(t, []string{"a.ix"}, metadata.ChildNames)
 	})
-}
-
-func testSnapshotWriteToFilesystem(t *testing.T, createFS func(*testing.T) (*core.Context, core.SnapshotableFilesystem)) {
-	//TODO
 }

@@ -73,6 +73,7 @@ type FilesystemSnapshot interface {
 	//it should be adapted to the FilesystemSnapshot implementation.
 	NewAdaptedFilesystem(maxTotalStorageSizeHint ByteCount) (SnapshotableFilesystem, error)
 
+	//Write the snapshot to a filesystem.
 	WriteTo(fls afs.Filesystem, params SnapshotWriteToFilesystem) error
 }
 
@@ -117,4 +118,8 @@ func WrapFsSnapshot(snapshot FilesystemSnapshot) *FilesystemSnapshotIL {
 
 func (s *FilesystemSnapshotIL) Underlying() FilesystemSnapshot {
 	return s.underlying
+}
+
+func NoContentCache(ChecksumSHA256 [32]byte) AddressableContent {
+	return nil
 }

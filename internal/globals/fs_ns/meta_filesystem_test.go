@@ -828,7 +828,8 @@ func TestMetaFilesystemTakeSnapshot(t *testing.T) {
 		return ctx, fls
 	}
 
-	testSnapshoting(t, createEmptyMetaFS)
+	alsoTestWriteTo := true
+	testSnapshot(t, alsoTestWriteTo, createEmptyMetaFS)
 }
 
 func TestMetaFilesystemWalk(t *testing.T) {

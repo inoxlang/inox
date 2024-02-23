@@ -72,6 +72,11 @@ func (s *InMemorySnapshot) NewAdaptedFilesystem(maxTotalStorageSizeHint core.Byt
 
 func (s *InMemorySnapshot) WriteTo(fls afs.Filesystem, params core.SnapshotWriteToFilesystem) error {
 	return s.ForEachEntry(func(m core.EntrySnapshotMetadata) error {
+		if m.AbsolutePath == "/" {
+			//No action needed.
+			return nil
+		}
+
 		path := string(m.AbsolutePath)
 		stat, err := fls.Stat(path)
 		needOverwrite := err == nil
@@ -81,10 +86,26 @@ func (s *InMemorySnapshot) WriteTo(fls afs.Filesystem, params core.SnapshotWrite
 		}
 
 		if needOverwrite {
+			isDirInSnapshot := m.IsDir()
+			isDirInFS := stat.IsDir()
+
 			if !params.Overwrite {
-				return fmt.Errorf("found a file or directory at %q but overwriting is not allowed", path)
+				if isDirInSnapshot && isDirInFS {
+					return nil
+				}
+
+				if !isDirInSnapshot && !isDirInFS {
+					return fmt.Errorf("found a file at %q but overwriting is not allowed", path)
+				}
+
+				if isDirInFS { //not a dir in the snapshot
+					return fmt.Errorf("found a dir at %q but a file should be written and overwriting is not allowed", path)
+				}
+
+				return fmt.Errorf("found a file at %q but a directory should be written and overwriting is not allowed", path)
 			}
-			if !stat.IsDir() {
+
+			if !isDirInFS {
 				err = fls.Remove(path)
 				if err != nil {
 					return err
