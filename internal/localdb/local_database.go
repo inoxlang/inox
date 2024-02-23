@@ -88,11 +88,16 @@ func OpenDatabase(ctx *core.Context, r core.ResourceName, restrictedAccess bool)
 		return nil, err
 	}
 
-	project := ctx.GetClosestState().Project
+	state := ctx.GetClosestState()
+	project := state.Project
 	if project == nil || reflect.ValueOf(project).IsZero() {
 		return nil, errors.New("local databases are only supported in project mode")
 	}
-	dbsDir := project.DevDatabasesDirOnOsFs()
+
+	dbsDir, err := project.DevDatabasesDirOnOsFs(ctx, state.MemberAuthToken)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get directory in which to store the database: %w", err)
+	}
 
 	db, err := openLocalDatabaseWithConfig(ctx, LocalDatabaseConfig{
 		OsFsDir:    core.DirPathFrom(filepath.Join(dbsDir, host.Name())),

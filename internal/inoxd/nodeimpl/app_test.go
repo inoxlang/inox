@@ -27,7 +27,7 @@ func TestAppStop(t *testing.T) {
 	}
 
 	makeMod := func(proj core.Project, mainix string, ignoreError bool) *core.Module {
-		fls := proj.(*project.Project).LiveFilesystem()
+		fls := proj.(*project.Project).StagingFilesystem()
 		utils.PanicIfErr(util.WriteFile(fls, "/main.ix", []byte(mainix), 0600))
 
 		ctx := core.NewContextWithEmptyState(core.ContextConfig{

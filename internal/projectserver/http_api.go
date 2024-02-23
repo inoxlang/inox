@@ -25,8 +25,8 @@ const (
 	SERVER_API_UPDATE_DEBOUNCE_DURATION = time.Second / 2
 )
 
-// serverAPI stores the API of a FS-routing HTTP Server.
-// It is primarilyt used for code completion.
+// serverAPI stores the API of a FS-routing HTTP Server. It is primarilyt used for code completion.
+// It is not shared between LSP sessions.
 type serverAPI struct {
 	lock     sync.Mutex
 	debounce func(f func())
@@ -35,16 +35,18 @@ type serverAPI struct {
 	dynamicDir string
 	appModPath string
 
-	fls     *Filesystem
-	session *jsonrpc.Session
+	fls             *Filesystem
+	session         *jsonrpc.Session
+	memberAuthToken string
 }
 
-func newServerAPI(fls *Filesystem, session *jsonrpc.Session) *serverAPI {
+func newServerAPI(fls *Filesystem, session *jsonrpc.Session, memberAuthToken string) *serverAPI {
 	api := &serverAPI{
-		dynamicDir: "/routes",
-		appModPath: "/main.ix",
-		fls:        fls,
-		session:    session,
+		dynamicDir:      "/routes",
+		appModPath:      "/main.ix",
+		fls:             fls,
+		session:         session,
+		memberAuthToken: memberAuthToken,
 	}
 	api.dynamicDir = core.AppendTrailingSlashIfNotPresent(api.dynamicDir)
 	api.debounce = debounce.New(SERVER_API_UPDATE_DEBOUNCE_DURATION)
@@ -167,6 +169,7 @@ func (a *serverAPI) tryUpdateAPI() {
 	prepResult, ok := prepareSourceFileInExtractionMode(handlingCtx, filePreparationParams{
 		fpath:                              a.appModPath,
 		session:                            a.session,
+		memberAuthToken:                    a.memberAuthToken,
 		requiresState:                      true,
 		requiresCache:                      true,
 		forcePrepareIfNoVeryRecentActivity: true,

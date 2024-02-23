@@ -145,13 +145,15 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 				}
 			}
 
-			_, ok = project.AuthenticateMember(sessionCtx, memberId)
-			if !ok {
+			_, err = project.AuthenticateMember(sessionCtx, memberId)
+			if err != nil {
 				return nil, jsonrpc.ResponseError{
 					Code:    jsonrpc.InternalError.Code,
-					Message: "failed authentication",
+					Message: err.Error(),
 				}
 			}
+
+			memberAuthToken := string(memberId)
 
 			//TODO: limit the number of concurrent sessions for the same member.
 
@@ -165,21 +167,22 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 				}
 			}
 
-			lspFilesystem := NewFilesystem(project.LiveFilesystem(), fs_ns.NewMemFilesystem(10_000_000))
+			lspFilesystem := NewFilesystem(project.StagingFilesystem(), fs_ns.NewMemFilesystem(10_000_000))
 
 			sessionData := getLockedSessionData(session)
 			defer sessionData.lock.Unlock()
 
+			sessionData.memberAuthToken = memberAuthToken
 			sessionData.projectDevSessionKey = http_ns.RandomDevSessionKey()
 			sessionCtx.PutUserData(http_ns.CTX_DATA_KEY_FOR_DEV_SESSION_KEY, core.String(sessionData.projectDevSessionKey))
 
 			sessionData.filesystem = lspFilesystem
 			sessionData.project = project
-			sessionData.serverAPI = newServerAPI(lspFilesystem, session)
+			sessionData.serverAPI = newServerAPI(lspFilesystem, session, memberAuthToken)
 
 			go sessionData.serverAPI.tryUpdateAPI() //use a goroutine to avoid deadlock
 
-			err = startNotifyingFilesystemStructureEvents(session, project.LiveFilesystem(), func(event fs_ns.Event) {
+			err = startNotifyingFilesystemStructureEvents(session, project.StagingFilesystem(), func(event fs_ns.Event) {
 				sessionData.serverAPI.acknowledgeStructureChangeEvent(event)
 			})
 

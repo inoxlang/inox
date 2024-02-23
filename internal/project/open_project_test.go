@@ -40,7 +40,16 @@ func TestOpenProject(t *testing.T) {
 		assert.NotNil(t, project)
 		assert.Equal(t, id, project.id)
 		assert.Equal(t, params, project.data.CreationParams)
-		assert.NotContains(t, project.DevDatabasesDirOnOsFs(), DEV_DATABASES_FOLDER_NAME_IN_PROCESS_TEMPDIR)
+
+		devDbDir, err := project.DevDatabasesDirOnOsFs(ctx, string(ownerID))
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		if !assert.NotEmpty(t, devDbDir) {
+			return
+		}
 
 		//Check members.
 
@@ -193,7 +202,7 @@ func TestOpenProject(t *testing.T) {
 
 		assert.Same(t, project1, project2)
 
-		fls := project1.LiveFilesystem()
+		fls := project1.StagingFilesystem()
 		entries, err := fls.ReadDir("/")
 		if !assert.NoError(t, err) {
 			return

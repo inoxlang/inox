@@ -46,16 +46,17 @@ type GlobalState struct {
 
 	// most relevant components
 
-	Ctx          *Context
-	Manifest     *Manifest
-	Project      Project                //can be nil
-	Bytecode     *Bytecode              //can be nil
-	Globals      GlobalVariables        //global variables
-	LThread      *LThread               //not nil if running in a dedicated LThread
-	Databases    map[string]*DatabaseIL //the map should never change
-	Heap         *ModuleHeap
-	SystemGraph  *SystemGraph
-	lockedValues []PotentiallySharable
+	Ctx             *Context
+	Manifest        *Manifest
+	Project         Project                //can be nil
+	MemberAuthToken string                 //Can be empty. Most of the time this field is only set for the main state.. //TODO: replace with a JWT.
+	Bytecode        *Bytecode              //can be nil
+	Globals         GlobalVariables        //global variables
+	LThread         *LThread               //not nil if running in a dedicated LThread
+	Databases       map[string]*DatabaseIL //the map should never change
+	Heap            *ModuleHeap
+	SystemGraph     *SystemGraph
+	lockedValues    []PotentiallySharable
 
 	//
 	goCallArgPrepBuf []any
@@ -148,7 +149,7 @@ func (g *GlobalState) IsMain() bool {
 
 func (g *GlobalState) InProjectMode() bool {
 	//Check if $g has .Project set.
-	if g.Project != nil && !reflect.ValueOf(g.MainState.Project).IsNil() {
+	if g.Project != nil && !reflect.ValueOf(g.Project).IsNil() {
 		return true
 	}
 
@@ -156,6 +157,24 @@ func (g *GlobalState) InProjectMode() bool {
 	return g.MainState != nil &&
 		g.MainState.Project != nil &&
 		!reflect.ValueOf(g.MainState.Project).IsNil()
+}
+
+func (g *GlobalState) GetMemberAuthToken() (string, bool) {
+	if g.InProjectMode() {
+		return "", false
+	}
+
+	//Check if $g has .Project set.
+	if g.MemberAuthToken != "" {
+		return g.MemberAuthToken, true
+	}
+
+	//Check if the main state has .Project set.
+	if g.MainState != nil && g.MainState.MemberAuthToken != "" {
+		return g.MemberAuthToken, true
+	}
+
+	return "", false
 }
 
 func (g *GlobalState) SetDescendantState(src ResourceName, state *GlobalState) {

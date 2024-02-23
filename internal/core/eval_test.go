@@ -12754,7 +12754,7 @@ func (p *TestProject) Configuration() ProjectConfiguration {
 	return p.Config
 }
 
-func (p *TestProject) DevDatabasesDirOnOsFs() string {
+func (p *TestProject) DevDatabasesDirOnOsFs(*Context, string) (string, error) {
 	panic("unimplemented")
 }
 

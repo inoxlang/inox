@@ -22,8 +22,9 @@ const (
 )
 
 type filePreparationParams struct {
-	fpath   string
-	session *jsonrpc.Session
+	fpath           string
+	session         *jsonrpc.Session
+	memberAuthToken string
 
 	//if true and the state preparation failed then ok is false and results are nil.
 	requiresState bool
@@ -194,6 +195,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 						requiresState:          true,
 						notifyUserAboutDbError: true,
 						_depth:                 params._depth + 1,
+						memberAuthToken: params.memberAuthToken,
 					})
 					if ok {
 						parentCtx = preparationResult.state.Ctx
@@ -220,7 +222,8 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 			ScriptContextFileSystem: fls,
 			PreinitFilesystem:       fls,
 
-			Project: project,
+			Project:         project,
+			MemberAuthToken: params.memberAuthToken,
 		}
 
 		if strings.HasSuffix(fpath, inoxconsts.INOXLANG_SPEC_FILE_SUFFIX) {

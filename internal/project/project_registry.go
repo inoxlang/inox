@@ -15,7 +15,9 @@ import (
 const (
 	KV_FILENAME = "projects.kv"
 
-	DEV_OS_DIR           = "dev" //dir present in the same level as projects and in each project
+	FS_OS_DIR = "fs"
+
+	DEV_OS_DIR           = "dev" //directory present in each project and in the same level as projects
 	DEV_DATABASES_OS_DIR = "databases"
 	DEV_SERVERS_OS_DIR   = "servers"
 
@@ -62,7 +64,11 @@ func (r *Registry) Close(ctx *core.Context) {
 	r.metadata.Close()
 }
 
-func (r *Registry) DevDir() (string, error) {
+func (r *Registry) projectDir(id core.ProjectID) string {
+	return r.filesystem.Join(r.projectsDir, string(id))
+}
+
+func (r *Registry) SharedDevDir() (string, error) {
 	devDir := filepath.Join(r.projectsDir, DEV_OS_DIR)
 
 	err := r.filesystem.MkdirAll(devDir, fs_ns.DEFAULT_DIR_FMODE)
@@ -74,32 +80,13 @@ func (r *Registry) DevDir() (string, error) {
 }
 
 func (r *Registry) DevServersDir() (string, error) {
-	devDir, err := r.DevDir()
+	devDir, err := r.SharedDevDir()
 
 	if err != nil {
 		return "", err
 	}
 
 	return filepath.Join(devDir, DEV_SERVERS_OS_DIR), nil
-}
-
-func (r *Registry) getCreateDevDatabasesDir(id core.ProjectID) (projectDevDatabasesDir string, err error) {
-	//create the dev dir that will store the dev databases
-
-	devDir, err := r.DevDir()
-	if err != nil {
-		return "", err
-	}
-
-	//create the <dev dir>/<project id>/databases dir
-	projectDevDatabasesDir = filepath.Join(devDir, string(id), DEV_DATABASES_OS_DIR)
-	err = r.filesystem.MkdirAll(projectDevDatabasesDir, fs_ns.DEFAULT_DIR_FMODE)
-	if err != nil {
-		projectDevDatabasesDir = ""
-		return
-	}
-
-	return projectDevDatabasesDir, nil
 }
 
 func (r *Registry) persistProjectData(ctx *core.Context, id core.ProjectID, data projectData) error {

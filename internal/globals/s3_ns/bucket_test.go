@@ -130,7 +130,7 @@ func (p *testProject) Configuration() core.ProjectConfiguration {
 	panic("unimplemented")
 }
 
-func (p *testProject) DevDatabasesDirOnOsFs() string {
+func (p *testProject) DevDatabasesDirOnOsFs(*core.Context, string) (string, error) {
 	panic("unimplemented")
 }
 

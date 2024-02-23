@@ -81,7 +81,7 @@ func TestSameProcessDeployment(t *testing.T) {
 
 	modPath := "/main.ix"
 
-	util.WriteFile(proj.LiveFilesystem(), modPath, []byte(`
+	util.WriteFile(proj.StagingFilesystem(), modPath, []byte(`
 		manifest {
 			kind:"application"
 			permissions: {

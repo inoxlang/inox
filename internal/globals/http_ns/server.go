@@ -324,7 +324,7 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 	config := GolangHttpServerConfig{
 		Addr:                    params.effectiveAddr,
 		Handler:                 topHandler,
-		PersistCreatedLocalCert: true,
+		PersistCreatedLocalCert: !server.isVirtual, //No need to persist the certificate if the server is virtual.
 		AllowSelfSignedCertCreationEvenIfExposed: isLocalhostOr127001Addr(params.effectiveAddr) ||
 			(params.exposingAllowed && isBindAllAddress(params.effectiveAddr)),
 	}

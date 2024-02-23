@@ -13,7 +13,7 @@ import (
 )
 
 // getCompletions gets the completions for a specific position in an Inox code file.
-func getCompletions(fpath string, line, column int32, session *jsonrpc.Session) []codecompletion.Completion {
+func getCompletions(fpath string, line, column int32, session *jsonrpc.Session, memberAuthToken string) []codecompletion.Completion {
 	sessionData := getLockedSessionData(session)
 
 	fls := sessionData.filesystem
@@ -30,9 +30,10 @@ func getCompletions(fpath string, line, column int32, session *jsonrpc.Session) 
 	})
 
 	prepResult, ok := prepareSourceFileInExtractionMode(handlingCtx, filePreparationParams{
-		fpath:         fpath,
-		session:       session,
-		requiresState: true,
+		fpath:           fpath,
+		session:         session,
+		requiresState:   true,
+		memberAuthToken: memberAuthToken,
 	})
 	if !ok {
 		return nil

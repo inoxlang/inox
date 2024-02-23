@@ -1,14 +1,11 @@
 package project
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
-	"os"
-	"sync/atomic"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/inoxd/node"
 	"github.com/inoxlang/inox/internal/project/access"
@@ -53,9 +50,12 @@ type Project struct {
 	//filesystems and images
 
 	//TODO: add base filesystem (VCS ?)
-	liveFilesystem core.SnapshotableFilesystem
+	osFilesystem      *fs_ns.OsFilesystem
+	stagingFilesystem core.SnapshotableFilesystem
 
-	devDatabasesDirOnOsFs atomic.Value //string
+	dirOnOsFs    string
+	fsDirOnOsFs  string
+	devDirOnOsFs string
 
 	//tokens and secrets
 
@@ -95,7 +95,7 @@ type DevSideProjectConfig struct {
 func NewDummyProject(name string, fls core.SnapshotableFilesystem) *Project {
 	return &Project{
 		id:                        core.RandomProjectID(name),
-		liveFilesystem:            fls,
+		stagingFilesystem:         fls,
 		storeSecretsInProjectData: true,
 	}
 }
@@ -105,7 +105,7 @@ func NewDummyProject(name string, fls core.SnapshotableFilesystem) *Project {
 func NewDummyProjectWithConfig(name string, fls core.SnapshotableFilesystem, config ProjectConfiguration) *Project {
 	return &Project{
 		id:                        core.RandomProjectID(name),
-		liveFilesystem:            fls,
+		stagingFilesystem:         fls,
 		storeSecretsInProjectData: true,
 		config:                    config,
 	}
@@ -160,8 +160,8 @@ func (p *Project) CanProvideS3Credentials(s3Provider string) (bool, error) {
 	return false, nil
 }
 
-func (p *Project) LiveFilesystem() core.SnapshotableFilesystem {
-	return p.liveFilesystem
+func (p *Project) StagingFilesystem() core.SnapshotableFilesystem {
+	return p.stagingFilesystem
 }
 
 func (p *Project) Configuration() core.ProjectConfiguration {
@@ -194,67 +194,6 @@ func (p *Project) GetMemberByName(ctx *core.Context, name string) (*access.Membe
 	}
 
 	return nil, false
-}
-
-func (p *Project) DevDatabasesDirOnOsFs() string {
-	val := p.devDatabasesDirOnOsFs.Load()
-	var dir string
-	if val == nil {
-		//fallback: create a temporary dir in the OsFs's /tmp/ dir
-		dir = "/tmp/" + string(p.Id()) + "--" + DEV_DATABASES_FOLDER_NAME_IN_PROCESS_TEMPDIR
-		_, err := os.Stat(dir)
-		if err != nil {
-			os.Mkdir(dir, 0700)
-		}
-		p.devDatabasesDirOnOsFs.Store(dir)
-	} else {
-		dir = val.(string)
-	}
-
-	return dir
-}
-
-func (p *Project) IsMutable() bool {
-	return true
-}
-
-func (p *Project) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherProject, ok := other.(*Project)
-	if !ok {
-		return false
-	}
-
-	return p == otherProject
-}
-
-func (p *Project) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
-	core.PrintType(w, p)
-}
-
-func (p *Project) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return symbolic.ANY, nil
-}
-
-func (p *Project) IsSharable(originState *core.GlobalState) (bool, string) {
-	return true, ""
-}
-
-func (p *Project) Share(originState *core.GlobalState) {
-	p.lock.Share(originState, func() {
-
-	})
-}
-
-func (p *Project) IsShared() bool {
-	return p.lock.IsValueShared()
-}
-
-func (p *Project) SmartLock(state *core.GlobalState) {
-	p.lock.Lock(state, p, true)
-}
-
-func (p *Project) SmartUnlock(state *core.GlobalState) {
-	p.lock.Unlock(state, p, true)
 }
 
 // persisted data

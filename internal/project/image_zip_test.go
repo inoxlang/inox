@@ -86,7 +86,7 @@ func TestZipUnzipImage(t *testing.T) {
 	t.Run("regular file at root level", func(t *testing.T) {
 		project := createProject()
 
-		fls := project.LiveFilesystem()
+		fls := project.StagingFilesystem()
 		utils.PanicIfErr(util.WriteFile(fls, "/x.ix", []byte("manifest {}"), 0600))
 
 		img, err := project.BaseImage()
@@ -134,7 +134,7 @@ func TestZipUnzipImage(t *testing.T) {
 	t.Run("regular file in an arbitrary sub dir", func(t *testing.T) {
 		project := createProject()
 
-		fls := project.LiveFilesystem()
+		fls := project.StagingFilesystem()
 		utils.PanicIfErrAmong(
 			fls.MkdirAll("/x", fs_ns.DEFAULT_DIR_FMODE),
 			util.WriteFile(fls, "/x/x.ix", []byte("manifest {}"), 0600),

@@ -814,9 +814,34 @@ func setupTestCase(t *testing.T, testCase serverTestCase) (*core.GlobalState, *c
 	})
 
 	state.Module = module
-	state.Project = project.NewDummyProject("proj", fls)
 
-	// create logger
+	//create project
+
+	projectsDir := t.TempDir()
+
+	projectRegistry, err := project.OpenRegistry(projectsDir, ctx)
+
+	if !assert.NoError(t, err) {
+		return nil, nil, nil, "", err
+	}
+
+	id, memberId, err := projectRegistry.CreateProject(ctx, project.CreateProjectParams{
+		Name: "proj",
+	})
+
+	if !assert.NoError(t, err) {
+		return nil, nil, nil, "", err
+	}
+
+	project, err := projectRegistry.OpenProject(ctx, project.OpenProjectParams{Id: id})
+	if !assert.NoError(t, err) {
+		return nil, nil, nil, "", err
+	}
+
+	state.Project = project
+	state.MemberAuthToken = string(memberId)
+
+	// Create logger
 	out := testCase.outWriter
 	if out == nil {
 		out = io.Discard

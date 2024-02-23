@@ -22,7 +22,7 @@ func (img *Image) FilesystemSnapshot() core.FilesystemSnapshot {
 }
 
 func (p *Project) BaseImage() (core.Image, error) {
-	snapshot, err := p.liveFilesystem.TakeFilesystemSnapshot(core.FilesystemSnapshotConfig{
+	snapshot, err := p.stagingFilesystem.TakeFilesystemSnapshot(core.FilesystemSnapshotConfig{
 		GetContent: func(ChecksumSHA256 [32]byte) core.AddressableContent {
 			return nil
 		},

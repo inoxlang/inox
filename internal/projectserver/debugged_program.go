@@ -16,11 +16,12 @@ import (
 )
 
 type debuggedProgramLaunch struct {
-	programPath  string
-	logLevels    *core.LogLevels
-	session      *jsonrpc.Session
-	debugSession *DebugSession
-	fls          *Filesystem
+	programPath     string
+	logLevels       *core.LogLevels
+	session         *jsonrpc.Session
+	debugSession    *DebugSession
+	fls             *Filesystem
+	memberAuthToken string
 }
 
 func launchDebuggedProgram(args debuggedProgramLaunch) {
@@ -30,6 +31,7 @@ func launchDebuggedProgram(args debuggedProgramLaunch) {
 	sessionCtx := session.Context()
 	debugSession := args.debugSession
 	fls := args.fls
+	memberAuthToken := args.memberAuthToken
 
 	defer func() {
 		e := recover()
@@ -134,6 +136,7 @@ func launchDebuggedProgram(args debuggedProgramLaunch) {
 		IgnoreHighRiskScore:       true,
 		FullAccessToDatabases:     true,
 		Project:                   project,
+		MemberAuthToken:           memberAuthToken,
 
 		Out:       programOut,
 		Logger:    logger,

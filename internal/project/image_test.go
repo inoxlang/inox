@@ -54,7 +54,7 @@ func TestBaseImage(t *testing.T) {
 	t.Run("regular file at root level", func(t *testing.T) {
 		project := createProject()
 
-		fls := project.LiveFilesystem()
+		fls := project.StagingFilesystem()
 		utils.PanicIfErr(util.WriteFile(fls, "/x.ix", []byte("manifest {}"), 0600))
 
 		img, err := project.BaseImage()
@@ -75,7 +75,7 @@ func TestBaseImage(t *testing.T) {
 	t.Run("regular file in an arbitrary sub dir", func(t *testing.T) {
 		project := createProject()
 
-		fls := project.LiveFilesystem()
+		fls := project.StagingFilesystem()
 		utils.PanicIfErrAmong(
 			fls.MkdirAll("/x", fs_ns.DEFAULT_DIR_FMODE),
 			util.WriteFile(fls, "/x/x.ix", []byte("manifest {}"), 0600),
@@ -105,7 +105,7 @@ func TestBaseImage(t *testing.T) {
 	t.Run("dot file at root level", func(t *testing.T) {
 		project := createProject()
 
-		fls := project.LiveFilesystem()
+		fls := project.StagingFilesystem()
 		utils.PanicIfErr(util.WriteFile(fls, "/.file", []byte("hello"), 0600))
 
 		img, err := project.BaseImage()
@@ -127,7 +127,7 @@ func TestBaseImage(t *testing.T) {
 	t.Run("dot file in an arbitrary sub dir", func(t *testing.T) {
 		project := createProject()
 
-		fls := project.LiveFilesystem()
+		fls := project.StagingFilesystem()
 		utils.PanicIfErrAmong(
 			fls.MkdirAll("/x", fs_ns.DEFAULT_DIR_FMODE),
 			util.WriteFile(fls, "/x/.file", []byte("hello"), 0600),
@@ -154,7 +154,7 @@ func TestBaseImage(t *testing.T) {
 	t.Run("empty dot dir at root level", func(t *testing.T) {
 		project := createProject()
 
-		fls := project.LiveFilesystem()
+		fls := project.StagingFilesystem()
 		utils.PanicIfErrAmong(
 			fls.MkdirAll("/.dir", fs_ns.DEFAULT_DIR_FMODE),
 		)
@@ -178,7 +178,7 @@ func TestBaseImage(t *testing.T) {
 	t.Run("non-empty dot dir at root level", func(t *testing.T) {
 		project := createProject()
 
-		fls := project.LiveFilesystem()
+		fls := project.StagingFilesystem()
 		utils.PanicIfErrAmong(
 			fls.MkdirAll("/.dir", fs_ns.DEFAULT_DIR_FMODE),
 			util.WriteFile(fls, "/.dir/script.ix", []byte("manifest {}"), 0600),
@@ -206,7 +206,7 @@ func TestBaseImage(t *testing.T) {
 	t.Run("empty dot dir in an arbitrary sub dir", func(t *testing.T) {
 		project := createProject()
 
-		fls := project.LiveFilesystem()
+		fls := project.StagingFilesystem()
 		utils.PanicIfErrAmong(
 			fls.MkdirAll("/x/.dir", fs_ns.DEFAULT_DIR_FMODE),
 		)
@@ -235,7 +235,7 @@ func TestBaseImage(t *testing.T) {
 	t.Run("non-empty dot dir in an arbitrary sub dir", func(t *testing.T) {
 		project := createProject()
 
-		fls := project.LiveFilesystem()
+		fls := project.StagingFilesystem()
 		utils.PanicIfErrAmong(
 			fls.MkdirAll("/x/.dir", fs_ns.DEFAULT_DIR_FMODE),
 			util.WriteFile(fls, "/.dir/script.ix", []byte("manifest {}"), 0600),

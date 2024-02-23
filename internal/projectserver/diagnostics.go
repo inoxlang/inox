@@ -14,9 +14,20 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
+type diagnosticsParams struct {
+	session         *jsonrpc.Session
+	docURI          defines.DocumentUri
+	usingInoxFS     bool
+	fls             *Filesystem
+	memberAuthToken string
+}
+
 // notifyDiagnostics prepares a source file, constructs a list of defines.Diagnostic from errors at different phases
 // (parsing, static check, and symbolic evaluation) and notifies the LSP client (textDocument/publishDiagnostics).
-func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, usingInoxFS bool, fls *Filesystem) error {
+func notifyDiagnostics(params diagnosticsParams) error {
+
+	session, docURI, usingInoxFS, fls, memberAuthToken := params.session, params.docURI, params.usingInoxFS, params.fls, params.memberAuthToken
+
 	sessionCtx := session.Context()
 	ctx := sessionCtx.BoundChildWithOptions(core.BoundChildContextOptions{
 		Filesystem: fls,
@@ -31,9 +42,10 @@ func notifyDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, usi
 	warningSeverity := defines.DiagnosticSeverityWarning
 
 	preparationResult, ok := prepareSourceFileInExtractionMode(ctx, filePreparationParams{
-		fpath:         fpath,
-		session:       session,
-		requiresState: false,
+		fpath:           fpath,
+		session:         session,
+		requiresState:   false,
+		memberAuthToken: memberAuthToken,
 	})
 
 	state := preparationResult.state

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"slices"
 
 	"github.com/inoxlang/inox/internal/buntdb"
@@ -77,11 +78,13 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 		projectData.Secrets = map[core.SecretName]localSecret{}
 	}
 
-	// Open the project's filesystem
+	// Open the staging filesystem.
 
-	projectDir := r.filesystem.Join(r.projectsDir, string(params.Id))
-	projectFS, err := fs_ns.OpenMetaFilesystem(r.openProjectsContext, r.filesystem, fs_ns.MetaFilesystemParams{
-		Dir:            projectDir,
+	projectDir := r.projectDir(params.Id)
+	projectFsDir := r.projectFsDir(params.Id)
+
+	stagingFS, err := fs_ns.OpenMetaFilesystem(r.openProjectsContext, r.filesystem, fs_ns.MetaFilesystemParams{
+		Dir:            projectFsDir,
 		MaxUsableSpace: params.MaxFilesystemSize,
 	})
 
@@ -92,18 +95,20 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 	closeProjectFSBecauseOfError := true
 	defer func() {
 		if closeProjectFSBecauseOfError {
-			projectFS.Close(ctx)
+			stagingFS.Close(ctx)
 		}
 	}()
 
 	// Create and initialize a *Project.
 
 	project := &Project{
-		id:             params.Id,
-		liveFilesystem: projectFS,
-		tempTokens:     params.TempTokens,
-		data:           projectData,
-		persistFn:      r.persistProjectData,
+		id:                params.Id,
+		osFilesystem:      r.filesystem,
+		stagingFilesystem: stagingFS,
+		tempTokens:        params.TempTokens,
+		data:              projectData,
+		persistFn:         r.persistProjectData,
+		dirOnOsFs:         projectDir,
 
 		storeSecretsInProjectData: true,
 
@@ -137,12 +142,15 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 	project.Share(nil)
 	r.openProjects[project.id] = project
 
-	projectDevDatabasesDir, err := r.getCreateDevDatabasesDir(project.id)
-	if err != nil {
-		return nil, err
-	}
+	projectDevDir := filepath.Join(projectDir, DEV_OS_DIR)
 
-	project.devDatabasesDirOnOsFs.Store(projectDevDatabasesDir)
+	project.devDirOnOsFs = projectDevDir
+	project.fsDirOnOsFs = projectFsDir
+
+	err = r.filesystem.MkdirAll(projectDevDir, fs_ns.DEFAULT_DIR_FMODE)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create dev dir in project dir: %w", err)
+	}
 
 	closeProjectFSBecauseOfError = false
 	return project, nil

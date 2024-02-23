@@ -29,10 +29,27 @@ const DEFAULT_TUTORIAL_TIMEOUT_DURATION = 25 * time.Second
 func TestTutorials(t *testing.T) {
 	const fpath = "/main.tut.ix"
 
+	projectsDir := t.TempDir()
+
+	registryCtx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
+	defer registryCtx.CancelGracefully()
+	projectRegistry, err := project.OpenRegistry(projectsDir, registryCtx)
+
+	if !assert.NoError(t, err) {
+		return
+	}
+
 	t.Run("BytecodeEval", func(t *testing.T) {
 		for _, series := range learn.TUTORIAL_SERIES {
 			for _, tut := range series.Tutorials {
-				testTutorial(t, series, tut, fpath, true)
+				testTutorial(t, tutorialTestParams{
+					series:          series,
+					tut:             tut,
+					fpath:           fpath,
+					useBytecode:     true,
+					registry:        projectRegistry,
+					registryContext: registryCtx,
+				})
 			}
 		}
 	})
@@ -40,14 +57,53 @@ func TestTutorials(t *testing.T) {
 	t.Run("TreeWalkEval", func(t *testing.T) {
 		for _, series := range learn.TUTORIAL_SERIES {
 			for _, tut := range series.Tutorials {
-				testTutorial(t, series, tut, fpath, false)
+				testTutorial(t, tutorialTestParams{
+					series:          series,
+					tut:             tut,
+					fpath:           fpath,
+					useBytecode:     false,
+					registry:        projectRegistry,
+					registryContext: registryCtx,
+				})
 			}
 		}
 	})
 }
 
-func testTutorial(t *testing.T, series learn.TutorialSeries, tut learn.Tutorial, fpath string, useBytecode bool) {
+type tutorialTestParams struct {
+	series      learn.TutorialSeries
+	tut         learn.Tutorial
+	fpath       string
+	useBytecode bool
+
+	registryContext *core.Context
+	registry        *project.Registry
+}
+
+func testTutorial(t *testing.T, params tutorialTestParams) {
+	series := params.series
+	tut := params.tut
+	fpath := params.fpath
+	useBytecode := params.useBytecode
+	registryCtx := params.registryContext
+	registry := params.registry
+
 	t.Run(series.Name+"--"+tut.Name, func(t *testing.T) {
+
+		//Create a project.
+
+		id, memberId, err := registry.CreateProject(registryCtx, project.CreateProjectParams{
+			Name: "test-project",
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		project, err := registry.OpenProject(registryCtx, project.OpenProjectParams{Id: id})
+		if !assert.NoError(t, err) {
+			return
+		}
 
 		hasHttpServer := bytes.Contains([]byte(tut.Program), []byte("http.Server"))
 
@@ -135,7 +191,9 @@ func testTutorial(t *testing.T, series learn.TutorialSeries, tut learn.Tutorial,
 				AllowMissingEnvVars: true,
 				IgnoreHighRiskScore: true,
 
-				Project: project.NewDummyProject("proj", fls),
+				Project:         project,
+				MemberAuthToken: string(memberId),
+
 				OnPrepared: func(state *core.GlobalState) error {
 					if hasHttpServer {
 						//Add a dev session key entry in order to allow the creation of a virtual HTTP server.

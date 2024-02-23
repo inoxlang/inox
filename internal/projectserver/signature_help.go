@@ -12,15 +12,24 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
-func getSignatureHelp(fpath string, line, column int32, handlingCtx *core.Context, session *jsonrpc.Session) (*defines.SignatureHelp, error) {
+type signatureHelpParams struct {
+	fpath           string
+	line, column    int32
+	session         *jsonrpc.Session
+	memberAuthToken string
+}
 
+func getSignatureHelp(handlingCtx *core.Context, params signatureHelpParams) (*defines.SignatureHelp, error) {
 	const NO_DATA_MSG = "no data"
 
+	fpath, line, column, session, memberAuthToken := params.fpath, params.line, params.column, params.session, params.memberAuthToken
+
 	preparationResult, ok := prepareSourceFileInExtractionMode(handlingCtx, filePreparationParams{
-		fpath:         fpath,
-		session:       session,
-		requiresState: true,
-		requiresCache: true,
+		fpath:           fpath,
+		session:         session,
+		memberAuthToken: memberAuthToken,
+		requiresState:   true,
+		requiresCache:   true,
 	})
 
 	if !ok {

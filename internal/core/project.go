@@ -31,8 +31,9 @@ type Project interface {
 
 	Configuration() ProjectConfiguration
 
-	//DevDatabasesDirOnOsFs returns the directory where the project's databases are stored.
-	DevDatabasesDirOnOsFs() string
+	//DevDatabasesDirOnOsFs returns a directory in the OS filesystem where some development databases can be stored.
+	//The directory is dedidcated to a single project member.
+	DevDatabasesDirOnOsFs(ctx *Context, memberAuthToken string) (string, error)
 }
 
 type ProjectID string

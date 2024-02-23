@@ -23,28 +23,48 @@ const MEM_FS_STORAGE_SIZE = 100_000_000
 func TestOpenDatabase(t *testing.T) {
 	const HOST = core.Host("ldb://main")
 
-	t.Run("opening the same database is forbidden", func(t *testing.T) {
-		dir, _ := filepath.Abs(t.TempDir())
-		dir += "/"
+	projectsDir := t.TempDir()
 
-		fls := fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE)
-		pattern := core.PathPattern(dir + "...")
-		project := project.NewDummyProject("proj", fls)
+	registryCtx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
+	defer registryCtx.CancelGracefully()
+	projectRegistry, err := project.OpenRegistry(projectsDir, registryCtx)
+
+	if !assert.NoError(t, err) {
+		return
+	}
+
+	createProject := func(t *testing.T) (proj core.Project, memberAuthToken string) {
+		id, memberId, err := projectRegistry.CreateProject(registryCtx, project.CreateProjectParams{
+			Name: "test-project",
+		})
+
+		if !assert.NoError(t, err) {
+			t.FailNow()
+			return
+		}
+
+		p, err := projectRegistry.OpenProject(registryCtx, project.OpenProjectParams{Id: id})
+		if !assert.NoError(t, err) {
+			t.FailNow()
+		}
+		return p, string(memberId)
+	}
+
+	t.Run("opening the same database is forbidden", func(t *testing.T) {
+		project, memberAuthToken := createProject(t)
+
+		//Open database
 
 		ctxConfig := core.ContextConfig{
-			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: pattern},
-				core.FilesystemPermission{Kind_: permkind.Create, Entity: pattern},
-				core.FilesystemPermission{Kind_: permkind.WriteStream, Entity: pattern},
-			},
 			HostDefinitions: map[core.Host]core.Value{
 				core.Host("ldb://main"): HOST,
 			},
-			Filesystem: fls,
 		}
 
 		ctx1 := core.NewContextWithEmptyState(ctxConfig, nil)
-		ctx1.GetClosestState().Project = project
+		state1 := ctx1.GetClosestState()
+		state1.Project = project
+		state1.MemberAuthToken = memberAuthToken
 
 		_db, err := OpenDatabase(ctx1, HOST, false)
 		if !assert.NoError(t, err) {
@@ -52,8 +72,12 @@ func TestOpenDatabase(t *testing.T) {
 		}
 		defer _db.Close(ctx1)
 
+		//Open the same database without closing.
+
 		ctx2 := core.NewContextWithEmptyState(ctxConfig, nil)
-		ctx2.GetClosestState().Project = project
+		state2 := ctx2.GetClosestState()
+		state2.Project = project
+		state2.MemberAuthToken = memberAuthToken
 
 		db, err := OpenDatabase(ctx2, HOST, false)
 		if !assert.ErrorIs(t, err, ErrOpenDatabase) {
@@ -63,36 +87,36 @@ func TestOpenDatabase(t *testing.T) {
 	})
 
 	t.Run("open same database sequentially (in-between closing)", func(t *testing.T) {
-		dir, _ := filepath.Abs(t.TempDir())
-		dir += "/"
+		project, memberAuthToken := createProject(t)
 
-		pattern := core.PathPattern(dir + "...")
-		fls := fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE)
-		project := project.NewDummyProject("proj", fls)
+		//Open database
 
 		ctxConfig := core.ContextConfig{
-			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: pattern},
-				core.FilesystemPermission{Kind_: permkind.Create, Entity: pattern},
-				core.FilesystemPermission{Kind_: permkind.WriteStream, Entity: pattern},
-			},
 			HostDefinitions: map[core.Host]core.Value{
 				core.Host("ldb://main"): HOST,
 			},
-			Filesystem: fls,
 		}
 
 		ctx1 := core.NewContextWithEmptyState(ctxConfig, nil)
-		ctx1.GetClosestState().Project = project
+		state1 := ctx1.GetClosestState()
+		state1.Project = project
+		state1.MemberAuthToken = memberAuthToken
 
 		_db, err := OpenDatabase(ctx1, HOST, false)
 		if !assert.NoError(t, err) {
 			return
 		}
+
+		//Close database
+
 		_db.Close(ctx1)
 
 		ctx2 := core.NewContextWithEmptyState(ctxConfig, nil)
-		ctx2.GetClosestState().Project = project
+		state2 := ctx2.GetClosestState()
+		state2.Project = project
+		state2.MemberAuthToken = memberAuthToken
+
+		//Open database
 
 		db, err := OpenDatabase(ctx2, HOST, false)
 		if !assert.NoError(t, err) {
@@ -104,24 +128,12 @@ func TestOpenDatabase(t *testing.T) {
 	})
 
 	t.Run("open same database in parallel should result in at least one error", func(t *testing.T) {
-
-		dir, _ := filepath.Abs(t.TempDir())
-		dir += "/"
-
-		pattern := core.PathPattern(dir + "...")
-		fls := fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE)
-		project := project.NewDummyProject("proj", fls)
+		project, memberAuthToken := createProject(t)
 
 		ctxConfig := core.ContextConfig{
-			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: pattern},
-				core.FilesystemPermission{Kind_: permkind.Create, Entity: pattern},
-				core.FilesystemPermission{Kind_: permkind.WriteStream, Entity: pattern},
-			},
 			HostDefinitions: map[core.Host]core.Value{
 				core.Host("ldb://main"): HOST,
 			},
-			Filesystem: fls,
 		}
 
 		db1Open := make(chan struct{})
@@ -145,7 +157,9 @@ func TestOpenDatabase(t *testing.T) {
 
 			//open database in first context
 			ctx1 = core.NewContextWithEmptyState(ctxConfig, nil)
-			ctx1.GetClosestState().Project = project
+			state1 := ctx1.GetClosestState()
+			state1.Project = project
+			state1.MemberAuthToken = memberAuthToken
 
 			_db1, err := OpenDatabase(ctx1, HOST, false)
 			if !assert.NoError(t, err) {
@@ -163,7 +177,9 @@ func TestOpenDatabase(t *testing.T) {
 
 		//open same database in second context
 		ctx2 = core.NewContextWithEmptyState(ctxConfig, nil)
-		ctx2.GetClosestState().Project = project
+		state2 := ctx2.GetClosestState()
+		state2.Project = project
+		state2.MemberAuthToken = memberAuthToken
 
 		_db2, err := OpenDatabase(ctx2, HOST, false)
 		if !assert.ErrorIs(t, err, ErrOpenDatabase) {
@@ -173,24 +189,12 @@ func TestOpenDatabase(t *testing.T) {
 	})
 
 	t.Run("open same database in parallel with different access mode", func(t *testing.T) {
-
-		dir, _ := filepath.Abs(t.TempDir())
-		dir += "/"
-
-		pattern := core.PathPattern(dir + "...")
-		fls := fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE)
-		project := project.NewDummyProject("proj", fls)
+		project, memberAuthToken := createProject(t)
 
 		ctxConfig := core.ContextConfig{
-			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: pattern},
-				core.FilesystemPermission{Kind_: permkind.Create, Entity: pattern},
-				core.FilesystemPermission{Kind_: permkind.WriteStream, Entity: pattern},
-			},
 			HostDefinitions: map[core.Host]core.Value{
 				core.Host("ldb://main"): HOST,
 			},
-			Filesystem: fls,
 		}
 
 		db1Open := make(chan struct{})
@@ -221,7 +225,10 @@ func TestOpenDatabase(t *testing.T) {
 
 			//open database in first context
 			ctx1 = core.NewContextWithEmptyState(ctxConfig, nil)
-			ctx1.GetClosestState().Project = project
+			state1 := ctx1.GetClosestState()
+			state1.Project = project
+			state1.MemberAuthToken = memberAuthToken
+
 			ctx1.AddNamedPattern("int", core.INT_PATTERN)
 
 			_db1, err := OpenDatabase(ctx1, HOST, false)
@@ -244,7 +251,10 @@ func TestOpenDatabase(t *testing.T) {
 
 		//open same database in second context but in restricted mode
 		ctx2 = core.NewContextWithEmptyState(ctxConfig, nil)
-		ctx2.GetClosestState().Project = project
+		state2 := ctx2.GetClosestState()
+		state2.Project = project
+		state2.MemberAuthToken = memberAuthToken
+
 		ctx2.AddNamedPattern("int", core.INT_PATTERN)
 
 		_db2, err := OpenDatabase(ctx2, HOST, true /*restricted access*/)
@@ -263,29 +273,20 @@ func TestOpenDatabase(t *testing.T) {
 	t.Run("re-open with a schema", func(t *testing.T) {
 
 		t.Run("top-level Set with URL-based uniqueness", func(t *testing.T) {
-			dir, _ := filepath.Abs(t.TempDir())
-			dir += "/"
-
-			pattern := core.PathPattern(dir + "...")
-			fls := fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE)
-			project := project.NewDummyProject("proj", fls)
+			project, memberAuthToken := createProject(t)
 
 			ctxConfig := core.ContextConfig{
-				Permissions: []core.Permission{
-					core.FilesystemPermission{Kind_: permkind.Read, Entity: pattern},
-					core.FilesystemPermission{Kind_: permkind.Create, Entity: pattern},
-					core.FilesystemPermission{Kind_: permkind.WriteStream, Entity: pattern},
-				},
 				HostDefinitions: map[core.Host]core.Value{
 					core.Host("ldb://main"): HOST,
 				},
-				Filesystem: fls,
 			}
 
 			ctx := core.NewContextWithEmptyState(ctxConfig, nil)
 			ctx.AddNamedPattern("Set", setcoll.SET_PATTERN)
 			ctx.AddNamedPattern("str", setcoll.SET_PATTERN)
-			ctx.GetClosestState().Project = project
+			state1 := ctx.GetClosestState()
+			state1.Project = project
+			state1.MemberAuthToken = memberAuthToken
 
 			db, err := OpenDatabase(ctx, HOST, false)
 			if !assert.NoError(t, err) {
@@ -339,29 +340,19 @@ func TestOpenDatabase(t *testing.T) {
 
 func TestLocalDatabase(t *testing.T) {
 
-	HOST := core.Host("ldb://main")
+	const HOST = core.Host("ldb://main")
 
 	setup := func(ctxHasTransaction bool) (*LocalDatabase, *core.Context, *core.Transaction) {
 		//core.ResetResourceMap()
-
-		config := LocalDatabaseConfig{}
-
 		osDir, _ := filepath.Abs(t.TempDir())
 		osDir += "/"
-		pattern := core.PathPattern(osDir + "...")
-		fls := fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE)
-		project := project.NewDummyProject("proj", fls)
+		config := LocalDatabaseConfig{}
+		project := project.NewDummyProject("proj", fs_ns.NewMemFilesystem(MEM_FS_STORAGE_SIZE))
 
 		ctxConfig := core.ContextConfig{
-			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: pattern},
-				core.FilesystemPermission{Kind_: permkind.Create, Entity: pattern},
-				core.FilesystemPermission{Kind_: permkind.WriteStream, Entity: pattern},
-			},
 			HostDefinitions: map[core.Host]core.Value{
-				HOST: core.Path(osDir),
+				HOST: HOST,
 			},
-			Filesystem: fls,
 		}
 		config.Host = HOST
 		config.OsFsDir = core.DirPathFrom(osDir)

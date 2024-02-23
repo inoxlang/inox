@@ -101,7 +101,11 @@ func registerTestingMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 			session := jsonrpc.GetSession(ctx)
 			params := req.(*TestFileParams)
 
-			return testModuleAsync(params.Path, params.Filters(), session)
+			data := getLockedSessionData(session)
+			memberAuthToken := data.memberAuthToken
+			data.lock.Unlock()
+
+			return testModuleAsync(params.Path, params.Filters(), session, memberAuthToken)
 		},
 	})
 

@@ -17,14 +17,25 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
+type hoverContentParams struct {
+	fpath           string
+	line, column    int32
+	session         *jsonrpc.Session
+	memberAuthToken string
+}
+
 // getHoverContent gets hover content for a specific position in an Inox code file.
-func getHoverContent(fpath string, line, column int32, handlingCtx *core.Context, session *jsonrpc.Session) (*defines.Hover, error) {
+func getHoverContent(handlingCtx *core.Context, params hoverContentParams) (*defines.Hover, error) {
+
+	fpath, line, column, session, memberAuthToken := params.fpath, params.line, params.column, params.session, params.memberAuthToken
+
 	preparationResult, ok := prepareSourceFileInExtractionMode(handlingCtx, filePreparationParams{
 		fpath:                              fpath,
 		session:                            session,
 		requiresState:                      true,
 		requiresCache:                      true,
 		forcePrepareIfNoVeryRecentActivity: true,
+		memberAuthToken:                    memberAuthToken,
 	})
 
 	if !ok {

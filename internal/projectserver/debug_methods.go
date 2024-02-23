@@ -578,6 +578,10 @@ func handleDebugLaunch(ctx context.Context, req interface{}) (interface{}, error
 		return nil, errors.New(string(FsNoFilesystem))
 	}
 
+	sessionData := getLockedSessionData(session)
+	memberAuthToken := sessionData.memberAuthToken
+	sessionData.lock.Unlock()
+
 	//check the configuration is done
 
 	if !debugSession.configurationDone.Load() {
@@ -650,7 +654,13 @@ func handleDebugLaunch(ctx context.Context, req interface{}) (interface{}, error
 			}
 		}()
 
-		defer notifyDiagnostics(session, debugSession.programURI, debugSession.inProjectMode, fls)
+		defer notifyDiagnostics(diagnosticsParams{
+			session:         session,
+			docURI:          debugSession.programURI,
+			usingInoxFS:     debugSession.inProjectMode,
+			fls:             fls,
+			memberAuthToken: memberAuthToken,
+		})
 		defer removeDebugSession(debugSession, session)
 
 		select {
@@ -665,11 +675,12 @@ func handleDebugLaunch(ctx context.Context, req interface{}) (interface{}, error
 	}()
 
 	go launchDebuggedProgram(debuggedProgramLaunch{
-		programPath:  programPath,
-		logLevels:    logLevels,
-		session:      session,
-		debugSession: debugSession,
-		fls:          fls,
+		programPath:     programPath,
+		logLevels:       logLevels,
+		session:         session,
+		debugSession:    debugSession,
+		fls:             fls,
+		memberAuthToken: memberAuthToken,
 	})
 
 	err = <-debugSession.programPreparedOrFailedToChan

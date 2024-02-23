@@ -47,8 +47,8 @@ func (r *Registry) CreateProject(ctx *core.Context, params CreateProjectParams) 
 	r.persistProjectData(ctx, id, projectData)
 
 	//Create the project's directory.
-	projectDir := r.filesystem.Join(r.projectsDir, string(id))
-	err = r.filesystem.MkdirAll(projectDir, fs_ns.DEFAULT_DIR_FMODE)
+	projectFsDir := r.projectFsDir(id)
+	err = r.filesystem.MkdirAll(projectFsDir, fs_ns.DEFAULT_DIR_FMODE)
 
 	if err != nil {
 		return "", "", fmt.Errorf("failed to create directory for project %s: %w", id, err)
@@ -56,7 +56,7 @@ func (r *Registry) CreateProject(ctx *core.Context, params CreateProjectParams) 
 
 	//Create initial files.
 	projectFS, err := fs_ns.OpenMetaFilesystem(ctx, r.filesystem, fs_ns.MetaFilesystemParams{
-		Dir: projectDir,
+		Dir: projectFsDir,
 	})
 	if err != nil {
 		return "", "", fmt.Errorf("failed to open the project filesystem to write initial files %s: %w", id, err)
@@ -74,12 +74,9 @@ func (r *Registry) CreateProject(ctx *core.Context, params CreateProjectParams) 
 		util.WriteFile(projectFS, DEFAULT_TUT_FILENAME, []byte(nil), fs_ns.DEFAULT_DIR_FMODE)
 	}
 
-	//Create a directory for storing the project's dev databases.
-
-	_, err = r.getCreateDevDatabasesDir(id)
-	if err != nil {
-		return "", "", err
-	}
-
 	return id, ownerMember.ID, nil
+}
+
+func (r *Registry) projectFsDir(id core.ProjectID) string {
+	return r.filesystem.Join(r.projectsDir, string(id), FS_OS_DIR)
 }

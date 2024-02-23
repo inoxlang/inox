@@ -84,7 +84,8 @@ type ModulePreparationArgs struct {
 	AdditionalPermissions []Permission
 
 	//should only be set if the module is a main module
-	Project Project
+	Project         Project
+	MemberAuthToken string
 
 	//defaults to os.Stdout
 	Out io.Writer
@@ -353,6 +354,7 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 	} else {
 		state.MainState = state
 		state.Project = args.Project
+		state.MemberAuthToken = args.MemberAuthToken
 	}
 	state.OutputFieldsInitialized.Store(true)
 

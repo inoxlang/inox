@@ -46,6 +46,7 @@ type RunLocalModuleArgs struct {
 
 	FullAccessToDatabases bool
 	Project               *project.Project
+	MemberAuthToken       string
 
 	UseBytecode      bool
 	OptimizeBytecode bool
@@ -108,6 +109,7 @@ func RunLocalModule(args RunLocalModuleArgs) (
 		PreinitFilesystem:     args.PreinitFilesystem,
 		FullAccessToDatabases: args.FullAccessToDatabases,
 		Project:               args.Project,
+		MemberAuthToken:       args.MemberAuthToken,
 
 		EnableTesting: args.EnableTesting,
 		TestFilters:   args.TestFilters,

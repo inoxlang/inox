@@ -25,7 +25,7 @@ type TestRunId string
 // without waiting for the tests to finish. The goroutine notifies the LSP client with TEST_RUN_FINISHED_METHOD when it is done.
 // testModuleAsync should NOT be called while the session data is locked because it acquires the lock in order to
 // store the testRunId in additionalSessionData.testRuns.
-func testModuleAsync(path string, filters core.TestFilters, session *jsonrpc.Session) (TestFileResponse, error) {
+func testModuleAsync(path string, filters core.TestFilters, session *jsonrpc.Session, memberAuthToken string) (TestFileResponse, error) {
 
 	fls, ok := getLspFilesystem(session)
 	if !ok {
@@ -63,7 +63,8 @@ func testModuleAsync(path string, filters core.TestFilters, session *jsonrpc.Ses
 		EnableTesting:         true,
 		TestFilters:           filters,
 
-		Project: project,
+		Project:         project,
+		MemberAuthToken: memberAuthToken,
 
 		Out: utils.FnWriter{
 			WriteFn: func(p []byte) (n int, err error) {

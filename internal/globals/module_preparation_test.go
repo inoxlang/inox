@@ -1616,7 +1616,34 @@ func TestPrepareLocalModuleWithInvalidInputs(t *testing.T) {
 }
 
 func TestPrepareLocalModuleWithDatabases(t *testing.T) {
+	projectsDir := t.TempDir()
+
+	registryCtx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
+	defer registryCtx.CancelGracefully()
+	projectRegistry, err := project.OpenRegistry(projectsDir, registryCtx)
+
+	if !assert.NoError(t, err) {
+		return
+	}
+
 	t.Run("local database", func(t *testing.T) {
+		//Create a project.
+
+		id, memberId, err := projectRegistry.CreateProject(registryCtx, project.CreateProjectParams{
+			Name: "test-project",
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		project, err := projectRegistry.OpenProject(registryCtx, project.OpenProjectParams{Id: id})
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		//
+
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
@@ -1624,10 +1651,6 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 
 		os.WriteFile(file, []byte(`
 			manifest {
-				permissions: {
-					read: %/...
-					write: %/...
-				}
 				databases: {
 					local: {
 						resource: ldb://main
@@ -1637,15 +1660,11 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 			}
 		`), 0o600)
 
-		fs := fs_ns.NewMemFilesystem(1000)
+		fs := fs_ns.NewMemFilesystem(100_000)
 
 		ctx := core.NewContext(core.ContextConfig{
-			Permissions: append(
-				core.GetDefaultGlobalVarPermissions(),
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
-				core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")},
-			),
-			Filesystem: fs,
+			Permissions: core.GetDefaultGlobalVarPermissions(),
+			Filesystem:  fs,
 		})
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
@@ -1660,7 +1679,9 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 			PreinitFilesystem:       fs,
 			ScriptContextFileSystem: fs,
 			FullAccessToDatabases:   true,
-			Project:                 project.NewDummyProject("proj", fs),
+
+			Project:         project,
+			MemberAuthToken: string(memberId),
 		})
 
 		if !assert.NoError(t, err) {
@@ -1695,6 +1716,23 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 	})
 
 	t.Run("if the current schema of a database does not match the expected schema, only an error should be returned", func(t *testing.T) {
+		//Create a project.
+
+		id, memberId, err := projectRegistry.CreateProject(registryCtx, project.CreateProjectParams{
+			Name: "test-project",
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		project, err := projectRegistry.OpenProject(registryCtx, project.OpenProjectParams{Id: id})
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		//
+
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
@@ -1707,10 +1745,6 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 				}
 			}
 			manifest {
-				permissions: {
-					read: %/...
-					write: %/...
-				}
 				databases: {
 					local: {
 						resource: ldb://main
@@ -1721,15 +1755,11 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 			}
 		`), 0o600)
 
-		fs := fs_ns.NewMemFilesystem(1000)
+		fs := fs_ns.NewMemFilesystem(100_000)
 
 		ctx := core.NewContext(core.ContextConfig{
-			Permissions: append(
-				core.GetDefaultGlobalVarPermissions(),
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
-				core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")},
-			),
-			Filesystem: fs,
+			Permissions: core.GetDefaultGlobalVarPermissions(),
+			Filesystem:  fs,
 		})
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
@@ -1744,7 +1774,8 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 			PreinitFilesystem:       fs,
 			ScriptContextFileSystem: fs,
 			FullAccessToDatabases:   true,
-			Project:                 project.NewDummyProject("proj", fs),
+			Project:                 project,
+			MemberAuthToken:         string(memberId),
 		})
 
 		if !assert.ErrorIs(t, err, core.ErrCurrentSchemaNotEqualToExpectedSchema) {
@@ -1763,6 +1794,23 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 	})
 
 	t.Run("in data extraction mode if the current schema of a database does not match the expected schema, the state and an error should be returned", func(t *testing.T) {
+		//Create a project.
+
+		id, memberId, err := projectRegistry.CreateProject(registryCtx, project.CreateProjectParams{
+			Name: "test-project",
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		project, err := projectRegistry.OpenProject(registryCtx, project.OpenProjectParams{Id: id})
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		//
+
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
@@ -1775,10 +1823,6 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 				}
 			}
 			manifest {
-				permissions: {
-					read: %/...
-					write: %/...
-				}
 				databases: {
 					local: {
 						resource: ldb://main
@@ -1789,15 +1833,11 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 			}
 		`), 0o600)
 
-		fs := fs_ns.NewMemFilesystem(1000)
+		fs := fs_ns.NewMemFilesystem(100_000)
 
 		ctx := core.NewContext(core.ContextConfig{
-			Permissions: append(
-				core.GetDefaultGlobalVarPermissions(),
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
-				core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")},
-			),
-			Filesystem: fs,
+			Permissions: core.GetDefaultGlobalVarPermissions(),
+			Filesystem:  fs,
 		})
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
@@ -1814,7 +1854,8 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 			FullAccessToDatabases:   true,
 
 			DataExtractionMode: true,
-			Project:            project.NewDummyProject("proj", fs),
+			Project:            project,
+			MemberAuthToken:    string(memberId),
 		})
 
 		if !assert.NoError(t, err) {
@@ -1862,6 +1903,23 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 	})
 
 	t.Run("local database + assert-schema matching the current schema", func(t *testing.T) {
+		//Create a project.
+
+		id, memberId, err := projectRegistry.CreateProject(registryCtx, project.CreateProjectParams{
+			Name: "test-project",
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		project, err := projectRegistry.OpenProject(registryCtx, project.OpenProjectParams{Id: id})
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		//
+
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
@@ -1872,10 +1930,6 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 				pattern expected-schema = %{}
 			}
 			manifest {
-				permissions: {
-					read: %/...
-					write: %/...
-				}
 				databases: {
 					local: {
 						resource: ldb://main
@@ -1886,15 +1940,11 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 			}
 		`), 0o600)
 
-		fs := fs_ns.NewMemFilesystem(1000)
+		fs := fs_ns.NewMemFilesystem(100_000)
 
 		ctx := core.NewContext(core.ContextConfig{
-			Permissions: append(
-				core.GetDefaultGlobalVarPermissions(),
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
-				core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")},
-			),
-			Filesystem: fs,
+			Permissions: core.GetDefaultGlobalVarPermissions(),
+			Filesystem:  fs,
 		})
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
@@ -1909,7 +1959,8 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 			PreinitFilesystem:       fs,
 			ScriptContextFileSystem: fs,
 			FullAccessToDatabases:   true,
-			Project:                 project.NewDummyProject("proj", fs),
+			Project:                 project,
+			MemberAuthToken:         string(memberId),
 		})
 
 		if !assert.NoError(t, err) {
@@ -1944,6 +1995,24 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 	})
 
 	t.Run("local database + expected schema update: the entities should not be loaded yet", func(t *testing.T) {
+
+		//Create a project.
+
+		id, memberId, err := projectRegistry.CreateProject(registryCtx, project.CreateProjectParams{
+			Name: "test-project",
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		project, err := projectRegistry.OpenProject(registryCtx, project.OpenProjectParams{Id: id})
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		//
+
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
@@ -1951,10 +2020,6 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 
 		os.WriteFile(file, []byte(`
 			manifest {
-				permissions: {
-					read: %/...
-					write: %/...
-				}
 				databases: {
 					local: {
 						resource: ldb://main
@@ -1967,15 +2032,11 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 			dbs.local.update_schema(%{})
 		`), 0o600)
 
-		fs := fs_ns.NewMemFilesystem(1000)
+		fs := fs_ns.NewMemFilesystem(100_000)
 
 		ctx := core.NewContext(core.ContextConfig{
-			Permissions: append(
-				core.GetDefaultGlobalVarPermissions(),
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
-				core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")},
-			),
-			Filesystem: fs,
+			Permissions: core.GetDefaultGlobalVarPermissions(),
+			Filesystem:  fs,
 		})
 		core.NewGlobalState(ctx)
 		defer ctx.CancelGracefully()
@@ -1990,7 +2051,8 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 			PreinitFilesystem:       fs,
 			ScriptContextFileSystem: fs,
 			FullAccessToDatabases:   true,
-			Project:                 project.NewDummyProject("proj", fs),
+			Project:                 project,
+			MemberAuthToken:         string(memberId),
 		})
 
 		if !assert.NoError(t, err) {
@@ -2027,19 +2089,36 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 	})
 
 	t.Run("local database set by main module and accessed by external module", func(t *testing.T) {
+
+		//Create a project.
+
+		id, memberId, err := projectRegistry.CreateProject(registryCtx, project.CreateProjectParams{
+			Name: "test-project",
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		project, err := projectRegistry.OpenProject(registryCtx, project.OpenProjectParams{Id: id})
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		//
+
 		fls := fs_ns.NewMemFilesystem(10_000)
 
 		util.WriteFile(fls, "/main.ix", []byte(`
 			manifest {
-				permissions: {
-					read: %/...
-					write: %/...
-				}
 				databases: {
 					local: {
 						resource: ldb://main
 						resolution-data: nil
 					}
+				}
+				permissions: {
+					read: %/...
 				}
 			}
 		`), 0o600)
@@ -2054,7 +2133,6 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 			Permissions: append(
 				core.GetDefaultGlobalVarPermissions(),
 				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
-				core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")},
 			),
 			Filesystem: fls,
 		})
@@ -2070,7 +2148,8 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 
 			PreinitFilesystem:     fls,
 			FullAccessToDatabases: true,
-			Project:               project.NewDummyProject("proj", fls),
+			Project:               project,
+			MemberAuthToken:       string(memberId),
 		})
 
 		if !assert.NoError(t, err) {
@@ -2126,6 +2205,23 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 			return
 		}
 
+		//Create a project.
+
+		id, memberId, err := projectRegistry.CreateProject(registryCtx, project.CreateProjectParams{
+			Name: "test-project",
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		project, err := projectRegistry.OpenProject(registryCtx, project.OpenProjectParams{Id: id})
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		//
+
 		s3Host := randS3Host()
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
@@ -2153,7 +2249,7 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 			}
 		`), 0o600)
 
-		fs := fs_ns.NewMemFilesystem(1000)
+		fs := fs_ns.NewMemFilesystem(100_000)
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: append(
@@ -2167,7 +2263,8 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 
 		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     file,
-			Project:                   project.NewDummyProject("test", fs),
+			Project:                   project,
+			MemberAuthToken:           string(memberId),
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
 			ParentContextRequired:     true,
@@ -2222,6 +2319,23 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 			return
 		}
 
+		//Create a project.
+
+		id, memberId, err := projectRegistry.CreateProject(registryCtx, project.CreateProjectParams{
+			Name: "test-project",
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		project, err := projectRegistry.OpenProject(registryCtx, project.OpenProjectParams{Id: id})
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		//
+
 		s3Host := randS3Host()
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
@@ -2252,7 +2366,7 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 			dbs.db.update_schema(%{})
 		`), 0o600)
 
-		fs := fs_ns.NewMemFilesystem(1000)
+		fs := fs_ns.NewMemFilesystem(100_000)
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: append(
@@ -2266,7 +2380,8 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 
 		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     file,
-			Project:                   project.NewDummyProject("test", fs),
+			Project:                   project,
+			MemberAuthToken:           string(memberId),
 			ParsingCompilationContext: compilationCtx,
 			ParentContext:             ctx,
 			ParentContextRequired:     true,
@@ -2326,6 +2441,7 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 
 		//create project
 		var proj *project.Project
+		var memberId string
 		projectName := "test-mod-prep-creds-from-project"
 		{
 			tempCtx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
@@ -2335,7 +2451,7 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 				return
 			}
 
-			id, _, err := registry.CreateProject(tempCtx, project.CreateProjectParams{
+			id, membID, err := registry.CreateProject(tempCtx, project.CreateProjectParams{
 				Name: projectName,
 			})
 
@@ -2352,6 +2468,8 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 					},
 				},
 			})
+
+			memberId = string(membID)
 
 			if !assert.NoError(t, err) {
 				return
@@ -2420,7 +2538,8 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 			ScriptContextFileSystem: fs,
 			FullAccessToDatabases:   true,
 
-			Project: proj,
+			Project:         proj,
+			MemberAuthToken: memberId,
 		})
 
 		if !assert.NoError(t, err) {

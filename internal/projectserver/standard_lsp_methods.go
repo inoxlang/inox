@@ -42,8 +42,9 @@ var (
 	sessionToAdditionalData     = make(map[*jsonrpc.Session]*additionalSessionData)
 	sessionToAdditionalDataLock sync.Mutex
 
-	ErrFileURIExpected = errors.New("a file: URI was expected")
-	ErrInoxURIExpected = errors.New("a inox: URI was expected")
+	ErrFileURIExpected        = errors.New("a file: URI was expected")
+	ErrInoxURIExpected        = errors.New("a inox: URI was expected")
+	ErrMemberNotAuthenticated = errors.New("member not authenticated")
 
 	True  = true
 	False = false
@@ -62,6 +63,7 @@ type additionalSessionData struct {
 	serverCapabilities   defines.ServerCapabilities
 	projectMode          bool
 	project              *project.Project
+	memberAuthToken      string
 	projectDevSessionKey http_ns.DevSessionKey //set after project is open
 
 	serverAPI *serverAPI //set during project opening
@@ -305,6 +307,7 @@ func handleHover(ctx context.Context, req *defines.HoverParams) (result *defines
 	sessionData := getLockedSessionData(session)
 	projectMode := sessionData.projectMode
 	fls := sessionData.filesystem
+	memberAuthToken := sessionData.memberAuthToken
 	sessionData.lock.Unlock()
 
 	if fls == nil {
@@ -322,7 +325,13 @@ func handleHover(ctx context.Context, req *defines.HoverParams) (result *defines
 	})
 	defer handlingCtx.CancelGracefully()
 
-	return getHoverContent(fpath, line, column, handlingCtx, session)
+	return getHoverContent(handlingCtx, hoverContentParams{
+		fpath:           fpath,
+		line:            line,
+		column:          column,
+		session:         session,
+		memberAuthToken: memberAuthToken,
+	})
 }
 
 func handleSignatureHelp(ctx context.Context, req *defines.SignatureHelpParams) (result *defines.SignatureHelp, err error) {
@@ -332,10 +341,15 @@ func handleSignatureHelp(ctx context.Context, req *defines.SignatureHelpParams) 
 	sessionData := getLockedSessionData(session)
 	projectMode := sessionData.projectMode
 	fls := sessionData.filesystem
+	memberAuthToken := sessionData.memberAuthToken
 	sessionData.lock.Unlock()
 
 	if fls == nil {
 		return nil, errors.New(string(FsNoFilesystem))
+	}
+
+	if memberAuthToken == "" {
+		return nil, ErrMemberNotAuthenticated
 	}
 
 	fpath, err := getFilePath(req.TextDocument.Uri, projectMode)
@@ -349,7 +363,13 @@ func handleSignatureHelp(ctx context.Context, req *defines.SignatureHelpParams) 
 	})
 	defer handlingCtx.CancelGracefully()
 
-	return getSignatureHelp(fpath, line, column, handlingCtx, session)
+	return getSignatureHelp(handlingCtx, signatureHelpParams{
+		fpath:           fpath,
+		line:            line,
+		column:          column,
+		session:         session,
+		memberAuthToken: memberAuthToken,
+	})
 }
 
 func handleCompletion(ctx context.Context, req *defines.CompletionParams) (result *[]defines.CompletionItem, err error) {
@@ -357,6 +377,7 @@ func handleCompletion(ctx context.Context, req *defines.CompletionParams) (resul
 
 	sessionData := getLockedSessionData(session)
 	projectMode := sessionData.projectMode
+	memberAuthToken := sessionData.memberAuthToken
 	sessionData.lock.Unlock()
 
 	fpath, err := getFilePath(req.TextDocument.Uri, projectMode)
@@ -364,9 +385,13 @@ func handleCompletion(ctx context.Context, req *defines.CompletionParams) (resul
 		return nil, err
 	}
 
+	if memberAuthToken == "" {
+		return nil, ErrMemberNotAuthenticated
+	}
+
 	line, column := getLineColumn(req.Position)
 
-	completions := getCompletions(fpath, line, column, session)
+	completions := getCompletions(fpath, line, column, session, memberAuthToken)
 	completionIndex := 0
 
 	lspCompletions := utils.MapSlice(completions, func(completion codecompletion.Completion) defines.CompletionItem {
@@ -444,6 +469,7 @@ func handleDefinition(ctx context.Context, req *defines.DefinitionParams) (resul
 	sessionData := getLockedSessionData(session)
 	projectMode := sessionData.projectMode
 	fls := sessionData.filesystem
+	memberAuthToken := sessionData.memberAuthToken
 	sessionData.lock.Unlock()
 
 	if fls == nil {
@@ -462,9 +488,10 @@ func handleDefinition(ctx context.Context, req *defines.DefinitionParams) (resul
 	defer handlingCtx.CancelGracefully()
 
 	preparationResult, ok := prepareSourceFileInExtractionMode(handlingCtx, filePreparationParams{
-		fpath:         fpath,
-		session:       session,
-		requiresState: true,
+		fpath:           fpath,
+		session:         session,
+		requiresState:   true,
+		memberAuthToken: memberAuthToken,
 	})
 
 	state := preparationResult.state
@@ -616,6 +643,7 @@ func handleDidOpenDocument(ctx context.Context, req *defines.DidOpenTextDocument
 	sessionData := getLockedSessionData(session)
 	projectMode := sessionData.projectMode
 	fls := sessionData.filesystem
+	memberAuthToken := sessionData.memberAuthToken
 	sessionData.lock.Unlock()
 	//----------------------------------------
 
@@ -675,7 +703,13 @@ func handleDidOpenDocument(ctx context.Context, req *defines.DidOpenTextDocument
 		sessionData.lock.Unlock()
 	}
 
-	return notifyDiagnostics(session, req.TextDocument.Uri, projectMode, fls)
+	return notifyDiagnostics(diagnosticsParams{
+		session:         session,
+		docURI:          req.TextDocument.Uri,
+		usingInoxFS:     projectMode,
+		fls:             fls,
+		memberAuthToken: memberAuthToken,
+	})
 }
 
 func handleDidSaveDocument(ctx context.Context, req *defines.DidSaveTextDocumentParams) (err error) {
@@ -685,6 +719,7 @@ func handleDidSaveDocument(ctx context.Context, req *defines.DidSaveTextDocument
 	sessionData := getLockedSessionData(session)
 	projectMode := sessionData.projectMode
 	fls := sessionData.filesystem
+	memberAuthToken := sessionData.memberAuthToken
 
 	fpath, err := getFilePath(req.TextDocument.Uri, projectMode)
 	if err != nil {
@@ -763,7 +798,13 @@ func handleDidSaveDocument(ctx context.Context, req *defines.DidSaveTextDocument
 		}
 	}
 
-	return notifyDiagnostics(session, req.TextDocument.Uri, projectMode, fls)
+	return notifyDiagnostics(diagnosticsParams{
+		session:         session,
+		docURI:          req.TextDocument.Uri,
+		usingInoxFS:     projectMode,
+		fls:             fls,
+		memberAuthToken: memberAuthToken,
+	})
 }
 
 func handleDidChangeDocument(ctx context.Context, req *defines.DidChangeTextDocumentParams) (err error) {
@@ -773,6 +814,7 @@ func handleDidChangeDocument(ctx context.Context, req *defines.DidChangeTextDocu
 	sessionData := getLockedSessionData(session)
 	projectMode := sessionData.projectMode
 	fls := sessionData.filesystem
+	memberAuthToken := sessionData.memberAuthToken
 
 	fpath, err := getFilePath(req.TextDocument.Uri, projectMode)
 	if err != nil {
@@ -890,7 +932,13 @@ func handleDidChangeDocument(ctx context.Context, req *defines.DidChangeTextDocu
 		}
 	}
 
-	return notifyDiagnostics(session, req.TextDocument.Uri, projectMode, fls)
+	return notifyDiagnostics(diagnosticsParams{
+		session:         session,
+		docURI:          req.TextDocument.Uri,
+		usingInoxFS:     projectMode,
+		fls:             fls,
+		memberAuthToken: memberAuthToken,
+	})
 }
 
 func handleDidCloseDocument(ctx context.Context, req *defines.DidCloseTextDocumentParams) (err error) {
