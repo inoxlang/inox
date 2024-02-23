@@ -9,11 +9,6 @@ manifest {
         provide: APP_LISTENING_ADDR
 
         read: %/...
-
-        write: {
-            # allow persisting the self signed certificate that is automatically generated.
-            %/.dev/self_signed*
-        }
     }
     databases: {
         main: {

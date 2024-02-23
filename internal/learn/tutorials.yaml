@@ -1119,9 +1119,6 @@
                 provide: HOST
 
                 read: %/...
-
-                # allow persisting the self signed certificate that is automatically generated.
-                write: %/.dev/self_signed*
             }
         }
 
