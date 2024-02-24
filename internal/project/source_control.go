@@ -8,6 +8,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/cache"
 	"github.com/go-git/go-git/v5/storage/filesystem"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/sourcecontrol"
 )
 
 const (
@@ -48,6 +49,6 @@ func (c *developerCopy) openRepositoryNoLock(gitStorageFs *fs_ns.MetaFilesystem)
 		return fmt.Errorf("failed to open git repository on project server: %w", err)
 	}
 
-	c.repository = repo
+	c.repository = sourcecontrol.WrapLower(repo)
 	return nil
 }
