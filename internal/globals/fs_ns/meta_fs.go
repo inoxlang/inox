@@ -283,7 +283,7 @@ func (fls *MetaFilesystem) Chroot(path string) (billy.Filesystem, error) {
 }
 
 func (fls *MetaFilesystem) Root() string {
-	panic(core.ErrNotImplemented)
+	return "/"
 }
 
 // DoWithContext implements core.IDoWithContext.

@@ -134,11 +134,11 @@ func (f *metaFsFile) Close() error {
 }
 
 func (f *metaFsFile) Lock() error {
-	return core.ErrNotImplemented
+	return f.underlying.Lock()
 }
 
 func (f *metaFsFile) Unlock() error {
-	return core.ErrNotImplemented
+	return f.underlying.Unlock()
 }
 
 func (f *metaFsFile) Truncate(size int64) error {

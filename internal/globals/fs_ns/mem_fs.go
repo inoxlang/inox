@@ -48,7 +48,7 @@ func (fs *MemFilesystem) Chroot(path string) (billy.Filesystem, error) {
 }
 
 func (fs *MemFilesystem) Root() string {
-	panic(core.ErrNotImplemented)
+	return "/"
 }
 
 func (fs *MemFilesystem) Absolute(path string) (string, error) {
