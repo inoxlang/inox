@@ -2,6 +2,7 @@ package project
 
 import (
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/project/imageconsts"
 )
 
 var (
@@ -27,11 +28,7 @@ func (p *Project) BaseImage() (core.Image, error) {
 			return nil
 		},
 		InclusionFilters: []core.PathPattern{"/..."},
-		ExclusionFilters: []core.PathPattern{
-			"/**/.*",   //files whose name starts with a dot
-			"/**/.*/",  //directories whose name starts with a dot
-			"/**/.*/*", //files in directories whose name starts with a dot
-		},
+		ExclusionFilters: imageconsts.ABSOLUTE_EXCLUSION_FILTERS,
 	})
 
 	if err != nil {

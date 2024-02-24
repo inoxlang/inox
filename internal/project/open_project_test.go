@@ -171,7 +171,7 @@ func TestOpenProject(t *testing.T) {
 			Name:     "myproject",
 			Template: scaffolding.MINIMAL_WEB_APP_TEMPLATE_NAME,
 		}
-		id, _ := utils.Must2(reg.CreateProject(ctx, params))
+		id, ownerID := utils.Must2(reg.CreateProject(ctx, params))
 
 		assert.NotEmpty(t, id)
 
@@ -198,6 +198,59 @@ func TestOpenProject(t *testing.T) {
 
 		assert.Same(t, project1, project2)
 		assert.Equal(t, params, project1.data.CreationParams)
+
+		//Check members.
+
+		member, ok := project2.GetMemberByID(ctx, ownerID)
+		if !assert.True(t, ok) {
+			return
+		}
+
+		assert.Equal(t, OWNER_MEMBER_NAME, member.Name())
+
+		member, ok = project2.GetMemberByName(ctx, OWNER_MEMBER_NAME)
+		if !assert.True(t, ok) {
+			return
+		}
+
+		assert.Equal(t, OWNER_MEMBER_NAME, member.Name())
+
+		//Check the staging filesystem.
+
+		fls := project2.StagingFilesystem()
+		entries, err := fls.ReadDir("/")
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		if !assert.NotZero(t, entries) {
+			return
+		}
+		assert.True(t, utils.Some(entries, func(e fs.FileInfo) bool { return e.Name() == DEFAULT_MAIN_FILENAME }))
+
+		//Check the working tree of the owner member.
+
+		devCopy, err := project2.DevCopy(ctx, string(ownerID))
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		entries, err = utils.MustGet(devCopy.WorkingFilesystem()).ReadDir("/")
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		if !assert.NotZero(t, entries) {
+			return
+		}
+		assert.True(t, utils.Some(entries, func(e fs.FileInfo) bool { return e.Name() == DEFAULT_MAIN_FILENAME }))
+
+		//Check the git repository of the owner member.
+
+		_, ok = devCopy.Repository()
+		if !assert.True(t, ok) {
+			return
+		}
 	})
 
 	t.Run("after closing the ctx that opened the project, re-opening with another ctx should be okay and the FS should be working", func(t *testing.T) {

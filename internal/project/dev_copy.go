@@ -6,10 +6,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-git/go-git/v5"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/project/access"
+	"github.com/inoxlang/inox/internal/sourcecontrol"
 )
 
 // A developerCopy represents a copy of the project for a single project member.
@@ -26,7 +26,7 @@ type developerCopy struct {
 	devSessionContext *core.Context
 	workingFs         *fs_ns.MetaFilesystem //working tree
 	gitStorageFs      *fs_ns.MetaFilesystem
-	repository        *git.Repository
+	repository        *sourcecontrol.GitRepository
 }
 
 func (p *Project) getOpenDevCopy(devSessionContext *core.Context, fsDir, gitStorageDir string, member *access.Member) (*developerCopy, error) {
@@ -61,21 +61,24 @@ func (p *Project) getOpenDevCopy(devSessionContext *core.Context, fsDir, gitStor
 		return copy, nil
 	}
 
-	select {
-	case <-copy.devSessionContext.Done():
-	case <-time.After(time.Second):
-	}
-
-	if !copy.workingFs.IsClosed() && copy.workingFs.IsClosedOrClosing() {
-		//Wait for the filesystem to close.
-		time.Sleep(time.Second)
-	}
-
-	if !copy.workingFs.IsClosed() {
-		if copy.workingFs.IsClosedOrClosing() {
-			return nil, fmt.Errorf("filesystem of the previous development session is still closing")
+	if copy.devSessionContext != nil {
+		//Wait for the previous development session to finish.
+		select {
+		case <-copy.devSessionContext.Done():
+		case <-time.After(time.Second):
 		}
-		return nil, fmt.Errorf("a development session is already using the filesystem")
+
+		if !copy.workingFs.IsClosed() && copy.workingFs.IsClosedOrClosing() {
+			//Wait for the filesystem to close.
+			time.Sleep(time.Second)
+		}
+
+		if !copy.workingFs.IsClosed() {
+			if copy.workingFs.IsClosedOrClosing() {
+				return nil, fmt.Errorf("filesystem of the previous development session is still closing")
+			}
+			return nil, fmt.Errorf("a development session is already using the filesystem")
+		}
 	}
 
 	err := copy.beginNewSession(devSessionContext, p)
@@ -100,7 +103,7 @@ func (c *developerCopy) WorkingFilesystem() (*fs_ns.MetaFilesystem, bool) {
 
 // WorkingFilesystem returns the Git repository of the developer's copy.
 // It may not be available because the developer (project member) has not started a session.
-func (c *developerCopy) Repository() (*git.Repository, bool) {
+func (c *developerCopy) Repository() (*sourcecontrol.GitRepository, bool) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
