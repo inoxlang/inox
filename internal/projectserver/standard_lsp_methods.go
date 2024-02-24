@@ -22,6 +22,7 @@ import (
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/projectserver/logs"
 	"github.com/inoxlang/inox/internal/projectserver/lsp"
+	"github.com/inoxlang/inox/internal/sourcecontrol"
 
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
 
@@ -59,6 +60,8 @@ type additionalSessionData struct {
 	preparedSourceFilesCache *preparedFileCache
 
 	filesystem           *Filesystem
+	repository           *sourcecontrol.GitRepository //Git repository on the project server.
+	repositoryLock       sync.Mutex
 	clientCapabilities   defines.ClientCapabilities
 	serverCapabilities   defines.ServerCapabilities
 	projectMode          bool

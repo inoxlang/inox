@@ -137,9 +137,7 @@ type DebugSecondaryEvent struct {
 	Body any `json:"body"`
 }
 
-func registerDebugMethodHandlers(
-	server *lsp.Server, opts LSPServerConfiguration,
-) {
+func registerDebugMethodHandlers(server *lsp.Server, opts LSPServerConfiguration) {
 
 	server.OnCustom(jsonrpc.MethodInfo{
 		Name: INITIALIZE_DEBUG_METHOD,

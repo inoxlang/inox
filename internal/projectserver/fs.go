@@ -19,7 +19,7 @@ var _ = fs_ns.WatchableVirtualFilesystem((*Filesystem)(nil))
 
 // Filesystem is a filesystem that stores the unsaved documents in a separate filesystem.
 type Filesystem struct {
-	afs.Filesystem
+	afs.Filesystem //working tree
 	//osFs *fs_ns.OsFilesystem
 
 	unsavedDocuments afs.Filesystem
@@ -27,12 +27,12 @@ type Filesystem struct {
 
 // NewFilesystem creates a new Filesystem with a persistsed filesystem and a filesystem
 // for storing the state of unsave documents. unsavedDocumentFs should be fast.
-func NewFilesystem(base afs.Filesystem, unsavedDocumentFs afs.Filesystem) *Filesystem {
+func NewFilesystem(workingTree afs.Filesystem, unsavedDocumentFs afs.Filesystem) *Filesystem {
 	if unsavedDocumentFs == nil {
 		panic(errors.New("unsavedDocumentFs is nil"))
 	}
 	return &Filesystem{
-		Filesystem:       base,
+		Filesystem:       workingTree,
 		unsavedDocuments: unsavedDocumentFs,
 	}
 }

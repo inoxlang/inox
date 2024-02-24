@@ -188,6 +188,16 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 				}
 			}
 
+			gitRepo, ok := developerCopy.Repository()
+			if !ok {
+				if err != nil {
+					return nil, jsonrpc.ResponseError{
+						Code:    jsonrpc.InternalError.Code,
+						Message: "failed to get local git repository",
+					}
+				}
+			}
+
 			lspFilesystem := NewFilesystem(workingFs, fs_ns.NewMemFilesystem(10_000_000))
 
 			//Update session data.
@@ -200,6 +210,7 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 			sessionCtx.PutUserData(http_ns.CTX_DATA_KEY_FOR_DEV_SESSION_KEY, core.String(sessionData.projectDevSessionKey))
 
 			sessionData.filesystem = lspFilesystem
+			sessionData.repository = gitRepo
 			sessionData.project = project
 			sessionData.serverAPI = newServerAPI(lspFilesystem, session, memberAuthToken)
 
