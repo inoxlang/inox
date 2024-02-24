@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/go-git/go-billy/v5"
+	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/buntdb"
 	"github.com/inoxlang/inox/internal/core"
@@ -881,7 +882,7 @@ func (fls *MetaFilesystem) MkdirAllNoLock_(path string, perm os.FileMode, tx *bu
 }
 
 func (fls *MetaFilesystem) TempFile(dir, prefix string) (billy.File, error) {
-	return nil, core.ErrNotImplementedYet
+	return util.TempFile(fls, dir, prefix)
 }
 
 func (fls *MetaFilesystem) Rename(from, to string) error {

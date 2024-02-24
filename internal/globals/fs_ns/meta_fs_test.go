@@ -71,6 +71,7 @@ type MetaFsWithUnderlyingFsTestSuite struct {
 
 	BasicTestSuite
 	DirTestSuite
+	TempFileSuite
 }
 
 func (s *MetaFsWithUnderlyingFsTestSuite) SetUpTest(c *check.C) {
@@ -98,6 +99,9 @@ func (s *MetaFsWithUnderlyingFsTestSuite) SetUpTest(c *check.C) {
 	s.DirTestSuite = DirTestSuite{
 		FS: createMetaFS(),
 	}
+	s.TempFileSuite = TempFileSuite{
+		FS: createMetaFS(),
+	}
 }
 
 func (s *MetaFsWithUnderlyingFsTestSuite) TearDownTest(c *check.C) {
@@ -112,6 +116,7 @@ type MetaFsTestSuite struct {
 
 	BasicTestSuite
 	DirTestSuite
+	TempFileSuite
 }
 
 func (s *MetaFsTestSuite) SetUpTest(c *check.C) {
@@ -136,6 +141,9 @@ func (s *MetaFsTestSuite) SetUpTest(c *check.C) {
 		FS: createMetaFS(),
 	}
 	s.DirTestSuite = DirTestSuite{
+		FS: createMetaFS(),
+	}
+	s.TempFileSuite = TempFileSuite{
 		FS: createMetaFS(),
 	}
 }

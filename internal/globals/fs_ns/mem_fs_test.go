@@ -17,14 +17,19 @@ var _ = check.Suite(&MemoryFsTestSuite{})
 type MemoryFsTestSuite struct {
 	BasicTestSuite
 	DirTestSuite
+	TempFileSuite
 }
 
 func (s *MemoryFsTestSuite) SetUpTest(c *check.C) {
+	const MAX_SIZE = 100_000_00
 	s.BasicTestSuite = BasicTestSuite{
-		FS: NewMemFilesystem(100_000_00),
+		FS: NewMemFilesystem(MAX_SIZE),
 	}
 	s.DirTestSuite = DirTestSuite{
-		FS: NewMemFilesystem(100_000_00),
+		FS: NewMemFilesystem(MAX_SIZE),
+	}
+	s.TempFileSuite = TempFileSuite{
+		FS: NewMemFilesystem(MAX_SIZE),
 	}
 }
 
