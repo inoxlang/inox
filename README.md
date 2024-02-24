@@ -736,16 +736,15 @@ In the planned architecture every important component runs in a separate `inox` 
 ```mermaid
 graph TB
 
-Inoxd(inoxd) --> |$ inox project-server -config='...'| ProjectServer(Project Server)
+Inoxd(inoxd) --> |$ inox project-server -config='...'| ProjectServer("Project Server (may be on a dedicated machine)")
 Inoxd --> |spawns| NodeAgent
 NodeAgent("Node Agent \n [uses cgroups]") --> |creates process| DeployedApp1(Deployed Application 1)
 NodeAgent --> |creates process| DeployedApp2(Deployed Application 2)
 NodeAgent --> |creates process| ServiceModule(Separate Service of App 1)
-ServiceModule <-.-> DeployedApp1
+ServiceModule -..- DeployedApp1
 
 ProjectServer --> |asks to deploy/stop apps| NodeAgent
 ```
-
 
 </details>
 
