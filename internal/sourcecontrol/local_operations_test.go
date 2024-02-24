@@ -24,7 +24,7 @@ func TestGetChanges(t *testing.T) {
 			return
 		}
 
-		expectedUnstagedChanges := []Change{{AbsoluteFilepath: "/file.txt", Code: git.Untracked}}
+		expectedUnstagedChanges := []Change{{AbsolutePath: "/file.txt", Code: git.Untracked}}
 
 		if !assert.ElementsMatch(t, expectedUnstagedChanges, unstagedChanges) {
 			return
@@ -41,7 +41,7 @@ func TestGetChanges(t *testing.T) {
 
 		//Stage the file.
 
-		err = repo.StageFile("file.txt")
+		err = repo.Stage("file.txt")
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -62,7 +62,7 @@ func TestGetChanges(t *testing.T) {
 			return
 		}
 
-		expectedStagedChanges := []Change{{AbsoluteFilepath: "/file.txt", Code: git.Added}}
+		expectedStagedChanges := []Change{{AbsolutePath: "/file.txt", Code: git.Added}}
 
 		if !assert.ElementsMatch(t, expectedStagedChanges, stagedChanges) {
 			return

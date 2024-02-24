@@ -12,8 +12,8 @@ import (
 )
 
 type Change struct {
-	AbsoluteFilepath string
-	Code             git.StatusCode
+	AbsolutePath string
+	Code         git.StatusCode
 }
 
 // getChangesNoLock returns the staged changes if $staged is true. The unstaged changes otherwise.
@@ -30,11 +30,13 @@ func (r *GitRepository) getChangesNoLock(staged bool) ([]Change, error) {
 		return nil, err
 	}
 
-	_, err = r.inner.Storer.Index()
+	index, err := r.inner.Storer.Index()
 
 	if err != nil {
 		return nil, err
 	}
+
+	_ = index
 
 	var changes []Change
 
@@ -49,23 +51,33 @@ func (r *GitRepository) getChangesNoLock(staged bool) ([]Change, error) {
 			}
 		}
 
+		absolutePath := string(path)
 		relativePath := filepath.Clean(strings.TrimPrefix(string(path), "/"))
 		fileStatus := status.File(relativePath)
 
 		//TODO: support chunks.
 		change := Change{
-			AbsoluteFilepath: string(path),
+			AbsolutePath: absolutePath,
 		}
 
 		if staged {
 			if fileStatus.Staging == git.Untracked {
-				//Do not add the change.
-				return nil
+				_, err := index.Entry(absolutePath)
+				if err != nil {
+					//Entry is not present, do not add the change.
+					return nil
+				}
 			}
 			change.Code = fileStatus.Staging
 		} else { //unstaged
 			if fileStatus.Worktree == git.Deleted && fileStatus.Staging != git.Deleted {
 				//Do not add the change.
+				return nil
+			}
+
+			_, err := index.Entry(absolutePath)
+			if fileStatus.Worktree == git.Untracked && err == nil {
+				//??? The file is tracked, do not add the change.
 				return nil
 			}
 			change.Code = fileStatus.Worktree

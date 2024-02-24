@@ -7,18 +7,19 @@ import (
 //Useful resources:
 //- https://github.com/src-d/go-git/issues/604
 
-func (r *GitRepository) StageFile(relativePath string) error {
+// Stage stages a file or a directory.
+func (r *GitRepository) Stage(absolutePath string) error {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
-	relativePath = filepath.Clean(relativePath)
+	absolutePath = filepath.Clean(absolutePath)
 	workTree, err := r.inner.Worktree()
 
 	if err != nil {
 		return err
 	}
 
-	_, err = workTree.Add(relativePath)
+	_, err = workTree.Add(absolutePath)
 	return err
 }
 
