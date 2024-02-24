@@ -169,7 +169,7 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 
 			//Update the project copy of the member.
 
-			developerCopyFS, err := project.DevFilesystem(sessionCtx, memberAuthToken)
+			developerCopy, err := project.DevCopy(sessionCtx, memberAuthToken)
 
 			if err != nil {
 				return nil, jsonrpc.ResponseError{
@@ -178,7 +178,17 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 				}
 			}
 
-			lspFilesystem := NewFilesystem(developerCopyFS, fs_ns.NewMemFilesystem(10_000_000))
+			workingFs, ok := developerCopy.WorkingFilesystem()
+			if !ok {
+				if err != nil {
+					return nil, jsonrpc.ResponseError{
+						Code:    jsonrpc.InternalError.Code,
+						Message: "failed to get the working filesystem (working tree)",
+					}
+				}
+			}
+
+			lspFilesystem := NewFilesystem(workingFs, fs_ns.NewMemFilesystem(10_000_000))
 
 			//Update session data.
 
@@ -195,7 +205,7 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 
 			go sessionData.serverAPI.tryUpdateAPI() //use a goroutine to avoid deadlock
 
-			err = startNotifyingFilesystemStructureEvents(session, developerCopyFS, func(event fs_ns.Event) {
+			err = startNotifyingFilesystemStructureEvents(session, workingFs, func(event fs_ns.Event) {
 				sessionData.serverAPI.acknowledgeStructureChangeEvent(event)
 			})
 

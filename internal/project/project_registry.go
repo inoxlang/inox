@@ -15,7 +15,8 @@ import (
 const (
 	KV_FILENAME = "projects.kv"
 
-	FS_OS_DIR = "fs"
+	FS_OS_DIR  = "fs"  //directory present in each project and in each developer's dir
+	GIT_OS_DIR = "git" //directory present in each developer's dir
 
 	DEV_OS_DIR           = "dev" //directory present in each project and in the same level as projects
 	DEV_DATABASES_OS_DIR = "databases"

@@ -84,14 +84,14 @@ func TestOpenProject(t *testing.T) {
 		}
 		assert.True(t, utils.Some(entries, func(e fs.FileInfo) bool { return e.Name() == DEFAULT_MAIN_FILENAME }))
 
-		//Check the copy of the owner member.
+		//Check the working tree of the owner member.
 
-		fls, err = project.DevFilesystem(ctx, string(ownerID))
+		devCopy, err := project.DevCopy(ctx, string(ownerID))
 		if !assert.NoError(t, err) {
 			return
 		}
 
-		entries, err = fls.ReadDir("/")
+		entries, err = utils.MustGet(devCopy.WorkingFilesystem()).ReadDir("/")
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -100,6 +100,13 @@ func TestOpenProject(t *testing.T) {
 			return
 		}
 		assert.True(t, utils.Some(entries, func(e fs.FileInfo) bool { return e.Name() == DEFAULT_MAIN_FILENAME }))
+
+		//Check the git repository of the owner member.
+
+		_, ok = devCopy.Repository()
+		if !assert.True(t, ok) {
+			return
+		}
 	})
 
 	t.Run("with ExposeWebServers: true", func(t *testing.T) {

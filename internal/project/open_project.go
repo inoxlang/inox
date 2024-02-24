@@ -108,6 +108,7 @@ func (r *Registry) OpenProject(ctx *core.Context, params OpenProjectParams) (*Pr
 		osFilesystem:      r.filesystem,
 		stagingFilesystem: stagingFS,
 		maxFilesystemSize: maxStagingFsSize,
+		developerCopies:   map[access.MemberID]*developerCopy{},
 
 		tempTokens: params.TempTokens,
 		data:       projectData,

@@ -3,6 +3,7 @@ package project
 import (
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
@@ -50,9 +51,11 @@ type Project struct {
 	//filesystems and images
 
 	//TODO: add base filesystem (VCS ?)
-	osFilesystem      *fs_ns.OsFilesystem
-	stagingFilesystem core.SnapshotableFilesystem
-	maxFilesystemSize core.ByteCount
+	osFilesystem        *fs_ns.OsFilesystem
+	stagingFilesystem   core.SnapshotableFilesystem
+	maxFilesystemSize   core.ByteCount
+	developerCopies     map[access.MemberID]*developerCopy
+	developerCopiesLock sync.Mutex
 
 	dirOnOsFs    string
 	fsDirOnOsFs  string
