@@ -34,9 +34,9 @@ by default in the global scope).
 This package also contains several implementations of
 [afs.Filesystem](../../afs/abstract_fs.go):
 
-- [MemFilesystem](./memory_filesystem.go)
-- [MetaFilesystem](./meta_filesystem.go)
-- [OsFilesystem](./os_filesystem_unix.go)
+- [MemFilesystem](./mem_fs.go)
+- [MetaFilesystem](./meta_fs.go)
+- [OsFilesystem](./os_fs_unix.go)
 
 File watching is implemented in [watcher_unix.go](./watcher_unix.go) and
 [vfs_watcher.go](./vfs_watcher.go).
