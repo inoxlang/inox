@@ -76,9 +76,10 @@ type MetaFilesystem struct {
 	metadata *buntdb.DB
 	ctx      *core.Context
 
-	lock        sync.RWMutex
-	closed      atomic.Bool
-	snapshoting atomic.Bool
+	lock            sync.RWMutex
+	closedOrClosing atomic.Bool
+	closed          atomic.Bool
+	snapshoting     atomic.Bool
 
 	pendingFileCreations atomic.Int32
 
@@ -223,10 +224,20 @@ func OpenMetaFilesystem(ctx *core.Context, underlying billy.Basic, opts MetaFile
 	return fls, nil
 }
 
+func (fls *MetaFilesystem) IsClosedOrClosing() bool {
+	return fls.closedOrClosing.Load()
+}
+
+func (fls *MetaFilesystem) IsClosed() bool {
+	return fls.closed.Load()
+}
+
 func (fls *MetaFilesystem) Close(ctx *core.Context) error {
-	if !fls.closed.CompareAndSwap(false, true) {
+	if !fls.closedOrClosing.CompareAndSwap(false, true) {
 		return nil
 	}
+
+	defer fls.closed.Store(true)
 
 	//unregister the filesystem from the watched filesystems.
 	watchedVirtualFilesystemsLock.Lock()
@@ -277,7 +288,7 @@ func (fls *MetaFilesystem) Root() string {
 
 // DoWithContext implements core.IDoWithContext.
 func (fls *MetaFilesystem) DoWithContext(ctx *core.Context, fn func() error) error {
-	if fls.closed.Load() {
+	if fls.closedOrClosing.Load() {
 		return ErrClosedFilesystem
 	}
 	return fn()
@@ -489,7 +500,7 @@ func (fls *MetaFilesystem) Open(filename string) (billy.File, error) {
 }
 
 func (fls *MetaFilesystem) OpenFile(filename string, flag int, perm os.FileMode) (billy.File, error) {
-	if fls.closed.Load() {
+	if fls.closedOrClosing.Load() {
 		return nil, ErrClosedFilesystem
 	}
 
@@ -661,7 +672,7 @@ func (fls *MetaFilesystem) OpenFile(filename string, flag int, perm os.FileMode)
 }
 
 func (fls *MetaFilesystem) Stat(filename string) (os.FileInfo, error) {
-	if fls.closed.Load() {
+	if fls.closedOrClosing.Load() {
 		return nil, ErrClosedFilesystem
 	}
 
@@ -672,7 +683,7 @@ func (fls *MetaFilesystem) Stat(filename string) (os.FileInfo, error) {
 }
 
 func (fls *MetaFilesystem) statNoLock(filename string) (os.FileInfo, error) {
-	if fls.closed.Load() {
+	if fls.closedOrClosing.Load() {
 		return nil, ErrClosedFilesystem
 	}
 
@@ -711,7 +722,7 @@ func (fls *MetaFilesystem) statNoLock(filename string) (os.FileInfo, error) {
 }
 
 func (fls *MetaFilesystem) Lstat(filename string) (os.FileInfo, error) {
-	if fls.closed.Load() {
+	if fls.closedOrClosing.Load() {
 		return nil, ErrClosedFilesystem
 	}
 
@@ -736,7 +747,7 @@ func (fls *MetaFilesystem) Lstat(filename string) (os.FileInfo, error) {
 }
 
 func (fls *MetaFilesystem) ReadDir(path string) ([]os.FileInfo, error) {
-	if fls.closed.Load() {
+	if fls.closedOrClosing.Load() {
 		return nil, ErrClosedFilesystem
 	}
 
@@ -774,7 +785,7 @@ func (fls *MetaFilesystem) ReadDir(path string) ([]os.FileInfo, error) {
 }
 
 func (fls *MetaFilesystem) MkdirAll(path string, perm os.FileMode) error {
-	if fls.closed.Load() {
+	if fls.closedOrClosing.Load() {
 		return ErrClosedFilesystem
 	}
 
@@ -789,7 +800,7 @@ func (fls *MetaFilesystem) MkdirAllNoLock(path string, perm os.FileMode) error {
 }
 
 func (fls *MetaFilesystem) MkdirAllNoLock_(path string, perm os.FileMode, tx *buntdb.Tx) error {
-	if fls.closed.Load() {
+	if fls.closedOrClosing.Load() {
 		return ErrClosedFilesystem
 	}
 
@@ -874,7 +885,7 @@ func (fls *MetaFilesystem) TempFile(dir, prefix string) (billy.File, error) {
 }
 
 func (fls *MetaFilesystem) Rename(from, to string) error {
-	if fls.closed.Load() {
+	if fls.closedOrClosing.Load() {
 		return ErrClosedFilesystem
 	}
 
@@ -1067,7 +1078,7 @@ func (fls *MetaFilesystem) Rename(from, to string) error {
 }
 
 func (fls *MetaFilesystem) Remove(filename string) error {
-	if fls.closed.Load() {
+	if fls.closedOrClosing.Load() {
 		return ErrClosedFilesystem
 	}
 

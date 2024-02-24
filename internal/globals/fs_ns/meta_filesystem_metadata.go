@@ -18,7 +18,7 @@ func (fls *MetaFilesystem) getFileMetadata(pth core.Path, usedTx *buntdb.Tx) (*m
 		return nil, false, errors.New("file's path should be absolute")
 	}
 
-	if fls.closed.Load() {
+	if fls.closedOrClosing.Load() {
 		return nil, false, ErrClosedFilesystem
 	}
 
