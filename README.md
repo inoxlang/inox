@@ -724,6 +724,32 @@ No but executing WebAssembly modules and programs will be possible.
 
 </details>
 
+### Does Inox use a single process ?
+
+<details>
+
+- The inox daemon runs in a single dedicated process.
+- As of now the project server and applications launched by developers run in the same process. This is obviously a **temporay solution**.
+
+In the planned architecture every important component runs in a separate `inox` process.
+
+```mermaid
+graph TB
+
+Inoxd(inoxd) --> |$ inox project-server -config='...'| ProjectServer(Project Server)
+Inoxd --> |spawns| NodeAgent
+NodeAgent("Node Agent \n [uses cgroups]") --> |creates process| DeployedApp1(Deployed Application 1)
+NodeAgent --> |creates process| DeployedApp2(Deployed Application 2)
+NodeAgent --> |creates process| ServiceModule(Separate Service of App 1)
+ServiceModule <-.-> DeployedApp1
+
+ProjectServer --> |asks to deploy/stop apps| NodeAgent
+```
+
+
+</details>
+
+
 ### Why have you created Inox ?
 
 <details>

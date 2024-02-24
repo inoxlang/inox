@@ -58,13 +58,14 @@ In this version every important component runs in a separate `inox` process.
 ```mermaid
 graph TB
 
-Inoxd(inoxd) --> |$ inox project-server -config='...'| ProjectServer
+Inoxd(inoxd) --> |$ inox project-server -config='...'| ProjectServer(Project Server)
 Inoxd --> |spawns| NodeAgent
 NodeAgent("Node Agent \n [uses cgroups]") --> |creates process| DeployedApp1(Deployed Application 1)
 NodeAgent --> |creates process| DeployedApp2(Deployed Application 2)
+NodeAgent --> |creates process| ServiceModule(Separate Service of App 1)
+ServiceModule <-.-> DeployedApp1
 DeployedApp1 --> |stores data in| ProdDir
 DeployedApp2 --> |stores data in| ProdDir
-
 
 ProjectServer[Project Server] --> |stores data in| ProjectsDir
 ProjectServer --> |asks to deploy/stop apps| NodeAgent
