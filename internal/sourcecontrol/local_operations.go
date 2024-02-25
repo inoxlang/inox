@@ -7,7 +7,13 @@ import (
 	"time"
 
 	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
+)
+
+var (
+	ErrNoReference = errors.New("no reference")
+	ErrEmptyCommit = errors.New("empty commit")
 )
 
 //Useful resources:
@@ -93,13 +99,23 @@ func (r *GitRepository) Commit(message string) error {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
+	stagedChanges, err := r.getStagedChangesNoLock()
+
+	if err != nil {
+		return fmt.Errorf("failed to determine if there staged changes: %w", err)
+	}
+
+	if len(stagedChanges) == 0 {
+		return ErrEmptyCommit
+	}
+
 	workTree, err := r.inner.Worktree()
 
 	if err != nil {
 		return err
 	}
 
-	_, err = workTree.Commit("Initial commit", &git.CommitOptions{
+	_, err = workTree.Commit(message, &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  "john doe",
 			Email: "john.doe@example.com",
@@ -118,10 +134,53 @@ func (r *GitRepository) GetUnstagedChanges() ([]Change, error) {
 	return r.getChangesNoLock(staged)
 }
 
+func (r *GitRepository) getStagedChangesNoLock() ([]Change, error) {
+	staged := true
+	return r.getChangesNoLock(staged)
+}
+
 func (r *GitRepository) GetStagedChanges() ([]Change, error) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
-	staged := true
-	return r.getChangesNoLock(staged)
+	return r.getStagedChangesNoLock()
+}
+
+func (r *GitRepository) LastDevCommit() (*object.Commit, error) {
+
+	head, err := r.inner.Head()
+	if err != nil {
+		return nil, ErrNoReference
+	}
+
+	commit, err := r.inner.CommitObject(head.Hash())
+
+	if err != nil {
+		return nil, err
+	}
+
+	return commit, nil
+}
+
+// Log returns the commits reachable from $from (defaults to HEAD). All arguments are optional.
+func (r *GitRepository) LogDevCommits(from plumbing.Hash, since, until *time.Time) ([]*object.Commit, error) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
+	iter, err := r.inner.Log(&git.LogOptions{
+		Since: since,
+		Until: until,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var commits []*object.Commit
+
+	iter.ForEach(func(c *object.Commit) error {
+		commits = append(commits, c)
+		return nil
+	})
+
+	return commits, nil
 }

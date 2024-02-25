@@ -337,6 +337,24 @@ func TestOperationsOnNonEmptyRepository(t *testing.T) {
 
 		assert.Empty(t, stagedChanges)
 	})
+
+	t.Run("commits with no changes are not allowed", func(t *testing.T) {
+		repo, fs := createEmptyRepo(t)
+		util.WriteFile(fs, "/file.txt", []byte("initial content"), 0600)
+
+		//Add the file and commit.
+
+		utils.PanicIfErr(repo.Stage("/file.txt"))
+
+		utils.PanicIfErr(repo.Commit("initial commit"))
+
+		//Try to commit again.
+
+		err := repo.Commit("initial commit")
+
+		assert.ErrorIs(t, err, ErrEmptyCommit)
+
+	})
 }
 
 func createEmptyRepo(t *testing.T) (*GitRepository, billy.Filesystem) {
