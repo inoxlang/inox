@@ -727,6 +727,8 @@ func (fls *MetaFilesystem) Lstat(filename string) (os.FileInfo, error) {
 		return nil, ErrClosedFilesystem
 	}
 
+	filename = NormalizeAsAbsolute(filename)
+
 	fls.lock.RLock()
 	defer fls.lock.RUnlock()
 
