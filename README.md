@@ -137,6 +137,7 @@ Inox (check see 'What is planned' and [Other features](#other-features)).
 - Be able to store several tera bytes of non-blob data. Note that blob data and
   backups will be stored in S3 buckets.
 - Support more than ~ 10k concurrent users
+- Interactivity with native code (FFIs ...)
 
 </details>
 

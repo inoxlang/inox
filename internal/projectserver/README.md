@@ -63,7 +63,7 @@ Inoxd --> |spawns| NodeAgent
 NodeAgent("Node Agent \n [uses cgroups]") --> |creates process| DeployedApp1(Deployed Application 1)
 NodeAgent --> |creates process| DeployedApp2(Deployed Application 2)
 NodeAgent --> |creates process| ServiceModule(Separate Service of App 1)
-ServiceModule <-.-> DeployedApp1
+ServiceModule -..- DeployedApp1
 DeployedApp1 --> |stores data in| ProdDir
 DeployedApp2 --> |stores data in| ProdDir
 
