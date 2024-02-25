@@ -62,7 +62,7 @@ func (r *GitRepository) getChangesNoLock(staged bool) ([]Change, error) {
 
 			seenFiles[relativePath] = struct{}{}
 
-			change, ok := r.getFileChange(relativePath, staged, status, index)
+			change, ok := r.getFileChange(relativePath, staged, status, index, lastCommit)
 			if ok {
 				changes = append(changes, change)
 			}
@@ -83,7 +83,7 @@ func (r *GitRepository) getChangesNoLock(staged bool) ([]Change, error) {
 
 		seenFiles[relativePath] = struct{}{}
 
-		change, ok := r.getFileChange(relativePath, staged, status, index)
+		change, ok := r.getFileChange(relativePath, staged, status, index, lastCommit)
 		if ok {
 			changes = append(changes, change)
 		}
@@ -94,7 +94,7 @@ func (r *GitRepository) getChangesNoLock(staged bool) ([]Change, error) {
 	return changes, nil
 }
 
-func (r *GitRepository) getFileChange(relativePath string, staged bool, status git.Status, index *index.Index) (Change, bool) {
+func (r *GitRepository) getFileChange(relativePath string, staged bool, status git.Status, index *index.Index, lastCommit *object.Commit) (Change, bool) {
 
 	for _, filter := range imageconsts.RELATIVE_EXCLUSION_FILTERS {
 		if filter.Test(nil, core.Path(relativePath)) {
@@ -120,6 +120,11 @@ func (r *GitRepository) getFileChange(relativePath string, staged bool, status g
 		if fileStatus.Staging == git.Unmodified {
 			return Change{}, false
 		}
+
+		if fileStatus.Staging == git.Untracked /* https://github.com/go-git/go-git/issues/119 */ && inIndex {
+			return Change{}, false
+		}
+
 		change.Code = fileStatus.Staging
 	} else { //unstaged
 

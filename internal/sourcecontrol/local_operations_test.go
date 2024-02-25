@@ -293,6 +293,50 @@ func TestOperationsOnNonEmptyRepository(t *testing.T) {
 		assert.Empty(t, stagedChanges)
 	})
 
+	t.Run("commit file, modify file, commit modification", func(t *testing.T) {
+		repo, fs := createEmptyRepo(t)
+		util.WriteFile(fs, "/file.txt", []byte("initial content"), 0600)
+
+		//Add the file and commit.
+
+		utils.PanicIfErr(repo.Stage("/file.txt"))
+
+		utils.PanicIfErr(repo.Commit("initial commit"))
+
+		//Modify the file.
+
+		f := utils.Must(fs.OpenFile("/file.txt", os.O_WRONLY, 0600))
+		f.Truncate(0)
+		f.Write([]byte("content"))
+		f.Close()
+
+		//Stage the modification and commit.
+
+		utils.PanicIfErr(repo.Stage("/file.txt"))
+
+		utils.PanicIfErr(repo.Commit("modify file.txt"))
+
+		//Check unstaged changes.
+
+		unstagedChanges, err := repo.GetUnstagedChanges()
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		if !assert.Empty(t, unstagedChanges) {
+			return
+		}
+
+		//Check staged changes.
+
+		stagedChanges, err := repo.GetStagedChanges()
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.Empty(t, stagedChanges)
+	})
 }
 
 func createEmptyRepo(t *testing.T) (*GitRepository, billy.Filesystem) {

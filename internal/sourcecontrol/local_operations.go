@@ -90,6 +90,8 @@ func (r *GitRepository) Unstage(absolutePath string) error {
 }
 
 func (r *GitRepository) Commit(message string) error {
+	r.lock.Lock()
+	defer r.lock.Unlock()
 
 	workTree, err := r.inner.Worktree()
 
@@ -109,16 +111,16 @@ func (r *GitRepository) Commit(message string) error {
 }
 
 func (r *GitRepository) GetUnstagedChanges() ([]Change, error) {
-	r.lock.RLock()
-	defer r.lock.RUnlock()
+	r.lock.Lock()
+	defer r.lock.Unlock()
 
 	staged := false
 	return r.getChangesNoLock(staged)
 }
 
 func (r *GitRepository) GetStagedChanges() ([]Change, error) {
-	r.lock.RLock()
-	defer r.lock.RUnlock()
+	r.lock.Lock()
+	defer r.lock.Unlock()
 
 	staged := true
 	return r.getChangesNoLock(staged)

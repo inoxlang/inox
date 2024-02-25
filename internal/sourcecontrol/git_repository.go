@@ -7,8 +7,9 @@ import (
 )
 
 type GitRepository struct {
-	lock  sync.RWMutex
+	lock  sync.Mutex      //all operations may cause mutations.
 	inner *git.Repository //repository on project server
+
 }
 
 func WrapLower(repo *git.Repository) *GitRepository {
