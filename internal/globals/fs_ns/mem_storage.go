@@ -426,6 +426,10 @@ func (s *inMemStorage) Remove(path string) error {
 }
 
 func NormalizeAsAbsolute(path string) string {
+	if path == "" { //An empty path can be passed by go-git.
+		return "/"
+	}
+
 	path = filepath.Clean(path)
 
 	if path != "/" && path[0] != '/' {
