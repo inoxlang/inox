@@ -2837,15 +2837,22 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		var attrs []XMLAttribute
 
 		for _, attrNode := range n.Opening.Attributes {
-			attr := XMLAttribute{name: attrNode.GetName()}
-			if attrNode.Value != nil {
-				attrValue, err := TreeWalkEval(attrNode.Value, state)
-				if err != nil {
-					return nil, err
+			var attr XMLAttribute
+			if regularAttr, ok := attrNode.(*parse.XMLAttribute); ok {
+				attr.name = regularAttr.GetName()
+				if regularAttr.Value != nil {
+					attrValue, err := TreeWalkEval(regularAttr.Value, state)
+					if err != nil {
+						return nil, err
+					}
+					attr.value = attrValue
+				} else {
+					attr.value = DEFAULT_XML_ATTR_VALUE
 				}
-				attr.value = attrValue
 			} else {
-				attr.value = DEFAULT_XML_ATTR_VALUE
+				shorthand := attrNode.(*parse.HyperscriptAttributeShorthand)
+				attr.name = inoxconsts.HYPERSCRIPT_ATTRIBUTE_NAME
+				attr.value = String(shorthand.Value)
 			}
 
 			attrs = append(attrs, attr)

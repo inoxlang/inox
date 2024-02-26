@@ -5457,16 +5457,21 @@ func evalXMLElement(n *parse.XMLElement, state *State, options evalOptions) (Val
 		attrs = make(map[string]Value, len(n.Opening.Attributes))
 
 		for _, attr := range n.Opening.Attributes {
-			name := attr.Name.(*parse.IdentifierLiteral).Name
-			if attr.Value == nil {
-				attrs[name] = ANY_STRING
-				continue
+			regularAttr, ok := attr.(*parse.XMLAttribute)
+			if ok {
+				name := regularAttr.Name.(*parse.IdentifierLiteral).Name
+				if regularAttr.Value == nil {
+					attrs[name] = ANY_STRING
+					continue
+				}
+				val, err := symbolicEval(regularAttr.Value, state)
+				if err != nil {
+					return nil, err
+				}
+				attrs[name] = val
+			} else if _, ok := attr.(*parse.HyperscriptAttributeShorthand); ok {
+				attrs[inoxconsts.HYPERSCRIPT_ATTRIBUTE_NAME] = ANY_STRING
 			}
-			val, err := symbolicEval(attr.Value, state)
-			if err != nil {
-				return nil, err
-			}
-			attrs[name] = val
 		}
 	}
 

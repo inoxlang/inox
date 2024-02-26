@@ -2255,12 +2255,19 @@ func (c *compiler) Compile(node parse.Node) error {
 		name := node.Opening.GetName()
 
 		for _, attr := range node.Opening.Attributes {
-			c.emit(node, OpPushConstant, c.addConstant(String(attr.GetName())))
 
-			if attr.Value == nil {
-				c.emit(node, OpPushConstant, c.addConstant(DEFAULT_XML_ATTR_VALUE))
-			} else if err := c.Compile(attr.Value); err != nil {
-				return err
+			if regularAttr, ok := attr.(*parse.XMLAttribute); ok {
+				c.emit(node, OpPushConstant, c.addConstant(String(regularAttr.GetName())))
+
+				if regularAttr.Value == nil {
+					c.emit(node, OpPushConstant, c.addConstant(DEFAULT_XML_ATTR_VALUE))
+				} else if err := c.Compile(regularAttr.Value); err != nil {
+					return err
+				}
+			} else {
+				shorthand := attr.(*parse.HyperscriptAttributeShorthand)
+				c.emit(node, OpPushConstant, c.addConstant(String(inoxconsts.HYPERSCRIPT_ATTRIBUTE_NAME)))
+				c.emit(node, OpPushConstant, c.addConstant(String(shorthand.Value)))
 			}
 		}
 
