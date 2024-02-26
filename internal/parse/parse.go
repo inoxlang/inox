@@ -7692,8 +7692,22 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 		rawTextElement = true
 	}
 
+	unterminatedHyperscriptAttribute := false //used to avoid reporting too many errors.
+
 	//attributes
 	for p.i < p.len && p.s[p.i] != '>' && p.s[p.i] != '/' {
+		if p.s[p.i] == '{' { //underscore attribute shortand
+			attr, terminated := p.parseHyperscriptAttribute(p.i)
+			if !terminated {
+				unterminatedHyperscriptAttribute = true
+			}
+			openingElement.Attributes = append(openingElement.Attributes, attr)
+			p.eatSpaceNewlineComment()
+			openingElement.Span.End = p.i
+			continue
+		}
+		unterminatedHyperscriptAttribute = false
+
 		name, isMissingExpr := p.parseExpression()
 
 		if isMissingExpr {
@@ -7746,7 +7760,9 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 	}
 
 	if p.i >= p.len || (p.s[p.i] != '>' && p.s[p.i] != '/') {
-		openingElement.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_OPENING_XML_TAG_MISSING_CLOSING}
+		if !unterminatedHyperscriptAttribute { //Avoid reporting two errors.
+			openingElement.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_OPENING_XML_TAG_MISSING_CLOSING}
+		}
 
 		return &XMLElement{
 			NodeBase: NodeBase{
@@ -7887,6 +7903,79 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 		Children:          children,
 		RawElementContent: rawElementText,
 	}
+}
+
+func (p *parser) parseHyperscriptAttribute(start int32) (attr *HyperscriptAttributeShorthand, terminated bool) {
+	p.tokens = append(p.tokens, Token{
+		Type:    OPENING_CURLY_BRACKET,
+		SubType: UNDERSCORE_ATTR_SHORTHAND_OPENING_BRACE,
+		Span:    NodeSpan{p.i, p.i + 1},
+	})
+
+	p.i++
+
+	end := int32(-1)
+	closingCurlyBracketPosition := int32(-1)
+
+	for p.i < p.len {
+		if p.s[p.i] == '}' {
+			closingCurlyBracketPosition = p.i
+			end = p.i + 1 //potential end
+			p.i++
+			p.eatSpaceNewline()
+			if p.i >= p.len {
+				break
+			}
+
+			r := p.s[p.i]
+
+			if r == '.' || r == '>' /*end of opening tag*/ {
+				p.tokens = append(p.tokens, Token{
+					Type:    CLOSING_CURLY_BRACKET,
+					SubType: UNDERSCORE_ATTR_SHORTHAND_CLOSING_BRACE,
+					Span:    NodeSpan{closingCurlyBracketPosition, closingCurlyBracketPosition + 1},
+				})
+
+				if r == '.' {
+					p.tokens = append(p.tokens, Token{
+						Type: DOT,
+						Span: NodeSpan{p.i, p.i + 1},
+					})
+					p.i++
+				}
+				break
+			}
+			end = -1
+			closingCurlyBracketPosition = -1
+		}
+		p.i++
+	}
+
+	terminated = end >= 0
+	if !terminated {
+		end = p.i
+	}
+
+	codeEnd := end
+	if closingCurlyBracketPosition > 0 {
+		codeEnd = closingCurlyBracketPosition
+	}
+
+	value := string(p.s[start+1 : codeEnd])
+
+	attr = &HyperscriptAttributeShorthand{
+		NodeBase: NodeBase{
+			Span: NodeSpan{start, end},
+		},
+		IsUnterminated: !terminated,
+		Value:          value,
+	}
+
+	if !terminated {
+		attr.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_HYPERSCRIPT_ATTRIBUTE_SHORTHAND}
+	}
+
+	return
 }
 
 func (p *parser) parseXMLChildren(singleBracketInterpolations bool) ([]Node, *ParsingError) {

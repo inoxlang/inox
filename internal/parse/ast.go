@@ -2294,7 +2294,7 @@ type XMLElement struct {
 type XMLOpeningElement struct {
 	NodeBase
 	Name       Node
-	Attributes []*XMLAttribute
+	Attributes []Node //*XMLAttribute | *HyperscriptAttributeShorthand
 	SelfClosed bool
 }
 
@@ -2315,6 +2315,12 @@ type XMLAttribute struct {
 
 func (attr XMLAttribute) GetName() string {
 	return attr.Name.(*IdentifierLiteral).Name
+}
+
+type HyperscriptAttributeShorthand struct {
+	NodeBase
+	Value          string
+	IsUnterminated bool
 }
 
 type XMLText struct {

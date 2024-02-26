@@ -27180,8 +27180,8 @@ func testParse(
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
 									Name:     "div",
 								},
-								Attributes: []*XMLAttribute{
-									{
+								Attributes: []Node{
+									&XMLAttribute{
 										NodeBase: NodeBase{
 											NodeSpan{6, 11},
 											nil,
@@ -27254,8 +27254,8 @@ func testParse(
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
 									Name:     "div",
 								},
-								Attributes: []*XMLAttribute{
-									{
+								Attributes: []Node{
+									&XMLAttribute{
 										NodeBase: NodeBase{
 											NodeSpan{6, 11},
 											nil,
@@ -27328,8 +27328,8 @@ func testParse(
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
 									Name:     "div",
 								},
-								Attributes: []*XMLAttribute{
-									{
+								Attributes: []Node{
+									&XMLAttribute{
 										NodeBase: NodeBase{
 											NodeSpan{6, 7},
 											nil,
@@ -27397,8 +27397,8 @@ func testParse(
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
 									Name:     "div",
 								},
-								Attributes: []*XMLAttribute{
-									{
+								Attributes: []Node{
+									&XMLAttribute{
 										NodeBase: NodeBase{
 											NodeSpan{6, 11},
 											nil,
@@ -27449,8 +27449,8 @@ func testParse(
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
 									Name:     "div",
 								},
-								Attributes: []*XMLAttribute{
-									{
+								Attributes: []Node{
+									&XMLAttribute{
 										NodeBase: NodeBase{
 											NodeSpan{6, 11},
 											nil,
@@ -27524,8 +27524,8 @@ func testParse(
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
 									Name:     "div",
 								},
-								Attributes: []*XMLAttribute{
-									{
+								Attributes: []Node{
+									&XMLAttribute{
 										NodeBase: NodeBase{
 											NodeSpan{6, 13},
 											nil,
@@ -27604,8 +27604,8 @@ func testParse(
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
 									Name:     "div",
 								},
-								Attributes: []*XMLAttribute{
-									{
+								Attributes: []Node{
+									&XMLAttribute{
 										NodeBase: NodeBase{
 											NodeSpan{6, 8},
 											nil,
@@ -27681,8 +27681,8 @@ func testParse(
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
 									Name:     "div",
 								},
-								Attributes: []*XMLAttribute{
-									{
+								Attributes: []Node{
+									&XMLAttribute{
 										NodeBase: NodeBase{
 											NodeSpan{6, 8},
 											nil,
@@ -27757,8 +27757,8 @@ func testParse(
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
 									Name:     "div",
 								},
-								Attributes: []*XMLAttribute{
-									{
+								Attributes: []Node{
+									&XMLAttribute{
 										NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
@@ -27819,8 +27819,8 @@ func testParse(
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
 									Name:     "div",
 								},
-								Attributes: []*XMLAttribute{
-									{
+								Attributes: []Node{
+									&XMLAttribute{
 										NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
@@ -27862,8 +27862,8 @@ func testParse(
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
 									Name:     "div",
 								},
-								Attributes: []*XMLAttribute{
-									{
+								Attributes: []Node{
+									&XMLAttribute{
 										NodeBase: NodeBase{
 											NodeSpan{6, 11},
 											nil,
@@ -27879,7 +27879,7 @@ func testParse(
 											Value:    "b",
 										},
 									},
-									{
+									&XMLAttribute{
 										NodeBase: NodeBase{
 											NodeSpan{12, 17},
 											nil,
@@ -27917,6 +27917,379 @@ func testParse(
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{20, 23}, nil, false},
 									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("empty hyperscript attribute shorthand", func(t *testing.T) {
+			n := mustparseChunk(t, `h<div {}></div>`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "h",
+						},
+						Element: &XMLElement{
+							NodeBase: NodeBase{NodeSpan{1, 15}, nil, false},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 9}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:     "div",
+								},
+								Attributes: []Node{
+									&HyperscriptAttributeShorthand{
+										NodeBase: NodeBase{Span: NodeSpan{6, 8}},
+										Value:    "",
+									},
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{9, 9}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &XMLClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{9, 15}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{11, 14}, nil, false},
+									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("non-empty hyperscript attribute shorthand", func(t *testing.T) {
+			n := mustparseChunk(t, `h<div {1}></div>`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "h",
+						},
+						Element: &XMLElement{
+							NodeBase: NodeBase{NodeSpan{1, 16}, nil, false},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 10}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:     "div",
+								},
+								Attributes: []Node{
+									&HyperscriptAttributeShorthand{
+										NodeBase: NodeBase{Span: NodeSpan{6, 9}},
+										Value:    "1",
+									},
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{10, 10}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &XMLClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{10, 16}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{12, 15}, nil, false},
+									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("hyperscript attribute shorthand followed by a space", func(t *testing.T) {
+			n := mustparseChunk(t, `h<div {} ></div>`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "h",
+						},
+						Element: &XMLElement{
+							NodeBase: NodeBase{NodeSpan{1, 16}, nil, false},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 10}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:     "div",
+								},
+								Attributes: []Node{
+									&HyperscriptAttributeShorthand{
+										NodeBase: NodeBase{Span: NodeSpan{6, 8}},
+										Value:    "",
+									},
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{10, 10}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &XMLClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{10, 16}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{12, 15}, nil, false},
+									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("hyperscript attribute shorthand followed by a dot", func(t *testing.T) {
+			n := mustparseChunk(t, `h<div {}.></div>`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "h",
+						},
+						Element: &XMLElement{
+							NodeBase: NodeBase{NodeSpan{1, 16}, nil, false},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 10}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:     "div",
+								},
+								Attributes: []Node{
+									&HyperscriptAttributeShorthand{
+										NodeBase: NodeBase{Span: NodeSpan{6, 8}},
+										Value:    "",
+									},
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{10, 10}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &XMLClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{10, 16}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{12, 15}, nil, false},
+									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("hyperscript attribute shorthand followed by end of line", func(t *testing.T) {
+			n, err := parseChunk(t, `h<div {}`, "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "h",
+						},
+						Element: &XMLElement{
+							NodeBase: NodeBase{NodeSpan{1, 8}, nil, false},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{
+									NodeSpan{1, 8},
+									&ParsingError{UnspecifiedParsingError, UNTERMINATED_OPENING_XML_TAG_MISSING_CLOSING},
+									false,
+								},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:     "div",
+								},
+								Attributes: []Node{
+									&HyperscriptAttributeShorthand{
+										NodeBase: NodeBase{Span: NodeSpan{6, 8}},
+										Value:    "",
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("unterminated hyperscript attribute shorthand: end of file", func(t *testing.T) {
+			n, err := parseChunk(t, `h<div {`, "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 7}, nil, false},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 7}, nil, false},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "h",
+						},
+						Element: &XMLElement{
+							NodeBase: NodeBase{NodeSpan{1, 7}, nil, false},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 7}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:     "div",
+								},
+								Attributes: []Node{
+									&HyperscriptAttributeShorthand{
+										NodeBase: NodeBase{
+											NodeSpan{6, 7},
+											&ParsingError{UnspecifiedParsingError, UNTERMINATED_HYPERSCRIPT_ATTRIBUTE_SHORTHAND},
+											false,
+										},
+										IsUnterminated: true,
+										Value:          "",
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("non-empty unterminated hyperscript attribute shorthand: end of file", func(t *testing.T) {
+			n, err := parseChunk(t, `h<div {1`, "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "h",
+						},
+						Element: &XMLElement{
+							NodeBase: NodeBase{NodeSpan{1, 8}, nil, false},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 8}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:     "div",
+								},
+								Attributes: []Node{
+									&HyperscriptAttributeShorthand{
+										NodeBase: NodeBase{
+											NodeSpan{6, 8},
+											&ParsingError{UnspecifiedParsingError, UNTERMINATED_HYPERSCRIPT_ATTRIBUTE_SHORTHAND},
+											false,
+										},
+										IsUnterminated: true,
+										Value:          "1",
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("non-empty unterminated hyperscript attribute shorthand: end of file", func(t *testing.T) {
+			n, err := parseChunk(t, `h<div {1></div>`, "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "h",
+						},
+						Element: &XMLElement{
+							NodeBase: NodeBase{NodeSpan{1, 15}, nil, false},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 15}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:     "div",
+								},
+								Attributes: []Node{
+									&HyperscriptAttributeShorthand{
+										NodeBase: NodeBase{
+											NodeSpan{6, 15},
+											&ParsingError{UnspecifiedParsingError, UNTERMINATED_HYPERSCRIPT_ATTRIBUTE_SHORTHAND},
+											false,
+										},
+										IsUnterminated: true,
+										Value:          "1></div>",
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("non-empty unterminated hyperscript attribute shorthand: ending with space + end of file", func(t *testing.T) {
+			n, err := parseChunk(t, `h<div { `, "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "h",
+						},
+						Element: &XMLElement{
+							NodeBase: NodeBase{NodeSpan{1, 8}, nil, false},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 8}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:     "div",
+								},
+								Attributes: []Node{
+									&HyperscriptAttributeShorthand{
+										NodeBase: NodeBase{
+											NodeSpan{6, 8},
+											&ParsingError{UnspecifiedParsingError, UNTERMINATED_HYPERSCRIPT_ATTRIBUTE_SHORTHAND},
+											false,
+										},
+										IsUnterminated: true,
+										Value:          " ",
+									},
 								},
 							},
 						},

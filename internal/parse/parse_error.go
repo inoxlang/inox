@@ -442,6 +442,7 @@ const (
 	UNTERMINATED_XML_INTERP                            = "unterminated xml interpolation"
 	UNTERMINATED_XML_ELEMENT_MISSING_CLOSING_TAG       = "unterminated xml element: missing closing tag '</element-name>'"
 	UNTERMINATED_CLOSING_XML_TAG_MISSING_CLOSING_DELIM = "unterminated closing xml tag: missing closing delimiter '>' after tag name"
+	UNTERMINATED_HYPERSCRIPT_ATTRIBUTE_SHORTHAND       = "unterminated hyperscript attribute shorthand"
 	EMPTY_XML_INTERP                                   = "xml interpolation should not be empty"
 	INVALID_XML_INTERP                                 = "invalid xml interpolation"
 	XML_ATTRIBUTE_NAME_SHOULD_BE_IDENT                 = "xml attribute's name should be an identifier"

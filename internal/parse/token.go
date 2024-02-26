@@ -231,6 +231,7 @@ const (
 	QUERY_PARAM_SLICE
 	OPTION_NAME
 	XML_TEXT_SLICE
+	HYPERSCRIPT_CODE_SLICE
 	OCCURRENCE_MODIFIER
 )
 
@@ -248,6 +249,9 @@ const (
 
 	XML_INTERP_OPENING_BRACE
 	XML_INTERP_CLOSING_BRACE
+
+	UNDERSCORE_ATTR_SHORTHAND_OPENING_BRACE
+	UNDERSCORE_ATTR_SHORTHAND_CLOSING_BRACE
 
 	BLOCK_OPENING_BRACE
 	BLOCK_CLOSING_BRACE
@@ -457,6 +461,8 @@ var tokenStrings = [...]string{
 	STR_TEMPLATE_SLICE:             "<?>",
 	STR_TEMPLATE_INTERP_TYPE:       "<?>",
 	BYTE_SLICE_LITERAL:             "<?>",
+	XML_TEXT_SLICE:                 "<?>",
+	HYPERSCRIPT_CODE_SLICE:         "<?>",
 	NAMED_PATH_SEGMENT:             "<?>",
 }
 
@@ -634,6 +640,7 @@ var tokenTypenames = [...]string{
 	QUERY_PARAM_SLICE:              "QUERY_PARAM_SLICE",
 	OPTION_NAME:                    "OPTION_NAME",
 	XML_TEXT_SLICE:                 "XML_TEXT_SLICE",
+	HYPERSCRIPT_CODE_SLICE:         "HYPERSCRIPT_CODE_SLICE",
 	OCCURRENCE_MODIFIER:            "OCCURRENCE_MODIFIER",
 }
 
@@ -1036,6 +1043,15 @@ func GetTokens(node Node, chunk *Chunk, addMeta bool) []Token {
 		case *XMLText:
 			tokenType = XML_TEXT_SLICE
 			raw = n.Raw
+		case *HyperscriptAttributeShorthand:
+			tokenType = HYPERSCRIPT_CODE_SLICE
+			raw = n.Value
+			literalSpan.Start = n.NodeBase.Span.Start + 1
+			if n.IsUnterminated {
+				literalSpan.End = n.NodeBase.Span.End
+			} else {
+				literalSpan.End = n.NodeBase.Span.End - 1
+			}
 		}
 
 		if tokenType > 0 {
