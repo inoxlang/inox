@@ -19,6 +19,7 @@ const (
 	HTML_CTYPE             = "text/html"
 	CSS_CTYPE              = "text/css"
 	JS_CTYPE               = "text/javascript" //https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types#textjavascript
+	HYPERSCRIPT_CTYPE      = "text/hyperscript" //https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types#textjavascript
 	INOX_CTYPE             = "text/inox"
 	PLAIN_TEXT_CTYPE       = "text/plain"
 	EVENT_STREAM_CTYPE     = "text/event-stream"

@@ -5,7 +5,12 @@ import (
 	"strconv"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/mimeconsts"
 	"golang.org/x/net/html"
+)
+
+const (
+	HYPERSCRIPT_SCRIPT_MARKER = "h"
 )
 
 func CreateHTMLNodeFromXMLElement(ctx *core.Context, arg *core.XMLElement) *HTMLNode {
@@ -21,6 +26,7 @@ func CreateHTMLNodeFromXMLElement(ctx *core.Context, arg *core.XMLElement) *HTML
 		createChildNodesFromValue(ctx, child, &childNodes)
 	}
 
+	tagName := arg.Name()
 	attributes := make([]html.Attribute, 0, len(arg.Attributes()))
 
 	for _, attr := range arg.Attributes() {
@@ -33,26 +39,33 @@ func CreateHTMLNodeFromXMLElement(ctx *core.Context, arg *core.XMLElement) *HTML
 			continue
 		}
 
+		attrValue := attr.Value()
+
+		if tagName == "script" && attrName == HYPERSCRIPT_SCRIPT_MARKER {
+			attrName = "type"
+			attrValue = core.String(mimeconsts.HYPERSCRIPT_CTYPE)
+		}
+
 		attributes = append(attributes, html.Attribute{Key: attrName})
 		index := len(attributes) - 1
 
-		switch val := attr.Value().(type) {
+		switch val := attrValue.(type) {
 		case core.StringLike:
 			attributes[index].Val = val.GetOrBuildString()
 		case core.Int:
 			attributes[index].Val = strconv.FormatInt(int64(val), 10)
 		default:
-			panic(fmt.Errorf("failed to convert value of attribute '%s' to string", attr.Name()))
+			panic(fmt.Errorf("failed to convert value of attribute '%s' to string", attrName))
 		}
 	}
 
 	node := NewNodeFromGoDescription(NodeDescription{
-		Tag:        arg.Name(),
+		Tag:        tagName,
 		Children:   childNodes,
 		Attributes: attributes,
 	})
 
-	if arg.Name() == "html" {
+	if tagName == "html" {
 		return NewHTML5DocumentNodeFromGoDescription(HTML5DocumentDescription{
 			HtmlTagNode: node,
 		})

@@ -23,6 +23,19 @@ func TestCreateHTMLNodeFromXMLElement(t *testing.T) {
 		assert.Equal(t, "<script><a></script>", s)
 	})
 
+	t.Run("script tag with hyperscript marker", func(t *testing.T) {
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		attributes := []core.XMLAttribute{core.NewXMLAttribute("h", core.String(""))}
+		element := CreateHTMLNodeFromXMLElement(ctx, core.NewRawTextXmlElement("script", attributes, "<a>"))
+
+		bytes := Render(ctx, element)
+		s := string(bytes.UnderlyingBytes())
+
+		assert.Equal(t, "<script type=\"text/hyperscript\"><a></script>", s)
+	})
+
 	t.Run("pseudo htmx attributes", func(t *testing.T) {
 		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
