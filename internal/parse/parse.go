@@ -7674,7 +7674,7 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 	// 	parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_TAG_NAME}
 	// }
 
-	p.eatSpace()
+	p.eatSpaceNewlineComment()
 
 	openingElement := &XMLOpeningElement{
 		NodeBase: NodeBase{
@@ -7742,7 +7742,7 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 			openingElement.Span.End = p.i
 		}
 
-		p.eatSpace()
+		p.eatSpaceNewlineComment()
 	}
 
 	if p.i >= p.len || (p.s[p.i] != '>' && p.s[p.i] != '/') {
