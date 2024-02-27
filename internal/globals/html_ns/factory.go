@@ -5,12 +5,9 @@ import (
 	"strconv"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/mimeconsts"
 	"golang.org/x/net/html"
-)
-
-const (
-	HYPERSCRIPT_SCRIPT_MARKER = "h"
 )
 
 func CreateHTMLNodeFromXMLElement(ctx *core.Context, arg *core.XMLElement) *HTMLNode {
@@ -41,7 +38,7 @@ func CreateHTMLNodeFromXMLElement(ctx *core.Context, arg *core.XMLElement) *HTML
 
 		attrValue := attr.Value()
 
-		if tagName == "script" && attrName == HYPERSCRIPT_SCRIPT_MARKER {
+		if tagName == "script" && attrName == inoxconsts.HYPERSCRIPT_SCRIPT_MARKER {
 			attrName = "type"
 			attrValue = core.String(mimeconsts.HYPERSCRIPT_CTYPE)
 		}
