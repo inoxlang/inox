@@ -1,0 +1,9 @@
+{
+    "compilerOptions": {
+        "target": "ES2015",
+        "module": "None",
+        "lib": ["ES2015", "DOM"],
+        "checkJs": true,
+        "noEmit": true,
+    }
+}
