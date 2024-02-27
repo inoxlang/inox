@@ -17,7 +17,9 @@ func TestParseHyperscript(t *testing.T) {
 		if !assert.NoError(t, parsingErr) {
 			return
 		}
-		_ = res
+
+		assert.Greater(t, len(res.Tokens), 6)
+		assert.Len(t, res.TokensNoWhitespace, 6)
 	})
 
 	t.Run("unexpected token", func(t *testing.T) {

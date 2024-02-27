@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/dop251/goja"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
@@ -17,6 +18,12 @@ var (
 
 func init() {
 	HYPERSCRIPT_PARSER_PROGRAM = goja.MustCompile("parse-hyperscript.js", HYPERSCRIPT_PARSER_JS, false)
+}
+
+type ParsingResult struct {
+	Node               any     `json:"node"`
+	Tokens             []Token `json:"tokens"`
+	TokensNoWhitespace []Token `json:"tokensNoWhitespace"`
 }
 
 type ParsingError struct {
@@ -30,11 +37,9 @@ func (e ParsingError) Error() string {
 	return e.Message
 }
 
-func parseHyperscript(source string) (_ any, parsingErr error, criticalErr error) {
+func parseHyperscript(source string) (result *ParsingResult, parsingErr error, criticalErr error) {
 	runtime := goja.New()
-
 	input := runtime.ToValue(source)
-
 	global := runtime.GlobalObject()
 	global.Set("input", input)
 
@@ -58,6 +63,23 @@ func parseHyperscript(source string) (_ any, parsingErr error, criticalErr error
 		}
 
 		return nil, &err, nil
+	}
+
+	outputJSON := global.Get("outputJSON")
+	if outputJSON != nil {
+		_json := outputJSON.Export().(string)
+		var parsingResult ParsingResult
+
+		unmarshallingErr := json.Unmarshal([]byte(_json), &parsingResult)
+		if unmarshallingErr != nil {
+			return nil, nil, fmt.Errorf("internal error: %w", unmarshallingErr)
+		}
+
+		parsingResult.TokensNoWhitespace = utils.FilterSlice(parsingResult.Tokens, func(e Token) bool {
+			return e.Type != "WHITESPACE"
+		})
+
+		return &parsingResult, nil, nil
 	}
 
 	return nil, nil, nil

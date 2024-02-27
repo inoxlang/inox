@@ -4981,16 +4981,17 @@ function throwOnlyParsingIsSupported() {
     throw new Error('only parsing is supported')
 }
 
-const tokens = Lexer.tokenize(this.input ?? "on click togegle .red on me")
+const tokens = Lexer.tokenize(this.input ?? "on click toggle .red on me")
 
 const parser = new Parser()
 hyperscriptCoreGrammar(parser)
 hyperscriptWebGrammar(parser)
 
 try {
+    const tokenList = Array.from(tokens.tokens) //Get tokens before they are used by the parser.
     const allowedKeys = []
     const node = parser.parseHyperScript(tokens)
-    this.outputJSON = JSON.stringify(node, (key, value) => {
+    this.outputJSON = JSON.stringify({node: node, tokens: tokenList}, (key, value) => {
         if (key == 'parent') {
             //Remove circular references.
             return null
