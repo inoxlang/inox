@@ -1,4 +1,4 @@
-package parse
+package hsparse
 
 import (
 	"testing"
@@ -10,12 +10,12 @@ import (
 func TestParseHyperscript(t *testing.T) {
 
 	t.Run("valid", func(t *testing.T) {
-		res, parsingErr, criticalError := parseHyperscript("on click toggle .red on me")
+		res, parsingErr, criticalError := ParseHyperscript("on click toggle .red on me")
 		if !assert.NoError(t, criticalError) {
 			return
 		}
 
-		if !assert.NoError(t, parsingErr) {
+		if !assert.Nil(t, parsingErr) {
 			return
 		}
 
@@ -26,17 +26,16 @@ func TestParseHyperscript(t *testing.T) {
 	})
 
 	t.Run("unexpected token", func(t *testing.T) {
-		res, parsingErr, criticalError := parseHyperscript("on click x .red on me")
+		res, parsingErr, criticalError := ParseHyperscript("on click x .red on me")
 		if !assert.NoError(t, criticalError) {
 			return
 		}
 
-		if !assert.Error(t, parsingErr) {
+		if !assert.NotNil(t, parsingErr) {
 			return
 		}
 
-		err := parsingErr.(*hscode.ParsingError)
-		assert.Contains(t, err.Message, "Unexpected Token")
+		assert.Contains(t, parsingErr.Message, "Unexpected Token")
 		assert.Equal(t, hscode.Token{
 			Type:   "IDENTIFIER",
 			Value:  "x",
@@ -44,7 +43,7 @@ func TestParseHyperscript(t *testing.T) {
 			End:    10,
 			Line:   1,
 			Column: 10,
-		}, err.Token)
+		}, parsingErr.Token)
 
 		_ = res
 	})

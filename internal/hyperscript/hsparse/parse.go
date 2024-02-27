@@ -1,4 +1,4 @@
-package parse
+package hsparse
 
 import (
 	_ "embed"
@@ -25,7 +25,7 @@ func init() {
 	HYPERSCRIPT_PARSER_PROGRAM = goja.MustCompile("parse-hyperscript.js", HYPERSCRIPT_PARSER_JS, false)
 }
 
-func parseHyperscript(source string) (result *hscode.ParsingResult, parsingErr error, criticalErr error) {
+func ParseHyperscript(source string) (*hscode.ParsingResult, *hscode.ParsingError, error) {
 	if len(source) > DEFAULT_MAX_HYPERSCRIPT_SOURCE_CODE_LENGTH {
 		return nil, nil, errors.New("input string is too long")
 	}
