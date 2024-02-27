@@ -3,7 +3,9 @@ package main
 import (
 	"github.com/inoxlang/inox/internal/core"
 	_ "github.com/inoxlang/inox/internal/globals"
+	"github.com/inoxlang/inox/internal/hyperscript/hsparse"
 	"github.com/inoxlang/inox/internal/inoxprocess/binary"
+	"github.com/inoxlang/inox/internal/parse"
 
 	"github.com/inoxlang/inox/internal/inoxd"
 	"github.com/inoxlang/inox/internal/inoxd/cloud/cloudproxy"
@@ -47,6 +49,8 @@ func main() {
 	cmd.Complete(COMMAND_NAME)
 
 	debug.SetMaxStack(MAX_STACK_SIZE)
+
+	parse.RegisterParseHypercript(hsparse.ParseHyperscript)
 
 	statusCode := _main(os.Args, os.Stdout, os.Stderr)
 	if statusCode != 0 {

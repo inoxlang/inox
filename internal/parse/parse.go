@@ -7820,9 +7820,11 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 	var children []Node
 
 	var rawElementText string
+	rawStart := int32(0)
+	rawEnd := int32(0)
 
 	if rawTextElement {
-		rawSart := p.i
+		rawStart = p.i
 		for p.i < p.len {
 			//closing tag
 			if p.s[p.i] == '<' && p.i < p.len-1 && p.s[p.i+1] == '/' {
@@ -7830,7 +7832,8 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 			}
 			p.i++
 		}
-		rawElementText = string(p.s[rawSart:p.i])
+		rawEnd = p.i
+		rawElementText = string(p.s[rawStart:rawEnd])
 	} else {
 		var err *ParsingError
 		children, err = p.parseXMLChildren(singleBracketInterpolations)
@@ -7844,9 +7847,11 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 				&ParsingError{UnspecifiedParsingError, UNTERMINATED_XML_ELEMENT_MISSING_CLOSING_TAG},
 				false,
 			},
-			Opening:           openingElement,
-			Children:          children,
-			RawElementContent: rawElementText,
+			Opening:                openingElement,
+			Children:               children,
+			RawElementContent:      rawElementText,
+			RawElementContentStart: rawStart,
+			RawElementContentEnd:   rawEnd,
 		}
 	}
 
@@ -7881,10 +7886,12 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 				parsingErr,
 				false,
 			},
-			Opening:           openingElement,
-			Closing:           closingElement,
-			Children:          children,
-			RawElementContent: rawElementText,
+			Opening:                 openingElement,
+			Closing:                 closingElement,
+			Children:                children,
+			RawElementContent:       rawElementText,
+			RawElementContentStart:  rawStart,
+			RawElementParsingResult: rawEnd,
 		}
 	}
 
@@ -7892,17 +7899,25 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 	p.i++
 	closingElement.Span.End = p.i
 
-	return &XMLElement{
+	result := &XMLElement{
 		NodeBase: NodeBase{
 			NodeSpan{start, p.i},
 			parsingErr,
 			false,
 		},
-		Opening:           openingElement,
-		Closing:           closingElement,
-		Children:          children,
-		RawElementContent: rawElementText,
+		Opening:                openingElement,
+		Closing:                closingElement,
+		Children:               children,
+		RawElementContent:      rawElementText,
+		RawElementContentStart: rawStart,
+		RawElementContentEnd:   rawEnd,
 	}
+
+	if rawElementText != "" {
+		p.parseContentOfRawXMLElement(result)
+	}
+
+	return result
 }
 
 func (p *parser) parseHyperscriptAttribute(start int32) (attr *HyperscriptAttributeShorthand, terminated bool) {
@@ -7973,6 +7988,23 @@ func (p *parser) parseHyperscriptAttribute(start int32) (attr *HyperscriptAttrib
 
 	if !terminated {
 		attr.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_HYPERSCRIPT_ATTRIBUTE_SHORTHAND}
+	}
+
+	if terminated && p.parseHyperscript != nil {
+		result, parsingErr, err := p.parseHyperscript(value)
+
+		if attr.Err == nil {
+			if err != nil {
+				attr.Err = &ParsingError{UnspecifiedParsingError, err.Error()}
+			}
+			if parsingErr != nil {
+				attr.HyperscriptParsingError = parsingErr
+			}
+		}
+
+		if result != nil {
+			attr.HyperscriptParsingResult = result
+		}
 	}
 
 	return

@@ -22,12 +22,17 @@ type parser struct {
 
 	context context.Context
 	cancel  context.CancelFunc
+
+	//If not set defaults to the registered parseHyperscript function.
+	parseHyperscript ParseHyperscriptFn
 }
 
 type ParserOptions struct {
 	//The context is checked each time the 'no check fuel' is empty.
 	//The 'no check fuel' defauls to DEFAULT_NO_CHECK_FUEL if NoCheckFuel is <= 0 or if context is nil.
 	NoCheckFuel int
+
+	ParseHyperscript ParseHyperscriptFn
 
 	//This option is ignored if noCheckFuel is <= 0.
 	//The default context context.Background().
@@ -51,6 +56,7 @@ func newParser(s []rune, opts ...ParserOptions) *parser {
 		noCheckFuel:          -1,
 		remainingNoCheckFuel: -1,
 		tokens:               make([]Token, 0, len(s)/10),
+		parseHyperscript:     parseHyperscript,
 	}
 
 	var (
@@ -69,6 +75,9 @@ func newParser(s []rune, opts ...ParserOptions) *parser {
 		}
 		if opt.Start {
 			p.onlyChunkStart = true
+		}
+		if opt.ParseHyperscript != nil {
+			p.parseHyperscript = opt.ParseHyperscript
 		}
 	}
 

@@ -6,6 +6,8 @@ import (
 	"runtime/debug"
 	"slices"
 	"unicode"
+
+	"github.com/inoxlang/inox/internal/hyperscript/hscode"
 )
 
 func MustParseChunk(str string, opts ...ParserOptions) (result *Chunk) {
@@ -66,6 +68,66 @@ func ParseChunk2(str string, fpath string, opts ...ParserOptions) (runes []rune,
 					return ContinueTraversal, nil
 				}
 
+				//Add embedded code error.
+				switch n := node.(type) {
+				case *HyperscriptAttributeShorthand:
+					hsParsingError := n.HyperscriptParsingError
+					if hsParsingError == nil {
+						break
+					}
+
+					if aggregation == nil {
+						aggregation = &ParsingErrorAggregation{}
+						resultErr = aggregation
+					}
+
+					codeStart := n.Span.Start + 1
+					token := hsParsingError.Token
+					tokenStartPosition := codeStart + int32(token.Start)
+					tokenEndPosition := codeStart + int32(token.End)
+
+					line, endLine, startCol, endCol := getLineColumns(p.s, tokenStartPosition, tokenEndPosition)
+
+					aggregation.Errors = append(aggregation.Errors, &ParsingError{UnspecifiedParsingError, hsParsingError.MessageAtToken})
+					aggregation.ErrorPositions = append(aggregation.ErrorPositions, SourcePositionRange{
+						SourceName:  fpath,
+						StartLine:   line,
+						StartColumn: startCol,
+						EndLine:     endLine,
+						EndColumn:   endCol,
+						Span:        NodeSpan{tokenStartPosition, tokenEndPosition},
+					})
+				case *XMLElement:
+					hsParsingError, ok := n.RawElementParsingResult.(*hscode.ParsingError)
+					if !ok {
+						break
+					}
+
+					if aggregation == nil {
+						aggregation = &ParsingErrorAggregation{}
+						resultErr = aggregation
+					}
+
+					codeStart := n.RawElementContentStart
+					token := hsParsingError.Token
+					tokenStartPosition := codeStart + int32(token.Start)
+					tokenEndPosition := codeStart + int32(token.End)
+
+					line, endLine, startCol, endCol := getLineColumns(p.s, tokenStartPosition, tokenEndPosition)
+
+					aggregation.Errors = append(aggregation.Errors, &ParsingError{UnspecifiedParsingError, hsParsingError.MessageAtToken})
+					aggregation.ErrorPositions = append(aggregation.ErrorPositions, SourcePositionRange{
+						SourceName:  fpath,
+						StartLine:   line,
+						StartColumn: startCol,
+						EndLine:     endLine,
+						EndColumn:   endCol,
+						Span:        NodeSpan{tokenStartPosition, tokenEndPosition},
+					})
+				}
+
+				//Regular parsing error.
+
 				nodeBase := node.Base()
 
 				parsingErr := nodeBase.Err
@@ -75,36 +137,10 @@ func ParseChunk2(str string, fpath string, opts ...ParserOptions) (runes []rune,
 
 				if aggregation == nil {
 					aggregation = &ParsingErrorAggregation{}
+					resultErr = aggregation
 				}
 
-				//add location in error message
-				line := int32(1)
-				col := int32(1)
-				i := int32(0)
-
-				for i < nodeBase.Span.Start {
-					if p.s[i] == '\n' {
-						line++
-						col = 1
-					} else {
-						col++
-					}
-
-					i++
-				}
-
-				endLine := line
-				endCol := col
-
-				for i < nodeBase.Span.End {
-					if p.s[i] == '\n' {
-						endLine++
-						endCol = 1
-					} else {
-						endCol++
-					}
-					i++
-				}
+				line, col, endLine, endCol := getLineColumns(p.s, nodeBase.Span.Start, nodeBase.Span.End)
 
 				aggregation.Errors = append(aggregation.Errors, parsingErr)
 				aggregation.ErrorPositions = append(aggregation.ErrorPositions, SourcePositionRange{
@@ -117,7 +153,6 @@ func ParseChunk2(str string, fpath string, opts ...ParserOptions) (runes []rune,
 				})
 
 				aggregation.Message = fmt.Sprintf("%s\n%s:%d:%d: %s", aggregation.Message, fpath, line, col, parsingErr.Message)
-				resultErr = aggregation
 				return ContinueTraversal, nil
 			}, nil)
 		}
@@ -228,4 +263,37 @@ finalize_chunk_node:
 	})
 
 	return chunk, nil
+}
+
+func getLineColumns(s []rune, start, end int32) (startLine, endLine int32, startColumn, endColumn int32) {
+	//add location in error message
+	startLine = int32(1)
+	startColumn = int32(1)
+	i := int32(0)
+
+	for i < start {
+		if s[i] == '\n' {
+			startLine++
+			startColumn = 1
+		} else {
+			startColumn++
+		}
+
+		i++
+	}
+
+	endLine = startLine
+	endColumn = startColumn
+
+	for i < end {
+		if s[i] == '\n' {
+			endLine++
+			endColumn = 1
+		} else {
+			endColumn++
+		}
+		i++
+	}
+
+	return
 }

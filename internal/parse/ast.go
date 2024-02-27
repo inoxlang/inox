@@ -10,6 +10,8 @@ import (
 	"slices"
 	"strings"
 	"time"
+
+	"github.com/inoxlang/inox/internal/hyperscript/hscode"
 )
 
 var (
@@ -2285,10 +2287,15 @@ func (XMLExpression) Kind() NodeKind {
 
 type XMLElement struct {
 	NodeBase
-	Opening           *XMLOpeningElement
-	Children          []Node
-	Closing           *XMLClosingElement //nil if self-closed
-	RawElementContent string             //set for script and style tags
+	Opening                *XMLOpeningElement
+	Children               []Node
+	Closing                *XMLClosingElement //nil if self-closed
+	RawElementContent      string             //set for script and style tags
+	RawElementContentStart int32
+	RawElementContentEnd   int32
+
+	//The following field can be set only if parsing RawElementContent is supported (js, css, hyperscript).
+	RawElementParsingResult any //example: *hscode.ParsingResult|*hscode.ParsingError
 }
 
 type XMLOpeningElement struct {
@@ -2321,6 +2328,11 @@ type HyperscriptAttributeShorthand struct {
 	NodeBase
 	Value          string
 	IsUnterminated bool
+
+	//The following fields can be set only if hyperscript parsing is supported.
+
+	HyperscriptParsingResult *hscode.ParsingResult
+	HyperscriptParsingError  *hscode.ParsingError
 }
 
 type XMLText struct {

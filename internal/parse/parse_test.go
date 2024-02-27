@@ -28662,7 +28662,9 @@ func testParse(
 									Name:     "script",
 								},
 							},
-							RawElementContent: "{1}2",
+							RawElementContent:      "{1}2",
+							RawElementContentStart: 9,
+							RawElementContentEnd:   13,
 							Closing: &XMLClosingElement{
 								NodeBase: NodeBase{
 									NodeSpan{13, 22},
@@ -28708,7 +28710,9 @@ func testParse(
 									Name:     "script",
 								},
 							},
-							RawElementContent: "<a>",
+							RawElementContent:      "<a>",
+							RawElementContentStart: 9,
+							RawElementContentEnd:   12,
 							Closing: &XMLClosingElement{
 								NodeBase: NodeBase{
 									NodeSpan{12, 21},
@@ -28754,7 +28758,9 @@ func testParse(
 									Name:     "style",
 								},
 							},
-							RawElementContent: "{1}2",
+							RawElementContent:      "{1}2",
+							RawElementContentStart: 8,
+							RawElementContentEnd:   12,
 							Closing: &XMLClosingElement{
 								NodeBase: NodeBase{
 									NodeSpan{12, 20},
@@ -28800,7 +28806,9 @@ func testParse(
 									Name:     "style",
 								},
 							},
-							RawElementContent: "<a>",
+							RawElementContent:      "<a>",
+							RawElementContentStart: 8,
+							RawElementContentEnd:   11,
 							Closing: &XMLClosingElement{
 								NodeBase: NodeBase{
 									NodeSpan{11, 19},
