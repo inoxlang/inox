@@ -3,6 +3,7 @@ package parse
 import (
 	"testing"
 
+	"github.com/inoxlang/inox/internal/hyperscript/hscode"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,6 +21,8 @@ func TestParseHyperscript(t *testing.T) {
 
 		assert.Greater(t, len(res.Tokens), 6)
 		assert.Len(t, res.TokensNoWhitespace, 6)
+
+		assert.Equal(t, hscode.HyperscriptProgram, res.Node.Type)
 	})
 
 	t.Run("unexpected token", func(t *testing.T) {
@@ -32,9 +35,9 @@ func TestParseHyperscript(t *testing.T) {
 			return
 		}
 
-		err := parsingErr.(*ParsingError)
+		err := parsingErr.(*hscode.ParsingError)
 		assert.Contains(t, err.Message, "Unexpected Token")
-		assert.Equal(t, Token{
+		assert.Equal(t, hscode.Token{
 			Type:   "IDENTIFIER",
 			Value:  "x",
 			Start:  9,

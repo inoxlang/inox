@@ -1,4 +1,4 @@
-package parse
+package hscode
 
 type Token struct {
 	Type  string `json:"type"` //can be empty

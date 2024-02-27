@@ -1438,11 +1438,7 @@ function hyperscriptCoreGrammar(parser) {
                 type: "nakedString",
                 tokens: tokenArr,
                 evaluate: function (context) {
-                    return tokenArr
-                        .map(function (t) {
-                            return t.value;
-                        })
-                        .join("");
+                   throwOnlyParsingIsSupported()
                 },
             };
         }
@@ -2241,33 +2237,6 @@ function hyperscriptCoreGrammar(parser) {
         }
     });
 
-    var scanForwardQuery = function (start, root, match, wrap) {
-        var results = root.querySelectorAll(match);
-        for (var i = 0; i < results.length; i++) {
-            var elt = results[i];
-            if (elt.compareDocumentPosition(start) === Node.DOCUMENT_POSITION_PRECEDING) {
-                return elt;
-            }
-        }
-        if (wrap) {
-            return results[0];
-        }
-    }
-
-    var scanBackwardsQuery = function (start, root, match, wrap) {
-        var results = root.querySelectorAll(match);
-        for (var i = results.length - 1; i >= 0; i--) {
-            var elt = results[i];
-            if (elt.compareDocumentPosition(start) === Node.DOCUMENT_POSITION_FOLLOWING) {
-                return elt;
-            }
-        }
-        if (wrap) {
-            return results[results.length - 1];
-        }
-    }
-
-
     parser.addGrammarElement("relativePositionalExpression", function (parser, runtime, tokens) {
         var op = tokens.matchAnyToken("next", "previous");
         if (!op) return;
@@ -2294,7 +2263,8 @@ function hyperscriptCoreGrammar(parser) {
         } else if (tokens.matchToken("within")) {
             withinElt = parser.requireElement("unaryExpression", tokens);
         } else {
-            withinElt = document.body;
+            //withinElt = document.body;
+            withinElt = undefined;
         }
 
         var wrapping = false;
@@ -2376,25 +2346,6 @@ function hyperscriptCoreGrammar(parser) {
     parser.addGrammarElement("mathExpression", function (parser, runtime, tokens) {
         return parser.parseAnyOf(["mathOperator", "unaryExpression"], tokens);
     });
-
-    function sloppyContains(src, container, value) {
-        if (container['contains']) {
-            return container.contains(value);
-        } else if (container['includes']) {
-            return container.includes(value);
-        } else {
-            throw Error("The value of " + src.sourceFor() + " does not have a contains or includes method on it");
-        }
-    }
-    function sloppyMatches(src, target, toMatch) {
-        if (target['match']) {
-            return !!target.match(toMatch);
-        } else if (target['matches']) {
-            return target.matches(toMatch);
-        } else {
-            throw Error("The value of " + src.sourceFor() + " does not have a match or matches method on it");
-        }
-    }
 
     parser.addGrammarElement("comparisonOperator", function (parser, runtime, tokens) {
         var expr = parser.parseElement("mathExpression", tokens);
