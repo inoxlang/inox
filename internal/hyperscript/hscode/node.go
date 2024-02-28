@@ -1,5 +1,7 @@
 package hscode
 
+import "reflect"
+
 type Node struct {
 	Type       NodeType `json:"type"`
 	StartToken Token    `json:"startToken,omitempty"`
@@ -57,6 +59,22 @@ type Node struct {
 	InSearch      bool `json:"inSearch,omitempty"`
 	Wrapping      bool `json:"wrapping,omitempty"`
 	NullOk        bool `json:"nullOk,omitempty"`
+}
+
+func (n Node) IsZero() bool {
+	return reflect.ValueOf(n).IsZero()
+}
+
+func (n Node) StartPos() int32 {
+	return n.StartToken.Start
+}
+
+func (n Node) EndPos() int32 {
+	return n.EndToken.End
+}
+
+func (n Node) IncludedIn(other Node) bool {
+	return n.StartPos() >= other.StartPos() && n.EndPos() <= other.EndPos()
 }
 
 type Field struct {
@@ -125,44 +143,44 @@ const (
 	Initial_literal              NodeType = "initial_literal"
 	ClosestExpr                  NodeType = "closestExpr"
 
-	OnFeature = "onFeature"
+	OnFeature NodeType = "onFeature"
 
 	SettleCmd NodeType = "settleCmd"
 	AddCmd    NodeType = "addCmd"
 
-	RemoveCommand     = "removeCommand"
-	ToggleCommand     = "toggleCommand"
-	HideCommand       = "hideCommand"
-	ShowCommand       = "showCommand"
-	TakeCommand       = "takeCommand"
-	PutCommand        = "putCommand"
-	TransitionCommand = "transitionCommand"
-	MeasureCommand    = "measureCommand"
-	GoCommand         = "goCommand"
-	JsCommand         = "jsCommand"
-	AsyncCommand      = "asyncCommand"
-	TellCommand       = "tellCommand"
-	WaitCommand       = "waitCommand"
-	TriggerCommand    = "triggerCommand"
-	ReturnCommand     = "returnCommand"
-	ExitCommand       = "exitCommand"
-	HaltCommand       = "haltCommand"
-	LogCommand        = "logCommand"
-	BeepCommand       = "beep!Command"
-	ThrowCommand      = "throwCommand"
-	CallCommand       = "callCommand"
-	MakeCommand       = "makeCommand"
-	GetCommand        = "getCommand"
-	DefaultCommand    = "defaultCommand"
-	SetCommand        = "setCommand"
-	IfCommand         = "ifCommand"
-	RepeatCommand     = "repeatCommand"
-	ForCommand        = "forCommand"
-	ContinueCommand   = "continueCommand"
-	BreakCommand      = "breakCommand"
-	AppendCommand     = "appendCommand"
-	PickCommand       = "pickCommand"
-	IncrementCommand  = "incrementCommand"
-	DecrementCommand  = "decrementCommand"
-	FetchCommand      = "fetchCommand"
+	RemoveCommand     NodeType = "removeCommand"
+	ToggleCommand     NodeType = "toggleCommand"
+	HideCommand       NodeType = "hideCommand"
+	ShowCommand       NodeType = "showCommand"
+	TakeCommand       NodeType = "takeCommand"
+	PutCommand        NodeType = "putCommand"
+	TransitionCommand NodeType = "transitionCommand"
+	MeasureCommand    NodeType = "measureCommand"
+	GoCommand         NodeType = "goCommand"
+	JsCommand         NodeType = "jsCommand"
+	AsyncCommand      NodeType = "asyncCommand"
+	TellCommand       NodeType = "tellCommand"
+	WaitCommand       NodeType = "waitCommand"
+	TriggerCommand    NodeType = "triggerCommand"
+	ReturnCommand     NodeType = "returnCommand"
+	ExitCommand       NodeType = "exitCommand"
+	HaltCommand       NodeType = "haltCommand"
+	LogCommand        NodeType = "logCommand"
+	BeepCommand       NodeType = "beep!Command"
+	ThrowCommand      NodeType = "throwCommand"
+	CallCommand       NodeType = "callCommand"
+	MakeCommand       NodeType = "makeCommand"
+	GetCommand        NodeType = "getCommand"
+	DefaultCommand    NodeType = "defaultCommand"
+	SetCommand        NodeType = "setCommand"
+	IfCommand         NodeType = "ifCommand"
+	RepeatCommand     NodeType = "repeatCommand"
+	ForCommand        NodeType = "forCommand"
+	ContinueCommand   NodeType = "continueCommand"
+	BreakCommand      NodeType = "breakCommand"
+	AppendCommand     NodeType = "appendCommand"
+	PickCommand       NodeType = "pickCommand"
+	IncrementCommand  NodeType = "incrementCommand"
+	DecrementCommand  NodeType = "decrementCommand"
+	FetchCommand      NodeType = "fetchCommand"
 )

@@ -1,0 +1,61 @@
+package hscode_test
+
+import (
+	"testing"
+
+	"github.com/inoxlang/inox/internal/hyperscript/hscode"
+	"github.com/inoxlang/inox/internal/hyperscript/hsparse"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestGetTokenAtCursor(t *testing.T) {
+
+	result, _, _ := hsparse.ParseHyperscript("on click toggle .red on me")
+
+	token, ok := hscode.GetTokenAtCursor(0, result.Tokens)
+	if !assert.True(t, ok) {
+		return
+	}
+
+	assert.Equal(t, hscode.Token{
+		Type:   hscode.IDENTIFIER,
+		Value:  "on",
+		Start:  0,
+		End:    2,
+		Line:   1,
+		Column: 0,
+	}, token)
+
+	token, ok = hscode.GetTokenAtCursor(2, result.Tokens)
+	if !assert.True(t, ok) {
+		return
+	}
+
+	assert.Equal(t, hscode.Token{
+		Type:   hscode.IDENTIFIER,
+		Value:  "on",
+		Start:  0,
+		End:    2,
+		Line:   1,
+		Column: 0,
+	}, token)
+}
+
+func TestGetNodeAtCursor(t *testing.T) {
+
+	result, _, _ := hsparse.ParseHyperscript("on click toggle .red on me")
+
+	node, _, _ := hscode.GetNodeAtCursor(0, result.Node)
+	if !assert.NotZero(t, node) {
+		return
+	}
+
+	assert.Equal(t, hscode.OnFeature, node.Type)
+
+	node, _, _ = hscode.GetNodeAtCursor(2, result.Node)
+	if !assert.NotZero(t, node) {
+		return
+	}
+
+	assert.Equal(t, hscode.OnFeature, node.Type)
+}

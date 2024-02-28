@@ -38,6 +38,12 @@ func Walk(node Node, handle, postHandle NodeHandler) (err error) {
 	return
 }
 
+func walkIfNotNil(node *Node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
+	if node != nil {
+		walk(*node, parent, ancestorChain, fn, afterFn)
+	}
+}
+
 func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 
 	if reflect.ValueOf(node).IsZero() {
@@ -66,21 +72,21 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 		}
 	}
 
-	walk(*node.Root, node, ancestorChain, fn, afterFn)
-	walk(*node.Expression, node, ancestorChain, fn, afterFn)
-	walk(*node.Expr, node, ancestorChain, fn, afterFn)
-	walk(*node.Attribute, node, ancestorChain, fn, afterFn)
-	walk(*node.From, node, ancestorChain, fn, afterFn)
-	walk(*node.To, node, ancestorChain, fn, afterFn)
-	walk(*node.FirstIndex, node, ancestorChain, fn, afterFn)
-	walk(*node.SecondIndex, node, ancestorChain, fn, afterFn)
-	walk(*node.Lhs, node, ancestorChain, fn, afterFn)
-	walk(*node.Rhs, node, ancestorChain, fn, afterFn)
-	walk(*node.Value, node, ancestorChain, fn, afterFn)
-	walk(*node.Target, node, ancestorChain, fn, afterFn)
-	walk(*node.AttributeRef, node, ancestorChain, fn, afterFn)
-	walk(*node.InElt, node, ancestorChain, fn, afterFn)
-	walk(*node.WithinElt, node, ancestorChain, fn, afterFn)
+	walkIfNotNil(node.Root, node, ancestorChain, fn, afterFn)
+	walkIfNotNil(node.Expression, node, ancestorChain, fn, afterFn)
+	walkIfNotNil(node.Expr, node, ancestorChain, fn, afterFn)
+	walkIfNotNil(node.Attribute, node, ancestorChain, fn, afterFn)
+	walkIfNotNil(node.From, node, ancestorChain, fn, afterFn)
+	walkIfNotNil(node.To, node, ancestorChain, fn, afterFn)
+	walkIfNotNil(node.FirstIndex, node, ancestorChain, fn, afterFn)
+	walkIfNotNil(node.SecondIndex, node, ancestorChain, fn, afterFn)
+	walkIfNotNil(node.Lhs, node, ancestorChain, fn, afterFn)
+	walkIfNotNil(node.Rhs, node, ancestorChain, fn, afterFn)
+	walkIfNotNil(node.Value, node, ancestorChain, fn, afterFn)
+	walkIfNotNil(node.Target, node, ancestorChain, fn, afterFn)
+	walkIfNotNil(node.AttributeRef, node, ancestorChain, fn, afterFn)
+	walkIfNotNil(node.InElt, node, ancestorChain, fn, afterFn)
+	walkIfNotNil(node.WithinElt, node, ancestorChain, fn, afterFn)
 
 	for _, n := range node.Children {
 		walk(n, node, ancestorChain, fn, afterFn)
@@ -115,21 +121,33 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 	}
 }
 
-// func getNodeAtCursor(cursorIndex int32, chunk Node) (nodeAtCursor, _parent Node, ancestors []Node) {
-// 	//search node at cursor
-// 	Walk(chunk, func(node, parent Node, ancestorChain []Node, _ bool) (TraversalAction, error) {
+func GetTokenAtCursor(cursorIndex int32, tokens []Token) (Token, bool) {
+	for _, t := range tokens {
+		if cursorIndex >= t.Start && cursorIndex <= t.End {
+			return t, true
+		}
+	}
+	return Token{}, false
+}
 
-// 		//if the cursor is not in the node's span we don't check the descendants of the node
-// 		if span.Start > cursorIndex || span.End < cursorIndex {
-// 			return Prune, nil
-// 		}
+func GetNodeAtCursor(cursorIndex int32, n Node) (nodeAtCursor, _parent Node, ancestors []Node) {
+	Walk(n, func(node, parent Node, ancestorChain []Node, _ bool) (TraversalAction, error) {
 
-// 		if nodeAtCursor == (Node{}) || node.Base().IncludedIn(nodeAtCursor) {
-// 			nodeAtCursor = node
-// 		}
+		if node.IsZero() {
+			return ContinueTraversal, nil
+		}
 
-// 		return ContinueTraversal, nil
-// 	}, nil)
+		//if the cursor is not in the node's span we don't check the descendants of the node
+		if node.StartPos() > cursorIndex || node.EndPos() < cursorIndex {
+			return Prune, nil
+		}
 
-// 	return
-// }
+		if nodeAtCursor.IsZero() || node.IncludedIn(nodeAtCursor) {
+			nodeAtCursor = node
+		}
+
+		return ContinueTraversal, nil
+	}, nil)
+
+	return
+}
