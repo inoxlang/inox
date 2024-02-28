@@ -219,7 +219,7 @@ class Lexer {
                     tokens.push(makeToken("RESERVED", consumeChar()));
                 } else {
                     if (position < source.length) {
-                        throw Error("Unknown token: " + currentChar() + " ");
+                        throw Error("unknown token: " + currentChar() + " ");
                     }
                 }
             }
@@ -4932,14 +4932,13 @@ function throwOnlyParsingIsSupported() {
     throw new Error('only parsing is supported')
 }
 
-const tokens = Lexer.tokenize(this.input ?? "on click toggle .red on me")
+const tokens = Lexer.tokenize(this.input ?? "on click toggle . on me")
+const tokenList = Array.from(tokens.tokens).map(jsonifyToken) //Get tokens before they are used by the parser.
 
 const parser = new Parser()
 hyperscriptCoreGrammar(parser)
 hyperscriptWebGrammar(parser)
-
 try {
-    const tokenList = Array.from(tokens.tokens) //Get tokens before they are used by the parser.
     const allowedKeys = []
     const node = parser.parseHyperScript(tokens)
     this.outputJSON = JSON.stringify({node: node, tokens: tokenList}, (key, value) => {
@@ -4956,7 +4955,7 @@ try {
             message: err.message,
             messageAtToken: err.messageAtToken,
             token: jsonifyToken(err.token),
-            tokens: err.tokens.map(token => jsonifyToken(token))
+            tokens: tokenList
         })
     } else {
         this.criticalError = err.message

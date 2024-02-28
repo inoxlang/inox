@@ -50,7 +50,7 @@ func main() {
 
 	debug.SetMaxStack(MAX_STACK_SIZE)
 
-	parse.RegisterParseHypercript(hsparse.ParseHyperscript)
+	parse.RegisterParseHypercript(hsparse.ParseHyperScript)
 
 	statusCode := _main(os.Args, os.Stdout, os.Stderr)
 	if statusCode != 0 {

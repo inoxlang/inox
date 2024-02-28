@@ -9,6 +9,9 @@ type Token struct {
 
 	Line   int32 `json:"line"`
 	Column int32 `json:"column"`
+
+	Op       bool
+	Template bool //string template
 }
 
 type TokenType string

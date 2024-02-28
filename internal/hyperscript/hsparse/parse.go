@@ -1,78 +1,35 @@
 package hsparse
 
 import (
-	_ "embed"
-	"encoding/json"
-	"errors"
-	"fmt"
-
-	"github.com/dop251/goja"
 	"github.com/inoxlang/inox/internal/hyperscript/hscode"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
-const (
-	DEFAULT_MAX_HYPERSCRIPT_SOURCE_CODE_LENGTH = 100_000
-)
+// ParseHyperScript uses the parser implementation written in Go to parse HyperScript code.
+// Only lexing is supported for now, therefore .Node is nil in the parsing result.
+func ParseHyperScript(source string) (*hscode.ParsingResult, *hscode.ParsingError, error) {
 
-var (
-	//go:embed parse-hyperscript.js
-	HYPERSCRIPT_PARSER_JS      string
-	HYPERSCRIPT_PARSER_PROGRAM *goja.Program
-)
-
-func init() {
-	HYPERSCRIPT_PARSER_PROGRAM = goja.MustCompile("parse-hyperscript.js", HYPERSCRIPT_PARSER_JS, false)
-}
-
-func ParseHyperscript(source string) (*hscode.ParsingResult, *hscode.ParsingError, error) {
-	if len(source) > DEFAULT_MAX_HYPERSCRIPT_SOURCE_CODE_LENGTH {
-		return nil, nil, errors.New("input string is too long")
-	}
-
-	runtime := goja.New()
-	input := runtime.ToValue(source)
-	global := runtime.GlobalObject()
-	global.Set("input", input)
-
-	_, err := runtime.RunProgram(HYPERSCRIPT_PARSER_PROGRAM)
+	lexer := NewLexer()
+	tokens, err := lexer.tokenize(source, false)
 	if err != nil {
-		return nil, nil, err
-	}
-
-	criticalError := global.Get("criticalError")
-	if criticalError != nil {
-		return nil, nil, errors.New(criticalError.Export().(string))
-	}
-
-	errorJSON := global.Get("errorJSON")
-	if errorJSON != nil {
-		_json := errorJSON.Export().(string)
-		var err hscode.ParsingError
-		unmarshallingErr := json.Unmarshal([]byte(_json), &err)
-		if unmarshallingErr != nil {
-			return nil, nil, fmt.Errorf("internal error: %w", unmarshallingErr)
+		parsingErr := &hscode.ParsingError{
+			Message:        err.Error(),
+			MessageAtToken: err.Error(),
+			Tokens:         tokens,
 		}
 
-		return nil, &err, nil
-	}
-
-	outputJSON := global.Get("outputJSON")
-	if outputJSON != nil {
-		_json := outputJSON.Export().(string)
-		var parsingResult hscode.ParsingResult
-
-		unmarshallingErr := json.Unmarshal([]byte(_json), &parsingResult)
-		if unmarshallingErr != nil {
-			return nil, nil, fmt.Errorf("internal error: %w", unmarshallingErr)
+		if len(tokens) > 0 {
+			parsingErr.Token = tokens[len(tokens)-1]
 		}
-
-		parsingResult.TokensNoWhitespace = utils.FilterSlice(parsingResult.Tokens, func(e hscode.Token) bool {
-			return e.Type != "WHITESPACE"
-		})
-
-		return &parsingResult, nil, nil
+		return nil, parsingErr, nil
 	}
 
-	return nil, nil, nil
+	result := &hscode.ParsingResult{
+		Node:   hscode.Node{},
+		Tokens: tokens,
+	}
+
+	result.TokensNoWhitespace = utils.FilterSlice(result.Tokens, isNotWhitespaceToken)
+
+	return result, nil, nil
 }
