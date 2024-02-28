@@ -6,7 +6,7 @@ import (
 	"github.com/inoxlang/inox/internal/hyperscript/hscode"
 )
 
-func GetHoverHelpMarkdown(ast hscode.Node, tokens []hscode.Token, cursorIndex int32) string {
+func GetHoverHelpMarkdown(tokens []hscode.Token, cursorIndex int32) string {
 
 	builder := strings.Builder{}
 

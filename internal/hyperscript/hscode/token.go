@@ -1,5 +1,7 @@
 package hscode
 
+import "reflect"
+
 type Token struct {
 	Type  TokenType `json:"type"` //can be empty
 	Value string    `json:"value"`
@@ -12,6 +14,14 @@ type Token struct {
 
 	Op       bool
 	Template bool //string template
+}
+
+func (t Token) IsZero() bool {
+	return reflect.ValueOf(t).IsZero()
+}
+
+func (t Token) IsNotZero() bool {
+	return !reflect.ValueOf(t).IsZero()
 }
 
 type TokenType string

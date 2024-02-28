@@ -356,14 +356,14 @@ func getSectionHelp(n parse.Node, ancestors []parse.Node) (string, bool) {
 func getHyperscriptHelpMarkdown(attribute *parse.HyperscriptAttributeShorthand, span parse.NodeSpan) string {
 	parsingResult := attribute.HyperscriptParsingResult
 	cursorIndexInHsCode := span.Start - attribute.Span.Start - 1
-	return hshelp.GetHoverHelpMarkdown(parsingResult.Node, parsingResult.Tokens, cursorIndexInHsCode)
+	return hshelp.GetHoverHelpMarkdown(parsingResult.Tokens, cursorIndexInHsCode)
 }
 
 func getRawXMLelementContentHelpMarkdown(element *parse.XMLElement, span parse.NodeSpan) string {
 	switch parsingResult := element.RawElementParsingResult.(type) {
 	case *hscode.ParsingResult:
 		cursorIndexInHsCode := span.Start - element.RawElementContentStart
-		return hshelp.GetHoverHelpMarkdown(parsingResult.Node, parsingResult.Tokens, cursorIndexInHsCode)
+		return hshelp.GetHoverHelpMarkdown(parsingResult.Tokens, cursorIndexInHsCode)
 	}
 
 	return ""

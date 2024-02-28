@@ -1,9 +1,10 @@
 package hscode
 
 type ParsingResult struct {
-	Node               Node    `json:"node"`
-	Tokens             []Token `json:"tokens"`
-	TokensNoWhitespace []Token `json:"tokensNoWhitespace"`
+	//Node               Node    `json:"node"`
+	NodeData           map[string]any `json:"nodeData"` //set by the slow JS-based parser.
+	Tokens             []Token        `json:"tokens"`
+	TokensNoWhitespace []Token        `json:"tokensNoWhitespace"`
 }
 
 type ParsingError struct {

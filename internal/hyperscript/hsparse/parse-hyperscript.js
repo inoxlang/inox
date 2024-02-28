@@ -4941,7 +4941,7 @@ hyperscriptWebGrammar(parser)
 try {
     const allowedKeys = []
     const node = parser.parseHyperScript(tokens)
-    this.outputJSON = JSON.stringify({node: node, tokens: tokenList}, (key, value) => {
+    this.outputJSON = JSON.stringify({nodeData: node, tokens: tokenList}, (key, value) => {
         if (key == 'parent') {
             //Remove circular references.
             return null

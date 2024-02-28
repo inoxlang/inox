@@ -2,13 +2,17 @@ package hsparse
 
 import (
 	"errors"
+	"fmt"
+	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/inoxlang/inox/internal/hyperscript/hscode"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 type Lexer struct {
-	OP_TABLE  map[string]hscode.TokenType
+	opTable   map[string]hscode.TokenType
 	tokens    []hscode.Token
 	lastToken string
 	i         int32
@@ -21,7 +25,7 @@ type Lexer struct {
 
 func NewLexer() *Lexer {
 	return &Lexer{
-		OP_TABLE: map[string]hscode.TokenType{
+		opTable: map[string]hscode.TokenType{
 			"+":   hscode.PLUS,
 			"-":   hscode.MINUS,
 			"*":   hscode.MULTIPLY,
@@ -93,7 +97,7 @@ func (l *Lexer) tokenize(str string, template bool) ([]hscode.Token, error) {
 				l.currentChar() == '#' &&
 				(isAlpha(l.nextChar()) || l.nextChar() == '{') {
 
-				idRef, err := l.consumeClassReference()
+				idRef, err := l.consumeIdReference()
 				l.tokens = append(l.tokens, idRef)
 				if err != nil {
 					return l.tokens, err
@@ -128,7 +132,7 @@ func (l *Lexer) tokenize(str string, template bool) ([]hscode.Token, error) {
 				} else {
 					l.tokens = append(l.tokens, l.consumeOp())
 				}
-			} else if l.OP_TABLE[string(l.currentChar())] != "" {
+			} else if l.opTable[string(l.currentChar())] != "" {
 				if l.lastToken == "$" && l.currentChar() == '{' {
 					l.templateBraceCount++
 				}
@@ -392,10 +396,10 @@ func (l *Lexer) consumeNumber() hscode.Token {
 func (l *Lexer) consumeOp() hscode.Token {
 	op := l.makeOpToken("", "")
 	value := string(l.consumeChar()) // consume leading char
-	for l.currentChar() >= 0 && l.OP_TABLE[value+string(l.currentChar())] != "" {
+	for l.currentChar() >= 0 && l.opTable[value+string(l.currentChar())] != "" {
 		value += string(l.consumeChar())
 	}
-	op.Type = l.OP_TABLE[value]
+	op.Type = l.opTable[value]
 	op.Value = value
 	op.End = l.i
 	return op
@@ -494,4 +498,202 @@ func len32[E any](s []E) int32 {
 
 func positionString(token hscode.Token) string {
 	return "[Line: " + strconv.Itoa(int(token.Line)) + ", Column: " + strconv.Itoa(int(token.Column)) + "]"
+}
+
+type tokens struct {
+	initial       []hscode.Token
+	tokens        []hscode.Token
+	consumed      []hscode.Token
+	source        []rune
+	sourceString  string
+	_lastConsumed hscode.Token
+	follows       []string
+}
+
+func NewTokens(tokenList []hscode.Token, consumed []hscode.Token, source []rune, sourceString string) *tokens {
+	t := &tokens{
+		initial:  slices.Clone(tokenList),
+		tokens:   tokenList,
+		consumed: consumed,
+		source:   source,
+	}
+	t.consumeWhitespace() // consume initial whitespace
+	return t
+}
+
+func (t *tokens) consumeWhitespace() {
+	for len(t.tokens) > 0 && t.tokens[0].Type == "WHITESPACE" {
+		t.consumed = append(t.consumed, t.tokens[0])
+		t.tokens = t.tokens[1:]
+	}
+}
+
+func (t *tokens) raiseError(error string) {
+	// Placeholder for error handling
+	fmt.Println("Error:", error)
+}
+
+func (t *tokens) requireOpToken(value string) hscode.Token {
+	token := t.matchOpToken(value)
+	if !token.IsZero() {
+		return token
+	}
+	t.raiseError("Expected '" + value + "' but found '" + t.currentToken().Value + "'")
+	return hscode.Token{}
+}
+
+func (t *tokens) matchAnyOpToken(ops ...string) hscode.Token {
+	for _, op := range ops {
+		token := t.matchOpToken(op)
+		if token.IsNotZero() {
+			return token
+		}
+	}
+	return hscode.Token{}
+}
+
+func (t *tokens) matchAnyToken(values ...string) hscode.Token {
+	for _, value := range values {
+		token := t.matchToken(value, "")
+		if !token.IsZero() {
+			return token
+		}
+	}
+	return hscode.Token{}
+}
+
+func (t *tokens) matchOpToken(value string) hscode.Token {
+	if !t.currentToken().IsZero() && t.currentToken().Op && t.currentToken().Value == value {
+		return t.consumeToken()
+	}
+	return hscode.Token{}
+}
+
+func (t *tokens) requireTokenType(types ...hscode.TokenType) hscode.Token {
+	token := t.matchTokenType(types...)
+	if token.IsNotZero() {
+		return token
+	}
+	strs := utils.MapSlice(types, func(e hscode.TokenType) string { return string(e) })
+	t.raiseError("Expected one of " + strings.Join(strs, ", "))
+	return hscode.Token{}
+}
+
+func (t *tokens) matchTokenType(types ...hscode.TokenType) hscode.Token {
+	if !t.currentToken().IsZero() {
+		for _, typ := range types {
+			if t.currentToken().Type == typ {
+				return t.consumeToken()
+			}
+		}
+	}
+	return hscode.Token{}
+}
+
+func (t *tokens) requireToken(value string, typ hscode.TokenType) hscode.Token {
+	token := t.matchToken(value, typ)
+	if token.IsNotZero() {
+		return token
+	}
+	t.raiseError("Expected '" + value + "' but found '" + t.currentToken().Value + "'")
+	return hscode.Token{}
+}
+
+func (t *tokens) peekToken(value string, peek int, typ hscode.TokenType) hscode.Token {
+	if peek < len(t.tokens) && t.tokens[peek].Value == value && t.tokens[peek].Type == typ {
+		return t.tokens[peek]
+	}
+	return hscode.Token{}
+}
+
+func (t *tokens) matchToken(value string, typ hscode.TokenType) hscode.Token {
+	if typ == "" {
+		typ = hscode.IDENTIFIER
+	}
+	if !t.currentToken().IsZero() && t.currentToken().Value == value && t.currentToken().Type == typ {
+		return t.consumeToken()
+	}
+	return hscode.Token{}
+}
+
+func (t *tokens) consumeToken() hscode.Token {
+	if len(t.tokens) > 0 {
+		token := t.tokens[0]
+		copy(t.tokens, t.tokens[1:])
+		t.tokens = t.tokens[:len(t.tokens)-1]
+		t.consumed = append(t.consumed, token)
+		t._lastConsumed = token
+		t.consumeWhitespace() // consume any whitespace
+		return token
+	}
+	return hscode.Token{}
+}
+
+func (t *tokens) consumeUntil(value string, typ hscode.TokenType) []hscode.Token {
+	var tokens []hscode.Token
+	for len(t.tokens) > 0 {
+		if (typ == "" || t.tokens[0].Type != typ) && (value == "" || t.tokens[0].Value != value) && t.tokens[0].Type != "EOF" {
+			tokens = append(tokens, t.tokens[0])
+			t.consumeToken()
+		} else {
+			break
+		}
+	}
+	t.consumeWhitespace() // consume any whitespace
+	return tokens
+}
+
+func (t *tokens) lastWhitespace() string {
+	if len(t.consumed) > 0 && t.consumed[len(t.consumed)-1].Type == "WHITESPACE" {
+		return t.consumed[len(t.consumed)-1].Value
+	}
+	return ""
+}
+
+func (t *tokens) consumeUntilWhitespace() []hscode.Token {
+	return t.consumeUntil("", "WHITESPACE")
+}
+
+func (t *tokens) hasMore() bool {
+	return len(t.tokens) > 0
+}
+
+func (t *tokens) token(n int, dontIgnoreWhitespace bool) hscode.Token {
+	i := 0
+	for !dontIgnoreWhitespace && i < len(t.tokens) && t.tokens[i].Type == "WHITESPACE" {
+		i++
+	}
+	if i+n < len(t.tokens) {
+		return t.tokens[i+n]
+	}
+	return hscode.Token{Type: "EOF", Value: "<<<EOF>>>"}
+}
+
+func (t *tokens) currentToken() hscode.Token {
+	return t.token(0, false)
+}
+
+func (t *tokens) lastMatch() hscode.Token {
+	return t._lastConsumed
+}
+
+// Methods for managing follows
+func (t *tokens) pushFollow(str string) {
+	t.follows = append(t.follows, str)
+}
+
+func (t *tokens) popFollow() {
+	if len(t.follows) > 0 {
+		t.follows = t.follows[:len(t.follows)-1]
+	}
+}
+
+func (t *tokens) clearFollows() []string {
+	tmp := t.follows
+	t.follows = []string{}
+	return tmp
+}
+
+func (t *tokens) restoreFollows(f []string) {
+	t.follows = f
 }

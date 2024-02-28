@@ -2,79 +2,35 @@ package hscode
 
 import "reflect"
 
-type Node struct {
-	Type       NodeType `json:"type"`
-	StartToken Token    `json:"startToken,omitempty"`
-	EndToken   Token    `json:"endToken,omitempty"`
-
-	Root         *Node `json:"root,omitempty"`
-	Expression   *Node `json:"expression,omitempty"`
-	Expr         *Node `json:"expr,omitempty"`
-	Attribute    *Node `json:"attribute,omitempty"`
-	From         *Node `json:"from,omitempty"`
-	To           *Node `json:"to,omitempty"`
-	FirstIndex   *Node `json:"firstIndex,omitempty"`
-	SecondIndex  *Node `json:"secondIndex,omitempty"`
-	Lhs          *Node `json:"lhs,omitempty"`
-	Rhs          *Node `json:"rhs,omitempty"`
-	Value        *Node `json:"value,omitempty"`
-	Target       *Node `json:"target,omitempty"`
-	AttributeRef *Node `json:"attributeRef,omitempty"`
-
-	InElt     *Node `json:"inElt,omitempty"`
-	WithinElt *Node `json:"withinElt,omitempty"`
-
-	Children map[string]Node `json:"children,omitempty"`
-
-	Args           []Node `json:"args,omitempty"`
-	ArgExressions  []Node `json:"argExressions,omitempty"`
-	ArgExpressions []Node `json:"argExpressions,omitempty"`
-	Values         []Node `json:"values,omitempty"`
-	Features       []Node `json:"features,omitempty"`
-
-	Fields []Field `json:"field,omitempty"`
-
-	Token       *Token `json:"token,omitempty"`
-	NumberToken *Token `json:"numberToken,omitempty"`
-	Prop        *Token `json:"prop,omitempty"`
-
-	Name     string `json:"name,omitempty"`
-	Key      string `json:"key,omitempty"`
-	CSS      string `json:"css,omitempty"`
-	Scope    string `json:"scope,omitempty"`
-	Operator string `json:"operator,omitempty"`
-	JsSource string `json:"jsSource,omitempty"`
-	TypeName string `json:"typeName,omitempty"`
-
-	//Events //TODO
-
-	ExposedFunctionNames []string `json:"exposedFunctionNames,omitempty"`
-	DotOrColonPath       []string `json:"dotOrColonPath,omitempty"`
-
-	Time any `json:"time,omitempty"`
-
-	IsFeature     bool `json:"isFeature"`
-	ParentSearch  bool `json:"parentSearch,omitempty"`
-	ForwardSearch bool `json:"forwardSearch,omitempty"`
-	InSearch      bool `json:"inSearch,omitempty"`
-	Wrapping      bool `json:"wrapping,omitempty"`
-	NullOk        bool `json:"nullOk,omitempty"`
+type Node interface {
+	Base() NodeBase
 }
 
-func (n Node) IsZero() bool {
+type NodeBase struct {
+	Type       NodeType `json:"type"`
+	StartToken *Token   `json:"startToken,omitempty"`
+	EndToken   *Token   `json:"endToken,omitempty"`
+	IsFeature  bool     `json:"isFeature"`
+}
+
+func (n NodeBase) IsZero() bool {
 	return reflect.ValueOf(n).IsZero()
 }
 
-func (n Node) StartPos() int32 {
+func (n NodeBase) IsNotZero() bool {
+	return !reflect.ValueOf(n).IsZero()
+}
+
+func (n NodeBase) StartPos() int32 {
 	return n.StartToken.Start
 }
 
-func (n Node) EndPos() int32 {
+func (n NodeBase) EndPos() int32 {
 	return n.EndToken.End
 }
 
-func (n Node) IncludedIn(other Node) bool {
-	return n.StartPos() >= other.StartPos() && n.EndPos() <= other.EndPos()
+func (n NodeBase) IncludedIn(other Node) bool {
+	return n.StartPos() >= other.Base().StartPos() && n.EndPos() <= other.Base().EndPos()
 }
 
 type Field struct {

@@ -23,7 +23,7 @@ func TestParseHyperscriptSlow(t *testing.T) {
 		assert.Greater(t, len(res.Tokens), 6)
 		assert.Len(t, res.TokensNoWhitespace, 6)
 
-		assert.Equal(t, hscode.HyperscriptProgram, res.Node.Type)
+		assert.EqualValues(t, hscode.HyperscriptProgram, res.NodeData["type"])
 	})
 
 	t.Run("unexpected token", func(t *testing.T) {

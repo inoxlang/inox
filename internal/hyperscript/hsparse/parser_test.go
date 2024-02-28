@@ -1,63 +1,66 @@
 package hsparse
 
-import (
-	"testing"
-	"time"
+//TODO: comparison functions methods should be implemented to compare the node data returned by
+//the slow JS-based parser, to the resulting AST nodes returned by the Golang implementation.
 
-	"github.com/inoxlang/inox/internal/hyperscript/hscode"
-	"github.com/stretchr/testify/assert"
-)
+// import (
+// 	"testing"
+// 	"time"
 
-const MAX_SMALL_PROGRAM_PARSING_DURATION = time.Millisecond
+// 	"github.com/inoxlang/inox/internal/hyperscript/hscode"
+// 	"github.com/stretchr/testify/assert"
+// )
 
-func TestParseHyperscript(t *testing.T) {
+// const MAX_SMALL_PROGRAM_PARSING_DURATION = time.Millisecond
 
-	t.Run("valid", func(t *testing.T) {
-		startTime := time.Now()
-		res, parsingErr, criticalError := ParseHyperScript("on click toggle .red on me")
+// func TestParseHyperscript(t *testing.T) {
 
-		assert.Less(t, time.Now(), startTime.Add(MAX_SMALL_PROGRAM_PARSING_DURATION))
+// 	t.Run("valid", func(t *testing.T) {
+// 		startTime := time.Now()
+// 		res, parsingErr, criticalError := ParseHyperScript("on click toggle .red on me")
 
-		if !assert.NoError(t, criticalError) {
-			return
-		}
+// 		assert.Less(t, time.Now(), startTime.Add(MAX_SMALL_PROGRAM_PARSING_DURATION))
 
-		if !assert.Nil(t, parsingErr) {
-			return
-		}
+// 		if !assert.NoError(t, criticalError) {
+// 			return
+// 		}
 
-		assert.Greater(t, len(res.Tokens), 6)
-		assert.Len(t, res.TokensNoWhitespace, 6)
+// 		if !assert.Nil(t, parsingErr) {
+// 			return
+// 		}
 
-		//TODO:		assert.Equal(t, hscode.HyperscriptProgram, res.Node.Type)
-	})
+// 		assert.Greater(t, len(res.Tokens), 6)
+// 		assert.Len(t, res.TokensNoWhitespace, 6)
 
-	t.Run("unexpected token", func(t *testing.T) {
-		t.Skip("TODO: implement parser in Golang")
+// 		//TODO:		assert.Equal(t, hscode.HyperscriptProgram, res.Node.Type)
+// 	})
 
-		startTime := time.Now()
-		res, parsingErr, criticalError := ParseHyperScript("on click x .red on me")
+// 	t.Run("unexpected token", func(t *testing.T) {
+// 		t.Skip("TODO: implement parser in Golang")
 
-		assert.Less(t, time.Now(), startTime.Add(MAX_SMALL_PROGRAM_PARSING_DURATION))
+// 		startTime := time.Now()
+// 		res, parsingErr, criticalError := ParseHyperScript("on click x .red on me")
 
-		if !assert.NoError(t, criticalError) {
-			return
-		}
+// 		assert.Less(t, time.Now(), startTime.Add(MAX_SMALL_PROGRAM_PARSING_DURATION))
 
-		if !assert.NotNil(t, parsingErr) {
-			return
-		}
+// 		if !assert.NoError(t, criticalError) {
+// 			return
+// 		}
 
-		assert.Contains(t, parsingErr.Message, "unexpected token")
-		assert.Equal(t, hscode.Token{
-			Type:   "IDENTIFIER",
-			Value:  "x",
-			Start:  9,
-			End:    10,
-			Line:   1,
-			Column: 10,
-		}, parsingErr.Token)
+// 		if !assert.NotNil(t, parsingErr) {
+// 			return
+// 		}
 
-		_ = res
-	})
-}
+// 		assert.Contains(t, parsingErr.Message, "unexpected token")
+// 		assert.Equal(t, hscode.Token{
+// 			Type:   "IDENTIFIER",
+// 			Value:  "x",
+// 			Start:  9,
+// 			End:    10,
+// 			Line:   1,
+// 			Column: 10,
+// 		}, parsingErr.Token)
+
+// 		_ = res
+// 	})
+// }
