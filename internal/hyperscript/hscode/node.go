@@ -1,7 +1,9 @@
 package hscode
 
 type Node struct {
-	Type NodeType `json:"type"`
+	Type       NodeType `json:"type"`
+	StartToken Token    `json:"startToken,omitempty"`
+	EndToken   Token    `json:"endToken,omitempty"`
 
 	Root         *Node `json:"root,omitempty"`
 	Expression   *Node `json:"expression,omitempty"`
@@ -19,6 +21,8 @@ type Node struct {
 
 	InElt     *Node `json:"inElt,omitempty"`
 	WithinElt *Node `json:"withinElt,omitempty"`
+
+	Children map[string]Node `json:"children,omitempty"`
 
 	Args           []Node `json:"args,omitempty"`
 	ArgExressions  []Node `json:"argExressions,omitempty"`
@@ -38,8 +42,9 @@ type Node struct {
 	Scope    string `json:"scope,omitempty"`
 	Operator string `json:"operator,omitempty"`
 	JsSource string `json:"jsSource,omitempty"`
-
 	TypeName string `json:"typeName,omitempty"`
+
+	//Events //TODO
 
 	ExposedFunctionNames []string `json:"exposedFunctionNames,omitempty"`
 	DotOrColonPath       []string `json:"dotOrColonPath,omitempty"`
@@ -114,11 +119,50 @@ const (
 	PseudoCommand                NodeType = "pseudoCommand"
 	WaitATick                    NodeType = "waitATick"
 	ImplicitIncrementOp          NodeType = "implicitIncrementOp"
-	SettleCmd                    NodeType = "settleCmd"
-	AddCmd                       NodeType = "addCmd"
 	StyleLiteral                 NodeType = "styleLiteral"
 	PseudopossessiveIts          NodeType = "pseudopossessiveIts"
 	StyleRefValue                NodeType = "styleRefValue"
 	Initial_literal              NodeType = "initial_literal"
 	ClosestExpr                  NodeType = "closestExpr"
+
+	OnFeature = "onFeature"
+
+	SettleCmd NodeType = "settleCmd"
+	AddCmd    NodeType = "addCmd"
+
+	RemoveCommand     = "removeCommand"
+	ToggleCommand     = "toggleCommand"
+	HideCommand       = "hideCommand"
+	ShowCommand       = "showCommand"
+	TakeCommand       = "takeCommand"
+	PutCommand        = "putCommand"
+	TransitionCommand = "transitionCommand"
+	MeasureCommand    = "measureCommand"
+	GoCommand         = "goCommand"
+	JsCommand         = "jsCommand"
+	AsyncCommand      = "asyncCommand"
+	TellCommand       = "tellCommand"
+	WaitCommand       = "waitCommand"
+	TriggerCommand    = "triggerCommand"
+	ReturnCommand     = "returnCommand"
+	ExitCommand       = "exitCommand"
+	HaltCommand       = "haltCommand"
+	LogCommand        = "logCommand"
+	BeepCommand       = "beep!Command"
+	ThrowCommand      = "throwCommand"
+	CallCommand       = "callCommand"
+	MakeCommand       = "makeCommand"
+	GetCommand        = "getCommand"
+	DefaultCommand    = "defaultCommand"
+	SetCommand        = "setCommand"
+	IfCommand         = "ifCommand"
+	RepeatCommand     = "repeatCommand"
+	ForCommand        = "forCommand"
+	ContinueCommand   = "continueCommand"
+	BreakCommand      = "breakCommand"
+	AppendCommand     = "appendCommand"
+	PickCommand       = "pickCommand"
+	IncrementCommand  = "incrementCommand"
+	DecrementCommand  = "decrementCommand"
+	FetchCommand      = "fetchCommand"
 )
