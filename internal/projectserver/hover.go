@@ -10,6 +10,8 @@ import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/html_ns"
 	"github.com/inoxlang/inox/internal/help"
+	"github.com/inoxlang/inox/internal/hyperscript/hscode"
+	"github.com/inoxlang/inox/internal/hyperscript/hshelp"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/projectserver/logs"
@@ -66,6 +68,36 @@ func getHoverContent(handlingCtx *core.Context, params hoverContentParams) (*def
 	if !ok || hoveredNode == nil {
 		logs.Println("no data")
 		return &defines.Hover{}, nil
+	}
+
+	//Hyperscript attribute shorthand
+	if attribute, ok := hoveredNode.(*parse.HyperscriptAttributeShorthand); ok && attribute.HyperscriptParsingResult != nil {
+		help := getHyperscriptHelpMarkdown(attribute, span)
+		if help == "" {
+			return &defines.Hover{}, nil
+		}
+
+		return &defines.Hover{
+			Contents: defines.MarkupContent{
+				Kind:  defines.MarkupKindMarkdown,
+				Value: help,
+			},
+		}, nil
+	}
+
+	//Raw XML element.
+	if elem, ok := hoveredNode.(*parse.XMLElement); ok && elem.RawElementContent != "" {
+		help := getRawXMLelementContentHelpMarkdown(elem, span)
+		if help == "" {
+			return &defines.Hover{}, nil
+		}
+
+		return &defines.Hover{
+			Contents: defines.MarkupContent{
+				Kind:  defines.MarkupKindMarkdown,
+				Value: help,
+			},
+		}, nil
 	}
 
 	//sectionHelp about manifest sections & lthread meta sections
@@ -319,4 +351,20 @@ func getSectionHelp(n parse.Node, ancestors []parse.Node) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+func getHyperscriptHelpMarkdown(attribute *parse.HyperscriptAttributeShorthand, span parse.NodeSpan) string {
+	parsingResult := attribute.HyperscriptParsingResult
+	cursorIndexInHsCode := span.Start - attribute.Span.Start - 1
+	return hshelp.GetHoverHelpMarkdown(parsingResult.Node, parsingResult.Tokens, cursorIndexInHsCode)
+}
+
+func getRawXMLelementContentHelpMarkdown(element *parse.XMLElement, span parse.NodeSpan) string {
+	switch parsingResult := element.RawElementParsingResult.(type) {
+	case *hscode.ParsingResult:
+		cursorIndexInHsCode := span.Start - element.RawElementContentStart
+		return hshelp.GetHoverHelpMarkdown(parsingResult.Node, parsingResult.Tokens, cursorIndexInHsCode)
+	}
+
+	return ""
 }

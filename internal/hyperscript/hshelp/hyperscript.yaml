@@ -1,0 +1,62 @@
+token-values:
+  # features
+  toggle: https://hyperscript.org/commands/toggle/
+  behavior: https://hyperscript.org/features/behavior/
+  def: https://hyperscript.org/features/def/
+  eventsource: https://hyperscript.org/features/eventsource/
+  js: https://hyperscript.org/features/js/
+  set: https://hyperscript.org/features/set/
+  init: https://hyperscript.org/features/init/
+  on: https://hyperscript.org/features/on/
+  socket: https://hyperscript.org/features/socket/
+  worker: https://hyperscript.org/features/worker/
+
+  # commands
+  add: https://hyperscript.org/commands/add/
+  append: https://hyperscript.org/commands/append/
+  async: https://hyperscript.org/commands/async/ or https://hyperscript.org/expressions/as/
+  break: https://hyperscript.org/commands/break/
+  call: https://hyperscript.org/commands/call/
+  get: https://hyperscript.org/commands/get/
+  continue: https://hyperscript.org/commands/continue/
+  decrement: https://hyperscript.org/commands/decrement/
+  fetch: https://hyperscript.org/commands/fetch/
+  go: https://hyperscript.org/commands/go/
+  halt: https://hyperscript.org/commands/halt/ 
+  hide: https://hyperscript.org/commands/hide/
+  if: https://hyperscript.org/commands/if/
+  increment: https://hyperscript.org/commands/increment/
+  js: https://hyperscript.org/commands/js/
+  log: https://hyperscript.org/commands/log/
+  make: https://hyperscript.org/commands/make/
+  measure: https://hyperscript.org/commands/measure/
+  pick: https://hyperscript.org/commands/pick/
+  put: https://hyperscript.org/commands/put/
+  remove: https://hyperscript.org/commands/remove/
+  repeat: https://hyperscript.org/commands/repeat/
+  return: https://hyperscript.org/commands/return/
+  send: https://hyperscript.org/commands/send/
+  trigger: https://hyperscript.org/commands/trigger/
+  set: https://hyperscript.org/commands/set/
+  settle: https://hyperscript.org/commands/settle/
+  show: https://hyperscript.org/commands/show/
+  take: https://hyperscript.org/commands/take/
+  tell: https://hyperscript.org/commands/tell/
+  throw: https://hyperscript.org/commands/throw/
+  toggle: https://hyperscript.org/commands/toggle/
+  transition: https://hyperscript.org/commands/transition/
+  wait: https://hyperscript.org/commands/wait/
+
+  # other
+  as: https://hyperscript.org/expressions/as/
+
+  # magic values
+  it: https://hyperscript.org/expressions/it/
+  me: https://hyperscript.org/expressions/me/
+  you: https://hyperscript.org/expressions/you/
+
+token-types:
+  # ATTRIBUTE_REF: https://hyperscript.org/expressions/attribute-ref/
+  CLASS_REF: https://hyperscript.org/expressions/class-reference/
+  ID_REF: https://hyperscript.org/expressions/id-reference/
+  STYLE_REF: https://hyperscript.org/expressions/query-reference/
