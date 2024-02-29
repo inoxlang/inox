@@ -99,7 +99,12 @@ func autoRestart(args AutoRestartArgs) (ctxError error) {
 			logger.Error().Msgf(processName+" process exited unexpectedly %d or more times in a short timeframe; wait %s\n", maxTryCount, args.PostStartBurstPauseDuration)
 			args.PostStartBurstPause.Store(true)
 
-			time.Sleep(args.PostStartBurstPauseDuration)
+			select {
+			case <-time.After(args.PostStartBurstPauseDuration):
+			case <-args.GoCtx.Done():
+				return args.GoCtx.Err()
+			}
+
 			args.PostStartBurstPause.Store(false)
 			tryCount = 0
 		}
