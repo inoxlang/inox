@@ -1,6 +1,7 @@
 package hsparse
 
 import (
+	"context"
 	_ "embed"
 	"encoding/json"
 	"errors"
@@ -12,41 +13,55 @@ import (
 )
 
 const (
-	DEFAULT_MAX_HYPERSCRIPT_SOURCE_CODE_LENGTH = 100_000
+	MAX_SOURCE_CODE_LENGTH_IF_SLOW_PARSE = 1000
 )
 
 var (
 	//go:embed parse-hyperscript.js
 	HYPERSCRIPT_PARSER_JS      string
 	HYPERSCRIPT_PARSER_PROGRAM *goja.Program
+	HYPERSCRIPT_PARSER_VM      *goja.Runtime
+
+	ErrInputStringTooLong = errors.New("input string is too long")
+	ErrNotParsed          = errors.New("input string is too long")
 )
 
 func init() {
 	HYPERSCRIPT_PARSER_PROGRAM = goja.MustCompile("parse-hyperscript.js", HYPERSCRIPT_PARSER_JS, false)
+
+	HYPERSCRIPT_PARSER_VM = goja.New()
+	utils.Must(HYPERSCRIPT_PARSER_VM.RunProgram(HYPERSCRIPT_PARSER_PROGRAM))
 }
 
-// ParseHyperScriptSlow uses the original parser written in JS to parse HyperScript code.
-func ParseHyperScriptSlow(source string) (*hscode.ParsingResult, *hscode.ParsingError, error) {
-	if len(source) > DEFAULT_MAX_HYPERSCRIPT_SOURCE_CODE_LENGTH {
-		return nil, nil, errors.New("input string is too long")
+// parseHyperScriptSlow uses the original parser written in JS to parse HyperScript code.
+func parseHyperScriptSlow(ctx context.Context, source string) (*hscode.ParsingResult, *hscode.ParsingError, error) {
+
+	if len(source) > MAX_SOURCE_CODE_LENGTH_IF_SLOW_PARSE {
+		return &hscode.ParsingResult{NodeData: map[string]any{}}, nil, nil
 	}
 
-	runtime := goja.New()
+	if len(source) > DEFAULT_MAX_SOURCE_CODE_LENGTH {
+		return nil, nil, ErrInputStringTooLong
+	}
+
+	runtime := HYPERSCRIPT_PARSER_VM
 	input := runtime.ToValue(source)
 	global := runtime.GlobalObject()
 	global.Set("input", input)
 
-	_, err := runtime.RunProgram(HYPERSCRIPT_PARSER_PROGRAM)
+	callResult, err := runtime.RunString(`parseHyperScript()`)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	criticalError := global.Get("criticalError")
+	object := callResult.ToObject(runtime)
+
+	criticalError := object.Get("criticalError")
 	if criticalError != nil {
 		return nil, nil, errors.New(criticalError.Export().(string))
 	}
 
-	errorJSON := global.Get("errorJSON")
+	errorJSON := object.Get("errorJSON")
 	if errorJSON != nil {
 		_json := errorJSON.Export().(string)
 		var err hscode.ParsingError
@@ -58,7 +73,7 @@ func ParseHyperScriptSlow(source string) (*hscode.ParsingResult, *hscode.Parsing
 		return nil, &err, nil
 	}
 
-	outputJSON := global.Get("outputJSON")
+	outputJSON := object.Get("outputJSON")
 	if outputJSON != nil {
 		_json := outputJSON.Export().(string)
 		var parsingResult hscode.ParsingResult

@@ -1,5 +1,49 @@
 //This file contains lexing and parsing logic that has been extracted from https://github.com/bigskysoftware/_hyperscript/blob/898345a1753ec365491dd6eedc3ab06873862109/src/_hyperscript.js#L1849 
 
+function parseHyperScript(args = {}){
+    let input = args.input
+    const doNotIncludeNodeData = args.doNotIncludeNodeData || false
+
+    if(input == undefined){
+        input = globalThis.input
+    }
+
+    const tokens = Lexer.tokenize(input)
+    const tokenList = Array.from(tokens.tokens).map(jsonifyToken) //Get tokens before they are used by the parser.
+
+    try {
+        const node = parser.parseHyperScript(tokens)
+
+        let nodeData = node
+        if(doNotIncludeNodeData){
+            nodeData = {}
+        }
+
+        return {
+            outputJSON: JSON.stringify({ 
+                nodeData: nodeData, 
+                tokens: tokenList
+            })
+        }
+    } catch (err) {
+
+        if (err instanceof ParsingError) {
+            return {
+                errorJSON: JSON.stringify({
+                    message: err.message,
+                    messageAtToken: err.messageAtToken,
+                    token: jsonifyToken(err.token),
+                    tokens: tokenList
+                })
+            }
+        } else {
+            return {
+                criticalError: err.message
+            }
+        }
+    }
+}
+
 const config = {
     attributes: "_, script, data-script",
     defaultTransition: "all 500ms ease-in",
@@ -1003,12 +1047,6 @@ class Parser {
             }
             return {
                 type: "emptyCommandListCommand",
-                op: function (context) {
-                    throwOnlyParsingIsSupported()
-                },
-                execute: function (context) {
-                    throwOnlyParsingIsSupported()
-                }
             }
         });
 
@@ -1041,12 +1079,6 @@ class Parser {
                 var unless = {
                     type: "unlessStatementModifier",
                     args: [conditional],
-                    op: function (context, conditional) {
-                        throwOnlyParsingIsSupported()
-                    },
-                    execute: function (context) {
-                        throwOnlyParsingIsSupported()
-                    },
                 };
                 root.parent = unless;
                 return unless;
@@ -1089,9 +1121,9 @@ class Parser {
      */
     initElt(parseElement, start, tokens) {
         parseElement.startToken = start;
-        parseElement.sourceFor = Tokens.sourceFor;
-        parseElement.lineFor = Tokens.lineFor;
-        parseElement.programSource = tokens.source;
+        //parseElement.sourceFor = Tokens.sourceFor;
+        //parseElement.lineFor = Tokens.lineFor;
+        //parseElement.programSource = tokens.source;
     }
 
     /**
@@ -1165,10 +1197,6 @@ class Parser {
             const commandElement = definition(parser, runtime, tokens);
             if (commandElement) {
                 commandElement.type = commandGrammarType;
-                commandElement.execute = function (context) {
-                    context.meta.command = commandElement;
-                    return runtime.unifiedExec(this, context);
-                };
                 return commandElement;
             }
         };
@@ -1240,7 +1268,7 @@ class Parser {
         const token = tokens.currentToken()
 
         const messageAtToken = message || "Unexpected Token : " + token.value
-        const completeMessage = message ?? (messageAtToken + "\n\n" +  Parser.createParserContext(tokens))
+        const completeMessage = message ?? (messageAtToken + "\n\n" + Parser.createParserContext(tokens))
         var error = new ParsingError(completeMessage, messageAtToken, token, tokens.tokens);
         throw error;
     }
@@ -1349,12 +1377,6 @@ class Parser {
     ensureTerminated(commandList) {
         var implicitReturn = {
             type: "implicitReturn",
-            op: function (context) {
-                throwOnlyParsingIsSupported()
-            },
-            execute: function (ctx) {
-                // do nothing
-            },
         };
 
         var end = commandList;
@@ -1421,9 +1443,6 @@ function hyperscriptCoreGrammar(parser) {
             type: "string",
             token: stringToken,
             args: args,
-            op: function (context) {
-                throwOnlyParsingIsSupported()
-            },
             evaluate: function (context) {
                 throwOnlyParsingIsSupported()
             },
@@ -1438,7 +1457,7 @@ function hyperscriptCoreGrammar(parser) {
                 type: "nakedString",
                 tokens: tokenArr,
                 evaluate: function (context) {
-                   throwOnlyParsingIsSupported()
+                    throwOnlyParsingIsSupported()
                 },
             };
         }
@@ -1471,9 +1490,6 @@ function hyperscriptCoreGrammar(parser) {
             return {
                 type: "idRefTemplate",
                 args: [innerExpression],
-                op: function (context, arg) {
-                    throwOnlyParsingIsSupported()
-                },
                 evaluate: function (context) {
                     throwOnlyParsingIsSupported()
                 },
@@ -1505,9 +1521,6 @@ function hyperscriptCoreGrammar(parser) {
             return {
                 type: "classRefTemplate",
                 args: [innerExpression],
-                op: function (context, arg) {
-                    throwOnlyParsingIsSupported()
-                },
                 evaluate: function (context) {
                     throwOnlyParsingIsSupported()
                 },
@@ -1551,9 +1564,6 @@ function hyperscriptCoreGrammar(parser) {
             type: "queryRef",
             css: queryValue,
             args: args,
-            op: function (context, ...args) {
-                throwOnlyParsingIsSupported()
-            },
             evaluate: function (context) {
                 throwOnlyParsingIsSupported()
             },
@@ -1585,9 +1595,6 @@ function hyperscriptCoreGrammar(parser) {
             name: name,
             css: css,
             value: value,
-            op: function (context) {
-                throwOnlyParsingIsSupported()
-            },
             evaluate: function (context) {
                 throwOnlyParsingIsSupported()
             },
@@ -1604,9 +1611,6 @@ function hyperscriptCoreGrammar(parser) {
             return {
                 type: "computedStyleRef",
                 name: styleProp,
-                op: function (context) {
-                    throwOnlyParsingIsSupported()
-                },
                 evaluate: function (context) {
                     throwOnlyParsingIsSupported()
                 },
@@ -1615,9 +1619,6 @@ function hyperscriptCoreGrammar(parser) {
             return {
                 type: "styleRef",
                 name: styleProp,
-                op: function (context) {
-                    throwOnlyParsingIsSupported()
-                },
                 evaluate: function (context) {
                     throwOnlyParsingIsSupported()
                 },
@@ -1642,9 +1643,6 @@ function hyperscriptCoreGrammar(parser) {
                 type: "objectKey",
                 expr: expr,
                 args: [expr],
-                op: function (ctx, expr) {
-                    throwOnlyParsingIsSupported()
-                },
                 evaluate: function (context) {
                     throwOnlyParsingIsSupported()
                 },
@@ -1682,9 +1680,6 @@ function hyperscriptCoreGrammar(parser) {
         return {
             type: "objectLiteral",
             args: [keyExpressions, valueExpressions],
-            op: function (context, keys, values) {
-                throwOnlyParsingIsSupported()
-            },
             evaluate: function (context) {
                 throwOnlyParsingIsSupported()
             },
@@ -1707,9 +1702,6 @@ function hyperscriptCoreGrammar(parser) {
             type: "namedArgumentList",
             fields: fields,
             args: [valueExpressions],
-            op: function (context, values) {
-                throwOnlyParsingIsSupported()
-            },
             evaluate: function (context) {
                 throwOnlyParsingIsSupported()
             },
@@ -1812,9 +1804,6 @@ function hyperscriptCoreGrammar(parser) {
             type: "arrayLiteral",
             values: values,
             args: [values],
-            op: function (context, values) {
-                throwOnlyParsingIsSupported()
-            },
             evaluate: function (context) {
                 throwOnlyParsingIsSupported()
             },
@@ -1853,9 +1842,6 @@ function hyperscriptCoreGrammar(parser) {
             root: root,
             prop: prop,
             args: [root],
-            op: function (_context, rootVal) {
-                throwOnlyParsingIsSupported()
-            },
             evaluate: function (context) {
                 throwOnlyParsingIsSupported()
             },
@@ -1890,9 +1876,6 @@ function hyperscriptCoreGrammar(parser) {
             attribute: attributeElt,
             expression: root,
             args: [newRoot],
-            op: function (context, rootVal) {
-                throwOnlyParsingIsSupported()
-            },
             evaluate: function (context) {
                 throwOnlyParsingIsSupported()
             },
@@ -1940,9 +1923,6 @@ function hyperscriptCoreGrammar(parser) {
                 attribute: attribute || style,
                 prop: prop,
                 args: [root],
-                op: function (context, rootVal) {
-                    throwOnlyParsingIsSupported()
-                },
                 evaluate: function (context) {
                     throwOnlyParsingIsSupported()
                 },
@@ -1958,9 +1938,6 @@ function hyperscriptCoreGrammar(parser) {
             type: "inExpression",
             root: root,
             args: [root, target],
-            op: function (context, rootVal, target) {
-                throwOnlyParsingIsSupported()
-            },
             evaluate: function (context) {
                 throwOnlyParsingIsSupported()
             },
@@ -1971,14 +1948,14 @@ function hyperscriptCoreGrammar(parser) {
     parser.addIndirectExpression("asExpression", function (parser, runtime, tokens, root) {
         if (!tokens.matchToken("as")) return;
         tokens.matchToken("a") || tokens.matchToken("an");
-        var conversion = parser.requireElement("dotOrColonPath", tokens).evaluate(); // OK No promise
+
+        //var conversion = parser.requireElement("dotOrColonPath", tokens).evaluate(); // OK No promise
+        parser.requireElement("dotOrColonPath", tokens)
+
         var propertyAccess = {
             type: "asExpression",
             root: root,
             args: [root],
-            op: function (context, rootVal) {
-                throwOnlyParsingIsSupported()
-            },
             evaluate: function (context) {
                 throwOnlyParsingIsSupported()
             },
@@ -2002,9 +1979,6 @@ function hyperscriptCoreGrammar(parser) {
                 root: root,
                 argExressions: args,
                 args: [root.root, args],
-                op: function (context, rootRoot, args) {
-                    throwOnlyParsingIsSupported()
-                },
                 evaluate: function (context) {
                     throwOnlyParsingIsSupported()
                 },
@@ -2015,9 +1989,6 @@ function hyperscriptCoreGrammar(parser) {
                 root: root,
                 argExressions: args,
                 args: [root, args],
-                op: function (context, func, argVals) {
-                    throwOnlyParsingIsSupported()
-                },
                 evaluate: function (context) {
                     throwOnlyParsingIsSupported()
                 },
@@ -2034,9 +2005,6 @@ function hyperscriptCoreGrammar(parser) {
             root: root,
             attribute: attribute,
             args: [root],
-            op: function (_ctx, rootVal) {
-                throwOnlyParsingIsSupported()
-            },
             evaluate: function (context) {
                 throwOnlyParsingIsSupported()
             },
@@ -2074,9 +2042,6 @@ function hyperscriptCoreGrammar(parser) {
             firstIndex: firstIndex,
             secondIndex: secondIndex,
             args: [root, firstIndex, secondIndex],
-            op: function (_ctx, root, firstIndex, secondIndex) {
-                throwOnlyParsingIsSupported()
-            },
             evaluate: function (context) {
                 throwOnlyParsingIsSupported()
             },
@@ -2101,9 +2066,6 @@ function hyperscriptCoreGrammar(parser) {
                 type: "stringPostfix",
                 postfix: stringPosfix.value,
                 args: [root],
-                op: function (context, val) {
-                    throwOnlyParsingIsSupported()
-                },
                 evaluate: function (context) {
                     throwOnlyParsingIsSupported()
                 },
@@ -2122,9 +2084,6 @@ function hyperscriptCoreGrammar(parser) {
                 time: root,
                 factor: timeFactor,
                 args: [root],
-                op: function (_context, val) {
-                    throwOnlyParsingIsSupported()
-                },
                 evaluate: function (context) {
                     throwOnlyParsingIsSupported()
                 },
@@ -2140,9 +2099,6 @@ function hyperscriptCoreGrammar(parser) {
                 typeName: typeName,
                 nullOk: nullOk,
                 args: [root],
-                op: function (context, val) {
-                    throwOnlyParsingIsSupported()
-                },
                 evaluate: function (context) {
                     throwOnlyParsingIsSupported()
                 },
@@ -2159,9 +2115,6 @@ function hyperscriptCoreGrammar(parser) {
             type: "logicalNot",
             root: root,
             args: [root],
-            op: function (context, val) {
-                throwOnlyParsingIsSupported()
-            },
             evaluate: function (context) {
                 throwOnlyParsingIsSupported()
             },
@@ -2175,9 +2128,6 @@ function hyperscriptCoreGrammar(parser) {
             type: "noExpression",
             root: root,
             args: [root],
-            op: function (_context, val) {
-                throwOnlyParsingIsSupported()
-            },
             evaluate: function (context) {
                 throwOnlyParsingIsSupported()
             },
@@ -2191,9 +2141,6 @@ function hyperscriptCoreGrammar(parser) {
             type: "noExpression",
             root: root,
             args: [root],
-            op: function (_context, val) {
-                throwOnlyParsingIsSupported()
-            },
             evaluate(context) {
                 throwOnlyParsingIsSupported()
             },
@@ -2207,9 +2154,6 @@ function hyperscriptCoreGrammar(parser) {
             type: "negativeNumber",
             root: root,
             args: [root],
-            op: function (context, value) {
-                throwOnlyParsingIsSupported()
-            },
             evaluate: function (context) {
                 throwOnlyParsingIsSupported()
             },
@@ -2283,9 +2227,6 @@ function hyperscriptCoreGrammar(parser) {
             withinElt: withinElt,
             operator: op.value,
             args: [thingElt, from, inElt, withinElt],
-            op: function (context, thing, from, inElt, withinElt) {
-                throwOnlyParsingIsSupported()
-            },
             evaluate: function (context) {
                 throwOnlyParsingIsSupported()
             },
@@ -2304,9 +2245,6 @@ function hyperscriptCoreGrammar(parser) {
             rhs: rhs,
             operator: op.value,
             args: [rhs],
-            op: function (context, rhsVal) {
-                throwOnlyParsingIsSupported()
-            },
             evaluate: function (context) {
                 throwOnlyParsingIsSupported()
             },
@@ -2331,9 +2269,6 @@ function hyperscriptCoreGrammar(parser) {
                 rhs: rhs,
                 operator: operator,
                 args: [expr, rhs],
-                op: function (context, lhsVal, rhsVal) {
-                    throwOnlyParsingIsSupported()
-                },
                 evaluate: function (context) {
                     throwOnlyParsingIsSupported()
                 },
@@ -2464,9 +2399,6 @@ function hyperscriptCoreGrammar(parser) {
                 lhs: expr,
                 rhs: rhs,
                 args: [expr, rhs],
-                op: function (context, lhsVal, rhsVal) {
-                    throwOnlyParsingIsSupported()
-                },
                 evaluate: function (context) {
                     throwOnlyParsingIsSupported()
                 },
@@ -2497,9 +2429,6 @@ function hyperscriptCoreGrammar(parser) {
                 lhs: expr,
                 rhs: rhs,
                 args: [expr, rhs],
-                op: function (context, lhsVal, rhsVal) {
-                    throwOnlyParsingIsSupported()
-                },
                 evaluate: function (context) {
                     throwOnlyParsingIsSupported()
                 },
@@ -2575,12 +2504,6 @@ function hyperscriptCoreGrammar(parser) {
         return {
             type: "hyperscript",
             features: features,
-            apply: function (target, source, args) {
-                // no op
-                for (const feature of features) {
-                    feature.install(target, source, args);
-                }
-            },
         };
     });
 
@@ -2645,14 +2568,18 @@ function hyperscriptCoreGrammar(parser) {
             if (eventName === "intersection") {
                 intersectionSpec = {};
                 if (tokens.matchToken("with")) {
-                    intersectionSpec["with"] = parser.requireElement("expression", tokens).evaluate();
+                    parser.requireElement("expression", tokens)
+                    //Do not evaluate.
+                    //intersectionSpec["with"] = parser.requireElement("expression", tokens).evaluate();
                 }
                 if (tokens.matchToken("having")) {
                     do {
                         if (tokens.matchToken("margin")) {
-                            intersectionSpec["rootMargin"] = parser.requireElement("stringLike", tokens).evaluate();
+                            parser.requireElement("stringLike", tokens)
+                            //intersectionSpec["rootMargin"] = parser.requireElement("stringLike", tokens).evaluate();
                         } else if (tokens.matchToken("threshold")) {
-                            intersectionSpec["threshold"] = parser.requireElement("expression", tokens).evaluate();
+                            parser.requireElement("expression", tokens)
+                            //intersectionSpec["threshold"] = parser.requireElement("expression", tokens).evaluate();
                         } else {
                             parser.raiseParseError(tokens, "Unknown intersection config specification");
                         }
@@ -2799,14 +2726,8 @@ function hyperscriptCoreGrammar(parser) {
             execCount: 0,
             errorHandler: errorHandler,
             errorSymbol: errorSymbol,
-            execute: function (/** @type {Context} */ ctx) {
-                throwOnlyParsingIsSupported()
-            },
-            install: function (elt, source) {
-                throwOnlyParsingIsSupported()
-            },
         };
-        parser.setParent(start, onFeature);
+        //parser.setParent(start, onFeature);
         return onFeature;
     });
 
@@ -2858,9 +2779,6 @@ function hyperscriptCoreGrammar(parser) {
             errorHandler: errorHandler,
             errorSymbol: errorSymbol,
             finallyHandler: finallyHandler,
-            install: function (target, source) {
-                throwOnlyParsingIsSupported()
-            },
         };
 
         parser.ensureTerminated(start);
@@ -2870,7 +2788,7 @@ function hyperscriptCoreGrammar(parser) {
             parser.ensureTerminated(errorHandler);
         }
 
-        parser.setParent(start, functionFeature);
+        //parser.setParent(start, functionFeature);
         return functionFeature;
     });
 
@@ -2882,9 +2800,6 @@ function hyperscriptCoreGrammar(parser) {
             }
             let setFeature = {
                 start: setCmd,
-                install: function (target, source) {
-                    throwOnlyParsingIsSupported()
-                },
             };
             parser.ensureTerminated(setCmd);
             return setFeature;
@@ -2899,14 +2814,11 @@ function hyperscriptCoreGrammar(parser) {
         var start = parser.requireElement("commandList", tokens);
         var initFeature = {
             start: start,
-            install: function (target, source) {
-                throwOnlyParsingIsSupported()
-            },
         };
 
         // terminate body
         parser.ensureTerminated(start);
-        parser.setParent(start, initFeature);
+        //parser.setParent(start, initFeature);
         return initFeature;
     });
 
@@ -2942,11 +2854,7 @@ function hyperscriptCoreGrammar(parser) {
             feature.behavior = path;
         }
 
-        return {
-            install: function (target, source) {
-                throwOnlyParsingIsSupported()
-            },
-        };
+        return {};
     });
 
     parser.addFeature("install", function (parser, runtime, tokens) {
@@ -2956,11 +2864,7 @@ function hyperscriptCoreGrammar(parser) {
         var args = parser.parseElement("namedArgumentList", tokens);
 
         var installFeature;
-        return (installFeature = {
-            install: function (target, source) {
-                throwOnlyParsingIsSupported()
-            },
-        });
+        return (installFeature = {});
     });
 
     parser.addGrammarElement("jsBody", function (parser, runtime, tokens) {
@@ -3016,9 +2920,6 @@ function hyperscriptCoreGrammar(parser) {
             jsSource: jsSource,
             function: func,
             exposedFunctionNames: jsBody.exposedFunctionNames,
-            install: function () {
-                throwOnlyParsingIsSupported()
-            },
         };
     });
 
@@ -3047,9 +2948,6 @@ function hyperscriptCoreGrammar(parser) {
             jsSource: jsBody.jsSource,
             function: func,
             inputs: inputs,
-            op: function (context) {
-                throwOnlyParsingIsSupported()
-            },
         };
         return command;
     });
@@ -3070,11 +2968,8 @@ function hyperscriptCoreGrammar(parser) {
         }
         var command = {
             body: body,
-            op: function (context) {
-                throwOnlyParsingIsSupported()
-            },
         };
-        parser.setParent(body, command);
+        //parser.setParent(body, command);
         return command;
     });
 
@@ -3094,11 +2989,8 @@ function hyperscriptCoreGrammar(parser) {
             resolveNext: function (context) {
                 throwOnlyParsingIsSupported()
             },
-            op: function (context, value) {
-                throwOnlyParsingIsSupported()
-            },
         };
-        parser.setParent(body, tellCmd);
+        //parser.setParent(body, tellCmd);
         return tellCmd;
     });
 
@@ -3113,8 +3005,12 @@ function hyperscriptCoreGrammar(parser) {
             do {
                 var lookahead = tokens.token(0);
                 if (lookahead.type === 'NUMBER' || lookahead.type === 'L_PAREN') {
+                    parser.requireElement('expression', tokens)
+
                     events.push({
-                        time: parser.requireElement('expression', tokens).evaluate() // TODO: do we want to allow async here?
+                        time: -1
+                        //Do not evaluate.
+                        //time: parser.requireElement('expression', tokens).evaluate() // TODO: do we want to allow async here?
                     })
                 } else {
                     events.push({
@@ -3133,9 +3029,6 @@ function hyperscriptCoreGrammar(parser) {
                 event: events,
                 on: on,
                 args: [on],
-                op: function (context, on) {
-                    throwOnlyParsingIsSupported()
-                },
             };
             return command;
         } else {
@@ -3151,12 +3044,6 @@ function hyperscriptCoreGrammar(parser) {
                 type: "waitCmd",
                 time: time,
                 args: [time],
-                op: function (context, timeValue) {
-                    throwOnlyParsingIsSupported()
-                },
-                execute: function (context) {
-                    throwOnlyParsingIsSupported()
-                },
             };
             return command;
         }
@@ -3215,13 +3102,6 @@ function hyperscriptCoreGrammar(parser) {
             details: details,
             to: toExpr,
             args: [toExpr, eventName, details],
-            op: function (context, to, eventName, details) {
-                runtime.nullCheck(to, toExpr);
-                runtime.implicitLoop(to, function (target) {
-                    runtime.triggerEvent(target, eventName, details, context.me);
-                });
-                return runtime.findNext(sendCmd, context);
-            },
         };
         return sendCmd;
     }
@@ -3250,19 +3130,6 @@ function hyperscriptCoreGrammar(parser) {
         var returnCmd = {
             value: value,
             args: [value],
-            op: function (context, value) {
-                var resolve = context.meta.resolve;
-                context.meta.returned = true;
-                context.meta.returnValue = value;
-                if (resolve) {
-                    if (value) {
-                        resolve(value);
-                    } else {
-                        resolve();
-                    }
-                }
-                return runtime.HALT;
-            },
         };
         return returnCmd;
     };
@@ -3301,9 +3168,6 @@ function hyperscriptCoreGrammar(parser) {
                 bubbling: bubbling,
                 haltDefault: haltDefault,
                 exit: exit,
-                op: function (ctx) {
-                    throwOnlyParsingIsSupported()
-                },
             };
             return haltCmd;
         }
@@ -3322,9 +3186,6 @@ function hyperscriptCoreGrammar(parser) {
             exprs: exprs,
             withExpr: withExpr,
             args: [withExpr, exprs],
-            op: function (ctx, withExpr, values) {
-                throwOnlyParsingIsSupported()
-            },
         };
         return logCmd;
     });
@@ -3338,9 +3199,6 @@ function hyperscriptCoreGrammar(parser) {
         var beepCmd = {
             exprs: exprs,
             args: [exprs],
-            op: function (ctx, values) {
-                throwOnlyParsingIsSupported()
-            },
         };
         return beepCmd;
     });
@@ -3351,9 +3209,6 @@ function hyperscriptCoreGrammar(parser) {
         var throwCmd = {
             expr: expr,
             args: [expr],
-            op: function (ctx, expr) {
-                throwOnlyParsingIsSupported()
-            },
         };
         return throwCmd;
     });
@@ -3363,10 +3218,6 @@ function hyperscriptCoreGrammar(parser) {
         var callCmd = {
             expr: expr,
             args: [expr],
-            op: function (context, result) {
-                context.result = result;
-                return runtime.findNext(callCmd, context);
-            },
         };
         return callCmd;
     };
@@ -3404,17 +3255,11 @@ function hyperscriptCoreGrammar(parser) {
         var command;
         if (expr.type === "queryRef") {
             command = {
-                op: function (ctx) {
-                    throwOnlyParsingIsSupported()
-                },
             };
             return command;
         } else {
             command = {
                 args: [expr, args],
-                op: function (ctx, expr, args) {
-                    throwOnlyParsingIsSupported()
-                },
             };
             return command;
         }
@@ -3457,24 +3302,12 @@ function hyperscriptCoreGrammar(parser) {
                 root: realRoot,
                 argExressions: root.argExressions,
                 args: [realRoot, root.argExressions],
-                op: function (context, rootRoot, args) {
-                    throwOnlyParsingIsSupported()
-                },
-                execute: function (context) {
-                    throwOnlyParsingIsSupported()
-                },
             }
         } else {
             pseudoCommand = {
                 type: "pseudoCommand",
                 expr: expr,
                 args: [expr],
-                op: function (context, result) {
-                    throwOnlyParsingIsSupported()
-                },
-                execute: function (context) {
-                    throwOnlyParsingIsSupported()
-                },
             };
         }
 
@@ -3522,33 +3355,6 @@ function hyperscriptCoreGrammar(parser) {
             symbolWrite: symbolWrite,
             value: value,
             args: [rootElt, prop, value],
-            op: function (context, root, prop, valueToSet) {
-                if (symbolWrite) {
-                    runtime.setSymbol(target.name, context, target.scope, valueToSet);
-                } else {
-                    runtime.nullCheck(root, rootElt);
-                    if (arrayWrite) {
-                        root[prop] = valueToSet;
-                    } else {
-                        runtime.implicitLoop(root, function (elt) {
-                            if (attribute) {
-                                if (attribute.type === "attributeRef") {
-                                    if (valueToSet == null) {
-                                        elt.removeAttribute(attribute.name);
-                                    } else {
-                                        elt.setAttribute(attribute.name, valueToSet);
-                                    }
-                                } else {
-                                    elt.style[attribute.name] = valueToSet;
-                                }
-                            } else {
-                                elt[prop] = valueToSet;
-                            }
-                        });
-                    }
-                }
-                return runtime.findNext(this, context);
-            },
         };
         return setCmd;
     };
@@ -3567,9 +3373,6 @@ function hyperscriptCoreGrammar(parser) {
             value: value,
             setter: setter,
             args: [target],
-            op: function (context, target) {
-                throwOnlyParsingIsSupported()
-            },
         };
         setter.parent = defaultCmd;
         return defaultCmd;
@@ -3586,9 +3389,6 @@ function hyperscriptCoreGrammar(parser) {
                 objectLiteral: obj,
                 target: target,
                 args: [obj, target],
-                op: function (ctx, obj, target) {
-                    throwOnlyParsingIsSupported()
-                },
             };
             return command;
         }
@@ -3630,12 +3430,9 @@ function hyperscriptCoreGrammar(parser) {
             trueBranch: trueBranch,
             falseBranch: falseBranch,
             args: [expr],
-            op: function (context, exprValue) {
-                throwOnlyParsingIsSupported()
-            },
         };
-        parser.setParent(trueBranch, ifCmd);
-        parser.setParent(falseBranch, ifCmd);
+        //parser.setParent(trueBranch, ifCmd);
+        //parser.setParent(falseBranch, ifCmd);
         return ifCmd;
     });
 
@@ -3688,13 +3485,6 @@ function hyperscriptCoreGrammar(parser) {
             }
             var waitATick = {
                 type: "waitATick",
-                op: function () {
-                    return new Promise(function (resolve) {
-                        setTimeout(function () {
-                            resolve(runtime.findNext(waitATick));
-                        }, 0);
-                    });
-                },
             };
             last.next = waitATick;
         }
@@ -3725,76 +3515,13 @@ function hyperscriptCoreGrammar(parser) {
             },
             loop: loop,
             args: [whileExpr, times],
-            op: function (context, whileValue, times) {
-                var iteratorInfo = context.meta.iterators[slot];
-                var keepLooping = false;
-                var loopVal = null;
-                if (this.forever) {
-                    keepLooping = true;
-                } else if (this.until) {
-                    if (evt) {
-                        keepLooping = context.meta.iterators[slot].eventFired === false;
-                    } else {
-                        keepLooping = whileValue !== true;
-                    }
-                } else if (whileExpr) {
-                    keepLooping = whileValue;
-                } else if (times) {
-                    keepLooping = iteratorInfo.index < times;
-                } else {
-                    var nextValFromIterator = iteratorInfo.iterator.next();
-                    keepLooping = !nextValFromIterator.done;
-                    loopVal = nextValFromIterator.value;
-                }
-
-                if (keepLooping) {
-                    if (iteratorInfo.value) {
-                        context.result = context.locals[identifier] = loopVal;
-                    } else {
-                        context.result = iteratorInfo.index;
-                    }
-                    if (indexIdentifier) {
-                        context.locals[indexIdentifier] = iteratorInfo.index;
-                    }
-                    iteratorInfo.index++;
-                    return loop;
-                } else {
-                    context.meta.iterators[slot] = null;
-                    return runtime.findNext(this.parent, context);
-                }
-            },
         };
-        parser.setParent(loop, repeatCmd);
+        //parser.setParent(loop, repeatCmd);
         var repeatInit = {
             name: "repeatInit",
             args: [expression, evt, on],
-            op: function (context, value, event, on) {
-                var iteratorInfo = {
-                    index: 0,
-                    value: value,
-                    eventFired: false,
-                };
-                context.meta.iterators[slot] = iteratorInfo;
-                if (value && value[Symbol.iterator]) {
-                    iteratorInfo.iterator = value[Symbol.iterator]();
-                }
-                if (evt) {
-                    var target = on || context.me;
-                    target.addEventListener(
-                        event,
-                        function (e) {
-                            context.meta.iterators[slot].eventFired = true;
-                        },
-                        { once: true }
-                    );
-                }
-                return repeatCmd; // continue to loop
-            },
-            execute: function (context) {
-                return runtime.unifiedExec(this, context);
-            },
         };
-        parser.setParent(repeatCmd, repeatInit);
+        //parser.setParent(repeatCmd, repeatInit);
         return repeatInit;
     };
 
@@ -3815,9 +3542,6 @@ function hyperscriptCoreGrammar(parser) {
         if (!tokens.matchToken("continue")) return;
 
         var command = {
-            op: function (context) {
-                throwOnlyParsingIsSupported()
-            }
         };
         return command;
     });
@@ -3827,9 +3551,6 @@ function hyperscriptCoreGrammar(parser) {
         if (!tokens.matchToken("break")) return;
 
         var command = {
-            op: function (context) {
-                throwOnlyParsingIsSupported()
-            }
         };
         return command;
     });
@@ -3867,12 +3588,6 @@ function hyperscriptCoreGrammar(parser) {
             value: value,
             target: targetExpr,
             args: [targetExpr, value],
-            op: function (context, target, value) {
-                throwOnlyParsingIsSupported()
-            },
-            execute: function (context) {
-                throwOnlyParsingIsSupported()
-            },
         };
 
         if (setter != null) {
@@ -4003,9 +3718,6 @@ function hyperscriptCoreGrammar(parser) {
             type: "implicitIncrementOp",
             target: target,
             args: [target, amountExpr],
-            op: function (context, targetValue, amount) {
-                throwOnlyParsingIsSupported()
-            },
             evaluate: function (context) {
                 throwOnlyParsingIsSupported()
             }
@@ -4030,9 +3742,6 @@ function hyperscriptCoreGrammar(parser) {
             type: "implicitDecrementOp",
             target: target,
             args: [target, amountExpr],
-            op: function (context, targetValue, amount) {
-                throwOnlyParsingIsSupported()
-            },
             evaluate: function (context) {
                 throwOnlyParsingIsSupported()
             }
@@ -4085,9 +3794,6 @@ function hyperscriptCoreGrammar(parser) {
             url: url,
             argExpressions: args,
             args: [url, args],
-            op: function (context, url, args) {
-                throwOnlyParsingIsSupported()
-            },
         };
         return fetchCmd;
     });
@@ -4105,12 +3811,6 @@ function hyperscriptWebGrammar(parser) {
             var settleCommand = {
                 type: "settleCmd",
                 args: [onExpr],
-                op: function (context, on) {
-                    throwOnlyParsingIsSupported()
-                },
-                execute: function (context) {
-                    throwOnlyParsingIsSupported()
-                },
             };
             return settleCommand;
         }
@@ -4154,9 +3854,6 @@ function hyperscriptWebGrammar(parser) {
                     classRefs: classRefs,
                     to: toExpr,
                     args: [toExpr, classRefs],
-                    op: function (context, to, classRefs) {
-                        throwOnlyParsingIsSupported()
-                    },
                 };
             } else if (attributeRef) {
                 return {
@@ -4164,12 +3861,6 @@ function hyperscriptWebGrammar(parser) {
                     attributeRef: attributeRef,
                     to: toExpr,
                     args: [toExpr],
-                    op: function (context, to, attrRef) {
-                        throwOnlyParsingIsSupported()
-                    },
-                    execute: function (ctx) {
-                        throwOnlyParsingIsSupported()
-                    },
                 };
             } else {
                 return {
@@ -4177,12 +3868,6 @@ function hyperscriptWebGrammar(parser) {
                     cssDeclaration: cssDeclaration,
                     to: toExpr,
                     args: [toExpr, cssDeclaration],
-                    op: function (context, to, css) {
-                        throwOnlyParsingIsSupported()
-                    },
-                    execute: function (ctx) {
-                        throwOnlyParsingIsSupported()
-                    },
                 };
             }
         }
@@ -4217,9 +3902,6 @@ function hyperscriptWebGrammar(parser) {
         return {
             type: "styleLiteral",
             args: [exprs],
-            op: function (ctx, exprs) {
-                throwOnlyParsingIsSupported()
-            },
             evaluate: function (ctx) {
                 throwOnlyParsingIsSupported()
             }
@@ -4262,9 +3944,6 @@ function hyperscriptWebGrammar(parser) {
                     elementExpr: elementExpr,
                     from: fromExpr,
                     args: [elementExpr, fromExpr],
-                    op: function (context, element, from) {
-                        throwOnlyParsingIsSupported()
-                    },
                 };
             } else {
                 return {
@@ -4273,9 +3952,6 @@ function hyperscriptWebGrammar(parser) {
                     elementExpr: elementExpr,
                     from: fromExpr,
                     args: [classRefs, fromExpr],
-                    op: function (context, classRefs, from) {
-                        throwOnlyParsingIsSupported()
-                    },
                 };
             }
         }
@@ -4379,9 +4055,6 @@ function hyperscriptWebGrammar(parser) {
                     }
                 },
                 args: [onExpr, time, evt, from, classRef, classRef2, classRefs],
-                op: function (context, on, time, evt, from, classRef, classRef2, classRefs) {
-                    throwOnlyParsingIsSupported()
-                },
             };
             return toggleCmd;
         }
@@ -4485,9 +4158,6 @@ function hyperscriptWebGrammar(parser) {
             return {
                 target: targetExpr,
                 args: [targetExpr],
-                op: function (ctx, target) {
-                    throwOnlyParsingIsSupported()
-                },
             };
         }
     });
@@ -4524,9 +4194,6 @@ function hyperscriptWebGrammar(parser) {
                 target: targetExpr,
                 when: when,
                 args: [targetExpr],
-                op: function (ctx, target) {
-                    throwOnlyParsingIsSupported()
-                },
             };
         }
     });
@@ -4570,9 +4237,6 @@ function hyperscriptWebGrammar(parser) {
                     from: fromExpr,
                     forElt: forExpr,
                     args: [classRefs, fromExpr, forExpr],
-                    op: function (context, classRefs, from, forElt) {
-                        throwOnlyParsingIsSupported()
-                    },
                 };
                 return takeCmd;
             } else {
@@ -4582,9 +4246,6 @@ function hyperscriptWebGrammar(parser) {
                     from: fromExpr,
                     forElt: forExpr,
                     args: [fromExpr, forExpr, replacementValue],
-                    op: function (context, from, forElt, replacementValue) {
-                        throwOnlyParsingIsSupported()
-                    },
                 };
                 return takeCmd;
             }
@@ -4667,9 +4328,6 @@ function hyperscriptWebGrammar(parser) {
                 symbolWrite: symbolWrite,
                 value: value,
                 args: [rootExpr, prop, value],
-                op: function (context, root, prop, valueToPut) {
-                    throwOnlyParsingIsSupported()
-                },
             };
             return putCmd;
         }
@@ -4765,9 +4423,6 @@ function hyperscriptWebGrammar(parser) {
             var transition = {
                 to: to,
                 args: [targetsExpr, properties, from, to, using, over],
-                op: function (context, targets, properties, from, to, using, over) {
-                    throwOnlyParsingIsSupported()
-                },
             };
             return transition;
         }
@@ -4787,9 +4442,6 @@ function hyperscriptWebGrammar(parser) {
         return {
             properties: propsToMeasure,
             args: [targetExpr],
-            op: function (ctx, target) {
-                throwOnlyParsingIsSupported()
-            },
         };
     });
 
@@ -4827,9 +4479,6 @@ function hyperscriptWebGrammar(parser) {
                 css: css,
                 to: to,
                 args: [to],
-                op: function (ctx, to) {
-                    throwOnlyParsingIsSupported()
-                },
                 evaluate: function (context) {
                     throwOnlyParsingIsSupported()
                 },
@@ -4919,9 +4568,6 @@ function hyperscriptWebGrammar(parser) {
             var goCmd = {
                 target: target,
                 args: [target, offset],
-                op: function (ctx, to, offset) {
-                    throwOnlyParsingIsSupported()
-                },
             };
             return goCmd;
         }
@@ -4931,37 +4577,6 @@ function hyperscriptWebGrammar(parser) {
 function throwOnlyParsingIsSupported() {
     throw new Error('only parsing is supported')
 }
-
-const tokens = Lexer.tokenize(this.input ?? "on click toggle . on me")
-const tokenList = Array.from(tokens.tokens).map(jsonifyToken) //Get tokens before they are used by the parser.
-
-const parser = new Parser()
-hyperscriptCoreGrammar(parser)
-hyperscriptWebGrammar(parser)
-try {
-    const allowedKeys = []
-    const node = parser.parseHyperScript(tokens)
-    this.outputJSON = JSON.stringify({nodeData: node, tokens: tokenList}, (key, value) => {
-        if (key == 'parent') {
-            //Remove circular references.
-            return null
-        }
-        return value
-    })
-} catch (err) {
-
-    if (err instanceof ParsingError) {
-        this.errorJSON = JSON.stringify({
-            message: err.message,
-            messageAtToken: err.messageAtToken,
-            token: jsonifyToken(err.token),
-            tokens: tokenList
-        })
-    } else {
-        this.criticalError = err.message
-    }
-}
-
 
 /** @param {Token} token */
 function jsonifyToken(token) {
@@ -4974,3 +4589,7 @@ function jsonifyToken(token) {
         column: (token.column ?? 0) + 1 //Make column positions start at 1.
     }
 }
+
+const parser = new Parser()
+hyperscriptCoreGrammar(parser)
+hyperscriptWebGrammar(parser)

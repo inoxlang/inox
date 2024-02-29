@@ -1,6 +1,7 @@
 package hsparse
 
 import (
+	"context"
 	"testing"
 
 	"github.com/inoxlang/inox/internal/hyperscript/hscode"
@@ -10,7 +11,7 @@ import (
 func TestParseHyperscriptSlow(t *testing.T) {
 
 	t.Run("valid", func(t *testing.T) {
-		res, parsingErr, criticalError := ParseHyperScriptSlow("on click toggle .red on me")
+		res, parsingErr, criticalError := parseHyperScriptSlow(context.Background(), "on click toggle .red on me ")
 
 		if !assert.NoError(t, criticalError) {
 			return
@@ -27,7 +28,7 @@ func TestParseHyperscriptSlow(t *testing.T) {
 	})
 
 	t.Run("unexpected token", func(t *testing.T) {
-		res, parsingErr, criticalError := ParseHyperScriptSlow("on click x .red on me")
+		res, parsingErr, criticalError := parseHyperScriptSlow(context.Background(), "on click x .red on me")
 
 		if !assert.NoError(t, criticalError) {
 			return

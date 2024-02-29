@@ -7991,7 +7991,7 @@ func (p *parser) parseHyperscriptAttribute(start int32) (attr *HyperscriptAttrib
 	}
 
 	if terminated && p.parseHyperscript != nil {
-		result, parsingErr, err := p.parseHyperscript(value)
+		result, parsingErr, err := p.parseHyperscript(p.context, value)
 
 		if attr.Err == nil {
 			if err != nil {

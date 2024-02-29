@@ -1,6 +1,7 @@
 package hscode_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/inoxlang/inox/internal/hyperscript/hscode"
@@ -10,7 +11,7 @@ import (
 
 func TestGetTokenAtCursor(t *testing.T) {
 
-	result, _, _ := hsparse.ParseHyperScriptSlow("on click toggle .red on me")
+	result, _, _ := hsparse.ParseHyperScript(context.Background(), "on click toggle .red on me")
 
 	token, ok := hscode.GetTokenAtCursor(0, result.Tokens)
 	if !assert.True(t, ok) {

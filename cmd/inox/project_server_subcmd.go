@@ -97,7 +97,7 @@ func ProjectServer(mainSubCommand string, mainSubCommandArgs []string, outW, err
 	if projectServerConfig.Port > 0 {
 		websocketAddr += strconv.Itoa(projectServerConfig.Port)
 	} else {
-		websocketAddr += projectserver.DEFAULT_PROJECT_SERVER_PORT
+		websocketAddr += inoxconsts.DEFAULT_PROJECT_SERVER_PORT
 	}
 
 	out := os.Stdout
