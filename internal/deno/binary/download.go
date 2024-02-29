@@ -44,6 +44,10 @@ func GetArchiveAssetInfo() (github.AssetInfo, archiveInfo, error) {
 		return github.AssetInfo{}, archiveInfo{}, err
 	}
 
+	if releaseInfo.Name == "" {
+		return github.AssetInfo{}, archiveInfo{}, errors.New("unexpected empty release info")
+	}
+
 	return getArchiveAssetInfo(releaseInfo)
 }
 

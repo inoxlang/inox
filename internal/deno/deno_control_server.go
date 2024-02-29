@@ -52,8 +52,7 @@ type ControlServer struct {
 }
 
 type ControlServerConfig struct {
-	Port           uint16
-	DenoBinaryPath string
+	Port uint16
 }
 
 func (c ControlServerConfig) Check() error {
@@ -100,10 +99,10 @@ func (s *ControlServer) Start() error {
 		Addr: s.addr(),
 
 		//the configuration is very strict in order to quickly ignore connections from processes that are not controlled.
-		ReadHeaderTimeout: 10 * time.Millisecond,
+		ReadHeaderTimeout: 100 * time.Millisecond,
 		MaxHeaderBytes:    200,
-		ReadTimeout:       10 * time.Millisecond,
-		WriteTimeout:      10 * time.Millisecond,
+		ReadTimeout:       100 * time.Millisecond,
+		WriteTimeout:      100 * time.Millisecond,
 
 		//Upgrade connection to WebSocket.
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
