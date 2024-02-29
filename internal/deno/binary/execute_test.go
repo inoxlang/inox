@@ -51,7 +51,7 @@ func TestExecute(t *testing.T) {
 			cancel()
 		}()
 
-		err := ExecuteWithAutoRestart(ctx, BinaryExecution{
+		err := ExecuteWithAutoRestart(ctx, Execution{
 			Location:            binaryLocation,
 			AbsoluteWorkDir:     workDir,
 			AbsoluteDenoDir:     denoDir,
@@ -97,7 +97,7 @@ func TestExecute(t *testing.T) {
 			cancel()
 		}()
 
-		err := ExecuteWithAutoRestart(ctx, BinaryExecution{
+		err := ExecuteWithAutoRestart(ctx, Execution{
 			Location:            binaryLocation,
 			AbsoluteWorkDir:     workDir,
 			AbsoluteDenoDir:     denoDir,
@@ -117,7 +117,7 @@ func TestExecute(t *testing.T) {
 		//Check that the program has not been changed.
 		content, err := os.ReadFile(programPath)
 
-		if !assert.NoError(t, err, "the program should have been executed") {
+		if !assert.NoError(t, err, "the program should have not been changed or deleted") {
 			return
 		}
 

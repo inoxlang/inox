@@ -36,8 +36,7 @@ func CreateDirInProcessTempDir(namePrefix string) core.Path {
 	if err := fls.MkdirAll(string(path), 0o700); err != nil {
 		panic(err)
 	}
-
-	return path
+	return core.AppendTrailingSlashIfNotPresent(path)
 }
 
 func DeleteDirInProcessTempDir(path core.Path) error {

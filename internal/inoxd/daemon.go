@@ -14,6 +14,7 @@ import (
 	"github.com/containerd/cgroups/v3"
 	"github.com/gorilla/websocket"
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/inoxd/cloud/cloudproxy"
 	"github.com/inoxlang/inox/internal/inoxd/cloud/cloudproxy/inoxdconn"
 	"github.com/inoxlang/inox/internal/inoxd/consts"
@@ -111,7 +112,7 @@ func Inoxd(args InoxdArgs) {
 
 	proxyConfig := cloudproxy.CloudProxyConfig{
 		CloudDataDir: consts.CLOUD_DATA_DIR,
-		Port:         projectserver.DEFAULT_PROJECT_SERVER_PORT_INT,
+		Port:         inoxconsts.DEFAULT_PROJECT_SERVER_PORT_INT,
 	}
 
 	if args.TestOnlyProxyConfig != nil {

@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"strings"
 
 	"github.com/inoxlang/inox/internal/utils/processutils"
 	"github.com/rs/zerolog"
@@ -16,24 +17,34 @@ const (
 	SRC_DIRNAME = "src" //directory containing the code in working directoryof the Deno process.
 )
 
-type BinaryExecution struct {
+type Execution struct {
 	Location string
 
 	//Temporary directory the binary is allowed to access.
 	//Writing to src/ is denied.
 	AbsoluteWorkDir string
 
-	//Cache directory. It should be used by a single process and should be different program the working directory.
+	//Cache directory. It should be used by a single process and should be different from the working directory.
 	AbsoluteDenoDir string
 
 	RelativeProgramPath string
 
+	CLIArguments []string
+
+	IgnoredCertificateErrors []string //host list
+
+	AllowNetwork bool
+
+	AllowLocalhostAccess bool
+
 	Logger zerolog.Logger
+
+	StartEventChan chan int32
 
 	writeToStdoutStderr bool
 }
 
-func ExecuteWithAutoRestart(ctx context.Context, args BinaryExecution) error {
+func ExecuteWithAutoRestart(ctx context.Context, args Execution) error {
 
 	if reflect.ValueOf(args.Logger).IsZero() {
 		args.Logger = zerolog.Nop()
@@ -43,13 +54,14 @@ func ExecuteWithAutoRestart(ctx context.Context, args BinaryExecution) error {
 		ProcessNameInLogs: "deno",
 		GoCtx:             ctx,
 		Logger:            args.Logger,
+		StartEventChan:    args.StartEventChan,
 		MakeCommand: func(goCtx context.Context) (*exec.Cmd, error) {
 			return makeCommand(goCtx, args)
 		},
 	})
 }
 
-func makeCommand(ctx context.Context, args BinaryExecution) (*exec.Cmd, error) {
+func makeCommand(ctx context.Context, args Execution) (*exec.Cmd, error) {
 
 	//Check arguments.
 
@@ -84,23 +96,40 @@ func makeCommand(ctx context.Context, args BinaryExecution) (*exec.Cmd, error) {
 
 	//Create the command.
 
-	cmd := exec.CommandContext(ctx, location,
+	commandArgs := []string{
 		"run",
 		//permissions
 		`--allow-env`,
-		`--allow-read=`+workDir+","+denoDir,
-		"--allow-write="+workDir+","+denoDir,
-		`--deny-write=/etc,/var/run/,`+srcDir+","+args.RelativeProgramPath,
+		`--allow-read=` + workDir + "," + denoDir,
+		"--allow-write=" + workDir + "," + denoDir,
+		`--deny-write=/etc,/var/run/,` + srcDir + "," + args.RelativeProgramPath,
 		`--deny-read=/etc,/var/run/`,
-		//program
-		args.RelativeProgramPath,
-	)
+	}
+
+	if len(args.IgnoredCertificateErrors) > 0 {
+		commandArgs = append(commandArgs, `--unsafely-ignore-certificate-errors=`+strings.Join(args.IgnoredCertificateErrors, ","))
+	}
+
+	if args.AllowNetwork {
+		commandArgs = append(commandArgs, "--allow-net")
+	}
+
+	if !args.AllowLocalhostAccess {
+		commandArgs = append(commandArgs, "--deny-net=localhost")
+	}
+
+	//program
+	commandArgs = append(commandArgs, args.RelativeProgramPath)
+	commandArgs = append(commandArgs, args.CLIArguments...)
+
+	cmd := exec.CommandContext(ctx, location, commandArgs...)
+
 	cmd.Dir = workDir
 
 	args.Logger.Debug().Msg("command is " + cmd.String())
 
 	if args.writeToStdoutStderr {
-		cmd.Stdin = os.Stdout
+		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 	}
 

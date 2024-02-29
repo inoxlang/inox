@@ -17,9 +17,9 @@ import (
 	"github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/ws_ns"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/inoxd/cloud/cloudproxy/inoxdconn"
 	"github.com/inoxlang/inox/internal/inoxd/consts"
-	"github.com/inoxlang/inox/internal/projectserver"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/assert"
 )
@@ -122,7 +122,7 @@ func TestAccountCreation(t *testing.T) {
 	config := CloudProxyConfig{
 		CloudDataDir:                 "/",
 		AnonymousAccountDatabasePath: "/db.kv",
-		Port:                         projectserver.DEFAULT_PROJECT_SERVER_PORT_INT,
+		Port:                         inoxconsts.DEFAULT_PROJECT_SERVER_PORT_INT,
 	}
 	goctx, cancel := context.WithTimeout(context.Background(), 29*time.Second)
 	defer cancel()
@@ -144,7 +144,7 @@ func TestAccountCreation(t *testing.T) {
 
 	time.Sleep(time.Second) //wait for the cloud proxy to start.
 
-	host := core.Host("wss://localhost:" + projectserver.DEFAULT_PROJECT_SERVER_PORT)
+	host := core.Host("wss://localhost:" + inoxconsts.DEFAULT_PROJECT_SERVER_PORT)
 
 	ctx := core.NewContextWithEmptyState(core.ContextConfig{
 		Permissions: []core.Permission{
