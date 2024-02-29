@@ -2,6 +2,7 @@ package processutils
 
 import (
 	"context"
+	"errors"
 	"os/exec"
 	"testing"
 	"time"
@@ -22,8 +23,8 @@ func TestAutoRestart(t *testing.T) {
 
 		go AutoRestart(AutoRestartArgs{
 			GoCtx: goCtx,
-			MakeCommand: func(goCtx context.Context) *exec.Cmd {
-				return exec.CommandContext(goCtx, "sleep", "10s")
+			MakeCommand: func(goCtx context.Context) (*exec.Cmd, error) {
+				return exec.CommandContext(goCtx, "sleep", "10s"), nil
 			},
 			Logger:            zerolog.Nop(),
 			ProcessNameInLogs: "sleep",
@@ -49,5 +50,28 @@ func TestAutoRestart(t *testing.T) {
 
 		exists, _ = process.PidExists(pid)
 		assert.False(t, exists)
+	})
+
+	t.Run("the loop should not start if the command factory returns an error", func(t *testing.T) {
+
+		startEvents := make(chan int32, 10)
+
+		goCtx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		commandCreationError := errors.New("failed to create command")
+
+		err := AutoRestart(AutoRestartArgs{
+			GoCtx: goCtx,
+			MakeCommand: func(goCtx context.Context) (*exec.Cmd, error) {
+				return nil, commandCreationError
+			},
+			Logger:            zerolog.Nop(),
+			ProcessNameInLogs: "sleep",
+			MaxTryCount:       3,
+			StartEventChan:    startEvents,
+		})
+
+		assert.ErrorIs(t, err, commandCreationError)
 	})
 }

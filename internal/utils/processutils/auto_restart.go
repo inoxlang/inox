@@ -21,7 +21,7 @@ const (
 
 type AutoRestartArgs struct {
 	GoCtx       context.Context
-	MakeCommand func(goCtx context.Context) *exec.Cmd
+	MakeCommand func(goCtx context.Context) (*exec.Cmd, error)
 
 	Logger            zerolog.Logger
 	ProcessNameInLogs string
@@ -42,8 +42,8 @@ type AutoRestartArgs struct {
 	PostStartBurstPause *atomic.Bool
 }
 
-// AutoRestart starts a restart loop in the calling goroutine,
-// during a single step args.MakeCommand is called and the returned command is started.
+// AutoRestart starts a restart loop in the calling goroutine. The Args.MakeCommand function is called to obtain the command before each execution.
+// The loop stops when the args.GoCtx is done or if Args.MakeCommand returns an error.
 func AutoRestart(args AutoRestartArgs) error {
 	if args.MaxTryCount <= 0 {
 		args.MaxTryCount = DEFAULT_MAX_TRY_COUNT
@@ -66,7 +66,7 @@ func AutoRestart(args AutoRestartArgs) error {
 	}
 
 	for {
-		ctxErr := func() error {
+		err := func() error {
 			defer func() {
 				e := recover()
 				if e != nil {
@@ -78,8 +78,8 @@ func AutoRestart(args AutoRestartArgs) error {
 			return autoRestart(args)
 		}()
 
-		if ctxErr != nil {
-			return ctxErr
+		if err != nil {
+			return err
 		}
 	}
 }
@@ -107,11 +107,17 @@ func autoRestart(args AutoRestartArgs) (ctxError error) {
 		tryCount++
 		lastLaunchTime = time.Now()
 
-		cmd := args.MakeCommand(args.GoCtx)
+		cmd, err := args.MakeCommand(args.GoCtx)
+
+		if err != nil {
+			err := fmt.Errorf("failed to created command for %s: %w", processName, err)
+			logger.Err(err).Send()
+			return err
+		}
 
 		logger.Info().Msg("create a new process (" + processName + ")")
 
-		err := cmd.Start()
+		err = cmd.Start()
 		if err == nil {
 			logger.Info().Int(NEW_PROCESS_PID_LOG_FIELD_NAME, cmd.Process.Pid).Send()
 			if args.StartEventChan != nil {

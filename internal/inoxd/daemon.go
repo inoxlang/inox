@@ -74,13 +74,13 @@ func Inoxd(args InoxdArgs) {
 	if !config.InoxCloud {
 		ctxErr := processutils.AutoRestart(processutils.AutoRestartArgs{
 			GoCtx: goCtx,
-			MakeCommand: func(context.Context) *exec.Cmd {
+			MakeCommand: func(context.Context) (*exec.Cmd, error) {
 				return projectserver.MakeProjectServerCmd(projectserver.ProjectServerCmdParams{
 					GoCtx:          goCtx,
 					Config:         serverConfig,
 					InoxBinaryPath: config.InoxBinaryPath,
 					Logger:         logger,
-				})
+				}), nil
 			},
 			Logger:                      logger,
 			ProcessNameInLogs:           "project server",
@@ -127,13 +127,13 @@ func Inoxd(args InoxdArgs) {
 
 	go processutils.AutoRestart(processutils.AutoRestartArgs{
 		GoCtx: goCtx,
-		MakeCommand: func(context.Context) *exec.Cmd {
+		MakeCommand: func(context.Context) (*exec.Cmd, error) {
 			return makeCloudProxyCommand(cloudProxyCmdParams{
 				goCtx:          goCtx,
 				inoxBinaryPath: config.InoxBinaryPath,
 				config:         proxyConfig,
 				logger:         logger,
-			})
+			}), nil
 		},
 		Logger:                      logger,
 		ProcessNameInLogs:           "cloud proxy",
