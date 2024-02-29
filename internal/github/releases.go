@@ -83,6 +83,10 @@ func FetchReleaseByTagName(repo, tagName string) (data ReleaseInfo, err error) {
 		return
 	}
 
+	if resp.StatusCode >= 400 {
+		return ReleaseInfo{}, fmt.Errorf("status code %d for GET %s", resp.StatusCode, endpoint)
+	}
+
 	body, err := io.ReadAll(resp.Body)
 
 	if err != nil {

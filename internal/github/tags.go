@@ -27,6 +27,10 @@ func FetchTags(repo string) (tags map[string]RepoTagInfo, _ error) {
 		return nil, fmt.Errorf("%s: %w", endpoint, err)
 	}
 
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("status code %d for GET %s", resp.StatusCode, endpoint)
+	}
+
 	body, err := io.ReadAll(resp.Body)
 
 	if err != nil {
