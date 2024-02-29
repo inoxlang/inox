@@ -14,7 +14,7 @@ import (
 
 func TestAutoRestart(t *testing.T) {
 
-	t.Run("cancelling the context should stop the process", func(t *testing.T) {
+	t.Run("cancelling the context should stop the process if the command was created using exec.CommandContext", func(t *testing.T) {
 
 		startEvents := make(chan int32, 10)
 
@@ -73,5 +73,28 @@ func TestAutoRestart(t *testing.T) {
 		})
 
 		assert.ErrorIs(t, err, commandCreationError)
+	})
+
+	t.Run("the loop should not start if the context is cancelled", func(t *testing.T) {
+
+		startEvents := make(chan int32, 10)
+
+		goCtx, cancel := context.WithCancel(context.Background())
+		cancel()
+
+		startTime := time.Now()
+		err := AutoRestart(AutoRestartArgs{
+			GoCtx: goCtx,
+			MakeCommand: func(goCtx context.Context) (*exec.Cmd, error) {
+				return exec.Command("sleep", "10s"), nil
+			},
+			Logger:            zerolog.Nop(),
+			ProcessNameInLogs: "sleep",
+			MaxTryCount:       3,
+			StartEventChan:    startEvents,
+		})
+
+		assert.ErrorIs(t, err, context.Canceled)
+		assert.Less(t, time.Since(startTime), 10*time.Millisecond)
 	})
 }
