@@ -1,4 +1,4 @@
-package binary
+package github
 
 import (
 	"testing"
@@ -8,11 +8,13 @@ import (
 
 func TestFetchTags(t *testing.T) {
 
+	const repo = "inoxlang/inox"
+
 	if testing.Short() {
 		return
 	}
 
-	tags, err := FetchTags()
+	tags, err := FetchTags(repo)
 	if !assert.NoError(t, err) {
 		return
 	}

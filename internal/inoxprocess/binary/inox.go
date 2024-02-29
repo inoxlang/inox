@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/inoxlang/inox/internal/github"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -17,11 +18,6 @@ var INOX_BINARY_ARCHIVE_GLOB_MATRIX = map[string]map[string]string{
 	"linux": {
 		"amd64": "*linux-amd64.tar.gz",
 	},
-}
-
-type assetInfo struct {
-	Name                string `json:"name"`
-	BrowserDownloadInfo string `json:"browser_download_url"`
 }
 
 func getBinaryArchiveGlob() (string, bool) {
@@ -34,11 +30,11 @@ func getBinaryArchiveGlob() (string, bool) {
 	return glob, ok
 }
 
-func getBinaryArchiveAssetInfo(release releaseInfo) (assetInfo, error) {
+func getBinaryArchiveAssetInfo(release github.ReleaseInfo) (github.AssetInfo, error) {
 
 	glob, ok := getBinaryArchiveGlob()
 	if !ok {
-		return assetInfo{}, fmt.Errorf("unsupported: %s x %s", runtime.GOOS, runtime.GOARCH)
+		return github.AssetInfo{}, fmt.Errorf("unsupported: %s x %s", runtime.GOOS, runtime.GOARCH)
 	}
 
 	for _, asset := range release.Assets {
@@ -47,17 +43,17 @@ func getBinaryArchiveAssetInfo(release releaseInfo) (assetInfo, error) {
 		}
 	}
 
-	return assetInfo{}, fmt.Errorf("archive not found for release %s (tag %s)", release.Name, release.TagName)
+	return github.AssetInfo{}, fmt.Errorf("archive not found for release %s (tag %s)", release.Name, release.TagName)
 }
 
 func downloadLatestReleaseArchive(outW io.Writer) (*url.URL, []byte, error) {
 
-	tags, err := FetchTags()
+	tags, err := github.FetchTags(INOX_REPOSITORY)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	releases, err := GetLatestNReleases(tags, 2)
+	releases, err := github.GetLatestNReleases(INOX_REPOSITORY, tags, 2)
 
 	if err != nil {
 		return nil, nil, err
@@ -67,7 +63,7 @@ func downloadLatestReleaseArchive(outW io.Writer) (*url.URL, []byte, error) {
 		return nil, nil, errors.New("no releases found")
 	}
 
-	names := utils.MapSlice(releases, func(r releaseInfo) string { return r.Name })
+	names := utils.MapSlice(releases, func(r github.ReleaseInfo) string { return r.Name })
 	fmt.Fprintln(outW, "latest releases =", strings.Join(names, ", "))
 
 	latestRelease := releases[0]

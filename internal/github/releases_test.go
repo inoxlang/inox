@@ -1,4 +1,4 @@
-package binary
+package github
 
 import (
 	"testing"
@@ -8,16 +8,18 @@ import (
 
 func TestGetLatestReleases(t *testing.T) {
 
+	const repo = "inoxlang/inox"
+
 	if testing.Short() {
 		return
 	}
 
-	tags, err := FetchTags()
+	tags, err := FetchTags(repo)
 	if !assert.NoError(t, err) {
 		return
 	}
 
-	releases, err := GetLatestNReleases(tags, 2)
+	releases, err := GetLatestNReleases(repo, tags, 2)
 	if !assert.NoError(t, err) {
 		return
 	}

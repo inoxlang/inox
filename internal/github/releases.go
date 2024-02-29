@@ -1,4 +1,4 @@
-package binary
+package github
 
 import (
 	"encoding/json"
@@ -7,21 +7,22 @@ import (
 	"net/http"
 	"reflect"
 	"slices"
+	"strings"
 	"sync"
 
 	"github.com/inoxlang/inox/internal/utils"
 	"golang.org/x/mod/semver"
 )
 
-type releaseInfo struct {
-	Assets  []assetInfo `json:"assets"`
+type ReleaseInfo struct {
+	Assets  []AssetInfo `json:"assets"`
 	TagName string      `json:"tag_name"`
 	Name    string      `json:"name"`
 }
 
 // GetLatestNReleases returns the information about the latest max (or less) releases.
 // The most recent release is the first element.
-func GetLatestNReleases(tags map[string]repoTagInfo, max int) (latestReleases []releaseInfo, err error) {
+func GetLatestNReleases(repo string, tags map[string]RepoTagInfo, max int) (latestReleases []ReleaseInfo, err error) {
 	if max <= 0 {
 		return nil, fmt.Errorf("max should be greater than zero")
 	}
@@ -44,7 +45,7 @@ func GetLatestNReleases(tags map[string]repoTagInfo, max int) (latestReleases []
 	wg := new(sync.WaitGroup)
 	wg.Add(count)
 
-	latestReleases = make([]releaseInfo, count)
+	latestReleases = make([]ReleaseInfo, count)
 	latestReleaseTagNames := releaseTagNames[:count]
 
 	for i, tagName := range latestReleaseTagNames {
@@ -52,7 +53,7 @@ func GetLatestNReleases(tags map[string]repoTagInfo, max int) (latestReleases []
 			defer utils.Recover()
 
 			defer wg.Done()
-			release, err := fetchReleaseByTagName(tagName)
+			release, err := FetchReleaseByTagName(repo, tagName)
 			if err == nil {
 				latestReleases[index] = release
 			}
@@ -70,8 +71,9 @@ func GetLatestNReleases(tags map[string]repoTagInfo, max int) (latestReleases []
 	return
 }
 
-func fetchReleaseByTagName(tagName string) (data releaseInfo, err error) {
-	var endpoint = RELEASE_BY_TAG_API_ENDPOINT + "/" + tagName
+func FetchReleaseByTagName(repo, tagName string) (data ReleaseInfo, err error) {
+	var endpoint = strings.ReplaceAll(RELEASE_BY_TAG_API_ENDPOINT_TMPL, "{repo}", repo) + "/" + tagName
+
 	resp, err := http.Get(endpoint)
 	if resp != nil {
 		defer resp.Body.Close()
