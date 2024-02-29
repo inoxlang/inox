@@ -1,4 +1,4 @@
-package install
+package binary
 
 import (
 	"bytes"
@@ -29,6 +29,8 @@ func Install(location string) error {
 	f, err := os.OpenFile(location, os.O_RDONLY, 0)
 
 	if errors.Is(err, os.ErrNotExist) {
+		//Download the archive, and extract the binary from it.
+
 		_, p, err := DownloadArchive()
 		if err != nil {
 			return err
@@ -47,6 +49,8 @@ func Install(location string) error {
 		if err != nil {
 			return err
 		}
+
+		defer f.Close()
 
 		_, err = io.Copy(f, fileInZip)
 		return err
@@ -68,7 +72,7 @@ func Install(location string) error {
 
 	perms := stat.Mode().Perm()
 	if perms != WANTED_FILE_PERMISSIONS {
-		return fmt.Errorf("found a binary at %q but its permissions (unix) are too wide: %s", location, WANTED_FILE_PERMISSIONS.String())
+		return fmt.Errorf("found a binary at %q but its permissions (unix) are too wide: %s", location, perms.String())
 	}
 
 	if stat.Size() > MAX_DENO_BINARY_SIZE {

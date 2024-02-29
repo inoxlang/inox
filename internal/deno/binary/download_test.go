@@ -1,4 +1,4 @@
-package install
+package binary
 
 import (
 	"crypto/sha256"
@@ -11,7 +11,7 @@ import (
 
 func TestDownloadArchive(t *testing.T) {
 	if testing.Short() {
-		t.Skip()
+		t.SkipNow()
 	}
 
 	_, p, err := DownloadArchive()
