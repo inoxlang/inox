@@ -11,7 +11,6 @@ import (
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/oklog/ulid/v2"
-	"github.com/rs/zerolog"
 )
 
 const (
@@ -67,7 +66,7 @@ func (s *ControlServer) StartServiceProcess(ctx *core.Context, config ServiceCon
 		token:                 token,
 		id:                    ulid.Make(),
 		connected:             make(chan struct{}, 1),
-		logger:                zerolog.Nop(),
+		logger:                s.logger.With().Str("serviceName", config.Name).Logger(),
 		receivedResponses:     map[string]*message{},
 		receivedResponseDates: map[string]time.Time{},
 	}

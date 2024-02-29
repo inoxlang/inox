@@ -20,11 +20,9 @@ import (
 )
 
 const (
-	CONTROL_SERVER_LOG_SRC    = "control-server"
+	CONTROL_SERVER_LOG_SRC    = "deno-control-server"
 	PROCESS_TOKEN_QUERY_PARAM = "token"
 	PROCESS_TOKEN_BYTE_LENGTH = 32
-
-	CONTROLLED_SUBCMD = "controlled"
 
 	//maximum time the control server will wait for the controlled process to connect.
 	MAX_CONTROLLED_PROCESS_CONNECTION_WAITING_TIME = time.Second
@@ -73,8 +71,7 @@ func NewControlServer(ctx *core.Context, config ControlServerConfig) (*ControlSe
 		controlledProcesses: map[ControlledProcessToken]*DenoProcess{},
 	}
 
-	s.logger = ctx.Logger().With().
-		Str(core.SOURCE_LOG_FIELD_NAME, CONTROL_SERVER_LOG_SRC+"/"+s.port).Logger()
+	s.logger = ctx.NewChildLoggerForInternalSource(CONTROL_SERVER_LOG_SRC + "/" + s.port)
 
 	websocketServer, err := ws_ns.NewWebsocketServer(ctx)
 	if err != nil {
