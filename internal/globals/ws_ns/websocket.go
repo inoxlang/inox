@@ -3,6 +3,7 @@ package ws_ns
 import (
 	"errors"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -10,7 +11,6 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/permkind"
-	ws_symbolic "github.com/inoxlang/inox/internal/globals/ws_ns/symbolic"
 	netaddr "github.com/inoxlang/inox/internal/netaddr"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -30,15 +30,19 @@ const (
 	WebsocketCloseMessage  WebsocketMessageType = websocket.CloseMessage
 )
 
+// A WebsocketConnection is a thin wrapper around a *websocket.Conn. It implements value.
+// Permissions (core.WebsocketPermission) are checked when reading and writing messages.
 type WebsocketConnection struct {
 	conn               *websocket.Conn
 	remoteAddrWithPort netaddr.RemoteAddrWithPort
 	endpoint           core.URL //HTTP endpoint
 
-	messageTimeout               time.Duration
+	messageReadAndWriteTimeout   time.Duration //Timeout for reading (or writing) a message.
 	closingOrClosed              atomic.Bool
 	tokenGivenBack               atomic.Bool
 	isReadingAllMessagesIntoChan atomic.Bool
+	writerLock                   sync.Mutex //https://pkg.go.dev/github.com/gorilla/websocket#hdr-Concurrency
+	readerLock                   sync.Mutex //same explanation as for writerLock
 
 	server *WebsocketServer //nil on client side
 
@@ -49,58 +53,23 @@ func (conn *WebsocketConnection) RemoteAddrWithPort() netaddr.RemoteAddrWithPort
 	return conn.remoteAddrWithPort
 }
 
-func (conn *WebsocketConnection) GetGoMethod(name string) (*core.GoFunction, bool) {
-	switch name {
-	case "send_json":
-		return core.WrapGoMethod(conn.sendJSON), true
-	case "read_json":
-		return core.WrapGoMethod(conn.readJSON), true
-	case "close":
-		return core.WrapGoMethod(conn.Close), true
-	}
-	return nil, false
-}
-
-func (conn *WebsocketConnection) Prop(ctx *core.Context, name string) core.Value {
-	method, ok := conn.GetGoMethod(name)
-	if !ok {
-		panic(core.FormatErrPropertyDoesNotExist(name, conn))
-	}
-	return method
-}
-
-func (*WebsocketConnection) SetProp(ctx *core.Context, name string, value core.Value) error {
-	return core.ErrCannotSetProp
-}
-
-func (*WebsocketConnection) PropertyNames(ctx *core.Context) []string {
-	return ws_symbolic.WEBSOCKET_PROPNAMES
-}
-
 func (conn *WebsocketConnection) SetPingHandler(ctx *core.Context, handler func(data string) error) {
 	conn.conn.SetPingHandler(handler)
 }
 
-func (conn *WebsocketConnection) sendJSON(ctx *core.Context, msg core.Value) error {
-	if err := conn.checkWriteAndConfig(ctx); err != nil {
-		return err
-	}
-
-	err := conn.conn.WriteJSON(core.ToJSONVal(ctx, msg.(core.Serializable)))
-	conn.conn.SetWriteDeadline(time.Now().Add(DEFAULT_WS_WAIT_MESSAGE_TIMEOUT))
-	conn.closeIfNecessary(err)
-
-	return err
-}
-
 func (conn *WebsocketConnection) readJSON(ctx *core.Context) (core.Value, error) {
+	conn.readerLock.Lock()
+	defer conn.readerLock.Unlock()
+	defer func() {
+		conn.conn.SetReadDeadline(time.Now().Add(DEFAULT_WAIT_FOR_NEXT_MESSAGE_TIMEOUT))
+	}()
+
 	if err := conn.checkReadAndConfig(ctx); err != nil {
 		return nil, err
 	}
 
 	var v interface{}
 	err := conn.conn.ReadJSON(&v)
-	conn.conn.SetReadDeadline(time.Now().Add(DEFAULT_WS_WAIT_MESSAGE_TIMEOUT))
 
 	conn.closeIfNecessary(err)
 
@@ -113,12 +82,18 @@ func (conn *WebsocketConnection) readJSON(ctx *core.Context) (core.Value, error)
 }
 
 func (conn *WebsocketConnection) ReadMessage(ctx *core.Context) (messageType WebsocketMessageType, p []byte, err error) {
+	conn.readerLock.Lock()
+	defer conn.readerLock.Unlock()
+
+	defer func() {
+		conn.conn.SetReadDeadline(time.Now().Add(DEFAULT_WAIT_FOR_NEXT_MESSAGE_TIMEOUT))
+	}()
+
 	if err := conn.checkReadAndConfig(ctx); err != nil {
 		return 0, nil, err
 	}
 
 	msgType, p, err := conn.conn.ReadMessage()
-	conn.conn.SetReadDeadline(time.Now().Add(DEFAULT_WS_WAIT_MESSAGE_TIMEOUT))
 	conn.closeIfNecessary(err)
 
 	return WebsocketMessageType(msgType), p, err
@@ -185,14 +160,47 @@ func (conn *WebsocketConnection) StartReadingAllMessagesIntoChan(ctx *core.Conte
 	return nil
 }
 
+func (conn *WebsocketConnection) sendJSON(ctx *core.Context, msg core.Value) error {
+	conn.writerLock.Lock()
+	defer conn.writerLock.Unlock()
+	defer func() {
+		conn.conn.SetReadDeadline(time.Now().Add(DEFAULT_WAIT_FOR_NEXT_MESSAGE_TIMEOUT))
+	}()
+	defer conn.conn.SetWriteDeadline(time.Time{}) //Remove write deadline.
+
+	if err := conn.checkWriteAndConfig(ctx); err != nil {
+		return err
+	}
+
+	err := conn.conn.WriteJSON(core.ToJSONVal(ctx, msg.(core.Serializable)))
+	conn.closeIfNecessary(err)
+
+	//Try to update the read deadline. It is okay if we don't get the lock: this means another writer or reader will update the deadline.
+	if conn.readerLock.TryLock() {
+		defer conn.readerLock.Unlock()
+		conn.conn.SetReadDeadline(time.Now().Add(DEFAULT_WAIT_FOR_NEXT_MESSAGE_TIMEOUT))
+	}
+
+	return err
+}
+
 func (conn *WebsocketConnection) WriteMessage(ctx *core.Context, messageType WebsocketMessageType, data []byte) error {
+	conn.writerLock.Lock()
+	defer conn.writerLock.Unlock()
+	defer conn.conn.SetWriteDeadline(time.Time{}) //Remove write deadline.
+
 	if err := conn.checkWriteAndConfig(ctx); err != nil {
 		return err
 	}
 
 	err := conn.conn.WriteMessage(int(messageType), data)
-	conn.conn.SetReadDeadline(time.Now().Add(DEFAULT_WS_WAIT_MESSAGE_TIMEOUT))
 	conn.closeIfNecessary(err)
+
+	//Try to update the read deadline. It is okay if we don't get the lock: this means another writer or reader will update the deadline.
+	if conn.readerLock.TryLock() {
+		defer conn.readerLock.Unlock()
+		conn.conn.SetReadDeadline(time.Now().Add(DEFAULT_WAIT_FOR_NEXT_MESSAGE_TIMEOUT))
+	}
 
 	return err
 }
@@ -216,7 +224,7 @@ func (conn *WebsocketConnection) checkReadAndConfig(ctx *core.Context) error {
 
 	//TODO: find out why the deadline cannot be overriden here after a call to WriteMessage invoked SetReadDeadline.
 	//setting a custom timeout here has no effect, why ?
-	conn.conn.SetReadDeadline(time.Now().Add(conn.messageTimeout))
+	conn.conn.SetReadDeadline(time.Now().Add(conn.messageReadAndWriteTimeout))
 	return nil
 }
 
@@ -237,7 +245,7 @@ func (conn *WebsocketConnection) checkWriteAndConfig(ctx *core.Context) error {
 		}
 	}
 
-	conn.conn.SetWriteDeadline(time.Now().Add(conn.messageTimeout))
+	conn.conn.SetWriteDeadline(time.Now().Add(conn.messageReadAndWriteTimeout))
 	return nil
 }
 

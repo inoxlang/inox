@@ -52,8 +52,8 @@ func WebsocketConnect(args WebsocketConnectParams) (*WebsocketConnection, error)
 	u := args.URL
 	insecure := args.Insecure
 	requestHeader := args.RequestHeader
-	messageTimeout := utils.DefaultIfZero(args.MessageTimeout, DEFAULT_WS_MESSAGE_TIMEOUT)
-	handshakeTimeout := utils.DefaultIfZero(args.HandshakeTimeout, DEFAULT_WS_HANDSHAKE_TIMEOUT)
+	messageTimeout := utils.DefaultIfZero(args.MessageTimeout, DEFAULT_MESSAGE_READ_AND_WRITE_TIMEOUT)
+	handshakeTimeout := utils.DefaultIfZero(args.HandshakeTimeout, DEFAULT_HANDSHAKE_TIMEOUT)
 
 	//check that a websocket read or write-stream permission is granted
 	perm := core.WebsocketPermission{
@@ -89,9 +89,9 @@ func WebsocketConnect(args WebsocketConnectParams) (*WebsocketConnection, error)
 	}
 
 	return &WebsocketConnection{
-		conn:           c,
-		endpoint:       u,
-		messageTimeout: messageTimeout,
-		serverContext:  ctx,
+		conn:                       c,
+		endpoint:                   u,
+		messageReadAndWriteTimeout: messageTimeout,
+		serverContext:              ctx,
 	}, nil
 }
