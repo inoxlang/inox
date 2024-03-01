@@ -23,6 +23,8 @@ const (
 	FS_ROUTING_BODY_PARAM   = "_body"
 	FS_ROUTING_METHOD_PARAM = "_method"
 	FS_ROUTING_INDEX_MODULE = "index" + inoxconsts.INOXLANG_FILE_EXTENSION
+
+	SINGLE_FILE_PARSING_TIMEOUT = 50 * time.Millisecond
 )
 
 var (
@@ -372,6 +374,7 @@ func addHandlerModule(
 			state, _, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 				Fpath:                     path.Value,
 				ParsingCompilationContext: ctx,
+				SingleFileParsingTimeout:  SINGLE_FILE_PARSING_TIMEOUT,
 
 				ParentContext:         ctx,
 				ParentContextRequired: true,
@@ -406,6 +409,7 @@ func addHandlerModule(
 	state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 		Fpath:                     absEntryPath,
 		ParsingCompilationContext: parentCtx,
+		SingleFileParsingTimeout:  SINGLE_FILE_PARSING_TIMEOUT,
 
 		ParentContext:         parentCtx,
 		ParentContextRequired: true,
