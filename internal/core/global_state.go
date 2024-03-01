@@ -37,14 +37,14 @@ type GlobalState struct {
 	id     StateId
 	Module *Module //nil in some cases (e.g. shell, mapping entry's state), TODO: check for usage
 
-	//output
+	//Output and logs
 
 	Out                     io.Writer      //io.Discard by default
 	Logger                  zerolog.Logger //zerolog.Nop() by default
 	LogLevels               *LogLevels     //DEFAULT_LOG_LEVELS by default
 	OutputFieldsInitialized atomic.Bool    //should be set to true by the state's creator, even if the default values are kept.
 
-	// most relevant components
+	//Most relevant components
 
 	Ctx             *Context
 	Manifest        *Manifest
@@ -58,28 +58,29 @@ type GlobalState struct {
 	SystemGraph     *SystemGraph
 	lockedValues    []PotentiallySharable
 
-	//
+	//Re-usable buffers for Go function calls made by reflect.Call.
+
 	goCallArgPrepBuf []any
 	goCallArgsBuf    []reflect.Value
 
-	// related states
+	//Related states
 
 	MainState            *GlobalState //never nil except for parents of main states,this field should be set by user of GlobalState.
 	descendantStates     map[ResourceName]*GlobalState
 	descendantStatesLock sync.Mutex
 
-	// factories for building the state of any imported module
+	//Factories for building the state of any imported module
 
 	GetBaseGlobalsForImportedModule      func(ctx *Context, manifest *Manifest) (GlobalVariables, error) // ok if nil
 	GetBasePatternsForImportedModule     func() (map[string]Pattern, map[string]*PatternNamespace)       // return nil maps by default
 	SymbolicBaseGlobalsForImportedModule map[string]symbolic.Value                                       // ok if nil, should not be modified
 
-	// debugging and testing
+	//Debugging and testing
 
 	Debugger     atomic.Value //nil or (nillable) *Debugger
 	TestingState TestingState
 
-	//errors & check data
+	//Errors & check data
 
 	PrenitStaticCheckErrors   []*StaticCheckError
 	MainPreinitError          error

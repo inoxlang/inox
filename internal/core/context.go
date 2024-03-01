@@ -50,10 +50,9 @@ var (
 	ErrOnDoneMicrotasksNotAllowed = errors.New("'on done' microtasks are not allowed")
 )
 
-// A Context is analogous to contexts provided by the context package from Golang's stdlib:
-// when the context is cancelled all descendant contexts are cancelled as well.
-// All *GlobalState instances have a context.
-// An Inox Context have several roles:
+// A Context is analogous to contexts provided by the stdlib's `context` package.
+// When the context is cancelled all descendant contexts are cancelled as well.
+// All *GlobalState instances have a context. An Inox Context has several roles:
 // - It stores named patterns, pattern namespaces and other module's data.
 // - It is called by the runtime and native functions to check permissions and enforce limits.
 // - It has a reference to the current transaction.
