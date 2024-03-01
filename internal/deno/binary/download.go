@@ -27,22 +27,38 @@ type archiveInfo struct {
 	binaryChecksum string
 }
 
-var ARCHIVE_MATRIX = map[string]map[string]archiveInfo{
-	"linux": {
-		"amd64": archiveInfo{
-			name:           "deno-x86_64-unknown-linux-gnu.zip",
-			checksum:       "c9b2620704d4b4f771104e52e5396d03b51a9b5304c4397230ecebe157eca2f3",
-			binaryChecksum: "b0877de86c74027327fca3ca37a5ac3780bcc9c70579ecf6c7c9a55d22147aef",
+var (
+	ARCHIVE_MATRIX = map[string]map[string]archiveInfo{
+		"linux": {
+			"amd64": archiveInfo{
+				name:           "deno-x86_64-unknown-linux-gnu.zip",
+				checksum:       "c9b2620704d4b4f771104e52e5396d03b51a9b5304c4397230ecebe157eca2f3",
+				binaryChecksum: "b0877de86c74027327fca3ca37a5ac3780bcc9c70579ecf6c7c9a55d22147aef",
+			},
 		},
-	},
-}
+	}
+
+	v1_14_0_releaseInfo = github.ReleaseInfo{
+		Name:    "v1.41.0",
+		TagName: "v1.41.0",
+		Assets: []github.AssetInfo{
+			{
+				Name:                "deno-x86_64-unknown-linux-gnu.zip",
+				BrowserDownloadInfo: "https://github.com/denoland/deno/releases/download/v1.41.0/deno-x86_64-unknown-linux-gnu.zip",
+			},
+			//There are other assets but we don't need to know them.
+		},
+	}
+)
 
 func GetArchiveAssetInfo() (github.AssetInfo, archiveInfo, error) {
-	releaseInfo, err := github.FetchReleaseByTagName(REPOSITORY, RELEASE_TAG)
+	releaseInfo := v1_14_0_releaseInfo
 
-	if err != nil {
-		return github.AssetInfo{}, archiveInfo{}, err
-	}
+	// 	releaseInfo, err := github.FetchReleaseByTagName(REPOSITORY, RELEASE_TAG)
+
+	// 	if err != nil {
+	// 		return github.AssetInfo{}, archiveInfo{}, err
+	// 	}
 
 	if releaseInfo.Name == "" {
 		return github.AssetInfo{}, archiveInfo{}, errors.New("unexpected empty release info")
