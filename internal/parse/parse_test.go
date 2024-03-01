@@ -2,7 +2,6 @@ package parse
 
 import (
 	"context"
-	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -158,9 +157,7 @@ func TestParseSystematicCheckAndVeryShortTimeout(t *testing.T) {
 		Timeout:       time.Millisecond,
 	})
 
-	if !errors.Is(err, context.Canceled) {
-		assert.ErrorContains(t, err, context.DeadlineExceeded.Error())
-	}
+	assert.ErrorIs(t, err, context.DeadlineExceeded)
 }
 
 func TestParseSystematicCheckAndDefaultTimeout(t *testing.T) {
@@ -168,9 +165,7 @@ func TestParseSystematicCheckAndDefaultTimeout(t *testing.T) {
 
 	_, err := ParseChunk(code, "test", ParserOptions{})
 
-	if !errors.Is(err, context.Canceled) {
-		assert.ErrorContains(t, err, context.DeadlineExceeded.Error())
-	}
+	assert.ErrorIs(t, err, context.DeadlineExceeded)
 }
 
 func TestCheckEmbddedModuleTokens(t *testing.T) {

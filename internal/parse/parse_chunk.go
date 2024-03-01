@@ -55,7 +55,7 @@ func ParseChunk2(str string, fpath string, opts ...ParserOptions) (runes []rune,
 		}
 
 		if resultErr != nil {
-			resultErr = fmt.Errorf("%s: %s", resultErr.Error(), debug.Stack())
+			resultErr = fmt.Errorf("%w: %s", resultErr, debug.Stack())
 		}
 
 		if result != nil {
