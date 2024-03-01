@@ -50,6 +50,7 @@ var (
 	ErrMissingManifest                 = errors.New("missing manifest")
 	ErrParsingErrorInManifestOrPreinit = errors.New("parsing error in manifest or preinit")
 	ErrInvalidModuleKind               = errors.New("invalid module kind")
+	ErrNotAnIncludableFile             = errors.New("not an includable file")
 )
 
 // A Module represents an Inox module, it does not hold any state and should NOT be modified. Module implements Value.
@@ -569,7 +570,7 @@ func ParseLocalIncludedFiles(ctx *Context, config IncludedFilesParsingConfig) (u
 
 		stmtPos := mod.MainChunk.GetSourcePosition(stmt.Span)
 
-		chunk, err := ParseLocalSecondaryChunk(LocalSecondaryChunkParsingConfig{
+		includedChunk, absoluteChunkPath, err := ParseIncludedChunk(LocalSecondaryChunkParsingConfig{
 			ChunkFilepath:                       chunkFilepath,
 			Module:                              mod,
 			Context:                             ctx,
@@ -578,15 +579,22 @@ func ParseLocalIncludedFiles(ctx *Context, config IncludedFilesParsingConfig) (u
 			SingleFileParsingTimeout:            config.SingleFileParsingTimeout,
 		})
 
-		if err != nil && chunk == nil {
+		if err != nil && includedChunk == nil { //critical error
 			return err
 		}
 
-		mod.OriginalErrors = append(mod.OriginalErrors, chunk.OriginalErrors...)
-		mod.ParsingErrors = append(mod.ParsingErrors, chunk.ParsingErrors...)
-		mod.ParsingErrorPositions = append(mod.ParsingErrorPositions, chunk.ParsingErrorPositions...)
-		mod.InclusionStatementMap[stmt] = chunk
-		mod.IncludedChunkForest = append(mod.IncludedChunkForest, chunk)
+		mod.OriginalErrors = append(mod.OriginalErrors, includedChunk.OriginalErrors...)
+		mod.ParsingErrors = append(mod.ParsingErrors, includedChunk.ParsingErrors...)
+		mod.ParsingErrorPositions = append(mod.ParsingErrorPositions, includedChunk.ParsingErrorPositions...)
+
+		if !errors.Is(err, ErrNotAnIncludableFile) {
+			mod.InclusionStatementMap[stmt] = includedChunk
+			mod.IncludedChunkMap[absoluteChunkPath] = includedChunk
+			mod.IncludedChunkForest = append(mod.IncludedChunkForest, includedChunk)
+			mod.FlattenedIncludedChunkList = append(mod.FlattenedIncludedChunkList, includedChunk)
+			continue
+		}
+
 	}
 	return nil
 }
@@ -610,23 +618,23 @@ type LocalSecondaryChunkParsingConfig struct {
 	SingleFileParsingTimeout            time.Duration
 }
 
-func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*IncludedChunk, error) {
+func ParseIncludedChunk(config LocalSecondaryChunkParsingConfig) (_ *IncludedChunk, absolutePath string, _ error) {
 	fpath := config.ChunkFilepath
 	ctx := config.Context
 	fls := ctx.GetFileSystem()
 	mod := config.Module
 
 	if strings.Contains(fpath, "..") {
-		return nil, errors.New(INCLUDED_FILE_PATH_SHOULD_NOT_CONTAIN_X)
+		return nil, "", errors.New(INCLUDED_FILE_PATH_SHOULD_NOT_CONTAIN_X)
 	}
 
 	absPath, err := fls.Absolute(fpath)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	if _, ok := mod.IncludedChunkMap[absPath]; ok {
-		return nil, fmt.Errorf("%s already included", absPath)
+		return nil, "", fmt.Errorf("%s already included", absPath)
 	}
 
 	//read the file
@@ -634,7 +642,7 @@ func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*Include
 	{
 		readPerm := FilesystemPermission{Kind_: permkind.Read, Entity: Path(absPath)}
 		if err := config.Context.CheckHasPermission(readPerm); err != nil {
-			return nil, fmt.Errorf("failed to parse included chunk %s: %w", config.ChunkFilepath, err)
+			return nil, "", fmt.Errorf("failed to parse included chunk %s: %w", config.ChunkFilepath, err)
 		}
 	}
 
@@ -654,31 +662,31 @@ func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*Include
 	if err == nil {
 		info, err = FileStat(file, fls)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get information for file to include %s: %w", fpath, err)
+			return nil, "", fmt.Errorf("failed to get information for file to include %s: %w", fpath, err)
 		}
 	}
 
 	if os.IsNotExist(err) {
 		if !config.RecoverFromNonExistingIncludedFiles {
-			return nil, err
+			return nil, "", err
 		}
 
 		existenceError = fmt.Errorf("%w: %s", ErrFileToIncludeDoesNotExist, fpath)
 	} else if err == nil && info.IsDir() {
 		if !config.RecoverFromNonExistingIncludedFiles {
-			return nil, err
+			return nil, "", err
 		}
 
 		existenceError = fmt.Errorf("%w: %s", ErrFileToIncludeIsAFolder, fpath)
 	} else {
 		if err != nil {
-			return nil, fmt.Errorf("failed to open included file %s: %s", fpath, err)
+			return nil, "", fmt.Errorf("failed to open included file %s: %s", fpath, err)
 		}
 
 		b, err := io.ReadAll(file)
 
 		if err != nil {
-			return nil, fmt.Errorf("failed to read included file %s: %s", fpath, err)
+			return nil, "", fmt.Errorf("failed to read included file %s: %s", fpath, err)
 		}
 
 		src.CodeString = utils.BytesAsString(b)
@@ -690,12 +698,24 @@ func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*Include
 		ParentContext: config.Context,
 		Timeout:       config.SingleFileParsingTimeout,
 	})
-	if err != nil && chunk == nil {
-		return nil, fmt.Errorf("failed to parse included file %s: %w", fpath, err)
+
+	if err != nil && chunk == nil { //critical error
+		return nil, "", fmt.Errorf("failed to parse included file %s: %w", fpath, err)
 	}
+
+	isModule := chunk != nil && chunk.Node.Manifest != nil
 
 	includedChunk := &IncludedChunk{
 		ParsedChunkSource: chunk,
+	}
+
+	if isModule {
+		// Add error and return.
+		includedChunk.ParsingErrors = append(includedChunk.ParsingErrors,
+			NewError(fmt.Errorf("included files should not contain a manifest: %s", fpath), Path(fpath)),
+		)
+		includedChunk.ParsingErrorPositions = append(includedChunk.ParsingErrorPositions, config.ImportPosition)
+		return includedChunk, "", ErrNotAnIncludableFile
 	}
 
 	// add parsing errors to the included chunk
@@ -718,20 +738,14 @@ func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*Include
 		}
 	}
 
-	// add error if a manifest is present
-	if chunk.Node.Manifest != nil {
+	if existenceError == nil && chunk.Node.IncludableChunkDesc == nil {
+		// Add an error if the includable-file
+
 		includedChunk.ParsingErrors = append(includedChunk.ParsingErrors,
-			NewError(fmt.Errorf("included chunk files should not contain a manifest: %s", fpath), Path(fpath)),
-		)
-		includedChunk.ParsingErrorPositions = append(includedChunk.ParsingErrorPositions, config.ImportPosition)
-	} else if existenceError == nil && chunk.Node.IncludableChunkDesc == nil {
-		includedChunk.ParsingErrors = append(includedChunk.ParsingErrors,
-			NewError(fmt.Errorf("included chunk files should start with the %s keyword: %s", parse.INCLUDABLE_CHUNK_KEYWORD_STR, fpath), Path(fpath)),
+			NewError(fmt.Errorf("included files should start with the %s keyword: %s", parse.INCLUDABLE_CHUNK_KEYWORD_STR, fpath), Path(fpath)),
 		)
 		includedChunk.ParsingErrorPositions = append(includedChunk.ParsingErrorPositions, config.ImportPosition)
 	}
-
-	mod.IncludedChunkMap[absPath] = includedChunk
 
 	inclusionStmts := parse.FindNodes(chunk.Node, (*parse.InclusionImportStatement)(nil), nil)
 
@@ -750,7 +764,7 @@ func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*Include
 
 		stmtPos := chunk.GetSourcePosition(stmt.Span)
 
-		chunk, err := ParseLocalSecondaryChunk(LocalSecondaryChunkParsingConfig{
+		chunk, absoluteChunkPath, err := ParseIncludedChunk(LocalSecondaryChunkParsingConfig{
 			ChunkFilepath:                       chunkFilepath,
 			Module:                              mod,
 			Context:                             config.Context,
@@ -760,18 +774,21 @@ func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*Include
 		})
 
 		if err != nil && chunk == nil {
-			return nil, err
+			return nil, "", err
 		}
 
 		includedChunk.OriginalErrors = append(mod.OriginalErrors, chunk.OriginalErrors...)
 		includedChunk.ParsingErrors = append(includedChunk.ParsingErrors, chunk.ParsingErrors...)
-		mod.InclusionStatementMap[stmt] = chunk
-		includedChunk.IncludedChunkForest = append(includedChunk.IncludedChunkForest, chunk)
+
+		if !errors.Is(err, ErrNotAnIncludableFile) {
+			mod.InclusionStatementMap[stmt] = chunk
+			mod.IncludedChunkMap[absoluteChunkPath] = chunk
+			includedChunk.IncludedChunkForest = append(includedChunk.IncludedChunkForest, chunk)
+			mod.FlattenedIncludedChunkList = append(mod.FlattenedIncludedChunkList, chunk)
+		}
 	}
 
-	mod.FlattenedIncludedChunkList = append(mod.FlattenedIncludedChunkList, includedChunk)
-
-	return includedChunk, nil
+	return includedChunk, absPath, nil
 }
 
 func createRecordFromSourcePosition(pos parse.SourcePositionRange) *Record {
