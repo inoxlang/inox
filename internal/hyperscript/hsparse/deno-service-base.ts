@@ -20,6 +20,10 @@ while (true) {
     const ws = new WebSocket('ws://localhost:'+controlServerPort+"?token="+token)
     let closePromise: Promise<void>|undefined;
 
+    const pingInterval = setInterval(() => {
+        ws.send('{}') //Send a message to keep the connection alive.
+    }, 5_000)
+
     try {
         //Wait for the connection to be established.
         await new Promise<void>((resolve, reject) => {
@@ -29,6 +33,7 @@ while (true) {
             ws.addEventListener('open', () => {
                 closePromise = new Promise(resolve => {
                     ws.addEventListener('close', () => {
+                        clearInterval(pingInterval)
                         resolve()
                     })
                 })
