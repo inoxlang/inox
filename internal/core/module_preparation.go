@@ -37,17 +37,20 @@ var (
 )
 
 type ModulePreparationArgs struct {
-	//path of the script in the .ParsingCompilationContext's filesystem.
+	//Path of the script in the .ParsingCompilationContext's filesystem.
 	Fpath string
 
-	//if not nil the module is not parsed and this value is used.
+	//Timeout duration set in parse.ParserOptions.
+	SingleFileParsingTimeout time.Duration
+
+	//If not nil the module is not parsed and this value is used.
 	Cache         *ModulePreparationCache
 	ForceUseCache bool //if true .Cache is assumed to be valid
 
 	IsUnderTest bool
 
-	// enable data extraction mode, this mode allows some errors.
-	// this mode is intended to be used by the LSP server.
+	//Enable data extraction mode, this mode allows some errors.
+	//this mode is intended to be used by the LSP server.
 	DataExtractionMode bool
 
 	AllowMissingEnvVars     bool
@@ -73,7 +76,7 @@ type ModulePreparationArgs struct {
 	ParentContextRequired     bool
 	UseParentStateAsMainState bool
 
-	//should not be set if ParentContext is set
+	//Non-Inox context. It should not be set if ParentContext is set.
 	StdlibCtx context.Context
 
 	//Limits that are not in this list nor in the prepared module's manifest will be initialized
@@ -177,6 +180,7 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 		module, parsingErr = ParseLocalModule(args.Fpath, ModuleParsingConfig{
 			Context:                             args.ParsingCompilationContext,
 			RecoverFromNonExistingIncludedFiles: args.DataExtractionMode,
+			SingleFileParsingTimeout:            args.SingleFileParsingTimeout,
 		})
 		preparationLogger.Debug().Dur("parsing", time.Since(start)).Send()
 
