@@ -399,7 +399,8 @@ type ModuleParsingConfig struct {
 	//DefaultLimits          []Limit
 	//CustomPermissionTypeHandler CustomPermissionTypeHandler
 
-	moduleGraph *memds.DirectedGraph[string, struct{}, map[string]memds.NodeId]
+	moduleGraph              *memds.DirectedGraph[string, struct{}, map[string]memds.NodeId]
+	SingleFileParsingTimeout time.Duration
 }
 
 func ParseModuleFromSource(src parse.ChunkSource, resource ResourceName, config ModuleParsingConfig) (*Module, error) {
@@ -436,7 +437,11 @@ func ParseModuleFromSource(src parse.ChunkSource, resource ResourceName, config 
 		nodeId = node.Id
 	}
 
-	code, err := parse.ParseChunkSource(src)
+	code, err := parse.ParseChunkSource(src, parse.ParserOptions{
+		ParentContext: config.Context,
+		Timeout:       config.SingleFileParsingTimeout,
+	})
+
 	if err != nil && code == nil {
 		return nil, fmt.Errorf("failed to parse %s: %w", resource.ResourceName(), err)
 	}
@@ -508,7 +513,12 @@ func ParseModuleFromSource(src parse.ChunkSource, resource ResourceName, config 
 	ctx := config.Context
 	fls := ctx.GetFileSystem()
 
-	unrecoverableError := ParseLocalIncludedFiles(mod, ctx, fls, config.RecoverFromNonExistingIncludedFiles)
+	unrecoverableError := ParseLocalIncludedFiles(ctx, IncludedFilesParsingConfig{
+		Module:                              mod,
+		Filesystem:                          fls,
+		RecoverFromNonExistingIncludedFiles: config.RecoverFromNonExistingIncludedFiles,
+		SingleFileParsingTimeout:            config.SingleFileParsingTimeout,
+	})
 	if unrecoverableError != nil {
 		return nil, unrecoverableError
 	}
@@ -529,7 +539,17 @@ func ParseModuleFromSource(src parse.ChunkSource, resource ResourceName, config 
 	return mod, CombineParsingErrorValues(mod.ParsingErrors, mod.ParsingErrorPositions)
 }
 
-func ParseLocalIncludedFiles(mod *Module, ctx *Context, fls afs.Filesystem, recoverFromNonExistingIncludedFiles bool) (unrecoverableError error) {
+type IncludedFilesParsingConfig struct {
+	Module                              *Module
+	Filesystem                          afs.Filesystem
+	RecoverFromNonExistingIncludedFiles bool
+	SingleFileParsingTimeout            time.Duration
+}
+
+// ParseLocalIncludedFiles parses all the files included by $mod.
+func ParseLocalIncludedFiles(ctx *Context, config IncludedFilesParsingConfig) (unrecoverableError error) {
+	mod, fls, recoverFromNonExistingIncludedFiles := config.Module, config.Filesystem, config.RecoverFromNonExistingIncludedFiles
+
 	src := mod.MainChunk.Source.(parse.SourceFile)
 
 	inclusionStmts := parse.FindNodes(mod.MainChunk.Node, (*parse.InclusionImportStatement)(nil), nil)
@@ -555,6 +575,7 @@ func ParseLocalIncludedFiles(mod *Module, ctx *Context, fls afs.Filesystem, reco
 			Context:                             ctx,
 			ImportPosition:                      stmtPos,
 			RecoverFromNonExistingIncludedFiles: recoverFromNonExistingIncludedFiles,
+			SingleFileParsingTimeout:            config.SingleFileParsingTimeout,
 		})
 
 		if err != nil && chunk == nil {
@@ -586,6 +607,7 @@ type LocalSecondaryChunkParsingConfig struct {
 	Context                             *Context
 	ImportPosition                      parse.SourcePositionRange
 	RecoverFromNonExistingIncludedFiles bool
+	SingleFileParsingTimeout            time.Duration
 }
 
 func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*IncludedChunk, error) {
@@ -664,7 +686,10 @@ func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*Include
 
 	//parse
 
-	chunk, err := parse.ParseChunkSource(src)
+	chunk, err := parse.ParseChunkSource(src, parse.ParserOptions{
+		ParentContext: config.Context,
+		Timeout:       config.SingleFileParsingTimeout,
+	})
 	if err != nil && chunk == nil {
 		return nil, fmt.Errorf("failed to parse included file %s: %w", fpath, err)
 	}
@@ -731,6 +756,7 @@ func ParseLocalSecondaryChunk(config LocalSecondaryChunkParsingConfig) (*Include
 			Context:                             config.Context,
 			ImportPosition:                      stmtPos,
 			RecoverFromNonExistingIncludedFiles: config.RecoverFromNonExistingIncludedFiles,
+			SingleFileParsingTimeout:            config.SingleFileParsingTimeout,
 		})
 
 		if err != nil && chunk == nil {

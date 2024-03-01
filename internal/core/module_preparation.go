@@ -748,7 +748,12 @@ func PrepareExtractionModeIncludableFile(args IncludableChunkfilePreparationArgs
 		IncludedChunkMap:      map[string]*IncludedChunk{},
 	}
 
-	criticalParsingError := ParseLocalIncludedFiles(mod, args.ParsingContext, args.IncludedChunkContextFileSystem, true)
+	criticalParsingError := ParseLocalIncludedFiles(args.ParsingContext, IncludedFilesParsingConfig{
+		Module:                              mod,
+		Filesystem:                          args.IncludedChunkContextFileSystem,
+		RecoverFromNonExistingIncludedFiles: true,
+	})
+
 	if criticalParsingError != nil {
 		finalErr = criticalParsingError
 		return

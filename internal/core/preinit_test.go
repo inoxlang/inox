@@ -1800,7 +1800,11 @@ func TestPreInit(t *testing.T) {
 					DoNotSpawnDoneGoroutine: true,
 					Filesystem:              fls,
 				})
-				ParseLocalIncludedFiles(mod, ctx, fls, false)
+				ParseLocalIncludedFiles(ctx, IncludedFilesParsingConfig{
+					Module:                              mod,
+					Filesystem:                          fls,
+					RecoverFromNonExistingIncludedFiles: false,
+				})
 				ctx.CancelGracefully()
 			}
 
