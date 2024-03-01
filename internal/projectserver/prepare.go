@@ -132,7 +132,9 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 		return
 	}
 
-	chunk, err := core.ParseFileChunk(fpath, fls)
+	chunk, err := core.ParseFileChunk(fpath, fls, parse.ParserOptions{
+		Timeout: singleFileParsingTimeout,
+	})
 
 	if chunk == nil { //unrecoverable parsing error
 		logs.Println("unrecoverable parsing error", err.Error())

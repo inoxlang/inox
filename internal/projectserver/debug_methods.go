@@ -1112,7 +1112,9 @@ func handleSetBreakpoints(ctx context.Context, req interface{}) (interface{}, er
 		return nil, errors.New(string(FsNoFilesystem))
 	}
 
-	chunk, err := core.ParseFileChunk(path, fls)
+	chunk, err := core.ParseFileChunk(path, fls, parse.ParserOptions{
+		Timeout: SINGLE_FILE_PARSING_TIMEOUT,
+	})
 
 	if err != nil {
 		return dap.SetBreakpointsResponse{

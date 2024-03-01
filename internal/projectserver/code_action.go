@@ -18,7 +18,9 @@ func getCodeActions(
 	doc defines.TextDocumentIdentifier, fpath string, fls *Filesystem,
 ) (*[]defines.CodeAction, error) {
 
-	chunk, err := core.ParseFileChunk(fpath, fls)
+	chunk, err := core.ParseFileChunk(fpath, fls, parse.ParserOptions{
+		Timeout: SINGLE_FILE_PARSING_TIMEOUT,
+	})
 	if err != nil {
 		return nil, err
 	}

@@ -163,7 +163,10 @@ func addFilesysteDirEndpoints(
 		}
 
 		//Determine if the file is an Inox module.
-		chunk, err := core.ParseFileChunk(absEntryPath, fls)
+		chunk, err := core.ParseFileChunk(absEntryPath, fls, parse.ParserOptions{
+			Timeout: SINGLE_FILE_PARSING_TIMEOUT,
+		})
+
 		if err != nil {
 			if config.IgnoreModulesWithErrors {
 				continue

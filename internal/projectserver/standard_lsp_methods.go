@@ -620,7 +620,9 @@ func handleFormatDocument(ctx context.Context, req *defines.DocumentFormattingPa
 		return nil, err
 	}
 
-	chunk, err := core.ParseFileChunk(fpath, fls)
+	chunk, err := core.ParseFileChunk(fpath, fls, parse.ParserOptions{
+		Timeout: SINGLE_FILE_PARSING_TIMEOUT,
+	})
 	if chunk == nil { //unrecoverable error
 		return nil, jsonrpc.ResponseError{
 			Code:    jsonrpc.InternalError.Code,

@@ -650,7 +650,7 @@ func (d *Debugger) beforeInstruction(n parse.Node, trace []StackFrameInfo, excep
 
 }
 
-func ParseFileChunk(absoluteSourcePath string, fls afs.Filesystem) (*parse.ParsedChunkSource, error) {
+func ParseFileChunk(absoluteSourcePath string, fls afs.Filesystem, opts ...parse.ParserOptions) (*parse.ParsedChunkSource, error) {
 	content, err := ReadFileInFS(fls, absoluteSourcePath, -1)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read %s: %w", absoluteSourcePath, err)
@@ -664,7 +664,7 @@ func ParseFileChunk(absoluteSourcePath string, fls afs.Filesystem) (*parse.Parse
 		CodeString:    string(content),
 	}
 
-	chunk, parsingErr := parse.ParseChunkSource(src)
+	chunk, parsingErr := parse.ParseChunkSource(src, opts...)
 
 	if parsingErr != nil {
 		return chunk, fmt.Errorf("failed to parse %s: %w", absoluteSourcePath, parsingErr)
