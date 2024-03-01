@@ -34,7 +34,7 @@ func ParseChunk2(str string, fpath string, opts ...ParserOptions) (runes []rune,
 
 	//check that the passed context is not done.
 	if len(opts) > 0 {
-		ctx := opts[0].Context
+		ctx := opts[0].ParentContext
 		if ctx != nil {
 			select {
 			case <-ctx.Done():

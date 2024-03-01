@@ -16,8 +16,8 @@ type ParsedChunkSource struct {
 	runesLock sync.Mutex
 }
 
-func ParseChunkSource(src ChunkSource) (*ParsedChunkSource, error) {
-	runes, chunk, err := ParseChunk2(src.Code(), src.Name())
+func ParseChunkSource(src ChunkSource, options ...ParserOptions) (*ParsedChunkSource, error) {
+	runes, chunk, err := ParseChunk2(src.Code(), src.Name(), options...)
 
 	if chunk == nil {
 		return nil, err

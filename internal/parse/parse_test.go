@@ -32,8 +32,8 @@ func TestParseSystematicCheckAndAlreadyDoneContext(t *testing.T) {
 				}
 			}()
 			mustParseChunkForgetTokens(str, ParserOptions{
-				NoCheckFuel: 1, //check context every major function call during parsing.
-				Context:     ctx,
+				NoCheckFuel:   1, //check context every major function call during parsing.
+				ParentContext: ctx,
 			})
 			return
 		})()
@@ -45,8 +45,8 @@ func TestParseSystematicCheckAndAlreadyDoneContext(t *testing.T) {
 
 	parseChunk := func(t *testing.T, str, name string) (result *Chunk, e error) {
 		_, err := ParseChunk(str, name, ParserOptions{
-			NoCheckFuel: 1, //check context every major function call during parsing.
-			Context:     ctx,
+			NoCheckFuel:   1, //check context every major function call during parsing.
+			ParentContext: ctx,
 		})
 
 		assert.ErrorContains(t, err, context.Canceled.Error())
@@ -70,8 +70,8 @@ func TestParseNonSystematicCheckAndAlreadyDoneContext(t *testing.T) {
 				}
 			}()
 			mustParseChunkForgetTokens(str, ParserOptions{
-				NoCheckFuel: 2, //check context every 2 major function calls during parsing.
-				Context:     ctx,
+				NoCheckFuel:   2, //check context every 2 major function calls during parsing.
+				ParentContext: ctx,
 			})
 			return
 		})()
@@ -83,8 +83,8 @@ func TestParseNonSystematicCheckAndAlreadyDoneContext(t *testing.T) {
 
 	parseChunk := func(t *testing.T, str, name string) (result *Chunk, e error) {
 		_, err := parseChunkForgetTokens(str, name, ParserOptions{
-			NoCheckFuel: 2, //check context every 2 major function calls during parsing.
-			Context:     ctx,
+			NoCheckFuel:   2, //check context every 2 major function calls during parsing.
+			ParentContext: ctx,
 		})
 
 		assert.ErrorContains(t, err, context.Canceled.Error())
@@ -117,8 +117,8 @@ func TestParseNonSystematicCheckAndAlreadyDoneContext2(t *testing.T) {
 				}
 			}()
 			mustParseChunkForgetTokens(str, ParserOptions{
-				NoCheckFuel: nodeCount / 2, //check context somewhere during the parsing.
-				Context:     ctx,
+				NoCheckFuel:   nodeCount / 2, //check context somewhere during the parsing.
+				ParentContext: ctx,
 			})
 			return
 		})()
@@ -137,8 +137,8 @@ func TestParseNonSystematicCheckAndAlreadyDoneContext2(t *testing.T) {
 		}
 
 		_, err = parseChunkForgetTokens(str, name, ParserOptions{
-			NoCheckFuel: nodeCount / 2, //check context somewhere during the parsing.
-			Context:     ctx,
+			NoCheckFuel:   nodeCount / 2, //check context somewhere during the parsing.
+			ParentContext: ctx,
 		})
 
 		assert.ErrorContains(t, err, context.Canceled.Error())
@@ -153,9 +153,9 @@ func TestParseSystematicCheckAndVeryShortTimeout(t *testing.T) {
 	code := "[" + strings.Repeat("111,", 20_000) + "]"
 
 	_, err := ParseChunk(code, "test", ParserOptions{
-		NoCheckFuel: 1, //check context every major function call during parsing.
-		Context:     context.Background(),
-		Timeout:     time.Millisecond,
+		NoCheckFuel:   1, //check context every major function call during parsing.
+		ParentContext: context.Background(),
+		Timeout:       time.Millisecond,
 	})
 
 	if !errors.Is(err, context.Canceled) {

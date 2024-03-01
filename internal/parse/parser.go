@@ -28,18 +28,19 @@ type parser struct {
 }
 
 type ParserOptions struct {
-	//The context is checked each time the 'no check fuel' is empty.
-	//The 'no check fuel' defauls to DEFAULT_NO_CHECK_FUEL if NoCheckFuel is <= 0 or if context is nil.
+	//If nil the parent context is set to context.Background().
+	//The parser internally creates a child context with a timeout.
+	ParentContext context.Context
+
+	//The internal context is checked each time the 'no check fuel' is empty.
+	//The 'no check fuel' defaults to DEFAULT_NO_CHECK_FUEL if NoCheckFuel is <= 0 or if context is nil.
 	NoCheckFuel int
-
-	ParseHyperscript ParseHyperscriptFn
-
-	//This option is ignored if noCheckFuel is <= 0.
-	//The default context context.Background().
-	Context context.Context
 
 	//Defaults to DEFAULT_TIMEOUT.
 	Timeout time.Duration
+
+	//If not set defaults to the function registered by RegisterParseHypercript.
+	ParseHyperscript ParseHyperscriptFn
 
 	//Makes the parser stops after the following node type:
 	// - IncludableChunkDescription if no constants are defined.
@@ -67,15 +68,23 @@ func newParser(s []rune, opts ...ParserOptions) *parser {
 
 	if len(opts) > 0 {
 		opt := opts[0]
-		if opt.Context != nil && opt.NoCheckFuel > 0 {
-			if opt.Timeout > 0 {
-				timeout = opt.Timeout
-			}
-			ctx = opt.Context
+
+		if opt.ParentContext != nil {
+			ctx = opt.ParentContext
 		}
+
+		if opt.NoCheckFuel > 0 {
+			noCheckFuel = opt.NoCheckFuel
+		}
+
+		if opt.Timeout > 0 {
+			timeout = opt.Timeout
+		}
+
 		if opt.Start {
 			p.onlyChunkStart = true
 		}
+
 		if opt.ParseHyperscript != nil {
 			p.parseHyperscript = opt.ParseHyperscript
 		}
