@@ -50,7 +50,9 @@ func testModuleAsync(path string, filters core.TestFilters, session *jsonrpc.Ses
 	// data := getLockedSessionData(session)
 
 	state, _, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
-		Fpath:                     path,
+		Fpath:                    path,
+		SingleFileParsingTimeout: SINGLE_FILE_PARSING_TIMEOUT,
+
 		ParsingCompilationContext: handlingCtx,
 		ParentContext:             handlingCtx,
 		ParentContextRequired:     true,

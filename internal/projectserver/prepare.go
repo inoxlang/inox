@@ -19,6 +19,8 @@ import (
 const (
 	VERY_RECENT_ACTIVITY_DELTA = time.Second
 	MAX_PREPARATION_DEPTH      = 2
+
+	SINGLE_FILE_PARSING_TIMEOUT = 50 * time.Millisecond
 )
 
 type filePreparationParams struct {
@@ -43,6 +45,9 @@ type filePreparationParams struct {
 	notifyUserAboutDbError bool
 
 	_depth int //should not be by caller, it is used internally by prepareSourceFileInExtractionMode
+
+	//Defaults to SINGLE_FILE_PARSING_TIMEOUT.
+	singleFileParsingTimeout time.Duration
 }
 
 type preparationResult struct {
@@ -63,6 +68,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 	session := params.session
 	requiresState := params.requiresState
 	project, _ := getProject(session)
+	singleFileParsingTimeout := utils.DefaultIfZero(params.singleFileParsingTimeout, SINGLE_FILE_PARSING_TIMEOUT)
 
 	fls, new := getLspFilesystem(session)
 	if !new {
@@ -79,7 +85,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 	}
 
 	//we avoid locking the session data
-	if sessionData.lock.TryLock() || sessionData.lock.TryLock() {
+	if sessionData.lock.TryLock() {
 		if sessionData.preparedSourceFilesCache == nil {
 			sessionData.preparedSourceFilesCache = newPreparedFileCache()
 		}
@@ -143,6 +149,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 			Out:                            io.Discard,
 			LogOut:                         io.Discard,
 			IncludedChunkContextFileSystem: fls,
+			SingleFileParsingTimeout:       singleFileParsingTimeout,
 		})
 
 		if includedChunk == nil {
@@ -184,18 +191,19 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 		var parentCtx *core.Context
 
 		if chunk.Node.Manifest != nil {
-			//additional logic if the manifest refers to databases in another module
+			//Additional logic if the manifest refers to databases in another module.
 			if obj, ok := chunk.Node.Manifest.Object.(*parse.ObjectLiteral); ok {
 				node, _ := obj.PropValue(core.MANIFEST_DATABASES_SECTION_NAME)
 
 				if pathLiteral, ok := node.(*parse.AbsolutePathLiteral); ok {
 					preparationResult, ok := prepareSourceFileInExtractionMode(ctx, filePreparationParams{
-						fpath:                  pathLiteral.Value,
-						session:                session,
-						requiresState:          true,
-						notifyUserAboutDbError: true,
-						_depth:                 params._depth + 1,
-						memberAuthToken: params.memberAuthToken,
+						fpath:                    pathLiteral.Value,
+						session:                  session,
+						requiresState:            true,
+						notifyUserAboutDbError:   true,
+						_depth:                   params._depth + 1,
+						memberAuthToken:          params.memberAuthToken,
+						singleFileParsingTimeout: singleFileParsingTimeout,
 					})
 					if ok {
 						parentCtx = preparationResult.state.Ctx
@@ -209,6 +217,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 		args := core.ModulePreparationArgs{
 			Fpath:                     fpath,
 			ParsingCompilationContext: ctx,
+			SingleFileParsingTimeout:  singleFileParsingTimeout,
 
 			//set if the module uses databases from another module.
 			ParentContext:         parentCtx,

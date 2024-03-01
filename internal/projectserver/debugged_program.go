@@ -127,7 +127,9 @@ func launchDebuggedProgram(args debuggedProgramLaunch) {
 	}))
 
 	_, _, _, preparationOk, err := mod.RunLocalModule(mod.RunLocalModuleArgs{
-		Fpath:                     programPath,
+		Fpath:                    programPath,
+		SingleFileParsingTimeout: SINGLE_FILE_PARSING_TIMEOUT,
+
 		ParsingCompilationContext: ctx,
 		ParentContext:             ctx,
 		ParentContextRequired:     true,

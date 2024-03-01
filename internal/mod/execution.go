@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"runtime/debug"
+	"time"
 
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/config"
@@ -27,9 +28,11 @@ var (
 )
 
 type RunLocalModuleArgs struct {
-	Fpath                     string
-	PassedCLIArgs             []string
-	PassedArgs                *core.ModuleArgs
+	Fpath         string
+	PassedCLIArgs []string
+	PassedArgs    *core.ModuleArgs
+
+	SingleFileParsingTimeout  time.Duration //Timeout duration set in parse.ParserOptions.
 	ParsingCompilationContext *core.Context
 
 	ParentContext         *core.Context
@@ -93,12 +96,14 @@ func RunLocalModule(args RunLocalModuleArgs) (
 		CliArgs:                   args.PassedCLIArgs,
 		Args:                      args.PassedArgs,
 		ParsingCompilationContext: args.ParsingCompilationContext,
-		ParentContext:             args.ParentContext,
-		ParentContextRequired:     args.ParentContextRequired,
-		StdlibCtx:                 args.StdlibCtx,
-		DefaultLimits:             core.GetDefaultScriptLimits(),
-		AdditionalPermissions:     args.AdditionalPermissions,
-		ScriptContextFileSystem:   args.ScriptContextFileSystem,
+		SingleFileParsingTimeout:  args.SingleFileParsingTimeout,
+
+		ParentContext:           args.ParentContext,
+		ParentContextRequired:   args.ParentContextRequired,
+		StdlibCtx:               args.StdlibCtx,
+		DefaultLimits:           core.GetDefaultScriptLimits(),
+		AdditionalPermissions:   args.AdditionalPermissions,
+		ScriptContextFileSystem: args.ScriptContextFileSystem,
 
 		Out:       args.Out,
 		LogOut:    args.LogOut,
