@@ -108,13 +108,8 @@ func TestParseHyperscriptWithDeno(t *testing.T) {
 		return id, nil
 	}
 
-	err = StartHyperscriptParsingService(startService, func(ctx context.Context, input string) (json.RawMessage, error) {
-		serviceId, ok := getDenoServiceID()
-		if !assert.True(t, ok) {
-			return nil, errors.New("no service ID")
-		}
-
-		process, ok := controlServer.GetServiceProcessByID(serviceId)
+	err = StartHyperscriptParsingService(startService, func(ctx context.Context, input string, serviceID ulid.ULID) (json.RawMessage, error) {
+		process, ok := controlServer.GetServiceProcessByID(serviceID)
 		if !assert.True(t, ok) {
 			return nil, errors.New("service not found")
 		}

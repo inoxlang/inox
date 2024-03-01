@@ -18,23 +18,26 @@ var (
 	//go:embed deno-service-base.ts
 	DENO_SERVICE_BASE_TS string
 
+	//Typescript code of the hyperscript parsing service.
 	DENO_SERVICE_TS = HYPERSCRIPT_PARSER_JS + "\n" + DENO_SERVICE_BASE_TS
 
-	serviceULID              ulid.ULID
-	parseHyperscriptWithDeno func(ctx context.Context, input string) (json.RawMessage, error)
-	serviceLock              sync.Mutex
+	serviceULID               ulid.ULID
+	_parseHyperscriptWithDeno func(ctx context.Context, input string, serviceULID ulid.ULID) (json.RawMessage, error)
+	serviceLock               sync.Mutex
 
 	ErrDenoServiceNotAvailable = errors.New("deno service not available")
 )
 
+// StartHyperscriptParsingService starts the parsing service by calling $startService and
+// registers $parseHyperscriptWithDeno. It saves the service ULID for future invocations of $parseHyperscriptWithDeno.
 func StartHyperscriptParsingService(
 	startService func(program string) (ulid.ULID, error),
-	_parseHyperscriptWithDeno func(context context.Context, input string) (json.RawMessage, error),
+	parseHyperscriptWithDeno func(context context.Context, input string, ulid ulid.ULID) (json.RawMessage, error),
 ) error {
 	serviceLock.Lock()
 	defer serviceLock.Unlock()
 
-	if parseHyperscriptWithDeno != nil {
+	if _parseHyperscriptWithDeno != nil {
 		return fmt.Errorf("service already started")
 	}
 
@@ -43,13 +46,14 @@ func StartHyperscriptParsingService(
 		return err
 	}
 	serviceULID = ulid
-	parseHyperscriptWithDeno = _parseHyperscriptWithDeno
+	_parseHyperscriptWithDeno = parseHyperscriptWithDeno
 	return nil
 }
 
 func tryParseHyperScriptWithDenoService(ctx context.Context, source string) (*hscode.ParsingResult, *hscode.ParsingError, error) {
 	serviceLock.Lock()
-	parseHyperscriptWithDeno := parseHyperscriptWithDeno
+	parseHyperscriptWithDeno := _parseHyperscriptWithDeno
+	serviceID := serviceULID
 	serviceLock.Unlock()
 
 	if parseHyperscriptWithDeno == nil {
@@ -60,7 +64,7 @@ func tryParseHyperScriptWithDenoService(ctx context.Context, source string) (*hs
 		return nil, nil, ErrInputStringTooLong
 	}
 
-	rawJSON, err := parseHyperscriptWithDeno(ctx, source)
+	rawJSON, err := parseHyperscriptWithDeno(ctx, source, serviceID)
 
 	if err != nil {
 		return nil, nil, err
@@ -106,11 +110,4 @@ func tryParseHyperScriptWithDenoService(ctx context.Context, source string) (*hs
 	}
 
 	return nil, nil, nil
-}
-
-func getDenoServiceID() (ulid.ULID, bool) {
-	serviceLock.Lock()
-	defer serviceLock.Unlock()
-
-	return serviceULID, serviceULID != (ulid.ULID{})
 }

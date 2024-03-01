@@ -14,6 +14,7 @@ import (
 
 const (
 	MAX_SOURCE_CODE_LENGTH_IF_SLOW_PARSE = 1000
+	HYPERSCRIPT_PARSING_FUNCTION_NAME    = "parseHyperScript"
 )
 
 var (
@@ -49,7 +50,7 @@ func parseHyperScriptSlow(ctx context.Context, source string) (*hscode.ParsingRe
 	global := runtime.GlobalObject()
 	global.Set("input", input)
 
-	callResult, err := runtime.RunString(`parseHyperScript()`)
+	callResult, err := runtime.RunString(HYPERSCRIPT_PARSING_FUNCTION_NAME + `()`)
 	if err != nil {
 		return nil, nil, err
 	}
