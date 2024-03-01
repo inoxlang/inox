@@ -718,6 +718,9 @@ type IncludableChunkfilePreparationArgs struct {
 
 	//used to create the context
 	IncludedChunkContextFileSystem afs.Filesystem
+
+	//Timeout duration set in parse.ParserOptions.
+	SingleFileParsingTimeout time.Duration
 }
 
 // PrepareExtractionModeIncludableFile parses & checks an includable file located in the filesystem and initializes its state.
@@ -756,6 +759,7 @@ func PrepareExtractionModeIncludableFile(args IncludableChunkfilePreparationArgs
 		Module:                              mod,
 		Filesystem:                          args.IncludedChunkContextFileSystem,
 		RecoverFromNonExistingIncludedFiles: true,
+		SingleFileParsingTimeout:            args.SingleFileParsingTimeout,
 	})
 
 	if criticalParsingError != nil {
