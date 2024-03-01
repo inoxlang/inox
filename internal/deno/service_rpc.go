@@ -34,6 +34,10 @@ func (s *ControlServer) GetServiceProcessByID(ulid ulid.ULID) (*DenoProcess, boo
 }
 
 func (p *DenoProcess) CallMethod(ctx *core.Context, method string, payload any) (json.RawMessage, error) {
+	if p.killedOrBeingKilled.Load() {
+		return nil, ErrProcessKilledOrBeingKilled
+	}
+
 	start := time.Now()
 
 	p.lock.Lock()
@@ -66,6 +70,9 @@ func (p *DenoProcess) CallMethod(ctx *core.Context, method string, payload any) 
 		default:
 			if time.Since(start) > METHOD_CALL_TIMEOUT {
 				return nil, ErrRemoteCallTimeout
+			}
+			if p.killedOrBeingKilled.Load() {
+				return nil, ErrProcessKilledOrBeingKilled
 			}
 		}
 

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"net/http"
 	"strconv"
 	"sync"
@@ -30,9 +31,10 @@ const (
 
 var (
 	PROCESS_TOKEN_ENCODED_BYTE_LENGTH = hex.EncodedLen(PROCESS_TOKEN_BYTE_LENGTH)
-	ErrProcessDidNotConnect           = errors.New("controlled process did not connect to the control server")
-	ErrProcessNotCurrentlyConnect     = errors.New("controlled process is not currently connected to the control server")
-	ErrProcessAlreadyConnected        = errors.New("controlled process is already connected to the control server")
+	ErrProcessDidNotConnect           = errors.New("deno process did not connect to the control server")
+	ErrProcessNotCurrentlyConnect     = errors.New("deno process is not currently connected to the control server")
+	ErrProcessAlreadyConnected        = errors.New("deno process is already connected to the control server")
+	ErrProcessKilledOrBeingKilled     = errors.New("deno process is killed or being killed")
 )
 
 // A ControlServer creates and controls Deno processes, each created process connects to the control server with a WebSocket (HTTP, no encrytion).
@@ -79,6 +81,36 @@ func NewControlServer(ctx *core.Context, config ControlServerConfig) (*ControlSe
 	}
 
 	s.websocketServer = websocketServer
+
+	ctx.OnGracefulTearDown(func(ctx *core.Context) error {
+		s.controlledProcessesLock.Lock()
+		processes := maps.Clone(s.controlledProcesses)
+		clear(s.controlledProcesses)
+		s.controlledProcessesLock.Unlock()
+
+		for _, process := range processes {
+			process.Stop(ctx)
+		}
+
+		return nil
+	})
+
+	ctx.OnDone(func(timeoutCtx context.Context, teardownStatus core.GracefulTeardownStatus) error {
+		s.controlledProcessesLock.Lock()
+		processes := maps.Clone(s.controlledProcesses)
+		clear(s.controlledProcesses)
+		s.controlledProcessesLock.Unlock()
+
+		for _, process := range processes {
+			go func(process *DenoProcess) {
+				defer utils.Recover()
+				process.kill()
+			}(process)
+		}
+
+		return nil
+	})
+
 	return s, nil
 }
 
