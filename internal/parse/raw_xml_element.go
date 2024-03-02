@@ -4,8 +4,6 @@ import (
 	"context"
 
 	"github.com/inoxlang/inox/internal/hyperscript/hscode"
-	"github.com/inoxlang/inox/internal/inoxconsts"
-	"github.com/inoxlang/inox/internal/mimeconsts"
 )
 
 var (
@@ -31,43 +29,21 @@ func (p *parser) parseContentOfRawXMLElement(element *XMLElement) {
 
 	switch ident.Name {
 	case "script":
-		for _, attr := range element.Opening.Attributes {
-			attr, ok := attr.(*XMLAttribute)
-			if !ok {
-				continue
-			}
-			ident, ok = attr.Name.(*IdentifierLiteral)
-			if !ok {
-				continue
-			}
 
-			isHyperscript := false
-
-			//<script h> element
-			if ident.Name == inoxconsts.HYPERSCRIPT_SCRIPT_MARKER {
-				isHyperscript = true
+		if element.EstimatedRawElementType == HyperscriptScript && p.parseHyperscript != nil {
+			result, parsingErr, err := p.parseHyperscript(p.context, element.RawElementContent)
+			if err != nil && element.Err == nil {
+				//Only critical errors oare reported in element.Err.
+				element.Err = &ParsingError{UnspecifiedParsingError, err.Error()}
 			}
-
-			//<script type="text/hyperscript">
-			if ident.Name == "type" {
-				strLit, ok := attr.Value.(*QuotedStringLiteral)
-				isHyperscript = ok && strLit.Value == mimeconsts.HYPERSCRIPT_CTYPE
+			if parsingErr != nil {
+				element.RawElementParsingResult = parsingErr
 			}
-
-			if isHyperscript && p.parseHyperscript != nil {
-				result, parsingErr, err := p.parseHyperscript(p.context, element.RawElementContent)
-				if err != nil && element.Err == nil {
-					//Only critical errors oare reported in element.Err.
-					element.Err = &ParsingError{UnspecifiedParsingError, err.Error()}
-				}
-				if parsingErr != nil {
-					element.RawElementParsingResult = parsingErr
-				}
-				if result != nil {
-					element.RawElementParsingResult = result
-				}
+			if result != nil {
+				element.RawElementParsingResult = result
 			}
 		}
+
 	case "style":
 	}
 }

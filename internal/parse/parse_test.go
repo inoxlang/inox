@@ -28806,9 +28806,10 @@ func testParse(
 									Name:     "script",
 								},
 							},
-							RawElementContent:      "{1}2",
-							RawElementContentStart: 9,
-							RawElementContentEnd:   13,
+							RawElementContent:       "{1}2",
+							RawElementContentStart:  9,
+							RawElementContentEnd:    13,
+							EstimatedRawElementType: JsScript,
 							Closing: &XMLClosingElement{
 								NodeBase: NodeBase{
 									NodeSpan{13, 22},
@@ -28854,9 +28855,10 @@ func testParse(
 									Name:     "script",
 								},
 							},
-							RawElementContent:      "<a>",
-							RawElementContentStart: 9,
-							RawElementContentEnd:   12,
+							RawElementContent:       "<a>",
+							RawElementContentStart:  9,
+							RawElementContentEnd:    12,
+							EstimatedRawElementType: JsScript,
 							Closing: &XMLClosingElement{
 								NodeBase: NodeBase{
 									NodeSpan{12, 21},
@@ -28865,6 +28867,103 @@ func testParse(
 								},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{14, 20}, nil, false},
+									Name:     "script",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("hyperscript script: h marker", func(t *testing.T) {
+			n := mustparseChunk(t, "h<script h><a></script>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "h",
+						},
+						Element: &XMLElement{
+							NodeBase: NodeBase{NodeSpan{1, 23}, nil, false},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 11}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 8}, nil, false},
+									Name:     "script",
+								},
+								Attributes: []Node{
+									&XMLAttribute{
+										NodeBase: NodeBase{NodeSpan{9, 10}, nil, false},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{9, 10}, nil, false},
+											Name:     "h",
+										},
+									},
+								},
+							},
+							RawElementContent:       "<a>",
+							RawElementContentStart:  11,
+							RawElementContentEnd:    14,
+							EstimatedRawElementType: HyperscriptScript,
+							Closing: &XMLClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{14, 23}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{16, 22}, nil, false},
+									Name:     "script",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("hyperscript script: type=text/hyperscript", func(t *testing.T) {
+			n := mustparseChunk(t, "h<script type=\"text/hyperscript\"><a></script>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 45}, nil, false},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 45}, nil, false},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "h",
+						},
+						Element: &XMLElement{
+							NodeBase: NodeBase{NodeSpan{1, 45}, nil, false},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 33}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 8}, nil, false},
+									Name:     "script",
+								},
+								Attributes: []Node{
+									&XMLAttribute{
+										NodeBase: NodeBase{NodeSpan{9, 32}, nil, false},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{9, 13}, nil, false},
+											Name:     "type",
+										},
+										Value: &QuotedStringLiteral{
+											NodeBase: NodeBase{NodeSpan{14, 32}, nil, false},
+											Value:    "text/hyperscript",
+											Raw:      `"text/hyperscript"`,
+										},
+									},
+								},
+							},
+							RawElementContent:       "<a>",
+							RawElementContentStart:  33,
+							RawElementContentEnd:    36,
+							EstimatedRawElementType: HyperscriptScript,
+							Closing: &XMLClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{36, 45}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{38, 44}, nil, false},
 									Name:     "script",
 								},
 							},
@@ -28902,9 +29001,10 @@ func testParse(
 									Name:     "style",
 								},
 							},
-							RawElementContent:      "{1}2",
-							RawElementContentStart: 8,
-							RawElementContentEnd:   12,
+							RawElementContent:       "{1}2",
+							RawElementContentStart:  8,
+							RawElementContentEnd:    12,
+							EstimatedRawElementType: CssStyleElem,
 							Closing: &XMLClosingElement{
 								NodeBase: NodeBase{
 									NodeSpan{12, 20},
@@ -28950,9 +29050,10 @@ func testParse(
 									Name:     "style",
 								},
 							},
-							RawElementContent:      "<a>",
-							RawElementContentStart: 8,
-							RawElementContentEnd:   11,
+							RawElementContent:       "<a>",
+							RawElementContentStart:  8,
+							RawElementContentEnd:    11,
+							EstimatedRawElementType: CssStyleElem,
 							Closing: &XMLClosingElement{
 								NodeBase: NodeBase{
 									NodeSpan{11, 19},

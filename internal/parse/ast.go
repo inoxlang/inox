@@ -268,9 +268,9 @@ func (IndexExpression) Kind() NodeKind {
 
 type SliceExpression struct {
 	NodeBase   `json:"base:slice-expr"`
-	Indexed    Node
-	StartIndex Node //can be nil
-	EndIndex   Node //can be nil
+	Indexed    Node `json:"indexed"`
+	StartIndex Node `json:"startIndex,omitempty"` //can be nil
+	EndIndex   Node `json:"endIndex,omitempty"`   //can be nil
 }
 
 func (SliceExpression) Kind() NodeKind {
@@ -278,9 +278,9 @@ func (SliceExpression) Kind() NodeKind {
 }
 
 type DoubleColonExpression struct {
-	NodeBase `json:"base:double-colon-exor"`
-	Left     Node
-	Element  *IdentifierLiteral
+	NodeBase `json:"base:double-colon-expr"`
+	Left     Node               `json:"left"`
+	Element  *IdentifierLiteral `json:"element"`
 }
 
 func (DoubleColonExpression) Kind() NodeKind {
@@ -289,7 +289,7 @@ func (DoubleColonExpression) Kind() NodeKind {
 
 type KeyListExpression struct {
 	NodeBase `json:"base:key-list-expr"`
-	Keys     []Node //slice of *IdentifierLiteral if ok
+	Keys     []Node `json:"keys"` //slice of *IdentifierLiteral if ok
 }
 
 func (expr KeyListExpression) Names() []*IdentifierLiteral {
@@ -2290,23 +2290,32 @@ func (XMLExpression) Kind() NodeKind {
 }
 
 type XMLElement struct {
-	NodeBase
-	Opening                *XMLOpeningElement
-	Children               []Node
-	Closing                *XMLClosingElement //nil if self-closed
-	RawElementContent      string             //set for script and style tags
-	RawElementContentStart int32
-	RawElementContentEnd   int32
+	NodeBase                `json:"base:xml-elem"`
+	Opening                 *XMLOpeningElement `json:"opening,omitempty"`
+	Children                []Node             `json:"children,omitempty"`
+	Closing                 *XMLClosingElement `json:"closing,omitempty"`           //nil if self-closed
+	RawElementContent       string             `json:"rawElementContent,omitempty"` //set for script and style tags
+	RawElementContentStart  int32              `json:"rawElementContentStart,omitempty"`
+	RawElementContentEnd    int32              `json:"rawElementContentEnd,omitempty"`
+	EstimatedRawElementType RawElementType     `json:"estimatedRawElementType,omitempty"`
 
 	//The following field can be set only if parsing RawElementContent is supported (js, css, hyperscript).
-	RawElementParsingResult any //example: *hscode.ParsingResult|*hscode.ParsingError
+	RawElementParsingResult any `json:"-"` //example: *hscode.ParsingResult|*hscode.ParsingError
 }
 
+type RawElementType string
+
+const (
+	JsScript          RawElementType = "js-script"
+	HyperscriptScript RawElementType = "hyperscript-script"
+	CssStyleElem      RawElementType = "css-style"
+)
+
 type XMLOpeningElement struct {
-	NodeBase
-	Name       Node
-	Attributes []Node //*XMLAttribute | *HyperscriptAttributeShorthand
-	SelfClosed bool
+	NodeBase   `json:"base:xml-opening-elem"`
+	Name       Node   `json:"name"`
+	Attributes []Node `json:"attributes"` //*XMLAttribute | *HyperscriptAttributeShorthand
+	SelfClosed bool   `json:"selfClosed"`
 }
 
 func (attr XMLOpeningElement) GetName() string {
@@ -2314,14 +2323,14 @@ func (attr XMLOpeningElement) GetName() string {
 }
 
 type XMLClosingElement struct {
-	NodeBase
-	Name Node
+	NodeBase `json:"base:xml-closing-elem"`
+	Name     Node `json:"name"`
 }
 
 type XMLAttribute struct {
-	NodeBase
-	Name  Node
-	Value Node
+	NodeBase `json:"base:xml-attr"`
+	Name     Node `json:"name"`
+	Value    Node `json:"value,omitempty"`
 }
 
 func (attr XMLAttribute) GetName() string {
@@ -2329,25 +2338,27 @@ func (attr XMLAttribute) GetName() string {
 }
 
 type HyperscriptAttributeShorthand struct {
-	NodeBase
-	Value          string
-	IsUnterminated bool
+	NodeBase `json:"base:hs-attr-shorthand"`
+
+	Value string `json:"value"`
+
+	IsUnterminated bool `json:"isUnterminated"`
 
 	//The following fields can be set only if hyperscript parsing is supported.
 
-	HyperscriptParsingResult *hscode.ParsingResult
-	HyperscriptParsingError  *hscode.ParsingError
+	HyperscriptParsingResult *hscode.ParsingResult `json:"-"`
+	HyperscriptParsingError  *hscode.ParsingError  `json:"-"`
 }
 
 type XMLText struct {
-	NodeBase
-	Raw   string
-	Value string
+	NodeBase `json:"base:xml-text"`
+	Raw      string `json:"raw"`
+	Value    string `json:"value"`
 }
 
 type XMLInterpolation struct {
-	NodeBase
-	Expr Node
+	NodeBase `json:"base:xml-interpolation"`
+	Expr     Node `json:"expr"`
 }
 
 type ExtendStatement struct {

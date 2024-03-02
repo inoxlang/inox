@@ -15,6 +15,7 @@ import (
 	"unicode"
 
 	"github.com/inoxlang/inox/internal/inoxconsts"
+	"github.com/inoxlang/inox/internal/mimeconsts"
 	"github.com/inoxlang/inox/internal/utils"
 	"golang.org/x/exp/slices"
 )
@@ -7691,6 +7692,7 @@ func (p *parser) parseXMLElement(start int32) (_ *XMLElement, noOrExpectedClosin
 	}
 
 	unterminatedHyperscriptAttribute := false //used to avoid reporting too many errors.
+	isHyperscriptScript := false
 
 	//Attributes
 	for p.i < p.len && p.s[p.i] != '>' && p.s[p.i] != '/' && /*start of other element*/ p.s[p.i] != '<' {
@@ -7718,8 +7720,14 @@ func (p *parser) parseXMLElement(start int32) (_ *XMLElement, noOrExpectedClosin
 			break
 		}
 
-		switch name.(type) {
+		attrName := ""
+		switch name := name.(type) {
 		case *IdentifierLiteral:
+			if name.Name == inoxconsts.HYPERSCRIPT_SCRIPT_MARKER {
+				isHyperscriptScript = true
+				break
+			}
+			attrName = name.Name
 		default:
 			if name.Base().Err == nil {
 				name.BasePtr().Err = &ParsingError{UnspecifiedParsingError, XML_ATTRIBUTE_NAME_SHOULD_BE_IDENT}
@@ -7727,6 +7735,8 @@ func (p *parser) parseXMLElement(start int32) (_ *XMLElement, noOrExpectedClosin
 		}
 
 		if p.i < p.len && p.s[p.i] == '=' {
+			//Parse value.
+
 			p.tokens = append(p.tokens, Token{Type: EQUAL, SubType: XML_ATTR_EQUAL, Span: NodeSpan{p.i, p.i + 1}})
 			p.i++
 
@@ -7743,6 +7753,12 @@ func (p *parser) parseXMLElement(start int32) (_ *XMLElement, noOrExpectedClosin
 			if isMissingExpr {
 				break
 			}
+
+			if attrName == "type" {
+				strLit, ok := value.(*QuotedStringLiteral)
+				isHyperscriptScript = ok && strLit.Value == mimeconsts.HYPERSCRIPT_CTYPE
+				break
+			}
 		} else {
 
 			openingElement.Attributes = append(openingElement.Attributes, &XMLAttribute{
@@ -7757,6 +7773,21 @@ func (p *parser) parseXMLElement(start int32) (_ *XMLElement, noOrExpectedClosin
 		p.eatSpaceNewlineComment()
 	}
 
+	//Determine the element type.
+
+	var estimatedRawElementType RawElementType
+
+	switch {
+	case isHyperscriptScript:
+		estimatedRawElementType = HyperscriptScript
+	case tagName == SCRIPT_TAG_NAME:
+		estimatedRawElementType = JsScript
+	case tagName == STYLE_TAG_NAME:
+		estimatedRawElementType = CssStyleElem
+	}
+
+	//Handle unterminated opening tags.
+
 	if p.i >= p.len || (p.s[p.i] != '>' && p.s[p.i] != '/') {
 		if !unterminatedHyperscriptAttribute { //Avoid reporting two errors.
 			openingElement.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_OPENING_XML_TAG_MISSING_CLOSING}
@@ -7768,7 +7799,8 @@ func (p *parser) parseXMLElement(start int32) (_ *XMLElement, noOrExpectedClosin
 				parsingErr,
 				false,
 			},
-			Opening: openingElement,
+			Opening:                 openingElement,
+			EstimatedRawElementType: estimatedRawElementType,
 		}, noOrExpectedClosingTag
 	}
 
@@ -7790,7 +7822,8 @@ func (p *parser) parseXMLElement(start int32) (_ *XMLElement, noOrExpectedClosin
 					parsingErr,
 					false,
 				},
-				Opening: openingElement,
+				Opening:                 openingElement,
+				EstimatedRawElementType: estimatedRawElementType,
 			}, noOrExpectedClosingTag
 		}
 
@@ -7805,9 +7838,10 @@ func (p *parser) parseXMLElement(start int32) (_ *XMLElement, noOrExpectedClosin
 				parsingErr,
 				false,
 			},
-			Opening:  openingElement,
-			Closing:  nil,
-			Children: nil,
+			Opening:                 openingElement,
+			Closing:                 nil,
+			Children:                nil,
+			EstimatedRawElementType: estimatedRawElementType,
 		}, noOrExpectedClosingTag
 	}
 
@@ -7854,11 +7888,12 @@ func (p *parser) parseXMLElement(start int32) (_ *XMLElement, noOrExpectedClosin
 				err,
 				false,
 			},
-			Opening:                openingElement,
-			Children:               children,
-			RawElementContent:      rawElementText,
-			RawElementContentStart: rawStart,
-			RawElementContentEnd:   rawEnd,
+			Opening:                 openingElement,
+			Children:                children,
+			RawElementContent:       rawElementText,
+			RawElementContentStart:  rawStart,
+			RawElementContentEnd:    rawEnd,
+			EstimatedRawElementType: estimatedRawElementType,
 		}, noOrExpectedClosingTag
 	}
 
@@ -7901,6 +7936,7 @@ func (p *parser) parseXMLElement(start int32) (_ *XMLElement, noOrExpectedClosin
 			RawElementContent:       rawElementText,
 			RawElementContentStart:  rawStart,
 			RawElementParsingResult: rawEnd,
+			EstimatedRawElementType: estimatedRawElementType,
 		}, noOrExpectedClosingTag
 	}
 
@@ -7914,12 +7950,13 @@ func (p *parser) parseXMLElement(start int32) (_ *XMLElement, noOrExpectedClosin
 			parsingErr,
 			false,
 		},
-		Opening:                openingElement,
-		Closing:                closingElement,
-		Children:               children,
-		RawElementContent:      rawElementText,
-		RawElementContentStart: rawStart,
-		RawElementContentEnd:   rawEnd,
+		Opening:                 openingElement,
+		Closing:                 closingElement,
+		Children:                children,
+		RawElementContent:       rawElementText,
+		RawElementContentStart:  rawStart,
+		RawElementContentEnd:    rawEnd,
+		EstimatedRawElementType: estimatedRawElementType,
 	}
 
 	if rawElementText != "" {
