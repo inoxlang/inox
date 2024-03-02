@@ -191,7 +191,7 @@ func (s *WebsocketServer) UpgradeGoValues(
 		func() {
 			if wsConn.readerLock.TryLock() {
 				defer wsConn.readerLock.Unlock()
-				conn.SetReadDeadline(time.Now().Add(DEFAULT_WAIT_FOR_NEXT_MESSAGE_TIMEOUT))
+				wsConn.setReadDeadlineNextMessageNoLock()
 			}
 		}()
 

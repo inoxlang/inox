@@ -60,9 +60,7 @@ func (conn *WebsocketConnection) SetPingHandler(ctx *core.Context, handler func(
 func (conn *WebsocketConnection) readJSON(ctx *core.Context) (core.Value, error) {
 	conn.readerLock.Lock()
 	defer conn.readerLock.Unlock()
-	defer func() {
-		conn.conn.SetReadDeadline(time.Now().Add(DEFAULT_WAIT_FOR_NEXT_MESSAGE_TIMEOUT))
-	}()
+	defer conn.setReadDeadlineNextMessageNoLock()
 
 	if err := conn.checkReadAndConfig(ctx); err != nil {
 		return nil, err
@@ -84,10 +82,7 @@ func (conn *WebsocketConnection) readJSON(ctx *core.Context) (core.Value, error)
 func (conn *WebsocketConnection) ReadMessage(ctx *core.Context) (messageType WebsocketMessageType, p []byte, err error) {
 	conn.readerLock.Lock()
 	defer conn.readerLock.Unlock()
-
-	defer func() {
-		conn.conn.SetReadDeadline(time.Now().Add(DEFAULT_WAIT_FOR_NEXT_MESSAGE_TIMEOUT))
-	}()
+	defer conn.setReadDeadlineNextMessageNoLock()
 
 	if err := conn.checkReadAndConfig(ctx); err != nil {
 		return 0, nil, err
@@ -163,9 +158,7 @@ func (conn *WebsocketConnection) StartReadingAllMessagesIntoChan(ctx *core.Conte
 func (conn *WebsocketConnection) sendJSON(ctx *core.Context, msg core.Value) error {
 	conn.writerLock.Lock()
 	defer conn.writerLock.Unlock()
-	defer func() {
-		conn.conn.SetReadDeadline(time.Now().Add(DEFAULT_WAIT_FOR_NEXT_MESSAGE_TIMEOUT))
-	}()
+	defer conn.setReadDeadlineNextMessageNoLock()
 	defer conn.conn.SetWriteDeadline(time.Time{}) //Remove write deadline.
 
 	if err := conn.checkWriteAndConfig(ctx); err != nil {
@@ -178,7 +171,7 @@ func (conn *WebsocketConnection) sendJSON(ctx *core.Context, msg core.Value) err
 	//Try to update the read deadline. It is okay if we don't get the lock: this means another writer or reader will update the deadline.
 	if conn.readerLock.TryLock() {
 		defer conn.readerLock.Unlock()
-		conn.conn.SetReadDeadline(time.Now().Add(DEFAULT_WAIT_FOR_NEXT_MESSAGE_TIMEOUT))
+		conn.setReadDeadlineNextMessageNoLock()
 	}
 
 	return err
@@ -199,7 +192,7 @@ func (conn *WebsocketConnection) WriteMessage(ctx *core.Context, messageType Web
 	//Try to update the read deadline. It is okay if we don't get the lock: this means another writer or reader will update the deadline.
 	if conn.readerLock.TryLock() {
 		defer conn.readerLock.Unlock()
-		conn.conn.SetReadDeadline(time.Now().Add(DEFAULT_WAIT_FOR_NEXT_MESSAGE_TIMEOUT))
+		conn.setReadDeadlineNextMessageNoLock()
 	}
 
 	return err
