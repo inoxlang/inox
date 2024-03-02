@@ -155,6 +155,14 @@ func FindCompletions(args SearchArgs) []Completion {
 			completions = findDictionaryInteriorCompletions(n, search)
 		case *parse.XMLOpeningElement:
 			completions = findXMLOpeningElementInteriorCompletions(n, search)
+		case *parse.XMLClosingElement:
+			if cursorIndex == n.Span.Start && utils.Implements[*parse.XMLElement](parent) {
+				completions = findHyperscriptScriptCompletions(parent.(*parse.XMLElement), search)
+			}
+		case *parse.XMLElement:
+			completions = findHyperscriptScriptCompletions(n, search)
+		case *parse.HyperscriptAttributeShorthand:
+			completions = findHyperscriptAttributeCompletions(n, search)
 		}
 	}
 

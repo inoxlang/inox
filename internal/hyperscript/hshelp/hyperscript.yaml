@@ -1,6 +1,5 @@
-token-values:
+keywords:
   # features
-  toggle: https://hyperscript.org/commands/toggle
   behavior: https://hyperscript.org/features/behavior
   def: https://hyperscript.org/features/def
   eventsource: https://hyperscript.org/features/eventsource
@@ -12,6 +11,7 @@ token-values:
   worker: https://hyperscript.org/features/worker
 
   # commands
+  toggle: https://hyperscript.org/commands/toggle
   add: https://hyperscript.org/commands/add
   append: https://hyperscript.org/commands/append
   async: https://hyperscript.org/commands/async or https://hyperscript.org/expressions/as
