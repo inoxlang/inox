@@ -27100,6 +27100,155 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("unterminated opening tag of child element", func(t *testing.T) {
+			n, err := parseChunk(t, "h<div><span</div>", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "h",
+						},
+						Element: &XMLElement{
+							NodeBase: NodeBase{NodeSpan{1, 17}, nil, false},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:     "div",
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{
+										Span: NodeSpan{6, 6},
+									},
+								},
+								&XMLElement{
+									NodeBase: NodeBase{NodeSpan{6, 11}, nil, false},
+									Opening: &XMLOpeningElement{
+										NodeBase: NodeBase{
+											NodeSpan{6, 11},
+											&ParsingError{UnspecifiedParsingError, UNTERMINATED_OPENING_XML_TAG_MISSING_CLOSING},
+											false,
+										},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{7, 11}, nil, false},
+											Name:     "span",
+										},
+									},
+								},
+								&XMLText{
+									NodeBase: NodeBase{
+										Span: NodeSpan{11, 11},
+									},
+								},
+							},
+							Closing: &XMLClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{11, 17}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{13, 16}, nil, false},
+									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("unterminated opening tag of nested child element", func(t *testing.T) {
+			n, err := parseChunk(t, "h<div><div><span</div></div>", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 28}, nil, false},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 28}, nil, false},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "h",
+						},
+						Element: &XMLElement{
+							NodeBase: NodeBase{NodeSpan{1, 28}, nil, false},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:     "div",
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{
+										Span: NodeSpan{6, 6},
+									},
+								},
+								&XMLElement{
+									NodeBase: NodeBase{NodeSpan{6, 22}, nil, false},
+									Opening: &XMLOpeningElement{
+										NodeBase: NodeBase{Span: NodeSpan{6, 11}},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{7, 10}, nil, false},
+											Name:     "div",
+										},
+									},
+									Children: []Node{
+										&XMLText{
+											NodeBase: NodeBase{
+												Span: NodeSpan{11, 11},
+											},
+										},
+										&XMLElement{
+											NodeBase: NodeBase{NodeSpan{11, 16}, nil, false},
+											Opening: &XMLOpeningElement{
+												NodeBase: NodeBase{
+													NodeSpan{11, 16},
+													&ParsingError{UnspecifiedParsingError, UNTERMINATED_OPENING_XML_TAG_MISSING_CLOSING},
+													false,
+												},
+												Name: &IdentifierLiteral{
+													NodeBase: NodeBase{NodeSpan{12, 16}, nil, false},
+													Name:     "span",
+												},
+											},
+										},
+										&XMLText{
+											NodeBase: NodeBase{
+												Span: NodeSpan{16, 16},
+											},
+										},
+									},
+									Closing: &XMLClosingElement{
+										NodeBase: NodeBase{Span: NodeSpan{16, 22}},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{18, 21}, nil, false},
+											Name:     "div",
+										},
+									},
+								},
+								&XMLText{
+									NodeBase: NodeBase{
+										Span: NodeSpan{22, 22},
+									},
+								},
+							},
+							Closing: &XMLClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{22, 28}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{24, 27}, nil, false},
+									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("closing bracket of opening tag is on the next line", func(t *testing.T) {
 			n := mustparseChunk(t, "h<div\n></div>")
 			assert.EqualValues(t, &Chunk{

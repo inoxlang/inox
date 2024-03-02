@@ -7637,7 +7637,7 @@ func (p *parser) parseXMLExpression(namespaceIdent *IdentifierLiteral) *XMLExpre
 		}
 	}
 
-	topElem := p.parseXMLElement(p.i)
+	topElem, _ := p.parseXMLElement(p.i)
 	return &XMLExpression{
 		NodeBase:  NodeBase{Span: NodeSpan{start, p.i}},
 		Namespace: namespaceIdent,
@@ -7645,12 +7645,16 @@ func (p *parser) parseXMLExpression(namespaceIdent *IdentifierLiteral) *XMLExpre
 	}
 }
 
-func (p *parser) parseXMLElement(start int32) *XMLElement {
+func (p *parser) parseXMLElement(start int32) (_ *XMLElement, noOrExpectedClosingTag bool) {
 	p.panicIfContextDone()
+
+	noOrExpectedClosingTag = true
 
 	var parsingErr *ParsingError
 	p.tokens = append(p.tokens, Token{Type: LESS_THAN, Span: NodeSpan{start, start + 1}})
 	p.i++
+
+	//Parse opening tag.
 
 	var openingIdent *IdentifierLiteral
 	{
@@ -7694,8 +7698,8 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 
 	unterminatedHyperscriptAttribute := false //used to avoid reporting too many errors.
 
-	//attributes
-	for p.i < p.len && p.s[p.i] != '>' && p.s[p.i] != '/' {
+	//Attributes
+	for p.i < p.len && p.s[p.i] != '>' && p.s[p.i] != '/' && /*start of other element*/ p.s[p.i] != '<' {
 		if p.s[p.i] == '{' { //underscore attribute shortand
 			attr, terminated := p.parseHyperscriptAttribute(p.i)
 			if !terminated {
@@ -7771,8 +7775,10 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 				false,
 			},
 			Opening: openingElement,
-		}
+		}, noOrExpectedClosingTag
 	}
+
+	//Children of regular element, or end of self-closing tag.
 
 	selfClosing := p.s[p.i] == '/'
 
@@ -7791,7 +7797,7 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 					false,
 				},
 				Opening: openingElement,
-			}
+			}, noOrExpectedClosingTag
 		}
 
 		p.tokens = append(p.tokens, Token{Type: SELF_CLOSING_TAG_TERMINATOR, Span: NodeSpan{p.i, p.i + 2}})
@@ -7808,16 +7814,17 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 			Opening:  openingElement,
 			Closing:  nil,
 			Children: nil,
-		}
+		}, noOrExpectedClosingTag
 	}
 
 	p.tokens = append(p.tokens, Token{Type: GREATER_THAN, Span: NodeSpan{p.i, p.i + 1}})
 	p.i++
 	openingElement.Span.End = p.i
 
-	//children
+	//Children
 
 	var children []Node
+	allChildrenHaveMatchingClosingTag := true
 
 	var rawElementText string
 	rawStart := int32(0)
@@ -7836,15 +7843,21 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 		rawElementText = string(p.s[rawStart:rawEnd])
 	} else {
 		var err *ParsingError
-		children, err = p.parseXMLChildren(singleBracketInterpolations)
+		children, err, allChildrenHaveMatchingClosingTag = p.parseXMLChildren(singleBracketInterpolations)
 		parsingErr = err
 	}
 
 	if p.i >= p.len || p.s[p.i] != '<' {
+
+		var err *ParsingError
+		if allChildrenHaveMatchingClosingTag {
+			err = &ParsingError{UnspecifiedParsingError, fmtExpectedClosingTag(openingIdent.Name)}
+		}
+
 		return &XMLElement{
 			NodeBase: NodeBase{
 				NodeSpan{start, p.i},
-				&ParsingError{UnspecifiedParsingError, UNTERMINATED_XML_ELEMENT_MISSING_CLOSING_TAG},
+				err,
 				false,
 			},
 			Opening:                openingElement,
@@ -7852,10 +7865,11 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 			RawElementContent:      rawElementText,
 			RawElementContentStart: rawStart,
 			RawElementContentEnd:   rawEnd,
-		}
+		}, noOrExpectedClosingTag
 	}
 
-	//closing element
+	//Closing element.
+
 	closingElemStart := p.i
 	p.tokens = append(p.tokens, Token{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{p.i, p.i + 2}})
 	p.i += 2
@@ -7873,6 +7887,7 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 		closingElement.Err = &ParsingError{UnspecifiedParsingError, INVALID_TAG_NAME}
 	} else if openingIdent != nil && closing.Name != openingIdent.Name {
 		closingElement.Err = &ParsingError{UnspecifiedParsingError, fmtExpectedClosingTag(openingIdent.Name)}
+		noOrExpectedClosingTag = false
 	}
 
 	if p.i >= p.len || p.s[p.i] != '>' {
@@ -7892,7 +7907,7 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 			RawElementContent:       rawElementText,
 			RawElementContentStart:  rawStart,
 			RawElementParsingResult: rawEnd,
-		}
+		}, noOrExpectedClosingTag
 	}
 
 	p.tokens = append(p.tokens, Token{Type: GREATER_THAN, Span: NodeSpan{p.i, p.i + 1}})
@@ -7917,7 +7932,7 @@ func (p *parser) parseXMLElement(start int32) *XMLElement {
 		p.parseContentOfRawXMLElement(result)
 	}
 
-	return result
+	return result, noOrExpectedClosingTag
 }
 
 func (p *parser) parseHyperscriptAttribute(start int32) (attr *HyperscriptAttributeShorthand, terminated bool) {
@@ -8010,9 +8025,10 @@ func (p *parser) parseHyperscriptAttribute(start int32) (attr *HyperscriptAttrib
 	return
 }
 
-func (p *parser) parseXMLChildren(singleBracketInterpolations bool) ([]Node, *ParsingError) {
+func (p *parser) parseXMLChildren(singleBracketInterpolations bool) (_ []Node, _ *ParsingError, allChildrenHaveMatchingClosingTag bool) {
 	p.panicIfContextDone()
 
+	allChildrenHaveMatchingClosingTag = true
 	inInterpolation := false
 	interpolationStart := int32(-1)
 	children := make([]Node, 0)
@@ -8022,6 +8038,7 @@ func (p *parser) parseXMLChildren(singleBracketInterpolations bool) ([]Node, *Pa
 
 	var parsingErr *ParsingError
 
+children_parsing_loop:
 	for p.i < p.len && (inInterpolation || (p.s[p.i] != '<' || (p.i < p.len-1 && p.s[p.i+1] != '/'))) {
 
 		//interpolation
@@ -8141,9 +8158,14 @@ func (p *parser) parseXMLChildren(singleBracketInterpolations bool) ([]Node, *Pa
 				Value: value,
 			})
 
-			child := p.parseXMLElement(p.i)
+			child, noOrExpectedClosingTag := p.parseXMLElement(p.i)
 			children = append(children, child)
 			childStart = p.i
+
+			if !noOrExpectedClosingTag {
+				allChildrenHaveMatchingClosingTag = false
+				break children_parsing_loop
+			}
 		default:
 			p.i++
 		}
@@ -8177,7 +8199,7 @@ func (p *parser) parseXMLChildren(singleBracketInterpolations bool) ([]Node, *Pa
 		})
 	}
 
-	return children, parsingErr
+	return children, parsingErr, allChildrenHaveMatchingClosingTag
 }
 
 // tryParseCall tries to parse a call or return nil (calls with parsing errors are returned)

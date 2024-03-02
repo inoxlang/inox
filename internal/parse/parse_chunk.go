@@ -86,12 +86,12 @@ func ParseChunk2(str string, fpath string, opts ...ParserOptions) (runes []rune,
 					tokenStartPosition := codeStart + int32(token.Start)
 					tokenEndPosition := codeStart + int32(token.End)
 
-					line, endLine, startCol, endCol := getLineColumns(p.s, tokenStartPosition, tokenEndPosition)
+					startLine, endLine, startCol, endCol := getLineColumns(p.s, tokenStartPosition, tokenEndPosition)
 
 					aggregation.Errors = append(aggregation.Errors, &ParsingError{UnspecifiedParsingError, hsParsingError.MessageAtToken})
 					aggregation.ErrorPositions = append(aggregation.ErrorPositions, SourcePositionRange{
 						SourceName:  fpath,
-						StartLine:   line,
+						StartLine:   startLine,
 						StartColumn: startCol,
 						EndLine:     endLine,
 						EndColumn:   endCol,
@@ -113,12 +113,12 @@ func ParseChunk2(str string, fpath string, opts ...ParserOptions) (runes []rune,
 					tokenStartPosition := codeStart + int32(token.Start)
 					tokenEndPosition := codeStart + int32(token.End)
 
-					line, endLine, startCol, endCol := getLineColumns(p.s, tokenStartPosition, tokenEndPosition)
+					startLine, endLine, startCol, endCol := getLineColumns(p.s, tokenStartPosition, tokenEndPosition)
 
 					aggregation.Errors = append(aggregation.Errors, &ParsingError{UnspecifiedParsingError, hsParsingError.MessageAtToken})
 					aggregation.ErrorPositions = append(aggregation.ErrorPositions, SourcePositionRange{
 						SourceName:  fpath,
-						StartLine:   line,
+						StartLine:   startLine,
 						StartColumn: startCol,
 						EndLine:     endLine,
 						EndColumn:   endCol,
@@ -140,19 +140,19 @@ func ParseChunk2(str string, fpath string, opts ...ParserOptions) (runes []rune,
 					resultErr = aggregation
 				}
 
-				line, col, endLine, endCol := getLineColumns(p.s, nodeBase.Span.Start, nodeBase.Span.End)
+				startLine, endLine, startCol, endCol := getLineColumns(p.s, nodeBase.Span.Start, nodeBase.Span.End)
 
 				aggregation.Errors = append(aggregation.Errors, parsingErr)
 				aggregation.ErrorPositions = append(aggregation.ErrorPositions, SourcePositionRange{
 					SourceName:  fpath,
-					StartLine:   line,
-					StartColumn: col,
+					StartLine:   startLine,
+					StartColumn: startCol,
 					EndLine:     endLine,
 					EndColumn:   endCol,
 					Span:        nodeBase.Span,
 				})
 
-				aggregation.Message = fmt.Sprintf("%s\n%s:%d:%d: %s", aggregation.Message, fpath, line, col, parsingErr.Message)
+				aggregation.Message = fmt.Sprintf("%s\n%s:%d:%d: %s", aggregation.Message, fpath, startLine, startCol, parsingErr.Message)
 				return ContinueTraversal, nil
 			}, nil)
 		}
