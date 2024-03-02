@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -498,10 +499,12 @@ func (s *Session) handlerError(err error) (continueLoop bool) {
 		continueLoop = false
 	}
 
+	t := time.Now().Format(time.TimeOnly)
+
 	if s.msgConn != nil {
-		logs.Printf("error: for client <%s>: %s\n", s.msgConn.Client(), err)
+		logs.Printf("error: for client <%s> at %s: %s\n", s.msgConn.Client(), t, err)
 	} else {
-		logs.Println("error: ", err)
+		logs.Println("error: ", err, "at", t)
 	}
 
 	return
