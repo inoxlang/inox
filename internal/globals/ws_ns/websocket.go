@@ -37,12 +37,13 @@ type WebsocketConnection struct {
 	remoteAddrWithPort netaddr.RemoteAddrWithPort
 	endpoint           core.URL //HTTP endpoint
 
-	messageReadAndWriteTimeout   time.Duration //Timeout for reading (or writing) a message.
+	writeTimeout                 time.Duration //Timeout for reading (or writing) a message.
 	closingOrClosed              atomic.Bool
 	tokenGivenBack               atomic.Bool
 	isReadingAllMessagesIntoChan atomic.Bool
-	writerLock                   sync.Mutex //https://pkg.go.dev/github.com/gorilla/websocket#hdr-Concurrency
-	readerLock                   sync.Mutex //same explanation as for writerLock
+	writerLock                   sync.Mutex  //https://pkg.go.dev/github.com/gorilla/websocket#hdr-Concurrency
+	readerLock                   sync.Mutex  //same explanation as for writerLock
+	reading                      atomic.Bool //true during ReadMessage() and readJSON() calls.
 
 	server *WebsocketServer //nil on client side
 
@@ -60,7 +61,9 @@ func (conn *WebsocketConnection) SetPingHandler(ctx *core.Context, handler func(
 func (conn *WebsocketConnection) readJSON(ctx *core.Context) (core.Value, error) {
 	conn.readerLock.Lock()
 	defer conn.readerLock.Unlock()
-	defer conn.setReadDeadlineNextMessageNoLock()
+
+	conn.reading.Store(true)
+	defer conn.reading.Store(false)
 
 	if err := conn.checkReadAndConfig(ctx); err != nil {
 		return nil, err
@@ -75,6 +78,8 @@ func (conn *WebsocketConnection) readJSON(ctx *core.Context) (core.Value, error)
 		return nil, err
 	}
 
+	conn.setReadDeadlineNextMessageNoLock()
+
 	//TODO: use ParseJSONRepresentation (add tests before change)
 	return core.ConvertJSONValToInoxVal(v, false), nil
 }
@@ -82,14 +87,21 @@ func (conn *WebsocketConnection) readJSON(ctx *core.Context) (core.Value, error)
 func (conn *WebsocketConnection) ReadMessage(ctx *core.Context) (messageType WebsocketMessageType, p []byte, err error) {
 	conn.readerLock.Lock()
 	defer conn.readerLock.Unlock()
-	defer conn.setReadDeadlineNextMessageNoLock()
+
+	conn.reading.Store(true)
+	defer conn.reading.Store(false)
 
 	if err := conn.checkReadAndConfig(ctx); err != nil {
 		return 0, nil, err
 	}
 
+	//Note: ping messages are handled by the 'ping handler'. ReadMessage() never returns a ping.
 	msgType, p, err := conn.conn.ReadMessage()
 	conn.closeIfNecessary(err)
+
+	if err == nil {
+		conn.setReadDeadlineNextMessageNoLock()
+	}
 
 	return WebsocketMessageType(msgType), p, err
 }
@@ -158,12 +170,14 @@ func (conn *WebsocketConnection) StartReadingAllMessagesIntoChan(ctx *core.Conte
 func (conn *WebsocketConnection) sendJSON(ctx *core.Context, msg core.Value) error {
 	conn.writerLock.Lock()
 	defer conn.writerLock.Unlock()
-	defer conn.setReadDeadlineNextMessageNoLock()
 	defer conn.conn.SetWriteDeadline(time.Time{}) //Remove write deadline.
 
 	if err := conn.checkWriteAndConfig(ctx); err != nil {
 		return err
 	}
+
+	//Update the write deadline in order to close the connection if the current write takes too long.
+	conn.conn.SetWriteDeadline(time.Now().Add(conn.writeTimeout))
 
 	err := conn.conn.WriteJSON(core.ToJSONVal(ctx, msg.(core.Serializable)))
 	conn.closeIfNecessary(err)
@@ -185,6 +199,9 @@ func (conn *WebsocketConnection) WriteMessage(ctx *core.Context, messageType Web
 	if err := conn.checkWriteAndConfig(ctx); err != nil {
 		return err
 	}
+
+	//Update the write deadline in order to close the connection if the current write takes too long.
+	conn.conn.SetWriteDeadline(time.Now().Add(conn.writeTimeout))
 
 	err := conn.conn.WriteMessage(int(messageType), data)
 	conn.closeIfNecessary(err)
@@ -215,9 +232,6 @@ func (conn *WebsocketConnection) checkReadAndConfig(ctx *core.Context) error {
 		}
 	}
 
-	//TODO: find out why the deadline cannot be overriden here after a call to WriteMessage invoked SetReadDeadline.
-	//setting a custom timeout here has no effect, why ?
-	conn.conn.SetReadDeadline(time.Now().Add(conn.messageReadAndWriteTimeout))
 	return nil
 }
 
@@ -238,7 +252,6 @@ func (conn *WebsocketConnection) checkWriteAndConfig(ctx *core.Context) error {
 		}
 	}
 
-	conn.conn.SetWriteDeadline(time.Now().Add(conn.messageReadAndWriteTimeout))
 	return nil
 }
 

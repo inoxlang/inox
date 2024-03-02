@@ -39,12 +39,12 @@ func websocketConnect(ctx *core.Context, u core.URL, options ...core.Option) (*W
 }
 
 type WebsocketConnectParams struct {
-	Ctx              *core.Context
-	URL              core.URL
-	Insecure         bool
-	RequestHeader    http.Header
-	MessageTimeout   time.Duration //if 0 defaults to DEFAULT_WS_MESSAGE_TIMEOUT
-	HandshakeTimeout time.Duration //if 0 defaults to DEFAULT_WS_HANDSHAKE_TIMEOUT
+	Ctx                 *core.Context
+	URL                 core.URL
+	Insecure            bool
+	RequestHeader       http.Header
+	WriteMessageTimeout time.Duration //if 0 defaults to DEFAULT_WRITE_MESSAGE_TIMEOUT
+	HandshakeTimeout    time.Duration //if 0 defaults to DEFAULT_HANDSHAKE_TIMEOUT
 }
 
 func WebsocketConnect(args WebsocketConnectParams) (*WebsocketConnection, error) {
@@ -52,7 +52,7 @@ func WebsocketConnect(args WebsocketConnectParams) (*WebsocketConnection, error)
 	u := args.URL
 	insecure := args.Insecure
 	requestHeader := args.RequestHeader
-	messageTimeout := utils.DefaultIfZero(args.MessageTimeout, DEFAULT_MESSAGE_READ_AND_WRITE_TIMEOUT)
+	writeMessageTimeout := utils.DefaultIfZero(args.WriteMessageTimeout, DEFAULT_WRITE_MESSAGE_TIMEOUT)
 	handshakeTimeout := utils.DefaultIfZero(args.HandshakeTimeout, DEFAULT_HANDSHAKE_TIMEOUT)
 
 	//check that a websocket read or write-stream permission is granted
@@ -89,9 +89,9 @@ func WebsocketConnect(args WebsocketConnectParams) (*WebsocketConnection, error)
 	}
 
 	return &WebsocketConnection{
-		conn:                       c,
-		endpoint:                   u,
-		messageReadAndWriteTimeout: messageTimeout,
-		serverContext:              ctx,
+		conn:          c,
+		endpoint:      u,
+		writeTimeout:  writeMessageTimeout,
+		serverContext: ctx,
 	}, nil
 }

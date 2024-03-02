@@ -28,9 +28,9 @@ const (
 	SERVER_SIDE_WEBSOCKET_CLOSE_TIMEOUT = 2 * time.Second
 	WEBSOCKET_SERVER_CLOSE_TIMEOUT      = 3 * time.Second
 
-	DEFAULT_MESSAGE_READ_AND_WRITE_TIMEOUT = 10 * time.Second
-	DEFAULT_WAIT_FOR_NEXT_MESSAGE_TIMEOUT  = 30 * time.Second
-	DEFAULT_HANDSHAKE_TIMEOUT              = 20 * time.Second
+	DEFAULT_WRITE_MESSAGE_TIMEOUT         = 10 * time.Second
+	DEFAULT_WAIT_FOR_NEXT_MESSAGE_TIMEOUT = 20 * time.Second
+	DEFAULT_HANDSHAKE_TIMEOUT             = 5 * time.Second
 )
 
 var (
@@ -54,7 +54,7 @@ type WebsocketServer struct {
 }
 
 func NewWebsocketServer(ctx *core.Context) (*WebsocketServer, error) {
-	return newWebsocketServer(ctx, DEFAULT_MESSAGE_READ_AND_WRITE_TIMEOUT)
+	return newWebsocketServer(ctx, DEFAULT_WRITE_MESSAGE_TIMEOUT)
 }
 
 func newWebsocketServer(ctx *core.Context, messageTimeout time.Duration) (*WebsocketServer, error) {
@@ -167,10 +167,10 @@ func (s *WebsocketServer) UpgradeGoValues(
 	}
 
 	wsConn := &WebsocketConnection{
-		conn:                       conn,
-		endpoint:                   core.URL(r.URL.String()).WithScheme(core.Scheme(scheme)),
-		remoteAddrWithPort:         remoteAddrAndPort,
-		messageReadAndWriteTimeout: s.messageTimeout,
+		conn:               conn,
+		endpoint:           core.URL(r.URL.String()).WithScheme(core.Scheme(scheme)),
+		remoteAddrWithPort: remoteAddrAndPort,
+		writeTimeout:       s.messageTimeout,
 
 		server:        s,
 		serverContext: s.originalContext,
@@ -187,10 +187,10 @@ func (s *WebsocketServer) UpgradeGoValues(
 		}()
 
 		//Update the read deadline to keep the connection alive.
-		// It's okay if we don't get the lock: this means another writer or reader will update the deadline.
 		func() {
-			if wsConn.readerLock.TryLock() {
-				defer wsConn.readerLock.Unlock()
+			//If reading is true we know the ping handler is being called during a ReadMessage() or readJSON() call.
+			//.readerLock is acquired by the goroutine calling the handler.
+			if wsConn.reading.Load() {
 				wsConn.setReadDeadlineNextMessageNoLock()
 			}
 		}()
