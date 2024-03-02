@@ -3310,9 +3310,7 @@ object_literal_top_loop:
 		case p.s[p.i] == '%': // type annotation
 			switch {
 			case noKey: // no key properties cannot be annotated
-				if propParsingErr == nil {
-					propParsingErr = &ParsingError{UnspecifiedParsingError, ONLY_EXPLICIT_KEY_CAN_HAVE_A_TYPE_ANNOT}
-				}
+				propParsingErr = &ParsingError{UnspecifiedParsingError, ONLY_EXPLICIT_KEY_CAN_HAVE_A_TYPE_ANNOT}
 				noKey = true
 				type_ = p.parsePercentPrefixedPattern(false)
 				propSpanEnd = type_.Base().Span.End
@@ -3337,9 +3335,7 @@ object_literal_top_loop:
 				})
 				goto step_end //the pattern is kept for the next iteration step
 			case IsMetadataKey(keyName): //meta properties cannot be annotated
-				if propParsingErr == nil {
-					propParsingErr = &ParsingError{UnspecifiedParsingError, ONLY_EXPLICIT_KEY_CAN_HAVE_A_TYPE_ANNOT}
-				}
+				propParsingErr = &ParsingError{UnspecifiedParsingError, ONLY_EXPLICIT_KEY_CAN_HAVE_A_TYPE_ANNOT}
 				metaProperties = append(metaProperties, &ObjectMetaProperty{
 					NodeBase: NodeBase{
 						Span: NodeSpan{propSpanStart, p.i},
@@ -3387,9 +3383,7 @@ object_literal_top_loop:
 		}
 
 		if noKey { // no key property not followed by a valid entry end
-			if propParsingErr == nil {
-				propParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_OBJ_REC_LIT_ENTRY_SEPARATION}
-			}
+			propParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_OBJ_REC_LIT_ENTRY_SEPARATION}
 			properties = append(properties, &ObjectProperty{
 				NodeBase: NodeBase{
 					Span: NodeSpan{propSpanStart, p.i},
@@ -4012,7 +4006,7 @@ func (p *parser) parsePercentPrefixedPattern(precededByOpeningParen bool) Node {
 			p.i++
 
 			_, err := regexp.Compile(str)
-			if err != nil && parsingErr == nil {
+			if err != nil {
 				parsingErr = &ParsingError{UnspecifiedParsingError, fmtInvalidRegexLiteral(err.Error())}
 			}
 		}
@@ -4445,13 +4439,13 @@ func (p *parser) parseIfExpression(openingParenIndex int32, ifIdent *IdentifierL
 
 	if p.i >= p.len {
 		end = p.i
-		if !isMissingExpr && parsingErr == nil {
+		if !isMissingExpr {
 			parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_IF_EXPR_MISSING_CLOSING_PAREN}
 		}
 	} else if p.s[p.i] == ')' {
 		p.i++
 		end = p.i
-	} else if !isMissingExpr && parsingErr == nil {
+	} else if !isMissingExpr {
 		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_IF_EXPR_MISSING_CLOSING_PAREN}
 	}
 
@@ -7691,7 +7685,7 @@ func (p *parser) parseXMLElement(start int32) (_ *XMLElement, noOrExpectedClosin
 	singleBracketInterpolations := true
 	rawTextElement := false
 
-	if openingIdent != nil && (tagName == SCRIPT_TAG_NAME || tagName == STYLE_TAG_NAME) {
+	if tagName == SCRIPT_TAG_NAME || tagName == STYLE_TAG_NAME {
 		singleBracketInterpolations = false
 		rawTextElement = true
 	}
@@ -7885,7 +7879,7 @@ func (p *parser) parseXMLElement(start int32) (_ *XMLElement, noOrExpectedClosin
 
 	if closing, ok := closingName.(*IdentifierLiteral); !ok {
 		closingElement.Err = &ParsingError{UnspecifiedParsingError, INVALID_TAG_NAME}
-	} else if openingIdent != nil && closing.Name != openingIdent.Name {
+	} else if closing.Name != openingIdent.Name {
 		closingElement.Err = &ParsingError{UnspecifiedParsingError, fmtExpectedClosingTag(openingIdent.Name)}
 		noOrExpectedClosingTag = false
 	}
@@ -8726,10 +8720,10 @@ func (p *parser) parseFunctionPattern(start int32, percentPrefixed bool) Node {
 				firstNodeInParam.BasePtr().Err = &ParsingError{UnspecifiedParsingError, PARAM_LIST_OF_FUNC_PATT_SHOULD_CONTAIN_PARAMETERS_SEP_BY_COMMAS}
 				additionalInvalidNodes = append(additionalInvalidNodes, firstNodeInParam)
 
-				if typ != nil {
-					typ.BasePtr().Err = &ParsingError{UnspecifiedParsingError, PARAM_LIST_OF_FUNC_SHOULD_CONTAIN_PARAMETERS_SEP_BY_COMMAS}
-					additionalInvalidNodes = append(additionalInvalidNodes, typ)
-				}
+				// if typ != nil {
+				// 	typ.BasePtr().Err = &ParsingError{UnspecifiedParsingError, PARAM_LIST_OF_FUNC_SHOULD_CONTAIN_PARAMETERS_SEP_BY_COMMAS}
+				// 	additionalInvalidNodes = append(additionalInvalidNodes, typ)
+				// }
 			}
 
 		}
