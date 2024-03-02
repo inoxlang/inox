@@ -889,10 +889,26 @@ class Tokens {
         if (token) {
             return token;
         } else {
-            return {
+            /** @type {Token} */
+            const EOF = {
                 type: "EOF",
                 value: "<<<EOF>>>",
+                //------------------
+                line: 1,
+                column: 0,
+                start: 1,
+                end: 1,  
             };
+
+            if(this._lastConsumed){
+                const last = this._lastConsumed
+                EOF.line = last.line
+                EOF.column = last.column + (last.end - last.start) + 1
+                EOF.start = last.end
+                EOF.end = last.end + 1
+            }
+
+            return EOF
         }
     }
 
