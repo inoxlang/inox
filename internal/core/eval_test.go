@@ -2983,6 +2983,139 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 	})
 
+	t.Run("for expression", func(t *testing.T) {
+		testconfig.AllowParallelization(t)
+
+		testCases := []struct {
+			input           string
+			result          Value
+			globals         func(ctx *Context) map[string]Value
+			doSymbolicCheck bool
+		}{
+			{
+				input:           `(for i, e in []: i)`,
+				result:          NewWrappedValueList(),
+				doSymbolicCheck: true,
+			},
+			{
+				input: `(for i, e in [5]: [i, e])`,
+				result: NewWrappedValueList(
+					NewWrappedValueList(Int(0), Int(5)),
+				),
+				doSymbolicCheck: true,
+			},
+			{
+				input:           `(for e in [5]: e)`,
+				result:          NewWrappedValueList(Int(5)),
+				doSymbolicCheck: true,
+			},
+			{
+				input: `(for i, e in [5, 6]: [i, e])`,
+				result: NewWrappedValueList(
+					NewWrappedValueList(Int(0), Int(5)),
+					NewWrappedValueList(Int(1), Int(6)),
+				),
+				doSymbolicCheck: true,
+			},
+			{
+				input: `(for i, e in 5..6: [i, e])`,
+				result: NewWrappedValueList(
+					NewWrappedValueList(Int(0), Int(5)),
+					NewWrappedValueList(Int(1), Int(6)),
+				),
+				doSymbolicCheck: true,
+			},
+			{
+				input: `
+					pattern p = %| 1 | 3
+					return (for %p n in [0, 1, 2, 3]: n)
+				`,
+				result:          NewWrappedValueList(Int(1), Int(3)),
+				doSymbolicCheck: true,
+			},
+			{
+				input: `
+					pattern i = 3
+					pattern p = %| 1 | 3
+					return (for %i i, %p n in [0, 1, 2, 3]: [i, n])
+				`,
+				result: NewWrappedValueList(
+					NewWrappedValueList(Int(3), Int(3)),
+				),
+				doSymbolicCheck: true,
+			},
+			{
+				input: `(for e in streamable: e)`,
+				globals: func(ctx *Context) map[string]Value {
+					watcher := NewGenericWatcher(WatcherConfiguration{Filter: ANYVAL_PATTERN})
+					watcher.InformAboutAsync(ctx, String("a"))
+					watcher.InformAboutAsync(ctx, String("b"))
+
+					go func() {
+						time.Sleep(5 * time.Millisecond)
+						watcher.Stop()
+					}()
+					return map[string]Value{
+						"streamable": StreamSource(watcher),
+					}
+				},
+				result: NewWrappedValueList(String("a"), String("b")),
+			},
+			{
+				input: `(for chunked chunk in streamable: chunk.data)`,
+				globals: func(ctx *Context) map[string]Value {
+					watcher := NewGenericWatcher(WatcherConfiguration{Filter: ANYVAL_PATTERN})
+					watcher.InformAboutAsync(ctx, String("a"))
+					watcher.InformAboutAsync(ctx, String("b"))
+
+					go func() {
+						time.Sleep(5 * time.Millisecond)
+						watcher.Stop()
+					}()
+					return map[string]Value{
+						"streamable": StreamSource(watcher),
+					}
+				},
+				result: NewWrappedValueList(
+					NewWrappedValueList(String("a"), String("b")),
+				),
+			},
+			{
+				input: `(for chunked chunk in streamable: chunk.data)`,
+				globals: func(ctx *Context) map[string]Value {
+					return map[string]Value{
+						"streamable": NewElementsStream(
+							[]Value{String("a"), String("b"), String("c"), String("d")},
+							nil,
+						),
+					}
+				},
+				result: NewWrappedValueList(
+					NewWrappedValueList(String("a"), String("b")),
+					NewWrappedValueList(String("c"), String("d")),
+				),
+			},
+			//TODO: add more tests with EOS error
+		}
+
+		for _, testCase := range testCases {
+			t.Run(testCase.input, func(t *testing.T) {
+				state := NewGlobalState(NewDefaultTestContext())
+				defer state.Ctx.CancelGracefully()
+				if testCase.globals != nil {
+					for k, v := range testCase.globals(state.Ctx) {
+						state.Globals.permanent[k] = v
+					}
+				}
+
+				res, err := Eval(testCase.input, state, testCase.doSymbolicCheck)
+				assert.NoError(t, err)
+				assert.EqualValues(t, testCase.result, res)
+			})
+		}
+
+	})
+
 	t.Run("walk statement", func(t *testing.T) {
 		testconfig.AllowParallelization(t)
 

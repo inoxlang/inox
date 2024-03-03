@@ -162,6 +162,7 @@ const (
 	OpPopJumpIfTestDisabled
 	OpPushNil
 	OpCreateList
+	OpCreateListDynLen
 	OpCreateKeyList
 	OpCreateTuple
 	OpCreateObject
@@ -316,6 +317,7 @@ var OpcodeNames = [...]string{
 	OpPopJumpIfTestDisabled:        "PJUMP_IF_TDISABLED",
 	OpPushNil:                      "PUSH_NIL",
 	OpCreateList:                   "CRT_LST",
+	OpCreateListDynLen:             "CRT_LST_DYN_LEN",
 	OpCreateKeyList:                "CRT_KLST",
 	OpCreateTuple:                  "CRT_TUPLE",
 	OpCreateObject:                 "CRT_OBJ",
@@ -471,6 +473,7 @@ var OpcodeOperands = [...][]int{
 	OpGetGlobal:                    {2},
 	OpSetGlobal:                    {2},
 	OpCreateList:                   {2},
+	OpCreateListDynLen:             {},
 	OpCreateKeyList:                {2},
 	OpCreateTuple:                  {2},
 	OpCreateObject:                 {2, 2},
@@ -623,6 +626,7 @@ var OpcodeConstantIndexes = [...][]bool{
 	OpGetGlobal:                    {true},
 	OpSetGlobal:                    {true},
 	OpCreateList:                   {false},
+	OpCreateListDynLen:             {},
 	OpCreateKeyList:                {false},
 	OpCreateTuple:                  {false},
 	OpCreateObject:                 {false, true},

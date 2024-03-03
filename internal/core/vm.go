@@ -1081,9 +1081,30 @@ func (v *VM) run() {
 			}
 			v.sp -= numElements
 
-			var arr Value = &List{underlyingList: &ValueList{elements: elements}}
+			list := NewWrappedValueListFrom(elements)
 
-			v.stack[v.sp] = arr
+			v.stack[v.sp] = list
+			v.sp++
+		case OpCreateListDynLen:
+
+			numElements := int(v.stack[v.sp-1].(Int))
+			v.sp--
+
+			var elements []Serializable
+			if numElements > 0 {
+				elements = make([]Serializable, numElements)
+			}
+
+			ind := 0
+			for i := v.sp - numElements; i < v.sp; i++ {
+				elements[ind] = v.stack[i].(Serializable)
+				ind++
+			}
+			v.sp -= numElements
+
+			list := NewWrappedValueListFrom(elements)
+
+			v.stack[v.sp] = list
 			v.sp++
 		case OpCreateTuple:
 			v.ip += 2

@@ -593,7 +593,6 @@ func (c *compiler) Compile(node parse.Node) error {
 				c.emit(node, OpPushNil)
 			}
 		}
-		_ = 1
 		c.emit(node, OpIterInit, config)
 		c.emit(node, OpSetLocal, itSymbol.Index)
 
@@ -672,6 +671,112 @@ func (c *compiler) Compile(node parse.Node) error {
 		curLoop.continuePositions = append(curLoop.continuePositions, pos)
 	case *parse.PruneStatement:
 		c.emit(node, OpIterPrune, c.currentWalkLoop().iteratorSymbol.Index)
+	case *parse.ForExpression:
+		itSuffix := strconv.Itoa(int(node.Span.Start))
+		itSymbol := c.currentLocalSymbols().Define(":it" + itSuffix)
+		streamElemSymbol := c.currentLocalSymbols().Define(":streamElem" + itSuffix)
+		listLengthSymbol := c.currentLocalSymbols().Define(":listLen" + itSuffix)
+
+		if err := c.Compile(node.IteratedValue); err != nil {
+			return err
+		}
+
+		//iterator initialization
+		config := 0
+		if node.KeyPattern != nil || node.ValuePattern != nil {
+			config = 1
+			if node.KeyPattern != nil {
+				if err := c.Compile(node.KeyPattern); err != nil {
+					return err
+				}
+			} else {
+				c.emit(node, OpPushNil)
+			}
+			if node.ValuePattern != nil {
+				if err := c.Compile(node.ValuePattern); err != nil {
+					return err
+				}
+			} else {
+				c.emit(node, OpPushNil)
+			}
+		}
+		c.emit(node, OpIterInit, config)
+		c.emit(node, OpSetLocal, itSymbol.Index)
+
+		//Initialize the list length variable.
+		c.emit(node, OpPushConstant, c.addConstant(Int(0)))
+		c.emit(node, OpSetLocal, listLengthSymbol.Index)
+
+		// pre-condition position
+		preCondPos := len(c.currentInstructions())
+
+		// condition
+		c.emit(node, OpGetLocal, itSymbol.Index)
+		if node.Chunked {
+			c.emit(node, OpIterNextChunk, streamElemSymbol.Index)
+		} else {
+			c.emit(node, OpIterNext, streamElemSymbol.Index)
+		}
+
+		// condition jump position
+		postCondPos := c.emit(node, OpJumpIfFalse, 0)
+
+		// enter loop
+		loop := c.enterLoop(itSymbol, ForLoop)
+		_ = loop
+
+		// Assign the key variable.
+		if node.KeyIndexIdent != nil && node.KeyIndexIdent.Name != "_" {
+			keySymbol := c.currentLocalSymbols().Define(node.KeyIndexIdent.Name)
+			c.emit(node, OpGetLocal, itSymbol.Index)
+			c.emit(node, OpIterKey)
+			c.emit(node, OpSetLocal, keySymbol.Index)
+		}
+
+		// Assign the value variable.
+		if node.ValueElemIdent != nil && node.ValueElemIdent.Name != "_" {
+			valueSymbol := c.currentLocalSymbols().Define(node.ValueElemIdent.Name)
+			c.emit(node, OpGetLocal, itSymbol.Index)
+			c.emit(node, OpIterValue, streamElemSymbol.Index)
+			c.emit(node, OpSetLocal, valueSymbol.Index)
+		}
+
+		// Increment the list length.
+		c.emit(node, OpGetLocal, listLengthSymbol.Index)
+		c.emit(node, OpPushConstant, c.addConstant(Int(1)))
+		c.emit(node, OpIntBin, int(parse.Add))
+		c.emit(node, OpSetLocal, listLengthSymbol.Index)
+
+		// body
+		if err := c.Compile(node.Body); err != nil {
+			c.leaveLoop()
+			return err
+		}
+
+		c.leaveLoop()
+
+		// post-body position
+		postBodyPos := len(c.currentInstructions())
+		_ = postBodyPos
+
+		// back to condition
+		c.emit(node, OpJump, preCondPos)
+
+		// post-statement position
+		postStmtPos := len(c.currentInstructions())
+		c.changeOperand(postCondPos, postStmtPos)
+
+		// // update all break/continue jump positions
+		// for _, pos := range loop.breakPositions {
+		// 	c.changeOperand(pos, postStmtPos)
+		// }
+		// for _, pos := range loop.continuePositions {
+		// 	c.changeOperand(pos, postBodyPos)
+		// }
+
+		//Create list.
+		c.emit(node, OpGetLocal, listLengthSymbol.Index)
+		c.emit(node, OpCreateListDynLen)
 	case *parse.WalkStatement:
 		itSuffix := strconv.Itoa(int(node.Span.Start))
 		itSymbol := c.currentLocalSymbols().Define(":it" + itSuffix)
