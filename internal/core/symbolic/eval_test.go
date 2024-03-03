@@ -12539,6 +12539,19 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &Identifier{name: "div"}, res)
 		})
 
+		t.Run("implicit namespace is not defined", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`(<div></div>)`)
+			res, err := symbolicEval(n, state)
+
+			xmlExpr := n.Statements[0].(*parse.XMLExpression)
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(xmlExpr, state, HTML_NS_IS_NOT_DEFINED),
+			}, state.errors())
+			assert.Equal(t, ANY, res)
+		})
+
 		t.Run("self-closing element", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`html<div/>`)
 			state.setGlobal("html", NewNamespace(map[string]Value{

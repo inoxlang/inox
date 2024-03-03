@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
@@ -81,6 +82,7 @@ const (
 	FROM_XML_FACTORY_IS_NOT_A_GO_FUNCTION                        = "factory ." + FROM_XML_FACTORY_NAME + " is not a Go function"
 	FROM_XML_FACTORY_SHOULD_NOT_BE_A_SHARED_FUNCTION             = "factory ." + FROM_XML_FACTORY_NAME + " should not be a shared function"
 	FROM_XML_FACTORY_SHOULD_HAVE_AT_LEAST_ONE_NON_VARIADIC_PARAM = "factory ." + FROM_XML_FACTORY_NAME + " should have at least one non variadic parameter"
+	HTML_NS_IS_NOT_DEFINED                                       = globalnames.HTML_NS + " is not defined"
 
 	//exact value pattern
 	ONLY_SERIALIZABLE_IMMUT_VALS_ALLOWED_IN_EXACT_VAL_PATTERN = "only serializable immutable values are allowed in an exact value pattern"

@@ -5377,9 +5377,25 @@ func evalStringTemplateLiteral(n *parse.StringTemplateLiteral, state *State, opt
 
 func evalXMLExpression(n *parse.XMLExpression, state *State, options evalOptions) (Value, error) {
 
-	namespace, err := symbolicEval(n.Namespace, state)
-	if err != nil {
-		return nil, err
+	var namespaceErrorNode parse.Node = n
+
+	var namespace Value
+
+	if n.Namespace != nil {
+		namespaceErrorNode = n.Namespace
+		var err error
+
+		namespace, err = symbolicEval(n.Namespace, state)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		varInfo, ok := state.getGlobal(globalnames.HTML_NS)
+		if !ok {
+			state.addError(makeSymbolicEvalError(n, state, HTML_NS_IS_NOT_DEFINED))
+			return ANY, nil
+		}
+		namespace = varInfo.value
 	}
 
 	ns, ok := namespace.(*Namespace)
@@ -5389,29 +5405,29 @@ func evalXMLExpression(n *parse.XMLExpression, state *State, options evalOptions
 			return nil, err
 		}
 
-		state.addError(makeSymbolicEvalError(n.Namespace, state, NAMESPACE_APPLIED_TO_XML_ELEMENT_SHOUD_BE_A_RECORD))
+		state.addError(makeSymbolicEvalError(namespaceErrorNode, state, NAMESPACE_APPLIED_TO_XML_ELEMENT_SHOUD_BE_A_RECORD))
 		return ANY, nil
 	} else {
 		factory, ok := ns.entries[FROM_XML_FACTORY_NAME]
 		if !ok {
-			state.addError(makeSymbolicEvalError(n.Namespace, state, MISSING_FACTORY_IN_NAMESPACE_APPLIED_TO_XML_ELEMENT))
+			state.addError(makeSymbolicEvalError(namespaceErrorNode, state, MISSING_FACTORY_IN_NAMESPACE_APPLIED_TO_XML_ELEMENT))
 			return ANY, nil
 		}
 		goFn, ok := factory.(*GoFunction)
 		if !ok {
-			state.addError(makeSymbolicEvalError(n.Namespace, state, FROM_XML_FACTORY_IS_NOT_A_GO_FUNCTION))
+			state.addError(makeSymbolicEvalError(namespaceErrorNode, state, FROM_XML_FACTORY_IS_NOT_A_GO_FUNCTION))
 			return ANY, nil
 		}
 
 		if goFn.IsShared() {
-			state.addError(makeSymbolicEvalError(n.Namespace, state, FROM_XML_FACTORY_SHOULD_NOT_BE_A_SHARED_FUNCTION))
+			state.addError(makeSymbolicEvalError(namespaceErrorNode, state, FROM_XML_FACTORY_SHOULD_NOT_BE_A_SHARED_FUNCTION))
 			return ANY, nil
 		}
 
 		utils.PanicIfErr(goFn.LoadSignatureData())
 
 		if len(goFn.NonVariadicParametersExceptCtx()) == 0 {
-			state.addError(makeSymbolicEvalError(n.Namespace, state, FROM_XML_FACTORY_SHOULD_HAVE_AT_LEAST_ONE_NON_VARIADIC_PARAM))
+			state.addError(makeSymbolicEvalError(namespaceErrorNode, state, FROM_XML_FACTORY_SHOULD_HAVE_AT_LEAST_ONE_NON_VARIADIC_PARAM))
 			return ANY, nil
 		}
 
