@@ -4401,7 +4401,7 @@ func (p *parser) getStrTemplateInterTypeAndExpr(interpolation []rune, interpolat
 	}
 }
 
-func (p *parser) parseIfExpression(openingParenIndex int32 /* -1 if unparenthesized */, ifStart int32) *IfExpression {
+func (p *parser) parseIfExpression(openingParenIndex int32 /* -1 if unparenthesized */, ifKeywordStart int32) *IfExpression {
 	p.panicIfContextDone()
 
 	var alternate Node
@@ -4409,7 +4409,7 @@ func (p *parser) parseIfExpression(openingParenIndex int32 /* -1 if unparenthesi
 	var parsingErr *ParsingError
 	shouldHaveClosingParen := openingParenIndex >= 0
 
-	p.tokens = append(p.tokens, Token{Type: IF_KEYWORD, Span: NodeSpan{ifStart, ifStart + 2}})
+	p.tokens = append(p.tokens, Token{Type: IF_KEYWORD, Span: NodeSpan{ifKeywordStart, ifKeywordStart + 2}})
 
 	p.eatSpace()
 	test, _ := p.parseExpression()
@@ -4457,7 +4457,7 @@ func (p *parser) parseIfExpression(openingParenIndex int32 /* -1 if unparenthesi
 
 	ifExprStart := openingParenIndex
 	if openingParenIndex < 0 {
-		ifExprStart = ifStart
+		ifExprStart = ifKeywordStart
 	}
 
 	return &IfExpression{
@@ -4505,7 +4505,7 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(openingParenIndex in
 		case "if":
 			return p.parseIfExpression(openingParenIndex, ident.Span.Start)
 		case "for":
-			return p.parseForExpression(openingParenIndex, ident)
+			return p.parseForExpression(openingParenIndex, ident.Span.Start)
 		}
 	}
 
@@ -8209,17 +8209,16 @@ children_parsing_loop:
 					switch {
 					case p.i < p.len-2 && p.s[p.i] == 'i' && p.s[p.i+1] == 'f' && !IsIdentChar(p.s[p.i+2]):
 						//Parse if expression without parentheses.
-						ifStart := p.i
+						ifKeywordStart := p.i
 						p.i += 2
 						p.eatSpace()
-						e = p.parseIfExpression(-1, ifStart)
+						e = p.parseIfExpression(-1, ifKeywordStart)
 					case p.i < p.len-3 && p.s[p.i] == 'f' && p.s[p.i+1] == 'o' && p.s[p.i+2] == 'r' && !IsIdentChar(p.s[p.i+3]):
 						//Parse for expression without parentheses.
-						forStart := p.i
+						forKeywordStart := p.i
 						p.i += 3
 						p.eatSpace()
-						_ = forStart
-						e = p.parseForExpression(-1, nil)
+						e = p.parseForExpression(-1, forKeywordStart)
 					default:
 						e, missingExpr = p.parseExpression()
 					}
@@ -9168,8 +9167,14 @@ func (p *parser) parseForStatement(forIdent *IdentifierLiteral) *ForStatement {
 	}
 }
 
-func (p *parser) parseForExpression(openingParenIndex int32, forIdent *IdentifierLiteral) *ForExpression {
+func (p *parser) parseForExpression(openingParenIndex int32 /*-1 if no unparenthesized*/, forKeywordStart int32) *ForExpression {
 	p.panicIfContextDone()
+
+	forExprStart := openingParenIndex
+	if forExprStart < 0 {
+		forExprStart = forKeywordStart
+	}
+	shouldHaveClosingParen := openingParenIndex >= 0
 
 	var parsingErr *ParsingError
 	var valuePattern Node
@@ -9181,7 +9186,7 @@ func (p *parser) parseForExpression(openingParenIndex int32, forIdent *Identifie
 	var firstPattern Node
 	var first Node
 	chunked := false
-	p.tokens = append(p.tokens, Token{Type: FOR_KEYWORD, Span: forIdent.Span})
+	p.tokens = append(p.tokens, Token{Type: FOR_KEYWORD, Span: NodeSpan{forKeywordStart, forKeywordStart + 3}})
 
 	if p.i < p.len && p.s[p.i] == '%' {
 		firstPattern = p.parsePercentPrefixedPattern(false)
@@ -9207,7 +9212,7 @@ func (p *parser) parseForExpression(openingParenIndex int32, forIdent *Identifie
 		if p.i >= p.len {
 			return &ForExpression{
 				NodeBase: NodeBase{
-					Span:            NodeSpan{forIdent.Span.Start, p.i},
+					Span:            NodeSpan{forExprStart, p.i},
 					Err:             &ParsingError{UnspecifiedParsingError, INVALID_FOR_EXPR},
 					IsParenthesized: true,
 				},
@@ -9234,7 +9239,7 @@ func (p *parser) parseForExpression(openingParenIndex int32, forIdent *Identifie
 			if p.i >= p.len {
 				return &ForExpression{
 					NodeBase: NodeBase{
-						Span:            NodeSpan{forIdent.Span.Start, p.i},
+						Span:            NodeSpan{forExprStart, p.i},
 						Err:             &ParsingError{UnspecifiedParsingError, UNTERMINATED_FOR_STMT},
 						IsParenthesized: true,
 					},
@@ -9262,7 +9267,7 @@ func (p *parser) parseForExpression(openingParenIndex int32, forIdent *Identifie
 			if p.i >= p.len {
 				return &ForExpression{
 					NodeBase: NodeBase{
-						Span:            NodeSpan{forIdent.Span.Start, p.i},
+						Span:            NodeSpan{forExprStart, p.i},
 						Err:             &ParsingError{UnspecifiedParsingError, UNTERMINATED_FOR_EXPR},
 						IsParenthesized: true,
 					},
@@ -9276,7 +9281,7 @@ func (p *parser) parseForExpression(openingParenIndex int32, forIdent *Identifie
 			if p.s[p.i] != 'i' || p.i > p.len-2 || p.s[p.i+1] != 'n' {
 				return &ForExpression{
 					NodeBase: NodeBase{
-						Span:            NodeSpan{forIdent.Span.Start, p.i},
+						Span:            NodeSpan{forExprStart, p.i},
 						Err:             &ParsingError{UnspecifiedParsingError, INVALID_FOR_STMT_MISSING_IN_KEYWORD},
 						IsParenthesized: true,
 					},
@@ -9300,7 +9305,7 @@ func (p *parser) parseForExpression(openingParenIndex int32, forIdent *Identifie
 
 			return &ForExpression{
 				NodeBase: NodeBase{
-					Span:            NodeSpan{forIdent.Span.Start, p.i},
+					Span:            NodeSpan{forExprStart, p.i},
 					Err:             &ParsingError{UnspecifiedParsingError, INVALID_FOR_STMT_IN_KEYWORD_SHOULD_BE_FOLLOWED_BY_SPACE},
 					IsParenthesized: true,
 				},
@@ -9316,7 +9321,7 @@ func (p *parser) parseForExpression(openingParenIndex int32, forIdent *Identifie
 		if p.i >= p.len {
 			return &ForExpression{
 				NodeBase: NodeBase{
-					Span:            NodeSpan{forIdent.Span.Start, p.i},
+					Span:            NodeSpan{forExprStart, p.i},
 					Err:             &ParsingError{UnspecifiedParsingError, INVALID_FOR_STMT_MISSING_VALUE_AFTER_IN},
 					IsParenthesized: true,
 				},
@@ -9348,17 +9353,21 @@ func (p *parser) parseForExpression(openingParenIndex int32, forIdent *Identifie
 
 		p.eatSpaceNewlineComment()
 
-		if p.i < p.len && p.s[p.i] == ')' {
-			p.tokens = append(p.tokens, Token{Type: CLOSING_PARENTHESIS, Span: NodeSpan{p.i, p.i + 1}})
-			p.i++
-			end = p.i
+		if shouldHaveClosingParen {
+			if p.i < p.len && p.s[p.i] == ')' {
+				p.tokens = append(p.tokens, Token{Type: CLOSING_PARENTHESIS, Span: NodeSpan{p.i, p.i + 1}})
+				p.i++
+				end = p.i
+			} else {
+				parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_FOR_EXPR_MISSING_CLOSIN_PAREN}
+			}
 		} else {
-			parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_FOR_EXPR_MISSING_CLOSIN_PAREN}
+			end = p.i
 		}
 
 		return &ForExpression{
 			NodeBase: NodeBase{
-				Span:            NodeSpan{forIdent.Span.Start, end},
+				Span:            NodeSpan{forExprStart, end},
 				Err:             parsingErr,
 				IsParenthesized: true,
 			},
@@ -9373,7 +9382,7 @@ func (p *parser) parseForExpression(openingParenIndex int32, forIdent *Identifie
 	default:
 		return &ForExpression{
 			NodeBase: NodeBase{
-				Span:            NodeSpan{forIdent.Span.Start, p.i},
+				Span:            NodeSpan{forExprStart, p.i},
 				Err:             &ParsingError{UnspecifiedParsingError, INVALID_FOR_EXPR},
 				IsParenthesized: true,
 			},
