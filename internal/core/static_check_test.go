@@ -3912,7 +3912,7 @@ func TestCheck(t *testing.T) {
 	})
 
 	t.Run("for statement", func(t *testing.T) {
-		t.Run("variables defined in for statement's head are not accessible after the statement", func(t *testing.T) {
+		t.Run("variables defined in a for statement's head are not accessible after the statement", func(t *testing.T) {
 			n, src := mustParseCode(`
 				for file in files {
 					
@@ -3927,7 +3927,7 @@ func TestCheck(t *testing.T) {
 			assert.Equal(t, expectedErr, err)
 		})
 
-		t.Run("variables defined in for statement's body are not accessible after the statement", func(t *testing.T) {
+		t.Run("variables defined in a for statement's body are not accessible after the statement", func(t *testing.T) {
 			n, src := mustParseCode(`
 				for file in files {
 					x = 3
@@ -3964,6 +3964,59 @@ func TestCheck(t *testing.T) {
 				$$k = 1
 				$$v = 1
 				for k, v in [] {}
+			`)
+			keyIdent := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
+				return n.Name == "k"
+			})
+			valueIdent := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
+				return n.Name == "v"
+			})
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(keyIdent, src, fmtCannotShadowGlobalVariable("k")),
+				makeError(valueIdent, src, fmtCannotShadowGlobalVariable("v")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+	})
+
+	t.Run("for expression", func(t *testing.T) {
+		t.Run("variables defined in a for expression's head are not accessible after the expression", func(t *testing.T) {
+			n, src := mustParseCode(`
+				(for file in files: 0)
+				return file
+			`)
+			varNode := parse.FindNodes(n, (*parse.IdentifierLiteral)(nil), nil)[2]
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(varNode, src, fmtVarIsNotDeclared("file")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("key and value vars should not shadow local variables", func(t *testing.T) {
+			n, src := mustParseCode(`
+				k = 1
+				v = 1
+				(for k, v in []: 0)
+			`)
+			keyIdent := n.Statements[2].(*parse.ForExpression).KeyIndexIdent
+			valueIdent := n.Statements[2].(*parse.ForExpression).ValueElemIdent
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(keyIdent, src, fmtCannotShadowLocalVariable("k")),
+				makeError(valueIdent, src, fmtCannotShadowLocalVariable("v")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("key and value vars should not shadow global variables", func(t *testing.T) {
+			n, src := mustParseCode(`
+				$$k = 1
+				$$v = 1
+				(for k, v in []: 0)
 			`)
 			keyIdent := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
 				return n.Name == "k"
@@ -5746,7 +5799,7 @@ func (*testProject) Configuration() ProjectConfiguration {
 	panic("unimplemented")
 }
 
-func (*testProject) DevDatabasesDirOnOsFs(*Context,string) (string, error) {
+func (*testProject) DevDatabasesDirOnOsFs(*Context, string) (string, error) {
 	panic("unimplemented")
 }
 

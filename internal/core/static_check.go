@@ -582,6 +582,8 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 		return c.checkAssignment(node, parent, scopeNode, closestModule)
 	case *parse.ForStatement:
 		return c.checkForStmt(node, scopeNode, closestModule)
+	case *parse.ForExpression:
+		return c.checkForExpression(node, scopeNode, closestModule)
 	case *parse.WalkStatement:
 		return c.checkWalkStmt(node, scopeNode, closestModule)
 	case *parse.ReadonlyPatternExpression:
@@ -1724,6 +1726,40 @@ func (c *checker) checkForStmt(node *parse.ForStatement, scopeNode, closestModul
 	return parse.ContinueTraversal
 }
 
+func (c *checker) checkForExpression(node *parse.ForExpression, scopeNode, closestModule parse.Node) parse.TraversalAction {
+	localVariablesBeforeStmt := c.getScopeLocalVarsCopy(scopeNode)
+	localVars := c.getLocalVarsInScope(scopeNode)
+	globalVars := c.getModGlobalVars(closestModule)
+
+	c.store[node] = localVariablesBeforeStmt
+
+	if node.KeyIndexIdent != nil {
+		name := node.KeyIndexIdent.Name
+
+		if _, alreadyDefined := localVars[name]; alreadyDefined && !c.shellLocalVars[name] {
+			c.addError(node.KeyIndexIdent, fmtCannotShadowLocalVariable(name))
+		} else if _, alreadyDefined := globalVars[name]; alreadyDefined {
+			c.addError(node.KeyIndexIdent, fmtCannotShadowGlobalVariable(name))
+		} else {
+			localVars[name] = localVarInfo{}
+		}
+	}
+
+	if node.ValueElemIdent != nil {
+		name := node.ValueElemIdent.Name
+
+		if _, alreadyDefined := localVars[name]; alreadyDefined {
+			c.addError(node.ValueElemIdent, fmtCannotShadowLocalVariable(name))
+		} else if _, alreadyDefined := globalVars[name]; alreadyDefined {
+			c.addError(node.ValueElemIdent, fmtCannotShadowGlobalVariable(name))
+		} else {
+			localVars[name] = localVarInfo{}
+		}
+	}
+
+	return parse.ContinueTraversal
+}
+
 func (c *checker) checkWalkStmt(node *parse.WalkStatement, scopeNode, closestModule parse.Node) parse.TraversalAction {
 	variablesBeforeStmt := c.getScopeLocalVarsCopy(scopeNode)
 	localVars := c.getLocalVarsInScope(scopeNode)
@@ -2176,7 +2212,9 @@ func (c *checker) checkIdentifier(node *parse.IdentifierLiteral, parent, scopeNo
 			return parse.ContinueTraversal
 
 		}
-	case *parse.ForStatement, *parse.WalkStatement, *parse.ObjectLiteral, *parse.MemberExpression, *parse.QuantityLiteral, *parse.RateLiteral,
+	case *parse.ForStatement, *parse.ForExpression, *parse.WalkStatement,
+		*parse.ObjectLiteral, *parse.MemberExpression, *parse.QuantityLiteral, *parse.RateLiteral,
+
 		*parse.KeyListExpression:
 		return parse.ContinueTraversal
 
@@ -2786,7 +2824,7 @@ func (checker *checker) postCheckSingleNode(node, parent, scopeNode parse.Node, 
 				})
 			} //else: the manifest of regular modules is already checked during the pre-init phase
 		}
-	case *parse.ForStatement, *parse.WalkStatement:
+	case *parse.ForStatement, *parse.ForExpression, *parse.WalkStatement:
 		varsBefore := checker.store[node].(map[string]localVarInfo)
 		checker.setScopeLocalVars(scopeNode, varsBefore)
 	case *parse.MatchStatement:
