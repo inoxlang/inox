@@ -8149,36 +8149,55 @@ children_parsing_loop:
 				interpParsingErr = &ParsingError{UnspecifiedParsingError, EMPTY_XML_INTERP}
 			} else {
 				//ignore leading & trailing space
-				exprStart := int32(0)
-				inclusiveExprEnd := int32(len32(interpolation) - 1)
+				relativeExprStart := int32(0)
+				relativeInclusiveExprEnd := int32(len32(interpolation) - 1)
 
-				for exprStart < len32(interpolation) && interpolation[exprStart] == '\n' || isSpaceNotLF(interpolation[exprStart]) {
-					if interpolation[exprStart] == '\n' {
-						pos := interpolationStart + exprStart
+				for relativeExprStart < len32(interpolation) && interpolation[relativeExprStart] == '\n' || isSpaceNotLF(interpolation[relativeExprStart]) {
+					if interpolation[relativeExprStart] == '\n' {
+						pos := interpolationStart + relativeExprStart
 						p.tokens = append(p.tokens, Token{
 							Type: NEWLINE,
 							Span: NodeSpan{Start: pos, End: pos + 1},
 						})
 					}
-					exprStart++
+					relativeExprStart++
 				}
 
-				for inclusiveExprEnd > 0 && interpolation[inclusiveExprEnd] == '\n' || isSpaceNotLF(interpolation[inclusiveExprEnd]) {
-					if interpolation[inclusiveExprEnd] == '\n' {
-						pos := interpolationStart + inclusiveExprEnd
+				for relativeInclusiveExprEnd > 0 && interpolation[relativeInclusiveExprEnd] == '\n' || isSpaceNotLF(interpolation[relativeInclusiveExprEnd]) {
+					if interpolation[relativeInclusiveExprEnd] == '\n' {
+						pos := interpolationStart + relativeInclusiveExprEnd
 						p.tokens = append(p.tokens, Token{
 							Type: NEWLINE,
 							Span: NodeSpan{Start: pos, End: pos + 1},
 						})
 					}
-					inclusiveExprEnd--
+					relativeInclusiveExprEnd--
 				}
 
-				e, _ := parseExpression(interpolation[exprStart:inclusiveExprEnd+1], false)
+				var e Node
+
+				func() {
+					//Modify the state of the parser to make it parse the interpolation.
+
+					indexSave := p.i
+					sourceSave := p.s
+					lenSave := p.len
+
+					p.i = interpolationStart + relativeExprStart
+					p.s = p.s[:interpolationExclEnd]
+					p.len = len32(p.s)
+
+					defer func() {
+						p.i = indexSave
+						p.s = sourceSave
+						p.len = lenSave
+					}()
+
+					e, _ = p.parseExpression()
+				}()
 
 				if e != nil {
 					expr = e
-					shiftNodeSpans(expr, interpolationStart+exprStart)
 				} else {
 					interpParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_XML_INTERP}
 				}
@@ -8871,25 +8890,10 @@ func (p *parser) parseIfStatement(ifIdent *IdentifierLiteral) *IfStatement {
 			case p.s[p.i] == '{':
 				alternate = p.parseBlock()
 				end = alternate.(*Block).Span.End
-			case p.i < p.len-2 && p.s[p.i] == 'i' && p.s[p.i+1] == 'f':
-
-				e := func() (n Node) {
-					defer func() {
-						if recover() != nil {
-							n = nil
-						}
-					}()
-					expr, _ := parseExpression(p.s[p.i:], true)
-					return expr
-				}()
-
-				if ident, ok := e.(*IdentifierLiteral); ok && ident.Name == tokenStrings[IF_KEYWORD] {
-					ident, _ := p.parseExpression(false)
-					alternate = p.parseIfStatement(ident.(*IdentifierLiteral))
-					end = alternate.(*IfStatement).Span.End
-					break
-				}
-				fallthrough
+			case p.i < p.len-1 && p.s[p.i] == 'i' && p.s[p.i+1] == 'f' && (p.i >= p.len-2 || !IsIdentChar(p.s[p.i+2])):
+				ident, _ := p.parseExpression(false)
+				alternate = p.parseIfStatement(ident.(*IdentifierLiteral))
+				end = alternate.(*IfStatement).Span.End
 			default:
 				parsingErr = &ParsingError{MissingBlock, fmtUnterminatedIfStmtElseShouldBeFollowedByBlock(p.s[p.i])}
 			}

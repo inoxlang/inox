@@ -629,7 +629,7 @@ func fmtUnterminatedIfStmtShouldBeFollowedByBlock(r rune) string {
 }
 
 func fmtUnterminatedIfStmtElseShouldBeFollowedByBlock(r rune) string {
-	return fmt.Sprintf("invalid if statement, 'else' should be followed by a block, not '%s'", string(r))
+	return fmt.Sprintf("invalid if statement, 'else' should be followed by a block a or 'if', not '%s'", string(r))
 }
 
 func fmtForStmtKeyIndexShouldBeFollowedByCommaNot(r rune) string {

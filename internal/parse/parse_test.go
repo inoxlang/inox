@@ -14597,49 +14597,21 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 27}, nil, false},
 				Statements: []Node{
 					&IfStatement{
-						NodeBase: NodeBase{
-							NodeSpan{0, 27},
-							nil,
-							false,
-							/*[]Token{
-								{Type: IF_KEYWORD, Span: NodeSpan{0, 2}},
-								{Type: ELSE_KEYWORD, Span: NodeSpan{12, 16}},
-							},*/
-						}, Test: &BooleanLiteral{
+						NodeBase: NodeBase{Span: NodeSpan{0, 27}}, Test: &BooleanLiteral{
 							NodeBase: NodeBase{NodeSpan{3, 7}, nil, false},
 							Value:    true,
 						},
 						Consequent: &Block{
-							NodeBase: NodeBase{
-								NodeSpan{8, 11},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{8, 9}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{10, 11}},
-								},*/
-							},
+							NodeBase:   NodeBase{Span: NodeSpan{8, 11}},
 							Statements: nil,
 						},
 						Alternate: &IfStatement{
-							NodeBase: NodeBase{
-								NodeSpan{17, 27},
-								nil,
-								false,
-							}, Test: &BooleanLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{17, 27}}, Test: &BooleanLiteral{
 								NodeBase: NodeBase{NodeSpan{20, 24}, nil, false},
 								Value:    true,
 							},
 							Consequent: &Block{
-								NodeBase: NodeBase{
-									NodeSpan{25, 27},
-									nil,
-									false,
-									/*[]Token{
-										{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{25, 26}},
-										{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{26, 27}},
-									},*/
-								},
+								NodeBase: NodeBase{Span: NodeSpan{25, 27}},
 							},
 						},
 					},
@@ -14647,6 +14619,34 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("if-else-if<ident char>", func(t *testing.T) {
+			n, err := parseChunk(t, "if true { } else if9", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
+				Statements: []Node{
+					&IfStatement{
+						NodeBase: NodeBase{
+							NodeSpan{0, 11},
+							&ParsingError{MissingBlock, fmtUnterminatedIfStmtElseShouldBeFollowedByBlock('i')},
+							false,
+						},
+						Test: &BooleanLiteral{
+							NodeBase: NodeBase{NodeSpan{3, 7}, nil, false},
+							Value:    true,
+						},
+						Consequent: &Block{
+							NodeBase:   NodeBase{Span: NodeSpan{8, 11}},
+							Statements: nil,
+						},
+					},
+					&IdentifierLiteral{
+						NodeBase: NodeBase{Span: NodeSpan{17, 20}},
+						Name:     "if9",
+					},
+				},
+			}, n)
+		})
 	})
 
 	t.Run("if expression", func(t *testing.T) {
@@ -29868,7 +29868,7 @@ func testParse(
 									Expr: &MissingExpression{
 										NodeBase: NodeBase{
 											NodeSpan{7, 8},
-											&ParsingError{UnspecifiedParsingError, fmtExprExpectedHere([]rune("?"), 0, true)},
+											&ParsingError{UnspecifiedParsingError, fmtExprExpectedHere([]rune("...div>{?"), 8, true)},
 											false,
 										},
 									},
