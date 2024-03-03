@@ -26,6 +26,9 @@ const (
 
 	STR_TEMPL_LITS_WITH_INTERP_SHOULD_BE_PRECEDED_BY_PATTERN_WICH_NAME_HAS_PREFIX = "string template literals with interpolations should be preceded by a pattern which name has a prefix"
 
+	//for expression
+	ELEMENTS_PRODUCED_BY_A_FOR_EXPR_SHOULD_BE_SERIALIZABLE = "the elements produced by a for expression should be serializable"
+
 	//spread
 	CANNOT_SPREAD_OBJ_PATTERN_THAT_MATCHES_ANY_OBJECT = "cannot spread an object pattern that matches any object"
 	CANNOT_SPREAD_REC_PATTERN_THAT_MATCHES_ANY_RECORD = "cannot spread an record pattern that matches any record"

@@ -2434,7 +2434,10 @@ func evalForStatementAndExpr(n parse.Node, state *State) (_ Value, finalErr erro
 		iteratedValueNode, body       parse.Node
 		keyIndexIdent, valueElemIdent *parse.IdentifierLiteral
 		chunked                       bool
+		isForExpr                     bool
 	)
+
+	var forExprListElements []Value
 
 	if stmt, ok := n.(*parse.ForStatement); ok {
 		iteratedValueNode = stmt.IteratedValue
@@ -2453,6 +2456,7 @@ func evalForStatementAndExpr(n parse.Node, state *State) (_ Value, finalErr erro
 			body = expr.Body
 		}
 		chunked = expr.Chunked
+		isForExpr = true
 	}
 
 	iteratedValue, err := symbolicEval(iteratedValueNode, state)
@@ -2518,14 +2522,28 @@ func evalForStatementAndExpr(n parse.Node, state *State) (_ Value, finalErr erro
 
 		stateFork.symbolicData.SetLocalScopeData(body, stateFork.currentLocalScopeData())
 
-		_, err = symbolicEval(body, stateFork)
+		res, err := symbolicEval(body, stateFork)
 		if err != nil {
 			return nil, err
+		}
+
+		if isForExpr {
+			elem, ok := AsSerializable(res).(Serializable)
+			if !ok {
+				state.addError(makeSymbolicEvalError(body, state, ELEMENTS_PRODUCED_BY_A_FOR_EXPR_SHOULD_BE_SERIALIZABLE))
+				elem = ANY_SERIALIZABLE
+			}
+			forExprListElements = append(forExprListElements, elem)
 		}
 
 		state.join(stateFork)
 		//we set the local scope data at the for statement, not the body
 		state.symbolicData.SetLocalScopeData(n, state.currentLocalScopeData())
+	}
+
+	if isForExpr {
+		elem := AsSerializableChecked(joinValues(forExprListElements))
+		return NewListOf(elem), nil
 	}
 
 	return nil, nil

@@ -8743,7 +8743,11 @@ func TestSymbolicEval(t *testing.T) {
 				(for k, v in {a: int}: [k, v])
 			`)
 
-			symbolicEval(n, state)
+			_, err := symbolicEval(n, state)
+
+			if !assert.NoError(t, err) {
+				return
+			}
 
 			arrayLiteral, chain := parse.FindNodeAndChain(n, (*parse.ListLiteral)(nil), nil)
 			data, ok := state.symbolicData.GetLocalScopeData(arrayLiteral, chain)
@@ -8761,6 +8765,32 @@ func TestSymbolicEval(t *testing.T) {
 				assert.Equal(t, "v", data.Variables[0].Name)
 				assert.Equal(t, "k", data.Variables[1].Name)
 			}
+		})
+
+		t.Run("the result should be a list containing the produced elements", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`(for r in 'a'..'z': r)`)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewListOf(ANY_RUNE), res)
+		})
+
+		t.Run("the produced elements should be serializable", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`(for i in 1..3: go do {})`)
+
+			spawnExpr := parse.FindNode(n, (*parse.SpawnExpression)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(spawnExpr, state, ELEMENTS_PRODUCED_BY_A_FOR_EXPR_SHOULD_BE_SERIALIZABLE),
+			}, state.errors())
+			assert.Equal(t, NewListOf(ANY_SERIALIZABLE), res)
 		})
 	})
 
