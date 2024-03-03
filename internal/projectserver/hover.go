@@ -8,6 +8,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/globals/html_ns"
 	"github.com/inoxlang/inox/internal/help"
 	"github.com/inoxlang/inox/internal/hyperscript/hscode"
@@ -244,13 +245,17 @@ func getXmlElementInfo(node parse.Node, ancestors []parse.Node) (string, bool) {
 	}
 	xmlExpr = e
 
-	namespace, ok := xmlExpr.Namespace.(*parse.IdentifierLiteral)
-	if !ok {
+	var namespaceName string
+	if xmlExpr.Namespace == nil {
+		namespaceName = globalnames.HTML_NS
+	} else if namespace, ok := xmlExpr.Namespace.(*parse.IdentifierLiteral); ok {
+		namespaceName = namespace.Name
+	} else {
 		return "", false
 	}
 
 	//TODO: use symbolic data in order to support aliases
-	switch namespace.Name {
+	switch namespaceName {
 	case "html":
 
 		if parent == openingElem {

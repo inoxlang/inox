@@ -31,7 +31,6 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/inoxlang/inox/internal/codecompletion"
 	"github.com/inoxlang/inox/internal/parse"
 )
 
@@ -221,7 +220,7 @@ func handleInitialize(ctx context.Context, req *defines.InitializeParams, projec
 	}
 
 	s.Capabilities.CompletionProvider = &defines.CompletionOptions{
-		TriggerCharacters: &[]string{".", ":"},
+		TriggerCharacters: &[]string{".", ":", "{"},
 	}
 
 	//create session data
@@ -373,71 +372,6 @@ func handleSignatureHelp(ctx context.Context, req *defines.SignatureHelpParams) 
 		session:         session,
 		memberAuthToken: memberAuthToken,
 	})
-}
-
-func handleCompletion(ctx context.Context, req *defines.CompletionParams) (result *[]defines.CompletionItem, err error) {
-	session := jsonrpc.GetSession(ctx)
-
-	sessionData := getLockedSessionData(session)
-	projectMode := sessionData.projectMode
-	memberAuthToken := sessionData.memberAuthToken
-	sessionData.lock.Unlock()
-
-	fpath, err := getFilePath(req.TextDocument.Uri, projectMode)
-	if err != nil {
-		return nil, err
-	}
-
-	if memberAuthToken == "" {
-		return nil, ErrMemberNotAuthenticated
-	}
-
-	line, column := getLineColumn(req.Position)
-
-	completions := getCompletions(fpath, line, column, session, memberAuthToken)
-	completionIndex := 0
-
-	lspCompletions := utils.MapSlice(completions, func(completion codecompletion.Completion) defines.CompletionItem {
-		defer func() {
-			completionIndex++
-		}()
-
-		var labelDetails *defines.CompletionItemLabelDetails
-		if completion.LabelDetail != "" {
-			detail := "  " + completion.LabelDetail
-			labelDetails = &defines.CompletionItemLabelDetails{
-				Detail: &detail,
-			}
-		}
-
-		var doc any
-		if completion.MarkdownDocumentation != "" {
-			doc = defines.MarkupContent{
-				Kind:  defines.MarkupKindMarkdown,
-				Value: completion.MarkdownDocumentation,
-			}
-		}
-
-		return defines.CompletionItem{
-			Label: completion.Value,
-			Kind:  &completion.Kind,
-			TextEdit: defines.TextEdit{
-				Range: rangeToLspRange(completion.ReplacedRange),
-			},
-			SortText: func() *string {
-				index := completionIndex
-				if index > 99 {
-					index = 99
-				}
-				s := string(rune(index/10) + 'a')
-				s += string(rune(index%10) + 'a')
-				return &s
-			}(),
-			LabelDetails:  labelDetails,
-			Documentation: doc,
-		}
-	})
-	return &lspCompletions, nil
 }
 
 func handleCodeActionWithSliceCodeAction(ctx context.Context, req *defines.CodeActionParams) (result *[]defines.CodeAction, err error) {

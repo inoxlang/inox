@@ -1,6 +1,7 @@
 package projectserver
 
 import (
+	"context"
 	"io/fs"
 	"strings"
 
@@ -9,8 +10,81 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/http_ns/spec"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
+	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
 	"github.com/inoxlang/inox/internal/utils"
 )
+
+func handleCompletion(ctx context.Context, req *defines.CompletionParams) (result *[]defines.CompletionItem, err error) {
+	session := jsonrpc.GetSession(ctx)
+
+	sessionData := getLockedSessionData(session)
+	projectMode := sessionData.projectMode
+	memberAuthToken := sessionData.memberAuthToken
+	sessionData.lock.Unlock()
+
+	fpath, err := getFilePath(req.TextDocument.Uri, projectMode)
+	if err != nil {
+		return nil, err
+	}
+
+	if memberAuthToken == "" {
+		return nil, ErrMemberNotAuthenticated
+	}
+
+	line, column := getLineColumn(req.Position)
+
+	completions := getCompletions(fpath, line, column, session, memberAuthToken)
+	completionIndex := 0
+
+	lspCompletions := utils.MapSlice(completions, func(completion codecompletion.Completion) defines.CompletionItem {
+		defer func() {
+			completionIndex++
+		}()
+
+		var labelDetails *defines.CompletionItemLabelDetails
+		if completion.LabelDetail != "" {
+			detail := "  " + completion.LabelDetail
+			labelDetails = &defines.CompletionItemLabelDetails{
+				Detail: &detail,
+			}
+		}
+
+		var doc any
+		if completion.MarkdownDocumentation != "" {
+			doc = defines.MarkupContent{
+				Kind:  defines.MarkupKindMarkdown,
+				Value: completion.MarkdownDocumentation,
+			}
+		}
+
+		lspRange := rangeToLspRange(completion.ReplacedRange)
+		var textEdit any
+
+		if completion.ReplacedRange.Span.Len() != 0 {
+			textEdit = defines.TextEdit{
+				Range: lspRange,
+			}
+		}
+
+		return defines.CompletionItem{
+			Label:    completion.Value,
+			Kind:     &completion.Kind,
+			TextEdit: textEdit,
+			SortText: func() *string {
+				index := completionIndex
+				if index > 99 {
+					index = 99
+				}
+				s := string(rune(index/10) + 'a')
+				s += string(rune(index%10) + 'a')
+				return &s
+			}(),
+			LabelDetails:  labelDetails,
+			Documentation: doc,
+		}
+	})
+	return &lspCompletions, nil
+}
 
 // getCompletions gets the completions for a specific position in an Inox code file.
 func getCompletions(fpath string, line, column int32, session *jsonrpc.Session, memberAuthToken string) []codecompletion.Completion {
