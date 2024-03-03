@@ -27069,6 +27069,42 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("parenthesized with no namespace", func(t *testing.T) {
+			n := mustparseChunk(t, "(<div></div>)")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{1, 12}, nil, true},
+						Element: &XMLElement{
+							NodeBase: NodeBase{NodeSpan{1, 12}, nil, false},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:     "div",
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &XMLClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{6, 12}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{8, 11}, nil, false},
+									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("unterminated opening tag", func(t *testing.T) {
 			n, err := parseChunk(t, "h<div", "")
 			assert.Error(t, err)

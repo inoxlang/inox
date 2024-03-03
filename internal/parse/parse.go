@@ -4474,9 +4474,20 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(openingParenIndex in
 		//firstParenTokenIndex = len(p.tokens)
 		p.tokens = append(p.tokens, Token{Type: OPENING_PARENTHESIS, Span: NodeSpan{openingParenIndex, openingParenIndex + 1}})
 	}
+
 	p.eatSpaceNewlineComment()
 
-	left, isMissingExpr := p.parseExpression(true)
+	var (
+		left          Node
+		isMissingExpr bool
+	)
+
+	if !hasPreviousOperator && p.i < p.len && p.s[p.i] == '<' {
+		//XML expression without namespace.
+		left = p.parseXMLExpression(nil, p.i)
+	} else {
+		left, isMissingExpr = p.parseExpression(true)
+	}
 
 	if ident, ok := left.(*IdentifierLiteral); ok && ident.Name == "if" && !hasPreviousOperator {
 		return p.parseIfExpression(openingParenIndex, ident)
@@ -7613,10 +7624,13 @@ func (p *parser) parseReadonlyPatternExpression(readonlyIdent *IdentifierLiteral
 	}
 }
 
-func (p *parser) parseXMLExpression(namespaceIdent *IdentifierLiteral) *XMLExpression {
+func (p *parser) parseXMLExpression(namespaceIdent *IdentifierLiteral /* can be nil */, start int32) *XMLExpression {
 	p.panicIfContextDone()
 
-	start := namespaceIdent.Span.Start
+	var namespace Node
+	if namespaceIdent != nil {
+		namespace = namespaceIdent
+	}
 
 	//we do not increment because we keep the '<' for parsing the top element
 
@@ -7629,13 +7643,14 @@ func (p *parser) parseXMLExpression(namespaceIdent *IdentifierLiteral) *XMLExpre
 				&ParsingError{UnspecifiedParsingError, UNTERMINATED_XML_EXPRESSION_MISSING_TOP_ELEM_NAME},
 				false,
 			},
+			Namespace: namespace,
 		}
 	}
 
 	topElem, _ := p.parseXMLElement(p.i)
 	return &XMLExpression{
 		NodeBase:  NodeBase{Span: NodeSpan{start, p.i}},
-		Namespace: namespaceIdent,
+		Namespace: namespace,
 		Element:   topElem,
 	}
 }

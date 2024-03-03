@@ -2280,9 +2280,9 @@ type CssAttributeSelector struct {
 }
 
 type XMLExpression struct {
-	NodeBase
-	Namespace Node //NOT an XML namespace
-	Element   *XMLElement
+	NodeBase  `json:"base:xml-expr"`
+	Namespace Node        `json:"namespace,omitempty"` //NOT an XML namespace
+	Element   *XMLElement `json:"element"`
 }
 
 func (XMLExpression) Kind() NodeKind {

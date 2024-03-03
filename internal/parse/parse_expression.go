@@ -437,7 +437,8 @@ func (p *parser) parseUnderscoreAlphaStartingExpression(precededByOpeningParen .
 	}
 
 	if p.s[p.i] == '<' && NodeIs(identStartingExpr, (*IdentifierLiteral)(nil)) {
-		node = p.parseXMLExpression(identStartingExpr.(*IdentifierLiteral))
+		ident := identStartingExpr.(*IdentifierLiteral)
+		node = p.parseXMLExpression(ident, ident.Span.Start)
 		return
 	}
 

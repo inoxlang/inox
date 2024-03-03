@@ -460,6 +460,7 @@ func TestPrint(t *testing.T) {
 		"fn() int =\n",
 		//xml
 		"h<div></div>",
+		"(<div></div>)",
 		"h<div",
 		"h<div/>",
 		"h<div/",
