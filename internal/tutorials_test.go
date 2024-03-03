@@ -186,8 +186,8 @@ func testTutorial(t *testing.T, params tutorialTestParams) {
 
 				UseBytecode:         useBytecode,
 				OptimizeBytecode:    useBytecode,
-				Out:                 outputBuff,
-				LogOut:              logOutputBuff,
+				Out:                 utils.NewLockedWriter(outputBuff),
+				LogOut:              utils.NewLockedWriter(logOutputBuff),
 				AllowMissingEnvVars: true,
 				IgnoreHighRiskScore: true,
 

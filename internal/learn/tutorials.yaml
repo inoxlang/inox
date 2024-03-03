@@ -1215,74 +1215,80 @@
             # This module is executed each time a GET request on `/` is received.
             manifest {}
 
-            return html<html>
-            <head>
-                <meta charset="utf-8"/>
-                <title></title>
-                <meta name="viewport" content="width=device-width, initial-scale=1"/>
-                <link rel="stylesheet" href="/base.css"/>
-                <script src="/htmx.min.js"></script>
-            </head>
-            <body>
-                <header> Hello from index.ix. </header>
-                <nav>
-                    <ul>
-                        <li><a href="/about">/about</a> (about.ix) </li>
-                        <li><a href="/about2">/about2</a> (about2/index.ix) </li>
-                        <li><a href="/users/1">/users/1</a> (users/:user-id/GET.ix) </li>
-                        <li><a href="/users/2">/users/2</a> (users/:user-id/GET.ix) </li>
-                    </ul>      
-                </nav>
+            return (
+                <html>
+                <head>
+                    <meta charset="utf-8"/>
+                    <title></title>
+                    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                    <link rel="stylesheet" href="/base.css"/>
+                    <script src="/htmx.min.js"></script>
+                </head>
+                <body>
+                    <header> Hello from index.ix. </header>
+                    <nav>
+                        <ul>
+                            <li><a href="/about">/about</a> (about.ix) </li>
+                            <li><a href="/about2">/about2</a> (about2/index.ix) </li>
+                            <li><a href="/users/1">/users/1</a> (users/:user-id/GET.ix) </li>
+                            <li><a href="/users/2">/users/2</a> (users/:user-id/GET.ix) </li>
+                        </ul>      
+                    </nav>
 
-                <main>
-                    <div class="forms">
-                        <span>Form sending a POST request to '/users'</span>
-                        <form hx-post-json="/users" hx-target="this">
-                            <input name="name" type="text" placeholder="name"/>
-                            <button type="submit">Submit</button>
-                        </form>
-                    </div>
+                    <main>
+                        <div class="forms">
+                            <span>Form sending a POST request to '/users'</span>
+                            <form hx-post-json="/users" hx-target="this">
+                                <input name="name" type="text" placeholder="name"/>
+                                <button type="submit">Submit</button>
+                            </form>
+                        </div>
 
 
-                    <div class="other">
-                        <span>Lazy loading of /users/0</span>
-                        <div hx-lazy-load="/users/0"></div>
-                    </div>
-                </main>
-            </body>
-            </html>
+                        <div class="other">
+                            <span>Lazy loading of /users/0</span>
+                            <div hx-lazy-load="/users/0"></div>
+                        </div>
+                    </main>
+                </body>
+                </html>
+            )
         /.tutorial-files/fs-routing-basics/about.ix: |
             # This module is each time a GET request on /about is received.
             manifest {}
 
-            return html<html>
-            <head>
-                <meta charset="utf-8"/>
-                <title></title>
-                <meta name="viewport" content="width=device-width, initial-scale=1"/>
-                <link rel="stylesheet" href="/base.css"/>
-                <script src="/htmx.min.js"></script>
-            </head>
-            <body>
-                <header> Hello from about.ix. </header>
-            </body>
-            </html>
+            return (
+                <html>
+                <head>
+                    <meta charset="utf-8"/>
+                    <title></title>
+                    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                    <link rel="stylesheet" href="/base.css"/>
+                    <script src="/htmx.min.js"></script>
+                </head>
+                <body>
+                    <header> Hello from about.ix. </header>
+                </body>
+                </html>
+            )
         /.tutorial-files/fs-routing-basics/about2/index.ix: |
             # This module is executed each time a GET request on /about2 is received.
             manifest {}
 
-            return html<html>
-            <head>
-                <meta charset="utf-8"/>
-                <title></title>
-                <meta name="viewport" content="width=device-width, initial-scale=1"/>
-                <link rel="stylesheet" href="/base.css"/>
-                <script src="/htmx.min.js"></script>
-            </head>
-            <body>
-                <header> Hello from about2/index.ix. </header>
-            </body>
-            </html>
+            return (
+                <html>
+                <head>
+                    <meta charset="utf-8"/>
+                    <title></title>
+                    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                    <link rel="stylesheet" href="/base.css"/>
+                    <script src="/htmx.min.js"></script>
+                </head>
+                <body>
+                    <header> Hello from about2/index.ix. </header>
+                </body>
+                </html>
+            )
         /.tutorial-files/fs-routing-basics/users/POST.ix: |
             # This module is executed each time a POST request on /users is received.
             manifest {
@@ -1299,19 +1305,21 @@
 
             username = mod-args.name
 
-            return html<html>
-            <head>
-                <meta charset="utf-8"/>
-                <title></title>
-                <meta name="viewport" content="width=device-width, initial-scale=1"/>
-                <link rel="stylesheet" href="/base.css"/>
-                <script src="/htmx.min.js"></script>
-            </head>
-            <body>
-                <header> Hello from users/POST.ix. </header>
-                Received user creation request with name "{username}".
-            </body>
-            </html>
+            return (
+                <html>
+                <head>
+                    <meta charset="utf-8"/>
+                    <title></title>
+                    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                    <link rel="stylesheet" href="/base.css"/>
+                    <script src="/htmx.min.js"></script>
+                </head>
+                <body>
+                    <header> Hello from users/POST.ix. </header>
+                    Received user creation request with name "{username}".
+                </body>
+                </html>
+            )
         /.tutorial-files/fs-routing-basics/users/:user-id/GET.ix: |
             # This module is executed each time a GET request on /users/<id> is received.
             manifest {}
@@ -1319,16 +1327,18 @@
             # Retrieve the `user-id` path parameter.
             user-id = ctx_data(/path-params/user-id, %string)
 
-            return html<html>
-            <head>
-                <meta charset="utf-8"/>
-                <title></title>
-                <meta name="viewport" content="width=device-width, initial-scale=1"/>
-                <link rel="stylesheet" href="/base.css"/>
-                <script src="/htmx.min.js"></script>
-            </head>
-            <body>
-                <header> Hello from users/:user-id/GET.ix. User id is `{user-id}`.</header>
-            </body>
-            </html>
+            return (
+                <html>
+                <head>
+                    <meta charset="utf-8"/>
+                    <title></title>
+                    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                    <link rel="stylesheet" href="/base.css"/>
+                    <script src="/htmx.min.js"></script>
+                </head>
+                <body>
+                    <header> Hello from users/:user-id/GET.ix. User id is `{user-id}`.</header>
+                </body>
+                </html>
+            )
 # ------------------------------------------------------------

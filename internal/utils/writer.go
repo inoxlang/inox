@@ -1,8 +1,10 @@
 package utils
 
 import (
+	"bytes"
 	"errors"
 	"io"
+	"sync"
 	"testing"
 )
 
@@ -27,6 +29,17 @@ type FnWriter struct {
 
 func (writer FnWriter) Write(p []byte) (n int, err error) {
 	return writer.WriteFn(p)
+}
+
+func NewLockedWriter(outputBuf *bytes.Buffer) io.Writer {
+	var lock sync.Mutex
+	return FnWriter{
+		WriteFn: func(p []byte) (n int, err error) {
+			lock.Lock()
+			defer lock.Unlock()
+			return outputBuf.Write(p)
+		},
+	}
 }
 
 type FnReader func(p []byte) (n int, err error)
