@@ -561,8 +561,8 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		return evalIfStatement(n, state)
 	case *parse.IfExpression:
 		return evalIfExpression(n, state)
-	case *parse.ForStatement:
-		return evalForStatement(n, state)
+	case *parse.ForStatement, *parse.ForExpression:
+		return evalForStatementAndExpr(n, state)
 	case *parse.WalkStatement:
 		return evalWalkStatement(n, state)
 	case *parse.SwitchStatement:
@@ -2428,8 +2428,34 @@ func evalIfExpression(n *parse.IfExpression, state *State) (_ Value, finalErr er
 	return ANY, nil
 }
 
-func evalForStatement(n *parse.ForStatement, state *State) (_ Value, finalErr error) {
-	iteratedValue, err := symbolicEval(n.IteratedValue, state)
+func evalForStatementAndExpr(n parse.Node, state *State) (_ Value, finalErr error) {
+
+	var (
+		iteratedValueNode, body       parse.Node
+		keyIndexIdent, valueElemIdent *parse.IdentifierLiteral
+		chunked                       bool
+	)
+
+	if stmt, ok := n.(*parse.ForStatement); ok {
+		iteratedValueNode = stmt.IteratedValue
+		keyIndexIdent = stmt.KeyIndexIdent
+		valueElemIdent = stmt.ValueElemIdent
+		if stmt.Body != nil {
+			body = stmt.Body
+		}
+		chunked = stmt.Chunked
+	} else {
+		expr := n.(*parse.ForExpression)
+		iteratedValueNode = expr.IteratedValue
+		keyIndexIdent = expr.KeyIndexIdent
+		valueElemIdent = expr.ValueElemIdent
+		if expr.Body != nil {
+			body = expr.Body
+		}
+		chunked = expr.Chunked
+	}
+
+	iteratedValue, err := symbolicEval(iteratedValueNode, state)
 	if err != nil {
 		return nil, err
 	}
@@ -2437,11 +2463,11 @@ func evalForStatement(n *parse.ForStatement, state *State) (_ Value, finalErr er
 	var kVarname string
 	var eVarname string
 
-	if n.KeyIndexIdent != nil {
-		kVarname = n.KeyIndexIdent.Name
+	if keyIndexIdent != nil {
+		kVarname = keyIndexIdent.Name
 	}
-	if n.ValueElemIdent != nil {
-		eVarname = n.ValueElemIdent.Name
+	if valueElemIdent != nil {
+		eVarname = valueElemIdent.Name
 	}
 
 	var keyType Value = ANY
@@ -2449,7 +2475,7 @@ func evalForStatement(n *parse.ForStatement, state *State) (_ Value, finalErr er
 	evaluateBody := true
 
 	if iterable, ok := asIterable(iteratedValue).(Iterable); ok {
-		if n.Chunked {
+		if chunked {
 			state.addError(makeSymbolicEvalError(n, state, "chunked iteration of iterables is not supported yet"))
 		}
 
@@ -2466,10 +2492,10 @@ func evalForStatement(n *parse.ForStatement, state *State) (_ Value, finalErr er
 		}
 
 	} else if streamable, ok := asStreamable(iteratedValue).(StreamSource); ok {
-		if n.KeyIndexIdent != nil {
-			state.addError(makeSymbolicEvalError(n.KeyIndexIdent, state, KEY_VAR_SHOULD_BE_PROVIDED_ONLY_WHEN_ITERATING_OVER_AN_ITERABLE))
+		if keyIndexIdent != nil {
+			state.addError(makeSymbolicEvalError(keyIndexIdent, state, KEY_VAR_SHOULD_BE_PROVIDED_ONLY_WHEN_ITERATING_OVER_AN_ITERABLE))
 		}
-		if n.Chunked {
+		if chunked {
 			valueType = streamable.ChunkedStreamElement()
 		} else {
 			valueType = streamable.StreamElement()
@@ -2478,21 +2504,21 @@ func evalForStatement(n *parse.ForStatement, state *State) (_ Value, finalErr er
 		state.addError(makeSymbolicEvalError(n, state, fmtXisNotIterable(iteratedValue)))
 	}
 
-	if n.Body != nil && evaluateBody {
+	if body != nil && evaluateBody {
 		stateFork := state.fork()
 
-		if n.KeyIndexIdent != nil {
-			stateFork.setLocal(kVarname, keyType, nil, n.KeyIndexIdent)
-			stateFork.symbolicData.SetMostSpecificNodeValue(n.KeyIndexIdent, keyType)
+		if keyIndexIdent != nil {
+			stateFork.setLocal(kVarname, keyType, nil, keyIndexIdent)
+			stateFork.symbolicData.SetMostSpecificNodeValue(keyIndexIdent, keyType)
 		}
-		if n.ValueElemIdent != nil {
-			stateFork.setLocal(eVarname, valueType, nil, n.ValueElemIdent)
-			stateFork.symbolicData.SetMostSpecificNodeValue(n.ValueElemIdent, valueType)
+		if valueElemIdent != nil {
+			stateFork.setLocal(eVarname, valueType, nil, valueElemIdent)
+			stateFork.symbolicData.SetMostSpecificNodeValue(valueElemIdent, valueType)
 		}
 
-		stateFork.symbolicData.SetLocalScopeData(n.Body, stateFork.currentLocalScopeData())
+		stateFork.symbolicData.SetLocalScopeData(body, stateFork.currentLocalScopeData())
 
-		_, err = symbolicEval(n.Body, stateFork)
+		_, err = symbolicEval(body, stateFork)
 		if err != nil {
 			return nil, err
 		}

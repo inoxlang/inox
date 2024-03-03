@@ -8737,6 +8737,33 @@ func TestSymbolicEval(t *testing.T) {
 		})
 	})
 
+	t.Run("for expression", func(t *testing.T) {
+		t.Run("key & element variables should be present in local scope data", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				(for k, v in {a: int}: [k, v])
+			`)
+
+			symbolicEval(n, state)
+
+			arrayLiteral, chain := parse.FindNodeAndChain(n, (*parse.ListLiteral)(nil), nil)
+			data, ok := state.symbolicData.GetLocalScopeData(arrayLiteral, chain)
+			if !assert.True(t, ok) {
+				return
+			}
+
+			if !assert.Len(t, data.Variables, 2) {
+				return
+			}
+
+			if data.Variables[0].Name == "k" {
+				assert.Equal(t, "v", data.Variables[1].Name)
+			} else {
+				assert.Equal(t, "v", data.Variables[0].Name)
+				assert.Equal(t, "k", data.Variables[1].Name)
+			}
+		})
+	})
+
 	t.Run("walk statement", func(t *testing.T) {
 		t.Run("walked value is not walkable", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
