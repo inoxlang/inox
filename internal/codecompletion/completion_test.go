@@ -1234,7 +1234,30 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 				},
 			}, completions)
 		})
+	})
 
+	t.Run("html attribute names in XML expression with implicit namespace", func(t *testing.T) {
+		t.Run("local variable in top level module", func(t *testing.T) {
+			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			defer state.Global.Ctx.CancelGracefully()
+
+			chunk, _ := parseChunkSource("(<img sr />)", "")
+
+			doSymbolicCheck(chunk, state.Global)
+			completions := findCompletions(state, chunk, 8)
+			assert.EqualValues(t, []Completion{
+				{
+					ShownString:   "src",
+					Value:         "src",
+					ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 6, End: 8}},
+				},
+				{
+					ShownString:   "srcset",
+					Value:         "srcset",
+					ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 6, End: 8}},
+				},
+			}, completions)
+		})
 	})
 
 	t.Run("html attribute values", func(t *testing.T) {
@@ -1257,6 +1280,25 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 					ShownString:   "/index.js",
 					Value:         `"/index.js"`,
 					ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 16, End: 18}},
+				},
+			}, completions)
+		})
+
+		t.Run("src in <script> with implicit namespace: empty", func(t *testing.T) {
+			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			defer state.Global.Ctx.CancelGracefully()
+
+			chunk, _ := parseChunkSource("(<script src=\"\">)", "")
+
+			doSymbolicCheck(chunk, state.Global)
+			completions := _findCompletions(state, chunk, 13, false, &InputData{
+				StaticFileURLPaths: []string{"/index.css", "/index.js"},
+			})
+			assert.EqualValues(t, []Completion{
+				{
+					ShownString:   "/index.js",
+					Value:         `"/index.js"`,
+					ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 13, End: 15}},
 				},
 			}, completions)
 		})

@@ -3,6 +3,7 @@ package codecompletion
 import (
 	"unicode"
 
+	"github.com/inoxlang/inox/internal/globals/globalnames"
 	parse "github.com/inoxlang/inox/internal/parse"
 )
 
@@ -23,7 +24,7 @@ func findXmlTagAndTagNameCompletions(ident *parse.IdentifierLiteral, search comp
 	suggestWholeTags := xmlElem != nil && xmlElem.Base().Span.End == ident.Span.End
 
 	//TODO: use symbolic data in order to support aliases
-	switch namespace.Name {
+	switch namespace {
 	case "html":
 		completions = getHTMLTagNamesWithPrefix(tagName)
 
@@ -38,7 +39,7 @@ func findXmlTagAndTagNameCompletions(ident *parse.IdentifierLiteral, search comp
 // findXmlTagAndTagNameCompletions finds completions based on the namespace (e.g. html) of the closest Inox XML opening element.
 func findXMLOpeningElementInteriorCompletions(openingElem *parse.XMLOpeningElement, search completionSearch) (completions []Completion) {
 	ancestors := search.ancestorChain
-	namespace, ok := findXMLNamespace(ancestors)
+	namespace, ok := findXMLNamespaceName(ancestors)
 	if !ok {
 		return
 	}
@@ -61,7 +62,7 @@ func findXMLOpeningElementInteriorCompletions(openingElem *parse.XMLOpeningEleme
 
 	suggestWholeTags := onlySpaceAfterTagName
 
-	switch namespace.Name {
+	switch namespace {
 	case "html":
 		if suggestWholeTags {
 			completions = append(completions, findWholeHTMLTagCompletions(tagName, ancestors, true, search.inputData)...)
@@ -80,7 +81,7 @@ func findXmlAttributeNameCompletions(ident *parse.IdentifierLiteral, parent *par
 	}
 
 	//TODO: use symbolic data in order to support aliases
-	switch namespace.Name {
+	switch namespace {
 	case "html":
 		return findHtmlAttributeNameCompletions(ident, parent, tagName, ancestors)
 	}
@@ -97,7 +98,7 @@ func findXMLAttributeValueCompletions(str *parse.QuotedStringLiteral, parent *pa
 	}
 
 	//TODO: use symbolic data in order to support aliases
-	switch namespace.Name {
+	switch namespace {
 	case "html":
 		return findHtmlAttributeValueCompletions(str, parent, tagName, ancestors, data)
 	}
@@ -105,26 +106,30 @@ func findXMLAttributeValueCompletions(str *parse.QuotedStringLiteral, parent *pa
 	return
 }
 
-// findXMLNamespace finds the namespace of the closest Inox XML expression.
-func findXMLNamespace(ancestors []parse.Node) (*parse.IdentifierLiteral, bool) {
+// findXMLNamespaceName finds the namespace of the closest Inox XML expression.
+func findXMLNamespaceName(ancestors []parse.Node) (string, bool) {
 	xmlExpr, _, found := parse.FindClosest(ancestors, (*parse.XMLExpression)(nil))
 	if !found {
-		return nil, false
+		return "", false
 	}
 
-	namespace, ok := xmlExpr.Namespace.(*parse.IdentifierLiteral)
+	if xmlExpr.Namespace == nil {
+		return globalnames.HTML_NS, true
+	}
+
+	namespaceIdent, ok := xmlExpr.Namespace.(*parse.IdentifierLiteral)
 	if !ok {
-		return nil, false
+		return "", false
 	}
 
-	return namespace, true
+	return namespaceIdent.Name, true
 }
 
 // findXMLNamespace finds the tag name and namespace of the closest Inox XML expression.
-func findTagNameAndNamespace(ancestors []parse.Node) (string, *parse.IdentifierLiteral, bool) {
+func findTagNameAndNamespace(ancestors []parse.Node) (tag string, ns string, _ bool) {
 	xmlExpr, _, found := parse.FindClosest(ancestors, (*parse.XMLExpression)(nil))
 	if !found {
-		return "", nil, false
+		return "", "", false
 	}
 
 	openingElem, ok := ancestors[len(ancestors)-1].(*parse.XMLOpeningElement)
@@ -133,15 +138,18 @@ func findTagNameAndNamespace(ancestors []parse.Node) (string, *parse.IdentifierL
 	}
 	tagIdent, ok := openingElem.Name.(*parse.IdentifierLiteral)
 	if !ok {
-		return "", nil, false
+		return "", "", false
 	}
 
 	tagName := tagIdent.Name
 
-	namespace, ok := xmlExpr.Namespace.(*parse.IdentifierLiteral)
-	if !ok {
-		return "", nil, false
+	if xmlExpr.Namespace == nil {
+		ns = globalnames.HTML_NS
+	} else if namespaceIdent, ok := xmlExpr.Namespace.(*parse.IdentifierLiteral); ok {
+		ns = namespaceIdent.Name
+	} else {
+		return "", "", false
 	}
 
-	return tagName, namespace, true
+	return tagName, ns, true
 }
