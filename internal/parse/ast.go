@@ -42,7 +42,7 @@ func (s NodeSpan) Len() int32 {
 type NodeBase struct {
 	Span            NodeSpan      `json:"span"`
 	Err             *ParsingError `json:"error,omitempty"`
-	IsParenthesized bool          //true even if the closing parenthesis is missing
+	IsParenthesized bool          //can be true even if the closing parenthesis is missing
 }
 
 func (base NodeBase) Base() NodeBase {
@@ -1405,6 +1405,24 @@ type ForStatement struct {
 
 func (ForStatement) Kind() NodeKind {
 	return Stmt
+}
+
+type ForExpression struct {
+	NodeBase
+
+	KeyIndexIdent *IdentifierLiteral //can be nil
+	KeyPattern    Node               //can be nil
+
+	ValueElemIdent *IdentifierLiteral //can be nil
+	ValuePattern   Node               //can be nil
+
+	Body          Node
+	Chunked       bool
+	IteratedValue Node
+}
+
+func (ForExpression) Kind() NodeKind {
+	return Expr
 }
 
 type WalkStatement struct {
@@ -2788,6 +2806,13 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 		walk(n.Consequent, node, ancestorChain, fn, afterFn)
 		walk(n.Alternate, node, ancestorChain, fn, afterFn)
 	case *ForStatement:
+		walk(n.KeyPattern, node, ancestorChain, fn, afterFn)
+		walk(n.KeyIndexIdent, node, ancestorChain, fn, afterFn)
+		walk(n.ValuePattern, node, ancestorChain, fn, afterFn)
+		walk(n.ValueElemIdent, node, ancestorChain, fn, afterFn)
+		walk(n.IteratedValue, node, ancestorChain, fn, afterFn)
+		walk(n.Body, node, ancestorChain, fn, afterFn)
+	case *ForExpression:
 		walk(n.KeyPattern, node, ancestorChain, fn, afterFn)
 		walk(n.KeyIndexIdent, node, ancestorChain, fn, afterFn)
 		walk(n.ValuePattern, node, ancestorChain, fn, afterFn)

@@ -337,17 +337,31 @@ const (
 
 	URL_LITS_AND_PATH_LITS_USED_AS_IMPORT_SRCS_SHOULD_END_WITH_IX = "URL literals and path literals used as import sources should end with `" + inoxconsts.INOXLANG_FILE_EXTENSION + "`"
 
-	UNTERMINATED_EMBEDDED_MODULE                            = "unterminated embedded module"
+	UNTERMINATED_EMBEDDED_MODULE = "unterminated embedded module"
+
+	//For ... statement.
+
 	INVALID_FOR_STMT                                        = "invalid for statement"
 	UNTERMINATED_FOR_STMT                                   = "unterminated for statement"
 	INVALID_FOR_STMT_MISSING_IN_KEYWORD                     = "invalid for statement: missing 'in' keyword "
 	INVALID_FOR_STMT_IN_KEYWORD_SHOULD_BE_FOLLOWED_BY_SPACE = "invalid for statement: 'in' keyword should be followed by a space"
 	INVALID_FOR_STMT_MISSING_VALUE_AFTER_IN                 = "unterminated for statement: missing value after 'in'"
 	UNTERMINATED_FOR_STMT_MISSING_BLOCK                     = "unterminated for statement: missing block"
-	UNTERMINATED_WALK_STMT_MISSING_WALKED_VALUE             = "unterminated walk statement: missing walked value"
-	UNTERMINATED_WALK_STMT_MISSING_ENTRY_VARIABLE_NAME      = "unterminated walk statement: missing entry variable's name"
-	INVALID_WALK_STMT_MISSING_ENTRY_IDENTIFIER              = "invalid walk statement: missing entry identifier"
-	UNTERMINATED_WALK_STMT_MISSING_BLOCK                    = "unterminated walk statement: missing block"
+
+	//For ... expression.
+
+	INVALID_FOR_EXPR                                        = "invalid for ... expression"
+	UNTERMINATED_FOR_EXPR                                   = "unterminated for expression"
+	INVALID_FOR_EXPR_MISSING_IN_KEYWORD                     = "invalid for expression: missing 'in' keyword "
+	INVALID_FOR_EXPR_IN_KEYWORD_SHOULD_BE_FOLLOWED_BY_SPACE = "invalid for expression: 'in' keyword should be followed by a space"
+	INVALID_FOR_EXPR_MISSING_VALUE_AFTER_IN                 = "unterminated for expression: missing value after 'in'"
+	UNTERMINATED_FOR_EXPR_MISSING_BODY                      = "unterminated for expression: missing body"
+	UNTERMINATED_FOR_EXPR_MISSING_CLOSIN_PAREN              = "unterminated for expression: missing closing parenthesis"
+
+	UNTERMINATED_WALK_STMT_MISSING_WALKED_VALUE        = "unterminated walk statement: missing walked value"
+	UNTERMINATED_WALK_STMT_MISSING_ENTRY_VARIABLE_NAME = "unterminated walk statement: missing entry variable's name"
+	INVALID_WALK_STMT_MISSING_ENTRY_IDENTIFIER         = "invalid walk statement: missing entry identifier"
+	UNTERMINATED_WALK_STMT_MISSING_BLOCK               = "unterminated walk statement: missing block"
 
 	UNTERMINATED_MULTI_ASSIGN_MISSING_EQL_SIGN             = "unterminated multi assign statement: missing '=' sign"
 	ASSIGN_KEYWORD_SHOULD_BE_FOLLOWED_BY_IDENTS            = "assign keyword should be followed by identifiers (assign a b = <value>)"
@@ -621,8 +635,17 @@ func fmtUnterminatedIfStmtElseShouldBeFollowedByBlock(r rune) string {
 func fmtForStmtKeyIndexShouldBeFollowedByCommaNot(r rune) string {
 	return fmt.Sprintf("for statement: key/index name should be followed by a comma ',' , not %s", string(r))
 }
+
 func fmtInvalidForStmtKeyIndexVarShouldBeFollowedByVarNot(keyIndexIdent Node) string {
 	return fmt.Sprintf("invalid for statement: 'for <key-index var> <colon> should be followed by a variable, not a(n) %T", keyIndexIdent)
+}
+
+func fmtForExprKeyIndexShouldBeFollowedByCommaNot(r rune) string {
+	return fmt.Sprintf("for expression: key/index name should be followed by a comma ',' , not %s", string(r))
+}
+
+func fmtInvalidForExprKeyIndexVarShouldBeFollowedByVarNot(keyIndexIdent Node) string {
+	return fmt.Sprintf("invalid for expression: 'for <key-index var> <colon> should be followed by a variable, not a(n) %T", keyIndexIdent)
 }
 
 func fmtInvalidPipelineStageUnexpectedChar(r rune) string {

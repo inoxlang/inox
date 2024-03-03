@@ -4452,8 +4452,9 @@ func (p *parser) parseIfExpression(openingParenIndex int32, ifIdent *IdentifierL
 
 	return &IfExpression{
 		NodeBase: NodeBase{
-			Span: NodeSpan{openingParenIndex, end},
-			Err:  parsingErr,
+			Span:            NodeSpan{openingParenIndex, end},
+			Err:             parsingErr,
+			IsParenthesized: true,
 		},
 		Test:       test,
 		Consequent: consequent,
@@ -4489,8 +4490,13 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(openingParenIndex in
 		left, isMissingExpr = p.parseExpression(true)
 	}
 
-	if ident, ok := left.(*IdentifierLiteral); ok && ident.Name == "if" && !hasPreviousOperator {
-		return p.parseIfExpression(openingParenIndex, ident)
+	if ident, ok := left.(*IdentifierLiteral); ok && !hasPreviousOperator {
+		switch ident.Name {
+		case "if":
+			return p.parseIfExpression(openingParenIndex, ident)
+		case "for":
+			return p.parseForExpression(openingParenIndex, ident)
+		}
 	}
 
 	p.eatSpaceNewlineComment()
@@ -9111,6 +9117,221 @@ func (p *parser) parseForStatement(forIdent *IdentifierLiteral) *ForStatement {
 	default:
 		p.eatSpace()
 		return parseVariableLessForStatement(first)
+	}
+}
+
+func (p *parser) parseForExpression(openingParenIndex int32, forIdent *IdentifierLiteral) *ForExpression {
+	p.panicIfContextDone()
+
+	var parsingErr *ParsingError
+	var valuePattern Node
+	var valueElemIdent *IdentifierLiteral
+	var keyPattern Node
+	var keyIndexIdent *IdentifierLiteral
+	p.eatSpace()
+
+	var firstPattern Node
+	var first Node
+	chunked := false
+	p.tokens = append(p.tokens, Token{Type: FOR_KEYWORD, Span: forIdent.Span})
+
+	if p.i < p.len && p.s[p.i] == '%' {
+		firstPattern = p.parsePercentPrefixedPattern(false)
+		p.eatSpace()
+
+		e, _ := p.parseExpression()
+		first = e
+	} else {
+		first, _ = p.parseExpression()
+
+		if ident, ok := first.(*IdentifierLiteral); ok && !ident.IsParenthesized && ident.Name == "chunked" {
+			p.tokens = append(p.tokens, Token{Type: CHUNKED_KEYWORD, Span: ident.Span})
+			chunked = true
+			p.eatSpace()
+			first, _ = p.parseExpression()
+		}
+	}
+
+	switch v := first.(type) {
+	case *IdentifierLiteral: //for ... in ...
+		p.eatSpace()
+
+		if p.i >= p.len {
+			return &ForExpression{
+				NodeBase: NodeBase{
+					Span:            NodeSpan{forIdent.Span.Start, p.i},
+					Err:             &ParsingError{UnspecifiedParsingError, INVALID_FOR_EXPR},
+					IsParenthesized: true,
+				},
+				Chunked:       chunked,
+				KeyPattern:    firstPattern,
+				KeyIndexIdent: v,
+			}
+		}
+
+		//if not directly followed by "in"
+		if p.i >= p.len-1 || p.s[p.i] != 'i' || p.s[p.i+1] != 'n' {
+			keyIndexIdent = v
+			keyPattern = firstPattern
+
+			if p.s[p.i] != ',' {
+				parsingErr = &ParsingError{UnspecifiedParsingError, fmtForExprKeyIndexShouldBeFollowedByCommaNot(p.s[p.i])}
+			}
+
+			p.tokens = append(p.tokens, Token{Type: COMMA, Span: NodeSpan{p.i, p.i + 1}})
+
+			p.i++
+			p.eatSpace()
+
+			if p.i >= p.len {
+				return &ForExpression{
+					NodeBase: NodeBase{
+						Span:            NodeSpan{forIdent.Span.Start, p.i},
+						Err:             &ParsingError{UnspecifiedParsingError, UNTERMINATED_FOR_STMT},
+						IsParenthesized: true,
+					},
+					Chunked:       chunked,
+					KeyPattern:    firstPattern,
+					KeyIndexIdent: v,
+				}
+			}
+
+			if p.s[p.i] == '%' {
+				valuePattern = p.parsePercentPrefixedPattern(false)
+				p.eatSpace()
+			}
+
+			e, _ := p.parseExpression()
+
+			if ident, isVar := e.(*IdentifierLiteral); !isVar {
+				parsingErr = &ParsingError{UnspecifiedParsingError, fmtInvalidForExprKeyIndexVarShouldBeFollowedByVarNot(keyIndexIdent)}
+			} else {
+				valueElemIdent = ident
+			}
+
+			p.eatSpace()
+
+			if p.i >= p.len {
+				return &ForExpression{
+					NodeBase: NodeBase{
+						Span:            NodeSpan{forIdent.Span.Start, p.i},
+						Err:             &ParsingError{UnspecifiedParsingError, UNTERMINATED_FOR_EXPR},
+						IsParenthesized: true,
+					},
+					KeyPattern:    firstPattern,
+					KeyIndexIdent: v,
+					ValuePattern:  valuePattern,
+					Chunked:       chunked,
+				}
+			}
+
+			if p.s[p.i] != 'i' || p.i > p.len-2 || p.s[p.i+1] != 'n' {
+				return &ForExpression{
+					NodeBase: NodeBase{
+						Span:            NodeSpan{forIdent.Span.Start, p.i},
+						Err:             &ParsingError{UnspecifiedParsingError, INVALID_FOR_STMT_MISSING_IN_KEYWORD},
+						IsParenthesized: true,
+					},
+					KeyPattern:     keyPattern,
+					KeyIndexIdent:  keyIndexIdent,
+					ValuePattern:   valuePattern,
+					ValueElemIdent: valueElemIdent,
+					Chunked:        chunked,
+				}
+			}
+
+		} else { //if directly followed by "in"
+			valueElemIdent = v
+			valuePattern = firstPattern
+		}
+
+		p.tokens = append(p.tokens, Token{Type: IN_KEYWORD, Span: NodeSpan{p.i, p.i + 2}})
+		p.i += 2
+
+		if p.i < p.len && p.s[p.i] != ' ' {
+
+			return &ForExpression{
+				NodeBase: NodeBase{
+					Span:            NodeSpan{forIdent.Span.Start, p.i},
+					Err:             &ParsingError{UnspecifiedParsingError, INVALID_FOR_STMT_IN_KEYWORD_SHOULD_BE_FOLLOWED_BY_SPACE},
+					IsParenthesized: true,
+				},
+				KeyPattern:     keyPattern,
+				KeyIndexIdent:  keyIndexIdent,
+				ValuePattern:   valuePattern,
+				ValueElemIdent: valueElemIdent,
+				Chunked:        chunked,
+			}
+		}
+		p.eatSpace()
+
+		if p.i >= p.len {
+			return &ForExpression{
+				NodeBase: NodeBase{
+					Span:            NodeSpan{forIdent.Span.Start, p.i},
+					Err:             &ParsingError{UnspecifiedParsingError, INVALID_FOR_STMT_MISSING_VALUE_AFTER_IN},
+					IsParenthesized: true,
+				},
+				KeyPattern:     firstPattern,
+				KeyIndexIdent:  keyIndexIdent,
+				ValuePattern:   valuePattern,
+				ValueElemIdent: valueElemIdent,
+				Chunked:        chunked,
+			}
+		}
+
+		iteratedValue, _ := p.parseExpression()
+		p.eatSpace()
+
+		var body Node
+		var end = p.i
+
+		if p.i >= p.len || p.s[p.i] != ':' {
+			parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_FOR_EXPR_MISSING_BODY}
+		} else {
+			p.tokens = append(p.tokens, Token{Type: COLON, Span: NodeSpan{p.i, p.i + 1}})
+			p.i++
+
+			p.eatSpaceNewlineComment()
+
+			body, _ = p.parseExpression()
+			end = body.Base().Span.End
+		}
+
+		p.eatSpaceNewlineComment()
+
+		if p.i < p.len && p.s[p.i] == ')' {
+			p.tokens = append(p.tokens, Token{Type: CLOSING_PARENTHESIS, Span: NodeSpan{p.i, p.i + 1}})
+			p.i++
+			end = p.i
+		} else {
+			parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_FOR_EXPR_MISSING_CLOSIN_PAREN}
+		}
+
+		return &ForExpression{
+			NodeBase: NodeBase{
+				Span:            NodeSpan{forIdent.Span.Start, end},
+				Err:             parsingErr,
+				IsParenthesized: true,
+			},
+			KeyPattern:     keyPattern,
+			KeyIndexIdent:  keyIndexIdent,
+			ValueElemIdent: valueElemIdent,
+			ValuePattern:   valuePattern,
+			Body:           body,
+			Chunked:        chunked,
+			IteratedValue:  iteratedValue,
+		}
+	default:
+		return &ForExpression{
+			NodeBase: NodeBase{
+				Span:            NodeSpan{forIdent.Span.Start, p.i},
+				Err:             &ParsingError{UnspecifiedParsingError, INVALID_FOR_EXPR},
+				IsParenthesized: true,
+			},
+			Chunked:    chunked,
+			KeyPattern: firstPattern,
+		}
 	}
 }
 

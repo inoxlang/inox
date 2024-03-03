@@ -14660,10 +14660,7 @@ func testParse(
 						NodeBase: NodeBase{
 							NodeSpan{0, 11},
 							nil,
-							false,
-							/*[]Token{
-								{Type: IF_KEYWORD, Span: NodeSpan{1, 3}},
-							},*/
+							true,
 						}, Test: &BooleanLiteral{
 							NodeBase: NodeBase{NodeSpan{4, 8}, nil, false},
 							Value:    true,
@@ -14690,10 +14687,7 @@ func testParse(
 						NodeBase: NodeBase{
 							NodeSpan{0, 8},
 							nil,
-							false,
-							/*[]Token{
-								{Type: IF_KEYWORD, Span: NodeSpan{1, 3}},
-							},*/
+							true,
 						}, Test: &BooleanLiteral{
 							NodeBase: NodeBase{NodeSpan{4, 8}, nil, false},
 							Value:    true,
@@ -14720,10 +14714,7 @@ func testParse(
 						NodeBase: NodeBase{
 							NodeSpan{0, 10},
 							&ParsingError{UnspecifiedParsingError, UNTERMINATED_IF_EXPR_MISSING_CLOSING_PAREN},
-							false,
-							/*[]Token{
-								{Type: IF_KEYWORD, Span: NodeSpan{1, 3}},
-							},*/
+							true,
 						}, Test: &BooleanLiteral{
 							NodeBase: NodeBase{NodeSpan{4, 8}, nil, false},
 							Value:    true,
@@ -14747,11 +14738,7 @@ func testParse(
 						NodeBase: NodeBase{
 							NodeSpan{0, 18},
 							nil,
-							false,
-							/*[]Token{
-								{Type: IF_KEYWORD, Span: NodeSpan{1, 3}},
-								{Type: ELSE_KEYWORD, Span: NodeSpan{11, 15}},
-							},*/
+							true,
 						}, Test: &BooleanLiteral{
 							NodeBase: NodeBase{NodeSpan{4, 8}, nil, false},
 							Value:    true,
@@ -14781,11 +14768,7 @@ func testParse(
 						NodeBase: NodeBase{
 							NodeSpan{0, 17},
 							&ParsingError{UnspecifiedParsingError, UNTERMINATED_IF_EXPR_MISSING_CLOSING_PAREN},
-							false,
-							/*[]Token{
-								{Type: IF_KEYWORD, Span: NodeSpan{1, 3}},
-								{Type: ELSE_KEYWORD, Span: NodeSpan{11, 15}},
-							},*/
+							true,
 						}, Test: &BooleanLiteral{
 							NodeBase: NodeBase{NodeSpan{4, 8}, nil, false},
 							Value:    true,
@@ -14816,11 +14799,7 @@ func testParse(
 						NodeBase: NodeBase{
 							NodeSpan{0, 15},
 							&ParsingError{UnspecifiedParsingError, UNTERMINATED_IF_EXPR_MISSING_CLOSING_PAREN},
-							false,
-							/*[]Token{
-								{Type: IF_KEYWORD, Span: NodeSpan{1, 3}},
-								{Type: ELSE_KEYWORD, Span: NodeSpan{11, 15}},
-							},*/
+							true,
 						}, Test: &BooleanLiteral{
 							NodeBase: NodeBase{NodeSpan{4, 8}, nil, false},
 							Value:    true,
@@ -15306,6 +15285,252 @@ func testParse(
 			}, n)
 		})
 
+	})
+
+	t.Run("for expression", func(t *testing.T) {
+		t.Run("for <index>, <elem> ... in", func(t *testing.T) {
+			n := mustparseChunk(t, "(for i, u in $users: i)")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
+				Statements: []Node{
+					&ForExpression{
+						NodeBase: NodeBase{Span: NodeSpan{1, 23}, IsParenthesized: true},
+						KeyIndexIdent: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{5, 6}, nil, false},
+							Name:     "i",
+						},
+						ValueElemIdent: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{8, 9}, nil, false},
+							Name:     "u",
+						},
+						IteratedValue: &Variable{
+							NodeBase: NodeBase{NodeSpan{13, 19}, nil, false},
+							Name:     "users",
+						},
+						Body: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{21, 22}, nil, false},
+							Name:     "i",
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("for <index pattern> <index>, <elem> ... in", func(t *testing.T) {
+			n := mustparseChunk(t, "(for %even i, u in $users: i)")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 29}, nil, false},
+				Statements: []Node{
+					&ForExpression{
+						NodeBase: NodeBase{Span: NodeSpan{1, 29}, IsParenthesized: true},
+						KeyPattern: &PatternIdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{5, 10}, nil, false},
+							Name:     "even",
+						},
+						KeyIndexIdent: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{11, 12}, nil, false},
+							Name:     "i",
+						},
+						ValueElemIdent: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{14, 15}, nil, false},
+							Name:     "u",
+						},
+						IteratedValue: &Variable{
+							NodeBase: NodeBase{NodeSpan{19, 25}, nil, false},
+							Name:     "users",
+						},
+						Body: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{27, 28}, nil, false},
+							Name:     "i",
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("for <index pattern> <index>, <elem pattern> <elem> ... in", func(t *testing.T) {
+			n := mustparseChunk(t, "(for %even i, %p u in $users: i)")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 32}, nil, false},
+				Statements: []Node{
+					&ForExpression{
+						NodeBase: NodeBase{Span: NodeSpan{1, 32}, IsParenthesized: true},
+						KeyPattern: &PatternIdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{5, 10}, nil, false},
+							Name:     "even",
+						},
+						KeyIndexIdent: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{11, 12}, nil, false},
+							Name:     "i",
+						},
+						ValuePattern: &PatternIdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{14, 16}, nil, false},
+							Name:     "p",
+						},
+						ValueElemIdent: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{17, 18}, nil, false},
+							Name:     "u",
+						},
+						IteratedValue: &Variable{
+							NodeBase: NodeBase{NodeSpan{22, 28}, nil, false},
+							Name:     "users",
+						},
+						Body: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{30, 31}, nil, false},
+							Name:     "i",
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("for <index>, <elem pattern> <elem> ... in", func(t *testing.T) {
+			n := mustparseChunk(t, "(for i, %p u in $users: i)")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 26}, nil, false},
+				Statements: []Node{
+					&ForExpression{
+						NodeBase: NodeBase{Span: NodeSpan{1, 26}, IsParenthesized: true},
+						KeyIndexIdent: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{5, 6}, nil, false},
+							Name:     "i",
+						},
+						ValuePattern: &PatternIdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{8, 10}, nil, false},
+							Name:     "p",
+						},
+						ValueElemIdent: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{11, 12}, nil, false},
+							Name:     "u",
+						},
+						IteratedValue: &Variable{
+							NodeBase: NodeBase{NodeSpan{16, 22}, nil, false},
+							Name:     "users",
+						},
+						Body: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{24, 25}, nil, false},
+							Name:     "i",
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("for <elem> ... in", func(t *testing.T) {
+			n := mustparseChunk(t, "(for u in $users: i)")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
+				Statements: []Node{
+					&ForExpression{
+						NodeBase:      NodeBase{Span: NodeSpan{1, 20}, IsParenthesized: true},
+						KeyIndexIdent: nil,
+						ValueElemIdent: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{5, 6}, nil, false},
+							Name:     "u",
+						},
+						IteratedValue: &Variable{
+							NodeBase: NodeBase{NodeSpan{10, 16}, nil, false},
+							Name:     "users",
+						},
+						Body: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{18, 19}, nil, false},
+							Name:     "i",
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("for <elem> ... in chunked", func(t *testing.T) {
+			n := mustparseChunk(t, "(for chunked u in $users: u)")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 28}, nil, false},
+				Statements: []Node{
+					&ForExpression{
+						NodeBase:      NodeBase{Span: NodeSpan{1, 28}, IsParenthesized: true},
+						KeyIndexIdent: nil,
+						ValueElemIdent: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{13, 14}, nil, false},
+							Name:     "u",
+						},
+						Chunked: true,
+						IteratedValue: &Variable{
+							NodeBase: NodeBase{NodeSpan{18, 24}, nil, false},
+							Name:     "users",
+						},
+						Body: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{26, 27}, nil, false},
+							Name:     "u",
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("missing body", func(t *testing.T) {
+			n, err := parseChunk(t, "(for i, u in $users:)", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
+				Statements: []Node{
+					&ForExpression{
+						NodeBase: NodeBase{Span: NodeSpan{1, 21}, IsParenthesized: true},
+						KeyIndexIdent: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{5, 6}, nil, false},
+							Name:     "i",
+						},
+						ValueElemIdent: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{8, 9}, nil, false},
+							Name:     "u",
+						},
+						IteratedValue: &Variable{
+							NodeBase: NodeBase{NodeSpan{13, 19}, nil, false},
+							Name:     "users",
+						},
+						Body: &MissingExpression{
+							NodeBase: NodeBase{
+								NodeSpan{20, 21},
+								&ParsingError{UnspecifiedParsingError, "an expression was expected: ...sers:<<here>>)..."},
+								false,
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("misisng closing parenthesis", func(t *testing.T) {
+			n, err := parseChunk(t, "(for i, u in $users: i", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 22}, nil, false},
+				Statements: []Node{
+					&ForExpression{
+						NodeBase: NodeBase{
+							NodeSpan{1, 22},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_FOR_EXPR_MISSING_CLOSIN_PAREN},
+							true,
+						},
+						KeyIndexIdent: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{5, 6}, nil, false},
+							Name:     "i",
+						},
+						ValueElemIdent: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{8, 9}, nil, false},
+							Name:     "u",
+						},
+						IteratedValue: &Variable{
+							NodeBase: NodeBase{NodeSpan{13, 19}, nil, false},
+							Name:     "users",
+						},
+						Body: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{21, 22}, nil, false},
+							Name:     "i",
+						},
+					},
+				},
+			}, n)
+		})
 	})
 
 	t.Run("walk statement", func(t *testing.T) {
