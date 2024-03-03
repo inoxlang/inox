@@ -21,6 +21,7 @@ import (
 	"github.com/inoxlang/inox/internal/afs"
 	permkind "github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/inoxlang/inox/internal/utils"
@@ -11590,14 +11591,14 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			return e
 		})
 
-		createNamespace := func() *Namespace {
+		createNamespaceWithFactory := func() *Namespace {
 			return NewNamespace("x", map[string]Value{symbolic.FROM_XML_FACTORY_NAME: __idt})
 		}
 
 		t.Run("element", func(t *testing.T) {
 			code := `idt<div></div>`
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"idt": createNamespace(),
+				"idt": createNamespaceWithFactory(),
 			})
 			defer state.Ctx.CancelGracefully()
 
@@ -11612,7 +11613,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("self-closing element", func(t *testing.T) {
 			code := `idt<div/>`
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"idt": createNamespace(),
+				"idt": createNamespaceWithFactory(),
 			})
 			defer state.Ctx.CancelGracefully()
 
@@ -11624,10 +11625,25 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Equal(t, NewXmlElement("div", nil, nil), val)
 		})
 
+		t.Run("implicit namespace", func(t *testing.T) {
+			code := `(<div></div>)`
+			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+				globalnames.HTML_NS: createNamespaceWithFactory(),
+			})
+			defer state.Ctx.CancelGracefully()
+
+			val, err := Eval(code, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t, NewXmlElement("div", nil, []Value{String("")}), val)
+		})
+
 		t.Run("integer attribute", func(t *testing.T) {
 			code := `idt<div a=1></div>`
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"idt": createNamespace(),
+				"idt": createNamespaceWithFactory(),
 			})
 			defer state.Ctx.CancelGracefully()
 
@@ -11642,7 +11658,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("string attribute", func(t *testing.T) {
 			code := `idt<div a="b"></div>`
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"idt": createNamespace(),
+				"idt": createNamespaceWithFactory(),
 			})
 			defer state.Ctx.CancelGracefully()
 
@@ -11657,7 +11673,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("attribute without value", func(t *testing.T) {
 			code := `idt<div a></div>`
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"idt": createNamespace(),
+				"idt": createNamespaceWithFactory(),
 			})
 			defer state.Ctx.CancelGracefully()
 
@@ -11672,7 +11688,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("value of attribute should be HTML escaped", func(t *testing.T) {
 			code := `idt<div a="<"></div>`
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"idt": createNamespace(),
+				"idt": createNamespaceWithFactory(),
 			})
 			defer state.Ctx.CancelGracefully()
 
@@ -11687,7 +11703,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("linefeed", func(t *testing.T) {
 			code := "idt<div>\n</div>"
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"idt": createNamespace(),
+				"idt": createNamespaceWithFactory(),
 			})
 			defer state.Ctx.CancelGracefully()
 
@@ -11702,7 +11718,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("raw text element", func(t *testing.T) {
 			code := "idt<script><a></script>"
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"idt": createNamespace(),
+				"idt": createNamespaceWithFactory(),
 			})
 			defer state.Ctx.CancelGracefully()
 
@@ -11717,7 +11733,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("empty child", func(t *testing.T) {
 			code := "idt<div><span></span></div>"
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"idt": createNamespace(),
+				"idt": createNamespaceWithFactory(),
 			})
 			defer state.Ctx.CancelGracefully()
 
@@ -11736,7 +11752,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("single attribute + empty child", func(t *testing.T) {
 			code := "idt<div a=1><span></span></div>"
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"idt": createNamespace(),
+				"idt": createNamespaceWithFactory(),
 			})
 			defer state.Ctx.CancelGracefully()
 
@@ -11757,7 +11773,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("two attributes + empty child", func(t *testing.T) {
 			code := "idt<div a=1 b=2><span></span></div>"
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"idt": createNamespace(),
+				"idt": createNamespaceWithFactory(),
 			})
 			defer state.Ctx.CancelGracefully()
 
@@ -11781,7 +11797,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("linefeed followed by empty child", func(t *testing.T) {
 			code := "idt<div>\n<span></span></div>"
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"idt": createNamespace(),
+				"idt": createNamespaceWithFactory(),
 			})
 			defer state.Ctx.CancelGracefully()
 
@@ -11800,7 +11816,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("non-empty child", func(t *testing.T) {
 			code := "idt<div><span>1</span></div>"
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"idt": createNamespace(),
+				"idt": createNamespaceWithFactory(),
 			})
 			defer state.Ctx.CancelGracefully()
 
@@ -11819,7 +11835,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("two empty children", func(t *testing.T) {
 			code := "idt<div><span></span><span></span></div>"
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"idt": createNamespace(),
+				"idt": createNamespaceWithFactory(),
 			})
 			defer state.Ctx.CancelGracefully()
 
@@ -11840,7 +11856,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("child + grandchild", func(t *testing.T) {
 			code := "idt<div><span><span></span></span></div>"
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"idt": createNamespace(),
+				"idt": createNamespaceWithFactory(),
 			})
 			defer state.Ctx.CancelGracefully()
 
@@ -11869,7 +11885,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				</div>
 			`
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"idt": createNamespace(),
+				"idt": createNamespaceWithFactory(),
 			})
 			defer state.Ctx.CancelGracefully()
 
@@ -11880,7 +11896,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("interpolation: XML element", func(t *testing.T) {
 			code := "idt<div>{idt<span></span>}</div>"
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"idt": createNamespace(),
+				"idt": createNamespaceWithFactory(),
 			})
 			defer state.Ctx.CancelGracefully()
 
@@ -11899,7 +11915,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("interpolation: string", func(t *testing.T) {
 			code := "idt<div>{\"a\"}</div>"
 			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"idt": createNamespace(),
+				"idt": createNamespaceWithFactory(),
 			})
 			defer state.Ctx.CancelGracefully()
 

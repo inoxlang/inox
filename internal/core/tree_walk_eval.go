@@ -13,6 +13,7 @@ import (
 
 	permkind "github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
@@ -2822,9 +2823,19 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			return nil, err
 		}
 
-		namespace, err := TreeWalkEval(n.Namespace, state)
-		if err != nil {
-			return nil, err
+		var namespace Value
+		if n.Namespace == nil {
+			name := globalnames.HTML_NS
+			ns, ok := state.GetGlobal(name)
+			if !ok {
+				return nil, errors.New("global variable " + name + " is not declared")
+			}
+			namespace = ns
+		} else {
+			namespace, err = TreeWalkEval(n.Namespace, state)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		ns := namespace.(*Namespace)

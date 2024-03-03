@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
@@ -2246,7 +2247,14 @@ func (c *compiler) Compile(node parse.Node) error {
 			return err
 		}
 
-		if err := c.Compile(node.Namespace); err != nil {
+		if node.Namespace == nil {
+			varname := globalnames.HTML_NS
+			_, exists := c.globalSymbols.Resolve(varname)
+			if !exists {
+				return fmt.Errorf("global variable %s is not defined", varname)
+			}
+			c.emit(node, OpGetGlobal, c.addConstant(String(varname)))
+		} else if err := c.Compile(node.Namespace); err != nil {
 			return err
 		}
 

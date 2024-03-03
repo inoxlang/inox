@@ -183,6 +183,11 @@ func (state *TreeWalkState) Get(name string) (Value, bool) {
 	return val, val != nil
 }
 
+func (state *TreeWalkState) GetGlobal(name string) (Value, bool) {
+	val := state.Global.Globals.Get(name)
+	return val, val != nil
+}
+
 func (state *TreeWalkState) CurrentLocalScope() map[string]Value {
 	if len(state.LocalScopeStack) == 0 {
 		return nil
