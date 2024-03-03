@@ -492,6 +492,10 @@ func TestPrint(t *testing.T) {
 		"h<div {1}></div>",
 		"h<div {1></div>",
 		"h<div {",
+		"h<script h>on click</script>",
+		"h<script type=\"text/hyperscript\">on click</script>",
+		"h<script type=\"text/hyperscript\" n>on click</script>",
+		"h<script>f()</script>",
 		//imports
 		"import",
 		"import res",

@@ -7772,7 +7772,6 @@ func (p *parser) parseXMLElement(start int32) (_ *XMLElement, noOrExpectedClosin
 			if attrName == "type" {
 				strLit, ok := value.(*QuotedStringLiteral)
 				isHyperscriptScript = ok && strLit.Value == mimeconsts.HYPERSCRIPT_CTYPE
-				break
 			}
 		} else {
 

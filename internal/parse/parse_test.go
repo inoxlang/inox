@@ -29009,6 +29009,64 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("hyperscript script: type=text/hyperscript followed by an attribute", func(t *testing.T) {
+			n := mustparseChunk(t, "h<script type=\"text/hyperscript\" n><a></script>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 47}, nil, false},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 47}, nil, false},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "h",
+						},
+						Element: &XMLElement{
+							NodeBase: NodeBase{NodeSpan{1, 47}, nil, false},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 35}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 8}, nil, false},
+									Name:     "script",
+								},
+								Attributes: []Node{
+									&XMLAttribute{
+										NodeBase: NodeBase{NodeSpan{9, 32}, nil, false},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{9, 13}, nil, false},
+											Name:     "type",
+										},
+										Value: &QuotedStringLiteral{
+											NodeBase: NodeBase{NodeSpan{14, 32}, nil, false},
+											Value:    "text/hyperscript",
+											Raw:      `"text/hyperscript"`,
+										},
+									},
+									&XMLAttribute{
+										NodeBase: NodeBase{NodeSpan{33, 34}, nil, false},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{33, 34}, nil, false},
+											Name:     "n",
+										},
+									},
+								},
+							},
+							RawElementContent:       "<a>",
+							RawElementContentStart:  35,
+							RawElementContentEnd:    38,
+							EstimatedRawElementType: HyperscriptScript,
+							Closing: &XMLClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{38, 47}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{40, 46}, nil, false},
+									Name:     "script",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("single curly bracket interpolations should not be parsed in style tags", func(t *testing.T) {
 			n := mustparseChunk(t, "h<style>{1}2</style>")
 			assert.EqualValues(t, &Chunk{
