@@ -29835,6 +29835,260 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("interpolation: literal followed by a linefeed followed by a literal", func(t *testing.T) {
+			n, err := parseChunk(t, "h<div>{1\n2}</div>", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "h",
+						},
+						Element: &XMLElement{
+							NodeBase: NodeBase{Span: NodeSpan{1, 17}},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:     "div",
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+								&XMLInterpolation{
+									NodeBase: NodeBase{
+										NodeSpan{7, 10},
+										&ParsingError{UnspecifiedParsingError, XML_INTERP_SHOULD_CONTAIN_A_SINGLE_EXPR},
+										false,
+									},
+									Expr: &IntLiteral{
+										NodeBase: NodeBase{Span: NodeSpan{7, 8}},
+										Raw:      "1",
+										Value:    1,
+									},
+								},
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{11, 11}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &XMLClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{11, 17}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{13, 16}, nil, false},
+									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("interpolation: if expression", func(t *testing.T) {
+			n := mustparseChunk(t, "h<div>{if true 1 else 2}</div>")
+
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 30}, nil, false},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 30}, nil, false},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "h",
+						},
+						Element: &XMLElement{
+							NodeBase: NodeBase{Span: NodeSpan{1, 30}},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:     "div",
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+								&XMLInterpolation{
+									NodeBase: NodeBase{Span: NodeSpan{7, 23}},
+									Expr: &IfExpression{
+										NodeBase: NodeBase{Span: NodeSpan{7, 23}},
+										Test: &BooleanLiteral{
+											NodeBase: NodeBase{Span: NodeSpan{10, 14}},
+											Value:    true,
+										},
+										Consequent: &IntLiteral{
+											NodeBase: NodeBase{Span: NodeSpan{15, 16}},
+											Raw:      "1",
+											Value:    1,
+										},
+										Alternate: &IntLiteral{
+											NodeBase: NodeBase{Span: NodeSpan{22, 23}},
+											Raw:      "2",
+											Value:    2,
+										},
+									},
+								},
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{24, 24}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &XMLClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{24, 30}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{26, 29}, nil, false},
+									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("interpolation: if expression followed by a linefeed", func(t *testing.T) {
+			n := mustparseChunk(t, "h<div>{if true 1 else 2\n}</div>")
+
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 31}, nil, false},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 31}, nil, false},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "h",
+						},
+						Element: &XMLElement{
+							NodeBase: NodeBase{Span: NodeSpan{1, 31}},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:     "div",
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+								&XMLInterpolation{
+									NodeBase: NodeBase{Span: NodeSpan{7, 24}},
+									Expr: &IfExpression{
+										NodeBase: NodeBase{Span: NodeSpan{7, 23}},
+										Test: &BooleanLiteral{
+											NodeBase: NodeBase{Span: NodeSpan{10, 14}},
+											Value:    true,
+										},
+										Consequent: &IntLiteral{
+											NodeBase: NodeBase{Span: NodeSpan{15, 16}},
+											Raw:      "1",
+											Value:    1,
+										},
+										Alternate: &IntLiteral{
+											NodeBase: NodeBase{Span: NodeSpan{22, 23}},
+											Raw:      "2",
+											Value:    2,
+										},
+									},
+								},
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{25, 25}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &XMLClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{25, 31}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{27, 30}, nil, false},
+									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("interpolation: unterminated if expression", func(t *testing.T) {
+			n, err := parseChunk(t, "h<div>{if true}</div>", "")
+			assert.Error(t, err)
+
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "h",
+						},
+						Element: &XMLElement{
+							NodeBase: NodeBase{Span: NodeSpan{1, 21}},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:     "div",
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+								&XMLInterpolation{
+									NodeBase: NodeBase{Span: NodeSpan{7, 14}},
+									Expr: &IfExpression{
+										NodeBase: NodeBase{Span: NodeSpan{7, 14}},
+										Test: &BooleanLiteral{
+											NodeBase: NodeBase{Span: NodeSpan{10, 14}},
+											Value:    true,
+										},
+										Consequent: &MissingExpression{
+											NodeBase: NodeBase{
+												NodeSpan{13, 14},
+												&ParsingError{UnspecifiedParsingError, fmtExprExpectedHere([]rune("h<div>{if true"), 14, true)},
+												false,
+											},
+										},
+									},
+								},
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{15, 15}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &XMLClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{15, 21}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{17, 20}, nil, false},
+									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("error within interpolation", func(t *testing.T) {
 			n, err := parseChunk(t, "h<div>{?}2</div>", "")
 			assert.Error(t, err)

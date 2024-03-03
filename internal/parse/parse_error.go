@@ -458,6 +458,7 @@ const (
 	UNTERMINATED_HYPERSCRIPT_ATTRIBUTE_SHORTHAND       = "unterminated hyperscript attribute shorthand"
 	EMPTY_XML_INTERP                                   = "xml interpolation should not be empty"
 	INVALID_XML_INTERP                                 = "invalid xml interpolation"
+	XML_INTERP_SHOULD_CONTAIN_A_SINGLE_EXPR            = "an xml interpolation should contain a single expression"
 	XML_ATTRIBUTE_NAME_SHOULD_BE_IDENT                 = "xml attribute's name should be an identifier"
 	INVALID_TAG_NAME                                   = "invalid tag name"
 

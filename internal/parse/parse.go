@@ -4401,14 +4401,15 @@ func (p *parser) getStrTemplateInterTypeAndExpr(interpolation []rune, interpolat
 	}
 }
 
-func (p *parser) parseIfExpression(openingParenIndex int32, ifIdent *IdentifierLiteral) *IfExpression {
+func (p *parser) parseIfExpression(openingParenIndex int32 /* -1 if unparenthesized */, ifStart int32) *IfExpression {
 	p.panicIfContextDone()
 
 	var alternate Node
 	var end int32
 	var parsingErr *ParsingError
+	shouldHaveClosingParen := openingParenIndex >= 0
 
-	p.tokens = append(p.tokens, Token{Type: IF_KEYWORD, Span: ifIdent.Span})
+	p.tokens = append(p.tokens, Token{Type: IF_KEYWORD, Span: NodeSpan{ifStart, ifStart + 2}})
 
 	p.eatSpace()
 	test, _ := p.parseExpression()
@@ -4438,23 +4439,32 @@ func (p *parser) parseIfExpression(openingParenIndex int32, ifIdent *IdentifierL
 		p.eatSpace()
 	}
 
-	if p.i >= p.len {
-		end = p.i
-		if !isMissingExpr {
+	if shouldHaveClosingParen {
+		if p.i >= p.len {
+			end = p.i
+			if !isMissingExpr {
+				parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_IF_EXPR_MISSING_CLOSING_PAREN}
+			}
+		} else if p.s[p.i] == ')' {
+			p.i++
+			end = p.i
+		} else if !isMissingExpr {
 			parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_IF_EXPR_MISSING_CLOSING_PAREN}
 		}
-	} else if p.s[p.i] == ')' {
-		p.i++
+	} else {
 		end = p.i
-	} else if !isMissingExpr {
-		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_IF_EXPR_MISSING_CLOSING_PAREN}
+	}
+
+	ifExprStart := openingParenIndex
+	if openingParenIndex < 0 {
+		ifExprStart = ifStart
 	}
 
 	return &IfExpression{
 		NodeBase: NodeBase{
-			Span:            NodeSpan{openingParenIndex, end},
+			Span:            NodeSpan{ifExprStart, end},
 			Err:             parsingErr,
-			IsParenthesized: true,
+			IsParenthesized: shouldHaveClosingParen,
 		},
 		Test:       test,
 		Consequent: consequent,
@@ -4493,7 +4503,7 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(openingParenIndex in
 	if ident, ok := left.(*IdentifierLiteral); ok && !hasPreviousOperator {
 		switch ident.Name {
 		case "if":
-			return p.parseIfExpression(openingParenIndex, ident)
+			return p.parseIfExpression(openingParenIndex, ident.Span.Start)
 		case "for":
 			return p.parseForExpression(openingParenIndex, ident)
 		}
@@ -8176,6 +8186,9 @@ children_parsing_loop:
 
 				var e Node
 
+				unexpectedRestStart := int32(-1)
+				missingExpr := false
+
 				func() {
 					//Modify the state of the parser to make it parse the interpolation.
 
@@ -8193,11 +8206,42 @@ children_parsing_loop:
 						p.len = lenSave
 					}()
 
-					e, _ = p.parseExpression()
+					switch {
+					case p.i < p.len-2 && p.s[p.i] == 'i' && p.s[p.i+1] == 'f' && !IsIdentChar(p.s[p.i+2]):
+						//Parse if expression without parentheses.
+						ifStart := p.i
+						p.i += 2
+						p.eatSpace()
+						e = p.parseIfExpression(-1, ifStart)
+					case p.i < p.len-3 && p.s[p.i] == 'f' && p.s[p.i+1] == 'o' && p.s[p.i+2] == 'r' && !IsIdentChar(p.s[p.i+3]):
+						//Parse for expression without parentheses.
+						forStart := p.i
+						p.i += 3
+						p.eatSpace()
+						_ = forStart
+						e = p.parseForExpression(-1, nil)
+					default:
+						e, missingExpr = p.parseExpression()
+					}
+
+					p.eatSpaceNewlineComment()
+					if p.i != p.len {
+						unexpectedRestStart = p.i
+					}
 				}()
 
 				if e != nil {
 					expr = e
+					if unexpectedRestStart > 0 {
+						p.tokens = append(p.tokens, Token{
+							Type: INVALID_INTERP_SLICE,
+							Span: NodeSpan{unexpectedRestStart, interpolationExclEnd},
+							Raw:  string(p.s[unexpectedRestStart:interpolationExclEnd]),
+						})
+						if !missingExpr {
+							interpParsingErr = &ParsingError{UnspecifiedParsingError, XML_INTERP_SHOULD_CONTAIN_A_SINGLE_EXPR}
+						}
+					}
 				} else {
 					interpParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_XML_INTERP}
 				}

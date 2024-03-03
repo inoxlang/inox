@@ -23,7 +23,7 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 	}
 
 	switch p.s[p.i] {
-	case '$': //normal & global variables
+	case '$': //local & global variables
 		start := p.i
 		isGlobal := false
 		p.i++
