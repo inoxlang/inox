@@ -26,6 +26,36 @@ func TestCutQuotedStringLiteral(t *testing.T) {
 		}, cut)
 	})
 
+	t.Run("unterminated empty string", func(t *testing.T) {
+		lit, ok := ParseExpression(`"`)
+		if !assert.False(t, ok) {
+			return
+		}
+		strLit := lit.(*QuotedStringLiteral)
+		if !assert.NotNil(t, strLit.Err) {
+			return
+		}
+
+		cut, ok := CutQuotedStringLiteral(1, strLit)
+		assert.False(t, ok)
+		assert.Zero(t, cut)
+	})
+
+	t.Run("unterminated non-empty string", func(t *testing.T) {
+		lit, ok := ParseExpression(`"a`)
+		if !assert.False(t, ok) {
+			return
+		}
+		strLit := lit.(*QuotedStringLiteral)
+		if !assert.NotNil(t, strLit.Err) {
+			return
+		}
+
+		cut, ok := CutQuotedStringLiteral(1, strLit)
+		assert.False(t, ok)
+		assert.Zero(t, cut)
+	})
+
 	t.Run("single-char string: ASCII", func(t *testing.T) {
 		lit := utils.MustGet(ParseExpression(`"a"`)).(*QuotedStringLiteral)
 
@@ -110,9 +140,10 @@ func TestCutQuotedStringLiteral(t *testing.T) {
 			}
 
 			assert.Equal(t, stringCut{
-				BeforeIndex:  " ",
-				AfterIndex:   "",
-				IsIndexAtEnd: true,
+				BeforeIndex:         " ",
+				AfterIndex:          "",
+				IsIndexAtEnd:        true,
+				HasSpaceBeforeIndex: true,
 			}, cut)
 		})
 	})
@@ -237,7 +268,52 @@ func TestCutQuotedStringLiteral(t *testing.T) {
 			}
 
 			assert.Equal(t, stringCut{
-				BeforeIndex:  "a ",
+				BeforeIndex:         "a ",
+				AfterIndex:          "",
+				IsIndexAtEnd:        true,
+				HasSpaceBeforeIndex: true,
+			}, cut)
+		})
+	})
+
+	t.Run("two-char string: space and non-space char", func(t *testing.T) {
+		lit := utils.MustGet(ParseExpression(`" a"`)).(*QuotedStringLiteral)
+
+		t.Run("at start", func(t *testing.T) {
+			cut, ok := CutQuotedStringLiteral(1, lit)
+			if !assert.True(t, ok) {
+				return
+			}
+
+			assert.Equal(t, stringCut{
+				BeforeIndex:        "",
+				AfterIndex:         " a",
+				IsIndexAtStart:     true,
+				HasSpaceAfterIndex: true,
+			}, cut)
+		})
+
+		t.Run("in middle", func(t *testing.T) {
+			cut, ok := CutQuotedStringLiteral(2, lit)
+			if !assert.True(t, ok) {
+				return
+			}
+
+			assert.Equal(t, stringCut{
+				BeforeIndex:         " ",
+				AfterIndex:          "a",
+				HasSpaceBeforeIndex: true,
+			}, cut)
+		})
+
+		t.Run("at end", func(t *testing.T) {
+			cut, ok := CutQuotedStringLiteral(3, lit)
+			if !assert.True(t, ok) {
+				return
+			}
+
+			assert.Equal(t, stringCut{
+				BeforeIndex:  " a",
 				AfterIndex:   "",
 				IsIndexAtEnd: true,
 			}, cut)

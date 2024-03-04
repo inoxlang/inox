@@ -6,12 +6,13 @@ import (
 )
 
 type stringCut struct {
-	BeforeIndex        string
-	AfterIndex         string
-	IsIndexAtStart     bool
-	IsIndexAtEnd       bool
-	HasSpaceAfterIndex bool
-	IsStringEmpty      bool
+	BeforeIndex         string
+	AfterIndex          string
+	IsIndexAtStart      bool
+	IsIndexAtEnd        bool
+	HasSpaceBeforeIndex bool
+	HasSpaceAfterIndex  bool
+	IsStringEmpty       bool
 }
 
 func CutQuotedStringLiteral(index int32, n *QuotedStringLiteral) (cut stringCut, ok bool) {
@@ -30,18 +31,19 @@ func CutQuotedStringLiteral(index int32, n *QuotedStringLiteral) (cut stringCut,
 			AfterIndex:         n.Value,
 			IsIndexAtStart:     true,
 			IsIndexAtEnd:       isStringEmpty,
-			HasSpaceAfterIndex: n.Span.End != n.Span.Start+1 && isFirstRuneSpace(n.Value),
+			HasSpaceAfterIndex: !isStringEmpty && isFirstRuneSpace(n.Value),
 			IsStringEmpty:      isStringEmpty,
 		}, true
 	}
 
 	if index == n.Span.End-1 { //"string<here>"
 		return stringCut{
-			BeforeIndex:    n.Value,
-			AfterIndex:     "",
-			IsIndexAtStart: isStringEmpty,
-			IsIndexAtEnd:   true,
-			IsStringEmpty:  isStringEmpty,
+			BeforeIndex:         n.Value,
+			AfterIndex:          "",
+			IsIndexAtStart:      isStringEmpty,
+			IsIndexAtEnd:        true,
+			IsStringEmpty:       isStringEmpty,
+			HasSpaceBeforeIndex: !isStringEmpty && isLastRuneSpace(n.Value),
 		}, true
 	}
 
@@ -61,16 +63,23 @@ func CutQuotedStringLiteral(index int32, n *QuotedStringLiteral) (cut stringCut,
 		return stringCut{}, false
 	}
 
+	beforeCursor := string(beforeCursorBytes)
 	afterCursor := string(afterCursorBytes)
 
 	return stringCut{
-		BeforeIndex:        string(beforeCursorBytes),
-		AfterIndex:         afterCursor,
-		HasSpaceAfterIndex: isFirstRuneSpace(afterCursor),
+		BeforeIndex:         beforeCursor,
+		AfterIndex:          afterCursor,
+		HasSpaceBeforeIndex: isLastRuneSpace(beforeCursor),
+		HasSpaceAfterIndex:  isFirstRuneSpace(afterCursor),
 	}, true
 }
 
 func isFirstRuneSpace(s string) bool {
 	firstRune, _ := utf8.DecodeRuneInString(s)
+	return unicode.IsSpace(firstRune)
+}
+
+func isLastRuneSpace(s string) bool {
+	firstRune, _ := utf8.DecodeLastRuneInString(s)
 	return unicode.IsSpace(firstRune)
 }
