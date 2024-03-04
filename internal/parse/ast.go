@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/hyperscript/hscode"
 )
 
@@ -2299,12 +2300,20 @@ type CssAttributeSelector struct {
 
 type XMLExpression struct {
 	NodeBase  `json:"base:xml-expr"`
-	Namespace Node        `json:"namespace,omitempty"` //NOT an XML namespace
+	Namespace Node        `json:"namespace,omitempty"` //*IdentifierLiteral or nil, NOT an XML namespace
 	Element   *XMLElement `json:"element"`
 }
 
 func (XMLExpression) Kind() NodeKind {
 	return Expr
+}
+
+func (e XMLExpression) EffectiveNamespaceName() string {
+	if e.Namespace == nil {
+		return globalnames.HTML_NS
+	}
+
+	return e.Namespace.(*IdentifierLiteral).Name
 }
 
 type XMLElement struct {

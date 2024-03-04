@@ -8,11 +8,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	"github.com/inoxlang/inox/internal/globals/globalnames"
-	"github.com/inoxlang/inox/internal/globals/html_ns"
 	"github.com/inoxlang/inox/internal/help"
-	"github.com/inoxlang/inox/internal/hyperscript/hscode"
-	"github.com/inoxlang/inox/internal/hyperscript/hshelp"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/projectserver/logs"
@@ -65,6 +61,7 @@ func getHoverContent(handlingCtx *core.Context, params hoverContentParams) (*def
 
 	span := chunk.GetLineColumnSingeCharSpan(line, column)
 	hoveredNode, ancestors, ok := chunk.GetNodeAndChainAtSpan(span)
+	cursorIndex := span.Start
 
 	if !ok || hoveredNode == nil {
 		logs.Println("no data")
@@ -86,7 +83,7 @@ func getHoverContent(handlingCtx *core.Context, params hoverContentParams) (*def
 		}, nil
 	}
 
-	//Raw XML element.
+	//Raw XML element (e.g. <script>, <style>).
 	if elem, ok := hoveredNode.(*parse.XMLElement); ok && elem.RawElementContent != "" {
 		help := getRawXMLelementContentHelpMarkdown(elem, span)
 		if help == "" {
@@ -112,17 +109,18 @@ func getHoverContent(handlingCtx *core.Context, params hoverContentParams) (*def
 		}, nil
 	}
 
-	//help about tag or attribute
-	xmlElementInfo, hasXmlElementInfo := getXmlElementInfo(hoveredNode, ancestors)
+	tagOrAttrHelp, shouldSpecificValBeIgnored, hasTagOrAttrHelp := getTagOrAttributeHoverHelp(hoveredNode, ancestors, cursorIndex)
 
+	//Try getting the hovered node's value.
 	mostSpecificVal, ok := state.SymbolicData.GetMostSpecificNodeValue(hoveredNode)
 	var lessSpecificVal symbolic.Value
-	if !ok {
-		if hasXmlElementInfo {
+
+	if !ok || shouldSpecificValBeIgnored {
+		if hasTagOrAttrHelp {
 			return &defines.Hover{
 				Contents: defines.MarkupContent{
 					Kind:  defines.MarkupKindMarkdown,
-					Value: xmlElementInfo,
+					Value: tagOrAttrHelp,
 				},
 			}, nil
 		}
@@ -135,7 +133,6 @@ func getHoverContent(handlingCtx *core.Context, params hoverContentParams) (*def
 	w := bufio.NewWriterSize(buff, 1000)
 	var stringifiedHoveredNodeValue string
 
-	//try getting the hovered node's value
 	{
 		utils.Must(symbolic.PrettyPrint(symbolic.PrettyPrintArgs{
 			Value:             mostSpecificVal,
@@ -181,8 +178,8 @@ func getHoverContent(handlingCtx *core.Context, params hoverContentParams) (*def
 		}
 	}
 
-	if hasXmlElementInfo {
-		helpMessage += "\n\n" + xmlElementInfo
+	if hasTagOrAttrHelp {
+		helpMessage += "\n\n" + tagOrAttrHelp
 	}
 
 	codeBlock := ""
@@ -196,93 +193,6 @@ func getHoverContent(handlingCtx *core.Context, params hoverContentParams) (*def
 			Value: codeBlock + helpMessage,
 		},
 	}, nil
-}
-
-func getXmlElementInfo(node parse.Node, ancestors []parse.Node) (string, bool) {
-	if len(ancestors) < 3 {
-		return "", false
-	}
-
-	ident, ok := node.(*parse.IdentifierLiteral)
-	if !ok {
-		return "", false
-	}
-
-	var (
-		attribute   *parse.XMLAttribute
-		openingElem *parse.XMLOpeningElement
-		parent      parse.Node
-		xmlExpr     *parse.XMLExpression
-		tagIdent    *parse.IdentifierLiteral
-	)
-
-	parent = ancestors[len(ancestors)-1]
-	attribute, ok = parent.(*parse.XMLAttribute)
-	if ok {
-		openingElem, ok = ancestors[len(ancestors)-2].(*parse.XMLOpeningElement)
-		if !ok { //invalid state
-			return "", false
-		}
-		tagIdent, ok = openingElem.Name.(*parse.IdentifierLiteral)
-		if !ok { //parsing error
-			return "", false
-		}
-	} else {
-		openingElem, ok = parent.(*parse.XMLOpeningElement)
-		if !ok { //invalid state
-			return "", false
-		}
-
-		if ident != openingElem.Name {
-			return "", false
-		}
-		tagIdent = ident
-	}
-
-	e, _, found := parse.FindClosest(ancestors, (*parse.XMLExpression)(nil))
-	if !found {
-		return "", false
-	}
-	xmlExpr = e
-
-	var namespaceName string
-	if xmlExpr.Namespace == nil {
-		namespaceName = globalnames.HTML_NS
-	} else if namespace, ok := xmlExpr.Namespace.(*parse.IdentifierLiteral); ok {
-		namespaceName = namespace.Name
-	} else {
-		return "", false
-	}
-
-	//TODO: use symbolic data in order to support aliases
-	switch namespaceName {
-	case "html":
-
-		if parent == openingElem {
-			tagData, ok := html_ns.GetTagData(tagIdent.Name)
-			if ok {
-				return tagData.DescriptionContent(), true
-			}
-		} else if parent == attribute {
-
-			attributes, ok := html_ns.GetAllTagAttributes(tagIdent.Name)
-			if !ok {
-				break
-			}
-
-			attrName := ident.Name
-
-			for _, attr := range attributes {
-				if attr.Name == attrName {
-					return attr.DescriptionContent(), true
-				}
-
-			}
-		}
-
-	}
-
-	return "", false
 }
 
 func getSectionHelp(n parse.Node, ancestors []parse.Node) (string, bool) {
@@ -356,20 +266,4 @@ func getSectionHelp(n parse.Node, ancestors []parse.Node) (string, bool) {
 		}
 	}
 	return "", false
-}
-
-func getHyperscriptHelpMarkdown(attribute *parse.HyperscriptAttributeShorthand, span parse.NodeSpan) string {
-	parsingResult := attribute.HyperscriptParsingResult
-	cursorIndexInHsCode := span.Start - attribute.Span.Start - 1
-	return hshelp.GetHoverHelpMarkdown(parsingResult.Tokens, cursorIndexInHsCode)
-}
-
-func getRawXMLelementContentHelpMarkdown(element *parse.XMLElement, span parse.NodeSpan) string {
-	switch parsingResult := element.RawElementParsingResult.(type) {
-	case *hscode.ParsingResult:
-		cursorIndexInHsCode := span.Start - element.RawElementContentStart
-		return hshelp.GetHoverHelpMarkdown(parsingResult.Tokens, cursorIndexInHsCode)
-	}
-
-	return ""
 }

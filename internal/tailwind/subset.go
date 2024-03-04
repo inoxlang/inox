@@ -56,30 +56,25 @@ func InitSubset() error {
 	return nil
 }
 
+// GetRulesetsFromSubset retrieves a ruleset by its name.
+// Note that '.5' and '/<digit>' (e.g. /2) sequences in $prefix are respectively escaped into '\.5' and '\/<digit>' (e.g. \/2).
+func GetRuleset(selector string) (Ruleset, bool) {
+	selector = escapeSelector(selector)
+	index, found := slices.BinarySearchFunc(TAILWIND_SUBSET_RULESETS, selector, func(r Ruleset, s string) int {
+		return strings.Compare(r.Name, s)
+	})
+
+	if found {
+		return TAILWIND_SUBSET_RULESETS[index], true
+	}
+	return Ruleset{}, false
+}
+
 // GetRulesetsFromSubset searches for all rulesets whose selector starts with $prefix.
 // Note that '.5' and '/<digit>' (e.g. /2) sequences in $prefix are respectively escaped into '\.5' and '\/<digit>' (e.g. \/2).
 func GetRulesetsFromSubset(prefix string) []Ruleset {
-	//escape .5 and /<digit>
 
-	var escaped []byte
-	escaped = append(escaped, prefix[0])
-
-	for i := 1; i < len(prefix); i++ {
-		b := prefix[i]
-
-		switch {
-		case b == '5' && prefix[i-1] == '.' && ( /*check if already escaped*/ i == 1 || prefix[i-2] != '\\'):
-			escaped[i-1] = '\\'
-			escaped = append(escaped, '.', b)
-		case '0' <= b && b <= '9' && prefix[i-1] == '/' && ( /*check if already escaped*/ i == 1 || prefix[i-2] != '\\'):
-			escaped[i-1] = '\\'
-			escaped = append(escaped, '/', b)
-		default:
-			escaped = append(escaped, b)
-		}
-	}
-
-	prefix = string(escaped)
+	prefix = escapeSelector(prefix)
 
 	index, _ := slices.BinarySearchFunc(TAILWIND_SUBSET_RULESETS, prefix, func(r Ruleset, s string) int {
 		return strings.Compare(r.Name, s)
@@ -94,4 +89,28 @@ func GetRulesetsFromSubset(prefix string) []Ruleset {
 	}
 
 	return rulesets
+}
+
+func escapeSelector(selector string) string {
+	//escape .5 and /<digit>
+
+	var escaped []byte
+	escaped = append(escaped, selector[0])
+
+	for i := 1; i < len(selector); i++ {
+		b := selector[i]
+
+		switch {
+		case b == '5' && selector[i-1] == '.' && ( /*check if already escaped*/ i == 1 || selector[i-2] != '\\'):
+			escaped[i-1] = '\\'
+			escaped = append(escaped, '.', b)
+		case '0' <= b && b <= '9' && selector[i-1] == '/' && ( /*check if already escaped*/ i == 1 || selector[i-2] != '\\'):
+			escaped[i-1] = '\\'
+			escaped = append(escaped, '/', b)
+		default:
+			escaped = append(escaped, b)
+		}
+	}
+
+	return string(escaped)
 }
