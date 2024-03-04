@@ -40,4 +40,28 @@ func TestGetRulesetsFromSubset(t *testing.T) {
 		}
 		assert.Equal(t, len(rulesets), 1)
 	})
+
+	t.Run("class name with escaped dot", func(t *testing.T) {
+		rulesets := GetRulesetsFromSubset(".h-0\\.5")
+		if !assert.NotEmpty(t, rulesets) {
+			return
+		}
+		assert.Equal(t, len(rulesets), 1)
+	})
+
+	t.Run("class name without escaped slash", func(t *testing.T) {
+		rulesets := GetRulesetsFromSubset(".h-1/2")
+		if !assert.NotEmpty(t, rulesets) {
+			return
+		}
+		assert.Equal(t, len(rulesets), 1)
+	})
+
+	t.Run("class name with escaped slash", func(t *testing.T) {
+		rulesets := GetRulesetsFromSubset(".h-1\\/2")
+		if !assert.NotEmpty(t, rulesets) {
+			return
+		}
+		assert.Equal(t, len(rulesets), 1)
+	})
 }

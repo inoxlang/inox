@@ -20,8 +20,9 @@ var (
 )
 
 type Ruleset struct {
-	Name string //Selector with '\' removed (.h-0\.5 --> .h-0.5).
-	Node css.Node
+	Name              string //e.g. .h-0, .h-0\.5, .h-1\/2
+	UserFriendltyName string //e.g. .h-0, .h-0.5, .h-1/2
+	Node              css.Node
 }
 
 func InitSubset() error {
@@ -37,12 +38,13 @@ func InitSubset() error {
 	for _, n := range stylesheet.Children {
 		if n.Type == css.Ruleset {
 			name := n.SelectorString()
-			name = strings.ReplaceAll(name, "\\.", ".")
-			name = strings.ReplaceAll(name, "\\/", "/")
+			userFriendlyName := strings.ReplaceAll(name, "\\.", ".")
+			userFriendlyName = strings.ReplaceAll(userFriendlyName, "\\/", "/")
 
 			TAILWIND_SUBSET_RULESETS = append(TAILWIND_SUBSET_RULESETS, Ruleset{
-				Name: name,
-				Node: n,
+				Name:              name,
+				UserFriendltyName: userFriendlyName,
+				Node:              n,
 			})
 		}
 	}
@@ -54,7 +56,30 @@ func InitSubset() error {
 	return nil
 }
 
+// GetRulesetsFromSubset searches for all rulesets whose selector starts with $prefix.
+// Note that '.5' and '/<digit>' (e.g. /2) sequences in $prefix are respectively escaped into '\.5' and '\/<digit>' (e.g. \/2).
 func GetRulesetsFromSubset(prefix string) []Ruleset {
+	//escape .5 and /<digit>
+
+	var escaped []byte
+	escaped = append(escaped, prefix[0])
+
+	for i := 1; i < len(prefix); i++ {
+		b := prefix[i]
+
+		switch {
+		case b == '5' && prefix[i-1] == '.' && ( /*check if already escaped*/ i == 1 || prefix[i-2] != '\\'):
+			escaped[i-1] = '\\'
+			escaped = append(escaped, '.', b)
+		case '0' <= b && b <= '9' && prefix[i-1] == '/' && ( /*check if already escaped*/ i == 1 || prefix[i-2] != '\\'):
+			escaped[i-1] = '\\'
+			escaped = append(escaped, '/', b)
+		default:
+			escaped = append(escaped, b)
+		}
+	}
+
+	prefix = string(escaped)
 
 	index, _ := slices.BinarySearchFunc(TAILWIND_SUBSET_RULESETS, prefix, func(r Ruleset, s string) int {
 		return strings.Compare(r.Name, s)

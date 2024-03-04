@@ -34,7 +34,7 @@ func findTailwindClassNameSuggestions(attrValueNode *parse.QuotedStringLiteral, 
 	rulesets := tailwind.GetRulesetsFromSubset("." + classNamePrefix)
 
 	for _, set := range rulesets {
-		className := strings.TrimPrefix(set.Name, ".")
+		className := strings.TrimPrefix(set.UserFriendltyName, ".")
 		replacedRange := search.chunk.GetSourcePosition(parse.NodeSpan{
 			Start: search.cursorIndex - int32(len(classNamePrefix)),
 			End:   search.cursorIndex,
