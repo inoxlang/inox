@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/dop251/goja"
 	"github.com/inoxlang/inox/internal/hyperscript/hscode"
@@ -22,12 +23,16 @@ var (
 	HYPERSCRIPT_PARSER_JS      string
 	HYPERSCRIPT_PARSER_PROGRAM *goja.Program
 	HYPERSCRIPT_PARSER_VM      *goja.Runtime
+	parserVmLock               sync.Mutex
 
 	ErrInputStringTooLong = errors.New("input string is too long")
 	ErrNotParsed          = errors.New("input string is too long")
 )
 
 func init() {
+	parserVmLock.Lock()
+	defer parserVmLock.Unlock()
+
 	HYPERSCRIPT_PARSER_PROGRAM = goja.MustCompile("parse-hyperscript.js", HYPERSCRIPT_PARSER_JS, false)
 
 	HYPERSCRIPT_PARSER_VM = goja.New()
@@ -44,6 +49,9 @@ func parseHyperScriptSlow(ctx context.Context, source string) (*hscode.ParsingRe
 	if len(source) > DEFAULT_MAX_SOURCE_CODE_LENGTH {
 		return nil, nil, ErrInputStringTooLong
 	}
+
+	parserVmLock.Lock()
+	defer parserVmLock.Unlock()
 
 	runtime := HYPERSCRIPT_PARSER_VM
 	input := runtime.ToValue(source)
