@@ -30,6 +30,15 @@ func ParseString(s string) (Node, error) {
 				Data: string(data),
 			}
 			stack[current].Children = append(stack[current].Children, comment)
+		case css.AtRuleGrammar:
+			atRule := Node{Type: AtRule}
+
+			err := makeNodesFromTokens(parser.Values(), &atRule)
+			if err != nil {
+				return Node{}, err
+			}
+
+			stack[current].Children = append(stack[current].Children, atRule)
 		case css.BeginAtRuleGrammar:
 			stack = append(stack, Node{Type: AtRule})
 			parent++

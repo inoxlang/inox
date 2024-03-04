@@ -10,6 +10,9 @@ func TestParse(t *testing.T) {
 
 	stylesheet, err := ParseString(`
 		/* comment */
+
+		@import "style.css";
+
 		@media screen {
 			div {
 				width: 5px;
@@ -28,8 +31,9 @@ func TestParse(t *testing.T) {
 	if !assert.Equal(t, Stylesheet, stylesheet.Type) {
 		return
 	}
+
 	assert.Empty(t, stylesheet.Data)
-	if !assert.Len(t, stylesheet.Children, 4) {
+	if !assert.Len(t, stylesheet.Children, 5) {
 		return
 	}
 
@@ -46,6 +50,20 @@ func TestParse(t *testing.T) {
 	if !assert.Equal(t, AtRule, atRule.Type) {
 		return
 	}
+
+	assert.Empty(t, atRule.Data)
+	if !assert.Len(t, atRule.Children, 1) {
+		return
+	}
+
+	assert.Equal(t, Node{Type: String, Data: "\"style.css\""}, atRule.Children[0])
+
+	//Check at-rule wih media query
+	atRule = stylesheet.Children[2]
+	if !assert.Equal(t, AtRule, atRule.Type) {
+		return
+	}
+
 	assert.Empty(t, atRule.Data)
 	if !assert.Len(t, atRule.Children, 2) {
 		return
@@ -94,7 +112,7 @@ func TestParse(t *testing.T) {
 	}
 
 	//Check second ruleset
-	ruleset := stylesheet.Children[2]
+	ruleset := stylesheet.Children[3]
 	if !assert.Equal(t, Ruleset, ruleset.Type) {
 		return
 	}
@@ -122,7 +140,7 @@ func TestParse(t *testing.T) {
 	}, ruleset.Children[1])
 
 	//Check third ruleset
-	ruleset = stylesheet.Children[3]
+	ruleset = stylesheet.Children[4]
 	if !assert.Equal(t, Ruleset, ruleset.Type) {
 		return
 	}
