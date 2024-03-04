@@ -15,9 +15,10 @@ func TestParse(t *testing.T) {
 				width: 5px;
 			}
 		}
-		div {
+		.div {
 			width: 6px;
 		}
+		.div a {}
 	`)
 
 	if !assert.NoError(t, err) {
@@ -28,7 +29,7 @@ func TestParse(t *testing.T) {
 		return
 	}
 	assert.Empty(t, stylesheet.Data)
-	if !assert.Len(t, stylesheet.Children, 3) {
+	if !assert.Len(t, stylesheet.Children, 4) {
 		return
 	}
 
@@ -92,7 +93,7 @@ func TestParse(t *testing.T) {
 		}, ruleset.Children[1])
 	}
 
-	//Check ruleset
+	//Check second ruleset
 	ruleset := stylesheet.Children[2]
 	if !assert.Equal(t, Ruleset, ruleset.Type) {
 		return
@@ -106,7 +107,7 @@ func TestParse(t *testing.T) {
 		Type: Selector,
 		Children: []Node{
 			{
-				Type: Ident,
+				Type: ClassName,
 				Data: "div",
 			},
 		},
@@ -119,4 +120,32 @@ func TestParse(t *testing.T) {
 			{Type: Dimension, Data: "6px"},
 		},
 	}, ruleset.Children[1])
+
+	//Check third ruleset
+	ruleset = stylesheet.Children[3]
+	if !assert.Equal(t, Ruleset, ruleset.Type) {
+		return
+	}
+	assert.Empty(t, ruleset.Data)
+	if !assert.Len(t, ruleset.Children, 1) {
+		return
+	}
+
+	assert.Equal(t, Node{
+		Type: Selector,
+		Children: []Node{
+			{
+				Type: ClassName,
+				Data: "div",
+			},
+			{
+				Type: Whitespace,
+				Data: " ",
+			},
+			{
+				Type: Ident,
+				Data: "a",
+			},
+		},
+	}, ruleset.Children[0])
 }

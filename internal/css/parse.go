@@ -141,7 +141,11 @@ func makeNodeFromToken(t css.Token, precededByDot bool) (n Node, significant boo
 	case css.DimensionToken:
 		n.Type = Dimension
 	case css.IdentToken:
-		n.Type = Ident
+		if precededByDot {
+			n.Type = ClassName
+		} else {
+			n.Type = Ident
+		}
 	case css.FunctionToken:
 		n.Type = Function
 	case css.HashToken:

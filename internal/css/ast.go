@@ -1,6 +1,9 @@
 package css
 
-import "strings"
+import (
+	"errors"
+	"strings"
+)
 
 type Node struct {
 	Children []Node
@@ -21,6 +24,7 @@ const (
 	Dimension
 	Number
 	Ident
+	ClassName
 	Function
 	Hash
 	String
@@ -33,6 +37,14 @@ const (
 	Whitespace
 	Comment
 )
+
+// SelectorString returns the selector if $n is a Ruleset, it panics otherwise.
+func (n Node) SelectorString() string {
+	if n.Type != Ruleset {
+		panic(errors.New("node is not a ruleset"))
+	}
+	return n.Children[0].String()
+}
 
 func (n Node) String() string {
 	w := &strings.Builder{}
@@ -115,6 +127,9 @@ func (n Node) string(w *strings.Builder, indent int) {
 			}
 			child.string(w, 0)
 		}
+	case ClassName:
+		w.WriteByte('.')
+		w.WriteString(n.Data)
 	default:
 		w.WriteString(n.Data)
 	}
