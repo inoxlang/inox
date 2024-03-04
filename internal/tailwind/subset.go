@@ -15,7 +15,8 @@ var (
 
 	TAILWIND_SUBSET_RULESETS []Ruleset //sorted by selector
 
-	ErrTailCssNotInitialized = errors.New("tail.css is not initialized")
+	ErrSubsetAlreadyInitialized = errors.New("subset is already initialized")
+	ErrSubsetNotInitialized     = errors.New("subset is not initialized")
 )
 
 type Ruleset struct {
@@ -24,6 +25,10 @@ type Ruleset struct {
 }
 
 func InitTailCSS() error {
+	if TAILWIND_SUBSET_RULESETS != nil {
+		return ErrSubsetAlreadyInitialized
+	}
+
 	stylesheet, err := css.ParseString(TAIL_CSS)
 	if err != nil {
 		return err

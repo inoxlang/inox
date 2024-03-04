@@ -3,14 +3,6 @@
     Tailwind's license: https://github.com/tailwindlabs/tailwindcss/blob/master/LICENSE
 */
 
-
-@media screen {
-    a {
-        height: 0px;
-        width: 0px;
-    }
-}
-
 .h-0 {
     height: 0px;
 }
