@@ -1,4 +1,4 @@
-package scan
+package codebasescan
 
 import (
 	"strings"
@@ -8,8 +8,8 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/tailwind"
-	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,7 +19,6 @@ func TestScan(t *testing.T) {
 	fls := fs_ns.NewMemFilesystem(10_000_000)
 
 	util.WriteFile(fls, "/routes/index.ix", []byte("manifest{}; return html<div class=\"flex-col\"></div>"), 0600)
-	util.WriteFile(fls, "/routes/todos/index.ix", []byte("manifest{}; return html<div class=\"flex-row\"></div>"), 0600)
 
 	//Write a large file that should be ignored.
 	util.WriteFile(fls, "/routes/large-file.ix", []byte("manifest{}; "+strings.Repeat("html<div class=\"flex-col-reverse\"></div>\n", 1000)), 0600)
@@ -34,22 +33,22 @@ func TestScan(t *testing.T) {
 	}, nil)
 	defer ctx.CancelGracefully()
 
-	rules, err := ScanForTailwindRulesToInclude(ctx, fls, Configuration{
+	var seenFiles []string
+
+	err := ScanCodebase(ctx, fls, Configuration{
 		TopDirectories: []string{"/routes"},
 		MaxFileSize:    1_000,
+		FileHandlers: []FileHandler{
+			func(path string, c *parse.Chunk) error {
+				seenFiles = append(seenFiles, path)
+				return nil
+			},
+		},
 	})
 
 	if !assert.NoError(t, err) {
 		return
 	}
 
-	flexColRule := utils.MustGet(tailwind.GetRuleset(".flex-col"))
-	flexRowRule := utils.MustGet(tailwind.GetRuleset(".flex-row"))
-
-	if !assert.Len(t, rules, 2) {
-		return
-	}
-
-	assert.Equal(t, flexColRule, rules[".flex-col"])
-	assert.Equal(t, flexRowRule, rules[".flex-row"])
+	assert.ElementsMatch(t, []string{"/routes/index.ix"}, seenFiles)
 }
