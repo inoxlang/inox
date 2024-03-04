@@ -21,6 +21,11 @@ func CutQuotedStringLiteral(index int32, n *QuotedStringLiteral) (cut stringCut,
 		return stringCut{}, false
 	}
 
+	//Do not cut if the index is outside the string.
+	if index <= n.Span.Start || index >= n.Span.End {
+		return stringCut{}, false
+	}
+
 	//Note: $n could be an invalid string (error).
 
 	isStringEmpty := n.Value == ""

@@ -56,6 +56,22 @@ func TestCutQuotedStringLiteral(t *testing.T) {
 		assert.Zero(t, cut)
 	})
 
+	t.Run("index before string", func(t *testing.T) {
+		lit := utils.MustGet(ParseExpression(`""`)).(*QuotedStringLiteral)
+
+		cut, ok := CutQuotedStringLiteral(0, lit)
+		assert.False(t, ok)
+		assert.Zero(t, cut)
+	})
+
+	t.Run("index after string", func(t *testing.T) {
+		lit := utils.MustGet(ParseExpression(`""`)).(*QuotedStringLiteral)
+
+		cut, ok := CutQuotedStringLiteral(2, lit)
+		assert.False(t, ok)
+		assert.Zero(t, cut)
+	})
+
 	t.Run("single-char string: ASCII", func(t *testing.T) {
 		lit := utils.MustGet(ParseExpression(`"a"`)).(*QuotedStringLiteral)
 
