@@ -12,13 +12,13 @@ func ParseString(s string) (Node, error) {
 	parser := css.NewParser(input, false)
 
 	var stack []Node
-	var current, parent *Node
 
 	stack = append(stack, Node{
 		Type: Stylesheet,
 	})
 
-	current = &stack[len(stack)-1]
+	current := 0
+	parent := -1
 
 	for {
 		gt, _, data := parser.Next()
@@ -29,17 +29,17 @@ func ParseString(s string) (Node, error) {
 				Type: Comment,
 				Data: string(data),
 			}
-			current.Children = append(current.Children, comment)
+			stack[current].Children = append(stack[current].Children, comment)
 		case css.BeginAtRuleGrammar:
 			stack = append(stack, Node{Type: AtRule})
-			parent = current
-			current = &stack[len(stack)-1]
+			parent++
+			current++
 
-			current.Children = append(current.Children, Node{
+			stack[current].Children = append(stack[current].Children, Node{
 				Type: MediaQuery,
 			})
 
-			mediaQuery := &current.Children[0]
+			mediaQuery := &stack[current].Children[0]
 
 			err := makeNodesFromTokens(parser.Values(), mediaQuery)
 			if err != nil {
@@ -47,25 +47,25 @@ func ParseString(s string) (Node, error) {
 			}
 		case css.BeginRulesetGrammar:
 			stack = append(stack, Node{Type: Ruleset})
-			parent = current
-			current = &stack[len(stack)-1]
+			current++
+			parent++
 
-			current.Children = append(current.Children, Node{
+			stack[current].Children = append(stack[current].Children, Node{
 				Type: Selector,
 			})
 
-			selector := &current.Children[0]
+			selector := &stack[current].Children[0]
 
 			err := makeNodesFromTokens(parser.Values(), selector)
 			if err != nil {
 				return Node{}, err
 			}
 		case css.DeclarationGrammar:
-			current.Children = append(current.Children, Node{
+			stack[current].Children = append(stack[current].Children, Node{
 				Type: Declaration,
 			})
 
-			declaration := &current.Children[len(current.Children)-1]
+			declaration := &stack[current].Children[len(stack[current].Children)-1]
 			declaration.Data = string(data)
 
 			err := makeNodesFromTokens(parser.Values(), declaration)
@@ -73,17 +73,12 @@ func ParseString(s string) (Node, error) {
 				return Node{}, err
 			}
 		case css.EndAtRuleGrammar, css.EndRulesetGrammar:
-			prev := *current
+			prev := stack[current]
+			parent--
+			current--
 			stack = stack[:len(stack)-1]
-			current = parent
 
-			current.Children = append(current.Children, prev)
-
-			if len(stack) == 1 {
-				parent = nil
-			} else {
-				parent = &stack[len(stack)-2]
-			}
+			stack[current].Children = append(stack[current].Children, prev)
 		}
 
 		// fmt.Println(" <" + gt.String() + "> ")
