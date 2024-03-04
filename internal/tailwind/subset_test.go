@@ -13,11 +13,31 @@ func TestGetRulesetsFromSubset(t *testing.T) {
 		utils.PanicIfErr(InitSubset())
 	}
 
-	rulesets := GetRulesetsFromSubset(".h")
-	if !assert.NotEmpty(t, rulesets) {
-		return
-	}
-	for _, ruleset := range rulesets {
-		assert.True(t, strings.HasPrefix(ruleset.Name, ".h"))
-	}
+	t.Run("prefix with matches", func(t *testing.T) {
+		rulesets := GetRulesetsFromSubset(".h")
+		if !assert.NotEmpty(t, rulesets) {
+			return
+		}
+		for _, ruleset := range rulesets {
+			assert.True(t, strings.HasPrefix(ruleset.Name, ".h"))
+		}
+	})
+
+	t.Run("exact match that is also a prefix", func(t *testing.T) {
+		rulesets := GetRulesetsFromSubset(".flex")
+		assert.Greater(t, len(rulesets), 1)
+	})
+
+	t.Run("prefix with no matches", func(t *testing.T) {
+		rulesets := GetRulesetsFromSubset(".z")
+		assert.Empty(t, rulesets)
+	})
+
+	t.Run("class name without escaped dot", func(t *testing.T) {
+		rulesets := GetRulesetsFromSubset(".h-0.5")
+		if !assert.NotEmpty(t, rulesets) {
+			return
+		}
+		assert.Equal(t, len(rulesets), 1)
+	})
 }

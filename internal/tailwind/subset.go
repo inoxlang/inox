@@ -20,7 +20,7 @@ var (
 )
 
 type Ruleset struct {
-	Name string
+	Name string //Selector with '\' removed (.h-0\.5 --> .h-0.5).
 	Node css.Node
 }
 
@@ -36,8 +36,12 @@ func InitSubset() error {
 
 	for _, n := range stylesheet.Children {
 		if n.Type == css.Ruleset {
+			name := n.SelectorString()
+			name = strings.ReplaceAll(name, "\\.", ".")
+			name = strings.ReplaceAll(name, "\\/", "/")
+
 			TAILWIND_SUBSET_RULESETS = append(TAILWIND_SUBSET_RULESETS, Ruleset{
-				Name: n.SelectorString(),
+				Name: name,
 				Node: n,
 			})
 		}
@@ -52,13 +56,9 @@ func InitSubset() error {
 
 func GetRulesetsFromSubset(prefix string) []Ruleset {
 
-	index, found := slices.BinarySearchFunc(TAILWIND_SUBSET_RULESETS, prefix, func(r Ruleset, s string) int {
+	index, _ := slices.BinarySearchFunc(TAILWIND_SUBSET_RULESETS, prefix, func(r Ruleset, s string) int {
 		return strings.Compare(r.Name, s)
 	})
-
-	if found {
-		return []Ruleset{TAILWIND_SUBSET_RULESETS[index]}
-	}
 
 	//Example: if prefix is `.h` $index is the position of the first .hXXXXX rule.
 
