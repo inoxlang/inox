@@ -73,7 +73,7 @@ func init() {
 		case "preact-signals.js":
 			PREACT_SIGNALS_JS = string(content)
 			PREACT_SIGNALS_MINIFIED = js.MustMinify(PREACT_SIGNALS_JS, nil)
-		case "base.css":
+		case "main.css":
 			BASE_CSS_STYLESHEET = string(content)
 		case "surreal-css-inline-scope.js":
 			SURREAL_CSS_INLINE_SCOPE = string(content)
@@ -142,7 +142,7 @@ func WriteTemplate(name string, fls afs.Filesystem) error {
 					content = []byte(HTMX_MIN_JS_PACKAGE)
 				case "inox.min.js":
 					content = []byte(INOX_JS_PACKAGE_MINIFIED)
-				case "base.css":
+				case "main.css":
 					content = []byte(BASE_CSS_STYLESHEET)
 				}
 			}

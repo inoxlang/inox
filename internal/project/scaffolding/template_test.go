@@ -30,7 +30,7 @@ func TestWriteTemplate(t *testing.T) {
 	assert.Equal(t, HTMX_MIN_JS_PACKAGE, string(content))
 	assert.NotEmpty(t, HTMX_MIN_JS_PACKAGE)
 
-	content, err = util.ReadFile(fls, "/static/base.css")
+	content, err = util.ReadFile(fls, "/static/main.css")
 
 	if !assert.NoError(t, err) {
 		return

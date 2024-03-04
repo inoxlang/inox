@@ -1136,7 +1136,7 @@
         server.wait_closed()
     other-files:
         /.tutorial-files/static/htmx.min.js: ""     # automatic content injection
-        /.tutorial-files/static/base.css: |
+        /.tutorial-files/static/main.css: |
             /* reset */
 
             html {
@@ -1221,7 +1221,7 @@
                     <meta charset="utf-8"/>
                     <title></title>
                     <meta name="viewport" content="width=device-width, initial-scale=1"/>
-                    <link rel="stylesheet" href="/base.css"/>
+                    <link rel="stylesheet" href="/main.css"/>
                     <script src="/htmx.min.js"></script>
                 </head>
                 <body>
@@ -1263,7 +1263,7 @@
                     <meta charset="utf-8"/>
                     <title></title>
                     <meta name="viewport" content="width=device-width, initial-scale=1"/>
-                    <link rel="stylesheet" href="/base.css"/>
+                    <link rel="stylesheet" href="/main.css"/>
                     <script src="/htmx.min.js"></script>
                 </head>
                 <body>
@@ -1281,7 +1281,7 @@
                     <meta charset="utf-8"/>
                     <title></title>
                     <meta name="viewport" content="width=device-width, initial-scale=1"/>
-                    <link rel="stylesheet" href="/base.css"/>
+                    <link rel="stylesheet" href="/main.css"/>
                     <script src="/htmx.min.js"></script>
                 </head>
                 <body>
@@ -1311,7 +1311,7 @@
                     <meta charset="utf-8"/>
                     <title></title>
                     <meta name="viewport" content="width=device-width, initial-scale=1"/>
-                    <link rel="stylesheet" href="/base.css"/>
+                    <link rel="stylesheet" href="/main.css"/>
                     <script src="/htmx.min.js"></script>
                 </head>
                 <body>
@@ -1333,7 +1333,7 @@
                     <meta charset="utf-8"/>
                     <title></title>
                     <meta name="viewport" content="width=device-width, initial-scale=1"/>
-                    <link rel="stylesheet" href="/base.css"/>
+                    <link rel="stylesheet" href="/main.css"/>
                     <script src="/htmx.min.js"></script>
                 </head>
                 <body>
