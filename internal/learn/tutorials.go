@@ -32,7 +32,7 @@ func init() {
 				basename := filepath.Base(name)
 				switch basename {
 				case "main.css":
-					tut.OtherFiles[name] = scaffolding.BASE_CSS_STYLESHEET
+					tut.OtherFiles[name] = scaffolding.MAIN_CSS_STYLESHEET
 				case "htmx.min.js":
 					tut.OtherFiles[name] = scaffolding.HTMX_MIN_JS_PACKAGE
 				}

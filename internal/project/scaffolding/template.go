@@ -17,6 +17,11 @@ import (
 
 const (
 	MINIMAL_WEB_APP_TEMPLATE_NAME = "web-app-min"
+
+	RELATIVE_GEN_DIR            = "gen/"
+	RELATIVE_TAILWIND_FILE_PATH = RELATIVE_GEN_DIR + "tailwind.css"
+
+	TAILWIND_IMPORT = "/* Tailwind */\n\n@import \"" + RELATIVE_TAILWIND_FILE_PATH + "\";"
 )
 
 var (
@@ -26,7 +31,10 @@ var (
 	//go:embed common/**
 	COMMON_FILES embed.FS
 
-	BASE_CSS_STYLESHEET string
+	MAIN_CSS_STYLESHEET                      string
+	MAIN_CSS_STYLESHEET_WITH_TAILWIND_IMPORT string
+
+	EMPTY_TAILWIND_CSS_STYLESHEET string
 
 	//Inox.js package
 
@@ -74,7 +82,10 @@ func init() {
 			PREACT_SIGNALS_JS = string(content)
 			PREACT_SIGNALS_MINIFIED = js.MustMinify(PREACT_SIGNALS_JS, nil)
 		case "main.css":
-			BASE_CSS_STYLESHEET = string(content)
+			MAIN_CSS_STYLESHEET = string(content)
+			MAIN_CSS_STYLESHEET_WITH_TAILWIND_IMPORT = MAIN_CSS_STYLESHEET + "\n\n" + TAILWIND_IMPORT
+		case "tailwind.css":
+			EMPTY_TAILWIND_CSS_STYLESHEET = string(content)
 		case "surreal-css-inline-scope.js":
 			SURREAL_CSS_INLINE_SCOPE = string(content)
 			SURREAL_CSS_INLINE_SCOPE_MINIFIED = js.MustMinify(SURREAL_CSS_INLINE_SCOPE, nil)
@@ -143,7 +154,9 @@ func WriteTemplate(name string, fls afs.Filesystem) error {
 				case "inox.min.js":
 					content = []byte(INOX_JS_PACKAGE_MINIFIED)
 				case "main.css":
-					content = []byte(BASE_CSS_STYLESHEET)
+					content = []byte(MAIN_CSS_STYLESHEET_WITH_TAILWIND_IMPORT)
+				case "tailwind.css":
+					content = []byte(EMPTY_TAILWIND_CSS_STYLESHEET)
 				}
 			}
 
