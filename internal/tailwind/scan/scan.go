@@ -1,6 +1,7 @@
 package scan
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/inoxlang/inox/internal/afs"
@@ -17,9 +18,9 @@ type Configuration struct {
 }
 
 // ScanForTailwindRulesToInclude scans for Tailwind class names in 'class' attributes in Inox files.
-func ScanForTailwindRulesToInclude(ctx *core.Context, fls afs.Filesystem, config Configuration) (rules map[string]tailwind.Ruleset, _ error) {
+func ScanForTailwindRulesToInclude(ctx *core.Context, fls afs.Filesystem, config Configuration) (rules []tailwind.Ruleset, _ error) {
 
-	rules = map[string]tailwind.Ruleset{}
+	ruleSet := map[string]tailwind.Ruleset{}
 
 	codebasescan.ScanCodebase(ctx, fls, codebasescan.Configuration{
 		TopDirectories: config.TopDirectories,
@@ -28,12 +29,21 @@ func ScanForTailwindRulesToInclude(ctx *core.Context, fls afs.Filesystem, config
 		FileHandlers: []codebasescan.FileHandler{
 			func(path string, n *parse.Chunk) error {
 				for _, rule := range findTailwindRulesToInclude(n) {
-					rules[rule.Name] = rule
+					ruleSet[rule.Name] = rule
 				}
 				return nil
 			},
 		},
 	})
+
+	for _, rule := range ruleSet {
+		rules = append(rules, rule)
+	}
+
+	slices.SortFunc(rules, func(a, b tailwind.Ruleset) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+
 	return
 }
 

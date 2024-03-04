@@ -11,6 +11,7 @@ import (
 	"github.com/inoxlang/inox/internal/project/access"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/projectserver/lsp"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 const (
@@ -212,9 +213,15 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 			sessionData.filesystem = lspFilesystem
 			sessionData.repository = gitRepo
 			sessionData.project = project
+			sessionData.cssGenerator = newCssGenerator()
 			sessionData.serverAPI = newServerAPI(lspFilesystem, session, memberAuthToken)
 
 			go sessionData.serverAPI.tryUpdateAPI() //use a goroutine to avoid deadlock
+
+			go func() {
+				defer utils.Recover()
+				sessionData.cssGenerator.InitialGen(session, sessionData.filesystem)
+			}()
 
 			err = startNotifyingFilesystemStructureEvents(session, workingFs, func(event fs_ns.Event) {
 				sessionData.serverAPI.acknowledgeStructureChangeEvent(event)

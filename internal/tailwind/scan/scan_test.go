@@ -50,6 +50,5 @@ func TestScan(t *testing.T) {
 		return
 	}
 
-	assert.Equal(t, flexColRule, rules[".flex-col"])
-	assert.Equal(t, flexRowRule, rules[".flex-row"])
+	assert.ElementsMatch(t, []tailwind.Ruleset{flexColRule, flexRowRule}, rules)
 }
