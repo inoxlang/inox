@@ -26,7 +26,10 @@ func DecodeJsonStringLiteralBytes(s []byte) (t []byte, ok bool) {
 		return
 	}
 	s = s[1 : len(s)-1]
+	return DecodeJsonStringBytesNoQuotes(s)
+}
 
+func DecodeJsonStringBytesNoQuotes(s []byte) (t []byte, ok bool) {
 	// Check for unusual characters. If there are none,
 	// then no unquoting is needed, so return a slice of the
 	// original bytes.
