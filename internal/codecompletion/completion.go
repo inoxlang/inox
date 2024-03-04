@@ -1725,7 +1725,7 @@ func findStringCompletions(strLit *parse.QuotedStringLiteral, search completionS
 	if attribute, ok := search.parent.(*parse.XMLAttribute); ok {
 		switch {
 		case strLit == attribute.Value:
-			completions = findXMLAttributeValueCompletions(strLit, attribute, search.ancestorChain, search.inputData)
+			completions = findXMLAttributeValueCompletions(strLit, attribute, search)
 		}
 
 		return completions

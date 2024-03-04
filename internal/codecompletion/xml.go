@@ -91,8 +91,8 @@ func findXmlAttributeNameCompletions(ident *parse.IdentifierLiteral, parent *par
 
 // findXMLAttributeValueCompletions finds completions for atribute values inside an Inox XML opening element,
 // this is based on the namespace (e.g. html) of the closest Inox XML expression.
-func findXMLAttributeValueCompletions(str *parse.QuotedStringLiteral, parent *parse.XMLAttribute, ancestors []parse.Node, data InputData) (completions []Completion) {
-	tagName, namespace, ok := findTagNameAndNamespace(ancestors)
+func findXMLAttributeValueCompletions(str *parse.QuotedStringLiteral, parent *parse.XMLAttribute, search completionSearch) (completions []Completion) {
+	tagName, namespace, ok := findTagNameAndNamespace(search.ancestorChain)
 	if !ok {
 		return
 	}
@@ -100,7 +100,7 @@ func findXMLAttributeValueCompletions(str *parse.QuotedStringLiteral, parent *pa
 	//TODO: use symbolic data in order to support aliases
 	switch namespace {
 	case "html":
-		return findHtmlAttributeValueCompletions(str, parent, tagName, ancestors, data)
+		return findHtmlAttributeValueCompletions(str, parent, tagName, search)
 	}
 
 	return
