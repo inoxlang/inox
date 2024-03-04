@@ -9,6 +9,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/chrome_ns"
 	"github.com/inoxlang/inox/internal/globals/inoxsh_ns"
 	"github.com/inoxlang/inox/internal/inoxprocess"
+	"github.com/inoxlang/inox/internal/tailwind"
 )
 
 func Shell(mainSubCommand string, mainSubCommandArgs []string, outW, errW io.Writer) (exitCode int) {
@@ -36,6 +37,10 @@ func Shell(mainSubCommand string, mainSubCommandArgs []string, outW, errW io.Wri
 	//create a temporary directory for the whole process
 	_, processTempDirPerms, removeTempDir := CreateTempDir()
 	defer removeTempDir()
+
+	//Initializations.
+
+	tailwind.InitSubset()
 
 	//Run the startup script to get the shell configuration.
 	//The global state of the startup script is re-used by the shell

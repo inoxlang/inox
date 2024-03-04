@@ -13,6 +13,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/chrome_ns"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/inoxprocess"
+	"github.com/inoxlang/inox/internal/tailwind"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
 )
@@ -84,6 +85,12 @@ func Controlled(mainSubCommand string, mainSubCommandArgs []string, outW, errW i
 	}
 
 	CancelOnSigintSigterm(state.Ctx, ROOT_CTX_TEARDOWN_TIMEOUT)
+
+	//Initializations.
+
+	tailwind.InitSubset() //TODO: add condition
+
+	//Start the control loop.
 
 	_ = client.StartControl()
 	return 0

@@ -10,7 +10,7 @@ import (
 
 func TestGetRulesetsFromSubset(t *testing.T) {
 	if TAILWIND_SUBSET_RULESETS == nil {
-		utils.PanicIfErr(InitTailCSS())
+		utils.PanicIfErr(InitSubset())
 	}
 
 	rulesets := GetRulesetsFromSubset(".h")

@@ -7,6 +7,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/globals/inox_ns"
 	"github.com/inoxlang/inox/internal/inoxprocess"
+	"github.com/inoxlang/inox/internal/tailwind"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -21,6 +22,12 @@ func CheckProgram(mainSubCommand string, mainSubCommandArgs []string, outW, errW
 
 	compilationCtx := createCompilationCtx(dir)
 	inoxprocess.RestrictProcessAccess(compilationCtx, inoxprocess.ProcessRestrictionConfig{AllowBrowserAccess: false})
+
+	//Initializations.
+
+	tailwind.InitSubset()
+
+	//Perform checks.
 
 	data := inox_ns.GetCheckData(fpath, compilationCtx, outW)
 	fmt.Fprintf(outW, "%s\n\r", utils.Must(json.Marshal(data)))

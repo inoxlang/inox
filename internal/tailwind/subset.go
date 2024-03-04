@@ -24,7 +24,7 @@ type Ruleset struct {
 	Node css.Node
 }
 
-func InitTailCSS() error {
+func InitSubset() error {
 	if TAILWIND_SUBSET_RULESETS != nil {
 		return ErrSubsetAlreadyInitialized
 	}

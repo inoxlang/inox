@@ -29,6 +29,7 @@ import (
 	"github.com/inoxlang/inox/internal/metricsperf"
 	"github.com/inoxlang/inox/internal/projectserver"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
+	"github.com/inoxlang/inox/internal/tailwind"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/oklog/ulid/v2"
 	"github.com/rs/zerolog"
@@ -129,6 +130,10 @@ func ProjectServer(mainSubCommand string, mainSubCommandArgs []string, outW, err
 		//Download a chrome browser if not present. This is done synchronously because Landlock is invoked further in the code.
 		downloadChromeBrowser(out, projectServerConfig)
 	}
+
+	//Initializations.
+
+	utils.PanicIfErr(tailwind.InitSubset())
 
 	//create context & state
 

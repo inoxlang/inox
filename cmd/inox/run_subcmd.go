@@ -14,6 +14,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/inoxprocess"
 	"github.com/inoxlang/inox/internal/mod"
+	"github.com/inoxlang/inox/internal/tailwind"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -81,6 +82,10 @@ func RunProgram(mainSubCommand string, mainSubCommandArgs []string, outW, errW i
 	//create a temporary directory for the whole process
 	_, processTempDirPerms, removeTempDir := CreateTempDir()
 	defer removeTempDir()
+
+	//Initializations.
+
+	tailwind.InitSubset()
 
 	//run script
 
