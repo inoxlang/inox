@@ -18,9 +18,9 @@ func GetHoverHelpMarkdown(tokens []hscode.Token, cursorIndex int32) string {
 			builder.WriteByte('\n')
 		}
 
-		help, ok = HELP_DATA.Keywords[token.Value]
+		keywordInfo, ok := HELP_DATA.Keywords[token.Value]
 		if ok {
-			builder.WriteString(help)
+			builder.WriteString(keywordInfo.DocumentationLink)
 			builder.WriteByte('\n')
 		}
 	}

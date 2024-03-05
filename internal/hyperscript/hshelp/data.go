@@ -14,13 +14,32 @@ import (
 var HELP_DATA_YAML string
 
 var HELP_DATA struct {
-	Keywords    map[string]string           `yaml:"keywords"`
-	ByTokenType map[hscode.TokenType]string `yaml:"token-types"`
+	Keywords             map[string]KeywordInfo      `yaml:"keywords"`
+	ByTokenType          map[hscode.TokenType]string `yaml:"token-types"`
+	FeatureStartExamples []AttributeStartExample     `yaml:"feature-start-examples"`
+	CommandExamples      []AttributeStartExample     `yaml:"command-examples"`
+}
+
+type AttributeStartExample struct {
+	Code                  string `yaml:"code"`
+	ShortExplanation      string `yaml:"short-explanation,omitempty"`
+	MarkdownDocumentation string `yaml:"documentation,omitempty"`
+}
+
+type CommandExample struct {
+	Code                  string `yaml:"code"`
+	ShortExplanation      string `yaml:"short-explanation,omitempty"`
+	MarkdownDocumentation string `yaml:"documentation,omitempty"`
 }
 
 func init() {
 	if err := yaml.Unmarshal(utils.StringAsBytes(HELP_DATA_YAML), &HELP_DATA); err != nil {
 		log.Panicf("error while parsing hyperscript.yaml: %s", err)
+	}
+
+	for name, info := range HELP_DATA.Keywords {
+		info.Name = name
+		HELP_DATA.Keywords[name] = info
 	}
 }
 
@@ -29,12 +48,9 @@ func init() {
 func GetKeywordsByPrefix(s string) (keywords []KeywordInfo) {
 	s = strings.ToLower(s)
 
-	for token, docLink := range HELP_DATA.Keywords {
+	for token, info := range HELP_DATA.Keywords {
 		if strings.HasPrefix(token, s) {
-			keywords = append(keywords, KeywordInfo{
-				Name:              token,
-				DocumentationLink: docLink,
-			})
+			keywords = append(keywords, info)
 		}
 	}
 
@@ -43,5 +59,14 @@ func GetKeywordsByPrefix(s string) (keywords []KeywordInfo) {
 
 type KeywordInfo struct {
 	Name              string
-	DocumentationLink string
+	DocumentationLink string      `yaml:"documentation"`
+	Kind              KeywordKind `yaml:"kind,omitempty"`
 }
+
+type KeywordKind string
+
+const (
+	UnspecifiedKeywordKind KeywordKind = ""
+	FeatureKeyword         KeywordKind = "feature"
+	CommandKeyword         KeywordKind = "command"
+)
