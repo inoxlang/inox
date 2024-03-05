@@ -45,4 +45,12 @@ func TestChunkCache(t *testing.T) {
 
 	_, ok = cache.Get(sourceCodeB)
 	assert.False(t, ok)
+
+	//Add, remove and try to retrieve an entry.
+
+	cache.Put(sourceCodeA, chunkA)
+	cache.DeleteEntryByValue(chunkA)
+
+	_, ok = cache.Get(sourceCodeA)
+	assert.False(t, ok)
 }
