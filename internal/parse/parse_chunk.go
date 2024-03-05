@@ -88,7 +88,10 @@ func ParseChunk2(str string, fpath string, opts ...ParserOptions) (runes []rune,
 
 					startLine, endLine, startCol, endCol := getLineColumns(p.s, tokenStartPosition, tokenEndPosition)
 
-					aggregation.Errors = append(aggregation.Errors, &ParsingError{UnspecifiedParsingError, hsParsingError.MessageAtToken})
+					aggregation.Errors = append(aggregation.Errors, &ParsingError{
+						UnspecifiedParsingError,
+						HYPERSCRIPT_PARSING_ERROR_PREFIX + hsParsingError.MessageAtToken,
+					})
 					aggregation.ErrorPositions = append(aggregation.ErrorPositions, SourcePositionRange{
 						SourceName:  fpath,
 						StartLine:   startLine,
@@ -115,7 +118,10 @@ func ParseChunk2(str string, fpath string, opts ...ParserOptions) (runes []rune,
 
 					startLine, endLine, startCol, endCol := getLineColumns(p.s, tokenStartPosition, tokenEndPosition)
 
-					aggregation.Errors = append(aggregation.Errors, &ParsingError{UnspecifiedParsingError, hsParsingError.MessageAtToken})
+					aggregation.Errors = append(aggregation.Errors, &ParsingError{
+						UnspecifiedParsingError,
+						HYPERSCRIPT_PARSING_ERROR_PREFIX + hsParsingError.MessageAtToken,
+					})
 					aggregation.ErrorPositions = append(aggregation.ErrorPositions, SourcePositionRange{
 						SourceName:  fpath,
 						StartLine:   startLine,

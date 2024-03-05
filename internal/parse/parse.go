@@ -8071,7 +8071,7 @@ func (p *parser) parseHyperscriptAttribute(start int32) (attr *HyperscriptAttrib
 
 		if attr.Err == nil {
 			if err != nil {
-				attr.Err = &ParsingError{UnspecifiedParsingError, err.Error()}
+				attr.Err = &ParsingError{UnspecifiedParsingError, HYPERSCRIPT_PARSING_ERROR_PREFIX + err.Error()}
 			}
 			if parsingErr != nil {
 				attr.HyperscriptParsingError = parsingErr

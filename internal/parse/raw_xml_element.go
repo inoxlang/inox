@@ -6,6 +6,10 @@ import (
 	"github.com/inoxlang/inox/internal/hyperscript/hscode"
 )
 
+const (
+	HYPERSCRIPT_PARSING_ERROR_PREFIX = "hyperscript: "
+)
+
 var (
 	parseHyperscript ParseHyperscriptFn
 )
@@ -33,8 +37,8 @@ func (p *parser) parseContentOfRawXMLElement(element *XMLElement) {
 		if element.EstimatedRawElementType == HyperscriptScript && p.parseHyperscript != nil {
 			result, parsingErr, err := p.parseHyperscript(p.context, element.RawElementContent)
 			if err != nil && element.Err == nil {
-				//Only critical errors oare reported in element.Err.
-				element.Err = &ParsingError{UnspecifiedParsingError, err.Error()}
+				//Only critical errors are reported in element.Err.
+				element.Err = &ParsingError{UnspecifiedParsingError, HYPERSCRIPT_PARSING_ERROR_PREFIX + err.Error()}
 			}
 			if parsingErr != nil {
 				element.RawElementParsingResult = parsingErr
