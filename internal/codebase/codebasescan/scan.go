@@ -22,12 +22,13 @@ const (
 
 type Configuration struct {
 	TopDirectories []string
-	MaxFileSize    int64         //defaults to DEFAULT_MAX_SCANNED_INOX_FILE_SIZE
-	Fast           bool          //if true the scan will be faster but will use more CPU and memory.
-	FileHandlers   []FileHandler //File handlers are called for each file. They should not modify the chunk node.
+	MaxFileSize    int64             //defaults to DEFAULT_MAX_SCANNED_INOX_FILE_SIZE
+	Fast           bool              //if true the scan will be faster but will use more CPU and memory.
+	FileHandlers   []FileHandler     //File handlers are called for each file. They should not modify the chunk node.
+	ChunkCache     *parse.ChunkCache //optional
 }
 
-type FileHandler func(path string, n *parse.Chunk) error
+type FileHandler func(path string, fileContent string, n *parse.Chunk) error
 
 func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) error {
 
@@ -36,6 +37,10 @@ func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) e
 	if err := ctx.CheckHasPermission(core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")}); err != nil {
 		return err
 	}
+
+	//Track the cached chunks in order
+	seenChunks := []*parse.Chunk{}
+	chunkCache := config.ChunkCache
 
 	for _, topDir := range config.TopDirectories {
 
@@ -46,6 +51,7 @@ func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) e
 			}
 
 			//Ignore non-Inox files.
+			//TODO: scan some other file types. The parser should change accordingly.
 			if d.IsDir() || filepath.Ext(path) != inoxconsts.INOXLANG_FILE_EXTENSION {
 				return nil
 			}
@@ -84,15 +90,38 @@ func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) e
 				return err
 			}
 
-			//Parse the file.
+			var (
+				chunk    *parse.Chunk
+				cacheHit bool
+			)
 
-			result, err := parse.ParseChunk(string(content), path)
-			if result == nil { //critical error
-				return nil
+			contentS := string(content)
+
+			//Check the cache.
+			if chunkCache != nil {
+				chunk, cacheHit = chunkCache.Get(contentS)
 			}
 
+			if !cacheHit {
+
+				//Parse the file.
+
+				result, _ := parse.ParseChunk(contentS, path)
+				if result == nil { //critical error
+					return nil
+				}
+
+				chunk = result
+
+				//Update the cache.
+				if chunkCache != nil {
+					config.ChunkCache.Put(contentS, result)
+				}
+			}
+			seenChunks = append(seenChunks, chunk)
+
 			for _, handler := range config.FileHandlers {
-				err := handler(path, result)
+				err := handler(path, contentS, chunk)
 
 				if err != nil {
 					return fmt.Errorf("a file handler returned an error for %s", path)
@@ -109,6 +138,11 @@ func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) e
 		if err != nil {
 			return err
 		}
+	}
+
+	//Remove the cache entries of old file versions.
+	if config.ChunkCache != nil {
+		chunkCache.KeepEntriesByValue(seenChunks...)
 	}
 
 	return nil

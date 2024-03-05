@@ -2,6 +2,7 @@ package parse
 
 import (
 	"crypto/sha256"
+	"slices"
 	"sync"
 
 	"github.com/inoxlang/inox/internal/utils"
@@ -53,6 +54,17 @@ func (c *ChunkCache) DeleteEntryByValue(chunk *Chunk) {
 
 	for key, cachedChunk := range c.entries {
 		if cachedChunk == chunk {
+			delete(c.entries, key)
+		}
+	}
+}
+
+func (c *ChunkCache) KeepEntriesByValue(keptChunks ...*Chunk) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	for key, cachedChunk := range c.entries {
+		if !slices.Contains(keptChunks, cachedChunk) {
 			delete(c.entries, key)
 		}
 	}

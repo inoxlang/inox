@@ -27,7 +27,7 @@ func ScanForTailwindRulesToInclude(ctx *core.Context, fls afs.Filesystem, config
 		MaxFileSize:    config.MaxFileSize,
 		Fast:           config.Fast,
 		FileHandlers: []codebasescan.FileHandler{
-			func(path string, n *parse.Chunk) error {
+			func(path string, content string, n *parse.Chunk) error {
 				for _, rule := range findTailwindRulesToInclude(n) {
 					ruleSet[rule.Name] = rule
 				}
