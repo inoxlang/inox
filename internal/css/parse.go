@@ -115,7 +115,7 @@ func makeNodesFromTokens(tokens []css.Token, parentNode *Node) error {
 
 		leadingSpace = false
 
-		if t.TokenType == css.DelimToken {
+		if t.TokenType == css.DelimToken && len(t.Data) == 1 && t.Data[0] == '.' {
 			precededByDot = true
 			continue
 		}
