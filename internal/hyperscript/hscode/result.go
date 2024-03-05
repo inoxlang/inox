@@ -8,10 +8,11 @@ type ParsingResult struct {
 }
 
 type ParsingError struct {
-	Message        string  `json:"message"`
-	MessageAtToken string  `json:"messageAtToken"`
-	Token          Token   `json:"token"`
-	Tokens         []Token `json:"tokens"`
+	Message            string  `json:"message"`
+	MessageAtToken     string  `json:"messageAtToken"`
+	Token              Token   `json:"token"`
+	Tokens             []Token `json:"tokens"`
+	TokensNoWhitespace []Token `json:"tokensNoWhitespace"`
 }
 
 func (e ParsingError) Error() string {

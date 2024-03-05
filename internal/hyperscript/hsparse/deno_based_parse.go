@@ -91,6 +91,8 @@ func tryParseHyperScriptWithDenoService(ctx context.Context, source string) (*hs
 			return nil, nil, fmt.Errorf("internal error: %w", unmarshallingErr)
 		}
 
+		err.TokensNoWhitespace = utils.FilterSlice(err.Tokens, isNotWhitespaceToken)
+
 		return nil, &err, nil
 	}
 

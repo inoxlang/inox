@@ -79,6 +79,8 @@ func parseHyperScriptSlow(ctx context.Context, source string) (*hscode.ParsingRe
 			return nil, nil, fmt.Errorf("internal error: %w", unmarshallingErr)
 		}
 
+		err.TokensNoWhitespace = utils.FilterSlice(err.Tokens, isNotWhitespaceToken)
+
 		return nil, &err, nil
 	}
 
