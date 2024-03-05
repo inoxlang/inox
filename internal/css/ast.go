@@ -25,7 +25,9 @@ const (
 	Number
 	Ident
 	ClassName
-	Function
+	FunctionCall
+	ParenthesizedExpr
+	AttributeSelector
 	Hash
 	String
 	URL
@@ -130,6 +132,33 @@ func (n Node) string(w *strings.Builder, indent int) {
 	case ClassName:
 		w.WriteByte('.')
 		w.WriteString(n.Data)
+	case FunctionCall:
+		w.WriteString(n.Data)
+		w.WriteByte('(')
+
+		for i, child := range n.Children {
+			if i != 0 {
+				w.WriteString(", ")
+			}
+			child.string(w, 0)
+		}
+
+		w.WriteByte(')')
+	case ParenthesizedExpr:
+		w.WriteByte('(')
+
+		for _, child := range n.Children {
+			child.string(w, 0)
+		}
+
+		w.WriteByte(')')
+	case AttributeSelector:
+		w.WriteByte('[')
+		for _, child := range n.Children {
+			child.string(w, 0)
+		}
+
+		w.WriteByte(']')
 	default:
 		w.WriteString(n.Data)
 	}

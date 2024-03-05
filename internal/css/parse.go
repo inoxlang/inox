@@ -2,6 +2,7 @@ package css
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/tdewolff/parse/v2"
 	"github.com/tdewolff/parse/v2/css"
@@ -105,10 +106,23 @@ func ParseString(s string) (Node, error) {
 }
 
 func makeNodesFromTokens(tokens []css.Token, parentNode *Node) error {
+	i := 0
+
+	return _makeNodesFromTokens(tokens, parentNode, &i, nil)
+}
+
+func _makeNodesFromTokens(tokens []css.Token, parentNode *Node, i *int, stop func(t css.Token) bool) error {
 	precededByDot := false
 	leadingSpace := true
 
-	for _, t := range tokens {
+	for *i < len(tokens) {
+		t := tokens[*i]
+		*i = (*i + 1)
+
+		if stop != nil && stop(t) {
+			return nil
+		}
+
 		if t.TokenType == css.WhitespaceToken && leadingSpace {
 			continue
 		}
@@ -124,16 +138,58 @@ func makeNodesFromTokens(tokens []css.Token, parentNode *Node) error {
 			return fmt.Errorf("delim '.' not followed by an identifier")
 		}
 
-		node, isSignificant := makeNodeFromToken(t, precededByDot)
-		if isSignificant {
-			parentNode.Children = append(parentNode.Children, node)
+		switch t.TokenType {
+		case css.FunctionToken:
+			functionCall := Node{
+				Type: FunctionCall,
+				Data: strings.TrimSuffix(string(t.Data), "("),
+			}
+
+			err := _makeNodesFromTokens(tokens, &functionCall, i, func(t css.Token) bool {
+				return t.TokenType == css.RightParenthesisToken
+			})
+
+			parentNode.Children = append(parentNode.Children, functionCall)
+
+			if err != nil {
+				return err
+			}
+		case css.LeftParenthesisToken:
+			expr := Node{
+				Type: ParenthesizedExpr,
+			}
+			err := _makeNodesFromTokens(tokens, &expr, i, func(t css.Token) bool {
+				return t.TokenType == css.RightParenthesisToken
+			})
+
+			if err != nil {
+				return err
+			}
+
+			parentNode.Children = append(parentNode.Children, expr)
+		case css.LeftBracketToken:
+			expr := Node{
+				Type: AttributeSelector,
+			}
+			err := _makeNodesFromTokens(tokens, &expr, i, func(t css.Token) bool {
+				return t.TokenType == css.RightBracketToken
+			})
+			if err != nil {
+				return err
+			}
+			parentNode.Children = append(parentNode.Children, expr)
+		default:
+			node, isSignificant := makeSimpleNodeFromToken(t, precededByDot)
+			if isSignificant {
+				parentNode.Children = append(parentNode.Children, node)
+			}
+			precededByDot = false
 		}
-		precededByDot = false
 	}
 	return nil
 }
 
-func makeNodeFromToken(t css.Token, precededByDot bool) (n Node, significant bool) {
+func makeSimpleNodeFromToken(t css.Token, precededByDot bool) (n Node, significant bool) {
 
 	if precededByDot && t.TokenType != css.IdentToken {
 		panic(fmt.Errorf("onlt identifiers can be preceded by a dot"))
@@ -150,8 +206,6 @@ func makeNodeFromToken(t css.Token, precededByDot bool) (n Node, significant boo
 		} else {
 			n.Type = Ident
 		}
-	case css.FunctionToken:
-		n.Type = Function
 	case css.HashToken:
 		n.Type = Hash
 	case css.StringToken:

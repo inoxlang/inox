@@ -21,7 +21,9 @@ func TestParse(t *testing.T) {
 		.div {
 			width: 6px;
 		}
-		.div a {}
+		.div [a] {
+			background: rgb(5, 5, 5);
+		}
 	`)
 
 	if !assert.NoError(t, err) {
@@ -145,7 +147,7 @@ func TestParse(t *testing.T) {
 		return
 	}
 	assert.Empty(t, ruleset.Data)
-	if !assert.Len(t, ruleset.Children, 1) {
+	if !assert.Len(t, ruleset.Children, 2) {
 		return
 	}
 
@@ -161,9 +163,41 @@ func TestParse(t *testing.T) {
 				Data: " ",
 			},
 			{
-				Type: Ident,
-				Data: "a",
+				Type: AttributeSelector,
+				Children: []Node{
+					{
+						Type: Ident,
+						Data: "a",
+					},
+				},
 			},
 		},
 	}, ruleset.Children[0])
+
+	decl := ruleset.Children[1]
+
+	assert.Equal(t, Node{
+		Type: Declaration,
+		Data: "background",
+		Children: []Node{
+			{
+				Type: FunctionCall,
+				Data: "rgb",
+				Children: []Node{
+					{
+						Type: Number,
+						Data: "5",
+					},
+					{
+						Type: Number,
+						Data: "5",
+					},
+					{
+						Type: Number,
+						Data: "5",
+					},
+				},
+			},
+		},
+	}, decl)
 }
