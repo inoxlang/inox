@@ -153,7 +153,7 @@ token-types:
   # ATTRIBUTE_REF: https://hyperscript.org/expressions/attribute-ref/
   CLASS_REF: https://hyperscript.org/expressions/class-reference
   ID_REF: https://hyperscript.org/expressions/id-reference
-  STYLE_REF: https://hyperscript.org/expressions/query-reference
+  STYLE_REF: https://hyperscript.org/docs/#dom-literals
 
 feature-start-examples:
 - code: 'on click'
@@ -221,7 +221,7 @@ feature-start-examples:
     init log "element initialized !"
     ```
 
-command-examples:
+# command-examples:
 - code: 'log "Hello world !"'
   documentation: https://hyperscript.org/commands/log
 - code: 'add .clicked on me'

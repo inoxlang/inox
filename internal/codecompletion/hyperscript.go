@@ -3,6 +3,7 @@ package codecompletion
 import (
 	"slices"
 
+	"github.com/inoxlang/inox/internal/css"
 	"github.com/inoxlang/inox/internal/hyperscript/hscode"
 	"github.com/inoxlang/inox/internal/hyperscript/hshelp"
 	"github.com/inoxlang/inox/internal/parse"
@@ -11,6 +12,7 @@ import (
 
 func findHyperscriptAttributeCompletions(n *parse.HyperscriptAttributeShorthand, search completionSearch) (completions []Completion) {
 	cursorIndexInHsCode := search.cursorIndex - n.Span.Start - (1 /* '{'*/)
+	hsCodeStart := n.Span.Start + 1
 
 	var tokens []hscode.Token
 	if n.HyperscriptParsingResult != nil {
@@ -31,7 +33,7 @@ func findHyperscriptAttributeCompletions(n *parse.HyperscriptAttributeShorthand,
 		return
 	}
 
-	return findHyperscriptCompletions(tokens, cursorIndexInHsCode, search)
+	return findHyperscriptCompletions(tokens, cursorIndexInHsCode, hsCodeStart, search)
 }
 
 func findHyperscriptScriptCompletions(n *parse.XMLElement, search completionSearch) (completions []Completion) {
@@ -55,10 +57,10 @@ func findHyperscriptScriptCompletions(n *parse.XMLElement, search completionSear
 		return
 	}
 
-	return findHyperscriptCompletions(tokens, cursorIndexInHsCode, search)
+	return findHyperscriptCompletions(tokens, cursorIndexInHsCode, n.RawElementContentStart, search)
 }
 
-func findHyperscriptCompletions(tokens []hscode.Token, cursorIndexInHsCode int32, search completionSearch) (completions []Completion) {
+func findHyperscriptCompletions(tokens []hscode.Token, cursorIndexInHsCode, hsCodeStart int32, search completionSearch) (completions []Completion) {
 	tokensNoLinefeeds := 0
 	for _, token := range tokens {
 		if token.Value != "\n" {
@@ -71,7 +73,7 @@ func findHyperscriptCompletions(tokens []hscode.Token, cursorIndexInHsCode int32
 	}
 
 	if tokensNoLinefeeds > 0 {
-		completions = append(completions, getHyperscriptTokenCompletions(cursorIndexInHsCode, tokens)...)
+		completions = append(completions, getHyperscriptTokenCompletions(cursorIndexInHsCode, hsCodeStart, tokens, search)...)
 	}
 
 	if tokensNoLinefeeds > 1 {
@@ -81,7 +83,7 @@ func findHyperscriptCompletions(tokens []hscode.Token, cursorIndexInHsCode int32
 	return
 }
 
-func getHyperscriptTokenCompletions(cursorIndexInHsCode int32, tokens []hscode.Token) (completions []Completion) {
+func getHyperscriptTokenCompletions(cursorIndexInHsCode, hsCodeStart int32, tokens []hscode.Token, search completionSearch) (completions []Completion) {
 	token, ok := hscode.GetTokenAtCursor(cursorIndexInHsCode, tokens)
 	if !ok {
 		return
@@ -94,8 +96,6 @@ func getHyperscriptTokenCompletions(cursorIndexInHsCode int32, tokens []hscode.T
 		return
 	}
 
-	//TODO: use token ?
-
 	for _, keyword := range keywords {
 		completions = append(completions, Completion{
 			ShownString:           keyword.Name,
@@ -103,6 +103,28 @@ func getHyperscriptTokenCompletions(cursorIndexInHsCode int32, tokens []hscode.T
 			Kind:                  defines.CompletionItemKindKeyword,
 			LabelDetail:           keyword.DocumentationLink,
 			MarkdownDocumentation: keyword.DocumentationLink,
+		})
+	}
+
+	//*<property name>
+	if token.Type == hscode.STYLE_REF && token.Value[0] == '*' && len(token.Value) >= 2 {
+
+		tokenStart := hsCodeStart + token.Start
+		tokenEnd := hsCodeStart + token.End
+
+		replacedRange := search.chunk.GetSourcePosition(parse.NodeSpan{Start: tokenStart + 1 /*do not include the '*' */, End: tokenEnd})
+
+		propertyNamePrefix := token.Value[1:]
+		css.ForEachPropertyName(propertyNamePrefix, func(name string) error {
+
+			completions = append(completions, Completion{
+				ShownString:   name,
+				Value:         name,
+				Kind:          defines.CompletionItemKindProperty,
+				ReplacedRange: replacedRange,
+				LabelDetail:   "style property",
+			})
+			return nil
 		})
 	}
 
