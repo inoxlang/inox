@@ -14,9 +14,9 @@ func findHyperscriptAttributeCompletions(n *parse.HyperscriptAttributeShorthand,
 
 	var tokens []hscode.Token
 	if n.HyperscriptParsingResult != nil {
-		tokens = slices.Clone(n.HyperscriptParsingResult.Tokens)
+		tokens = slices.Clone(n.HyperscriptParsingResult.TokensNoWhitespace)
 	} else if n.HyperscriptParsingError != nil {
-		tokens = slices.Clone(n.HyperscriptParsingError.Tokens)
+		tokens = slices.Clone(n.HyperscriptParsingError.TokensNoWhitespace)
 	} else {
 		return
 	}
@@ -31,17 +31,7 @@ func findHyperscriptAttributeCompletions(n *parse.HyperscriptAttributeShorthand,
 		return
 	}
 
-	if len(tokens) == 0 {
-		// completions = append(completions, Completion{
-		// 	ShownString: "on click",
-		// 	Value:       "on click",
-		// 	Kind:        defines.CompletionItemKindText,
-		// })
-	} else {
-		completions = append(completions, getHyperscriptTokenCompletions(cursorIndexInHsCode, tokens)...)
-	}
-
-	return
+	return findHyperscriptCompletions(tokens, cursorIndexInHsCode, search)
 }
 
 func findHyperscriptScriptCompletions(n *parse.XMLElement, search completionSearch) (completions []Completion) {
@@ -53,9 +43,9 @@ func findHyperscriptScriptCompletions(n *parse.XMLElement, search completionSear
 	}
 	parsingResult, ok := n.RawElementParsingResult.(*hscode.ParsingResult)
 	if ok {
-		tokens = parsingResult.Tokens
+		tokens = slices.Clone(parsingResult.TokensNoWhitespace)
 	} else if parsingErr, ok := n.RawElementParsingResult.(*hscode.ParsingError); ok {
-		tokens = parsingErr.Tokens
+		tokens = slices.Clone(parsingErr.TokensNoWhitespace)
 	} else {
 		return
 	}
@@ -65,10 +55,27 @@ func findHyperscriptScriptCompletions(n *parse.XMLElement, search completionSear
 		return
 	}
 
-	if len(tokens) == 0 {
-		return
-	} else {
+	return findHyperscriptCompletions(tokens, cursorIndexInHsCode, search)
+}
+
+func findHyperscriptCompletions(tokens []hscode.Token, cursorIndexInHsCode int32, search completionSearch) (completions []Completion) {
+	tokensNoLinefeeds := 0
+	for _, token := range tokens {
+		if token.Value != "\n" {
+			tokensNoLinefeeds++
+		}
+	}
+
+	if tokensNoLinefeeds <= 1 {
+		completions = append(completions, getFeatureStartCompletions()...)
+	}
+
+	if tokensNoLinefeeds > 0 {
 		completions = append(completions, getHyperscriptTokenCompletions(cursorIndexInHsCode, tokens)...)
+	}
+
+	if tokensNoLinefeeds > 1 {
+		completions = append(completions, tryGetTrailingCommandHelp(cursorIndexInHsCode, tokens, search)...)
 	}
 
 	return
@@ -87,6 +94,8 @@ func getHyperscriptTokenCompletions(cursorIndexInHsCode int32, tokens []hscode.T
 		return
 	}
 
+	//TODO: use token ?
+
 	for _, keyword := range keywords {
 		completions = append(completions, Completion{
 			ShownString:           keyword.Name,
@@ -94,6 +103,48 @@ func getHyperscriptTokenCompletions(cursorIndexInHsCode int32, tokens []hscode.T
 			Kind:                  defines.CompletionItemKindKeyword,
 			LabelDetail:           keyword.DocumentationLink,
 			MarkdownDocumentation: keyword.DocumentationLink,
+		})
+	}
+
+	return
+}
+
+func getFeatureStartCompletions() (completions []Completion) {
+
+	for _, example := range hshelp.HELP_DATA.FeatureStartExamples {
+
+		completions = append(completions, Completion{
+			ShownString:           "(example)" + example.Code,
+			Value:                 example.Code,
+			Kind:                  defines.CompletionItemKindEvent,
+			LabelDetail:           example.ShortExplanation,
+			MarkdownDocumentation: example.MarkdownDocumentation,
+		})
+	}
+
+	return
+}
+
+func tryGetTrailingCommandHelp(relativeIndex int32, tokens []hscode.Token, search completionSearch) (completions []Completion) {
+
+	if len(tokens) <= 1 {
+		return
+	}
+
+	lastToken := tokens[len(tokens)-1]
+
+	if lastToken.Type != hscode.IDENTIFIER {
+		return
+	}
+
+	for _, example := range hshelp.HELP_DATA.CommandExamples {
+
+		completions = append(completions, Completion{
+			ShownString:           "(example)" + example.Code,
+			Value:                 example.Code,
+			Kind:                  defines.CompletionItemKindEvent,
+			LabelDetail:           example.ShortExplanation,
+			MarkdownDocumentation: example.MarkdownDocumentation,
 		})
 	}
 

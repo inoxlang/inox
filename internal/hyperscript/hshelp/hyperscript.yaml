@@ -238,4 +238,4 @@ command-examples:
   documentation: Wait 1 second. https://hyperscript.org/commands/wait
 - code: 'set @data-count to 0'
   short-explanation: 'Set the data-count attribute'
-  documentation: Set the `data-count attribute to the number 0. https://hyperscript.org/docs/#attributes`
+  documentation: Set the `data-count` attribute to the number 0. https://hyperscript.org/docs/#attributes`

@@ -41,35 +41,9 @@ func handleCompletion(ctx context.Context, req *defines.CompletionParams) (resul
 			completionIndex++
 		}()
 
-		var labelDetails *defines.CompletionItemLabelDetails
-		if completion.LabelDetail != "" {
-			detail := "  " + completion.LabelDetail
-			labelDetails = &defines.CompletionItemLabelDetails{
-				Detail: &detail,
-			}
-		}
-
-		var doc any
-		if completion.MarkdownDocumentation != "" {
-			doc = defines.MarkupContent{
-				Kind:  defines.MarkupKindMarkdown,
-				Value: completion.MarkdownDocumentation,
-			}
-		}
-
-		lspRange := rangeToLspRange(completion.ReplacedRange)
-		var textEdit any
-
-		if completion.ReplacedRange.Span.Len() != 0 {
-			textEdit = defines.TextEdit{
-				Range: lspRange,
-			}
-		}
-
-		return defines.CompletionItem{
-			Label:    completion.Value,
-			Kind:     &completion.Kind,
-			TextEdit: textEdit,
+		item := defines.CompletionItem{
+			Label: completion.Value,
+			Kind:  &completion.Kind,
 			SortText: func() *string {
 				index := completionIndex
 				if index > 99 {
@@ -79,9 +53,37 @@ func handleCompletion(ctx context.Context, req *defines.CompletionParams) (resul
 				s += string(rune(index%10) + 'a')
 				return &s
 			}(),
-			LabelDetails:  labelDetails,
-			Documentation: doc,
 		}
+
+		if completion.LabelDetail != "" {
+			detail := "  " + completion.LabelDetail
+			item.LabelDetails = &defines.CompletionItemLabelDetails{
+				Detail: &detail,
+			}
+		}
+
+		if completion.MarkdownDocumentation != "" {
+			item.Documentation = defines.MarkupContent{
+				Kind:  defines.MarkupKindMarkdown,
+				Value: completion.MarkdownDocumentation,
+			}
+		}
+
+		//lspRange := rangeToLspRange(completion.ReplacedRange)
+		//		var textEdit any
+
+		// if completion.ReplacedRange.Span.Len() != 0 {
+		// 	textEdit = defines.TextEdit{
+		// 		Range:   lspRange,
+		// 		NewText: completion.Value,
+		// 	}
+		// 	textEdit = defines.InsertReplaceEdit{
+		// 		Replace: lspRange,
+		// 		NewText: completion.Value,
+		// 	}
+		// }
+
+		return item
 	})
 	return &lspCompletions, nil
 }
