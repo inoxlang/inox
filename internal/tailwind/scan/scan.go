@@ -15,6 +15,7 @@ type Configuration struct {
 	TopDirectories []string
 	MaxFileSize    int64 //defaults to codebasescan.DEFAULT_MAX_SCANNED_INOX_FILE_SIZE
 	Fast           bool  //if true the scan will be faster but will use more CPU and memory.
+	InoxChunkCache *parse.ChunkCache
 }
 
 // ScanForTailwindRulesToInclude scans for Tailwind class names in 'class' attributes in Inox files.
@@ -26,6 +27,7 @@ func ScanForTailwindRulesToInclude(ctx *core.Context, fls afs.Filesystem, config
 		TopDirectories: config.TopDirectories,
 		MaxFileSize:    config.MaxFileSize,
 		Fast:           config.Fast,
+		ChunkCache:     config.InoxChunkCache,
 		FileHandlers: []codebasescan.FileHandler{
 			func(path string, content string, n *parse.Chunk) error {
 				for _, rule := range findTailwindRulesToInclude(n) {

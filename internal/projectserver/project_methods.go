@@ -213,14 +213,14 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 			sessionData.filesystem = lspFilesystem
 			sessionData.repository = gitRepo
 			sessionData.project = project
-			sessionData.cssGenerator = newCssGenerator()
+			sessionData.cssGenerator = newCssGenerator(session, lspFilesystem)
 			sessionData.serverAPI = newServerAPI(lspFilesystem, session, memberAuthToken)
 
 			go sessionData.serverAPI.tryUpdateAPI() //use a goroutine to avoid deadlock
 
 			go func() {
 				defer utils.Recover()
-				sessionData.cssGenerator.InitialGenAndSetup(session, sessionData.filesystem)
+				sessionData.cssGenerator.InitialGenAndSetup()
 			}()
 
 			err = startNotifyingFilesystemStructureEvents(session, workingFs, func(event fs_ns.Event) {
