@@ -83,7 +83,7 @@ func init() {
 			PREACT_SIGNALS_MINIFIED = js.MustMinify(PREACT_SIGNALS_JS, nil)
 		case "main.css":
 			MAIN_CSS_STYLESHEET = string(content)
-			MAIN_CSS_STYLESHEET_WITH_TAILWIND_IMPORT = MAIN_CSS_STYLESHEET + "\n\n" + TAILWIND_IMPORT
+			MAIN_CSS_STYLESHEET_WITH_TAILWIND_IMPORT = TAILWIND_IMPORT + "\n\n" + MAIN_CSS_STYLESHEET
 		case "tailwind.css":
 			EMPTY_TAILWIND_CSS_STYLESHEET = string(content)
 		case "surreal-css-inline-scope.js":
