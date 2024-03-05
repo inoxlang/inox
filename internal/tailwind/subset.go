@@ -53,6 +53,15 @@ func InitSubset() error {
 		return strings.Compare(a.Name, b.Name)
 	})
 
+	//Remove possible duplicates.
+
+	for i := 1; i < len(TAILWIND_SUBSET_RULESETS); i++ {
+		if TAILWIND_SUBSET_RULESETS[i].Name == TAILWIND_SUBSET_RULESETS[i-1].Name {
+			copy(TAILWIND_SUBSET_RULESETS[i-1:], TAILWIND_SUBSET_RULESETS[i:])
+			TAILWIND_SUBSET_RULESETS = TAILWIND_SUBSET_RULESETS[:len(TAILWIND_SUBSET_RULESETS)-1]
+		}
+	}
+
 	return nil
 }
 
