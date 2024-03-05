@@ -220,7 +220,7 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 
 			go func() {
 				defer utils.Recover()
-				sessionData.cssGenerator.InitialGen(session, sessionData.filesystem)
+				sessionData.cssGenerator.InitialGenAndSetup(session, sessionData.filesystem)
 			}()
 
 			err = startNotifyingFilesystemStructureEvents(session, workingFs, func(event fs_ns.Event) {
