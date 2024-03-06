@@ -18,8 +18,9 @@ import (
 const (
 	MINIMAL_WEB_APP_TEMPLATE_NAME = "web-app-min"
 
-	RELATIVE_GEN_DIR            = "gen/"
-	RELATIVE_TAILWIND_FILE_PATH = RELATIVE_GEN_DIR + "tailwind.css"
+	RELATIVE_GEN_DIR                        = "gen/"
+	RELATIVE_TAILWIND_FILE_PATH             = RELATIVE_GEN_DIR + "tailwind.css"
+	RELATIVE_MINIFIED_HYPERSCRIPT_FILE_PATH = RELATIVE_GEN_DIR + "hyperscript.min.js"
 
 	TAILWIND_IMPORT = "/* Tailwind */\n\n@import \"" + RELATIVE_TAILWIND_FILE_PATH + "\";"
 )
@@ -34,7 +35,7 @@ var (
 	MAIN_CSS_STYLESHEET                      string
 	MAIN_CSS_STYLESHEET_WITH_TAILWIND_IMPORT string
 
-	EMPTY_TAILWIND_CSS_STYLESHEET string
+	TAILWIND_CSS_STYLESHEET_EXPLANATION string
 
 	//Inox.js package
 
@@ -56,6 +57,10 @@ var (
 
 	HTMX_EXTENSIONS          = map[string]string{}
 	MINIFIED_HTMX_EXTENSIONS = map[string]string{}
+
+	//Hyperscript package
+
+	HYPERSCRIPT_MIN_JS_EXPLANATION string
 )
 
 func init() {
@@ -85,7 +90,9 @@ func init() {
 			MAIN_CSS_STYLESHEET = string(content)
 			MAIN_CSS_STYLESHEET_WITH_TAILWIND_IMPORT = TAILWIND_IMPORT + "\n\n" + MAIN_CSS_STYLESHEET
 		case "tailwind.css":
-			EMPTY_TAILWIND_CSS_STYLESHEET = string(content)
+			TAILWIND_CSS_STYLESHEET_EXPLANATION = string(content)
+		case "hyperscript.min.js":
+			HYPERSCRIPT_MIN_JS_EXPLANATION = string(content)
 		case "surreal-css-inline-scope.js":
 			SURREAL_CSS_INLINE_SCOPE = string(content)
 			SURREAL_CSS_INLINE_SCOPE_MINIFIED = js.MustMinify(SURREAL_CSS_INLINE_SCOPE, nil)
@@ -156,7 +163,7 @@ func WriteTemplate(name string, fls afs.Filesystem) error {
 				case "main.css":
 					content = []byte(MAIN_CSS_STYLESHEET_WITH_TAILWIND_IMPORT)
 				case "tailwind.css":
-					content = []byte(EMPTY_TAILWIND_CSS_STYLESHEET)
+					content = []byte(TAILWIND_CSS_STYLESHEET_EXPLANATION)
 				}
 			}
 

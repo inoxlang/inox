@@ -32,6 +32,7 @@ type additionalSessionData struct {
 
 	serverAPI    *serverAPI //set during project opening
 	cssGenerator *cssGenerator
+	jsGenerator  *jsGenerator
 
 	//testing
 	testRuns map[TestRunId]*TestRun

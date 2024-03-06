@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"time"
 
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
@@ -21,11 +22,12 @@ const (
 )
 
 type Configuration struct {
-	TopDirectories []string
-	MaxFileSize    int64             //defaults to DEFAULT_MAX_SCANNED_INOX_FILE_SIZE
-	Fast           bool              //if true the scan will be faster but will use more CPU and memory.
-	FileHandlers   []FileHandler     //File handlers are called for each file. They should not modify the chunk node.
-	ChunkCache     *parse.ChunkCache //optional
+	TopDirectories     []string
+	MaxFileSize        int64             //defaults to DEFAULT_MAX_SCANNED_INOX_FILE_SIZE
+	Fast               bool              //if true the scan will be faster but will use more CPU and memory.
+	FileHandlers       []FileHandler     //File handlers are called for each file. They should not modify the chunk node.
+	ChunkCache         *parse.ChunkCache //optional
+	FileParsingTimeout time.Duration     //maximum duration for parsing a single file. defaults to parse.DEFAULT_TIMEOUT
 }
 
 type FileHandler func(path string, fileContent string, n *parse.Chunk) error
@@ -106,7 +108,9 @@ func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) e
 
 				//Parse the file.
 
-				result, _ := parse.ParseChunk(contentS, path)
+				result, _ := parse.ParseChunk(contentS, path, parse.ParserOptions{
+					Timeout: config.FileParsingTimeout,
+				})
 				if result == nil { //critical error
 					return nil
 				}

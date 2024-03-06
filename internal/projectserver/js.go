@@ -1,29 +1,32 @@
 package projectserver
 
 import (
+	"os"
 	"path/filepath"
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/hyperscript/hsgen"
+	hsscan "github.com/inoxlang/inox/internal/hyperscript/scan"
 	"github.com/inoxlang/inox/internal/inoxconsts"
+	"github.com/inoxlang/inox/internal/js"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/project/scaffolding"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/projectserver/logs"
-	tailwindscan "github.com/inoxlang/inox/internal/tailwind/scan"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
-// A cssGenerator generates CSS stylesheets (most of the time in the /static/gen directory).
+// A jsGenerator generates JS files (most of the time in the /static/gen directory).
 // It is not shared between sessions.
-type cssGenerator struct {
+type jsGenerator struct {
 	fsEventSource  *fs_ns.FilesystemEventSource
 	inoxChunkCache *parse.ChunkCache
 	fls            *Filesystem
 	session        *jsonrpc.Session
 }
 
-func newCssGenerator(session *jsonrpc.Session, fls *Filesystem) *cssGenerator {
+func newJSGenerator(session *jsonrpc.Session, fls *Filesystem) *jsGenerator {
 	ctx := session.Context()
 
 	evs, err := fs_ns.NewEventSourceWithFilesystem(ctx, fls, core.PathPattern("/..."))
@@ -31,7 +34,7 @@ func newCssGenerator(session *jsonrpc.Session, fls *Filesystem) *cssGenerator {
 		panic(err)
 	}
 
-	generator := &cssGenerator{
+	generator := &jsGenerator{
 		inoxChunkCache: parse.NewChunkCache(),
 		fls:            fls,
 		session:        session,
@@ -53,15 +56,16 @@ func newCssGenerator(session *jsonrpc.Session, fls *Filesystem) *cssGenerator {
 	return generator
 }
 
-func (g *cssGenerator) InitialGenAndSetup() {
+func (g *jsGenerator) InitialGenAndSetup() {
 	g.gen()
 }
 
-func (g *cssGenerator) gen() {
+func (g *jsGenerator) gen() {
 	defer utils.Recover()
-	ctx := g.session.Context()
 
-	rulesets, err := tailwindscan.ScanForTailwindRulesToInclude(ctx, g.fls, tailwindscan.Configuration{
+	//Find used features and commands.
+
+	scanResult, err := hsscan.ScanCodebase(g.session.Context(), g.fls, hsscan.Configuration{
 		TopDirectories: []string{"/"},
 		InoxChunkCache: g.inoxChunkCache,
 	})
@@ -72,7 +76,7 @@ func (g *cssGenerator) gen() {
 	}
 
 	//TODO: make more flexible
-	path := filepath.Join("/static/", scaffolding.RELATIVE_TAILWIND_FILE_PATH)
+	path := filepath.Join("/static/", scaffolding.RELATIVE_MINIFIED_HYPERSCRIPT_FILE_PATH)
 
 	f, err := g.fls.Create(path)
 
@@ -83,12 +87,23 @@ func (g *cssGenerator) gen() {
 
 	defer f.Close()
 
-	linefeeds := []byte{'\n', '\n'}
-
-	f.Write([]byte(scaffolding.TAILWIND_CSS_STYLESHEET_EXPLANATION))
-
-	for _, ruleset := range rulesets {
-		f.Write(linefeeds)
-		f.Write([]byte(ruleset.Node.String()))
+	jsCode, err := hsgen.Generate(hsgen.Config{
+		RequiredDefinitions: scanResult.RequiredDefinitions,
+	})
+	if err != nil {
+		logs.Println(g.session.Client(), err)
+		return
 	}
+
+	os.WriteFile("/tmp/out.xx", []byte(jsCode), 0600)
+
+	minified, err := js.Minify(jsCode, nil)
+	if err != nil {
+		logs.Println(g.session.Client(), err)
+		return
+	}
+
+	f.Write([]byte(scaffolding.HYPERSCRIPT_MIN_JS_EXPLANATION))
+	f.Write([]byte{'\n', '\n'})
+	f.Write(utils.StringAsBytes(minified))
 }

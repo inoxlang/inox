@@ -15,14 +15,18 @@ var (
 	ADD_FEATURE_LEN                = len("parser.addFeature")
 	FEATURE_OR_CMD_DEF_START_REGEX = regexp.MustCompile(`parser\.(addFeature|addCommand)\(`)
 
-	DEFINITIONS   = []Definition{}
-	COMMAND_NAMES []string
-	FEATURE_NAMES []string
+	BUILTIN_DEFINITIONS   = []Definition{}
+	COMMAND_NAMES         []string
+	BUILTIN_COMMAND_NAMES []string
+
+	FEATURE_NAMES         []string
+	BUILTIN_FEATURE_NAMES []string
 )
 
 type Config struct {
-	Commands     []string
-	FeatureNames []string
+	RequiredCommands     []string
+	RequiredFeatureNames []string
+	RequiredDefinitions  []Definition
 }
 
 func init() {
@@ -39,14 +43,16 @@ func init() {
 		}
 
 		def := GetDefinition(start, kind, hyperscript)
-		DEFINITIONS = append(DEFINITIONS, def)
+		BUILTIN_DEFINITIONS = append(BUILTIN_DEFINITIONS, def)
 
 		if isFeature {
-			FEATURE_NAMES = append(FEATURE_NAMES, def.Name)
+			BUILTIN_FEATURE_NAMES = append(BUILTIN_FEATURE_NAMES, def.Name)
 		} else {
-			COMMAND_NAMES = append(COMMAND_NAMES, def.Name)
+			BUILTIN_COMMAND_NAMES = append(BUILTIN_COMMAND_NAMES, def.Name)
 		}
 	}
+	COMMAND_NAMES = append(COMMAND_NAMES, BUILTIN_COMMAND_NAMES...)
+	FEATURE_NAMES = append(FEATURE_NAMES, BUILTIN_FEATURE_NAMES...)
 }
 
 // Generate generates a subset of hyperscript.js that only contains the command and feature definitions listed in the configuration.
@@ -57,18 +63,15 @@ func Generate(config Config) (string, error) {
 
 	builder := strings.Builder{}
 
-	for _, def := range DEFINITIONS {
+	for _, def := range BUILTIN_DEFINITIONS {
 		beforeDefinition := base[prevDefEnd:def.Start]
 		builder.WriteString(beforeDefinition)
 
 		prevDefEnd = def.End
 
-		if def.Kind == FeatureDefinition && slices.Contains(config.FeatureNames, def.Name) {
-			//include the definition.
-			builder.WriteString(def.Code)
-		}
-
-		if def.Kind == CommandDefinition && slices.Contains(config.Commands, def.Name) {
+		if def.Kind == FeatureDefinition && slices.Contains(config.RequiredFeatureNames, def.Name) ||
+			def.Kind == CommandDefinition && slices.Contains(config.RequiredCommands, def.Name) ||
+			slices.Contains(config.RequiredDefinitions, def) {
 			//include the definition.
 			builder.WriteString(def.Code)
 		}
@@ -77,4 +80,22 @@ func Generate(config Config) (string, error) {
 	builder.WriteString(base[prevDefEnd:])
 
 	return builder.String(), nil
+}
+
+func IsBuiltinFeatureName(name string) bool {
+	return slices.Contains(BUILTIN_FEATURE_NAMES, name)
+}
+
+func IsBuiltinCommandName(name string) bool {
+	return slices.Contains(COMMAND_NAMES, name)
+}
+
+func GetBuiltinDefinition(name string) (Definition, bool) {
+	for _, def := range BUILTIN_DEFINITIONS {
+		if def.Name == name {
+			return def, true
+		}
+	}
+
+	return Definition{}, false
 }
