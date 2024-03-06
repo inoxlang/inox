@@ -20,11 +20,15 @@ func findHyperscriptAttributeCompletions(n *parse.HyperscriptAttributeShorthand,
 		hsCodeEnd = n.Span.End
 	}
 
+	var tokensNoSpace []hscode.Token
 	var tokens []hscode.Token
+
 	if n.HyperscriptParsingResult != nil {
-		tokens = slices.Clone(n.HyperscriptParsingResult.TokensNoWhitespace)
+		tokensNoSpace = slices.Clone(n.HyperscriptParsingResult.TokensNoWhitespace)
+		tokens = slices.Clone(n.HyperscriptParsingResult.Tokens)
 	} else if n.HyperscriptParsingError != nil {
-		tokens = slices.Clone(n.HyperscriptParsingError.TokensNoWhitespace)
+		tokensNoSpace = slices.Clone(n.HyperscriptParsingError.TokensNoWhitespace)
+		tokens = slices.Clone(n.HyperscriptParsingError.Tokens)
 	} else {
 		return
 	}
@@ -39,21 +43,25 @@ func findHyperscriptAttributeCompletions(n *parse.HyperscriptAttributeShorthand,
 		return
 	}
 
-	return findHyperscriptCompletions(tokens, cursorIndexInHsCode, hsCodeStart, hsCodeEnd, search)
+	return findHyperscriptCompletions(tokensNoSpace, tokens, cursorIndexInHsCode, hsCodeStart, hsCodeEnd, search)
 }
 
 func findHyperscriptScriptCompletions(n *parse.XMLElement, search completionSearch) (completions []Completion) {
 	cursorIndexInHsCode := search.cursorIndex - n.RawElementContentStart
 
+	var tokensNoSpace []hscode.Token
 	var tokens []hscode.Token
+
 	if n.RawElementParsingResult == nil {
 		return
 	}
 	parsingResult, ok := n.RawElementParsingResult.(*hscode.ParsingResult)
 	if ok {
-		tokens = slices.Clone(parsingResult.TokensNoWhitespace)
+		tokensNoSpace = slices.Clone(parsingResult.TokensNoWhitespace)
+		tokens = slices.Clone(parsingResult.Tokens)
 	} else if parsingErr, ok := n.RawElementParsingResult.(*hscode.ParsingError); ok {
-		tokens = slices.Clone(parsingErr.TokensNoWhitespace)
+		tokensNoSpace = slices.Clone(parsingErr.TokensNoWhitespace)
+		tokens = slices.Clone(parsingErr.Tokens)
 	} else {
 		return
 	}
@@ -63,23 +71,23 @@ func findHyperscriptScriptCompletions(n *parse.XMLElement, search completionSear
 		return
 	}
 
-	return findHyperscriptCompletions(tokens, cursorIndexInHsCode, n.RawElementContentStart, n.RawElementContentEnd, search)
+	return findHyperscriptCompletions(tokensNoSpace, tokens, cursorIndexInHsCode, n.RawElementContentStart, n.RawElementContentEnd, search)
 }
 
-func findHyperscriptCompletions(tokens []hscode.Token, cursorIndexInHsCode, hsCodeStart, hsCodeEnd int32, search completionSearch) (completions []Completion) {
+func findHyperscriptCompletions(tokensNoSpace, tokens []hscode.Token, cursorIndexInHsCode, hsCodeStart, hsCodeEnd int32, search completionSearch) (completions []Completion) {
 	tokensNoLinefeeds := 0
-	for _, token := range tokens {
+	for _, token := range tokensNoSpace {
 		if token.Value != "\n" {
 			tokensNoLinefeeds++
 		}
 	}
 
 	if tokensNoLinefeeds <= 1 {
-		completions = append(completions, getFeatureStartCompletions(hsCodeStart, hsCodeEnd, tokens, search)...)
+		completions = append(completions, getFeatureStartCompletions(hsCodeStart, hsCodeEnd, tokensNoSpace, search)...)
 	}
 
 	if tokensNoLinefeeds > 0 {
-		completions = append(completions, getHyperscriptTokenCompletions(cursorIndexInHsCode, hsCodeStart, hsCodeEnd, tokens, search)...)
+		completions = append(completions, getHyperscriptTokenCompletions(cursorIndexInHsCode, hsCodeStart, hsCodeEnd, tokensNoSpace, search)...)
 	}
 
 	if tokensNoLinefeeds > 1 {
@@ -141,19 +149,19 @@ func getHyperscriptTokenCompletions(cursorIndexInHsCode, hsCodeStart, hsCodeEnd 
 }
 
 // getFeatureStartCompletions returns feature examples, it assumes there is at most one significant token in the code.
-func getFeatureStartCompletions(hsCodeStart, hsCodeEnd int32, tokens []hscode.Token, search completionSearch) (completions []Completion) {
+func getFeatureStartCompletions(hsCodeStart, hsCodeEnd int32, tokensNoSpace []hscode.Token, search completionSearch) (completions []Completion) {
 
 	var replacedRange parse.SourcePositionRange
 
-	tokensNoSpaceNoLinefeeds := utils.FilterSlice(tokens, func(e hscode.Token) bool { return e.Type != hscode.WHITESPACE && e.Value != "\n" })
+	tokensNoLinefeeds := utils.FilterSlice(tokensNoSpace, func(e hscode.Token) bool { return e.Value != "\n" })
 
-	if len(tokensNoSpaceNoLinefeeds) == 1 {
-		token := tokensNoSpaceNoLinefeeds[0]
+	if len(tokensNoLinefeeds) == 1 {
+		token := tokensNoLinefeeds[0]
 		//replace token
 		replacedRange = search.chunk.GetSourcePosition(parse.NodeSpan{Start: hsCodeStart + token.Start, End: hsCodeStart + token.End})
 	} else {
 		cursorIndexInHsCode := search.cursorIndex - hsCodeStart
-		token, ok := hscode.GetTokenAtCursor(cursorIndexInHsCode, tokens)
+		token, ok := hscode.GetTokenAtCursor(cursorIndexInHsCode, tokensNoSpace)
 		if ok {
 			//replace token
 			replacedRange = search.chunk.GetSourcePosition(parse.NodeSpan{Start: hsCodeStart + token.Start, End: hsCodeStart + token.End})
@@ -184,13 +192,28 @@ func tryGetTrailingCommandHelp(hsCodeStart, hsCodeEnd, relativeIndex int32, toke
 		return
 	}
 
-	tokenAtCursor, ok := hscode.GetTokenAtCursor(relativeIndex, tokens)
+	token, ok := hscode.GetTokenAtCursor(relativeIndex, tokens)
 
-	if !ok || tokenAtCursor.Type != hscode.IDENTIFIER || hsgen.IsBuiltinCommandName(tokenAtCursor.Value) {
+	//Only show completions if the token is whitespace or an identifier.
+	if !ok || (token.Type != hscode.WHITESPACE && token.Type != hscode.IDENTIFIER) || hsgen.IsBuiltinCommandName(token.Value) {
 		return
 	}
 
-	replacedRange := search.chunk.GetSourcePosition(parse.NodeSpan{Start: hsCodeStart + tokenAtCursor.Start, End: hsCodeStart + tokenAtCursor.End})
+	//If the previous token is 'to' or a command we do not suggest commands.
+	tokenBefore, _ := hscode.GetClosestTokenOnCursorLeftSide(token.Start, tokens)
+	if token.Type == hscode.WHITESPACE &&
+		tokenBefore.Type == hscode.IDENTIFIER &&
+		(tokenBefore.Value == "to" || hsgen.IsBuiltinCommandName(tokenBefore.Value)) {
+		return
+	}
+
+	var replacedRange parse.SourcePositionRange
+	if token.Type == hscode.WHITESPACE {
+		//empty range (insertion)
+		replacedRange = search.chunk.GetSourcePosition(parse.NodeSpan{Start: hsCodeStart + token.End, End: hsCodeStart + token.End})
+	} else {
+		replacedRange = search.chunk.GetSourcePosition(parse.NodeSpan{Start: hsCodeStart + token.Start, End: hsCodeStart + token.End})
+	}
 
 	for _, example := range hshelp.HELP_DATA.CommandExamples {
 

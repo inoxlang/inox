@@ -42,6 +42,53 @@ func TestGetTokenAtCursor(t *testing.T) {
 	}, token)
 }
 
+func TestGetClosestTokenOnCursorLeftSide(t *testing.T) {
+
+	result, _, _ := hsparse.ParseHyperScript(context.Background(), "on click toggle .red on me")
+
+	_, ok := hscode.GetClosestTokenOnCursorLeftSide(0, result.Tokens)
+	if !assert.False(t, ok) {
+		return
+	}
+
+	token, ok := hscode.GetClosestTokenOnCursorLeftSide(1, result.Tokens)
+	if !assert.True(t, ok) {
+		return
+	}
+
+	onToken := hscode.Token{
+		Type:   hscode.IDENTIFIER,
+		Value:  "on",
+		Start:  0,
+		End:    2,
+		Line:   1,
+		Column: 1,
+	}
+
+	assert.Equal(t, onToken, token)
+
+	token, ok = hscode.GetClosestTokenOnCursorLeftSide(2, result.Tokens)
+	if !assert.True(t, ok) {
+		return
+	}
+
+	assert.Equal(t, onToken, token)
+
+	token, ok = hscode.GetTokenAtCursor(3, result.Tokens)
+	if !assert.True(t, ok) {
+		return
+	}
+
+	assert.Equal(t, hscode.Token{
+		Type:   hscode.WHITESPACE,
+		Value:  " ",
+		Start:  2,
+		End:    3,
+		Line:   1,
+		Column: 3,
+	}, token)
+}
+
 // func TestGetNodeAtCursor(t *testing.T) {
 
 // 	result, _, _ := hsparse.ParseHyperScriptSlow("on click toggle .red on me")

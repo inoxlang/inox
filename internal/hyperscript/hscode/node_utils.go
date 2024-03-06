@@ -9,6 +9,20 @@ func GetTokenAtCursor(cursorIndex int32, tokens []Token) (Token, bool) {
 	return Token{}, false
 }
 
+// GetClosestTokenOnCursorLeftSide returns the closest token on the left side of the cursor.
+// If the cursor is 'inside' a token, this token is returned.
+func GetClosestTokenOnCursorLeftSide(cursorIndex int32, tokens []Token) (Token, bool) {
+
+	for i := len(tokens) - 1; i >= 0; i-- {
+		t := tokens[i]
+
+		if t.End <= cursorIndex || (t.Start < cursorIndex && cursorIndex <= t.End) {
+			return t, true
+		}
+	}
+	return Token{}, false
+}
+
 // type TraversalAction int
 // type TraversalOrder int
 

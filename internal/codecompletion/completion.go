@@ -1231,7 +1231,6 @@ func handleDoubleColonExpressionCompletions(n *parse.DoubleColonExpression, sear
 	for _, ext := range extensions {
 		for _, propExpr := range ext.PropertyExpressions {
 			if n.Element == nil || hasPrefixCaseInsensitive(propExpr.Name, n.Element.Name) {
-
 				labelDetail := ""
 				var kind defines.CompletionItemKind
 				if propExpr.Method == nil {

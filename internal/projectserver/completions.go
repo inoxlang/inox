@@ -72,10 +72,19 @@ func handleCompletion(ctx context.Context, req *defines.CompletionParams) (resul
 
 		if completion.ReplacedRange.Span != (parse.NodeSpan{}) {
 			lspRange := rangeToLspRange(completion.ReplacedRange)
+
+			// if completion.ReplacedRange.Span.Len() == 0 {
+			// 	item.TextEdit = defines.InsertReplaceEdit{
+			// 		Insert:  lspRange,
+			// 		NewText: completion.Value,
+			// 	}
+			// } else {
 			item.TextEdit = defines.TextEdit{
 				Range:   lspRange,
 				NewText: completion.Value,
 			}
+			//}
+
 		}
 
 		return item
