@@ -9,6 +9,7 @@ import (
 	"github.com/inoxlang/inox/internal/codecompletion"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/http_ns/spec"
+	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
 	"github.com/inoxlang/inox/internal/utils"
@@ -69,19 +70,13 @@ func handleCompletion(ctx context.Context, req *defines.CompletionParams) (resul
 			}
 		}
 
-		//lspRange := rangeToLspRange(completion.ReplacedRange)
-		//		var textEdit any
-
-		// if completion.ReplacedRange.Span.Len() != 0 {
-		// 	textEdit = defines.TextEdit{
-		// 		Range:   lspRange,
-		// 		NewText: completion.Value,
-		// 	}
-		// 	textEdit = defines.InsertReplaceEdit{
-		// 		Replace: lspRange,
-		// 		NewText: completion.Value,
-		// 	}
-		// }
+		if completion.ReplacedRange.Span != (parse.NodeSpan{}) {
+			lspRange := rangeToLspRange(completion.ReplacedRange)
+			item.TextEdit = defines.TextEdit{
+				Range:   lspRange,
+				NewText: completion.Value,
+			}
+		}
 
 		return item
 	})

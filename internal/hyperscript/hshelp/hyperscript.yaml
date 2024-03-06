@@ -192,7 +192,7 @@ feature-start-examples:
     -- set the value of an attribute 
     on click toggle set @data-clicked to true
 
-    Documentation on attributes: https://hyperscript.org/docs/#attributes
+    -- Documentation on attributes: https://hyperscript.org/docs/#attributes
     ```
 - code: 'on click from .button in me'
   short-explanation: 'handle clicks on the button.'
@@ -210,7 +210,7 @@ feature-start-examples:
     -- set the value of an attribute
     on click toggle set @data-clicked to true
 
-    Documentation on attributes: https://hyperscript.org/docs/#attributes
+    -- Documentation on attributes: https://hyperscript.org/docs/#attributes
     ```
 - code: init 
   short-explanation: 'run some code on initialization.'
@@ -221,7 +221,7 @@ feature-start-examples:
     init log "element initialized !"
     ```
 
-# command-examples:
+command-examples:
 - code: 'log "Hello world !"'
   documentation: https://hyperscript.org/commands/log
 - code: 'add .clicked on me'
