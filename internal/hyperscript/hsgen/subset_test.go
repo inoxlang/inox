@@ -1,6 +1,7 @@
 package hsgen
 
 import (
+	"fmt"
 	"slices"
 	"testing"
 
@@ -12,6 +13,7 @@ func TestInit(t *testing.T) {
 	assert.NotEmpty(t, COMMAND_NAMES)
 	assert.NotEmpty(t, FEATURE_NAMES)
 	assert.Equal(t, len(DEFINITIONS), len(FEATURE_NAMES)+len(COMMAND_NAMES))
+	fmt.Println(DEFINITIONS[0])
 }
 
 func TestGenerate(t *testing.T) {

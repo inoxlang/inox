@@ -42,9 +42,7 @@ func GetDefinition(definitionStart int, kind DefinitionType, definitions string)
 	}
 
 	definitionEnd := commandNameStart
-
-	afterDefinitionEnd := min(len(definitions), commandNameStart+10_000)
-	subString := definitions[commandNameStart:afterDefinitionEnd]
+	subString := definitions[commandNameStart:]
 
 	doFixReplacement := false
 
@@ -62,8 +60,6 @@ func GetDefinition(definitionStart int, kind DefinitionType, definitions string)
 
 	var parenCount = 1 //'(' after parser.addCommand
 
-	var prev []byte
-
 	for parenCount > 0 { //Stop at end of definition.
 		_, s := lexer.Next()
 		definitionEnd += len(s)
@@ -76,9 +72,6 @@ func GetDefinition(definitionStart int, kind DefinitionType, definitions string)
 			panic(err)
 		}
 
-		prev = s
-		_ = prev
-
 		if len(s) == 1 {
 			if s[0] == '(' {
 				parenCount++
@@ -86,6 +79,11 @@ func GetDefinition(definitionStart int, kind DefinitionType, definitions string)
 				parenCount--
 			}
 		}
+	}
+
+	_, s := lexer.Next()
+	if len(s) == 1 && s[0] == ';' {
+		definitionEnd++
 	}
 
 	region := Definition{
