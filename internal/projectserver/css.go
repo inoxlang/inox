@@ -7,7 +7,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
-	"github.com/inoxlang/inox/internal/project/scaffolding"
+	"github.com/inoxlang/inox/internal/project/layout"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/projectserver/logs"
 	tailwindscan "github.com/inoxlang/inox/internal/tailwind/scan"
@@ -72,7 +72,15 @@ func (g *cssGenerator) gen() {
 	}
 
 	//TODO: make more flexible
-	path := filepath.Join("/static/", scaffolding.RELATIVE_TAILWIND_FILE_PATH)
+
+	err = g.fls.MkdirAll(filepath.Join("/static", layout.STATIC_STYLES_DIRNAME), 0700)
+
+	if err != nil {
+		logs.Println(g.session.Client(), err)
+		return
+	}
+
+	path := filepath.Join("/static/", layout.STATIC_STYLES_DIRNAME, layout.TAILWIND_FILENAME)
 
 	f, err := g.fls.Create(path)
 
@@ -85,7 +93,7 @@ func (g *cssGenerator) gen() {
 
 	linefeeds := []byte{'\n', '\n'}
 
-	f.Write([]byte(scaffolding.TAILWIND_CSS_STYLESHEET_EXPLANATION))
+	f.Write([]byte(layout.TAILWIND_CSS_STYLESHEET_EXPLANATION))
 
 	for _, ruleset := range rulesets {
 		f.Write(linefeeds)

@@ -11,7 +11,7 @@ import (
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/js"
 	"github.com/inoxlang/inox/internal/parse"
-	"github.com/inoxlang/inox/internal/project/scaffolding"
+	"github.com/inoxlang/inox/internal/project/layout"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/projectserver/logs"
 	"github.com/inoxlang/inox/internal/utils"
@@ -76,7 +76,15 @@ func (g *jsGenerator) gen() {
 	}
 
 	//TODO: make more flexible
-	path := filepath.Join("/static/", scaffolding.RELATIVE_MINIFIED_HYPERSCRIPT_FILE_PATH)
+
+	err = g.fls.MkdirAll(filepath.Join("/static", layout.STATIC_JS_DIRNAME), 0700)
+
+	if err != nil {
+		logs.Println(g.session.Client(), err)
+		return
+	}
+
+	path := filepath.Join("/static/", layout.STATIC_JS_DIRNAME, layout.HYPERSCRIPT_MIN_JS_FILENAME)
 
 	f, err := g.fls.Create(path)
 
@@ -103,7 +111,7 @@ func (g *jsGenerator) gen() {
 		return
 	}
 
-	f.Write([]byte(scaffolding.HYPERSCRIPT_MIN_JS_EXPLANATION))
+	f.Write([]byte(layout.HYPERSCRIPT_MIN_JS_EXPLANATION))
 	f.Write([]byte{'\n'})
 	f.Write(utils.StringAsBytes(minified))
 }

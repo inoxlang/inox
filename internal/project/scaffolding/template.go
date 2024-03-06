@@ -12,21 +12,12 @@ import (
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/js"
+	"github.com/inoxlang/inox/internal/project/layout"
 	"golang.org/x/exp/maps"
 )
 
 const (
 	MINIMAL_WEB_APP_TEMPLATE_NAME = "web-app-min"
-
-	STATIC_JS_DIR     = "js/"
-	STATIC_STYLES_DIR = "styles/"
-
-	RELATIVE_GEN_DIR                        = "gen/"
-	TAILWIND_FILENAME                       = "tailwind.css"
-	RELATIVE_TAILWIND_FILE_PATH             = STATIC_STYLES_DIR + TAILWIND_FILENAME
-	RELATIVE_MINIFIED_HYPERSCRIPT_FILE_PATH = STATIC_JS_DIR + "hyperscript.min.js"
-
-	TAILWIND_IMPORT = "/* Tailwind */\n\n@import \"" + TAILWIND_FILENAME + "\";"
 )
 
 var (
@@ -39,8 +30,6 @@ var (
 	MAIN_CSS_STYLESHEET                      string
 	MAIN_CSS_STYLESHEET_WITH_TAILWIND_IMPORT string
 
-	TAILWIND_CSS_STYLESHEET_EXPLANATION string
-
 	//Inox.js package
 
 	INOX_JS string //inox.js without any other library
@@ -48,8 +37,11 @@ var (
 	PREACT_SIGNALS_JS       string
 	PREACT_SIGNALS_MINIFIED string
 
-	SURREAL_CSS_INLINE_SCOPE          string
-	SURREAL_CSS_INLINE_SCOPE_MINIFIED string
+	SURREAL_JS          string
+	SURREAL_JS_MINIFIED string
+
+	CSS_INLINE_SCOPE          string
+	CSS_INLINE_SCOPE_MINIFIED string
 
 	INOX_JS_PACKAGE          string
 	INOX_JS_PACKAGE_MINIFIED string
@@ -61,10 +53,6 @@ var (
 
 	HTMX_EXTENSIONS          = map[string]string{}
 	MINIFIED_HTMX_EXTENSIONS = map[string]string{}
-
-	//Hyperscript package
-
-	HYPERSCRIPT_MIN_JS_EXPLANATION string
 )
 
 func init() {
@@ -92,14 +80,13 @@ func init() {
 			PREACT_SIGNALS_MINIFIED = js.MustMinify(PREACT_SIGNALS_JS, nil)
 		case "main.css":
 			MAIN_CSS_STYLESHEET = string(content)
-			MAIN_CSS_STYLESHEET_WITH_TAILWIND_IMPORT = TAILWIND_IMPORT + "\n\n" + MAIN_CSS_STYLESHEET
-		case "tailwind.css":
-			TAILWIND_CSS_STYLESHEET_EXPLANATION = string(content)
-		case "hyperscript.min.js":
-			HYPERSCRIPT_MIN_JS_EXPLANATION = string(content)
-		case "surreal-css-inline-scope.js":
-			SURREAL_CSS_INLINE_SCOPE = string(content)
-			SURREAL_CSS_INLINE_SCOPE_MINIFIED = js.MustMinify(SURREAL_CSS_INLINE_SCOPE, nil)
+			MAIN_CSS_STYLESHEET_WITH_TAILWIND_IMPORT = layout.TAILWIND_IMPORT + "\n\n" + MAIN_CSS_STYLESHEET
+		case "surreal.js":
+			SURREAL_JS = string(content)
+			SURREAL_JS_MINIFIED = js.MustMinify(SURREAL_JS, nil)
+		case "css-inline-scope.js":
+			CSS_INLINE_SCOPE = string(content)
+			CSS_INLINE_SCOPE_MINIFIED = js.MustMinify(CSS_INLINE_SCOPE, nil)
 
 		//HTMX package
 		case "htmx-1.9.9.min.js":
@@ -124,7 +111,8 @@ func init() {
 	parts := []string{
 		"{\n" + INOX_JS + "\n}\n",
 		"{\n" + PREACT_SIGNALS_JS + "\n}\n",
-		SURREAL_CSS_INLINE_SCOPE,
+		SURREAL_JS,
+		CSS_INLINE_SCOPE,
 	}
 
 	INOX_JS_PACKAGE = strings.Join(parts, "\n")
@@ -166,8 +154,8 @@ func WriteTemplate(name string, fls afs.Filesystem) error {
 					content = []byte(INOX_JS_PACKAGE_MINIFIED)
 				case "main.css":
 					content = []byte(MAIN_CSS_STYLESHEET_WITH_TAILWIND_IMPORT)
-				case "tailwind.css":
-					content = []byte(TAILWIND_CSS_STYLESHEET_EXPLANATION)
+				case layout.TAILWIND_FILENAME:
+					content = []byte(layout.TAILWIND_CSS_STYLESHEET_EXPLANATION)
 				}
 			}
 
