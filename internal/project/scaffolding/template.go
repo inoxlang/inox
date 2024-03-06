@@ -18,11 +18,15 @@ import (
 const (
 	MINIMAL_WEB_APP_TEMPLATE_NAME = "web-app-min"
 
-	RELATIVE_GEN_DIR                        = "gen/"
-	RELATIVE_TAILWIND_FILE_PATH             = RELATIVE_GEN_DIR + "tailwind.css"
-	RELATIVE_MINIFIED_HYPERSCRIPT_FILE_PATH = RELATIVE_GEN_DIR + "hyperscript.min.js"
+	STATIC_JS_DIR     = "js/"
+	STATIC_STYLES_DIR = "styles/"
 
-	TAILWIND_IMPORT = "/* Tailwind */\n\n@import \"" + RELATIVE_TAILWIND_FILE_PATH + "\";"
+	RELATIVE_GEN_DIR                        = "gen/"
+	TAILWIND_FILENAME                       = "tailwind.css"
+	RELATIVE_TAILWIND_FILE_PATH             = STATIC_STYLES_DIR + TAILWIND_FILENAME
+	RELATIVE_MINIFIED_HYPERSCRIPT_FILE_PATH = STATIC_JS_DIR + "hyperscript.min.js"
+
+	TAILWIND_IMPORT = "/* Tailwind */\n\n@import \"" + TAILWIND_FILENAME + "\";"
 )
 
 var (

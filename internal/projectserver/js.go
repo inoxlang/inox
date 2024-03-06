@@ -104,6 +104,6 @@ func (g *jsGenerator) gen() {
 	}
 
 	f.Write([]byte(scaffolding.HYPERSCRIPT_MIN_JS_EXPLANATION))
-	f.Write([]byte{'\n', '\n'})
+	f.Write([]byte{'\n'})
 	f.Write(utils.StringAsBytes(minified))
 }

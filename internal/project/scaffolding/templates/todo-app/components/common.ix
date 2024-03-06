@@ -7,11 +7,12 @@ fn Page(content html.node){
         <meta charset="utf-8"/>
         <title></title>
         <meta name="viewport" content="width=device-width, initial-scale=1"/>
-        <link rel="stylesheet" href="/main.css"/>
-        <script src="/htmx.min.js"></script>
-        <script src="/inox.min.js"></script>
+        <link rel="stylesheet" href="/styles/main.css"/>
+        <script src="/js/htmx.min.js"></script>
+        <script src="/js/hyperscript.min.js"></script>
+        <script src="/js/inox.min.js"></script>
     </head>
-    <body>
+    <body hx-ext="response-targets">
         <style>
             header {
                 font-weight: 700;
