@@ -224,8 +224,8 @@ feature-start-examples:
 command-examples:
 - code: 'log "Hello world !"'
   documentation: https://hyperscript.org/commands/log
-- code: 'add .clicked on me'
-  short-explanation: 'add the CSS class .clicked '
+- code: 'add .classname on me'
+  short-explanation: 'add the CSS class .classname'
   documentation: Add the CSS class .clicked to the element. https://hyperscript.org/docs/#add-remove-toggle
 - code: 'remove .x from me'
   short-explanation: 'remove the CSS class .x'
@@ -238,4 +238,15 @@ command-examples:
   documentation: Wait 1 second. https://hyperscript.org/commands/wait
 - code: 'set @data-count to 0'
   short-explanation: 'Set the data-count attribute'
-  documentation: Set the `data-count` attribute to the number 0. https://hyperscript.org/docs/#attributes`
+  documentation: Set the `data-count` attribute of the element to the number 0. https://hyperscript.org/docs/#attributes`
+- code: 'increment @data-count'
+  short-explanation: 'increment the data-count attribute'
+  documentation: Increment the `data-count` attribute of the element. https://hyperscript.org/commands/increment
+- code: 'tell <li/> in me'
+  short-explanation: 'make all `<li>` descendants execute a command (to complete).'
+  documentation: >
+    Make all `<li>` descendants execute a command. For example `tell <li/> in me add .x` will make all `<li>` in the element to add the class `x`. 
+    https://hyperscript.org/commands/tell
+- code: 'send eventname to the closest .component'
+  short-explanation: 'send the `eventname` event'
+  documentation: Send the `eventname` event to the closest element with the CSS class `component`. https://hyperscript.org/docs/#sending-events
