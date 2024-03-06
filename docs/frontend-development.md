@@ -21,7 +21,7 @@ libraries:
   enabling dynamic content updates in web applications without the complexity of
   heavy JavaScript frameworks.
 
-- [CSS Scope Inline](https://github.com/gnat/surreal) enables locality of behavior for `<style>` elements.
+- [CSS Scope Inline](https://github.com/gnat/css-scope-inline) enables locality of behavior for `<style>` elements.
     ```html
     <div class="counter">
         ....
