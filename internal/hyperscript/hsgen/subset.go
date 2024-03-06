@@ -11,39 +11,45 @@ var (
 	//go:embed hyperscript.0.9.12.js
 	HYPERSCRIPT_0_9_12_JS string
 
-	ADD_COMMAND_LEN         = len("parser.addCommand")
-	ADD_COMMAND_START_REGEX = regexp.MustCompile(`parser\.addCommand\(`)
+	ADD_COMMAND_LEN                = len("parser.addCommand")
+	ADD_FEATURE_LEN                = len("parser.addFeature")
+	FEATURE_OR_CMD_DEF_START_REGEX = regexp.MustCompile(`parser\.(addFeature|addCommand)\(`)
 
-	COMMAND_DEFINITIONS = []CommandDefinition{}
-	COMMAND_NAMES       []string
+	DEFINITIONS   = []Definition{}
+	COMMAND_NAMES []string
+	FEATURE_NAMES []string
 )
 
 type Config struct {
-	Commands []string
-}
-
-type CommandDefinition struct {
-	CommandName string
-	Start       int
-	End         int
-	Code        string
+	Commands     []string
+	FeatureNames []string
 }
 
 func init() {
 	hyperscript := HYPERSCRIPT_0_9_12_JS
 
-	positions := ADD_COMMAND_START_REGEX.FindAllStringIndex(hyperscript, -1)
-
-	//Find all command definition regions.
-	for _, pos := range positions {
+	//Find all feature and command definition regions.
+	for _, pos := range FEATURE_OR_CMD_DEF_START_REGEX.FindAllStringIndex(hyperscript, -1) {
 		start := pos[0]
-		def := GetCommandDefinition(start, hyperscript)
-		COMMAND_DEFINITIONS = append(COMMAND_DEFINITIONS, def)
-		COMMAND_NAMES = append(COMMAND_NAMES, def.CommandName)
+		defStartSubstring := hyperscript[start : start+max(ADD_COMMAND_LEN, ADD_FEATURE_LEN)]
+		isFeature := strings.Contains(defStartSubstring, "addFeature")
+		kind := FeatureDefinition
+		if !isFeature {
+			kind = CommandDefinition
+		}
+
+		def := GetDefinition(start, kind, hyperscript)
+		DEFINITIONS = append(DEFINITIONS, def)
+
+		if isFeature {
+			FEATURE_NAMES = append(FEATURE_NAMES, def.Name)
+		} else {
+			COMMAND_NAMES = append(COMMAND_NAMES, def.Name)
+		}
 	}
 }
 
-// Generate generates a subset of hyperscript.js that does not contain the command definitions listed in the configuration.
+// Generate generates a subset of hyperscript.js that only contains the command and feature definitions listed in the configuration.
 func Generate(config Config) (string, error) {
 
 	base := HYPERSCRIPT_0_9_12_JS
@@ -51,13 +57,18 @@ func Generate(config Config) (string, error) {
 
 	builder := strings.Builder{}
 
-	for _, def := range COMMAND_DEFINITIONS {
+	for _, def := range DEFINITIONS {
 		beforeDefinition := base[prevDefEnd:def.Start]
 		builder.WriteString(beforeDefinition)
 
 		prevDefEnd = def.End
 
-		if slices.Contains(config.Commands, def.CommandName) {
+		if def.Kind == FeatureDefinition && slices.Contains(config.FeatureNames, def.Name) {
+			//include the definition.
+			builder.WriteString(def.Code)
+		}
+
+		if def.Kind == CommandDefinition && slices.Contains(config.Commands, def.Name) {
 			//include the definition.
 			builder.WriteString(def.Code)
 		}

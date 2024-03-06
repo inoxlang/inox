@@ -17,8 +17,30 @@ var (
 	BUGGY_REGEX_REPLACEMENT = strings.ReplaceAll(BUGGY_REGEX, `/`, `"`) //the replacement should have the same length.
 )
 
-func GetCommandDefinition(definitionStart int, definitions string) CommandDefinition {
-	commandNameStart := definitionStart + ADD_COMMAND_LEN + (1 /* '('*/)
+type Definition struct {
+	Kind  DefinitionType
+	Name  string
+	Start int
+	End   int
+	Code  string
+}
+
+type DefinitionType int
+
+const (
+	CommandDefinition DefinitionType = iota
+	FeatureDefinition
+)
+
+func GetDefinition(definitionStart int, kind DefinitionType, definitions string) Definition {
+	commandNameStart := definitionStart
+	switch kind {
+	case CommandDefinition:
+		commandNameStart += ADD_COMMAND_LEN + (1 /* '('*/)
+	case FeatureDefinition:
+		commandNameStart += ADD_FEATURE_LEN + (1 /* '('*/)
+	}
+
 	definitionEnd := commandNameStart
 
 	afterDefinitionEnd := min(len(definitions), commandNameStart+10_000)
@@ -66,11 +88,12 @@ func GetCommandDefinition(definitionStart int, definitions string) CommandDefini
 		}
 	}
 
-	region := CommandDefinition{
-		CommandName: commandName,
-		Start:       definitionStart,
-		End:         definitionEnd,
-		Code:        definitions[definitionStart:definitionEnd],
+	region := Definition{
+		Kind:  kind,
+		Name:  commandName,
+		Start: definitionStart,
+		End:   definitionEnd,
+		Code:  definitions[definitionStart:definitionEnd],
 	}
 
 	if doFixReplacement {
