@@ -3,6 +3,8 @@ package hsgen
 import (
 	_ "embed"
 	"regexp"
+	"slices"
+	"strings"
 )
 
 var (
@@ -12,7 +14,8 @@ var (
 	ADD_COMMAND_LEN         = len("parser.addCommand")
 	ADD_COMMAND_START_REGEX = regexp.MustCompile(`parser\.addCommand\(`)
 
-	COMMAND_DEFINITION_REGIONS = map[string]CommandDefinition{}
+	COMMAND_DEFINITIONS = []CommandDefinition{}
+	COMMAND_NAMES       []string
 )
 
 type Config struct {
@@ -35,12 +38,32 @@ func init() {
 	for _, pos := range positions {
 		start := pos[0]
 		def := GetCommandDefinition(start, hyperscript)
-		COMMAND_DEFINITION_REGIONS[def.CommandName] = def
+		COMMAND_DEFINITIONS = append(COMMAND_DEFINITIONS, def)
+		COMMAND_NAMES = append(COMMAND_NAMES, def.CommandName)
 	}
-
-	println("1")
 }
 
+// Generate generates a subset of hyperscript.js that does not contain the command definitions listed in the configuration.
 func Generate(config Config) (string, error) {
-	return "", nil
+
+	base := HYPERSCRIPT_0_9_12_JS
+	prevDefEnd := 0
+
+	builder := strings.Builder{}
+
+	for _, def := range COMMAND_DEFINITIONS {
+		beforeDefinition := base[prevDefEnd:def.Start]
+		builder.WriteString(beforeDefinition)
+
+		prevDefEnd = def.End
+
+		if slices.Contains(config.Commands, def.CommandName) {
+			//include the definition.
+			builder.WriteString(def.Code)
+		}
+	}
+
+	builder.WriteString(base[prevDefEnd:])
+
+	return builder.String(), nil
 }
