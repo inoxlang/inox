@@ -6,10 +6,10 @@ import (
 	"io"
 
 	"github.com/inoxlang/inox/internal/config"
+	"github.com/inoxlang/inox/internal/css/tailwind"
 	"github.com/inoxlang/inox/internal/globals/chrome_ns"
 	"github.com/inoxlang/inox/internal/globals/inoxsh_ns"
 	"github.com/inoxlang/inox/internal/inoxprocess"
-	"github.com/inoxlang/inox/internal/tailwind"
 )
 
 func Shell(mainSubCommand string, mainSubCommandArgs []string, outW, errW io.Writer) (exitCode int) {

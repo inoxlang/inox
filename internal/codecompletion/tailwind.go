@@ -3,9 +3,9 @@ package codecompletion
 import (
 	"strings"
 
+	"github.com/inoxlang/inox/internal/css/tailwind"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
-	"github.com/inoxlang/inox/internal/tailwind"
 )
 
 func findTailwindClassNameSuggestions(attrValueNode *parse.QuotedStringLiteral, search completionSearch) (completions []Completion) {

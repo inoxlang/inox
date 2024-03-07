@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/inoxlang/inox/internal/css/tailwind"
 	"github.com/inoxlang/inox/internal/globals/inox_ns"
 	"github.com/inoxlang/inox/internal/inoxprocess"
-	"github.com/inoxlang/inox/internal/tailwind"
 	"github.com/inoxlang/inox/internal/utils"
 )
 

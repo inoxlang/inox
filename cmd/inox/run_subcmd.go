@@ -10,11 +10,11 @@ import (
 
 	"github.com/inoxlang/inox/internal/config"
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/css/tailwind"
 	"github.com/inoxlang/inox/internal/globals/chrome_ns"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/inoxprocess"
 	"github.com/inoxlang/inox/internal/mod"
-	"github.com/inoxlang/inox/internal/tailwind"
 	"github.com/inoxlang/inox/internal/utils"
 )
 

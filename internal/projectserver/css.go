@@ -1,16 +1,18 @@
 package projectserver
 
 import (
+	"fmt"
 	"path/filepath"
+	"runtime/debug"
 
 	"github.com/inoxlang/inox/internal/core"
+	tailwindscan "github.com/inoxlang/inox/internal/css/tailwind/scan"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/project/layout"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/projectserver/logs"
-	tailwindscan "github.com/inoxlang/inox/internal/tailwind/scan"
 	"github.com/inoxlang/inox/internal/utils"
 )
 

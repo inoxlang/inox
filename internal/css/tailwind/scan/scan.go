@@ -7,8 +7,8 @@ import (
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/codebase/codebasescan"
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/css/tailwind"
 	"github.com/inoxlang/inox/internal/parse"
-	"github.com/inoxlang/inox/internal/tailwind"
 )
 
 type Configuration struct {

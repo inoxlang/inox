@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/inoxlang/inox/internal/css/tailwind"
 	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/globals/html_ns"
 	"github.com/inoxlang/inox/internal/hyperscript/hscode"
 	"github.com/inoxlang/inox/internal/hyperscript/hshelp"
 	"github.com/inoxlang/inox/internal/parse"
-	"github.com/inoxlang/inox/internal/tailwind"
 )
 
 func getTagOrAttributeHoverHelp(

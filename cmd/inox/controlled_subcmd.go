@@ -10,10 +10,10 @@ import (
 	"strings"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/css/tailwind"
 	"github.com/inoxlang/inox/internal/globals/chrome_ns"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/inoxprocess"
-	"github.com/inoxlang/inox/internal/tailwind"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
 )
