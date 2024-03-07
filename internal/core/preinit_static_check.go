@@ -358,7 +358,7 @@ func checkSingleKindPermissions(permKind PermissionKind, desc parse.Node, onErro
 		case *parse.PatternIdentifierLiteral, *parse.PatternNamespaceIdentifierLiteral:
 		case *parse.GlobalVariable, *parse.Variable, *parse.IdentifierLiteral:
 
-		case *parse.QuotedStringLiteral, *parse.MultilineStringLiteral, *parse.UnquotedStringLiteral:
+		case *parse.DoubleQuotedStringLiteral, *parse.MultilineStringLiteral, *parse.UnquotedStringLiteral:
 			s := n.(parse.SimpleValueLiteral).ValueString()
 
 			if len(s) <= 1 {
@@ -735,7 +735,7 @@ func checkParametersObject(objLit *parse.ObjectLiteral, onError func(n parse.Nod
 						}
 					case "description":
 						switch paramDescProp.Value.(type) {
-						case *parse.QuotedStringLiteral, *parse.MultilineStringLiteral:
+						case *parse.DoubleQuotedStringLiteral, *parse.MultilineStringLiteral:
 						default:
 							onError(paramDescProp, "the .description of a non positional parameter should be a string literal")
 						}
@@ -781,7 +781,7 @@ func checkParametersObject(objLit *parse.ObjectLiteral, onError func(n parse.Nod
 				switch propName {
 				case MANIFEST_PARAM__DESCRIPTION_PROPNAME:
 					switch paramDescProp.Value.(type) {
-					case *parse.QuotedStringLiteral, *parse.MultilineStringLiteral:
+					case *parse.DoubleQuotedStringLiteral, *parse.MultilineStringLiteral:
 					default:
 						onError(paramDescProp, "the .description property of a positional parameter should be a string literal")
 					}

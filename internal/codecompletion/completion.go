@@ -129,7 +129,7 @@ func FindCompletions(args SearchArgs) []Completion {
 			completions = handleDoubleColonExpressionCompletions(n, search)
 		case *parse.CallExpression: //if a call is the deepest node at cursor it means we are not in an argument
 			completions = handleNewCallArgumentCompletions(n, search)
-		case *parse.QuotedStringLiteral:
+		case *parse.DoubleQuotedStringLiteral:
 			completions = findStringCompletions(n, search)
 		case *parse.MultilineStringLiteral:
 			completions = findStringCompletions(n, search)
@@ -1724,7 +1724,7 @@ func findDictionaryInteriorCompletions(n *parse.DictionaryLiteral, search comple
 func findStringCompletions(strLit parse.SimpleValueLiteral, search completionSearch) (completions []Completion) {
 
 	switch strLit.(type) {
-	case *parse.QuotedStringLiteral, *parse.MultilineStringLiteral:
+	case *parse.DoubleQuotedStringLiteral, *parse.MultilineStringLiteral:
 	default:
 		return nil
 	}

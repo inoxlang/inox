@@ -296,7 +296,7 @@ func EvalSimpleValueLiteral(n parse.SimpleValueLiteral, global *GlobalState) (Se
 			segments = append(segments, segment.(ValuePathSegment))
 		}
 		return NewLongValuePath(segments), nil
-	case *parse.QuotedStringLiteral:
+	case *parse.DoubleQuotedStringLiteral:
 		return String(node.Value), nil
 	case *parse.UnquotedStringLiteral:
 		return String(node.Value), nil

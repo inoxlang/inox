@@ -881,7 +881,7 @@ func GetTokens(node Node, chunk *Chunk, addMeta bool) []Token {
 			} else {
 				raw = "false"
 			}
-		case *QuotedStringLiteral:
+		case *DoubleQuotedStringLiteral:
 			tokenType = QUOTED_STRING_LITERAL
 			raw = n.Raw
 		case *UnquotedStringLiteral:

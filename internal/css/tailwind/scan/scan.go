@@ -66,7 +66,7 @@ func findTailwindRulesToInclude(chunk *parse.Chunk) (rulesets []tailwind.Ruleset
 		attrValue := ""
 
 		switch v := attr.Value.(type) {
-		case *parse.QuotedStringLiteral:
+		case *parse.DoubleQuotedStringLiteral:
 			attrValue = v.Value
 		case *parse.MultilineStringLiteral:
 			attrValue = v.Value

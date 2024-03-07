@@ -2736,7 +2736,7 @@ func testParse(
 							false,
 						},
 						Name: "name",
-						Value: &QuotedStringLiteral{
+						Value: &DoubleQuotedStringLiteral{
 							NodeBase: NodeBase{NodeSpan{7, 12}, nil, false},
 							Raw:      `"foo"`,
 							Value:    "foo",
@@ -4768,7 +4768,7 @@ func testParse(
 								NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 								Name:     "a",
 							},
-							PropertyName: &QuotedStringLiteral{
+							PropertyName: &DoubleQuotedStringLiteral{
 								NodeBase: NodeBase{
 									NodeSpan{3, 6},
 									nil,
@@ -7875,7 +7875,7 @@ func testParse(
 			error  bool
 		}{
 			`""`: {
-				result: &QuotedStringLiteral{
+				result: &DoubleQuotedStringLiteral{
 					NodeBase: NodeBase{NodeSpan{0, 2}, nil, false},
 					Raw:      `""`,
 					Value:    ``,
@@ -7883,7 +7883,7 @@ func testParse(
 			},
 
 			`" "`: {
-				result: &QuotedStringLiteral{
+				result: &DoubleQuotedStringLiteral{
 					NodeBase: NodeBase{NodeSpan{0, 3}, nil, false},
 					Raw:      `" "`,
 					Value:    ` `,
@@ -7891,7 +7891,7 @@ func testParse(
 			},
 
 			`"é"`: {
-				result: &QuotedStringLiteral{
+				result: &DoubleQuotedStringLiteral{
 					NodeBase: NodeBase{NodeSpan{0, 3}, nil, false},
 					Raw:      `"é"`,
 					Value:    `é`,
@@ -7899,7 +7899,7 @@ func testParse(
 			},
 
 			`"\\"`: {
-				result: &QuotedStringLiteral{
+				result: &DoubleQuotedStringLiteral{
 					NodeBase: NodeBase{NodeSpan{0, 4}, nil, false},
 					Raw:      `"\\"`,
 					Value:    `\`,
@@ -7907,7 +7907,7 @@ func testParse(
 			},
 
 			`"\\\\"`: {
-				result: &QuotedStringLiteral{
+				result: &DoubleQuotedStringLiteral{
 					NodeBase: NodeBase{NodeSpan{0, 6}, nil, false},
 					Raw:      `"\\\\"`,
 					Value:    `\\`,
@@ -7915,7 +7915,7 @@ func testParse(
 			},
 
 			`"\u0061"`: {
-				result: &QuotedStringLiteral{
+				result: &DoubleQuotedStringLiteral{
 					NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
 					Raw:      `"\u0061"`,
 					Value:    `a`,
@@ -7923,7 +7923,7 @@ func testParse(
 			},
 
 			`"ab`: {
-				result: &QuotedStringLiteral{
+				result: &DoubleQuotedStringLiteral{
 					NodeBase: NodeBase{
 						NodeSpan{0, 3},
 						&ParsingError{UnspecifiedParsingError, UNTERMINATED_QUOTED_STRING_LIT},
@@ -7942,7 +7942,7 @@ func testParse(
 						false,
 					},
 					Statements: []Node{
-						&QuotedStringLiteral{
+						&DoubleQuotedStringLiteral{
 							NodeBase: NodeBase{
 								NodeSpan{0, 3},
 								&ParsingError{UnspecifiedParsingError, UNTERMINATED_QUOTED_STRING_LIT},
@@ -9342,7 +9342,7 @@ func testParse(
 							},
 						},
 						Arguments: []Node{
-							&QuotedStringLiteral{
+							&DoubleQuotedStringLiteral{
 								NodeBase: NodeBase{NodeSpan{5, 8}, nil, false},
 								Raw:      `"a"`,
 								Value:    "a",
@@ -9604,7 +9604,7 @@ func testParse(
 							},
 						},
 						Arguments: []Node{
-							&QuotedStringLiteral{
+							&DoubleQuotedStringLiteral{
 								NodeBase: NodeBase{NodeSpan{4, 7}, nil, false},
 								Raw:      `"a"`,
 								Value:    "a",
@@ -9968,7 +9968,7 @@ func testParse(
 						Name:     "mime",
 					},
 					Arguments: []Node{
-						&QuotedStringLiteral{
+						&DoubleQuotedStringLiteral{
 							NodeBase: NodeBase{NodeSpan{4, 10}, nil, false},
 							Raw:      `"json"`,
 							Value:    "json",
@@ -10928,7 +10928,7 @@ func testParse(
 								{
 									NodeBase: NodeBase{NodeSpan{3, 8}, nil, false},
 									Key:      nil,
-									Value: &QuotedStringLiteral{
+									Value: &DoubleQuotedStringLiteral{
 										NodeBase: NodeBase{
 											NodeSpan{3, 6},
 											nil,
@@ -12287,7 +12287,7 @@ func testParse(
 								{
 									NodeBase: NodeBase{NodeSpan{4, 9}, nil, false},
 									Key:      nil,
-									Value: &QuotedStringLiteral{
+									Value: &DoubleQuotedStringLiteral{
 										NodeBase: NodeBase{
 											NodeSpan{4, 7},
 											nil,
@@ -13635,7 +13635,7 @@ func testParse(
 							Entries: []*DictionaryEntry{
 								{
 									NodeBase: NodeBase{Span: NodeSpan{3, 10}},
-									Key: &QuotedStringLiteral{
+									Key: &DoubleQuotedStringLiteral{
 										NodeBase: NodeBase{NodeSpan{3, 6}, nil, false},
 										Raw:      `"a"`,
 										Value:    "a",
@@ -13921,7 +13921,7 @@ func testParse(
 										nil,
 										false,
 									},
-									Key: &QuotedStringLiteral{
+									Key: &DoubleQuotedStringLiteral{
 										NodeBase: NodeBase{NodeSpan{3, 6}, nil, false},
 										Raw:      `"a"`,
 										Value:    "a",
@@ -13961,7 +13961,7 @@ func testParse(
 										nil,
 										false,
 									},
-									Key: &QuotedStringLiteral{
+									Key: &DoubleQuotedStringLiteral{
 										NodeBase: NodeBase{NodeSpan{4, 7}, nil, false},
 										Raw:      `"a"`,
 										Value:    "a",
@@ -13994,7 +13994,7 @@ func testParse(
 										&ParsingError{UnspecifiedParsingError, INVALID_DICT_ENTRY_MISSING_COLON_AFTER_KEY},
 										false,
 									},
-									Key: &QuotedStringLiteral{
+									Key: &DoubleQuotedStringLiteral{
 										NodeBase: NodeBase{NodeSpan{3, 6}, nil, false},
 										Raw:      `"a"`,
 										Value:    "a",
@@ -14077,7 +14077,7 @@ func testParse(
 										&ParsingError{UnspecifiedParsingError, INVALID_DICT_LIT_ENTRY_SEPARATION},
 										false,
 									},
-									Key: &QuotedStringLiteral{
+									Key: &DoubleQuotedStringLiteral{
 										NodeBase: NodeBase{NodeSpan{3, 6}, nil, false},
 										Raw:      `"a"`,
 										Value:    "a",
@@ -14090,7 +14090,7 @@ func testParse(
 								},
 								{
 									NodeBase: NodeBase{Span: NodeSpan{12, 19}},
-									Key: &QuotedStringLiteral{
+									Key: &DoubleQuotedStringLiteral{
 										NodeBase: NodeBase{NodeSpan{12, 15}, nil, false},
 										Raw:      `"b"`,
 										Value:    "b",
@@ -14117,7 +14117,7 @@ func testParse(
 							Entries: []*DictionaryEntry{
 								{
 									NodeBase: NodeBase{Span: NodeSpan{3, 10}},
-									Key: &QuotedStringLiteral{
+									Key: &DoubleQuotedStringLiteral{
 										NodeBase: NodeBase{NodeSpan{3, 6}, nil, false},
 										Raw:      `"a"`,
 										Value:    "a",
@@ -14130,7 +14130,7 @@ func testParse(
 								},
 								{
 									NodeBase: NodeBase{Span: NodeSpan{13, 20}},
-									Key: &QuotedStringLiteral{
+									Key: &DoubleQuotedStringLiteral{
 										NodeBase: NodeBase{NodeSpan{13, 16}, nil, false},
 										Raw:      `"b"`,
 										Value:    "b",
@@ -14157,7 +14157,7 @@ func testParse(
 							Entries: []*DictionaryEntry{
 								{
 									NodeBase: NodeBase{Span: NodeSpan{3, 10}},
-									Key: &QuotedStringLiteral{
+									Key: &DoubleQuotedStringLiteral{
 										NodeBase: NodeBase{NodeSpan{3, 6}, nil, false},
 										Raw:      `"a"`,
 										Value:    "a",
@@ -14184,7 +14184,7 @@ func testParse(
 							Entries: []*DictionaryEntry{
 								{
 									NodeBase: NodeBase{Span: NodeSpan{5, 12}},
-									Key: &QuotedStringLiteral{
+									Key: &DoubleQuotedStringLiteral{
 										NodeBase: NodeBase{NodeSpan{5, 8}, nil, false},
 										Raw:      `"a"`,
 										Value:    "a",
@@ -14211,7 +14211,7 @@ func testParse(
 							Entries: []*DictionaryEntry{
 								{
 									NodeBase: NodeBase{Span: NodeSpan{3, 10}},
-									Key: &QuotedStringLiteral{
+									Key: &DoubleQuotedStringLiteral{
 										NodeBase: NodeBase{NodeSpan{3, 6}, nil, false},
 										Raw:      `"a"`,
 										Value:    "a",
@@ -14228,7 +14228,7 @@ func testParse(
 										nil,
 										false,
 									},
-									Key: &QuotedStringLiteral{
+									Key: &DoubleQuotedStringLiteral{
 										NodeBase: NodeBase{NodeSpan{13, 16}, nil, false},
 										Raw:      `"b"`,
 										Value:    "b",
@@ -21760,7 +21760,7 @@ func testParse(
 							nil,
 							false,
 						},
-						Meta: &QuotedStringLiteral{
+						Meta: &DoubleQuotedStringLiteral{
 							NodeBase: NodeBase{
 								Span: NodeSpan{10, 16},
 							},
@@ -21862,7 +21862,7 @@ func testParse(
 							&ParsingError{MissingBlock, UNTERMINATED_TESTSUITE_EXPRESSION_MISSING_BLOCK},
 							false,
 						},
-						Meta: &QuotedStringLiteral{
+						Meta: &DoubleQuotedStringLiteral{
 							NodeBase: NodeBase{
 								Span: NodeSpan{10, 16},
 							},
@@ -21917,7 +21917,7 @@ func testParse(
 							nil,
 							false,
 						},
-						Meta: &QuotedStringLiteral{
+						Meta: &DoubleQuotedStringLiteral{
 							NodeBase: NodeBase{
 								Span: NodeSpan{9, 15},
 							},
@@ -21971,7 +21971,7 @@ func testParse(
 							&ParsingError{UnspecifiedParsingError, UNTERMINATED_TESTCASE_EXPRESSION_MISSING_BLOCK},
 							false,
 						},
-						Meta: &QuotedStringLiteral{
+						Meta: &DoubleQuotedStringLiteral{
 							NodeBase: NodeBase{
 								Span: NodeSpan{9, 15},
 							},
@@ -22616,7 +22616,7 @@ func testParse(
 							false,
 						},
 						Elements: []Node{
-							&QuotedStringLiteral{
+							&DoubleQuotedStringLiteral{
 								NodeBase: NodeBase{Span: NodeSpan{7, 10}},
 								Raw:      `"a"`,
 								Value:    "a",
@@ -22638,12 +22638,12 @@ func testParse(
 							false,
 						},
 						Elements: []Node{
-							&QuotedStringLiteral{
+							&DoubleQuotedStringLiteral{
 								NodeBase: NodeBase{Span: NodeSpan{7, 10}},
 								Raw:      `"a"`,
 								Value:    "a",
 							},
-							&QuotedStringLiteral{
+							&DoubleQuotedStringLiteral{
 								NodeBase: NodeBase{Span: NodeSpan{11, 14}},
 								Raw:      `"b"`,
 								Value:    "b",
@@ -22678,19 +22678,19 @@ func testParse(
 									false,
 								},
 								Elements: []Node{
-									&QuotedStringLiteral{
+									&DoubleQuotedStringLiteral{
 										NodeBase: NodeBase{Span: NodeSpan{8, 11}},
 										Raw:      `"a"`,
 										Value:    "a",
 									},
-									&QuotedStringLiteral{
+									&DoubleQuotedStringLiteral{
 										NodeBase: NodeBase{Span: NodeSpan{12, 15}},
 										Raw:      `"b"`,
 										Value:    "b",
 									},
 								},
 							},
-							&QuotedStringLiteral{
+							&DoubleQuotedStringLiteral{
 								NodeBase: NodeBase{Span: NodeSpan{17, 20}},
 								Raw:      `"c"`,
 								Value:    "c",
@@ -24598,7 +24598,7 @@ func testParse(
 							{
 								NodeBase:  NodeBase{NodeSpan{5, 8}, nil, false},
 								Ocurrence: ExactlyOneOcurrence,
-								Expr: &QuotedStringLiteral{
+								Expr: &DoubleQuotedStringLiteral{
 									NodeBase: NodeBase{NodeSpan{5, 8}, nil, false},
 									Raw:      "\"a\"",
 									Value:    "a",
@@ -24631,7 +24631,7 @@ func testParse(
 							{
 								NodeBase:  NodeBase{NodeSpan{5, 8}, nil, false},
 								Ocurrence: ExactlyOneOcurrence,
-								Expr: &QuotedStringLiteral{
+								Expr: &DoubleQuotedStringLiteral{
 									NodeBase: NodeBase{NodeSpan{5, 8}, nil, false},
 									Raw:      "\"a\"",
 									Value:    "a",
@@ -24747,7 +24747,7 @@ func testParse(
 										{
 											NodeBase:  NodeBase{NodeSpan{6, 9}, nil, false},
 											Ocurrence: ExactlyOneOcurrence,
-											Expr: &QuotedStringLiteral{
+											Expr: &DoubleQuotedStringLiteral{
 												NodeBase: NodeBase{NodeSpan{6, 9}, nil, false},
 												Raw:      "\"a\"",
 												Value:    "a",
@@ -24801,7 +24801,7 @@ func testParse(
 										{
 											NodeBase:  NodeBase{NodeSpan{6, 9}, nil, false},
 											Ocurrence: ExactlyOneOcurrence,
-											Expr: &QuotedStringLiteral{
+											Expr: &DoubleQuotedStringLiteral{
 												NodeBase: NodeBase{NodeSpan{6, 9}, nil, false},
 												Raw:      "\"a\"",
 												Value:    "a",
@@ -24904,7 +24904,7 @@ func testParse(
 									false,
 								},
 								Ocurrence: ExactlyOneOcurrence,
-								Expr: &QuotedStringLiteral{
+								Expr: &DoubleQuotedStringLiteral{
 									NodeBase: NodeBase{NodeSpan{7, 10}, nil, false},
 									Raw:      "\"a\"",
 									Value:    "a",
@@ -24931,7 +24931,7 @@ func testParse(
 							{
 								NodeBase:  NodeBase{Span: NodeSpan{5, 11}},
 								Ocurrence: ExactlyOneOcurrence,
-								Expr: &QuotedStringLiteral{
+								Expr: &DoubleQuotedStringLiteral{
 									NodeBase: NodeBase{NodeSpan{8, 11}, nil, false},
 									Raw:      "\"a\"",
 									Value:    "a",
@@ -24959,7 +24959,7 @@ func testParse(
 							{
 								NodeBase:  NodeBase{Span: NodeSpan{5, 17}},
 								Ocurrence: ExactlyOneOcurrence,
-								Expr: &QuotedStringLiteral{
+								Expr: &DoubleQuotedStringLiteral{
 									NodeBase: NodeBase{NodeSpan{14, 17}, nil, false},
 									Raw:      "\"a\"",
 									Value:    "a",
@@ -25041,7 +25041,7 @@ func testParse(
 						Elements: []*PatternPieceElement{
 							{
 								NodeBase: NodeBase{NodeSpan{5, 8}, nil, false},
-								Expr: &QuotedStringLiteral{
+								Expr: &DoubleQuotedStringLiteral{
 									NodeBase: NodeBase{NodeSpan{5, 8}, nil, false},
 									Raw:      "\"a\"",
 									Value:    "a",
@@ -25049,7 +25049,7 @@ func testParse(
 							},
 							{
 								NodeBase: NodeBase{NodeSpan{9, 12}, nil, false},
-								Expr: &QuotedStringLiteral{
+								Expr: &DoubleQuotedStringLiteral{
 									NodeBase: NodeBase{NodeSpan{9, 12}, nil, false},
 									Raw:      "\"b\"",
 									Value:    "b",
@@ -25093,12 +25093,12 @@ func testParse(
 										},*/
 									},
 									Cases: []Node{
-										&QuotedStringLiteral{
+										&DoubleQuotedStringLiteral{
 											NodeBase: NodeBase{NodeSpan{9, 12}, nil, false},
 											Raw:      `"a"`,
 											Value:    "a",
 										},
-										&QuotedStringLiteral{
+										&DoubleQuotedStringLiteral{
 											NodeBase: NodeBase{NodeSpan{15, 18}, nil, false},
 											Raw:      `"b"`,
 											Value:    "b",
@@ -25145,17 +25145,17 @@ func testParse(
 										},*/
 									},
 									Cases: []Node{
-										&QuotedStringLiteral{
+										&DoubleQuotedStringLiteral{
 											NodeBase: NodeBase{NodeSpan{9, 12}, nil, false},
 											Raw:      `"a"`,
 											Value:    "a",
 										},
-										&QuotedStringLiteral{
+										&DoubleQuotedStringLiteral{
 											NodeBase: NodeBase{NodeSpan{15, 18}, nil, false},
 											Raw:      `"b"`,
 											Value:    "b",
 										},
-										&QuotedStringLiteral{
+										&DoubleQuotedStringLiteral{
 											NodeBase: NodeBase{NodeSpan{21, 24}, nil, false},
 											Raw:      `"c"`,
 											Value:    "c",
@@ -25203,12 +25203,12 @@ func testParse(
 										},*/
 									},
 									Cases: []Node{
-										&QuotedStringLiteral{
+										&DoubleQuotedStringLiteral{
 											NodeBase: NodeBase{NodeSpan{9, 12}, nil, false},
 											Raw:      `"a"`,
 											Value:    "a",
 										},
-										&QuotedStringLiteral{
+										&DoubleQuotedStringLiteral{
 											NodeBase: NodeBase{NodeSpan{15, 18}, nil, false},
 											Raw:      `"b"`,
 											Value:    "b",
@@ -25245,12 +25245,12 @@ func testParse(
 								Expr: &PatternUnion{
 									NodeBase: NodeBase{Span: NodeSpan{6, 20}},
 									Cases: []Node{
-										&QuotedStringLiteral{
+										&DoubleQuotedStringLiteral{
 											NodeBase: NodeBase{NodeSpan{9, 12}, nil, false},
 											Raw:      `"a"`,
 											Value:    "a",
 										},
-										&QuotedStringLiteral{
+										&DoubleQuotedStringLiteral{
 											NodeBase: NodeBase{NodeSpan{15, 18}, nil, false},
 											Raw:      `"b"`,
 											Value:    "b",
@@ -25277,12 +25277,12 @@ func testParse(
 								Expr: &PatternUnion{
 									NodeBase: NodeBase{Span: NodeSpan{5, 16}},
 									Cases: []Node{
-										&QuotedStringLiteral{
+										&DoubleQuotedStringLiteral{
 											NodeBase: NodeBase{NodeSpan{7, 10}, nil, false},
 											Raw:      `"a"`,
 											Value:    "a",
 										},
-										&QuotedStringLiteral{
+										&DoubleQuotedStringLiteral{
 											NodeBase: NodeBase{NodeSpan{13, 16}, nil, false},
 											Raw:      `"b"`,
 											Value:    "b",
@@ -25309,12 +25309,12 @@ func testParse(
 								Expr: &PatternUnion{
 									NodeBase: NodeBase{Span: NodeSpan{6, 17}},
 									Cases: []Node{
-										&QuotedStringLiteral{
+										&DoubleQuotedStringLiteral{
 											NodeBase: NodeBase{NodeSpan{8, 11}, nil, false},
 											Raw:      `"a"`,
 											Value:    "a",
 										},
-										&QuotedStringLiteral{
+										&DoubleQuotedStringLiteral{
 											NodeBase: NodeBase{NodeSpan{14, 17}, nil, false},
 											Raw:      `"b"`,
 											Value:    "b",
@@ -25341,12 +25341,12 @@ func testParse(
 								Expr: &PatternUnion{
 									NodeBase: NodeBase{Span: NodeSpan{5, 16}},
 									Cases: []Node{
-										&QuotedStringLiteral{
+										&DoubleQuotedStringLiteral{
 											NodeBase: NodeBase{NodeSpan{7, 10}, nil, false},
 											Raw:      `"a"`,
 											Value:    "a",
 										},
-										&QuotedStringLiteral{
+										&DoubleQuotedStringLiteral{
 											NodeBase: NodeBase{NodeSpan{13, 16}, nil, false},
 											Raw:      `"b"`,
 											Value:    "b",
@@ -25378,7 +25378,7 @@ func testParse(
 								{
 									NodeBase:  NodeBase{NodeSpan{17, 20}, nil, false},
 									Ocurrence: ExactlyOneOcurrence,
-									Expr: &QuotedStringLiteral{
+									Expr: &DoubleQuotedStringLiteral{
 										NodeBase: NodeBase{NodeSpan{17, 20}, nil, false},
 										Raw:      "\"a\"",
 										Value:    "a",
@@ -25672,7 +25672,7 @@ func testParse(
 					&PatternUnion{
 						NodeBase: NodeBase{NodeSpan{0, 6}, nil, false},
 						Cases: []Node{
-							&QuotedStringLiteral{
+							&DoubleQuotedStringLiteral{
 								NodeBase: NodeBase{NodeSpan{3, 6}, nil, false},
 								Raw:      `"a"`,
 								Value:    "a",
@@ -25719,7 +25719,7 @@ func testParse(
 							},*/
 						},
 						Cases: []Node{
-							&QuotedStringLiteral{
+							&DoubleQuotedStringLiteral{
 								NodeBase: NodeBase{NodeSpan{4, 7}, nil, false},
 								Raw:      `"a"`,
 								Value:    "a",
@@ -25746,12 +25746,12 @@ func testParse(
 							},*/
 						},
 						Cases: []Node{
-							&QuotedStringLiteral{
+							&DoubleQuotedStringLiteral{
 								NodeBase: NodeBase{NodeSpan{3, 6}, nil, false},
 								Raw:      `"a"`,
 								Value:    "a",
 							},
-							&QuotedStringLiteral{
+							&DoubleQuotedStringLiteral{
 								NodeBase: NodeBase{NodeSpan{9, 12}, nil, false},
 								Raw:      `"b"`,
 								Value:    "b",
@@ -25780,12 +25780,12 @@ func testParse(
 							},*/
 						},
 						Cases: []Node{
-							&QuotedStringLiteral{
+							&DoubleQuotedStringLiteral{
 								NodeBase: NodeBase{NodeSpan{4, 7}, nil, false},
 								Raw:      `"a"`,
 								Value:    "a",
 							},
-							&QuotedStringLiteral{
+							&DoubleQuotedStringLiteral{
 								NodeBase: NodeBase{NodeSpan{10, 13}, nil, false},
 								Raw:      `"b"`,
 								Value:    "b",
@@ -25814,12 +25814,12 @@ func testParse(
 							},*/
 						},
 						Cases: []Node{
-							&QuotedStringLiteral{
+							&DoubleQuotedStringLiteral{
 								NodeBase: NodeBase{NodeSpan{4, 7}, nil, false},
 								Raw:      `"a"`,
 								Value:    "a",
 							},
-							&QuotedStringLiteral{
+							&DoubleQuotedStringLiteral{
 								NodeBase: NodeBase{NodeSpan{10, 13}, nil, false},
 								Raw:      `"b"`,
 								Value:    "b",
@@ -25848,12 +25848,12 @@ func testParse(
 							},*/
 						},
 						Cases: []Node{
-							&QuotedStringLiteral{
+							&DoubleQuotedStringLiteral{
 								NodeBase: NodeBase{NodeSpan{4, 7}, nil, false},
 								Raw:      `"a"`,
 								Value:    "a",
 							},
-							&QuotedStringLiteral{
+							&DoubleQuotedStringLiteral{
 								NodeBase: NodeBase{NodeSpan{10, 13}, nil, false},
 								Raw:      `"b"`,
 								Value:    "b",
@@ -25886,12 +25886,12 @@ func testParse(
 								true,
 							},
 							Cases: []Node{
-								&QuotedStringLiteral{
+								&DoubleQuotedStringLiteral{
 									NodeBase: NodeBase{NodeSpan{15, 18}, nil, false},
 									Raw:      `"a"`,
 									Value:    "a",
 								},
-								&QuotedStringLiteral{
+								&DoubleQuotedStringLiteral{
 									NodeBase: NodeBase{NodeSpan{21, 24}, nil, false},
 									Raw:      `"b"`,
 									Value:    "b",
@@ -25925,12 +25925,12 @@ func testParse(
 								true,
 							},
 							Cases: []Node{
-								&QuotedStringLiteral{
+								&DoubleQuotedStringLiteral{
 									NodeBase: NodeBase{NodeSpan{15, 18}, nil, false},
 									Raw:      `"a"`,
 									Value:    "a",
 								},
-								&QuotedStringLiteral{
+								&DoubleQuotedStringLiteral{
 									NodeBase: NodeBase{NodeSpan{21, 24}, nil, false},
 									Raw:      `"b"`,
 									Value:    "b",
@@ -26348,7 +26348,7 @@ func testParse(
 									Name:     "a",
 								},
 								Pattern: "=",
-								Value: &QuotedStringLiteral{
+								Value: &DoubleQuotedStringLiteral{
 									NodeBase: NodeBase{NodeSpan{5, 8}, nil, false},
 									Raw:      `"1"`,
 									Value:    "1",
@@ -27613,7 +27613,7 @@ func testParse(
 											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 											Name:     "a",
 										},
-										Value: &QuotedStringLiteral{
+										Value: &DoubleQuotedStringLiteral{
 											NodeBase: NodeBase{NodeSpan{8, 11}, nil, false},
 											Raw:      `"b"`,
 											Value:    "b",
@@ -27687,7 +27687,7 @@ func testParse(
 											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 											Name:     "a",
 										},
-										Value: &QuotedStringLiteral{
+										Value: &DoubleQuotedStringLiteral{
 											NodeBase: NodeBase{NodeSpan{8, 11}, nil, false},
 											Raw:      `"b"`,
 											Value:    "b",
@@ -27830,7 +27830,7 @@ func testParse(
 											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 											Name:     "a",
 										},
-										Value: &QuotedStringLiteral{
+										Value: &DoubleQuotedStringLiteral{
 											NodeBase: NodeBase{NodeSpan{8, 11}, nil, false},
 											Raw:      `"b"`,
 											Value:    "b",
@@ -27882,7 +27882,7 @@ func testParse(
 											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 											Name:     "a",
 										},
-										Value: &QuotedStringLiteral{
+										Value: &DoubleQuotedStringLiteral{
 											NodeBase: NodeBase{NodeSpan{8, 11}, nil, false},
 											Raw:      `"b"`,
 											Value:    "b",
@@ -27953,7 +27953,7 @@ func testParse(
 											nil,
 											false,
 										},
-										Name: &QuotedStringLiteral{
+										Name: &DoubleQuotedStringLiteral{
 											NodeBase: NodeBase{
 												NodeSpan{6, 9},
 												&ParsingError{UnspecifiedParsingError, XML_ATTRIBUTE_NAME_SHOULD_BE_IDENT},
@@ -27962,7 +27962,7 @@ func testParse(
 											Raw:   `"a"`,
 											Value: "a",
 										},
-										Value: &QuotedStringLiteral{
+										Value: &DoubleQuotedStringLiteral{
 											NodeBase: NodeBase{NodeSpan{10, 13}, nil, false},
 											Raw:      `"b"`,
 											Value:    "b",
@@ -28295,7 +28295,7 @@ func testParse(
 											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 											Name:     "a",
 										},
-										Value: &QuotedStringLiteral{
+										Value: &DoubleQuotedStringLiteral{
 											NodeBase: NodeBase{NodeSpan{8, 11}, nil, false},
 											Raw:      `"b"`,
 											Value:    "b",
@@ -28311,7 +28311,7 @@ func testParse(
 											NodeBase: NodeBase{NodeSpan{12, 13}, nil, false},
 											Name:     "c",
 										},
-										Value: &QuotedStringLiteral{
+										Value: &DoubleQuotedStringLiteral{
 											NodeBase: NodeBase{NodeSpan{14, 17}, nil, false},
 											Raw:      `"d"`,
 											Value:    "d",
@@ -29226,7 +29226,7 @@ func testParse(
 											NodeBase: NodeBase{NodeSpan{9, 13}, nil, false},
 											Name:     "type",
 										},
-										Value: &QuotedStringLiteral{
+										Value: &DoubleQuotedStringLiteral{
 											NodeBase: NodeBase{NodeSpan{14, 32}, nil, false},
 											Value:    "text/hyperscript",
 											Raw:      `"text/hyperscript"`,
@@ -29277,7 +29277,7 @@ func testParse(
 											NodeBase: NodeBase{NodeSpan{9, 13}, nil, false},
 											Name:     "type",
 										},
-										Value: &QuotedStringLiteral{
+										Value: &DoubleQuotedStringLiteral{
 											NodeBase: NodeBase{NodeSpan{14, 32}, nil, false},
 											Value:    "text/hyperscript",
 											Raw:      `"text/hyperscript"`,

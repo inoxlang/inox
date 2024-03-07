@@ -885,7 +885,7 @@ func getUncheckedModuleKindNameFromNode(n parse.Node) (name string, found bool) 
 	var kindName string
 
 	switch node := n.(type) {
-	case *parse.QuotedStringLiteral:
+	case *parse.DoubleQuotedStringLiteral:
 		kindName = node.Value
 	case *parse.MultilineStringLiteral:
 		kindName = node.Value

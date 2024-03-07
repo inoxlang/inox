@@ -325,7 +325,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 			return ANY, nil
 		}
 		return extData.ToSymbolicValue(state.ctx.startingConcreteContext, v, false)
-	case *parse.QuotedStringLiteral:
+	case *parse.DoubleQuotedStringLiteral:
 		return NewString(n.Value), nil
 	case *parse.UnquotedStringLiteral:
 		return NewString(n.Value), nil
@@ -3862,7 +3862,7 @@ func evalObjectLiteral(n *parse.ObjectLiteral, state *State, options evalOptions
 
 		//add the key
 		switch n := p.Key.(type) {
-		case *parse.QuotedStringLiteral:
+		case *parse.DoubleQuotedStringLiteral:
 			key = n.Value
 		case *parse.IdentifierLiteral:
 			key = n.Name
@@ -4108,7 +4108,7 @@ func evalRecordLiteral(n *parse.RecordLiteral, state *State, options evalOptions
 
 		//add the key
 		switch n := p.Key.(type) {
-		case *parse.QuotedStringLiteral:
+		case *parse.DoubleQuotedStringLiteral:
 			key = n.Value
 		case *parse.IdentifierLiteral:
 			key = n.Name

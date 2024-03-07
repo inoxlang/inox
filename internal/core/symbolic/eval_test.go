@@ -3481,7 +3481,7 @@ func TestSymbolicEval(t *testing.T) {
 				fn f() %int => "a"
 			`)
 
-			strLit := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
+			strLit := parse.FindNode(n, (*parse.DoubleQuotedStringLiteral)(nil), nil)
 			res, err := symbolicEval(n, state)
 
 			assert.NoError(t, err)
@@ -4095,7 +4095,7 @@ func TestSymbolicEval(t *testing.T) {
 	
 				return f("a")
 			`)
-			strLit := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
+			strLit := parse.FindNode(n, (*parse.DoubleQuotedStringLiteral)(nil), nil)
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -4127,7 +4127,7 @@ func TestSymbolicEval(t *testing.T) {
 	
 				return f(1, "a")
 			`)
-			strLit := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
+			strLit := parse.FindNode(n, (*parse.DoubleQuotedStringLiteral)(nil), nil)
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)

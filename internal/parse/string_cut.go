@@ -21,7 +21,7 @@ func CutQuotedStringLiteral(index int32, n SimpleValueLiteral) (cut stringCut, o
 	var raw string
 
 	switch n := n.(type) {
-	case *QuotedStringLiteral:
+	case *DoubleQuotedStringLiteral:
 		value = n.ValueString()
 		raw = n.Raw
 	case *MultilineStringLiteral:

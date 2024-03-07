@@ -107,7 +107,7 @@ func TestCheck(t *testing.T) {
 
 		t.Run("elements + explicit empty property name", func(t *testing.T) {
 			n, src := mustParseCode(`{1, "": 'a'}`)
-			strLit := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
+			strLit := parse.FindNode(n, (*parse.DoubleQuotedStringLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
 				makeError(strLit, src, EMPTY_PROP_NAME_NOT_ALLOWED_IF_ELEMENTS),
@@ -123,7 +123,7 @@ func TestCheck(t *testing.T) {
 		t.Run("duplicate keys (two string literals)", func(t *testing.T) {
 			n, src := mustParseCode(`{"0":1, "0": 1}`)
 
-			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
+			keyNode := parse.FindNode(n, (*parse.DoubleQuotedStringLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
 				makeError(keyNode, src, fmtDuplicateKey("0")),
@@ -134,7 +134,7 @@ func TestCheck(t *testing.T) {
 		t.Run("duplicate keys (one identifier & one string)", func(t *testing.T) {
 			n, src := mustParseCode(`{a:1, "a": 1}`)
 
-			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
+			keyNode := parse.FindNode(n, (*parse.DoubleQuotedStringLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
 				makeError(keyNode, src, fmtDuplicateKey("a")),
@@ -145,7 +145,7 @@ func TestCheck(t *testing.T) {
 		t.Run("duplicate keys (one string & one identifier)", func(t *testing.T) {
 			n, src := mustParseCode(`{a:1, "a": 1}`)
 
-			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
+			keyNode := parse.FindNode(n, (*parse.DoubleQuotedStringLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
 				makeError(keyNode, src, fmtDuplicateKey("a")),
@@ -156,7 +156,7 @@ func TestCheck(t *testing.T) {
 		t.Run("duplicate keys (two identifiers)", func(t *testing.T) {
 			n, src := mustParseCode(`{a:1, "a": 1}`)
 
-			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
+			keyNode := parse.FindNode(n, (*parse.DoubleQuotedStringLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
 				makeError(keyNode, src, fmtDuplicateKey("a")),
@@ -199,7 +199,7 @@ func TestCheck(t *testing.T) {
 			code := strings.Replace(`{"a":1}`, "a", name, 1)
 			n, src := mustParseCode(code)
 
-			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
+			keyNode := parse.FindNode(n, (*parse.DoubleQuotedStringLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
 				makeError(keyNode, src, fmtNameIsTooLong(name)),
@@ -337,7 +337,7 @@ func TestCheck(t *testing.T) {
 		t.Run("duplicate keys", func(t *testing.T) {
 			n, src := mustParseCode(`#{"0":1, "0": 1}`)
 
-			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
+			keyNode := parse.FindNode(n, (*parse.DoubleQuotedStringLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
 				makeError(keyNode, src, fmtDuplicateKey("0")),
@@ -380,7 +380,7 @@ func TestCheck(t *testing.T) {
 			code := strings.Replace(`#{"a":1}`, "a", name, 1)
 			n, src := mustParseCode(code)
 
-			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
+			keyNode := parse.FindNode(n, (*parse.DoubleQuotedStringLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
 				makeError(keyNode, src, fmtNameIsTooLong(name)),
@@ -408,7 +408,7 @@ func TestCheck(t *testing.T) {
 		t.Run("duplicate keys", func(t *testing.T) {
 			n, src := mustParseCode(`%{"0":1, "0": 1}`)
 
-			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
+			keyNode := parse.FindNode(n, (*parse.DoubleQuotedStringLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
 				makeError(keyNode, src, fmtDuplicateKey("0")),
@@ -434,7 +434,7 @@ func TestCheck(t *testing.T) {
 			code := strings.Replace(`%{"a":1}`, "a", name, 1)
 			n, src := mustParseCode(code)
 
-			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
+			keyNode := parse.FindNode(n, (*parse.DoubleQuotedStringLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
 				makeError(keyNode, src, fmtNameIsTooLong(name)),
@@ -479,7 +479,7 @@ func TestCheck(t *testing.T) {
 		t.Run("duplicate keys", func(t *testing.T) {
 			n, src := mustParseCode(`pattern p = #{"0":1, "0": 1}`)
 
-			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
+			keyNode := parse.FindNode(n, (*parse.DoubleQuotedStringLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
 				makeError(keyNode, src, fmtDuplicateKey("0")),
@@ -505,7 +505,7 @@ func TestCheck(t *testing.T) {
 			code := `pattern p = ` + strings.Replace(`#{"a":1}`, "a", name, 1)
 			n, src := mustParseCode(code)
 
-			keyNode := parse.FindNode(n, (*parse.QuotedStringLiteral)(nil), nil)
+			keyNode := parse.FindNode(n, (*parse.DoubleQuotedStringLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
 				makeError(keyNode, src, fmtNameIsTooLong(name)),

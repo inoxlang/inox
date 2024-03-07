@@ -334,7 +334,7 @@ func fetchParseImportedModules(parentMod *Module, ctx *Context, fls afs.Filesyst
 		var validationString string = ""
 		validationNode, ok := objLiteral.PropValue("validation")
 		if ok {
-			validationStringLit, ok := validationNode.(*parse.QuotedStringLiteral)
+			validationStringLit, ok := validationNode.(*parse.DoubleQuotedStringLiteral)
 			if ok {
 				validationString = validationStringLit.Value
 			} else {

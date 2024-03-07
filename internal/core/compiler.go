@@ -346,7 +346,7 @@ func (c *compiler) Compile(node parse.Node) error {
 		}
 		c.emit(node, OpPushConstant, c.addConstant(v))
 	//strings
-	case *parse.QuotedStringLiteral:
+	case *parse.DoubleQuotedStringLiteral:
 		c.emit(node, OpPushConstant, c.addConstant(String(node.Value)))
 	case *parse.UnquotedStringLiteral:
 		c.emit(node, OpPushConstant, c.addConstant(String(node.Value)))
@@ -1141,7 +1141,7 @@ func (c *compiler) Compile(node parse.Node) error {
 		//Compile entries.
 		for _, prop := range node.Properties {
 			switch n := prop.Key.(type) {
-			case *parse.QuotedStringLiteral:
+			case *parse.DoubleQuotedStringLiteral:
 				key = n.Value
 				propCount++
 			case *parse.IdentifierLiteral:
@@ -1198,7 +1198,7 @@ func (c *compiler) Compile(node parse.Node) error {
 		//Compile entries.
 		for _, prop := range node.Properties {
 			switch n := prop.Key.(type) {
-			case *parse.QuotedStringLiteral:
+			case *parse.DoubleQuotedStringLiteral:
 				key = n.Value
 				propCount++
 			case *parse.IdentifierLiteral:
@@ -2775,7 +2775,7 @@ func (c *compiler) compileLogical(node *parse.BinaryExpression) error {
 
 func (c *compiler) CompileStringPatternNode(node parse.Node) error {
 	switch v := node.(type) {
-	case *parse.QuotedStringLiteral:
+	case *parse.DoubleQuotedStringLiteral:
 		c.emit(node, OpPushConstant, c.addConstant(NewExactStringPattern(String(v.Value))))
 	case *parse.RuneLiteral:
 		c.emit(node, OpPushConstant, c.addConstant(NewExactStringPattern(String(v.Value))))

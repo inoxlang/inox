@@ -85,7 +85,7 @@ type GroupPatternLiteral interface {
 }
 
 var _ = []SimpleValueLiteral{
-	(*QuotedStringLiteral)(nil), (*UnquotedStringLiteral)(nil), (*MultilineStringLiteral)(nil), (*IdentifierLiteral)(nil),
+	(*DoubleQuotedStringLiteral)(nil), (*UnquotedStringLiteral)(nil), (*MultilineStringLiteral)(nil), (*IdentifierLiteral)(nil),
 	(*UnambiguousIdentifierLiteral)(nil), (*IntLiteral)(nil), (*FloatLiteral)(nil),
 	(*AbsolutePathLiteral)(nil), (*RelativePathLiteral)(nil), (*AbsolutePathPatternLiteral)(nil), (*RelativePathPatternLiteral)(nil),
 	(*NamedSegmentPathPatternLiteral)(nil), (*RegularExpressionLiteral)(nil), (*BooleanLiteral)(nil), (*NilLiteral)(nil),
@@ -499,17 +499,17 @@ func (RuneLiteral) Kind() NodeKind {
 	return Expr
 }
 
-type QuotedStringLiteral struct {
-	NodeBase `json:"base:quoted-str-lit"`
+type DoubleQuotedStringLiteral struct {
+	NodeBase `json:"base:double-quoted-str-lit"`
 	Raw      string
 	Value    string
 }
 
-func (l QuotedStringLiteral) ValueString() string {
+func (l DoubleQuotedStringLiteral) ValueString() string {
 	return l.Value
 }
 
-func (QuotedStringLiteral) Kind() NodeKind {
+func (DoubleQuotedStringLiteral) Kind() NodeKind {
 	return Expr
 }
 
@@ -940,7 +940,7 @@ func (prop ObjectProperty) Name() string {
 	switch v := prop.Key.(type) {
 	case *IdentifierLiteral:
 		return v.Name
-	case *QuotedStringLiteral:
+	case *DoubleQuotedStringLiteral:
 		return v.Value
 	default:
 		panic(fmt.Errorf("invalid key type %T", v))
@@ -951,7 +951,7 @@ func (prop ObjectProperty) HasNameEqualTo(name string) bool {
 	switch v := prop.Key.(type) {
 	case *IdentifierLiteral:
 		return v.Name == name
-	case *QuotedStringLiteral:
+	case *DoubleQuotedStringLiteral:
 		return v.Value == name
 	default:
 		return false
@@ -974,7 +974,7 @@ func (prop ObjectPatternProperty) Name() string {
 	switch v := prop.Key.(type) {
 	case *IdentifierLiteral:
 		return v.Name
-	case *QuotedStringLiteral:
+	case *DoubleQuotedStringLiteral:
 		return v.Value
 	default:
 		panic(fmt.Errorf("invalid key type %T", v))
@@ -991,7 +991,7 @@ func (prop ObjectMetaProperty) Name() string {
 	switch v := prop.Key.(type) {
 	case *IdentifierLiteral:
 		return v.Name
-	case *QuotedStringLiteral:
+	case *DoubleQuotedStringLiteral:
 		return v.Value
 	default:
 		panic(fmt.Errorf("invalid key type %T", v))
@@ -2366,7 +2366,7 @@ func (attr XMLAttribute) GetName() string {
 
 func (attr XMLAttribute) ValueIfStringLiteral() string {
 	switch val := attr.Value.(type) {
-	case *QuotedStringLiteral:
+	case *DoubleQuotedStringLiteral:
 		return val.Value
 	case *MultilineStringLiteral:
 		return val.Value
@@ -2413,7 +2413,7 @@ func (ExtendStatement) Kind() NodeKind {
 // *QuotedStringLiteral, *UnquotedStringLiteral, *StringTemplateLiteral, *MultilineStringLiteral
 func NodeIsStringLiteral(node Node) bool {
 	switch node.(type) {
-	case *QuotedStringLiteral, *UnquotedStringLiteral, *StringTemplateLiteral, *MultilineStringLiteral:
+	case *DoubleQuotedStringLiteral, *UnquotedStringLiteral, *StringTemplateLiteral, *MultilineStringLiteral:
 		return true
 	}
 	return false

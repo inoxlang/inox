@@ -890,7 +890,7 @@ func (c *checker) checkObjectRecordPatternLiteral(node parse.Node) parse.Travers
 		var k string
 
 		switch n := prop.Key.(type) {
-		case *parse.QuotedStringLiteral:
+		case *parse.DoubleQuotedStringLiteral:
 			k = n.Value
 		case *parse.IdentifierLiteral:
 			k = n.Name
@@ -2911,7 +2911,7 @@ func shallowCheckObjectRecordProperties(
 		}
 
 		switch n := prop.Key.(type) {
-		case *parse.QuotedStringLiteral:
+		case *parse.DoubleQuotedStringLiteral:
 			k = n.Value
 		case *parse.IdentifierLiteral:
 			k = n.Name

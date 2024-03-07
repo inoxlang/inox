@@ -200,7 +200,7 @@ func GetNodeColorizations(chunk *parse.Chunk, lightMode bool) []ColorizationInfo
 			// 	Span:          n.Tokens[0].Span,
 			// 	ColorSequence: colors.PatternIdentifier,
 			// })
-		case *parse.QuotedStringLiteral, *parse.UnquotedStringLiteral, *parse.MultilineStringLiteral, *parse.FlagLiteral,
+		case *parse.DoubleQuotedStringLiteral, *parse.UnquotedStringLiteral, *parse.MultilineStringLiteral, *parse.FlagLiteral,
 			*parse.RuneLiteral, *parse.StringTemplateSlice:
 			colorizations = append(colorizations, ColorizationInfo{
 				Span:          n.Base().Span,

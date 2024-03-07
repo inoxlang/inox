@@ -1309,7 +1309,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			var key string
 
 			switch n := p.Key.(type) {
-			case *parse.QuotedStringLiteral:
+			case *parse.DoubleQuotedStringLiteral:
 				key = n.Value
 			case *parse.IdentifierLiteral:
 				key = n.Name
@@ -1376,7 +1376,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			var key string
 
 			switch n := p.Key.(type) {
-			case *parse.QuotedStringLiteral:
+			case *parse.DoubleQuotedStringLiteral:
 				key = n.Value
 			case *parse.IdentifierLiteral:
 				key = n.Name
@@ -3126,7 +3126,7 @@ func evalPatternNode(node parse.Node, state *TreeWalkState) (Pattern, error) {
 
 func evalStringPatternNode(node parse.Node, state *TreeWalkState, lazy bool) (StringPattern, error) {
 	switch v := node.(type) {
-	case *parse.QuotedStringLiteral:
+	case *parse.DoubleQuotedStringLiteral:
 		return NewExactStringPattern(String(v.Value)), nil
 	case *parse.RuneLiteral:
 		return NewExactStringPattern(String(v.Value)), nil

@@ -45,7 +45,7 @@ func init() {
 		case *parse.ObjectLiteral:
 			s3Provider := ""
 			if providerNode, hasProvider := n.PropValue("provider"); hasProvider {
-				if strLit, ok := providerNode.(*parse.QuotedStringLiteral); ok {
+				if strLit, ok := providerNode.(*parse.DoubleQuotedStringLiteral); ok {
 					s3Provider = strLit.Value
 				} else {
 					return ".provider should be a quoted string literal"
@@ -55,7 +55,7 @@ func init() {
 			}
 
 			if bucketNode, hasBucket := n.PropValue("bucket"); hasBucket {
-				if _, ok := bucketNode.(*parse.QuotedStringLiteral); !ok {
+				if _, ok := bucketNode.(*parse.DoubleQuotedStringLiteral); !ok {
 					return ".bucket should be a quoted string literal"
 				}
 			} else {

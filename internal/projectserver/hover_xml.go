@@ -29,7 +29,7 @@ func getTagOrAttributeHoverHelp(
 	var ident *parse.IdentifierLiteral
 
 	switch n := node.(type) {
-	case *parse.QuotedStringLiteral:
+	case *parse.DoubleQuotedStringLiteral:
 		//Determine if the string is the value of an attribute.
 		parent := ancestors[len(ancestors)-1]
 		xmlAttr, ok := parent.(*parse.XMLAttribute)
@@ -153,7 +153,7 @@ func getCssClassHoverHelp(attrValue parse.Node, index int32) string {
 
 	//Determine the hovered class name.
 
-	quotedStrLit, ok := attrValue.(*parse.QuotedStringLiteral)
+	quotedStrLit, ok := attrValue.(*parse.DoubleQuotedStringLiteral)
 	if !ok {
 		return ""
 	}

@@ -10,7 +10,7 @@ import (
 func TestCutQuotedStringLiteral(t *testing.T) {
 
 	t.Run("empty string", func(t *testing.T) {
-		lit := utils.MustGet(ParseExpression(`""`)).(*QuotedStringLiteral)
+		lit := utils.MustGet(ParseExpression(`""`)).(*DoubleQuotedStringLiteral)
 
 		cut, ok := CutQuotedStringLiteral(1, lit)
 		if !assert.True(t, ok) {
@@ -48,7 +48,7 @@ func TestCutQuotedStringLiteral(t *testing.T) {
 		if !assert.False(t, ok) {
 			return
 		}
-		strLit := lit.(*QuotedStringLiteral)
+		strLit := lit.(*DoubleQuotedStringLiteral)
 		if !assert.NotNil(t, strLit.Err) {
 			return
 		}
@@ -78,7 +78,7 @@ func TestCutQuotedStringLiteral(t *testing.T) {
 		if !assert.False(t, ok) {
 			return
 		}
-		strLit := lit.(*QuotedStringLiteral)
+		strLit := lit.(*DoubleQuotedStringLiteral)
 		if !assert.NotNil(t, strLit.Err) {
 			return
 		}
@@ -89,7 +89,7 @@ func TestCutQuotedStringLiteral(t *testing.T) {
 	})
 
 	t.Run("index before string", func(t *testing.T) {
-		lit := utils.MustGet(ParseExpression(`""`)).(*QuotedStringLiteral)
+		lit := utils.MustGet(ParseExpression(`""`)).(*DoubleQuotedStringLiteral)
 
 		cut, ok := CutQuotedStringLiteral(0, lit)
 		assert.False(t, ok)
@@ -97,7 +97,7 @@ func TestCutQuotedStringLiteral(t *testing.T) {
 	})
 
 	t.Run("index after string", func(t *testing.T) {
-		lit := utils.MustGet(ParseExpression(`""`)).(*QuotedStringLiteral)
+		lit := utils.MustGet(ParseExpression(`""`)).(*DoubleQuotedStringLiteral)
 
 		cut, ok := CutQuotedStringLiteral(2, lit)
 		assert.False(t, ok)
@@ -105,7 +105,7 @@ func TestCutQuotedStringLiteral(t *testing.T) {
 	})
 
 	t.Run("single-char string: ASCII", func(t *testing.T) {
-		lit := utils.MustGet(ParseExpression(`"a"`)).(*QuotedStringLiteral)
+		lit := utils.MustGet(ParseExpression(`"a"`)).(*DoubleQuotedStringLiteral)
 
 		t.Run("at start", func(t *testing.T) {
 			cut, ok := CutQuotedStringLiteral(1, lit)
@@ -135,7 +135,7 @@ func TestCutQuotedStringLiteral(t *testing.T) {
 	})
 
 	t.Run("single-char string: non-ASCII", func(t *testing.T) {
-		lit := utils.MustGet(ParseExpression(`"é"`)).(*QuotedStringLiteral)
+		lit := utils.MustGet(ParseExpression(`"é"`)).(*DoubleQuotedStringLiteral)
 
 		t.Run("at start", func(t *testing.T) {
 			cut, ok := CutQuotedStringLiteral(1, lit)
@@ -165,7 +165,7 @@ func TestCutQuotedStringLiteral(t *testing.T) {
 	})
 
 	t.Run("single-char string: space", func(t *testing.T) {
-		lit := utils.MustGet(ParseExpression(`" "`)).(*QuotedStringLiteral)
+		lit := utils.MustGet(ParseExpression(`" "`)).(*DoubleQuotedStringLiteral)
 
 		t.Run("at start", func(t *testing.T) {
 			cut, ok := CutQuotedStringLiteral(1, lit)
@@ -197,7 +197,7 @@ func TestCutQuotedStringLiteral(t *testing.T) {
 	})
 
 	t.Run("two-char string: two ASCII chars", func(t *testing.T) {
-		lit := utils.MustGet(ParseExpression(`"aa"`)).(*QuotedStringLiteral)
+		lit := utils.MustGet(ParseExpression(`"aa"`)).(*DoubleQuotedStringLiteral)
 
 		t.Run("at start", func(t *testing.T) {
 			cut, ok := CutQuotedStringLiteral(1, lit)
@@ -239,7 +239,7 @@ func TestCutQuotedStringLiteral(t *testing.T) {
 	})
 
 	t.Run("two-char string: two non-ASCII chars", func(t *testing.T) {
-		lit := utils.MustGet(ParseExpression(`"éé"`)).(*QuotedStringLiteral)
+		lit := utils.MustGet(ParseExpression(`"éé"`)).(*DoubleQuotedStringLiteral)
 
 		t.Run("at start", func(t *testing.T) {
 			cut, ok := CutQuotedStringLiteral(1, lit)
@@ -281,7 +281,7 @@ func TestCutQuotedStringLiteral(t *testing.T) {
 	})
 
 	t.Run("two-char string: non-space char and space", func(t *testing.T) {
-		lit := utils.MustGet(ParseExpression(`"a "`)).(*QuotedStringLiteral)
+		lit := utils.MustGet(ParseExpression(`"a "`)).(*DoubleQuotedStringLiteral)
 
 		t.Run("at start", func(t *testing.T) {
 			cut, ok := CutQuotedStringLiteral(1, lit)
@@ -325,7 +325,7 @@ func TestCutQuotedStringLiteral(t *testing.T) {
 	})
 
 	t.Run("two-char string: space and non-space char", func(t *testing.T) {
-		lit := utils.MustGet(ParseExpression(`" a"`)).(*QuotedStringLiteral)
+		lit := utils.MustGet(ParseExpression(`" a"`)).(*DoubleQuotedStringLiteral)
 
 		t.Run("at start", func(t *testing.T) {
 			cut, ok := CutQuotedStringLiteral(1, lit)
@@ -369,7 +369,7 @@ func TestCutQuotedStringLiteral(t *testing.T) {
 	})
 
 	t.Run("three-char string: all non-space", func(t *testing.T) {
-		lit := utils.MustGet(ParseExpression(`"aaa"`)).(*QuotedStringLiteral)
+		lit := utils.MustGet(ParseExpression(`"aaa"`)).(*DoubleQuotedStringLiteral)
 
 		t.Run("at start", func(t *testing.T) {
 			cut, ok := CutQuotedStringLiteral(1, lit)

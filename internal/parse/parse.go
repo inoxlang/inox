@@ -1076,7 +1076,7 @@ func (p *parser) parseLazyAndHostAliasStuff() Node {
 	}
 }
 
-func (p *parser) parseQuotedStringLiteral() *QuotedStringLiteral {
+func (p *parser) parseQuotedStringLiteral() *DoubleQuotedStringLiteral {
 	p.panicIfContextDone()
 
 	start := p.i
@@ -1106,7 +1106,7 @@ func (p *parser) parseQuotedStringLiteral() *QuotedStringLiteral {
 		}
 	}
 
-	return &QuotedStringLiteral{
+	return &DoubleQuotedStringLiteral{
 		NodeBase: NodeBase{
 			Span: NodeSpan{start, p.i},
 			Err:  parsingErr,
@@ -2801,7 +2801,7 @@ object_pattern_top_loop:
 						otherPropsExprs = append(otherPropsExprs, expr)
 						goto step_end
 					}
-				case *QuotedStringLiteral:
+				case *DoubleQuotedStringLiteral:
 					keyName = k.Value
 				default:
 					noKey = true
@@ -3279,7 +3279,7 @@ object_literal_top_loop:
 			switch k := key.(type) {
 			case *IdentifierLiteral:
 				keyName = k.Name
-			case *QuotedStringLiteral:
+			case *DoubleQuotedStringLiteral:
 				keyName = k.Value
 			default:
 				noKey = true
@@ -7786,7 +7786,7 @@ func (p *parser) parseXMLElement(start int32) (_ *XMLElement, noOrExpectedClosin
 			}
 
 			if attrName == "type" {
-				strLit, ok := value.(*QuotedStringLiteral)
+				strLit, ok := value.(*DoubleQuotedStringLiteral)
 				isHyperscriptScript = ok && strLit.Value == mimeconsts.HYPERSCRIPT_CTYPE
 			}
 		} else {

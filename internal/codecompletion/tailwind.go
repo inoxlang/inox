@@ -10,7 +10,7 @@ import (
 
 func findTailwindClassNameSuggestions(attrValueNode parse.SimpleValueLiteral, search completionSearch) (completions []Completion) {
 
-	quotedStrLiteral, ok := attrValueNode.(*parse.QuotedStringLiteral)
+	quotedStrLiteral, ok := attrValueNode.(*parse.DoubleQuotedStringLiteral)
 	if !ok {
 		return
 	}

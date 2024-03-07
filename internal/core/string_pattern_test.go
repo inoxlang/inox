@@ -25,7 +25,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 			Elements: []*parse.PatternPieceElement{
 				{
 					Ocurrence: parse.ExactlyOneOcurrence,
-					Expr:      &parse.QuotedStringLiteral{Value: "s"},
+					Expr:      &parse.DoubleQuotedStringLiteral{Value: "s"},
 				},
 			},
 		}, state, false)
@@ -52,7 +52,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 			Elements: []*parse.PatternPieceElement{
 				{
 					Ocurrence: parse.ExactlyOneOcurrence,
-					Expr:      &parse.QuotedStringLiteral{Value: "s"},
+					Expr:      &parse.DoubleQuotedStringLiteral{Value: "s"},
 					GroupName: &parse.PatternGroupName{
 						Name: "g",
 					},
@@ -109,7 +109,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 			Elements: []*parse.PatternPieceElement{
 				{
 					Ocurrence: parse.ZeroOrMoreOcurrence,
-					Expr:      &parse.QuotedStringLiteral{Value: "s"},
+					Expr:      &parse.DoubleQuotedStringLiteral{Value: "s"},
 				},
 			},
 		}, state, false)
@@ -135,7 +135,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 			Elements: []*parse.PatternPieceElement{
 				{
 					Ocurrence: parse.ZeroOrMoreOcurrence,
-					Expr:      &parse.QuotedStringLiteral{Value: "ab"},
+					Expr:      &parse.DoubleQuotedStringLiteral{Value: "ab"},
 				},
 			},
 		}, state, false)
@@ -190,7 +190,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 				{
 					Ocurrence:           parse.ExactOcurrence,
 					ExactOcurrenceCount: 2,
-					Expr:                &parse.QuotedStringLiteral{Value: "s"},
+					Expr:                &parse.DoubleQuotedStringLiteral{Value: "s"},
 				},
 			},
 		}, state, false)
@@ -216,7 +216,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 				{
 					Ocurrence:           parse.ExactOcurrence,
 					ExactOcurrenceCount: 2,
-					Expr:                &parse.QuotedStringLiteral{Value: "ab"},
+					Expr:                &parse.DoubleQuotedStringLiteral{Value: "ab"},
 				},
 			},
 		}, state, false)
@@ -242,7 +242,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 			Elements: []*parse.PatternPieceElement{
 				{
 					Ocurrence: parse.ExactlyOneOcurrence,
-					Expr:      &parse.QuotedStringLiteral{Value: "a"},
+					Expr:      &parse.DoubleQuotedStringLiteral{Value: "a"},
 				},
 				{
 					Ocurrence: parse.ExactlyOneOcurrence,
@@ -269,8 +269,8 @@ func TestEvalStringPatternNode(t *testing.T) {
 
 		patt, err := evalStringPatternNode(&parse.PatternUnion{
 			Cases: []parse.Node{
-				&parse.QuotedStringLiteral{Value: "a"},
-				&parse.QuotedStringLiteral{Value: "b"},
+				&parse.DoubleQuotedStringLiteral{Value: "a"},
+				&parse.DoubleQuotedStringLiteral{Value: "b"},
 			},
 		}, state, false)
 
@@ -335,11 +335,11 @@ func TestEvalStringPatternNode(t *testing.T) {
 					Elements: []*parse.PatternPieceElement{
 						{
 							Ocurrence: parse.ExactlyOneOcurrence,
-							Expr:      &parse.QuotedStringLiteral{Value: "a"},
+							Expr:      &parse.DoubleQuotedStringLiteral{Value: "a"},
 						},
 						{
 							Ocurrence: parse.ExactlyOneOcurrence,
-							Expr:      &parse.QuotedStringLiteral{Value: "b"},
+							Expr:      &parse.DoubleQuotedStringLiteral{Value: "b"},
 						},
 					},
 				},
@@ -348,11 +348,11 @@ func TestEvalStringPatternNode(t *testing.T) {
 					Elements: []*parse.PatternPieceElement{
 						{
 							Ocurrence: parse.ExactlyOneOcurrence,
-							Expr:      &parse.QuotedStringLiteral{Value: "c"},
+							Expr:      &parse.DoubleQuotedStringLiteral{Value: "c"},
 						},
 						{
 							Ocurrence: parse.ExactlyOneOcurrence,
-							Expr:      &parse.QuotedStringLiteral{Value: "d"},
+							Expr:      &parse.DoubleQuotedStringLiteral{Value: "d"},
 						},
 					},
 				},
