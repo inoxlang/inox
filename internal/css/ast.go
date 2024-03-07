@@ -1,8 +1,10 @@
 package css
 
 import (
+	"bufio"
+	"bytes"
 	"errors"
-	"strings"
+	"io"
 )
 
 type Node struct {
@@ -49,21 +51,48 @@ func (n Node) SelectorString() string {
 }
 
 func (n Node) String() string {
-	w := &strings.Builder{}
-	n.string(w, 0)
+	buf := &bytes.Buffer{}
+	n.write(buf, 0)
 
-	return w.String()
+	return buf.String()
+}
+
+func (n Node) WriteTo(w io.Writer) (err error) {
+
+	writer, ok := w.(astStringificatioWriter)
+	if !ok {
+		bufferedWriter := bufio.NewWriter(w)
+		writer = bufferedWriter
+		defer func() {
+			err = bufferedWriter.Flush()
+		}()
+	}
+
+	n.write(writer, 0)
+	return
 }
 
 func (n Node) IsZero() bool {
 	return n.Children == nil && n.Type == 0 && n.Data == "" && !n.Error
 }
 
+func (n Node) Equal(other Node) bool {
+	if n.Type != other.Type || n.Data != other.Data || n.Error != other.Error || len(n.Children) != len(other.Children) {
+		return false
+	}
+	for _, child := range other.Children {
+		if !child.Equal(other) {
+			return false
+		}
+	}
+	return true
+}
+
 func (n Node) IsImport() bool {
 	return n.Type == AtRule && n.Data == "@import"
 }
 
-func (n Node) string(w *strings.Builder, indent int) {
+func (n Node) write(w astStringificatioWriter, indent int) {
 
 	for i := 0; i < indent; i++ {
 		w.WriteByte(' ')
@@ -75,13 +104,13 @@ func (n Node) string(w *strings.Builder, indent int) {
 			if i != 0 {
 				w.WriteByte('\n')
 			}
-			child.string(w, indent)
+			child.write(w, indent)
 		}
 	case AtRule:
 		w.WriteString(n.Data)
 
 		//Query
-		n.Children[0].string(w, 0)
+		n.Children[0].write(w, 0)
 
 		w.WriteString(" { ")
 
@@ -89,7 +118,7 @@ func (n Node) string(w *strings.Builder, indent int) {
 		if len(n.Children) > 1 {
 			for _, child := range n.Children[1:] {
 				w.WriteByte('\n')
-				child.string(w, indent+2)
+				child.write(w, indent+2)
 			}
 			w.WriteByte('\n')
 			for i := 0; i < indent; i++ {
@@ -100,7 +129,7 @@ func (n Node) string(w *strings.Builder, indent int) {
 		w.WriteString("}")
 	case Ruleset:
 		//Selector
-		n.Children[0].string(w, 0)
+		n.Children[0].write(w, 0)
 
 		w.WriteString(" {")
 
@@ -108,7 +137,7 @@ func (n Node) string(w *strings.Builder, indent int) {
 		if len(n.Children) > 1 {
 			for _, child := range n.Children[1:] {
 				w.WriteByte('\n')
-				child.string(w, indent+2)
+				child.write(w, indent+2)
 			}
 			w.WriteByte('\n')
 			for i := 0; i < indent; i++ {
@@ -126,7 +155,7 @@ func (n Node) string(w *strings.Builder, indent int) {
 		//Value
 		for _, child := range n.Children {
 			w.WriteByte(' ')
-			child.string(w, 0)
+			child.write(w, 0)
 		}
 
 		w.WriteByte(';')
@@ -135,7 +164,7 @@ func (n Node) string(w *strings.Builder, indent int) {
 			if i != 0 {
 				w.WriteByte(' ')
 			}
-			child.string(w, 0)
+			child.write(w, 0)
 		}
 	case ClassName:
 		w.WriteByte('.')
@@ -148,7 +177,7 @@ func (n Node) string(w *strings.Builder, indent int) {
 			if i != 0 {
 				w.WriteString(", ")
 			}
-			child.string(w, 0)
+			child.write(w, 0)
 		}
 
 		w.WriteByte(')')
@@ -156,18 +185,24 @@ func (n Node) string(w *strings.Builder, indent int) {
 		w.WriteByte('(')
 
 		for _, child := range n.Children {
-			child.string(w, 0)
+			child.write(w, 0)
 		}
 
 		w.WriteByte(')')
 	case AttributeSelector:
 		w.WriteByte('[')
 		for _, child := range n.Children {
-			child.string(w, 0)
+			child.write(w, 0)
 		}
 
 		w.WriteByte(']')
 	default:
 		w.WriteString(n.Data)
 	}
+}
+
+type astStringificatioWriter interface {
+	io.Writer
+	WriteByte(byte) error
+	WriteString(string) (int, error)
 }

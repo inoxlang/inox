@@ -82,3 +82,104 @@ func walkAST(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) 
 		}
 	}
 }
+
+type GraphTraversalAction int
+type GraphTraversalOrder int
+
+const (
+	ContinueGraphTraversal GraphTraversalAction = iota
+	PruneGraphTraversal
+	StopGraphTraversal
+)
+
+type ImportNodeHandler = func(node Import, importer *LocalFile, importerStack []*LocalFile, after bool) (GraphTraversalAction, error)
+
+type ImportGraphWalkParams struct {
+	Handle       ImportNodeHandler //pre-order
+	PostHandle   ImportNodeHandler //post-order
+	AllowRevisit bool              //if true the imports in a file included several other files can be visited several times.
+}
+
+// This functions performs a pre-order traversal on the import graph (depth first).
+// postHandle is called on a node after all its descendants have been visited.
+func (g *ImportGraph) Walk(params ImportGraphWalkParams) (err error) {
+	defer func() {
+		v := recover()
+
+		switch val := v.(type) {
+		case error:
+			err = fmt.Errorf("%s:%w", debug.Stack(), val)
+		case nil:
+		case GraphTraversalAction:
+		default:
+			panic(v)
+		}
+	}()
+
+	importerStack := make([]*LocalFile, 0)
+	var visited map[*LocalFile]struct{}
+	if params.AllowRevisit {
+		visited = map[*LocalFile]struct{}{}
+	}
+
+	for _, _import := range g.root.imports {
+		g.walk(_import, g.root, &importerStack, visited, params.Handle, params.PostHandle)
+	}
+	return
+}
+
+func (g *ImportGraph) walk(node Import, importer *LocalFile, ancestorChain *[]*LocalFile, visited map[*LocalFile]struct{}, fn, afterFn ImportNodeHandler) {
+
+	if visited != nil {
+		if _, ok := visited[importer]; ok {
+			return
+		}
+
+		defer func() {
+			//Several imports can be visited, therefore importer should be added to $visited AFTER the visits.
+			visited[importer] = struct{}{}
+		}()
+	}
+
+	if ancestorChain != nil {
+		*ancestorChain = append((*ancestorChain), importer)
+		defer func() {
+			*ancestorChain = (*ancestorChain)[:len(*ancestorChain)-1]
+		}()
+	}
+
+	if fn != nil {
+		action, err := fn(node, importer, *ancestorChain, false)
+
+		if err != nil {
+			panic(err)
+		}
+
+		switch action {
+		case StopGraphTraversal:
+			panic(StopGraphTraversal)
+		case PruneGraphTraversal:
+			return
+		}
+	}
+
+	file, ok := node.LocalFile()
+	if ok {
+		for _, _import := range file.Imports() {
+			g.walk(_import, file, ancestorChain, visited, fn, afterFn)
+		}
+	}
+
+	if afterFn != nil {
+		action, err := afterFn(node, importer, *ancestorChain, true)
+
+		if err != nil {
+			panic(err)
+		}
+
+		switch action {
+		case StopGraphTraversal:
+			panic(StopGraphTraversal)
+		}
+	}
+}

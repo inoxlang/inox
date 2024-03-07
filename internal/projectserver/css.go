@@ -1,11 +1,15 @@
 package projectserver
 
 import (
+	"bytes"
 	"fmt"
 	"path/filepath"
 	"runtime/debug"
+	"sync"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/css"
+	cssbundle "github.com/inoxlang/inox/internal/css/bundle"
 	tailwindscan "github.com/inoxlang/inox/internal/css/tailwind/scan"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/inoxconsts"
@@ -16,6 +20,10 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
+const (
+	CSS_GENERATION_TEMP_BUF_INITIAL_CAPACITY = 100_000
+)
+
 // A cssGenerator generates CSS stylesheets (most of the time in the /static/gen directory).
 // It is not shared between sessions.
 type cssGenerator struct {
@@ -24,6 +32,9 @@ type cssGenerator struct {
 	fls            *Filesystem
 	session        *jsonrpc.Session
 	staticDir      string
+
+	lock sync.Mutex
+	buf  []byte
 }
 
 func newCssGenerator(session *jsonrpc.Session, fls *Filesystem) *cssGenerator {
@@ -39,6 +50,7 @@ func newCssGenerator(session *jsonrpc.Session, fls *Filesystem) *cssGenerator {
 		fls:            fls,
 		session:        session,
 		staticDir:      "/static",
+		buf:            make([]byte, 0, CSS_GENERATION_TEMP_BUF_INITIAL_CAPACITY),
 	}
 
 	evs.OnIDLE(core.IdleEventSourceHandler{
@@ -50,7 +62,7 @@ func newCssGenerator(session *jsonrpc.Session, fls *Filesystem) *cssGenerator {
 			return
 		},
 		Microtask: func() {
-			go generator.genTailwindcss()
+			go generator.genAll()
 		},
 	})
 
@@ -58,10 +70,14 @@ func newCssGenerator(session *jsonrpc.Session, fls *Filesystem) *cssGenerator {
 }
 
 func (g *cssGenerator) InitialGenAndSetup() {
-	g.genTailwindcss()
+	g.buf = g.buf[0:0:cap(g.buf)]
+	g.genAll()
 }
 
 func (g *cssGenerator) genAll() {
+	g.lock.Lock()
+	defer g.lock.Unlock()
+
 	defer func() {
 		e := recover()
 		if e != nil {
@@ -81,6 +97,7 @@ func (g *cssGenerator) genAll() {
 	}
 
 	g.genTailwindcss()
+	g.genMainBundle()
 }
 
 func (g *cssGenerator) genTailwindcss() {
@@ -115,6 +132,57 @@ func (g *cssGenerator) genTailwindcss() {
 
 	for _, ruleset := range rulesets {
 		f.Write(linefeeds)
-		f.Write([]byte(ruleset.Node.String()))
+		err := ruleset.Node.WriteTo(f)
+		if err != nil {
+			logs.Println(g.session.Client(), err)
+			return
+		}
 	}
+}
+
+func (g *cssGenerator) genMainBundle() {
+	ctx := g.session.Context()
+
+	mainCSSPath := filepath.Join(g.staticDir, layout.STATIC_STYLES_DIRNAME, layout.MAIN_CSS_FILENAME)
+
+	stylesheet, err := cssbundle.Bundle(ctx, cssbundle.BundlingParams{
+		InputFile:  mainCSSPath,
+		Filesystem: g.fls,
+	})
+
+	if err != nil {
+		logs.Println(g.session.Client(), err)
+		return
+	}
+
+	//Create or truncate main-bundle.min.css.
+	path := filepath.Join(g.staticDir, layout.STATIC_STYLES_DIRNAME, layout.MAIN_BUNDLE_MIN_CSS_FILENAME)
+
+	f, err := g.fls.Create(path)
+
+	if err != nil {
+		logs.Println(g.session.Client(), err)
+		return
+	}
+
+	defer f.Close()
+
+	//Stringify the stylesheet.
+
+	buff := bytes.NewBuffer(g.buf)
+	err = stylesheet.WriteTo(buff)
+
+	if err != nil {
+		logs.Println(g.session.Client(), err)
+		return
+	}
+
+	//Write the output to the filesystem.
+
+	err = css.MinifyStream(bytes.NewReader(buff.Bytes()), f)
+	if err != nil {
+		logs.Println(g.session.Client(), err)
+		return
+	}
+
 }
