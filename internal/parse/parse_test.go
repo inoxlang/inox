@@ -8203,6 +8203,7 @@ func testParse(
 					},
 				},
 			},
+			//unterminated multiline string literals
 			"`": {
 				error: true,
 				result: &Chunk{
@@ -8215,6 +8216,40 @@ func testParse(
 								false,
 							},
 							Raw:   "`",
+							Value: "",
+						},
+					},
+				},
+			},
+			"`\n": {
+				error: true,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 2}, nil, false},
+					Statements: []Node{
+						&MultilineStringLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{0, 2},
+								&ParsingError{UnspecifiedParsingError, UNTERMINATED_MULTILINE_STRING_LIT},
+								false,
+							},
+							Raw:   "`\n",
+							Value: "",
+						},
+					},
+				},
+			},
+			"`a": {
+				error: true,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 2}, nil, false},
+					Statements: []Node{
+						&MultilineStringLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{0, 2},
+								&ParsingError{UnspecifiedParsingError, UNTERMINATED_MULTILINE_STRING_LIT},
+								false,
+							},
+							Raw:   "`a",
 							Value: "",
 						},
 					},
@@ -27142,17 +27177,7 @@ func testParse(
 					NodeBase: NodeBase{NodeSpan{0, 32}, nil, false},
 					Statements: []Node{
 						&StringTemplateLiteral{
-							NodeBase: NodeBase{
-								NodeSpan{0, 32},
-								nil,
-								false,
-								/*[]Token{
-									{Type: BACKQUOTE, Span: NodeSpan{0, 1}},
-									{Type: STR_INTERP_OPENING_BRACKETS, Span: NodeSpan{1, 3}},
-									{Type: STR_INTERP_CLOSING_BRACKETS, Span: NodeSpan{11, 13}},
-									{Type: BACKQUOTE, Span: NodeSpan{32, 33}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{0, 32}},
 							Slices: []Node{
 								&StringTemplateSlice{
 									NodeBase: NodeBase{NodeSpan{1, 1}, nil, false},
@@ -27251,6 +27276,78 @@ func testParse(
 								&StringTemplateSlice{
 									NodeBase: NodeBase{NodeSpan{12, 14}, nil, false},
 									Raw:      "\\n",
+									Value:    "\n",
+								},
+							},
+						},
+					},
+				}, n)
+			})
+
+			t.Run("unterminated: followed by EOF", func(t *testing.T) {
+				n, err := parseChunk(t, "`${$nothing}", "")
+				assert.Error(t, err)
+				assert.EqualValues(t, &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
+					Statements: []Node{
+						&StringTemplateLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{0, 12},
+								&ParsingError{UnspecifiedParsingError, UNTERMINATED_STRING_TEMPL_LIT},
+								false,
+							},
+							Slices: []Node{
+								&StringTemplateSlice{
+									NodeBase: NodeBase{NodeSpan{1, 1}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+								&StringTemplateInterpolation{
+									NodeBase: NodeBase{NodeSpan{3, 11}, nil, false},
+									Expr: &Variable{
+										NodeBase: NodeBase{NodeSpan{3, 11}, nil, false},
+										Name:     "nothing",
+									},
+								},
+								&StringTemplateSlice{
+									NodeBase: NodeBase{NodeSpan{12, 12}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+						},
+					},
+				}, n)
+			})
+
+			t.Run("unterminated: ending with a linefeed", func(t *testing.T) {
+				n, err := parseChunk(t, "`${$nothing}\n", "")
+				assert.Error(t, err)
+				assert.EqualValues(t, &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
+					Statements: []Node{
+						&StringTemplateLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{0, 13},
+								&ParsingError{UnspecifiedParsingError, UNTERMINATED_STRING_TEMPL_LIT},
+								false,
+							},
+							Slices: []Node{
+								&StringTemplateSlice{
+									NodeBase: NodeBase{NodeSpan{1, 1}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+								&StringTemplateInterpolation{
+									NodeBase: NodeBase{NodeSpan{3, 11}, nil, false},
+									Expr: &Variable{
+										NodeBase: NodeBase{NodeSpan{3, 11}, nil, false},
+										Name:     "nothing",
+									},
+								},
+								&StringTemplateSlice{
+									NodeBase: NodeBase{NodeSpan{12, 13}, nil, false},
+									Raw:      "\n",
 									Value:    "\n",
 								},
 							},
