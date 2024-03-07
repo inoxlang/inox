@@ -55,6 +55,10 @@ func (n Node) String() string {
 	return w.String()
 }
 
+func (n Node) IsZero() bool {
+	return n.Children == nil && n.Type == 0 && n.Data == "" && !n.Error
+}
+
 func (n Node) string(w *strings.Builder, indent int) {
 
 	for i := 0; i < indent; i++ {
@@ -70,7 +74,7 @@ func (n Node) string(w *strings.Builder, indent int) {
 			child.string(w, indent)
 		}
 	case AtRule:
-		w.WriteString("@media")
+		w.WriteString(n.Data)
 
 		//Query
 		n.Children[0].string(w, 0)

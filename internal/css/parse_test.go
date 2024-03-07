@@ -1,6 +1,7 @@
 package css
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -8,7 +9,7 @@ import (
 
 func TestParse(t *testing.T) {
 
-	stylesheet, err := ParseString(`
+	stylesheet, err := ParseString(context.Background(), `
 		/* comment */
 
 		@import "style.css";
@@ -53,7 +54,7 @@ func TestParse(t *testing.T) {
 		return
 	}
 
-	assert.Empty(t, atRule.Data)
+	assert.Equal(t, "@import", atRule.Data)
 	if !assert.Len(t, atRule.Children, 1) {
 		return
 	}
@@ -61,12 +62,13 @@ func TestParse(t *testing.T) {
 	assert.Equal(t, Node{Type: String, Data: "\"style.css\""}, atRule.Children[0])
 
 	//Check at-rule wih media query
+
 	atRule = stylesheet.Children[2]
 	if !assert.Equal(t, AtRule, atRule.Type) {
 		return
 	}
+	assert.Equal(t, "@media", atRule.Data)
 
-	assert.Empty(t, atRule.Data)
 	if !assert.Len(t, atRule.Children, 2) {
 		return
 	}

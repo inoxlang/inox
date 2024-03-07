@@ -1,15 +1,26 @@
 package css
 
 import (
+	"context"
 	"fmt"
+	"io"
 	"strings"
 
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/tdewolff/parse/v2"
+
 	"github.com/tdewolff/parse/v2/css"
 )
 
-func ParseString(s string) (Node, error) {
-	input := parse.NewInputString(s)
+func ParseString(ctx context.Context, s string) (Node, error) {
+	return _parse(ctx, parse.NewInputString(s))
+}
+
+func ParseRead(ctx context.Context, r io.Reader) (Node, error) {
+	return _parse(ctx, parse.NewInput(r))
+}
+
+func _parse(ctx context.Context, input *parse.Input) (Node, error) {
 	parser := css.NewParser(input, false)
 
 	var stack []Node
@@ -20,8 +31,17 @@ func ParseString(s string) (Node, error) {
 
 	current := 0
 	parent := -1
+	noCheckFuel := 11 //check the context every time we run out of 'no check fuel'.
 
 	for {
+		noCheckFuel--
+		if noCheckFuel == 0 {
+			noCheckFuel = 10
+			if utils.IsContextDone(ctx) {
+				return Node{}, ctx.Err()
+			}
+		}
+
 		gt, _, data := parser.Next()
 
 		switch gt {
@@ -32,7 +52,7 @@ func ParseString(s string) (Node, error) {
 			}
 			stack[current].Children = append(stack[current].Children, comment)
 		case css.AtRuleGrammar:
-			atRule := Node{Type: AtRule}
+			atRule := Node{Type: AtRule, Data: string(data)}
 
 			err := makeNodesFromTokens(parser.Values(), &atRule)
 			if err != nil {
@@ -41,7 +61,7 @@ func ParseString(s string) (Node, error) {
 
 			stack[current].Children = append(stack[current].Children, atRule)
 		case css.BeginAtRuleGrammar:
-			stack = append(stack, Node{Type: AtRule})
+			stack = append(stack, Node{Type: AtRule, Data: string(data)})
 			parent++
 			current++
 
