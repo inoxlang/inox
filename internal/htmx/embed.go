@@ -59,6 +59,16 @@ func Load() {
 	if err != nil {
 		panic(err)
 	}
+
+	for name, header := range HEADERS.Request {
+		header.Name = name
+		HEADERS.Request[name] = header
+	}
+
+	for name, header := range HEADERS.Response {
+		header.Name = name
+		HEADERS.Response[name] = header
+	}
 }
 
 func GetExtensionInfoByPrefix(prefix string) (extensions []Extension) {

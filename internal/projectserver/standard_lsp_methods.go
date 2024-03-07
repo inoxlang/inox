@@ -156,7 +156,7 @@ func handleInitialize(ctx context.Context, req *defines.InitializeParams, projec
 	}
 
 	s.Capabilities.CompletionProvider = &defines.CompletionOptions{
-		TriggerCharacters: &[]string{".", ":", "{"},
+		TriggerCharacters: &[]string{".", ":", "{", "-"},
 	}
 
 	//create session data

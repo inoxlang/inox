@@ -88,3 +88,22 @@ func findHTMXAttributeValueSuggestions(attributeName string, strLiteral parse.Si
 
 	return
 }
+
+func getHTMXResponseHeaderNames(ident *parse.IdentifierLiteral, search completionSearch) (completions []Completion) {
+
+	prefix := ident.Name
+	if len(prefix) == 4 && prefix[2] == '-' {
+		prefix = prefix[:3]
+	}
+
+	for _, header := range htmx.GetResponseHeadersByPrefix(prefix, false) {
+		completions = append(completions, Completion{
+			ShownString:           header.Name,
+			Value:                 header.Name,
+			Kind:                  defines.CompletionItemKindProperty,
+			LabelDetail:           header.ShortExplanation,
+			MarkdownDocumentation: header.Documentation,
+		})
+	}
+	return
+}
