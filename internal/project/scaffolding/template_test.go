@@ -21,16 +21,7 @@ func TestWriteTemplate(t *testing.T) {
 		return
 	}
 
-	content, err := util.ReadFile(fls, "/static/htmx.min.js")
-
-	if !assert.NoError(t, err) {
-		return
-	}
-
-	assert.Equal(t, HTMX_MIN_JS_PACKAGE, string(content))
-	assert.NotEmpty(t, HTMX_MIN_JS_PACKAGE)
-
-	content, err = util.ReadFile(fls, "/static/main.css")
+	content, err := util.ReadFile(fls, "/static/main.css")
 
 	if !assert.NoError(t, err) {
 		return

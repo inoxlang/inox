@@ -1,10 +1,11 @@
 package layout
 
 const (
-	STATIC_JS_DIRNAME           = "js"
-	INOXJS_FILENAME             = "inox.js"
-	INOX_MIN_JS_FILENAME        = "inox.min.js"
-	HYPERSCRIPT_MIN_JS_FILENAME = "hyperscript.min.js"
+	STATIC_JS_DIRNAME      = "js"
+	INOXJS_FILENAME        = "inox.js"
+	INOX_JS_FILENAME       = "inox.js"
+	HYPERSCRIPTJS_FILENAME = "hyperscript.js"
+	HTMX_JS_FILENAME       = "htmx.js"
 
 	STATIC_STYLES_DIRNAME = "styles"
 	TAILWIND_FILENAME     = "tailwind.css"
@@ -12,5 +13,7 @@ const (
 	TAILWIND_IMPORT       = "/* Tailwind */\n\n@import \"" + TAILWIND_FILENAME + "\";"
 
 	TAILWIND_CSS_STYLESHEET_EXPLANATION = "/* This file is generated automatically by scanning the codebase for Tailwind class names. */"
-	HYPERSCRIPT_MIN_JS_EXPLANATION      = "/* This file is generated automatically by scanning the codebase for used Hyperscript features. */"
+	HYPERSCRIPT_JS_EXPLANATION          = "/* This file is generated automatically by scanning the codebase for used Hyperscript features. */"
+	HTMX_JS_EXPLANATION                 = "/* This file is generated automatically by scanning the codebase for used HTMX extensions. */"
+	INOX_JS_EXPLANATION                 = "/* This file is generated automatically by scanning the codebase for used librairies among: Surreal, CSS Scope Inline, Preact Signals, .... */"
 )

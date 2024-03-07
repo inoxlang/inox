@@ -1,15 +1,15 @@
 package projectserver
 
 import (
-	"os"
 	"path/filepath"
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	hxgen "github.com/inoxlang/inox/internal/htmx/gen"
+	hxscan "github.com/inoxlang/inox/internal/htmx/scan"
 	"github.com/inoxlang/inox/internal/hyperscript/hsgen"
 	hsscan "github.com/inoxlang/inox/internal/hyperscript/scan"
 	"github.com/inoxlang/inox/internal/inoxconsts"
-	"github.com/inoxlang/inox/internal/js"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/project/layout"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
@@ -49,7 +49,10 @@ func newJSGenerator(session *jsonrpc.Session, fls *Filesystem) *jsGenerator {
 			return
 		},
 		Microtask: func() {
-			go generator.gen()
+			go func() {
+				generator.genHyperscript()
+				generator.genHTMX()
+			}()
 		},
 	})
 
@@ -57,10 +60,11 @@ func newJSGenerator(session *jsonrpc.Session, fls *Filesystem) *jsGenerator {
 }
 
 func (g *jsGenerator) InitialGenAndSetup() {
-	g.gen()
+	g.genHyperscript()
+	g.genHTMX()
 }
 
-func (g *jsGenerator) gen() {
+func (g *jsGenerator) genHyperscript() {
 	defer utils.Recover()
 
 	//Find used features and commands.
@@ -84,7 +88,7 @@ func (g *jsGenerator) gen() {
 		return
 	}
 
-	path := filepath.Join("/static/", layout.STATIC_JS_DIRNAME, layout.HYPERSCRIPT_MIN_JS_FILENAME)
+	path := filepath.Join("/static/", layout.STATIC_JS_DIRNAME, layout.HYPERSCRIPTJS_FILENAME)
 
 	f, err := g.fls.Create(path)
 
@@ -103,15 +107,55 @@ func (g *jsGenerator) gen() {
 		return
 	}
 
-	os.WriteFile("/tmp/out.xx", []byte(jsCode), 0600)
+	f.Write([]byte(layout.HYPERSCRIPT_JS_EXPLANATION))
+	f.Write([]byte{'\n'})
+	f.Write(utils.StringAsBytes(jsCode))
+}
 
-	minified, err := js.Minify(jsCode, nil)
+func (g *jsGenerator) genHTMX() {
+	defer utils.Recover()
+
+	//Find used features and commands.
+
+	scanResult, err := hxscan.ScanCodebase(g.session.Context(), g.fls, hxscan.Configuration{
+		TopDirectories: []string{"/"},
+		InoxChunkCache: g.inoxChunkCache,
+	})
+
 	if err != nil {
 		logs.Println(g.session.Client(), err)
 		return
 	}
 
-	f.Write([]byte(layout.HYPERSCRIPT_MIN_JS_EXPLANATION))
+	//TODO: make more flexible
+
+	err = g.fls.MkdirAll(filepath.Join("/static", layout.STATIC_JS_DIRNAME), 0700)
+
+	if err != nil {
+		logs.Println(g.session.Client(), err)
+		return
+	}
+
+	path := filepath.Join("/static/", layout.STATIC_JS_DIRNAME, layout.HTMX_JS_FILENAME)
+
+	f, err := g.fls.Create(path)
+
+	if err != nil {
+		logs.Println(g.session.Client(), err)
+		return
+	}
+
+	defer f.Close()
+
+	jsCode, err := hxgen.Generate(hxgen.Config{
+		Extensions: scanResult.UsedExtensions,
+	})
+	if err != nil {
+		logs.Println(g.session.Client(), err)
+		return
+	}
+
+	f.Write([]byte(layout.HTMX_JS_EXPLANATION))
 	f.Write([]byte{'\n'})
-	f.Write(utils.StringAsBytes(minified))
+	f.Write(utils.StringAsBytes(jsCode))
 }

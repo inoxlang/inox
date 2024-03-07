@@ -8,9 +8,9 @@ fn Page(content html.node){
         <title></title>
         <meta name="viewport" content="width=device-width, initial-scale=1"/>
         <link rel="stylesheet" href="/styles/main.css"/>
-        <script src="/js/htmx.min.js"></script>
-        <script src="/js/hyperscript.min.js"></script>
-        <script src="/js/inox.min.js"></script>
+        <script src="/js/htmx.js"></script>
+        <script src="/js/hyperscript.js"></script>
+        <script src="/js/inox.js"></script>
     </head>
     <body hx-ext="response-targets">
         <style>

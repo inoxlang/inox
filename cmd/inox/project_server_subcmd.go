@@ -20,6 +20,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/chrome_ns"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/s3_ns"
+	"github.com/inoxlang/inox/internal/htmx"
 	"github.com/inoxlang/inox/internal/hyperscript/hsparse"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/inoxd/node"
@@ -134,6 +135,7 @@ func ProjectServer(mainSubCommand string, mainSubCommandArgs []string, outW, err
 	//Initializations.
 
 	utils.PanicIfErr(tailwind.InitSubset())
+	htmx.ReadEmbedded()
 
 	//create context & state
 

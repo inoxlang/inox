@@ -1,7 +1,7 @@
 //https://github.com/bigskysoftware/htmx/blob/f919c0705182c904a440e3ff4a9687f4d5166c55/dist/ext/response-targets.js
 (function(){
 
-    /** @type {import("../htmx").HtmxInternalApi} */
+    /** @type {import("./htmx").HtmxInternalApi} */
     var api;
 
     var attrPrefix = 'hx-target-';

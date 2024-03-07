@@ -2364,6 +2364,17 @@ func (attr XMLAttribute) GetName() string {
 	return attr.Name.(*IdentifierLiteral).Name
 }
 
+func (attr XMLAttribute) ValueIfStringLiteral() string {
+	switch val := attr.Value.(type) {
+	case *QuotedStringLiteral:
+		return val.Value
+	case *MultilineStringLiteral:
+		return val.Value
+	default:
+		return ""
+	}
+}
+
 type HyperscriptAttributeShorthand struct {
 	NodeBase `json:"base:hs-attr-shorthand"`
 

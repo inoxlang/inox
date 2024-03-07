@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/goccy/go-yaml"
+	"github.com/inoxlang/inox/internal/htmx"
 	"github.com/inoxlang/inox/internal/project/scaffolding"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -34,7 +35,7 @@ func init() {
 				case "main.css":
 					tut.OtherFiles[name] = scaffolding.MAIN_CSS_STYLESHEET
 				case "htmx.min.js":
-					tut.OtherFiles[name] = scaffolding.HTMX_MIN_JS_PACKAGE
+					tut.OtherFiles[name] = htmx.MINIFIED_HTMX_JS
 				}
 			}
 		}
