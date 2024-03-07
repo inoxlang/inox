@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"bufio"
 	"bytes"
 	"errors"
 	"io"
@@ -42,10 +43,35 @@ func NewLockedWriter(outputBuf *bytes.Buffer) io.Writer {
 	}
 }
 
+func NewLockedBufferedWriter(output io.Writer) io.Writer {
+	var lock sync.Mutex
+	buff := bufio.NewWriter(output)
+	return FnWriter{
+		WriteFn: func(p []byte) (n int, err error) {
+			lock.Lock()
+			defer lock.Unlock()
+			return buff.Write(p)
+		},
+	}
+}
+
 type FnReader func(p []byte) (n int, err error)
 
 func (fn FnReader) Read(p []byte) (n int, err error) {
 	return fn(p)
+}
+
+type FnReaderCloser struct {
+	ReadFn  func(p []byte) (n int, err error)
+	CloseFn func() error
+}
+
+func (w FnReaderCloser) Read(p []byte) (n int, err error) {
+	return w.ReadFn(p)
+}
+
+func (w FnReaderCloser) Close() error {
+	return w.CloseFn()
 }
 
 type FnReaderWriter struct {

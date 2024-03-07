@@ -27,6 +27,10 @@ func Minify(input string, params map[string]string) (string, error) {
 	return output.String(), nil
 }
 
+func MinifyStream(input io.Reader, writer io.Writer, params map[string]string) error {
+	return js.Minify(minifier, writer, input, params)
+}
+
 func ReadMinify(output io.Writer, input io.Reader, params map[string]string) error {
 	return js.Minify(minifier, output, input, params)
 }

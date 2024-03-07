@@ -8,9 +8,15 @@ fn Page(content html.node){
         <title></title>
         <meta name="viewport" content="width=device-width, initial-scale=1"/>
         <link rel="stylesheet" href="/styles/main.css"/>
-        <script src="/js/htmx.js"></script>
-        <script src="/js/hyperscript.js"></script>
-        <script src="/js/inox.js"></script>
+        {
+            if ctx_data(/dev)? [
+                (<script src="/js/htmx.js"></script>)
+                (<script src="/js/hyperscript.js"></script>)
+                (<script src="/js/inox.js"></script>)
+            ] else (
+                (<script src="/js/global-bundle.min.js"></script>)
+            ) 
+        }
     </head>
     <body hx-ext="response-targets">
         <style>

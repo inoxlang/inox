@@ -1,6 +1,8 @@
 package projectserver
 
 import (
+	"bytes"
+	"io"
 	"path/filepath"
 
 	"github.com/inoxlang/inox/internal/core"
@@ -12,11 +14,16 @@ import (
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	ixgen "github.com/inoxlang/inox/internal/inoxjs/gen"
 	ixscan "github.com/inoxlang/inox/internal/inoxjs/scan"
+	"github.com/inoxlang/inox/internal/js"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/project/layout"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/projectserver/logs"
 	"github.com/inoxlang/inox/internal/utils"
+)
+
+const (
+	JS_BUNDLING_BUFFER_SIZE = 100_000
 )
 
 // A jsGenerator generates JS files (most of the time in the /static/gen directory).
@@ -26,6 +33,7 @@ type jsGenerator struct {
 	inoxChunkCache *parse.ChunkCache
 	fls            *Filesystem
 	session        *jsonrpc.Session
+	staticDir      string
 }
 
 func newJSGenerator(session *jsonrpc.Session, fls *Filesystem) *jsGenerator {
@@ -40,6 +48,7 @@ func newJSGenerator(session *jsonrpc.Session, fls *Filesystem) *jsGenerator {
 		inoxChunkCache: parse.NewChunkCache(),
 		fls:            fls,
 		session:        session,
+		staticDir:      "/static/",
 	}
 
 	evs.OnIDLE(core.IdleEventSourceHandler{
@@ -51,11 +60,7 @@ func newJSGenerator(session *jsonrpc.Session, fls *Filesystem) *jsGenerator {
 			return
 		},
 		Microtask: func() {
-			go func() {
-				generator.genHyperscript()
-				generator.genHTMX()
-				generator.genInox()
-			}()
+			go generator.genAll()
 		},
 	})
 
@@ -63,12 +68,36 @@ func newJSGenerator(session *jsonrpc.Session, fls *Filesystem) *jsGenerator {
 }
 
 func (g *jsGenerator) InitialGenAndSetup() {
-	g.genHyperscript()
-	g.genHTMX()
-	g.genInox()
+	g.genAll()
 }
 
-func (g *jsGenerator) genHyperscript() {
+func (g *jsGenerator) genAll() {
+	defer utils.Recover()
+
+	//TODO: make more flexible
+
+	err := g.fls.MkdirAll(filepath.Join(g.staticDir, layout.STATIC_JS_DIRNAME), 0700)
+
+	if err != nil {
+		logs.Println(g.session.Client(), err)
+		return
+	}
+
+	concatenated := &bytes.Buffer{}
+
+	g.genHyperscript(concatenated)
+	concatenated.WriteByte(';')
+
+	g.genHTMX(concatenated)
+	concatenated.WriteByte(';')
+
+	g.genInox(concatenated)
+	concatenated.WriteByte(';')
+
+	g.writeBundle(concatenated)
+}
+
+func (g *jsGenerator) genHyperscript(bundleWriter io.Writer) {
 	defer utils.Recover()
 
 	//Find used features and commands.
@@ -85,14 +114,14 @@ func (g *jsGenerator) genHyperscript() {
 
 	//TODO: make more flexible
 
-	err = g.fls.MkdirAll(filepath.Join("/static", layout.STATIC_JS_DIRNAME), 0700)
+	err = g.fls.MkdirAll(filepath.Join(g.staticDir, layout.STATIC_JS_DIRNAME), 0700)
 
 	if err != nil {
 		logs.Println(g.session.Client(), err)
 		return
 	}
 
-	path := filepath.Join("/static/", layout.STATIC_JS_DIRNAME, layout.HYPERSCRIPTJS_FILENAME)
+	path := filepath.Join(g.staticDir, layout.STATIC_JS_DIRNAME, layout.HYPERSCRIPTJS_FILENAME)
 
 	f, err := g.fls.Create(path)
 
@@ -113,10 +142,12 @@ func (g *jsGenerator) genHyperscript() {
 
 	f.Write([]byte(layout.HYPERSCRIPT_JS_EXPLANATION))
 	f.Write([]byte{'\n'})
-	f.Write(utils.StringAsBytes(jsCode))
+
+	w := io.MultiWriter(f, bundleWriter) //write to the file and the bundle.
+	w.Write(utils.StringAsBytes(jsCode))
 }
 
-func (g *jsGenerator) genHTMX() {
+func (g *jsGenerator) genHTMX(bundleWriter io.Writer) {
 	defer utils.Recover()
 
 	//Find used features and commands.
@@ -131,16 +162,7 @@ func (g *jsGenerator) genHTMX() {
 		return
 	}
 
-	//TODO: make more flexible
-
-	err = g.fls.MkdirAll(filepath.Join("/static", layout.STATIC_JS_DIRNAME), 0700)
-
-	if err != nil {
-		logs.Println(g.session.Client(), err)
-		return
-	}
-
-	path := filepath.Join("/static/", layout.STATIC_JS_DIRNAME, layout.HTMX_JS_FILENAME)
+	path := filepath.Join(g.staticDir, layout.STATIC_JS_DIRNAME, layout.HTMX_JS_FILENAME)
 
 	f, err := g.fls.Create(path)
 
@@ -161,10 +183,12 @@ func (g *jsGenerator) genHTMX() {
 
 	f.Write([]byte(layout.HTMX_JS_EXPLANATION))
 	f.Write([]byte{'\n'})
-	f.Write(utils.StringAsBytes(jsCode))
+
+	w := io.MultiWriter(f, bundleWriter) //write to the file and the bundle.
+	w.Write(utils.StringAsBytes(jsCode))
 }
 
-func (g *jsGenerator) genInox() {
+func (g *jsGenerator) genInox(bundleWriter io.Writer) {
 	defer utils.Recover()
 
 	//Find used features and commands.
@@ -181,14 +205,14 @@ func (g *jsGenerator) genInox() {
 
 	//TODO: make more flexible
 
-	err = g.fls.MkdirAll(filepath.Join("/static", layout.STATIC_JS_DIRNAME), 0700)
+	err = g.fls.MkdirAll(filepath.Join(g.staticDir, layout.STATIC_JS_DIRNAME), 0700)
 
 	if err != nil {
 		logs.Println(g.session.Client(), err)
 		return
 	}
 
-	path := filepath.Join("/static/", layout.STATIC_JS_DIRNAME, layout.INOX_JS_FILENAME)
+	path := filepath.Join(g.staticDir, layout.STATIC_JS_DIRNAME, layout.INOX_JS_FILENAME)
 
 	f, err := g.fls.Create(path)
 
@@ -209,5 +233,32 @@ func (g *jsGenerator) genInox() {
 
 	f.Write([]byte(layout.INOX_JS_EXPLANATION))
 	f.Write([]byte{'\n'})
-	f.Write(utils.StringAsBytes(jsCode))
+
+	w := io.MultiWriter(f, bundleWriter) //write to the file and the bundle.
+	w.Write(utils.StringAsBytes(jsCode))
+}
+
+func (g *jsGenerator) writeBundle(concatenatedJsFiles *bytes.Buffer) {
+	err := g.fls.MkdirAll(filepath.Join(g.staticDir, layout.STATIC_JS_DIRNAME), 0700)
+
+	if err != nil {
+		logs.Println(g.session.Client(), err)
+		return
+	}
+
+	path := filepath.Join(g.staticDir, layout.STATIC_JS_DIRNAME, layout.GLOBAL_BUNDLE_MIN_JS_FILENAME)
+
+	f, err := g.fls.Create(path)
+
+	if err != nil {
+		logs.Println(g.session.Client(), err)
+		return
+	}
+
+	defer f.Close()
+
+	err = js.MinifyStream(concatenatedJsFiles, f, nil)
+	if err != nil {
+		logs.Println("bundle minification and writing", g.session.Client(), err)
+	}
 }
