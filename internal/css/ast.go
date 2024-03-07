@@ -52,7 +52,7 @@ func (n Node) SelectorString() string {
 
 func (n Node) String() string {
 	buf := &bytes.Buffer{}
-	n.write(buf, 0)
+	n.writeTo(buf, 0)
 
 	return buf.String()
 }
@@ -68,7 +68,7 @@ func (n Node) WriteTo(w io.Writer) (err error) {
 		}()
 	}
 
-	n.write(writer, 0)
+	n.writeTo(writer, 0)
 	return
 }
 
@@ -92,7 +92,7 @@ func (n Node) IsImport() bool {
 	return n.Type == AtRule && n.Data == "@import"
 }
 
-func (n Node) write(w astStringificatioWriter, indent int) {
+func (n Node) writeTo(w astStringificatioWriter, indent int) {
 
 	for i := 0; i < indent; i++ {
 		w.WriteByte(' ')
@@ -104,32 +104,44 @@ func (n Node) write(w astStringificatioWriter, indent int) {
 			if i != 0 {
 				w.WriteByte('\n')
 			}
-			child.write(w, indent)
+			child.writeTo(w, indent)
 		}
 	case AtRule:
 		w.WriteString(n.Data)
 
-		//Query
-		n.Children[0].write(w, 0)
+		switch n.Data {
+		case "@charset", "@import", "@namespace": //regular: https://developer.mozilla.org/en-US/docs/Web/CSS/At-rule#regular
 
-		w.WriteString(" { ")
-
-		//Rules
-		if len(n.Children) > 1 {
-			for _, child := range n.Children[1:] {
-				w.WriteByte('\n')
-				child.write(w, indent+2)
-			}
-			w.WriteByte('\n')
-			for i := 0; i < indent; i++ {
+			for _, child := range n.Children {
 				w.WriteByte(' ')
+				child.writeTo(w, 0)
 			}
+
+			w.WriteByte(';')
+		default: //nested: https://developer.mozilla.org/en-US/docs/Web/CSS/At-rule#nested
+			//Head
+			n.Children[0].writeTo(w, 0)
+
+			w.WriteString(" { ")
+
+			//Rules
+			if len(n.Children) > 1 {
+				for _, child := range n.Children[1:] {
+					w.WriteByte('\n')
+					child.writeTo(w, indent+2)
+				}
+				w.WriteByte('\n')
+				for i := 0; i < indent; i++ {
+					w.WriteByte(' ')
+				}
+			}
+
+			w.WriteString("}")
 		}
 
-		w.WriteString("}")
 	case Ruleset:
 		//Selector
-		n.Children[0].write(w, 0)
+		n.Children[0].writeTo(w, 0)
 
 		w.WriteString(" {")
 
@@ -137,7 +149,7 @@ func (n Node) write(w astStringificatioWriter, indent int) {
 		if len(n.Children) > 1 {
 			for _, child := range n.Children[1:] {
 				w.WriteByte('\n')
-				child.write(w, indent+2)
+				child.writeTo(w, indent+2)
 			}
 			w.WriteByte('\n')
 			for i := 0; i < indent; i++ {
@@ -155,7 +167,7 @@ func (n Node) write(w astStringificatioWriter, indent int) {
 		//Value
 		for _, child := range n.Children {
 			w.WriteByte(' ')
-			child.write(w, 0)
+			child.writeTo(w, 0)
 		}
 
 		w.WriteByte(';')
@@ -164,7 +176,7 @@ func (n Node) write(w astStringificatioWriter, indent int) {
 			if i != 0 {
 				w.WriteByte(' ')
 			}
-			child.write(w, 0)
+			child.writeTo(w, 0)
 		}
 	case ClassName:
 		w.WriteByte('.')
@@ -177,7 +189,7 @@ func (n Node) write(w astStringificatioWriter, indent int) {
 			if i != 0 {
 				w.WriteString(", ")
 			}
-			child.write(w, 0)
+			child.writeTo(w, 0)
 		}
 
 		w.WriteByte(')')
@@ -185,14 +197,14 @@ func (n Node) write(w astStringificatioWriter, indent int) {
 		w.WriteByte('(')
 
 		for _, child := range n.Children {
-			child.write(w, 0)
+			child.writeTo(w, 0)
 		}
 
 		w.WriteByte(')')
 	case AttributeSelector:
 		w.WriteByte('[')
 		for _, child := range n.Children {
-			child.write(w, 0)
+			child.writeTo(w, 0)
 		}
 
 		w.WriteByte(']')
