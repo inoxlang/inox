@@ -28,6 +28,7 @@ func (g ImportGraph) Root() *LocalFile {
 type LocalFile struct {
 	absolutePath string
 	imports      []Import
+	stylesheet   Node
 }
 
 func (f LocalFile) AbsolutePath() string {
@@ -36,6 +37,25 @@ func (f LocalFile) AbsolutePath() string {
 
 func (f LocalFile) Imports() []Import {
 	return f.imports[:len(f.imports):len(f.imports)]
+}
+
+// TryGetImport returns the Import corresponding to $n.
+// $n should be an @import at-rule.
+func (f LocalFile) TryGetImport(n Node) (Import, bool) {
+	if !n.IsImport() {
+		return Import{}, false
+	}
+
+	for _, _import := range f.imports {
+		if _import.atRule.Equal(n) {
+			return _import, true
+		}
+	}
+	return Import{}, false
+}
+
+func (f LocalFile) Stylesheet() Node {
+	return f.stylesheet
 }
 
 type Import struct {
@@ -127,6 +147,8 @@ func buildImportGraph(ctx context.Context, fls afs.Filesystem, absoluteFilePath 
 		return nil, err
 	}
 
+	file.stylesheet = node
+
 	graph.localFiles[absoluteFilePath] = file
 
 	//Add $file to the importer stack
@@ -136,6 +158,9 @@ func buildImportGraph(ctx context.Context, fls afs.Filesystem, absoluteFilePath 
 	}()
 
 	for _, topLevelNode := range node.Children {
+		if topLevelNode.Type == Comment {
+			continue
+		}
 		if !topLevelNode.IsImport() {
 			// https://developer.mozilla.org/en-US/docs/Web/CSS/@import
 			// An @import rule must be defined at the top of the stylesheet, before any other at-rule

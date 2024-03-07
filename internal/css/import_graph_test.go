@@ -528,4 +528,40 @@ func TestGetImportGraph(t *testing.T) {
 		assert.Equal(t, "/dir/other2.css", importedFile2.AbsolutePath())
 		assert.Empty(t, importedFile2.Imports())
 	})
+
+	t.Run("import after comment", func(t *testing.T) {
+		fls := fs_ns.NewMemFilesystem(1_000)
+
+		util.WriteFile(fls, "/main.css", []byte("/* */\n@import \"/other.css\""), 0600)
+		util.WriteFile(fls, "/other.css", []byte(``), 0600)
+
+		graph, err := GetImportGraph(context.Background(), fls, "/main.css")
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		file := graph.Root()
+		assert.Equal(t, "/main.css", file.AbsolutePath())
+
+		imports := file.Imports()
+
+		if !assert.Len(t, imports, 1) {
+			return
+		}
+
+		_import := imports[0]
+
+		assert.Equal(t, LocalImport, _import.Kind())
+		assert.Equal(t, AtRule, _import.Node().Type)
+		assert.Equal(t, "/other.css", _import.Resource())
+
+		importedFile, ok := _import.LocalFile()
+		if !assert.True(t, ok) {
+			return
+		}
+
+		assert.Equal(t, "/other.css", importedFile.AbsolutePath())
+		assert.Empty(t, importedFile.Imports())
+	})
+
 }
