@@ -30,26 +30,27 @@ func Bundle(ctx context.Context, params BundlingParams) (stylesheet css.Node, _ 
 		Type: css.Stylesheet,
 	}
 
-	visitedImporters := map[*css.LocalFile]struct{}{}
+	visitedFiles := map[*css.LocalFile]struct{}{}
 
 	//post-order traveral.
 	err = graph.Walk(css.ImportGraphWalkParams{
 		AllowRevisit: false,
-		PostHandle: func(node css.Import, importer *css.LocalFile, importerStack []*css.LocalFile, after bool) (css.GraphTraversalAction, error) {
+		PostHandle: func(node css.Import, localFile *css.LocalFile, importerStack []*css.LocalFile, after bool) (css.GraphTraversalAction, error) {
+			//node.IsZero() == leaf local file
 
 			//We only care about the importer: once we have seen an importer once we ignore it all the next times.
-			_, ok := visitedImporters[importer]
+			_, ok := visitedFiles[localFile]
 			if ok {
 				return css.ContinueGraphTraversal, nil
 			}
-			visitedImporters[importer] = struct{}{}
+			visitedFiles[localFile] = struct{}{}
 
 			//Copy all definitions in the resulting stylesheet.
 
-			importerStylesheet := importer.Stylesheet()
+			importerStylesheet := localFile.Stylesheet()
 
 			for _, child := range importerStylesheet.Children {
-				_import, ok := importer.TryGetImport(child)
+				_import, ok := localFile.TryGetImport(child)
 				//Ignore local imports.
 				if ok && _import.Kind() == css.LocalImport {
 					continue

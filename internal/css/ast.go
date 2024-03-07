@@ -80,8 +80,8 @@ func (n Node) Equal(other Node) bool {
 	if n.Type != other.Type || n.Data != other.Data || n.Error != other.Error || len(n.Children) != len(other.Children) {
 		return false
 	}
-	for _, child := range other.Children {
-		if !child.Equal(other) {
+	for i, child := range n.Children {
+		if !child.Equal(other.Children[i]) {
 			return false
 		}
 	}
@@ -90,6 +90,18 @@ func (n Node) Equal(other Node) bool {
 
 func (n Node) IsImport() bool {
 	return n.Type == AtRule && n.Data == "@import"
+}
+
+func (n Node) IsRegularAtRule() bool {
+	if n.Type != AtRule {
+		return false
+	}
+	switch n.Data {
+	//https://developer.mozilla.org/en-US/docs/Web/CSS/At-rule#regular
+	case "@charset", "@import", "@namespace":
+		return true
+	}
+	return false
 }
 
 func (n Node) writeTo(w astStringificatioWriter, indent int) {
@@ -109,8 +121,7 @@ func (n Node) writeTo(w astStringificatioWriter, indent int) {
 	case AtRule:
 		w.WriteString(n.Data)
 
-		switch n.Data {
-		case "@charset", "@import", "@namespace": //regular: https://developer.mozilla.org/en-US/docs/Web/CSS/At-rule#regular
+		if n.IsRegularAtRule() { //regular: https://developer.mozilla.org/en-US/docs/Web/CSS/At-rule#regular
 
 			for _, child := range n.Children {
 				w.WriteByte(' ')
@@ -118,7 +129,7 @@ func (n Node) writeTo(w astStringificatioWriter, indent int) {
 			}
 
 			w.WriteByte(';')
-		default: //nested: https://developer.mozilla.org/en-US/docs/Web/CSS/At-rule#nested
+		} else { //nested: https://developer.mozilla.org/en-US/docs/Web/CSS/At-rule#nested
 			//Head
 			n.Children[0].writeTo(w, 0)
 

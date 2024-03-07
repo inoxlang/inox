@@ -92,7 +92,7 @@ const (
 	StopGraphTraversal
 )
 
-type ImportNodeHandler = func(node Import, importer *LocalFile, importerStack []*LocalFile, after bool) (GraphTraversalAction, error)
+type ImportNodeHandler = func(node Import, localFile *LocalFile, importerStack []*LocalFile, after bool) (GraphTraversalAction, error)
 
 type ImportGraphWalkParams struct {
 	Handle       ImportNodeHandler //pre-order
@@ -102,6 +102,7 @@ type ImportGraphWalkParams struct {
 
 // This functions performs a pre-order traversal on the import graph (depth first).
 // postHandle is called on a node after all its descendants have been visited.
+// Local files that contain no imports are visited with a zero import node.
 func (g *ImportGraph) Walk(params ImportGraphWalkParams) (err error) {
 	defer func() {
 		v := recover()
@@ -125,6 +126,11 @@ func (g *ImportGraph) Walk(params ImportGraphWalkParams) (err error) {
 	for _, _import := range g.root.imports {
 		g.walk(_import, g.root, &importerStack, visited, params.Handle, params.PostHandle)
 	}
+
+	if len(g.root.imports) == 0 {
+		g.walk(Import{}, g.root, &importerStack, visited, params.Handle, params.PostHandle)
+	}
+
 	return
 }
 
@@ -165,8 +171,13 @@ func (g *ImportGraph) walk(node Import, importer *LocalFile, ancestorChain *[]*L
 
 	file, ok := node.LocalFile()
 	if ok {
-		for _, _import := range file.Imports() {
+		imports := file.Imports()
+		for _, _import := range imports {
 			g.walk(_import, file, ancestorChain, visited, fn, afterFn)
+		}
+
+		if len(imports) == 0 {
+			g.walk(Import{}, file, ancestorChain, visited, fn, afterFn)
 		}
 	}
 

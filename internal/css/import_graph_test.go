@@ -564,4 +564,33 @@ func TestGetImportGraph(t *testing.T) {
 		assert.Empty(t, importedFile.Imports())
 	})
 
+	t.Run("self imports should be detected", func(t *testing.T) {
+		fls := fs_ns.NewMemFilesystem(1_000)
+
+		util.WriteFile(fls, "/main.css", []byte("/* */\n@import \"/main.css\""), 0600)
+
+		_, err := GetImportGraph(context.Background(), fls, "/main.css")
+		assert.ErrorIs(t, err, errImportCycle)
+	})
+
+	t.Run("shallow import cycles should be detected", func(t *testing.T) {
+		fls := fs_ns.NewMemFilesystem(1_000)
+
+		util.WriteFile(fls, "/main.css", []byte("/* */\n@import \"/other.css\""), 0600)
+		util.WriteFile(fls, "/other.css", []byte("/* */\n@import \"/main.css\""), 0600)
+
+		_, err := GetImportGraph(context.Background(), fls, "/main.css")
+		assert.ErrorIs(t, err, errImportCycle)
+	})
+
+	t.Run("deep import cycles should be detected", func(t *testing.T) {
+		fls := fs_ns.NewMemFilesystem(1_000)
+
+		util.WriteFile(fls, "/main.css", []byte("/* */\n@import \"/other1.css\""), 0600)
+		util.WriteFile(fls, "/other1.css", []byte("/* */\n@import \"/other2.css\""), 0600)
+		util.WriteFile(fls, "/other2.css", []byte("/* */\n@import \"/main.css\""), 0600)
+
+		_, err := GetImportGraph(context.Background(), fls, "/main.css")
+		assert.ErrorIs(t, err, errImportCycle)
+	})
 }
