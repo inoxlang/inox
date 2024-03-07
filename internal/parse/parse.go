@@ -7651,7 +7651,7 @@ func (p *parser) parseXMLExpression(namespaceIdent *IdentifierLiteral /* can be 
 	//we do not increment because we keep the '<' for parsing the top element
 
 	if p.i+1 >= p.len || !isAlpha(p.s[p.i+1]) {
-		p.tokens = append(p.tokens, Token{Type: LESS_THAN, Span: NodeSpan{p.i, p.i + 1}})
+		p.tokens = append(p.tokens, Token{Type: LESS_THAN, SubType: XML_TAG_OPENING_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
 
 		return &XMLExpression{
 			NodeBase: NodeBase{
@@ -7677,7 +7677,7 @@ func (p *parser) parseXMLElement(start int32) (_ *XMLElement, noOrExpectedClosin
 	noOrExpectedClosingTag = true
 
 	var parsingErr *ParsingError
-	p.tokens = append(p.tokens, Token{Type: LESS_THAN, Span: NodeSpan{start, start + 1}})
+	p.tokens = append(p.tokens, Token{Type: LESS_THAN, SubType: XML_TAG_OPENING_BRACKET, Span: NodeSpan{start, start + 1}})
 	p.i++
 
 	//Parse opening tag.
@@ -7875,7 +7875,7 @@ func (p *parser) parseXMLElement(start int32) (_ *XMLElement, noOrExpectedClosin
 		}, noOrExpectedClosingTag
 	}
 
-	p.tokens = append(p.tokens, Token{Type: GREATER_THAN, Span: NodeSpan{p.i, p.i + 1}})
+	p.tokens = append(p.tokens, Token{Type: GREATER_THAN, SubType: XML_TAG_CLOSING_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
 	p.i++
 	openingElement.Span.End = p.i
 
@@ -7970,7 +7970,7 @@ func (p *parser) parseXMLElement(start int32) (_ *XMLElement, noOrExpectedClosin
 		}, noOrExpectedClosingTag
 	}
 
-	p.tokens = append(p.tokens, Token{Type: GREATER_THAN, Span: NodeSpan{p.i, p.i + 1}})
+	p.tokens = append(p.tokens, Token{Type: GREATER_THAN, SubType: XML_TAG_CLOSING_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
 	p.i++
 	closingElement.Span.End = p.i
 
