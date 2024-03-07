@@ -15,45 +15,60 @@ type stringCut struct {
 	IsStringEmpty       bool
 }
 
-func CutQuotedStringLiteral(index int32, n *QuotedStringLiteral) (cut stringCut, ok bool) {
+func CutQuotedStringLiteral(index int32, n SimpleValueLiteral) (cut stringCut, ok bool) {
 
-	if n.Err != nil {
+	var value string
+	var raw string
+
+	switch n := n.(type) {
+	case *QuotedStringLiteral:
+		value = n.ValueString()
+		raw = n.Raw
+	case *MultilineStringLiteral:
+		value = n.ValueString()
+		raw = n.Raw
+	default:
+		return stringCut{}, false
+	}
+
+	base := n.Base()
+	if base.Err != nil {
 		return stringCut{}, false
 	}
 
 	//Do not cut if the index is outside the string.
-	if index <= n.Span.Start || index >= n.Span.End {
+	if index <= base.Span.Start || index >= base.Span.End {
 		return stringCut{}, false
 	}
 
 	//Note: $n could be an invalid string (error).
 
-	isStringEmpty := n.Value == ""
+	isStringEmpty := value == ""
 
-	if index == n.Span.Start+1 { //"<here>string"
+	if index == base.Span.Start+1 { //"<here>string"
 		return stringCut{
 			BeforeIndex:        "",
-			AfterIndex:         n.Value,
+			AfterIndex:         value,
 			IsIndexAtStart:     true,
 			IsIndexAtEnd:       isStringEmpty,
-			HasSpaceAfterIndex: !isStringEmpty && isFirstRuneSpace(n.Value),
+			HasSpaceAfterIndex: !isStringEmpty && isFirstRuneSpace(value),
 			IsStringEmpty:      isStringEmpty,
 		}, true
 	}
 
-	if index == n.Span.End-1 { //"string<here>"
+	if index == base.Span.End-1 { //"string<here>"
 		return stringCut{
-			BeforeIndex:         n.Value,
+			BeforeIndex:         value,
 			AfterIndex:          "",
 			IsIndexAtStart:      isStringEmpty,
 			IsIndexAtEnd:        true,
 			IsStringEmpty:       isStringEmpty,
-			HasSpaceBeforeIndex: !isStringEmpty && isLastRuneSpace(n.Value),
+			HasSpaceBeforeIndex: !isStringEmpty && isLastRuneSpace(value),
 		}, true
 	}
 
-	relativeCursorPosition := index - n.Span.Start - 1
-	runes := []rune(n.Raw[1 : len(n.Raw)-1])
+	relativeCursorPosition := index - base.Span.Start - 1
+	runes := []rune(raw[1 : len(raw)-1])
 
 	beforeCursorRunes := runes[:relativeCursorPosition]
 	afterCursorRunes := runes[relativeCursorPosition:]

@@ -43,7 +43,7 @@ func findHtmlAttributeNameCompletions(ident *parse.IdentifierLiteral, parent *pa
 }
 
 func findHtmlAttributeValueCompletions(
-	str *parse.QuotedStringLiteral,
+	strLiteral parse.SimpleValueLiteral,
 	parent *parse.XMLAttribute,
 	tagName string,
 	search completionSearch,
@@ -54,13 +54,13 @@ func findHtmlAttributeValueCompletions(
 	}
 
 	attrName := attrIdent.Name
-	attrValue := str.Value
+	attrValue := strLiteral.ValueString()
 	inputData := search.inputData
 
 	set, ok := html_ns.GetAttributeValueSet(attrName, tagName)
 	if ok {
 		for _, attrValueData := range set.Values {
-			if !strings.HasPrefix(attrValueData.Name, str.Value) {
+			if !strings.HasPrefix(attrValueData.Name, attrValue) {
 				continue
 			}
 
@@ -131,6 +131,7 @@ func findHtmlAttributeValueCompletions(
 		}
 	}
 
+	//endpoint suggestions.
 	if inputData.ServerAPI != nil && strings.HasPrefix(attrValue, "/") && (strings.HasPrefix(attrName, "hx-") || attrName == "href") {
 		//local server
 
@@ -174,8 +175,12 @@ func findHtmlAttributeValueCompletions(
 
 	switch attrName {
 	case "class":
-		completions = append(completions, findTailwindClassNameSuggestions(str, search)...)
+		completions = append(completions, findTailwindClassNameSuggestions(strLiteral, search)...)
 	}
+
+	// if strings.HasPrefix(attrName, "hx-") {
+	// 	completions = append(completions, findHTMXAttributeValueSuggestions(attrName, strLiteral, search)...)
+	// }
 
 	return
 }

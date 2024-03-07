@@ -4323,7 +4323,7 @@ end:
 		var value string
 		var raw string
 
-		if p.i >= p.len && p.s[p.i-1] != '`' {
+		if p.i >= p.len && (p.i == openingBackquoteIndex+1 || p.s[p.i-1] != '`') {
 			raw = string(p.s[openingBackquoteIndex:])
 			parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_MULTILINE_STRING_LIT}
 		} else {

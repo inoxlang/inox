@@ -8,9 +8,14 @@ import (
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
 )
 
-func findTailwindClassNameSuggestions(attrValueNode *parse.QuotedStringLiteral, search completionSearch) (completions []Completion) {
+func findTailwindClassNameSuggestions(attrValueNode parse.SimpleValueLiteral, search completionSearch) (completions []Completion) {
 
-	cut, ok := parse.CutQuotedStringLiteral(search.cursorIndex, attrValueNode)
+	quotedStrLiteral, ok := attrValueNode.(*parse.QuotedStringLiteral)
+	if !ok {
+		return
+	}
+
+	cut, ok := parse.CutQuotedStringLiteral(search.cursorIndex, quotedStrLiteral)
 	if !ok {
 		return nil
 	}

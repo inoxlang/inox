@@ -8203,6 +8203,23 @@ func testParse(
 					},
 				},
 			},
+			"`": {
+				error: true,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+					Statements: []Node{
+						&MultilineStringLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{0, 1},
+								&ParsingError{UnspecifiedParsingError, UNTERMINATED_MULTILINE_STRING_LIT},
+								false,
+							},
+							Raw:   "`",
+							Value: "",
+						},
+					},
+				},
+			},
 		}
 
 		for input, testCase := range testCases {

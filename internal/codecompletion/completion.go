@@ -131,6 +131,8 @@ func FindCompletions(args SearchArgs) []Completion {
 			completions = handleNewCallArgumentCompletions(n, search)
 		case *parse.QuotedStringLiteral:
 			completions = findStringCompletions(n, search)
+		case *parse.MultilineStringLiteral:
+			completions = findStringCompletions(n, search)
 		case *parse.RelativePathLiteral:
 			completions = findPathCompletions(state.Global.Ctx, n.Raw)
 		case *parse.AbsolutePathLiteral:
@@ -1719,7 +1721,14 @@ func findDictionaryInteriorCompletions(n *parse.DictionaryLiteral, search comple
 	return
 }
 
-func findStringCompletions(strLit *parse.QuotedStringLiteral, search completionSearch) (completions []Completion) {
+func findStringCompletions(strLit parse.SimpleValueLiteral, search completionSearch) (completions []Completion) {
+
+	switch strLit.(type) {
+	case *parse.QuotedStringLiteral, *parse.MultilineStringLiteral:
+	default:
+		return nil
+	}
+
 	// in attribute
 	if attribute, ok := search.parent.(*parse.XMLAttribute); ok {
 		switch {

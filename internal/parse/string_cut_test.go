@@ -26,12 +26,44 @@ func TestCutQuotedStringLiteral(t *testing.T) {
 		}, cut)
 	})
 
+	t.Run("empty string: backticks", func(t *testing.T) {
+		lit := utils.MustGet(ParseExpression("``")).(*MultilineStringLiteral)
+
+		cut, ok := CutQuotedStringLiteral(1, lit)
+		if !assert.True(t, ok) {
+			return
+		}
+
+		assert.Equal(t, stringCut{
+			BeforeIndex:    "",
+			AfterIndex:     "",
+			IsIndexAtStart: true,
+			IsIndexAtEnd:   true,
+			IsStringEmpty:  true,
+		}, cut)
+	})
+
 	t.Run("unterminated empty string", func(t *testing.T) {
 		lit, ok := ParseExpression(`"`)
 		if !assert.False(t, ok) {
 			return
 		}
 		strLit := lit.(*QuotedStringLiteral)
+		if !assert.NotNil(t, strLit.Err) {
+			return
+		}
+
+		cut, ok := CutQuotedStringLiteral(1, strLit)
+		assert.False(t, ok)
+		assert.Zero(t, cut)
+	})
+
+	t.Run("unterminated empty string: backtick", func(t *testing.T) {
+		lit, ok := ParseExpression("`")
+		if !assert.False(t, ok) {
+			return
+		}
+		strLit := lit.(*MultilineStringLiteral)
 		if !assert.NotNil(t, strLit.Err) {
 			return
 		}
