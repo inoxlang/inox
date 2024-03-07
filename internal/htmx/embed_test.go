@@ -6,9 +6,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestReadExtensions(t *testing.T) {
+func TestLoad(t *testing.T) {
 
-	ReadEmbedded()
+	Load()
 
 	assert.NotEmpty(t, EXTENSIONS)
+	//assert.NotEmpty(t, HEADERS.Request)
+	assert.NotEmpty(t, HEADERS.Response)
 }

@@ -135,7 +135,7 @@ func ProjectServer(mainSubCommand string, mainSubCommandArgs []string, outW, err
 	//Initializations.
 
 	utils.PanicIfErr(tailwind.InitSubset())
-	htmx.ReadEmbedded()
+	htmx.Load()
 
 	//create context & state
 

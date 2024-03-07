@@ -6,7 +6,9 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/goccy/go-yaml"
 	"github.com/inoxlang/inox/internal/js"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
@@ -16,18 +18,21 @@ var (
 
 	//go:embed extensions/*
 	extensionsFS embed.FS
+
+	//go:embed headers.yaml
+	headersInfo string
 )
 
-func ReadEmbedded() {
+func Load() {
 
 	MINIFIED_HTMX_JS = js.MustMinify(HTMX_JS, nil)
 
-	entries, err := extensionsFS.ReadDir("extensions")
+	extensionEntries, err := extensionsFS.ReadDir("extensions")
 	if err != nil {
 		panic(err)
 	}
 
-	for _, entry := range entries {
+	for _, entry := range extensionEntries {
 		entryName := entry.Name()
 		ext := filepath.Ext(entryName)
 		extName := strings.TrimSuffix(entryName, ext)
@@ -47,6 +52,12 @@ func ReadEmbedded() {
 		extension.Code = sourceCodeString
 		extension.MinifiedCode = js.MustMinify(sourceCodeString, nil)
 		EXTENSIONS[extName] = extension
+	}
+
+	//Get information about headers.
+	err = yaml.Unmarshal(utils.StringAsBytes(headersInfo), &HEADERS)
+	if err != nil {
+		panic(err)
 	}
 }
 
