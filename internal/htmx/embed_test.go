@@ -11,5 +11,4 @@ func TestReadExtensions(t *testing.T) {
 	ReadEmbedded()
 
 	assert.NotEmpty(t, EXTENSIONS)
-	assert.NotEmpty(t, MINIFIED_EXTENSIONS)
 }

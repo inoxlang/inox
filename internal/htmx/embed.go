@@ -3,6 +3,7 @@ package htmx
 import (
 	"embed"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/inoxlang/inox/internal/js"
@@ -15,15 +16,9 @@ var (
 
 	//go:embed extensions/*
 	extensionsFS embed.FS
-
-	EXTENSIONS          = map[string]string{}
-	MINIFIED_EXTENSIONS = map[string]string{}
 )
 
 func ReadEmbedded() {
-	if len(EXTENSIONS) != 0 {
-		return
-	}
 
 	MINIFIED_HTMX_JS = js.MustMinify(HTMX_JS, nil)
 
@@ -44,7 +39,29 @@ func ReadEmbedded() {
 
 		sourceCodeString := string(sourceCode)
 
-		EXTENSIONS[extName] = sourceCodeString
-		MINIFIED_EXTENSIONS[extName] = js.MustMinify(sourceCodeString, nil)
+		extension := EXTENSIONS[extName]
+
+		//The extension's documentation may be set.
+
+		extension.Name = extName
+		extension.Code = sourceCodeString
+		extension.MinifiedCode = js.MustMinify(sourceCodeString, nil)
+		EXTENSIONS[extName] = extension
 	}
+}
+
+func GetExtensionInfoByPrefix(prefix string) (extensions []Extension) {
+	lowercasePrefix := strings.ToLower(prefix)
+
+	for name, extension := range EXTENSIONS {
+		if strings.HasPrefix(name, lowercasePrefix) {
+			extensions = append(extensions, extension)
+		}
+	}
+
+	slices.SortFunc(extensions, func(a, b Extension) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+
+	return extensions
 }

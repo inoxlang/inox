@@ -178,9 +178,9 @@ func findHtmlAttributeValueCompletions(
 		completions = append(completions, findTailwindClassNameSuggestions(strLiteral, search)...)
 	}
 
-	// if strings.HasPrefix(attrName, "hx-") {
-	// 	completions = append(completions, findHTMXAttributeValueSuggestions(attrName, strLiteral, search)...)
-	// }
+	if strings.HasPrefix(attrName, "hx-") {
+		completions = append(completions, findHTMXAttributeValueSuggestions(attrName, strLiteral, search)...)
+	}
 
 	return
 }

@@ -28,7 +28,7 @@ func Generate(config Config) (string, error) {
 
 	for _, ext := range config.Extensions {
 		w.WriteByte('\n')
-		w.WriteString(htmx.EXTENSIONS[ext])
+		w.WriteString(htmx.EXTENSIONS[ext].Code)
 	}
 
 	return w.String(), nil
