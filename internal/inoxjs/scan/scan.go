@@ -15,7 +15,7 @@ import (
 
 var (
 	CSS_SCOPE_INLINE_DETECTION_PATTERN = regexp.MustCompile(`(\b|^\s*)me\b`)
-	SURREAL_DETECTION_PATTERN          = regexp.MustCompile(`(\b|^\s*)me\(`)
+	SURREAL_DETECTION_PATTERN          = regexp.MustCompile(`(\b|^\s*)(me|any)\(`)
 	PREACT_SIGNALS_DETECTION_PATTERN   = regexp.MustCompile(`(signal|computed|effect|batch|untracked)\(`)
 )
 
