@@ -37,6 +37,8 @@ response-headers:
       within a response to htmx. You can trigger a single event or as many uniquely named events as you would like. Example: `HX-Trigger: myEvent`.
       Available variations are `HX-Trigger-After-Settle` and `HX-Trigger-After-Swap`.
   HX-Trigger-After-Settle:
-      short-explanation: https://htmx.org/headers/hx-trigger
+    short-explanation: https://htmx.org/headers/hx-trigger
+    documentation: See HX-Trigger. https://htmx.org/headers/hx-trigger
   HX-Trigger-After-Swap: 
     short-explanation: https://htmx.org/headers/hx-trigger
+    documentation: See HX-Trigger. https://htmx.org/headers/hx-trigger
