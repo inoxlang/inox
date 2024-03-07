@@ -76,7 +76,10 @@ func (f *formatter) formatInoxChunk(chunk *parse.ParsedChunkSource, options defi
 
 func (f *formatter) preVisitNode(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
 
-	if _, ok := node.(*parse.XMLExpression); ok {
+	switch node.(type) {
+	case *parse.XMLExpression, *parse.XMLElement:
+		return parse.Prune, nil
+	case *parse.XMLInterpolation:
 		return parse.Prune, nil
 	}
 
@@ -98,6 +101,10 @@ func (f *formatter) postVisitNode(node, parent, scopeNode parse.Node, ancestorCh
 	//Update identation of comment tokens.
 	if hasTokens {
 		for _, token := range tokens {
+			if token.SubType == parse.XML_TAG_OPENING_BRACKET { //Temporary fix
+				break
+			}
+
 			switch token.Type {
 			case parse.COMMENT:
 			default:
@@ -123,6 +130,10 @@ func (f *formatter) postVisitNode(node, parent, scopeNode parse.Node, ancestorCh
 
 	//Update identation and surrounding space of some tokens.
 	for _, token := range tokens {
+		if token.SubType == parse.XML_TAG_OPENING_BRACKET { //Temporary fix
+			return parse.ContinueTraversal, nil
+		}
+
 		_, ok := f.seenTokens[token.Span]
 		if ok {
 			continue
