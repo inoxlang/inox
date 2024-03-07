@@ -1,6 +1,7 @@
 package tailwind
 
 import (
+	"context"
 	_ "embed"
 	"errors"
 	"slices"
@@ -30,7 +31,7 @@ func InitSubset() error {
 		return ErrSubsetAlreadyInitialized
 	}
 
-	stylesheet, err := css.ParseString(TAIL_CSS)
+	stylesheet, err := css.ParseString(context.Background(), TAIL_CSS)
 	if err != nil {
 		return err
 	}

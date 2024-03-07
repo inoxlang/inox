@@ -59,6 +59,10 @@ func (n Node) IsZero() bool {
 	return n.Children == nil && n.Type == 0 && n.Data == "" && !n.Error
 }
 
+func (n Node) IsImport() bool {
+	return n.Type == AtRule && n.Data == "@import"
+}
+
 func (n Node) string(w *strings.Builder, indent int) {
 
 	for i := 0; i < indent; i++ {

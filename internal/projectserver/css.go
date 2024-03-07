@@ -23,6 +23,7 @@ type cssGenerator struct {
 	inoxChunkCache *parse.ChunkCache
 	fls            *Filesystem
 	session        *jsonrpc.Session
+	staticDir      string
 }
 
 func newCssGenerator(session *jsonrpc.Session, fls *Filesystem) *cssGenerator {
@@ -37,6 +38,7 @@ func newCssGenerator(session *jsonrpc.Session, fls *Filesystem) *cssGenerator {
 		inoxChunkCache: parse.NewChunkCache(),
 		fls:            fls,
 		session:        session,
+		staticDir:      "/static",
 	}
 
 	evs.OnIDLE(core.IdleEventSourceHandler{
@@ -48,7 +50,7 @@ func newCssGenerator(session *jsonrpc.Session, fls *Filesystem) *cssGenerator {
 			return
 		},
 		Microtask: func() {
-			go generator.gen()
+			go generator.genTailwindcss()
 		},
 	})
 
@@ -56,10 +58,32 @@ func newCssGenerator(session *jsonrpc.Session, fls *Filesystem) *cssGenerator {
 }
 
 func (g *cssGenerator) InitialGenAndSetup() {
-	g.gen()
+	g.genTailwindcss()
 }
 
-func (g *cssGenerator) gen() {
+func (g *cssGenerator) genAll() {
+	defer func() {
+		e := recover()
+		if e != nil {
+			err := utils.ConvertPanicValueToError(e)
+			err = fmt.Errorf("%w: %s", err, debug.Stack())
+			logs.Println(g.session.Client(), err)
+		}
+	}()
+
+	//TODO: make more flexible
+
+	err := g.fls.MkdirAll(filepath.Join(g.staticDir, layout.STATIC_STYLES_DIRNAME), 0700)
+
+	if err != nil {
+		logs.Println(g.session.Client(), err)
+		return
+	}
+
+	g.genTailwindcss()
+}
+
+func (g *cssGenerator) genTailwindcss() {
 	defer utils.Recover()
 	ctx := g.session.Context()
 
@@ -73,16 +97,8 @@ func (g *cssGenerator) gen() {
 		return
 	}
 
-	//TODO: make more flexible
-
-	err = g.fls.MkdirAll(filepath.Join("/static", layout.STATIC_STYLES_DIRNAME), 0700)
-
-	if err != nil {
-		logs.Println(g.session.Client(), err)
-		return
-	}
-
-	path := filepath.Join("/static/", layout.STATIC_STYLES_DIRNAME, layout.TAILWIND_FILENAME)
+	//Create or truncate tailwind.css.
+	path := filepath.Join(g.staticDir, layout.STATIC_STYLES_DIRNAME, layout.TAILWIND_FILENAME)
 
 	f, err := g.fls.Create(path)
 
