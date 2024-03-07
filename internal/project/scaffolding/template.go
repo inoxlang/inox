@@ -10,7 +10,6 @@ import (
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
-	"github.com/inoxlang/inox/internal/js"
 	"github.com/inoxlang/inox/internal/project/layout"
 )
 
@@ -30,19 +29,6 @@ var (
 
 	//Inox.js package
 
-	INOX_JS string //inox.js without any other library
-
-	PREACT_SIGNALS_JS       string
-	PREACT_SIGNALS_MINIFIED string
-
-	SURREAL_JS          string
-	SURREAL_JS_MINIFIED string
-
-	CSS_INLINE_SCOPE          string
-	CSS_INLINE_SCOPE_MINIFIED string
-
-	INOX_JS_PACKAGE          string
-	INOX_JS_PACKAGE_MINIFIED string
 )
 
 func init() {
@@ -62,21 +48,9 @@ func init() {
 		basename := filepath.Base(path)
 
 		switch basename {
-		//Inox.js package
-		case "inox.js":
-			INOX_JS = string(content)
-		case "preact-signals.js":
-			PREACT_SIGNALS_JS = string(content)
-			PREACT_SIGNALS_MINIFIED = js.MustMinify(PREACT_SIGNALS_JS, nil)
 		case "main.css":
 			MAIN_CSS_STYLESHEET = string(content)
 			MAIN_CSS_STYLESHEET_WITH_TAILWIND_IMPORT = layout.TAILWIND_IMPORT + "\n\n" + MAIN_CSS_STYLESHEET
-		case "surreal.js":
-			SURREAL_JS = string(content)
-			SURREAL_JS_MINIFIED = js.MustMinify(SURREAL_JS, nil)
-		case "css-inline-scope.js":
-			CSS_INLINE_SCOPE = string(content)
-			CSS_INLINE_SCOPE_MINIFIED = js.MustMinify(CSS_INLINE_SCOPE, nil)
 		}
 
 		return nil
@@ -85,16 +59,6 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-
-	parts := []string{
-		"{\n" + INOX_JS + "\n}\n",
-		"{\n" + PREACT_SIGNALS_JS + "\n}\n",
-		SURREAL_JS,
-		CSS_INLINE_SCOPE,
-	}
-
-	INOX_JS_PACKAGE = strings.Join(parts, "\n")
-	INOX_JS_PACKAGE_MINIFIED = js.MustMinify(INOX_JS_PACKAGE, nil)
 }
 
 func WriteTemplate(name string, fls afs.Filesystem) error {

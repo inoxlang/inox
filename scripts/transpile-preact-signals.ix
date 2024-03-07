@@ -1,8 +1,8 @@
 
 const (
-    TS_CONFIG_FILE = ./internal/project/scaffolding/common/tsconfig.json
-    OUTPUT_JS_FILE = ./internal/project/scaffolding/common/preact-signals.js
-    OUTPUT_DECLARATION_FILE = ./internal/project/scaffolding/common/preact-signals.d.ts
+    TS_CONFIG_FILE = ./internal/inoxjs/tsconfig.json
+    OUTPUT_JS_FILE = ./internal/inoxjs/preact-signals.js
+    OUTPUT_DECLARATION_FILE = ./internal/inoxjs/preact-signals.d.ts
 
     EXPORT_PATTERN =  %`^\s*(export|Object\.defineProperty\(exports).*`
 )

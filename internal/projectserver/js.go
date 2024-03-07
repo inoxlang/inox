@@ -10,6 +10,8 @@ import (
 	"github.com/inoxlang/inox/internal/hyperscript/hsgen"
 	hsscan "github.com/inoxlang/inox/internal/hyperscript/scan"
 	"github.com/inoxlang/inox/internal/inoxconsts"
+	ixgen "github.com/inoxlang/inox/internal/inoxjs/gen"
+	ixscan "github.com/inoxlang/inox/internal/inoxjs/scan"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/project/layout"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
@@ -52,6 +54,7 @@ func newJSGenerator(session *jsonrpc.Session, fls *Filesystem) *jsGenerator {
 			go func() {
 				generator.genHyperscript()
 				generator.genHTMX()
+				generator.genInox()
 			}()
 		},
 	})
@@ -62,6 +65,7 @@ func newJSGenerator(session *jsonrpc.Session, fls *Filesystem) *jsGenerator {
 func (g *jsGenerator) InitialGenAndSetup() {
 	g.genHyperscript()
 	g.genHTMX()
+	g.genInox()
 }
 
 func (g *jsGenerator) genHyperscript() {
@@ -156,6 +160,54 @@ func (g *jsGenerator) genHTMX() {
 	}
 
 	f.Write([]byte(layout.HTMX_JS_EXPLANATION))
+	f.Write([]byte{'\n'})
+	f.Write(utils.StringAsBytes(jsCode))
+}
+
+func (g *jsGenerator) genInox() {
+	defer utils.Recover()
+
+	//Find used features and commands.
+
+	scanResult, err := ixscan.ScanCodebase(g.session.Context(), g.fls, ixscan.Configuration{
+		TopDirectories: []string{"/"},
+		InoxChunkCache: g.inoxChunkCache,
+	})
+
+	if err != nil {
+		logs.Println(g.session.Client(), err)
+		return
+	}
+
+	//TODO: make more flexible
+
+	err = g.fls.MkdirAll(filepath.Join("/static", layout.STATIC_JS_DIRNAME), 0700)
+
+	if err != nil {
+		logs.Println(g.session.Client(), err)
+		return
+	}
+
+	path := filepath.Join("/static/", layout.STATIC_JS_DIRNAME, layout.INOX_JS_FILENAME)
+
+	f, err := g.fls.Create(path)
+
+	if err != nil {
+		logs.Println(g.session.Client(), err)
+		return
+	}
+
+	defer f.Close()
+
+	jsCode, err := ixgen.Generate(ixgen.Config{
+		Libraries: scanResult.Libraries,
+	})
+	if err != nil {
+		logs.Println(g.session.Client(), err)
+		return
+	}
+
+	f.Write([]byte(layout.INOX_JS_EXPLANATION))
 	f.Write([]byte{'\n'})
 	f.Write(utils.StringAsBytes(jsCode))
 }

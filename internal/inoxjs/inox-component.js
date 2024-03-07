@@ -3,7 +3,6 @@
 const INTERPOLATION_PATTERN = /\$\(([^)]*)\)/g
 const SIGNAL_SETTLING_TIMEOUT_MILLIS = 100
 
-
 /** @type {WeakMap<Signal, Dependent[]>} */
 const signalsToDependents = new WeakMap()
 

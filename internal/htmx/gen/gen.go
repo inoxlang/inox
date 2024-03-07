@@ -15,7 +15,7 @@ func Generate(config Config) (string, error) {
 
 	w := strings.Builder{}
 
-	w.WriteString("//included-extensions: ")
+	w.WriteString("//included extensions: [")
 	for i, ext := range config.Extensions {
 		if i != 0 {
 			w.WriteString(", ")
@@ -23,7 +23,7 @@ func Generate(config Config) (string, error) {
 		w.WriteString(ext)
 	}
 
-	w.WriteString("\n\n")
+	w.WriteString("]\n\n")
 	w.WriteString(htmx.HTMX_JS)
 
 	for _, ext := range config.Extensions {
