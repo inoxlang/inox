@@ -190,6 +190,15 @@ func (mv *Multivalue) AllValues(callbackFn func(v Value) bool) bool {
 	return true
 }
 
+func (mv *Multivalue) ForEachValue(callbackFn func(v Value) error) error {
+	for _, val := range mv.values {
+		if err := callbackFn(val); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // MapValues calls transform on all values in mv, the resulting values are joined.
 func (mv *Multivalue) TransformsValues(transform func(v Value) Value) Value {
 	var newValues []Value

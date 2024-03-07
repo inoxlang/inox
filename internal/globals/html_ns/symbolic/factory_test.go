@@ -44,6 +44,18 @@ func TestSymbolicCreateHTMLNodeFromXMLElement(t *testing.T) {
 			assert.Empty(t, state.Errors())
 		})
 
+		t.Run("multi value with one case being a list of HTML nodes", func(t *testing.T) {
+			chunk, state := symbolic.MakeTestStateAndChunk(`
+				html<div>
+				{ if true  [ html<span></span> ] else 2 }
+				</div>
+			`, globals())
+
+			_, err := symbolic.SymbolicEval(chunk, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.Errors())
+		})
+
 		t.Run("list of string-like values", func(t *testing.T) {
 			chunk, state := symbolic.MakeTestStateAndChunk(`html<div>{ [ "a", (concat "b" "c")  ] }</div>`, globals())
 

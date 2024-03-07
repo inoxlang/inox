@@ -1,6 +1,7 @@
 package html_ns
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
@@ -14,25 +15,46 @@ func init() {
 		CreateHTMLNodeFromXMLElement,
 		func(n parse.Node, value symbolic.Value) (errorMsg string) {
 
-			switch {
-			case symbolic.ImplementsOrIsMultivalueWithAllValuesImplementing[symbolic.StringLike](value),
-				symbolic.ImplementsOrIsMultivalueWithAllValuesImplementing[*HTMLNode](value),
-				symbolic.ImplementsOrIsMultivalueWithAllValuesImplementing[*symbolic.Int](value):
-				return ""
-			}
-
-			if list, ok := value.(*symbolic.List); ok {
-				elem := list.IteratorElementValue()
-				switch {
-				case symbolic.ImplementsOrIsMultivalueWithAllValuesImplementing[symbolic.StringLike](elem),
-					symbolic.ImplementsOrIsMultivalueWithAllValuesImplementing[*HTMLNode](elem),
-					symbolic.ImplementsOrIsMultivalueWithAllValuesImplementing[*symbolic.Int](elem):
-					return ""
-				}
-			}
-			return INTERPOLATION_LIMITATION_ERROR_MSG
+			return checkInterpolationValue(value)
 		},
 	)
+}
+
+func checkInterpolationValue(value symbolic.Value) (errMsg string) {
+
+	mv, ok := value.(*symbolic.Multivalue)
+
+	if ok {
+		err := mv.ForEachValue(func(v symbolic.Value) error {
+			if errMsg := checkInterpolationValue(v); errMsg != "" {
+				return errors.New(errMsg)
+			}
+			return nil
+		})
+
+		if err != nil {
+			return err.Error()
+		}
+		return ""
+	}
+
+	switch {
+	case symbolic.ImplementsOrIsMultivalueWithAllValuesImplementing[symbolic.StringLike](value),
+		symbolic.ImplementsOrIsMultivalueWithAllValuesImplementing[*HTMLNode](value),
+		symbolic.ImplementsOrIsMultivalueWithAllValuesImplementing[*symbolic.Int](value):
+		return ""
+	}
+
+	if list, ok := value.(*symbolic.List); ok {
+		elem := list.IteratorElementValue()
+		switch {
+		case symbolic.ImplementsOrIsMultivalueWithAllValuesImplementing[symbolic.StringLike](elem),
+			symbolic.ImplementsOrIsMultivalueWithAllValuesImplementing[*HTMLNode](elem),
+			symbolic.ImplementsOrIsMultivalueWithAllValuesImplementing[*symbolic.Int](elem):
+			return ""
+		}
+	}
+	return INTERPOLATION_LIMITATION_ERROR_MSG
 }
 
 func CreateHTMLNodeFromXMLElement(ctx *symbolic.Context, elem *symbolic.XMLElement) *HTMLNode {
