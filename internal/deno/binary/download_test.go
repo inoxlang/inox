@@ -14,7 +14,12 @@ func TestDownloadArchive(t *testing.T) {
 		t.SkipNow()
 	}
 
-	_, p, err := DownloadArchive()
+	assetInfo, archiveInfo, err := GetArchiveAssetInfo()
+	if !assert.NoError(t, err) {
+		return
+	}
+
+	_, p, err := DownloadArchive(archiveInfo, assetInfo)
 
 	if !assert.NoError(t, err) {
 		return

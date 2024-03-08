@@ -68,12 +68,7 @@ func GetArchiveAssetInfo() (github.AssetInfo, archiveInfo, error) {
 }
 
 // Download downloads the zip archive for the RELEASE_TAG version of Deno.
-func DownloadArchive() (*url.URL, []byte, error) {
-
-	assetInfo, archiveInfo, err := GetArchiveAssetInfo()
-	if err != nil {
-		return nil, nil, err
-	}
+func DownloadArchive(archiveInfo archiveInfo, assetInfo github.AssetInfo) (*url.URL, []byte, error) {
 
 	url, err := url.Parse(assetInfo.BrowserDownloadInfo)
 

@@ -20,7 +20,7 @@ const (
 
 func Install(location string) error {
 
-	_, archiveInfo, err := GetArchiveAssetInfo()
+	assetInfo, archiveInfo, err := GetArchiveAssetInfo()
 
 	if err != nil {
 		return err
@@ -31,7 +31,7 @@ func Install(location string) error {
 	if errors.Is(err, os.ErrNotExist) {
 		//Download the archive, and extract the binary from it.
 
-		_, p, err := DownloadArchive()
+		_, p, err := DownloadArchive(archiveInfo, assetInfo)
 		if err != nil {
 			return err
 		}
