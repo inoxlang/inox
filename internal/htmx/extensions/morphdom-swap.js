@@ -18,7 +18,7 @@
             }
         }
     });
-}())
+}());
 
 //https://github.com/patrick-steele-idem/morphdom/blob/e98d69e125cda814dd6d1ba71d6c7c9d93edc01e/dist/morphdom-umd.js (MIT licensed)
 (function (global, factory) {
