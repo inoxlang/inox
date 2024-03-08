@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/afs"
-	"github.com/inoxlang/inox/internal/codebase/codebasescan"
+	"github.com/inoxlang/inox/internal/codebase/scan"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/inoxjs"
 	"github.com/inoxlang/inox/internal/parse"
@@ -73,10 +73,10 @@ func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) (
 		return nil
 	}
 
-	err := codebasescan.ScanCodebase(ctx, fls, codebasescan.Configuration{
+	err := scan.ScanCodebase(ctx, fls, scan.Configuration{
 		TopDirectories:     []string{"/"},
 		ChunkCache:         config.InoxChunkCache,
-		FileHandlers:       []codebasescan.FileHandler{handleFile},
+		FileHandlers:       []scan.FileHandler{handleFile},
 		FileParsingTimeout: 50 * time.Millisecond,
 	})
 

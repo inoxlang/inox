@@ -1,4 +1,4 @@
-package codebasescan
+package scan
 
 import (
 	"strings"

@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/inoxlang/inox/internal/afs"
-	"github.com/inoxlang/inox/internal/codebase/codebasescan"
+	"github.com/inoxlang/inox/internal/codebase/scan"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/css/tailwind"
 	"github.com/inoxlang/inox/internal/parse"
@@ -23,12 +23,12 @@ func ScanForTailwindRulesToInclude(ctx *core.Context, fls afs.Filesystem, config
 
 	ruleSet := map[string]tailwind.Ruleset{}
 
-	codebasescan.ScanCodebase(ctx, fls, codebasescan.Configuration{
+	scan.ScanCodebase(ctx, fls, scan.Configuration{
 		TopDirectories: config.TopDirectories,
 		MaxFileSize:    config.MaxFileSize,
 		Fast:           config.Fast,
 		ChunkCache:     config.InoxChunkCache,
-		FileHandlers: []codebasescan.FileHandler{
+		FileHandlers: []scan.FileHandler{
 			func(path string, content string, n *parse.Chunk) error {
 				for _, rule := range findTailwindRulesToInclude(n) {
 					ruleSet[rule.Name] = rule
