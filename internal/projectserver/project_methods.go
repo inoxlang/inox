@@ -13,6 +13,7 @@ import (
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/project/access"
+	"github.com/inoxlang/inox/internal/projectserver/dev"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/projectserver/logs"
 	"github.com/inoxlang/inox/internal/projectserver/lsp"
@@ -216,6 +217,10 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 				}
 			}
 
+			//Create a development session.
+
+			devSession := dev.NewDevSession()
+
 			//Update session data.
 
 			sessionData := getLockedSessionData(session)
@@ -229,6 +234,7 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 			sessionData.repository = gitRepo
 			sessionData.project = project
 			sessionData.fsEventSource = evs
+			sessionData.devSession = devSession
 
 			//Create the server API (application).
 

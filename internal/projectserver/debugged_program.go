@@ -9,7 +9,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/hack"
-	"github.com/inoxlang/inox/internal/mod"
+	"github.com/inoxlang/inox/internal/projectserver/dev"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
@@ -20,6 +20,7 @@ type debuggedProgramLaunch struct {
 	logLevels       *core.LogLevels
 	session         *jsonrpc.Session
 	debugSession    *DebugSession
+	devSession      *dev.Session
 	fls             *Filesystem
 	memberAuthToken string
 }
@@ -126,26 +127,20 @@ func launchDebuggedProgram(args debuggedProgramLaunch) {
 		}
 	}))
 
-	_, _, _, preparationOk, err := mod.RunLocalModule(mod.RunLocalModuleArgs{
-		Fpath:                    programPath,
-		SingleFileParsingTimeout: SINGLE_FILE_PARSING_TIMEOUT,
+	preparationOk, err := args.devSession.RunProgram(dev.RunProgramParams{
+		Path:          programPath,
+		ParentContext: ctx,
 
-		ParsingCompilationContext: ctx,
-		ParentContext:             ctx,
-		ParentContextRequired:     true,
-		PreinitFilesystem:         fls,
-		AllowMissingEnvVars:       false,
-		IgnoreHighRiskScore:       true,
-		FullAccessToDatabases:     true,
-		Project:                   project,
-		MemberAuthToken:           memberAuthToken,
+		Project:         project,
+		MemberAuthToken: memberAuthToken,
 
-		Out:       programOut,
-		Logger:    logger,
-		LogLevels: logLevels,
+		PreinitFilesystem: fls,
 
-		Debugger:     debugSession.debugger,
-		PreparedChan: debugSession.programPreparedOrFailedToChan,
+		Debugger:                      debugSession.debugger,
+		ProgramOut:                    programOut,
+		Logger:                        logger,
+		LogLevels:                     logLevels,
+		ProgramPreparedOrFailedToChan: debugSession.programPreparedOrFailedToChan,
 	})
 
 	if preparationOk {

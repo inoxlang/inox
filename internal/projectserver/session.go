@@ -9,6 +9,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/project"
+	"github.com/inoxlang/inox/internal/projectserver/dev"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
 	"github.com/inoxlang/inox/internal/sourcecontrol"
@@ -31,6 +32,7 @@ type additionalSessionData struct {
 	project              *project.Project
 	memberAuthToken      string
 	projectDevSessionKey http_ns.DevSessionKey //set after project is open
+	devSession           *dev.Session
 
 	serverAPI     *serverAPI //set during project opening
 	cssGenerator  *gen.CssGenerator

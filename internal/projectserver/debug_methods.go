@@ -677,6 +677,7 @@ func handleDebugLaunch(ctx context.Context, req interface{}) (interface{}, error
 		logLevels:       logLevels,
 		session:         session,
 		debugSession:    debugSession,
+		devSession:      sessionData.devSession,
 		fls:             fls,
 		memberAuthToken: memberAuthToken,
 	})
