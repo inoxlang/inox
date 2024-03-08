@@ -20,6 +20,10 @@ func RegisterParseHypercript(fn ParseHyperscriptFn) {
 	parseHyperscript = fn
 }
 
+func IsParseHypercriptRegistered() bool {
+	return parseHyperscript != nil
+}
+
 func (p *parser) parseContentOfRawXMLElement(element *XMLElement) {
 
 	ident, ok := element.Opening.Name.(*IdentifierLiteral)

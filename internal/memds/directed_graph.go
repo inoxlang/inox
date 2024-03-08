@@ -67,6 +67,23 @@ func NewDirectedGraph[NodeData, EdgeData any](threadSafety ThreadSafety) *Direct
 }
 
 // NewDirectedGraph returns a DirectedGraph.
+func NewDirectedGraphWithAdditionalData[NodeData, EdgeData any, InternalData any](threadSafety ThreadSafety, data InternalData) *DirectedGraph[NodeData, EdgeData, InternalData] {
+	graph := &DirectedGraph[NodeData, EdgeData, InternalData]{
+		nodes:          make(map[NodeId]GraphNode[NodeData]),
+		from:           make(map[NodeId]map[NodeId]EdgeData),
+		to:             make(map[NodeId]map[NodeId]EdgeData),
+		additionalData: data,
+		currId:         -1,
+	}
+
+	if threadSafety == ThreadSafe {
+		graph.lock = &sync.RWMutex{}
+	}
+
+	return graph
+}
+
+// NewDirectedGraph returns a DirectedGraph.
 func newDirectedGraph[NodeData, EdgeData any, InternalData any](threadSafety ThreadSafety) *DirectedGraph[NodeData, EdgeData, InternalData] {
 	graph := &DirectedGraph[NodeData, EdgeData, InternalData]{
 		nodes:  make(map[NodeId]GraphNode[NodeData]),
