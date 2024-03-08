@@ -396,13 +396,15 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 			return nil, nil, nil, ErrDatabaseOpenFunctionNotFound
 		}
 
-		db, err := openDB(ctx, DbOpenConfiguration{
+		openingConfig := DbOpenConfiguration{
 			Resource:       config.Resource,
 			ResolutionData: config.ResolutionData,
 			FullAccess:     args.FullAccessToDatabases,
 			Project:        project,
 			IsTestDatabase: args.IsUnderTest,
-		})
+		}
+
+		db, err := openDB(ctx, openingConfig)
 
 		if err != nil {
 			err = fmt.Errorf("failed to open the '%s' database: %w", config.Name, err)
@@ -422,6 +424,9 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 			Name:                         config.Name,
 			ExpectedSchema:               config.ExpectedSchema,
 			DevMode:                      args.DataExtractionMode,
+
+			OpeningFunction:      openDB,
+			OpeningConfiguration: openingConfig,
 		})
 
 		if err != nil && (!args.DataExtractionMode || !errors.Is(err, ErrCurrentSchemaNotEqualToExpectedSchema)) {

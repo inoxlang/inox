@@ -71,6 +71,9 @@ type DatabaseIL struct {
 	topLevelEntitiesLoaded            atomic.Bool
 	topLevelEntities                  map[string]Serializable
 	topLevelEntitiesAccessPermissions map[string]DatabasePermission
+
+	openingFn            OpenDBFn
+	openingConfiguration DbOpenConfiguration
 }
 
 type DbOpenConfiguration struct {
@@ -137,6 +140,12 @@ type DatabaseWrappingArgs struct {
 	//In dev mode top level entities are never loaded, and a mismatch between
 	//the current schema and the expected schema causes the expected schema to be used.
 	DevMode bool
+
+	//(Optional) function used to open the database.
+	OpeningFunction OpenDBFn
+
+	//(Optional) configuration used to open the database. It should be set if OpeningFunction is not nil.
+	OpeningConfiguration DbOpenConfiguration
 }
 
 // WrapDatabase wraps a Database in a *DatabaseIL.
@@ -163,6 +172,14 @@ func WrapDatabase(ctx *Context, args DatabaseWrappingArgs) (*DatabaseIL, error) 
 		name:                 args.Name,
 
 		devMode: args.DevMode,
+	}
+
+	if args.OpeningFunction != nil {
+		db.openingFn = args.OpeningFunction
+		db.openingConfiguration = args.OpeningConfiguration
+		if db.openingConfiguration == (DbOpenConfiguration{}) {
+			return nil, errors.New("opening function was provided but the configuration was not")
+		}
 	}
 
 	var errInDevMode error
@@ -274,6 +291,13 @@ func (db *DatabaseIL) setDatabasePermissions() {
 
 func (db *DatabaseIL) Resource() SchemeHolder {
 	return db.inner.Resource()
+}
+
+func (db *DatabaseIL) OpeningConfiguration() (fn OpenDBFn, config DbOpenConfiguration, available bool) {
+	if db.openingFn == nil {
+		return nil, DbOpenConfiguration{}, false
+	}
+	return db.openingFn, db.openingConfiguration, true
 }
 
 func (db *DatabaseIL) UpdateSchema(ctx *Context, nextSchema *ObjectPattern, migrations ...*Object) {

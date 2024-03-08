@@ -1712,7 +1712,18 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 			return
 		}
 
-		assert.Equal(t, core.Host("ldb://main"), state.Databases["local"].Resource())
+		db := state.Databases["local"]
+		assert.Equal(t, core.Host("ldb://main"), db.Resource())
+
+		//The database opening configuration should be available.
+
+		fn, config, availabe := db.OpeningConfiguration()
+		if !assert.True(t, availabe) {
+			return
+		}
+
+		assert.NotNil(t, fn)
+		assert.NotZero(t, config)
 	})
 
 	t.Run("if the current schema of a database does not match the expected schema, only an error should be returned", func(t *testing.T) {

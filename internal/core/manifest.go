@@ -171,7 +171,7 @@ type DatabaseConfigs []DatabaseConfig
 type DatabaseConfig struct {
 	Name                 string       //declared name, this is NOT the basename.
 	Resource             SchemeHolder //URL or Host
-	ResolutionData       Value        //ResourceName or Nil
+	ResolutionData       Serializable        //ResourceName or Nil
 	ExpectedSchemaUpdate bool
 	ExpectedSchema       *ObjectPattern //can be nil, not related to .ExpectedSchemaUpdate
 	Owned                bool
