@@ -7,6 +7,8 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/hyperscript/hsgen"
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -35,8 +37,8 @@ func TestAnalyzeHyperscript(t *testing.T) {
 		}
 
 		expectedResult := newEmptyResult()
-		expectedResult.UsedHyperscriptCommands["toggle"] = struct{}{}
-		expectedResult.UsedHyperscriptFeatures["on"] = struct{}{}
+		expectedResult.UsedHyperscriptCommands["toggle"] = utils.MustGet(hsgen.GetBuiltinDefinition("toggle"))
+		expectedResult.UsedHyperscriptFeatures["on"] = utils.MustGet(hsgen.GetBuiltinDefinition("on"))
 
 		assert.Equal(t, expectedResult, result)
 	})
@@ -55,8 +57,8 @@ func TestAnalyzeHyperscript(t *testing.T) {
 		}
 
 		expectedResult := newEmptyResult()
-		expectedResult.UsedHyperscriptCommands["toggle"] = struct{}{}
-		expectedResult.UsedHyperscriptFeatures["on"] = struct{}{}
+		expectedResult.UsedHyperscriptCommands["toggle"] = utils.MustGet(hsgen.GetBuiltinDefinition("toggle"))
+		expectedResult.UsedHyperscriptFeatures["on"] = utils.MustGet(hsgen.GetBuiltinDefinition("on"))
 
 		assert.Equal(t, expectedResult, result)
 	})

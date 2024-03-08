@@ -7,6 +7,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/inoxjs"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -36,6 +37,7 @@ func TestAnalyzeInoxjs(t *testing.T) {
 
 		expectedResult := newEmptyResult()
 		expectedResult.IsSurrealUsed = true
+		expectedResult.UsedInoxJsLibs = append(expectedResult.UsedInoxJsLibs, inoxjs.SURREAL_LIB_NAME)
 
 		assert.Equal(t, expectedResult, result)
 	})
@@ -60,6 +62,7 @@ func TestAnalyzeInoxjs(t *testing.T) {
 
 		expectedResult := newEmptyResult()
 		expectedResult.IsPreactSignalsLibUsed = true
+		expectedResult.UsedInoxJsLibs = append(expectedResult.UsedInoxJsLibs, inoxjs.PREACT_SIGNALS_LIB_NAME)
 
 		assert.Equal(t, expectedResult, result)
 	})
@@ -84,6 +87,7 @@ func TestAnalyzeInoxjs(t *testing.T) {
 
 		expectedResult := newEmptyResult()
 		expectedResult.IsInoxComponentLibUsed = true
+		expectedResult.UsedInoxJsLibs = append(expectedResult.UsedInoxJsLibs, inoxjs.INOX_COMPONENT_LIB_NAME)
 
 		assert.Equal(t, expectedResult, result)
 	})
@@ -108,6 +112,7 @@ func TestAnalyzeInoxjs(t *testing.T) {
 
 		expectedResult := newEmptyResult()
 		expectedResult.IsCssScopeInlineUsed = true
+		expectedResult.UsedInoxJsLibs = append(expectedResult.UsedInoxJsLibs, inoxjs.CSS_INLINE_SCOPE_LIB_NAME)
 
 		assert.Equal(t, expectedResult, result)
 	})
@@ -134,6 +139,7 @@ func TestAnalyzeInoxjs(t *testing.T) {
 
 		expectedResult := newEmptyResult()
 		expectedResult.IsCssScopeInlineUsed = true
+		expectedResult.UsedInoxJsLibs = append(expectedResult.UsedInoxJsLibs, inoxjs.CSS_INLINE_SCOPE_LIB_NAME)
 
 		assert.Equal(t, expectedResult, result)
 	})

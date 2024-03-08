@@ -3,13 +3,18 @@ package projectserver
 import (
 	"context"
 
+	"github.com/inoxlang/inox/internal/codebase/analysis"
+	"github.com/inoxlang/inox/internal/codebase/gen"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/inoxd/node"
+	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/project/access"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
+	"github.com/inoxlang/inox/internal/projectserver/logs"
 	"github.com/inoxlang/inox/internal/projectserver/lsp"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -199,7 +204,17 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 				}
 			}
 
+			//Create filesystem and FS event source.
+
 			lspFilesystem := NewFilesystem(workingFs, fs_ns.NewMemFilesystem(10_000_000))
+
+			evs, err := fs_ns.NewEventSourceWithFilesystem(sessionCtx, lspFilesystem, core.PathPattern("/..."))
+			if err != nil {
+				return nil, jsonrpc.ResponseError{
+					Code:    jsonrpc.InternalError.Code,
+					Message: "failed to get create an event source from the filesystem",
+				}
+			}
 
 			//Update session data.
 
@@ -213,17 +228,15 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 			sessionData.filesystem = lspFilesystem
 			sessionData.repository = gitRepo
 			sessionData.project = project
-			sessionData.cssGenerator = newCssGenerator(session, lspFilesystem)
-			sessionData.jsGenerator = newJSGenerator(session, lspFilesystem)
+			sessionData.fsEventSource = evs
+
+			//Create the server API (application).
+
 			sessionData.serverAPI = newServerAPI(lspFilesystem, session, memberAuthToken)
 
 			go sessionData.serverAPI.tryUpdateAPI() //use a goroutine to avoid deadlock
 
-			go func() {
-				defer utils.Recover()
-				sessionData.cssGenerator.InitialGenAndSetup()
-				sessionData.jsGenerator.InitialGenAndSetup()
-			}()
+			//Notify the LSP client about FS events and refresh the server API on certain events.
 
 			err = startNotifyingFilesystemStructureEvents(session, workingFs, func(event fs_ns.Event) {
 				sessionData.serverAPI.acknowledgeStructureChangeEvent(event)
@@ -235,6 +248,52 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 					Message: err.Error(),
 				}
 			}
+
+			//Create static CSS and JS generators.
+
+			sessionData.cssGenerator = gen.NewCssGenerator(lspFilesystem, "/static", session.Client())
+			sessionData.jsGenerator = gen.NewJSGenerator(lspFilesystem, "/static", session.Client())
+
+			chunkCache := parse.NewChunkCache()
+
+			analyzeCodebaseAndRegen := func(initial bool) {
+				defer utils.Recover()
+				analysisResult, err := analysis.AnalyzeCodebase(sessionCtx, lspFilesystem, analysis.Configuration{
+					TopDirectories: []string{"/"},
+					InoxChunkCache: chunkCache,
+				})
+				if err != nil {
+					logs.Println(session.Client(), err)
+					return
+				}
+
+				if initial {
+					sessionData.cssGenerator.InitialGenAndSetup(sessionCtx, analysisResult)
+					sessionData.jsGenerator.InitialGenAndSetup(sessionCtx, analysisResult)
+				} else {
+					sessionData.cssGenerator.RegenAll(sessionCtx, analysisResult)
+					sessionData.jsGenerator.RegenAll(sessionCtx, analysisResult)
+				}
+			}
+
+			go func() {
+				//Initial generation.
+				analyzeCodebaseAndRegen(true)
+			}()
+
+			//Each time an Inox file changes we analyze the codebase en regenerate static CSS & JS.
+			evs.OnIDLE(core.IdleEventSourceHandler{
+				MinimumLastEventAge: 2 * fs_ns.OLD_EVENT_MIN_AGE,
+				IsIgnoredEvent: func(e *core.Event) (ignore bool) {
+					fsEvent := e.SourceValue().(fs_ns.Event)
+
+					ignore = !fsEvent.IsStructureOrContentChange() || fsEvent.Path().Extension() != inoxconsts.INOXLANG_FILE_EXTENSION
+					return
+				},
+				Microtask: func() {
+					go analyzeCodebaseAndRegen(false)
+				},
+			})
 
 			return OpenProjectResponse{
 				TempProjectTokens:   tokens,

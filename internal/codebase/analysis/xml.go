@@ -41,18 +41,22 @@ func analyzeXmlElement(node *parse.XMLElement, state *inoxFileAnalysisState, res
 	case parse.HyperscriptScript:
 		addUsedHyperscriptFeaturesAndCommands(node, result)
 	case parse.JsScript:
-		if SURREAL_DETECTION_PATTERN.MatchString(node.RawElementContent) {
+		if SURREAL_DETECTION_PATTERN.MatchString(node.RawElementContent) && !result.IsSurrealUsed {
 			result.IsSurrealUsed = true
+			result.UsedInoxJsLibs = append(result.UsedInoxJsLibs, inoxjs.SURREAL_LIB_NAME)
 		}
-		if PREACT_SIGNALS_DETECTION_PATTERN.MatchString(node.RawElementContent) {
+		if PREACT_SIGNALS_DETECTION_PATTERN.MatchString(node.RawElementContent) && !result.IsPreactSignalsLibUsed {
 			result.IsPreactSignalsLibUsed = true
+			result.UsedInoxJsLibs = append(result.UsedInoxJsLibs, inoxjs.PREACT_SIGNALS_LIB_NAME)
 		}
-		if strings.Contains(node.RawElementContent, inoxjs.INIT_COMPONENT_FN_NAME+"(") {
+		if strings.Contains(node.RawElementContent, inoxjs.INIT_COMPONENT_FN_NAME+"(") && !result.IsPreactSignalsLibUsed {
 			result.IsInoxComponentLibUsed = true
+			result.UsedInoxJsLibs = append(result.UsedInoxJsLibs, inoxjs.INOX_COMPONENT_LIB_NAME)
 		}
 	case parse.CssStyleElem:
-		if CSS_SCOPE_INLINE_DETECTION_PATTERN.MatchString(node.RawElementContent) {
+		if CSS_SCOPE_INLINE_DETECTION_PATTERN.MatchString(node.RawElementContent) && !result.IsCssScopeInlineUsed {
 			result.IsCssScopeInlineUsed = true
+			result.UsedInoxJsLibs = append(result.UsedInoxJsLibs, inoxjs.CSS_INLINE_SCOPE_LIB_NAME)
 		}
 	}
 }

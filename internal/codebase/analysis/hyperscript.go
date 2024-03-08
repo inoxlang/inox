@@ -40,9 +40,9 @@ func addUsedHyperscriptFeaturesAndCommands(node parse.Node, result *Result) {
 			if ok {
 				switch def.Kind {
 				case hsgen.CommandDefinition:
-					result.UsedHyperscriptCommands[def.Name] = struct{}{}
+					result.UsedHyperscriptCommands[def.Name] = def
 				case hsgen.FeatureDefinition:
-					result.UsedHyperscriptFeatures[def.Name] = struct{}{}
+					result.UsedHyperscriptFeatures[def.Name] = def
 				}
 			}
 		}

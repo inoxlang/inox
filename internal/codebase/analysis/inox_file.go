@@ -21,8 +21,9 @@ func analyzeInoxFile(path string, chunk *parse.Chunk, result *Result) {
 		case *parse.XMLElement:
 			analyzeXmlElement(node, &state, result)
 		case *parse.XMLText:
-			if strings.Contains(node.Value, inoxjs.TEXT_INTERPOLATION_OPENING_DELIMITER) {
+			if strings.Contains(node.Value, inoxjs.TEXT_INTERPOLATION_OPENING_DELIMITER) && !result.IsInoxComponentLibUsed {
 				result.IsInoxComponentLibUsed = true
+				result.UsedInoxJsLibs = append(result.UsedInoxJsLibs, inoxjs.INOX_COMPONENT_LIB_NAME)
 			}
 		}
 
