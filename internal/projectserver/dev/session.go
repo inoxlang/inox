@@ -1,8 +1,10 @@
 package dev
 
 import (
+	"errors"
 	"io"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/inoxlang/inox/internal/afs"
@@ -16,8 +18,14 @@ const (
 	SINGLE_FILE_PARSING_TIMEOUT = 100 * time.Millisecond
 )
 
+var (
+	ErrDevSessionAlreadyRunningProgram = errors.New("development session is already running a program")
+)
+
 type Session struct {
 	lock sync.Mutex
+
+	isRunningAProgram atomic.Bool
 }
 
 func NewDevSession() *Session {
@@ -41,6 +49,12 @@ type RunProgramParams struct {
 }
 
 func (s *Session) RunProgram(args RunProgramParams) (preparationOk bool, _ error) {
+
+	if !s.isRunningAProgram.CompareAndSwap(false, true) {
+		return false, ErrDevSessionAlreadyRunningProgram
+	}
+
+	defer s.isRunningAProgram.Store(false)
 
 	_, _, _, preparationOk, err := mod.RunLocalModule(mod.RunLocalModuleArgs{
 		Fpath:                    args.Path,

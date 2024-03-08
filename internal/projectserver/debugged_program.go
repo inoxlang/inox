@@ -143,7 +143,7 @@ func launchDebuggedProgram(args debuggedProgramLaunch) {
 		ProgramPreparedOrFailedToChan: debugSession.programPreparedOrFailedToChan,
 	})
 
-	if preparationOk {
+	if preparationOk || errors.Is(err, dev.ErrDevSessionAlreadyRunningProgram) {
 		debugSession.programDoneChan <- err
 	} else {
 		debugSession.debugger.Closed()
