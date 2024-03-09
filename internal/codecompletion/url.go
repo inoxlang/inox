@@ -1,66 +1,19 @@
 package codecompletion
 
 import (
-	"path"
 	"path/filepath"
 	"slices"
 	"strings"
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	"github.com/inoxlang/inox/internal/inoxconsts"
-	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
-
-	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/globalnames"
-
 	"github.com/inoxlang/inox/internal/globals/s3_ns"
-	"github.com/inoxlang/inox/internal/utils"
-
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	parse "github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
+	"github.com/inoxlang/inox/internal/utils"
 )
-
-func findPathCompletions(ctx *core.Context, pth string) []Completion {
-	var completions []Completion
-
-	fls := ctx.GetFileSystem()
-	dir := path.Dir(pth)
-	base := path.Base(pth)
-
-	if core.Path(pth).IsDirPath() {
-		base = ""
-	}
-
-	entries, err := fs_ns.ListFiles(ctx, core.ToValueOptionalParam(core.Path(dir+"/")))
-	if err != nil {
-		return nil
-	}
-
-	for _, e := range entries {
-		name := string(e.BaseName_)
-		if strings.HasPrefix(name, base) {
-			pth := path.Join(dir, name)
-
-			if !parse.HasPathLikeStart(pth) {
-				pth = "./" + pth
-			}
-
-			stat, _ := fls.Stat(pth)
-			if stat.IsDir() {
-				pth += "/"
-			}
-
-			completions = append(completions, Completion{
-				ShownString: name,
-				Value:       pth,
-				Kind:        defines.CompletionItemKindConstant,
-				LabelDetail: "%" + core.PATH_PATTERN.Name,
-			})
-		}
-	}
-
-	return completions
-}
 
 func findURLCompletions(ctx *core.Context, node *parse.URLLiteral, search completionSearch) (completions []Completion) {
 

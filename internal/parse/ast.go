@@ -1363,6 +1363,19 @@ func (CallExpression) Kind() NodeKind {
 	return Expr
 }
 
+func (e CallExpression) IsCalleeNamed(name string) bool {
+	switch callee := e.Callee.(type) {
+	case *IdentifierLiteral:
+		return callee.Name == name
+	case *GlobalVariable:
+		return callee.Name == name
+	case *Variable:
+		return callee.Name == name
+	default:
+		return false
+	}
+}
+
 type SpreadArgument struct {
 	NodeBase
 	Expr Node

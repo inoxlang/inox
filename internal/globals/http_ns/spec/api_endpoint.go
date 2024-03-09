@@ -40,6 +40,16 @@ func (e ApiEndpoint) Operations() []ApiOperation {
 	return e.operations[0:len(e.operations):len(e.operations)]
 }
 
+func (e ApiEndpoint) ForEachPathSegment(fn func(segment EndpointPathSegment) error) error {
+	for _, segment := range e.pathSegments {
+		err := fn(segment)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (e ApiEndpoint) GetPathParams(path string) (params PathParams, count int, err error) {
 
 	segmentIndex := -1

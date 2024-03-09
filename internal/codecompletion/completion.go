@@ -134,9 +134,9 @@ func FindCompletions(args SearchArgs) []Completion {
 		case *parse.MultilineStringLiteral:
 			completions = findStringCompletions(n, search)
 		case *parse.RelativePathLiteral:
-			completions = findPathCompletions(state.Global.Ctx, n.Raw)
+			completions = findPathCompletions(state.Global.Ctx, n.Raw, n, search)
 		case *parse.AbsolutePathLiteral:
-			completions = findPathCompletions(state.Global.Ctx, n.Raw)
+			completions = findPathCompletions(state.Global.Ctx, n.Raw, n, search)
 		case *parse.URLLiteral:
 			completions = findURLCompletions(state.Global.Ctx, n, search)
 		case *parse.URLPatternLiteral:
