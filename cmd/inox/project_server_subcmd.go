@@ -266,6 +266,7 @@ func determineProjectServerPermissions(projectServerConfig projectserver.Individ
 
 	const DEV_LOCALHOST_0 = core.Host("https://localhost:" + inoxconsts.DEV_PORT_0)
 	const DEV_LOCALHOST_1 = core.Host("https://localhost:" + inoxconsts.DEV_PORT_1)
+	const DEV_LOCALHOST_2 = core.Host("https://localhost:" + inoxconsts.DEV_PORT_2)
 
 	perms := []core.Permission{
 		//TODO: change path patterns
@@ -280,6 +281,7 @@ func determineProjectServerPermissions(projectServerConfig projectserver.Individ
 		core.HttpPermission{Kind_: permkind.Provide, Entity: core.ANY_HTTPS_HOST_PATTERN},
 		core.HttpPermission{Kind_: permkind.Provide, Entity: core.HostPattern("https://**:" + inoxconsts.DEV_PORT_0)},
 		core.HttpPermission{Kind_: permkind.Provide, Entity: core.HostPattern("https://**:" + inoxconsts.DEV_PORT_1)},
+		core.HttpPermission{Kind_: permkind.Provide, Entity: core.HostPattern("https://**:" + inoxconsts.DEV_PORT_2)},
 		core.HttpPermission{Kind_: permkind.Provide, Entity: core.HostPattern("http://" + chrome_ns.BROWSER_PROXY_ADDR)},
 
 		//Default HTTP read|write|delete permissions
@@ -291,6 +293,10 @@ func determineProjectServerPermissions(projectServerConfig projectserver.Individ
 		core.HttpPermission{Kind_: permkind.Read, Entity: DEV_LOCALHOST_1},
 		core.HttpPermission{Kind_: permkind.Write, Entity: DEV_LOCALHOST_1},
 		core.HttpPermission{Kind_: permkind.Delete, Entity: DEV_LOCALHOST_1},
+
+		core.HttpPermission{Kind_: permkind.Read, Entity: DEV_LOCALHOST_2},
+		core.HttpPermission{Kind_: permkind.Write, Entity: DEV_LOCALHOST_2},
+		core.HttpPermission{Kind_: permkind.Delete, Entity: DEV_LOCALHOST_2},
 
 		//Lighweight thread permissions
 

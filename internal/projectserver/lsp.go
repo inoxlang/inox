@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"runtime/debug"
+	"time"
 
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
@@ -19,7 +20,7 @@ import (
 )
 
 const (
-	LSP_LOG_SRC = "lsp"
+	PROJECT_SERVER_LOG_SRC = "project-server"
 )
 
 var HOVER_PRETTY_PRINT_CONFIG = &pprint.PrettyPrintConfig{
@@ -60,7 +61,7 @@ type WebsocketServerConfiguration struct {
 func StartLSPServer(ctx *core.Context, serverConfig LSPServerConfiguration) (finalErr error) {
 	//Setup logs.
 
-	zerologLogger := ctx.NewChildLoggerForInternalSource(LSP_LOG_SRC)
+	zerologLogger := ctx.NewChildLoggerForInternalSource(PROJECT_SERVER_LOG_SRC)
 	logger := log.New(zerologLogger, "", 0)
 	logs.Init(logger)
 
@@ -116,13 +117,13 @@ func StartLSPServer(ctx *core.Context, serverConfig LSPServerConfiguration) (fin
 	}
 
 	if serverConfig.ProdDir != "" {
-		ctx.Logger().Debug().Msgf("prod dir is %s", serverConfig.ProdDir)
+		zerologLogger.Info().Msgf("prod dir is %s", serverConfig.ProdDir)
 	}
 
 	//Open the project registry.
 
 	projDir := string(serverConfig.ProjectsDir)
-	ctx.Logger().Debug().Msgf("open project registry at %s", projDir)
+	zerologLogger.Info().Msgf("open project registry at %s", projDir)
 	projectRegistry, err := project.OpenRegistry(projDir, ctx)
 
 	if err != nil {
@@ -138,14 +139,30 @@ func StartLSPServer(ctx *core.Context, serverConfig LSPServerConfiguration) (fin
 
 	// Start the development server(s).
 
-	earlyErr := http_ns.StartDevServer(ctx.BoundChild(), http_ns.DevServerConfig{
-		DevServersDir:       devServersDir,
-		Port:                inoxconsts.DEV_PORT_0,
-		BindToAllInterfaces: serverConfig.ExposeWebServers,
-	})
+	earlyDevServerErrChan := make(chan error, 1)
 
-	if earlyErr != nil {
-		return fmt.Errorf("failed to start dev server on port %s: %w", inoxconsts.DEV_PORT_0, earlyErr)
+	for _, port := range []string{inoxconsts.DEV_PORT_0, inoxconsts.DEV_PORT_1, inoxconsts.DEV_PORT_2} {
+		go func(port string) {
+			earlyErr := http_ns.StartDevServer(ctx.BoundChild(), http_ns.DevServerConfig{
+				DevServersDir:       devServersDir,
+				Port:                port,
+				BindToAllInterfaces: serverConfig.ExposeWebServers,
+			})
+
+			if earlyErr != nil {
+				earlyDevServerErrChan <- fmt.Errorf("failed to start dev server on port %s: %w", port, earlyErr)
+			}
+
+			zerologLogger.Info().Msgf("dev server started on port %s", port)
+		}(port)
+	}
+
+	select {
+	case err := <-earlyDevServerErrChan:
+		if err != nil {
+			return err
+		}
+	case <-time.After(2 * http_ns.MAX_DEV_SERVER_STARTUP_PERIOD):
 	}
 
 	//Create and start the LSP server.

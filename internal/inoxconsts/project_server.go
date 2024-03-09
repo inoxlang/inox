@@ -8,6 +8,7 @@ const (
 
 	DEV_PORT_0 string = "8080"
 	DEV_PORT_1 string = "8081"
+	DEV_PORT_2 string = "8082"
 
 	DEV_SESSION_KEY_HEADER = "X-Dev-Session-Key"
 
@@ -15,5 +16,5 @@ const (
 )
 
 func IsDevPort(s string) bool {
-	return s == DEV_PORT_0 || s == DEV_PORT_1
+	return s == DEV_PORT_0 || s == DEV_PORT_1 || s == DEV_PORT_2
 }
