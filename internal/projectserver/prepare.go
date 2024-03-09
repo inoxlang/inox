@@ -44,7 +44,7 @@ type filePreparationParams struct {
 
 	notifyUserAboutDbError bool
 
-	_depth int //should not be by caller, it is used internally by prepareSourceFileInExtractionMode
+	_depth int //should not be set by the caller, it is used internally by prepareSourceFileInExtractionMode
 
 	//Defaults to SINGLE_FILE_PARSING_TIMEOUT.
 	singleFileParsingTimeout time.Duration

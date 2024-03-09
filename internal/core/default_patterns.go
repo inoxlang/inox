@@ -10,6 +10,7 @@ import (
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core/patternnames"
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/core/symbolicdev"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -948,6 +949,12 @@ var (
 		SymbolicValue: symbolic.ANY_TUPLE_PATTERN,
 	}
 
+	DEV_API_PATTERN = &TypePattern{
+		Type:          reflect.TypeOf(struct{ __never int }{}),
+		Name:          "dev",
+		SymbolicValue: symbolicdev.ANY_DEV_API,
+	}
+
 	DEFAULT_NAMED_PATTERNS = map[string]Pattern{
 		NEVER_PATTERN.Name:          NEVER_PATTERN,
 		NIL_PATTERN.Name:            NIL_PATTERN,
@@ -1048,6 +1055,7 @@ var (
 				"node":            ASTNODE_PATTERN,
 				"module":          MOD_PATTERN,
 				"source_position": SOURCE_POS_PATTERN,
+				"dev":             DEV_API_PATTERN,
 			},
 		},
 		patternnames.DATE_FORMAT_NS: {

@@ -2,6 +2,9 @@ package projectserver
 
 import (
 	"context"
+	"fmt"
+	"runtime/debug"
+	"time"
 
 	"github.com/inoxlang/inox/internal/codebase/analysis"
 	"github.com/inoxlang/inox/internal/codebase/gen"
@@ -13,6 +16,7 @@ import (
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/project/access"
+	"github.com/inoxlang/inox/internal/project/layout"
 	"github.com/inoxlang/inox/internal/projectserver/dev"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/projectserver/logs"
@@ -110,201 +114,7 @@ func registerProjectMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 		},
 		RateLimits: []int{0, 2, 5},
 		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
-			session := jsonrpc.GetSession(ctx)
-			sessionCtx := session.Context()
-			params := req.(*OpenProjectParams)
-
-			_, ok := getProject(session)
-			if ok {
-				return nil, jsonrpc.ResponseError{
-					Code:    jsonrpc.InternalError.Code,
-					Message: "a project is already open",
-				}
-			}
-
-			projectId := core.ProjectID(params.ProjectID)
-			if err := projectId.Validate(); err != nil {
-				return nil, jsonrpc.ResponseError{
-					Code:    jsonrpc.InternalError.Code,
-					Message: "invalid project ID",
-				}
-			}
-
-			memberId := access.MemberID(params.MemberID)
-			if err := memberId.Validate(); err != nil {
-				return nil, jsonrpc.ResponseError{
-					Code:    jsonrpc.InternalError.Code,
-					Message: "invalid member ID",
-				}
-			}
-
-			project, err := projectRegistry.OpenProject(sessionCtx, project.OpenProjectParams{
-				Id:               projectId,
-				DevSideConfig:    params.DevSideConfig,
-				TempTokens:       params.TempTokens,
-				ExposeWebServers: opts.ExposeWebServers,
-			})
-
-			if err != nil {
-				return nil, jsonrpc.ResponseError{
-					Code:    jsonrpc.InternalError.Code,
-					Message: err.Error(),
-				}
-			}
-
-			_, err = project.AuthenticateMember(sessionCtx, memberId)
-			if err != nil {
-				return nil, jsonrpc.ResponseError{
-					Code:    jsonrpc.InternalError.Code,
-					Message: err.Error(),
-				}
-			}
-
-			memberAuthToken := string(memberId)
-
-			//TODO: limit the number of concurrent sessions for the same member.
-
-			sessionCtx.PutUserData(CURRENT_PROJECT_CTX_DATA_PATH, project)
-
-			tokens, err := project.TempProjectTokens(sessionCtx)
-			if err != nil {
-				return nil, jsonrpc.ResponseError{
-					Code:    jsonrpc.InternalError.Code,
-					Message: err.Error(),
-				}
-			}
-
-			//Update the project copy of the member.
-
-			developerCopy, err := project.DevCopy(sessionCtx, memberAuthToken)
-
-			if err != nil {
-				return nil, jsonrpc.ResponseError{
-					Code:    jsonrpc.InternalError.Code,
-					Message: err.Error(),
-				}
-			}
-
-			workingFs, ok := developerCopy.WorkingFilesystem()
-			if !ok {
-				if err != nil {
-					return nil, jsonrpc.ResponseError{
-						Code:    jsonrpc.InternalError.Code,
-						Message: "failed to get the working filesystem (working tree)",
-					}
-				}
-			}
-
-			gitRepo, ok := developerCopy.Repository()
-			if !ok {
-				if err != nil {
-					return nil, jsonrpc.ResponseError{
-						Code:    jsonrpc.InternalError.Code,
-						Message: "failed to get local git repository",
-					}
-				}
-			}
-
-			//Create filesystem and FS event source.
-
-			lspFilesystem := NewFilesystem(workingFs, fs_ns.NewMemFilesystem(10_000_000))
-
-			evs, err := fs_ns.NewEventSourceWithFilesystem(sessionCtx, lspFilesystem, core.PathPattern("/..."))
-			if err != nil {
-				return nil, jsonrpc.ResponseError{
-					Code:    jsonrpc.InternalError.Code,
-					Message: "failed to get create an event source from the filesystem",
-				}
-			}
-
-			//Create a development session.
-
-			devSession := dev.NewDevSession()
-
-			//Update session data.
-
-			sessionData := getLockedSessionData(session)
-			defer sessionData.lock.Unlock()
-
-			sessionData.memberAuthToken = memberAuthToken
-			sessionData.projectDevSessionKey = http_ns.RandomDevSessionKey()
-			sessionCtx.PutUserData(http_ns.CTX_DATA_KEY_FOR_DEV_SESSION_KEY, core.String(sessionData.projectDevSessionKey))
-
-			sessionData.filesystem = lspFilesystem
-			sessionData.repository = gitRepo
-			sessionData.project = project
-			sessionData.fsEventSource = evs
-			sessionData.devSession = devSession
-
-			//Create the server API (application).
-
-			sessionData.serverAPI = newServerAPI(lspFilesystem, session, memberAuthToken)
-
-			go sessionData.serverAPI.tryUpdateAPI() //use a goroutine to avoid deadlock
-
-			//Notify the LSP client about FS events and refresh the server API on certain events.
-
-			err = startNotifyingFilesystemStructureEvents(session, workingFs, func(event fs_ns.Event) {
-				sessionData.serverAPI.acknowledgeStructureChangeEvent(event)
-			})
-
-			if err != nil {
-				return nil, jsonrpc.ResponseError{
-					Code:    jsonrpc.InternalError.Code,
-					Message: err.Error(),
-				}
-			}
-
-			//Create static CSS and JS generators.
-
-			sessionData.cssGenerator = gen.NewCssGenerator(lspFilesystem, "/static", session.Client())
-			sessionData.jsGenerator = gen.NewJSGenerator(lspFilesystem, "/static", session.Client())
-
-			chunkCache := parse.NewChunkCache()
-
-			analyzeCodebaseAndRegen := func(initial bool) {
-				defer utils.Recover()
-				analysisResult, err := analysis.AnalyzeCodebase(sessionCtx, lspFilesystem, analysis.Configuration{
-					TopDirectories: []string{"/"},
-					InoxChunkCache: chunkCache,
-				})
-				if err != nil {
-					logs.Println(session.Client(), err)
-					return
-				}
-
-				if initial {
-					sessionData.cssGenerator.InitialGenAndSetup(sessionCtx, analysisResult)
-					sessionData.jsGenerator.InitialGenAndSetup(sessionCtx, analysisResult)
-				} else {
-					sessionData.cssGenerator.RegenAll(sessionCtx, analysisResult)
-					sessionData.jsGenerator.RegenAll(sessionCtx, analysisResult)
-				}
-			}
-
-			go func() {
-				//Initial generation.
-				analyzeCodebaseAndRegen(true)
-			}()
-
-			//Each time an Inox file changes we analyze the codebase en regenerate static CSS & JS.
-			evs.OnIDLE(core.IdleEventSourceHandler{
-				MinimumLastEventAge: 2 * fs_ns.OLD_EVENT_MIN_AGE,
-				IsIgnoredEvent: func(e *core.Event) (ignore bool) {
-					fsEvent := e.SourceValue().(fs_ns.Event)
-
-					ignore = !fsEvent.IsStructureOrContentChange() || fsEvent.Path().Extension() != inoxconsts.INOXLANG_FILE_EXTENSION
-					return
-				},
-				Microtask: func() {
-					go analyzeCodebaseAndRegen(false)
-				},
-			})
-
-			return OpenProjectResponse{
-				TempProjectTokens:   tokens,
-				CanBeDeployedInProd: node.IsAgentSet(),
-			}, nil
+			return handleOpenProject(ctx, req, projectRegistry, opts.ExposeWebServers)
 		},
 	})
 
@@ -367,4 +177,231 @@ func getProject(session *jsonrpc.Session) (*project.Project, bool) {
 	p := session.Context().ResolveUserData(CURRENT_PROJECT_CTX_DATA_PATH)
 	project, ok := p.(*project.Project)
 	return project, ok
+}
+
+func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *project.Registry, exposeWebServers bool) (interface{}, error) {
+	session := jsonrpc.GetSession(ctx)
+	sessionCtx := session.Context()
+	params := req.(*OpenProjectParams)
+
+	_, ok := getProject(session)
+	if ok {
+		return nil, jsonrpc.ResponseError{
+			Code:    jsonrpc.InternalError.Code,
+			Message: "a project is already open",
+		}
+	}
+
+	projectId := core.ProjectID(params.ProjectID)
+	if err := projectId.Validate(); err != nil {
+		return nil, jsonrpc.ResponseError{
+			Code:    jsonrpc.InternalError.Code,
+			Message: "invalid project ID",
+		}
+	}
+
+	memberId := access.MemberID(params.MemberID)
+	if err := memberId.Validate(); err != nil {
+		return nil, jsonrpc.ResponseError{
+			Code:    jsonrpc.InternalError.Code,
+			Message: "invalid member ID",
+		}
+	}
+
+	project, err := projectRegistry.OpenProject(sessionCtx, project.OpenProjectParams{
+		Id:               projectId,
+		DevSideConfig:    params.DevSideConfig,
+		TempTokens:       params.TempTokens,
+		ExposeWebServers: exposeWebServers,
+	})
+
+	if err != nil {
+		return nil, jsonrpc.ResponseError{
+			Code:    jsonrpc.InternalError.Code,
+			Message: err.Error(),
+		}
+	}
+
+	_, err = project.AuthenticateMember(sessionCtx, memberId)
+	if err != nil {
+		return nil, jsonrpc.ResponseError{
+			Code:    jsonrpc.InternalError.Code,
+			Message: err.Error(),
+		}
+	}
+
+	memberAuthToken := string(memberId)
+
+	//TODO: limit the number of concurrent sessions for the same member.
+
+	sessionCtx.PutUserData(CURRENT_PROJECT_CTX_DATA_PATH, project)
+
+	tokens, err := project.TempProjectTokens(sessionCtx)
+	if err != nil {
+		return nil, jsonrpc.ResponseError{
+			Code:    jsonrpc.InternalError.Code,
+			Message: err.Error(),
+		}
+	}
+
+	//Update the project copy of the member.
+
+	developerCopy, err := project.DevCopy(sessionCtx, memberAuthToken)
+
+	if err != nil {
+		return nil, jsonrpc.ResponseError{
+			Code:    jsonrpc.InternalError.Code,
+			Message: err.Error(),
+		}
+	}
+
+	workingFs, ok := developerCopy.WorkingFilesystem()
+	if !ok {
+		if err != nil {
+			return nil, jsonrpc.ResponseError{
+				Code:    jsonrpc.InternalError.Code,
+				Message: "failed to get the working filesystem (working tree)",
+			}
+		}
+	}
+
+	gitRepo, ok := developerCopy.Repository()
+	if !ok {
+		if err != nil {
+			return nil, jsonrpc.ResponseError{
+				Code:    jsonrpc.InternalError.Code,
+				Message: "failed to get local git repository",
+			}
+		}
+	}
+
+	//Create filesystem and FS event source.
+
+	lspFilesystem := NewFilesystem(workingFs, fs_ns.NewMemFilesystem(10_000_000))
+
+	evs, err := fs_ns.NewEventSourceWithFilesystem(sessionCtx, lspFilesystem, core.PathPattern("/..."))
+	if err != nil {
+		return nil, jsonrpc.ResponseError{
+			Code:    jsonrpc.InternalError.Code,
+			Message: "failed to get create an event source from the filesystem",
+		}
+	}
+
+	//Create a development session.
+
+	devSession := dev.NewDevSession(lspFilesystem, project, sessionCtx /*create a child context ?*/)
+
+	go func() {
+		defer func() {
+			e := recover()
+			if e != nil {
+				err := utils.ConvertPanicValueToError(e)
+				err = fmt.Errorf("%w: %s", err, debug.Stack())
+				logs.Println(session.Client(), err)
+			}
+		}()
+
+		time.Sleep(time.Second) //Wait a bit because a lot of computations are performed after the goroutine creation.
+
+		handlerCtx := core.NewContextWithEmptyState(core.ContextConfig{
+			ParentContext: session.Context(),
+		}, nil)
+		defer handlerCtx.CancelGracefully()
+
+		result, ok := prepareSourceFileInExtractionMode(handlerCtx, filePreparationParams{
+			fpath:           layout.MAIN_PROGRAM_PATH,
+			session:         session,
+			memberAuthToken: memberAuthToken,
+			requiresState:   true,
+		})
+
+		if ok {
+			devSession.InitWithPreparedMainModule(result.state)
+		}
+	}()
+
+	//Update session data.
+
+	sessionData := getLockedSessionData(session)
+	defer sessionData.lock.Unlock()
+
+	sessionData.memberAuthToken = memberAuthToken
+	sessionData.projectDevSessionKey = http_ns.RandomDevSessionKey()
+	sessionCtx.PutUserData(http_ns.CTX_DATA_KEY_FOR_DEV_SESSION_KEY, core.String(sessionData.projectDevSessionKey))
+
+	sessionData.filesystem = lspFilesystem
+	sessionData.repository = gitRepo
+	sessionData.project = project
+	sessionData.fsEventSource = evs
+	sessionData.devSession = devSession
+
+	//Create the server API (application).
+
+	sessionData.serverAPI = newServerAPI(lspFilesystem, session, memberAuthToken)
+
+	go sessionData.serverAPI.tryUpdateAPI() //use a goroutine to avoid deadlock
+
+	//Notify the LSP client about FS events and refresh the server API on certain events.
+
+	err = startNotifyingFilesystemStructureEvents(session, workingFs, func(event fs_ns.Event) {
+		sessionData.serverAPI.acknowledgeStructureChangeEvent(event)
+	})
+
+	if err != nil {
+		return nil, jsonrpc.ResponseError{
+			Code:    jsonrpc.InternalError.Code,
+			Message: err.Error(),
+		}
+	}
+
+	//Create static CSS and JS generators.
+
+	sessionData.cssGenerator = gen.NewCssGenerator(lspFilesystem, "/static", session.Client())
+	sessionData.jsGenerator = gen.NewJSGenerator(lspFilesystem, "/static", session.Client())
+
+	chunkCache := parse.NewChunkCache()
+
+	analyzeCodebaseAndRegen := func(initial bool) {
+		defer utils.Recover()
+		analysisResult, err := analysis.AnalyzeCodebase(sessionCtx, lspFilesystem, analysis.Configuration{
+			TopDirectories: []string{"/"},
+			InoxChunkCache: chunkCache,
+		})
+		if err != nil {
+			logs.Println(session.Client(), err)
+			return
+		}
+
+		if initial {
+			sessionData.cssGenerator.InitialGenAndSetup(sessionCtx, analysisResult)
+			sessionData.jsGenerator.InitialGenAndSetup(sessionCtx, analysisResult)
+		} else {
+			sessionData.cssGenerator.RegenAll(sessionCtx, analysisResult)
+			sessionData.jsGenerator.RegenAll(sessionCtx, analysisResult)
+		}
+	}
+
+	go func() {
+		//Initial generation.
+		analyzeCodebaseAndRegen(true)
+	}()
+
+	//Each time an Inox file changes we analyze the codebase en regenerate static CSS & JS.
+	evs.OnIDLE(core.IdleEventSourceHandler{
+		MinimumLastEventAge: 2 * fs_ns.OLD_EVENT_MIN_AGE,
+		IsIgnoredEvent: func(e *core.Event) (ignore bool) {
+			fsEvent := e.SourceValue().(fs_ns.Event)
+
+			ignore = !fsEvent.IsStructureOrContentChange() || fsEvent.Path().Extension() != inoxconsts.INOXLANG_FILE_EXTENSION
+			return
+		},
+		Microtask: func() {
+			go analyzeCodebaseAndRegen(false)
+		},
+	})
+
+	return OpenProjectResponse{
+		TempProjectTokens:   tokens,
+		CanBeDeployedInProd: node.IsAgentSet(),
+	}, nil
 }

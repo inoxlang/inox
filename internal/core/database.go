@@ -293,6 +293,13 @@ func (db *DatabaseIL) Resource() SchemeHolder {
 	return db.inner.Resource()
 }
 
+func (db *DatabaseIL) Schema() *ObjectPattern {
+	if db.newSchemaSet.Load() {
+		return db.newSchema
+	}
+	return db.initialSchema
+}
+
 func (db *DatabaseIL) OpeningConfiguration() (fn OpenDBFn, config DbOpenConfiguration, available bool) {
 	if db.openingFn == nil {
 		return nil, DbOpenConfiguration{}, false

@@ -2,16 +2,14 @@ package dev
 
 import (
 	"errors"
-	"io"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/mod"
 	"github.com/inoxlang/inox/internal/project"
-	"github.com/rs/zerolog"
+	"github.com/inoxlang/inox/internal/project/layout"
 )
 
 const (
@@ -20,63 +18,68 @@ const (
 
 var (
 	ErrDevSessionAlreadyRunningProgram = errors.New("development session is already running a program")
+	ErrDevSessionNotInitialized        = errors.New("development session is not initialized")
+	ErrDevSessionAlreadyInitialized    = errors.New("development session is already initialized")
 )
 
 type Session struct {
-	lock sync.Mutex
+	lock        sync.Mutex
+	initialized bool
+	context     *core.Context
+
+	devAPI *API
+
+	developerWorkingFS afs.Filesystem
+	project            *project.Project
+
+	runningProgramDatabases       map[string]*core.DatabaseIL      //main
+	databaseOpeningConfigurations map[string]databaseOpeningConfig //main
+	dbProxies                     map[string]*dbProxy              //proxies should be unique because they may open a database
 
 	isRunningAProgram atomic.Bool
 }
 
-func NewDevSession() *Session {
-	return &Session{}
-}
-
-type RunProgramParams struct {
-	Path            string
-	ParentContext   *core.Context //also used as the parsing context
-	Project         *project.Project
-	MemberAuthToken string
-
-	PreinitFilesystem afs.Filesystem
-	Debugger          *core.Debugger
-
-	ProgramOut io.Writer
-	Logger     zerolog.Logger
-	LogLevels  *core.LogLevels
-
-	ProgramPreparedOrFailedToChan chan error
-}
-
-func (s *Session) RunProgram(args RunProgramParams) (preparationOk bool, _ error) {
-
-	if !s.isRunningAProgram.CompareAndSwap(false, true) {
-		return false, ErrDevSessionAlreadyRunningProgram
+func NewDevSession(workingFS afs.Filesystem, project *project.Project, ctx *core.Context) *Session {
+	s := &Session{
+		developerWorkingFS:            workingFS,
+		project:                       project,
+		runningProgramDatabases:       map[string]*core.DatabaseIL{},
+		databaseOpeningConfigurations: map[string]databaseOpeningConfig{},
+		context:                       ctx,
+		dbProxies:                     map[string]*dbProxy{},
 	}
 
-	defer s.isRunningAProgram.Store(false)
+	s.devAPI = &API{session: s}
 
-	_, _, _, preparationOk, err := mod.RunLocalModule(mod.RunLocalModuleArgs{
-		Fpath:                    args.Path,
-		SingleFileParsingTimeout: SINGLE_FILE_PARSING_TIMEOUT,
+	return s
+}
 
-		ParsingCompilationContext: args.ParentContext,
-		ParentContext:             args.ParentContext,
-		ParentContextRequired:     true,
-		PreinitFilesystem:         args.PreinitFilesystem,
-		AllowMissingEnvVars:       false,
-		IgnoreHighRiskScore:       true,
-		FullAccessToDatabases:     true,
-		Project:                   args.Project,
-		MemberAuthToken:           args.MemberAuthToken,
+func (s *Session) DevAPI() *API {
+	return s.devAPI
+}
 
-		Out:       args.ProgramOut,
-		Logger:    args.Logger,
-		LogLevels: args.LogLevels,
+func (s *Session) InitWithPreparedMainModule(state *core.GlobalState) error {
+	src, ok := state.Module.AbsoluteSource()
+	if !ok || src.ResourceName() != layout.MAIN_PROGRAM_PATH {
+		return errors.New("provided state is not the main module's state")
+	}
 
-		Debugger:     args.Debugger,
-		PreparedChan: args.ProgramPreparedOrFailedToChan,
-	})
+	s.lock.Lock()
+	defer s.lock.Unlock()
 
-	return preparationOk, err
+	if s.initialized {
+		return ErrDevSessionAlreadyInitialized
+	}
+
+	for name, db := range state.Databases {
+		open, config, ok := db.OpeningConfiguration()
+
+		if ok {
+			s.databaseOpeningConfigurations[name] = databaseOpeningConfig{
+				open:   open,
+				config: config,
+			}
+		}
+	}
+	return nil
 }

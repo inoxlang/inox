@@ -19,10 +19,7 @@ func (db *DatabaseIL) Prop(ctx *Context, name string) Value {
 
 	switch name {
 	case "schema":
-		if db.newSchemaSet.Load() {
-			return db.newSchema
-		}
-		return db.initialSchema
+		return db.Schema()
 	case "update_schema", "close":
 	default:
 		if db.schemaUpdateExpected {
