@@ -1,6 +1,9 @@
 package dev
 
 import (
+	"slices"
+	"strings"
+
 	"github.com/inoxlang/inox/internal/core"
 )
 
@@ -38,4 +41,30 @@ func (a *API) getDB(ctx *core.Context, name core.String) (*dbProxy, error) {
 	a.session.dbProxies[nameS] = proxy
 
 	return proxy, nil
+}
+
+func (a *API) getDatabaseNames(_ *core.Context) *core.List {
+	a.session.lock.Lock()
+	defer a.session.lock.Unlock()
+
+	names := map[string]struct{}{}
+
+	for name := range a.session.dbProxies {
+		names[name] = struct{}{}
+	}
+
+	for name := range a.session.runningProgramDatabases {
+		names[name] = struct{}{}
+	}
+
+	var nameSlice []core.StringLike
+	for name := range names {
+		nameSlice = append(nameSlice, core.String(name))
+	}
+
+	slices.SortFunc(nameSlice, func(a, b core.StringLike) int {
+		return strings.Compare(a.GetOrBuildString(), b.GetOrBuildString())
+	})
+
+	return core.NewWrappedStringListFrom(nameSlice)
 }

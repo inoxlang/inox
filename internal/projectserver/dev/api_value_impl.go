@@ -14,6 +14,8 @@ func (a *API) GetGoMethod(name string) (*core.GoFunction, bool) {
 	switch name {
 	case "get_db":
 		return core.WrapGoMethod(a.getDB), true
+	case "get_db_names":
+		return core.WrapGoMethod(a.getDatabaseNames), true
 	}
 	return nil, false
 }

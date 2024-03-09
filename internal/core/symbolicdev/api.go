@@ -8,7 +8,7 @@ import (
 
 var (
 	ANY_DEV_API       = &API{}
-	DEV_API_PROPNAMES = []string{"get_db"}
+	DEV_API_PROPNAMES = []string{"get_db", "get_db_names"}
 
 	_ = symbolic.GoValue((*API)(nil))
 	_ = symbolic.IProps((*API)(nil))
@@ -26,10 +26,16 @@ func (a *API) getDB(ctx *symbolic.Context, name *symbolic.String) (*DBProxy, *sy
 	return ANY_DB_PROXY, nil
 }
 
+func (a *API) getDatabaseNames(ctx *symbolic.Context) *symbolic.List {
+	return symbolic.NewListOf(symbolic.ANY_STR_LIKE)
+}
+
 func (a *API) GetGoMethod(name string) (*symbolic.GoFunction, bool) {
 	switch name {
 	case "get_db":
 		return symbolic.WrapGoMethod(a.getDB), true
+	case "get_db_names":
+		return symbolic.WrapGoMethod(a.getDatabaseNames), true
 	}
 	return nil, false
 }
