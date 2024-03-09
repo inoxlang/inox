@@ -89,6 +89,7 @@ type ModulePreparationArgs struct {
 	//should only be set if the module is a main module
 	Project         Project
 	MemberAuthToken string
+	ListeningPort   uint16 //optional, defaults to <inoxconsts.DEV_PORT_0
 
 	//defaults to os.Stdout
 	Out io.Writer
@@ -220,11 +221,14 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 
 	var applicationListeningAddr Host
 	if project != nil {
-		//TODO: get available port in a range dedicated to dev.
+		port := inoxconsts.DEV_PORT_0
+		if args.ListeningPort != 0 {
+			port = strconv.Itoa(int(args.ListeningPort))
+		}
 
-		applicationListeningAddr = Host("https://localhost:" + inoxconsts.DEV_PORT_0)
+		applicationListeningAddr = Host("https://localhost:" + port)
 		if project.Configuration().AreExposedWebServersAllowed() {
-			applicationListeningAddr = Host("https://0.0.0.0:" + inoxconsts.DEV_PORT_0)
+			applicationListeningAddr = Host("https://0.0.0.0:" + port)
 		}
 	}
 

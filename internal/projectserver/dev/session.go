@@ -2,12 +2,15 @@ package dev
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/globals/http_ns"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/project/layout"
 )
@@ -23,35 +26,61 @@ var (
 )
 
 type Session struct {
-	lock        sync.Mutex
+	lock sync.Mutex
+
+	key             http_ns.DevSessionKey
+	memberAuthToken string
+
 	initialized bool
 	context     *core.Context
-
-	devAPI *API
 
 	developerWorkingFS afs.Filesystem
 	project            *project.Project
 
-	runningProgramDatabases       map[string]*core.DatabaseIL      //main
-	databaseOpeningConfigurations map[string]databaseOpeningConfig //main
-	dbProxies                     map[string]*dbProxy              //proxies should be unique because they may open a database
+	//main program and databases
 
-	isRunningAProgram atomic.Bool
+	isRunningAProgram             atomic.Bool
+	runningProgramDatabases       map[string]*core.DatabaseIL
+	databaseOpeningConfigurations map[string]databaseOpeningConfig
+	dbProxies                     map[string]*dbProxy //proxies should be unique because they may open a database
+
+	//tools
+
+	toolsServerPort string
+	devAPI          *API
 }
 
-func NewDevSession(workingFS afs.Filesystem, project *project.Project, ctx *core.Context) *Session {
+type SessionParams struct {
+	WorkingFS      afs.Filesystem
+	Project        *project.Project
+	SessionContext *core.Context //context of the development session
+
+	ToolsServerPort string //should be a dev port
+	DevSessionKey   http_ns.DevSessionKey
+	MemberAuthToken string
+}
+
+func NewDevSession(args SessionParams) (*Session, error) {
 	s := &Session{
-		developerWorkingFS:            workingFS,
-		project:                       project,
+		developerWorkingFS:            args.WorkingFS,
+		project:                       args.Project,
 		runningProgramDatabases:       map[string]*core.DatabaseIL{},
 		databaseOpeningConfigurations: map[string]databaseOpeningConfig{},
-		context:                       ctx,
+		context:                       args.SessionContext,
 		dbProxies:                     map[string]*dbProxy{},
+
+		toolsServerPort: args.ToolsServerPort,
+		key:             args.DevSessionKey,
+		memberAuthToken: args.MemberAuthToken,
 	}
 
 	s.devAPI = &API{session: s}
 
-	return s
+	if !inoxconsts.IsDevPort(s.toolsServerPort) {
+		return nil, fmt.Errorf("%s is not a dev port", s.toolsServerPort)
+	}
+
+	return s, nil
 }
 
 func (s *Session) DevAPI() *API {

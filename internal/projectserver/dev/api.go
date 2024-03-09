@@ -29,7 +29,8 @@ func (a *API) getDB(ctx *core.Context, name core.String) (*dbProxy, error) {
 
 	proxy = newDBProxy(nameS, a.session)
 
-	_, err := proxy.dbNoLock()
+	lockSession := false
+	_, err := proxy.dbNoLock(lockSession)
 	if err != nil {
 		return nil, err
 	}

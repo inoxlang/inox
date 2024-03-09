@@ -50,6 +50,7 @@ type RunLocalModuleArgs struct {
 	FullAccessToDatabases bool
 	Project               *project.Project
 	MemberAuthToken       string
+	ListeningPort         uint16 //optional, defaults to inoxconsts.DEV_PORT_0
 
 	UseBytecode      bool
 	OptimizeBytecode bool
@@ -115,6 +116,7 @@ func RunLocalModule(args RunLocalModuleArgs) (
 		FullAccessToDatabases: args.FullAccessToDatabases,
 		Project:               args.Project,
 		MemberAuthToken:       args.MemberAuthToken,
+		ListeningPort:         args.ListeningPort,
 
 		EnableTesting: args.EnableTesting,
 		TestFilters:   args.TestFilters,

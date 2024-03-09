@@ -289,7 +289,23 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 
 	//Create a development session.
 
-	devSession := dev.NewDevSession(lspFilesystem, project, sessionCtx /*create a child context ?*/)
+	devSessionKey := http_ns.RandomDevSessionKey()
+
+	devSession, err := dev.NewDevSession(dev.SessionParams{
+		WorkingFS:       lspFilesystem,
+		Project:         project,
+		SessionContext:  sessionCtx,
+		ToolsServerPort: inoxconsts.DEV_PORT_2,
+		DevSessionKey:   devSessionKey,
+		MemberAuthToken: memberAuthToken,
+	})
+
+	if err != nil {
+		return nil, jsonrpc.ResponseError{
+			Code:    jsonrpc.InternalError.Code,
+			Message: fmt.Sprintf("failed to create the development session: %s", err.Error()),
+		}
+	}
 
 	go func() {
 		defer func() {
@@ -318,6 +334,13 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 		if ok {
 			devSession.InitWithPreparedMainModule(result.state)
 		}
+
+		err := devSession.DevToolsServer()
+		if err != nil {
+			logs.Println(session.Client(), err)
+		} else {
+			logs.Println(session.Client(), "dev tools server started")
+		}
 	}()
 
 	//Update session data.
@@ -326,7 +349,7 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 	defer sessionData.lock.Unlock()
 
 	sessionData.memberAuthToken = memberAuthToken
-	sessionData.projectDevSessionKey = http_ns.RandomDevSessionKey()
+	sessionData.projectDevSessionKey = devSessionKey
 	sessionCtx.PutUserData(http_ns.CTX_DATA_KEY_FOR_DEV_SESSION_KEY, core.String(sessionData.projectDevSessionKey))
 
 	sessionData.filesystem = lspFilesystem

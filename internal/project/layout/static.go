@@ -1,10 +1,6 @@
 package layout
 
 const (
-	//inox
-
-	MAIN_PROGRAM_PATH = "/main.ix"
-
 	//static js/
 	STATIC_JS_DIRNAME             = "js"
 	INOX_JS_FILENAME              = "inox.js"

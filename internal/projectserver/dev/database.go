@@ -36,7 +36,9 @@ func (p *dbProxy) getSchema(ctx *core.Context) (*core.ObjectPattern, error) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
-	db, err := p.dbNoLock()
+	lockSession := true
+
+	db, err := p.dbNoLock(lockSession)
 	if err != nil {
 		return core.NewInexactObjectPattern([]core.ObjectPatternEntry{}), err
 	}
@@ -44,13 +46,15 @@ func (p *dbProxy) getSchema(ctx *core.Context) (*core.ObjectPattern, error) {
 	return db.Schema(), nil
 }
 
-func (p *dbProxy) dbNoLock() (*core.DatabaseIL, error) {
+func (p *dbProxy) dbNoLock(lockSession bool) (*core.DatabaseIL, error) {
 	if p.current != nil {
 		return p.current, nil
 	}
 
-	p.session.lock.Lock()
-	defer p.session.lock.Unlock()
+	if lockSession {
+		p.session.lock.Lock()
+		defer p.session.lock.Unlock()
+	}
 
 	db, ok := p.session.runningProgramDatabases[p.dbName]
 	if ok {
