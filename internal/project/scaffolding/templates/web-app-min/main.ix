@@ -29,7 +29,7 @@ server = http.Server!(APP_LISTENING_ADDR, {
     # Inox's HTTP server has a strict Content Security Policy by default (https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP).
     # Uncomment the following lines to individually override the default directives.
     # default-csp: http.CSP{
-    #     # allow loading images from any HTTPS website.
+    #     # allow loading images from any HTTPS server.
     #     img-src: "https://*"
     # 
     #     # allow loading scripts from the current server and unpkg.com.

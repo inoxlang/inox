@@ -257,7 +257,7 @@ server:
 server = http.Server!(APP_LISTENING_ADDR {
     ...
     default-csp: http.CSP{
-        # allow loading images from any HTTPS website.
+        # allow loading images from any HTTPS server.
         img-src: "https://*"
     
         # allow loading scripts from the current server and unpkg.com.
