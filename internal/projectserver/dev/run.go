@@ -6,6 +6,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/mod"
 	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/project/layout"
@@ -35,6 +36,11 @@ func (s *Session) RunProgram(args RunProgramParams) (preparationOk bool, _ error
 	}
 
 	defer s.isRunningAProgram.Store(false)
+	defer func() {
+		s.lock.Lock()
+		defer s.lock.Unlock()
+		clear(s.runningProgramDatabases)
+	}()
 
 	_, _, _, preparationOk, err := mod.RunLocalModule(mod.RunLocalModuleArgs{
 		Fpath:                    args.Path,
@@ -61,6 +67,8 @@ func (s *Session) RunProgram(args RunProgramParams) (preparationOk bool, _ error
 			if args.Path != layout.MAIN_PROGRAM_PATH {
 				return nil
 			}
+
+			state.Ctx.PutUserData(inoxconsts.DEV_CTX_DATA_ENTRY, s.devAPI)
 
 			s.lock.Lock()
 			defer s.lock.Unlock()

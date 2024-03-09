@@ -950,7 +950,7 @@ var (
 	}
 
 	DEV_API_PATTERN = &TypePattern{
-		Type:          reflect.TypeOf(struct{ __never int }{}),
+		Type:          DEV_API_TYPE,
 		Name:          "dev",
 		SymbolicValue: symbolicdev.ANY_DEV_API,
 	}

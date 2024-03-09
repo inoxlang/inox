@@ -114,6 +114,8 @@ var (
 	REGEX_PATTERN_TYPE              = reflect.TypeOf(&RegexPattern{})
 	EVENT_PATTERN_TYPE              = reflect.TypeOf((*EventPattern)(nil))
 	MUTATION_PATTERN_TYPE           = reflect.TypeOf((*MutationPattern)(nil))
+
+	DEV_API_TYPE =  reflect.TypeOf((*DevAPI)(nil)).Elem()
 )
 
 var IMPLICITLY_REMOVED_ROUTINE_PERMS = []Permission{

@@ -4,8 +4,16 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 )
 
+var (
+	_ = core.DevAPI((*API)(nil))
+)
+
 type API struct {
 	session *Session
+}
+
+func (a *API) DevAPI__() {
+
 }
 
 func (a *API) getDB(ctx *core.Context, name core.String) (*dbProxy, error) {
