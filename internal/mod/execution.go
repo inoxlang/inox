@@ -47,10 +47,11 @@ type RunLocalModuleArgs struct {
 	//If there is no parent context the OS filesystem is used.
 	ScriptContextFileSystem afs.Filesystem
 
-	FullAccessToDatabases bool
-	Project               *project.Project
-	MemberAuthToken       string
-	ListeningPort         uint16 //optional, defaults to inoxconsts.DEV_PORT_0
+	FullAccessToDatabases          bool
+	Project                        *project.Project
+	MemberAuthToken                string
+	ListeningPort                  uint16 //optional, defaults to inoxconsts.DEV_PORT_0
+	ForceLocalhostListeningAddress bool   //if true the application listening host is localhost
 
 	UseBytecode      bool
 	OptimizeBytecode bool
@@ -111,12 +112,13 @@ func RunLocalModule(args RunLocalModuleArgs) (
 		Logger:    args.Logger,
 		LogLevels: args.LogLevels,
 
-		AllowMissingEnvVars:   args.AllowMissingEnvVars,
-		PreinitFilesystem:     args.PreinitFilesystem,
-		FullAccessToDatabases: args.FullAccessToDatabases,
-		Project:               args.Project,
-		MemberAuthToken:       args.MemberAuthToken,
-		ListeningPort:         args.ListeningPort,
+		AllowMissingEnvVars:            args.AllowMissingEnvVars,
+		PreinitFilesystem:              args.PreinitFilesystem,
+		FullAccessToDatabases:          args.FullAccessToDatabases,
+		Project:                        args.Project,
+		MemberAuthToken:                args.MemberAuthToken,
+		ListeningPort:                  args.ListeningPort,
+		ForceLocalhostListeningAddress: args.ForceLocalhostListeningAddress,
 
 		EnableTesting: args.EnableTesting,
 		TestFilters:   args.TestFilters,

@@ -87,9 +87,10 @@ type ModulePreparationArgs struct {
 	AdditionalPermissions []Permission
 
 	//should only be set if the module is a main module
-	Project         Project
-	MemberAuthToken string
-	ListeningPort   uint16 //optional, defaults to <inoxconsts.DEV_PORT_0
+	Project                        Project
+	MemberAuthToken                string
+	ListeningPort                  uint16 //optional, defaults to inoxconsts.DEV_PORT_0
+	ForceLocalhostListeningAddress bool   //if true the application listening host is localhost
 
 	//defaults to os.Stdout
 	Out io.Writer
@@ -227,7 +228,7 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 		}
 
 		applicationListeningAddr = Host("https://localhost:" + port)
-		if project.Configuration().AreExposedWebServersAllowed() {
+		if project.Configuration().AreExposedWebServersAllowed() && !args.ForceLocalhostListeningAddress {
 			applicationListeningAddr = Host("https://0.0.0.0:" + port)
 		}
 	}

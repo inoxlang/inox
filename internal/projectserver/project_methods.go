@@ -9,6 +9,7 @@ import (
 	"github.com/inoxlang/inox/internal/codebase/analysis"
 	"github.com/inoxlang/inox/internal/codebase/gen"
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/inoxconsts"
@@ -32,6 +33,7 @@ const (
 	CREATE_PROJECT_METHOD            = "project/create"
 	REGISTER_APPLICATION_METHOD      = "project/registerApplication"
 	LIST_APPLICATION_STATUSES_METHOD = "project/listApplicationStatuses"
+	DEFAULT_DEV_TOOLS_PORT           = inoxconsts.DEV_PORT_2
 )
 
 type CreateProjectParams struct {
@@ -257,21 +259,17 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 
 	workingFs, ok := developerCopy.WorkingFilesystem()
 	if !ok {
-		if err != nil {
-			return nil, jsonrpc.ResponseError{
-				Code:    jsonrpc.InternalError.Code,
-				Message: "failed to get the working filesystem (working tree)",
-			}
+		return nil, jsonrpc.ResponseError{
+			Code:    jsonrpc.InternalError.Code,
+			Message: "failed to get the working filesystem (working tree)",
 		}
 	}
 
 	gitRepo, ok := developerCopy.Repository()
 	if !ok {
-		if err != nil {
-			return nil, jsonrpc.ResponseError{
-				Code:    jsonrpc.InternalError.Code,
-				Message: "failed to get local git repository",
-			}
+		return nil, jsonrpc.ResponseError{
+			Code:    jsonrpc.InternalError.Code,
+			Message: "failed to get local git repository",
 		}
 	}
 
@@ -290,12 +288,23 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 	//Create a development session.
 
 	devSessionKey := http_ns.RandomDevSessionKey()
+	toolsServerPort := DEFAULT_DEV_TOOLS_PORT
+
+	devSessionCtx := core.NewContextWithEmptyState(core.ContextConfig{
+		ParentContext: sessionCtx,
+		Filesystem:    lspFilesystem,
+		Permissions: append(core.GetDefaultGlobalVarPermissions(),
+			core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
+			core.HttpPermission{Kind_: permkind.Provide, Entity: core.Host("https://localhost:" + toolsServerPort)},
+			core.LThreadPermission{Kind_: permkind.Create},
+		),
+	}, nil)
 
 	devSession, err := dev.NewDevSession(dev.SessionParams{
 		WorkingFS:       lspFilesystem,
 		Project:         project,
-		SessionContext:  sessionCtx,
-		ToolsServerPort: inoxconsts.DEV_PORT_2,
+		SessionContext:  devSessionCtx,
+		ToolsServerPort: toolsServerPort,
 		DevSessionKey:   devSessionKey,
 		MemberAuthToken: memberAuthToken,
 	})
@@ -337,7 +346,7 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 
 		err := devSession.DevToolsServer()
 		if err != nil {
-			logs.Println(session.Client(), err)
+			logs.Println(session.Client(), "failed to start dev tools server:", err)
 		} else {
 			logs.Println(session.Client(), "dev tools server started")
 		}

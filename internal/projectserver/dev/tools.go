@@ -22,7 +22,6 @@ const (
 
 var (
 	ErrInexistingOrInvalidDevToolsEntryPoint = errors.New("entry point for the dev tools server does not exist or is invalid")
-	DEFAULT_DEV_TOOLS_PORT                   = inoxconsts.Uint16DevPort(inoxconsts.DEV_PORT_2)
 )
 
 func (s *Session) DevToolsServer() error {
@@ -52,16 +51,17 @@ func (s *Session) DevToolsServer() error {
 			Fpath:                    entryPoint,
 			SingleFileParsingTimeout: SINGLE_FILE_PARSING_TIMEOUT,
 
-			ParsingCompilationContext: s.context,
-			ParentContext:             s.context,
-			ParentContextRequired:     true,
-			PreinitFilesystem:         s.developerWorkingFS,
-			AllowMissingEnvVars:       false,
-			IgnoreHighRiskScore:       true,
-			FullAccessToDatabases:     true,
-			Project:                   s.project,
-			MemberAuthToken:           s.memberAuthToken,
-			ListeningPort:             DEFAULT_DEV_TOOLS_PORT,
+			ParsingCompilationContext:      s.context,
+			ParentContext:                  s.context,
+			ParentContextRequired:          true,
+			PreinitFilesystem:              s.developerWorkingFS,
+			AllowMissingEnvVars:            false,
+			IgnoreHighRiskScore:            true,
+			FullAccessToDatabases:          true,
+			Project:                        s.project,
+			MemberAuthToken:                s.memberAuthToken,
+			ListeningPort:                  inoxconsts.Uint16DevPort(s.toolsServerPort),
+			ForceLocalhostListeningAddress: true,
 
 			Out:    io.Discard,
 			Logger: zerolog.Nop(),
