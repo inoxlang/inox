@@ -7,6 +7,9 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/inoxlang/inox/internal/afs"
@@ -22,7 +25,7 @@ const (
 )
 
 type Configuration struct {
-	TopDirectories     []string
+	TopDirectories     []string          //note that if TopDirectories == {"/"} '/.dev' will be excluded.
 	MaxFileSize        int64             //defaults to DEFAULT_MAX_SCANNED_INOX_FILE_SIZE
 	Fast               bool              //if true the scan will be faster but will use more CPU and memory.
 	FileHandlers       []FileHandler     //File handlers are called for each file. They should not modify the chunk node.
@@ -36,6 +39,21 @@ func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) e
 
 	maxFileSize := utils.DefaultIfZero(config.MaxFileSize, DEFAULT_MAX_SCANNED_INOX_FILE_SIZE)
 
+	topDirs := utils.MapSlice(slices.Clone(config.TopDirectories), filepath.Clean)
+	{
+		// Remove duplicates
+		sort.Strings(topDirs)
+		for i := 0; i < len(topDirs); i++ {
+			if topDirs[i] == "." {
+				return fmt.Errorf("some top directories are invalid among %s", strings.Join(config.TopDirectories, ","))
+			}
+			if i > 0 && topDirs[i] == topDirs[i-1] {
+				topDirs = slices.Delete(topDirs, i, i+1)
+			}
+		}
+	}
+	excludeRootDotDev := len(topDirs) == 1 && topDirs[0] == "/"
+
 	if err := ctx.CheckHasPermission(core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")}); err != nil {
 		return err
 	}
@@ -44,12 +62,17 @@ func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) e
 	seenChunks := []*parse.Chunk{}
 	chunkCache := config.ChunkCache
 
-	for _, topDir := range config.TopDirectories {
+	for _, topDir := range topDirs {
 
 		err := core.WalkDirLow(fls, topDir, func(path string, d fs.DirEntry, err error) error {
 
 			if ctx.IsDoneSlowCheck() {
 				return ctx.Err()
+			}
+
+			//Ignore /.dev
+			if d.IsDir() && excludeRootDotDev && path == "/"+inoxconsts.DEV_DIR_NAME {
+				return fs.SkipDir
 			}
 
 			//Ignore non-Inox files.
