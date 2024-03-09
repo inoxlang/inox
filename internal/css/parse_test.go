@@ -10,6 +10,7 @@ import (
 func TestParse(t *testing.T) {
 
 	stylesheet, err := ParseString(context.Background(), `
+
 		/* comment */
 
 		@import "style.css";
@@ -19,6 +20,9 @@ func TestParse(t *testing.T) {
 				width: 5px;
 			}
 		}
+
+		@media screen and (min-width: 400px) {}
+
 		.div {
 			width: 6px;
 		}
@@ -36,7 +40,7 @@ func TestParse(t *testing.T) {
 	}
 
 	assert.Empty(t, stylesheet.Data)
-	if !assert.Len(t, stylesheet.Children, 5) {
+	if !assert.Len(t, stylesheet.Children, 6) {
 		return
 	}
 
@@ -61,7 +65,7 @@ func TestParse(t *testing.T) {
 
 	assert.Equal(t, Node{Type: String, Data: "\"style.css\""}, atRule.Children[0])
 
-	//Check at-rule wih media query
+	//Check first at-rule wih media query
 
 	atRule = stylesheet.Children[2]
 	if !assert.Equal(t, AtRule, atRule.Type) {
@@ -115,8 +119,53 @@ func TestParse(t *testing.T) {
 		}, ruleset.Children[1])
 	}
 
+	//Check second at-rule wih media query
+
+	atRule = stylesheet.Children[3]
+	if !assert.Equal(t, AtRule, atRule.Type) {
+		return
+	}
+	assert.Equal(t, "@media", atRule.Data)
+
+	if !assert.Len(t, atRule.Children, 1) {
+		return
+	}
+
+	{
+		//Check media query
+		query := atRule.Children[0]
+		if !assert.Equal(t, MediaQuery, query.Type) {
+			return
+		}
+		assert.Empty(t, query.Data)
+		if !assert.Len(t, query.Children, 3) {
+			return
+		}
+
+		screenIdent := query.Children[0]
+		assert.Equal(t, Node{Type: Ident, Data: "screen"}, screenIdent)
+
+		andIdent := query.Children[1]
+		assert.Equal(t, Node{Type: Ident, Data: "and"}, andIdent)
+
+		mediaFeature := query.Children[2]
+
+		if !assert.Equal(t, Node{
+			Type: MediaFeature,
+			Data: "min-width",
+			Children: []Node{
+				{
+					Type: Dimension,
+					Data: "400px",
+				},
+			},
+		}, mediaFeature) {
+			return
+		}
+	}
+
 	//Check second ruleset
-	ruleset := stylesheet.Children[3]
+	ruleset := stylesheet.Children[4]
 	if !assert.Equal(t, Ruleset, ruleset.Type) {
 		return
 	}
@@ -144,7 +193,7 @@ func TestParse(t *testing.T) {
 	}, ruleset.Children[1])
 
 	//Check third ruleset
-	ruleset = stylesheet.Children[4]
+	ruleset = stylesheet.Children[5]
 	if !assert.Equal(t, Ruleset, ruleset.Type) {
 		return
 	}

@@ -22,6 +22,7 @@ const (
 	AtRule
 	Selector
 	MediaQuery
+	MediaFeature
 	Declaration
 	Dimension
 	Number

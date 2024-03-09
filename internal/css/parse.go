@@ -132,10 +132,56 @@ func makeNodesFromTokens(tokens []css.Token, parentNode *Node) error {
 }
 
 func _makeNodesFromTokens(tokens []css.Token, parentNode *Node, i *int, stop func(t css.Token) bool) error {
+
 	precededByDot := false
 	leadingSpace := true
 
+	inMediaFeature := false
+	var mediaFeature Node
+
+	if parentNode.Type == MediaQuery {
+		for *i < len(tokens) {
+
+			t := tokens[*i]
+			*i = (*i + 1)
+
+			switch t.TokenType {
+			case css.LeftParenthesisToken:
+				inMediaFeature = true
+				mediaFeature.Type = MediaFeature
+			case css.RightParenthesisToken:
+				inMediaFeature = false
+				parentNode.Children = append(parentNode.Children, mediaFeature)
+				mediaFeature = Node{}
+			case css.IdentToken:
+				if inMediaFeature && mediaFeature.Data == "" {
+					mediaFeature.Data = string(t.Data)
+				} else {
+					parentNode.Children = append(parentNode.Children, Node{
+						Type: Ident,
+						Data: string(t.Data),
+					})
+				}
+			case css.ColonToken, css.WhitespaceToken:
+				//ignore
+			default:
+				node, _ := makeSimpleNodeFromToken(t, precededByDot)
+
+				if inMediaFeature {
+					mediaFeature.Children = append(mediaFeature.Children, node)
+				} else {
+					parentNode.Children = append(parentNode.Children, node)
+				}
+			}
+		}
+
+		return nil
+	}
+
+	//other node types
+
 	for *i < len(tokens) {
+
 		t := tokens[*i]
 		*i = (*i + 1)
 
