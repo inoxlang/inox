@@ -20,12 +20,6 @@ var (
 	ErrSubsetNotInitialized     = errors.New("subset is not initialized")
 )
 
-type Ruleset struct {
-	Name              string //e.g. .h-0, .h-0\.5, .h-1\/2
-	UserFriendltyName string //e.g. .h-0, .h-0.5, .h-1/2
-	Node              css.Node
-}
-
 func InitSubset() error {
 	if TAILWIND_SUBSET_RULESETS != nil {
 		return ErrSubsetAlreadyInitialized
@@ -43,21 +37,22 @@ func InitSubset() error {
 			userFriendlyName = strings.ReplaceAll(userFriendlyName, "\\/", "/")
 
 			TAILWIND_SUBSET_RULESETS = append(TAILWIND_SUBSET_RULESETS, Ruleset{
-				Name:              name,
-				UserFriendltyName: userFriendlyName,
-				Node:              n,
+				BaseName:             name,
+				UserFriendlyBaseName: userFriendlyName,
+				NameWithModifiers:    strings.TrimPrefix(name, "."),
+				Ruleset:              n,
 			})
 		}
 	}
 
 	slices.SortFunc(TAILWIND_SUBSET_RULESETS, func(a, b Ruleset) int {
-		return strings.Compare(a.Name, b.Name)
+		return strings.Compare(a.BaseName, b.BaseName)
 	})
 
 	//Remove possible duplicates.
 
 	for i := 1; i < len(TAILWIND_SUBSET_RULESETS); i++ {
-		if TAILWIND_SUBSET_RULESETS[i].Name == TAILWIND_SUBSET_RULESETS[i-1].Name {
+		if TAILWIND_SUBSET_RULESETS[i].BaseName == TAILWIND_SUBSET_RULESETS[i-1].BaseName {
 			copy(TAILWIND_SUBSET_RULESETS[i-1:], TAILWIND_SUBSET_RULESETS[i:])
 			TAILWIND_SUBSET_RULESETS = TAILWIND_SUBSET_RULESETS[:len(TAILWIND_SUBSET_RULESETS)-1]
 		}
@@ -66,12 +61,12 @@ func InitSubset() error {
 	return nil
 }
 
-// GetRulesetsFromSubset retrieves a ruleset by its name.
-// Note that '.5' and '/<digit>' (e.g. /2) sequences in $prefix are respectively escaped into '\.5' and '\/<digit>' (e.g. \/2).
-func GetRuleset(selector string) (Ruleset, bool) {
+// GetBaseRuleset retrieves a base ruleset (no modifier) by its name.
+// Note that '.5', ':' and '/<digit>' (e.g. /2) sequences in $prefix are respectively escaped into '\.5', '\:' and '\/<digit>' (e.g. \/2).
+func GetBaseRuleset(selector string) (Ruleset, bool) {
 	selector = escapeSelector(selector)
 	index, found := slices.BinarySearchFunc(TAILWIND_SUBSET_RULESETS, selector, func(r Ruleset, s string) int {
-		return strings.Compare(r.Name, s)
+		return strings.Compare(r.BaseName, s)
 	})
 
 	if found {
@@ -80,21 +75,30 @@ func GetRuleset(selector string) (Ruleset, bool) {
 	return Ruleset{}, false
 }
 
-// GetRulesetsFromSubset searches for all rulesets whose selector starts with $prefix.
-// Note that '.5' and '/<digit>' (e.g. /2) sequences in $prefix are respectively escaped into '\.5' and '\/<digit>' (e.g. \/2).
+// GetRulesetsFromSubset searches for all rulesets whose selector starts with $prefix, modifiers are not supported.
+// Note that '.5', ':' and '/<digit>' (e.g. /2) sequences in $prefix are respectively escaped into '\.5', '\:' and '\/<digit>' (e.g. \/2).
 func GetRulesetsFromSubset(prefix string) []Ruleset {
+
+	if len(prefix) == 0 {
+		return nil
+	}
+
+	if strings.Contains(prefix, ":") {
+		//The prefix should not contain modifiers.
+		return nil
+	}
 
 	prefix = escapeSelector(prefix)
 
 	index, _ := slices.BinarySearchFunc(TAILWIND_SUBSET_RULESETS, prefix, func(r Ruleset, s string) int {
-		return strings.Compare(r.Name, s)
+		return strings.Compare(r.BaseName, s)
 	})
 
 	//Example: if prefix is `.h` $index is the position of the first .hXXXXX rule.
 
 	var rulesets []Ruleset
 
-	for i := index; i < len(TAILWIND_SUBSET_RULESETS) && strings.HasPrefix(TAILWIND_SUBSET_RULESETS[i].Name, prefix); i++ {
+	for i := index; i < len(TAILWIND_SUBSET_RULESETS) && strings.HasPrefix(TAILWIND_SUBSET_RULESETS[i].BaseName, prefix); i++ {
 		rulesets = append(rulesets, TAILWIND_SUBSET_RULESETS[i])
 	}
 
@@ -102,7 +106,7 @@ func GetRulesetsFromSubset(prefix string) []Ruleset {
 }
 
 func escapeSelector(selector string) string {
-	//escape .5 and /<digit>
+	//escape .5, ':' and /<digit>
 
 	var escaped []byte
 	escaped = append(escaped, selector[0])
@@ -117,6 +121,8 @@ func escapeSelector(selector string) string {
 		case '0' <= b && b <= '9' && selector[i-1] == '/' && ( /*check if already escaped*/ i == 1 || selector[i-2] != '\\'):
 			escaped[i-1] = '\\'
 			escaped = append(escaped, '/', b)
+		case b == ':':
+			escaped = append(escaped, '\\', b)
 		default:
 			escaped = append(escaped, b)
 		}

@@ -23,9 +23,24 @@ func addUsedTailwindRulesets(classAttributeValue parse.Node, result *Result) {
 	classNames := strings.Split(attrValue, " ")
 	for _, name := range classNames {
 		name = strings.TrimSpace(name)
-		ruleset, ok := tailwind.GetRuleset("." + name)
-		if ok {
-			result.UsedTailwindRules[ruleset.Name] = ruleset
+
+		var ruleset tailwind.Ruleset
+		modifier, basename, hasModifier := strings.Cut(name, ":")
+
+		if !hasModifier {
+			basename = name
 		}
+
+		baseRuleset, ok := tailwind.GetBaseRuleset("." + basename)
+		if !ok {
+			continue
+		}
+
+		if hasModifier {
+			ruleset = baseRuleset.WithOnlyModifier(modifier)
+		} else {
+			ruleset = baseRuleset
+		}
+		result.UsedTailwindRules[ruleset.NameWithModifiers] = ruleset
 	}
 }

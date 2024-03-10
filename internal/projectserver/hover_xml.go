@@ -183,9 +183,9 @@ func getCssClassHoverHelp(attrValue parse.Node, index int32) string {
 
 	className := leftNamePart + rightNamePart
 
-	ruleset, ok := tailwind.GetRuleset("." + className)
+	ruleset, ok := tailwind.GetBaseRuleset("." + className)
 	if ok {
-		help += fmt.Sprintf("```css\n%s\n```", ruleset.Node.String())
+		help += fmt.Sprintf("```css\n%s\n```", ruleset.Ruleset.String())
 	}
 
 	return help

@@ -19,7 +19,7 @@ func TestGetRulesetsFromSubset(t *testing.T) {
 			return
 		}
 		for _, ruleset := range rulesets {
-			assert.True(t, strings.HasPrefix(ruleset.Name, ".h"))
+			assert.True(t, strings.HasPrefix(ruleset.BaseName, ".h"))
 		}
 	})
 

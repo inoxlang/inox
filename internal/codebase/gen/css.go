@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"runtime/debug"
-	"strings"
 	"sync"
 
 	"github.com/inoxlang/inox/internal/afs"
@@ -19,7 +18,6 @@ import (
 	"github.com/inoxlang/inox/internal/projectserver/logs"
 	"github.com/inoxlang/inox/internal/utils"
 	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 )
 
 const (
@@ -95,23 +93,13 @@ func (g *CssGenerator) genTailwindcss(ctx *core.Context, rulesets map[string]tai
 
 	defer f.Close()
 
-	linefeeds := []byte{'\n', '\n'}
-
 	f.Write([]byte(layout.TAILWIND_CSS_STYLESHEET_EXPLANATION))
 
 	rulesetList := maps.Values(rulesets)
 
-	slices.SortFunc(rulesetList, func(a, b tailwind.Ruleset) int {
-		return strings.Compare(a.Name, b.Name)
-	})
-
-	for _, ruleset := range rulesets {
-		f.Write(linefeeds)
-		err := ruleset.Node.WriteTo(f)
-		if err != nil {
-			logs.Println(g.owner, err)
-			return
-		}
+	err = tailwind.WriteRulesets(f, rulesetList)
+	if err != nil {
+		logs.Println(g.owner, err)
 	}
 }
 

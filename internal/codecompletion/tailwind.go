@@ -2,10 +2,17 @@ package codecompletion
 
 import (
 	"strings"
+	"sync"
 
 	"github.com/inoxlang/inox/internal/css/tailwind"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
+)
+
+var (
+	//Cache used for a few cases with potentially a lot of rulesets.
+	baseRulesetCache     = map[string][]tailwind.Ruleset{}
+	baseRulesetCacheLock sync.Mutex
 )
 
 func findTailwindClassNameSuggestions(attrValueNode parse.SimpleValueLiteral, search completionSearch) (completions []Completion) {
@@ -32,28 +39,89 @@ func findTailwindClassNameSuggestions(attrValueNode parse.SimpleValueLiteral, se
 		classNamePrefix = cut.BeforeIndex //Not an issue if empty.
 	}
 
-	if classNamePrefix == "" {
+	if classNamePrefix == "" || strings.Count(classNamePrefix, ":") > 1 {
 		return nil
 	}
 
-	rulesets := tailwind.GetRulesetsFromSubset("." + classNamePrefix)
+	replacedRange := search.chunk.GetSourcePosition(parse.NodeSpan{
+		Start: search.cursorIndex - int32(len(classNamePrefix)),
+		End:   search.cursorIndex,
+	})
 
-	for _, set := range rulesets {
-		className := strings.TrimPrefix(set.UserFriendltyName, ".")
-		replacedRange := search.chunk.GetSourcePosition(parse.NodeSpan{
-			Start: search.cursorIndex - int32(len(classNamePrefix)),
-			End:   search.cursorIndex,
-		})
+	modifierName, basename, ok := strings.Cut(classNamePrefix, ":")
 
-		completions = append(completions, Completion{
-			ShownString:           className,
-			Value:                 className,
-			Kind:                  defines.CompletionItemKindConstant,
-			ReplacedRange:         replacedRange,
-			LabelDetail:           "Tailwind",
-			MarkdownDocumentation: "```css\n" + set.Node.String() + "\n```",
-		})
+	if ok {
+		if basename == "" {
+			//Do not suggest all class names because this is resource intensive.
+			return
+		}
+
+		rulesets := getBaseRulesetsByPrefix("." + basename)
+
+		for _, set := range rulesets {
+			set = set.WithOnlyModifier(modifierName)
+			className := modifierName + ":" + strings.TrimPrefix(set.UserFriendlyBaseName, ".")
+
+			completions = append(completions, makeTailwindCompletion(className, "Tailwind class with modifier", set.String(), replacedRange))
+		}
+	} else { //no modifier
+		modifiers := tailwind.GetModifierInfoByPrefix(classNamePrefix)
+
+		for _, modifier := range modifiers {
+			completion := makeTailwindCompletion(modifier.Name+":", "Tailwind modifier: "+modifier.Description, "", replacedRange)
+			completions = append(completions, completion)
+		}
+
+		rulesets := getBaseRulesetsByPrefix("." + classNamePrefix)
+
+		for _, set := range rulesets {
+			className := strings.TrimPrefix(set.UserFriendlyBaseName, ".")
+
+			completions = append(completions, makeTailwindCompletion(className, "Tailwind class", set.String(), replacedRange))
+		}
 	}
 
 	return
+}
+
+func makeTailwindCompletion(name string, labelDetail, doc string, replacedRange parse.SourcePositionRange) Completion {
+	c := Completion{
+		ShownString:   name,
+		Value:         name,
+		Kind:          defines.CompletionItemKindConstant,
+		ReplacedRange: replacedRange,
+		LabelDetail:   labelDetail,
+	}
+
+	if doc != "" {
+		c.MarkdownDocumentation = "```css\n" + doc + "\n```"
+	}
+	return c
+}
+
+func getBaseRulesetsByPrefix(basename string) []tailwind.Ruleset {
+	var (
+		rulesets []tailwind.Ruleset
+		cacheHit bool
+	)
+
+	useCache := len(basename) <= 3
+
+	if useCache {
+		baseRulesetCacheLock.Lock()
+		rulesets, cacheHit = baseRulesetCache[basename]
+		baseRulesetCacheLock.Unlock()
+	}
+
+	if !cacheHit {
+		rulesets = tailwind.GetRulesetsFromSubset(basename)
+
+		if useCache && len(rulesets) != 0 {
+			baseRulesetCacheLock.Lock()
+			baseRulesetCache[basename] = rulesets
+			baseRulesetCacheLock.Unlock()
+		}
+	}
+
+	return rulesets
 }
