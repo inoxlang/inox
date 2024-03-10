@@ -6,8 +6,11 @@
 
 - [If statement](#if-statement--expression)
 - [Switch statement](#switch-statement)
+- [Switch expression](#switch-expression)
 - [Match statement](#match-statement)
+- [Match expression](#match-expression)
 - [For statement](#for-statement)
+- [For expression](#for-expression)
 - [Walk statement](#walk-statement)
 - [Pipe statement](#pipe-statement)
 
@@ -57,6 +60,22 @@ output:
 1
 ```
 
+
+## Switch Expression
+
+```
+str = switch 1 {
+    1 => "a"
+    2 => "b"
+    defaultcase => "c"
+}
+
+print(str)
+
+output:
+a
+```
+
 ## Match Statement
 
 The match statement is similar to the switch statement but uses **patterns** as
@@ -95,6 +114,23 @@ fn print_type(arg){
         defaultcase { }
     }
 }
+```
+
+## Match Expression
+
+```
+value = /a 
+
+str = match value {
+    %/a => "/a"
+    %/... => "any absolute path"
+    defaultcase => "?"
+}
+
+print(str)
+
+output:
+/a
 ```
 
 ## For Statement
@@ -198,6 +234,22 @@ aa 2
 ```
 
 </details>
+
+## For Expression
+
+For expressions allow you to create a [list](./serializable-data-structures.md#lists) by
+evaluating an expression for each iteration.
+
+```
+double = (for n in [1, 2, 3]: (2 * n))
+print(double)
+
+output:
+2
+4
+6
+```
+
 
 ## Walk Statement
 
