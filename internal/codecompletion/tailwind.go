@@ -2,17 +2,10 @@ package codecompletion
 
 import (
 	"strings"
-	"sync"
 
 	"github.com/inoxlang/inox/internal/css/tailwind"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
-)
-
-var (
-	//Cache used for a few cases with potentially a lot of rulesets.
-	baseRulesetCache     = map[string][]tailwind.Ruleset{}
-	baseRulesetCacheLock sync.Mutex
 )
 
 func findTailwindClassNameSuggestions(attrValueNode parse.SimpleValueLiteral, search completionSearch) (completions []Completion) {
@@ -56,7 +49,7 @@ func findTailwindClassNameSuggestions(attrValueNode parse.SimpleValueLiteral, se
 			return
 		}
 
-		rulesets := getBaseRulesetsByPrefix("." + basename)
+		rulesets := tailwind.GetRulesetsFromSubset("." + basename)
 
 		for _, set := range rulesets {
 			set = set.WithOnlyModifier(modifierName)
@@ -72,7 +65,7 @@ func findTailwindClassNameSuggestions(attrValueNode parse.SimpleValueLiteral, se
 			completions = append(completions, completion)
 		}
 
-		rulesets := getBaseRulesetsByPrefix("." + classNamePrefix)
+		rulesets := tailwind.GetRulesetsFromSubset("." + basename)
 
 		for _, set := range rulesets {
 			className := strings.TrimPrefix(set.UserFriendlyBaseName, ".")
@@ -97,31 +90,4 @@ func makeTailwindCompletion(name string, labelDetail, doc string, replacedRange 
 		c.MarkdownDocumentation = "```css\n" + doc + "\n```"
 	}
 	return c
-}
-
-func getBaseRulesetsByPrefix(basename string) []tailwind.Ruleset {
-	var (
-		rulesets []tailwind.Ruleset
-		cacheHit bool
-	)
-
-	useCache := len(basename) <= 3
-
-	if useCache {
-		baseRulesetCacheLock.Lock()
-		rulesets, cacheHit = baseRulesetCache[basename]
-		baseRulesetCacheLock.Unlock()
-	}
-
-	if !cacheHit {
-		rulesets = tailwind.GetRulesetsFromSubset(basename)
-
-		if useCache && len(rulesets) != 0 {
-			baseRulesetCacheLock.Lock()
-			baseRulesetCache[basename] = rulesets
-			baseRulesetCacheLock.Unlock()
-		}
-	}
-
-	return rulesets
 }

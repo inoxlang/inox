@@ -9,7 +9,7 @@ import (
 )
 
 func TestGetRulesetsFromSubset(t *testing.T) {
-	if TAILWIND_SUBSET_RULESETS == nil {
+	if BASE_RULESETS == nil {
 		utils.PanicIfErr(InitSubset())
 	}
 

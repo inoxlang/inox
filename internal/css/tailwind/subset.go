@@ -6,6 +6,7 @@ import (
 	"errors"
 	"slices"
 	"strings"
+	"sync"
 
 	"github.com/inoxlang/inox/internal/css"
 )
@@ -14,14 +15,18 @@ var (
 	//go:embed subset.css
 	TAIL_CSS string
 
-	TAILWIND_SUBSET_RULESETS []Ruleset //sorted by selector
+	BASE_RULESETS []Ruleset //sorted by selector
 
 	ErrSubsetAlreadyInitialized = errors.New("subset is already initialized")
 	ErrSubsetNotInitialized     = errors.New("subset is not initialized")
+
+	//Cache used for prefixes with potentially a lot of rulesets.
+	baseRulesetCache     = map[string][]Ruleset{}
+	baseRulesetCacheLock sync.Mutex
 )
 
 func InitSubset() error {
-	if TAILWIND_SUBSET_RULESETS != nil {
+	if BASE_RULESETS != nil {
 		return ErrSubsetAlreadyInitialized
 	}
 
@@ -36,7 +41,7 @@ func InitSubset() error {
 			userFriendlyName := strings.ReplaceAll(name, "\\.", ".")
 			userFriendlyName = strings.ReplaceAll(userFriendlyName, "\\/", "/")
 
-			TAILWIND_SUBSET_RULESETS = append(TAILWIND_SUBSET_RULESETS, Ruleset{
+			BASE_RULESETS = append(BASE_RULESETS, Ruleset{
 				BaseName:             name,
 				UserFriendlyBaseName: userFriendlyName,
 				NameWithModifiers:    strings.TrimPrefix(name, "."),
@@ -45,16 +50,16 @@ func InitSubset() error {
 		}
 	}
 
-	slices.SortFunc(TAILWIND_SUBSET_RULESETS, func(a, b Ruleset) int {
+	slices.SortFunc(BASE_RULESETS, func(a, b Ruleset) int {
 		return strings.Compare(a.BaseName, b.BaseName)
 	})
 
 	//Remove possible duplicates.
 
-	for i := 1; i < len(TAILWIND_SUBSET_RULESETS); i++ {
-		if TAILWIND_SUBSET_RULESETS[i].BaseName == TAILWIND_SUBSET_RULESETS[i-1].BaseName {
-			copy(TAILWIND_SUBSET_RULESETS[i-1:], TAILWIND_SUBSET_RULESETS[i:])
-			TAILWIND_SUBSET_RULESETS = TAILWIND_SUBSET_RULESETS[:len(TAILWIND_SUBSET_RULESETS)-1]
+	for i := 1; i < len(BASE_RULESETS); i++ {
+		if BASE_RULESETS[i].BaseName == BASE_RULESETS[i-1].BaseName {
+			copy(BASE_RULESETS[i-1:], BASE_RULESETS[i:])
+			BASE_RULESETS = BASE_RULESETS[:len(BASE_RULESETS)-1]
 		}
 	}
 
@@ -65,17 +70,17 @@ func InitSubset() error {
 // Note that '.5', ':' and '/<digit>' (e.g. /2) sequences in $prefix are respectively escaped into '\.5', '\:' and '\/<digit>' (e.g. \/2).
 func GetBaseRuleset(selector string) (Ruleset, bool) {
 	selector = escapeSelector(selector)
-	index, found := slices.BinarySearchFunc(TAILWIND_SUBSET_RULESETS, selector, func(r Ruleset, s string) int {
+	index, found := slices.BinarySearchFunc(BASE_RULESETS, selector, func(r Ruleset, s string) int {
 		return strings.Compare(r.BaseName, s)
 	})
 
 	if found {
-		return TAILWIND_SUBSET_RULESETS[index], true
+		return BASE_RULESETS[index], true
 	}
 	return Ruleset{}, false
 }
 
-// GetRulesetsFromSubset searches for all rulesets whose selector starts with $prefix, modifiers are not supported.
+// GetRulesetsFromSubset searches for all base rulesets whose selector starts with $prefix, modifiers are not supported.
 // Note that '.5', ':' and '/<digit>' (e.g. /2) sequences in $prefix are respectively escaped into '\.5', '\:' and '\/<digit>' (e.g. \/2).
 func GetRulesetsFromSubset(prefix string) []Ruleset {
 
@@ -90,16 +95,35 @@ func GetRulesetsFromSubset(prefix string) []Ruleset {
 
 	prefix = escapeSelector(prefix)
 
-	index, _ := slices.BinarySearchFunc(TAILWIND_SUBSET_RULESETS, prefix, func(r Ruleset, s string) int {
-		return strings.Compare(r.BaseName, s)
-	})
+	var (
+		rulesets []Ruleset
+		cacheHit bool
+	)
 
-	//Example: if prefix is `.h` $index is the position of the first .hXXXXX rule.
+	useCache := len(prefix) <= 3
 
-	var rulesets []Ruleset
+	if useCache {
+		baseRulesetCacheLock.Lock()
+		rulesets, cacheHit = baseRulesetCache[prefix]
+		baseRulesetCacheLock.Unlock()
+	}
 
-	for i := index; i < len(TAILWIND_SUBSET_RULESETS) && strings.HasPrefix(TAILWIND_SUBSET_RULESETS[i].BaseName, prefix); i++ {
-		rulesets = append(rulesets, TAILWIND_SUBSET_RULESETS[i])
+	if !cacheHit || !useCache {
+		index, _ := slices.BinarySearchFunc(BASE_RULESETS, prefix, func(r Ruleset, s string) int {
+			return strings.Compare(r.BaseName, s)
+		})
+
+		//Example: if prefix is `.h` $index is the position of the first .hXXXXX rule.
+
+		for i := index; i < len(BASE_RULESETS) && strings.HasPrefix(BASE_RULESETS[i].BaseName, prefix); i++ {
+			rulesets = append(rulesets, BASE_RULESETS[i])
+		}
+	}
+
+	if useCache && !cacheHit && len(rulesets) != 0 { //Update cache.
+		baseRulesetCacheLock.Lock()
+		baseRulesetCache[prefix] = rulesets
+		baseRulesetCacheLock.Unlock()
 	}
 
 	return rulesets
