@@ -618,8 +618,8 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 
 		for i := iterativeStmtIndex + 1; i < len(ancestorChain); i++ {
 			switch ancestorChain[i].(type) {
-			case *parse.IfStatement, *parse.SwitchStatement, *parse.SwitchCase,
-				*parse.MatchCase, *parse.MatchStatement, *parse.Block:
+			case *parse.IfStatement, *parse.SwitchStatement, *parse.SwitchStatementCase,
+				*parse.MatchStatementCase, *parse.MatchStatement, *parse.Block:
 			default:
 				c.addError(node, INVALID_BREAK_OR_CONTINUE_STMT_SHOULD_BE_IN_A_FOR_OR_WALK_STMT)
 				return parse.ContinueTraversal
@@ -630,7 +630,7 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 	case *parse.MatchStatement:
 		variablesBeforeStmt := c.getScopeLocalVarsCopy(scopeNode)
 		c.store[node] = variablesBeforeStmt
-	case *parse.MatchCase:
+	case *parse.MatchStatementCase:
 		return c.checkMatchCase(node, scopeNode, closestModule)
 	case *parse.Variable:
 		return c.checkVariable(node, scopeNode, closestModule)
@@ -1986,7 +1986,7 @@ loop1:
 	return parse.ContinueTraversal
 }
 
-func (c *checker) checkMatchCase(node *parse.MatchCase, scopeNode, closestModule parse.Node) parse.TraversalAction {
+func (c *checker) checkMatchCase(node *parse.MatchStatementCase, scopeNode, closestModule parse.Node) parse.TraversalAction {
 
 	//define the variables named after groups if the literal is used as a case in a match statement
 

@@ -18917,7 +18917,7 @@ func testParse(
 								Raw:      "1",
 								Value:    1,
 							},
-							Cases: []*SwitchCase{
+							Cases: []*SwitchStatementCase{
 								{
 									NodeBase: NodeBase{NodeSpan{11, 16}, nil, false},
 									Values: []Node{
@@ -18967,8 +18967,8 @@ func testParse(
 								Raw:      "1",
 								Value:    1,
 							},
-							Cases: []*SwitchCase{},
-							DefaultCases: []*DefaultCase{
+							Cases: []*SwitchStatementCase{},
+							DefaultCases: []*DefaultCaseWithBlock{
 								{
 									NodeBase: NodeBase{
 										NodeSpan{11, 26},
@@ -19014,7 +19014,7 @@ func testParse(
 								Raw:      "1",
 								Value:    1,
 							},
-							Cases: []*SwitchCase{
+							Cases: []*SwitchStatementCase{
 								{
 									NodeBase: NodeBase{NodeSpan{11, 16}, nil, false},
 									Values: []Node{
@@ -19087,7 +19087,7 @@ func testParse(
 								Raw:      "1",
 								Value:    1,
 							},
-							Cases: []*SwitchCase{
+							Cases: []*SwitchStatementCase{
 								{
 									NodeBase: NodeBase{NodeSpan{11, 19}, nil, false},
 									Values: []Node{
@@ -19141,7 +19141,7 @@ func testParse(
 								Raw:      "1",
 								Value:    1,
 							},
-							Cases: []*SwitchCase{
+							Cases: []*SwitchStatementCase{
 								{
 									NodeBase: NodeBase{NodeSpan{11, 16}, nil, false},
 									Values: []Node{
@@ -19190,8 +19190,8 @@ func testParse(
 								Raw:      "1",
 								Value:    1,
 							},
-							Cases: []*SwitchCase{},
-							DefaultCases: []*DefaultCase{
+							Cases: []*SwitchStatementCase{},
+							DefaultCases: []*DefaultCaseWithBlock{
 								{
 									NodeBase: NodeBase{
 										NodeSpan{11, 26},
@@ -19236,7 +19236,7 @@ func testParse(
 								Raw:      "1",
 								Value:    1,
 							},
-							Cases: []*SwitchCase{
+							Cases: []*SwitchStatementCase{
 								{
 									NodeBase: NodeBase{NodeSpan{11, 14}, nil, false},
 									Values: []Node{
@@ -19284,7 +19284,7 @@ func testParse(
 								Raw:      "1",
 								Value:    1,
 							},
-							Cases: []*SwitchCase{
+							Cases: []*SwitchStatementCase{
 								{
 									NodeBase: NodeBase{NodeSpan{11, 15}, nil, false},
 									Values: []Node{
@@ -19398,7 +19398,7 @@ func testParse(
 							Raw:      "1",
 							Value:    1,
 						},
-						Cases: []*MatchCase{
+						Cases: []*MatchStatementCase{
 							{
 								NodeBase: NodeBase{NodeSpan{10, 18}, nil, false},
 								Values: []Node{
@@ -19456,7 +19456,7 @@ func testParse(
 							Raw:      "1",
 							Value:    1,
 						},
-						Cases: []*MatchCase{
+						Cases: []*MatchStatementCase{
 							{
 								NodeBase: NodeBase{NodeSpan{10, 34}, nil, false},
 								Values: []Node{
@@ -19538,7 +19538,7 @@ func testParse(
 							Raw:      "1",
 							Value:    1,
 						},
-						Cases: []*MatchCase{
+						Cases: []*MatchStatementCase{
 							{
 								NodeBase: NodeBase{NodeSpan{10, 12}, nil, false},
 								Values: []Node{

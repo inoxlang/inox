@@ -9511,9 +9511,9 @@ func (p *parser) parseSwitchMatchStatement(keywordIdent *IdentifierLiteral) Node
 	}
 
 	discriminant, _ := p.parseExpression()
-	var switchCases []*SwitchCase
-	var matchCases []*MatchCase
-	var defaultCases []*DefaultCase
+	var switchCases []*SwitchStatementCase
+	var matchCases []*MatchStatementCase
+	var defaultCases []*DefaultCaseWithBlock
 
 	p.eatSpace()
 
@@ -9565,13 +9565,13 @@ top_loop:
 			}
 
 			if isMatchStmt {
-				matchCases = append(matchCases, &MatchCase{
+				matchCases = append(matchCases, &MatchStatementCase{
 					NodeBase: base,
 					Values:   []Node{missingExpr},
 					Block:    blk,
 				})
 			} else {
-				switchCases = append(switchCases, &SwitchCase{
+				switchCases = append(switchCases, &SwitchStatementCase{
 					NodeBase: base,
 					Values:   []Node{missingExpr},
 					Block:    blk,
@@ -9579,19 +9579,19 @@ top_loop:
 			}
 		} else { //parse values of case + block
 
-			var switchCase *SwitchCase
-			var matchCase *MatchCase
-			var defaultCase *DefaultCase
+			var switchCase *SwitchStatementCase
+			var matchCase *MatchStatementCase
+			var defaultCase *DefaultCaseWithBlock
 
 			if isMatchStmt {
-				matchCase = &MatchCase{
+				matchCase = &MatchStatementCase{
 					NodeBase: NodeBase{
 						Span: NodeSpan{p.i, 0},
 					},
 				}
 				matchCases = append(matchCases, matchCase)
 			} else {
-				switchCase = &SwitchCase{
+				switchCase = &SwitchStatementCase{
 					NodeBase: NodeBase{
 						Span: NodeSpan{p.i, 0},
 					},
@@ -9636,7 +9636,7 @@ top_loop:
 					}
 
 					p.tokens = append(p.tokens, Token{Type: DEFAULTCASE_KEYWORD, Span: NodeSpan{ident.Span.Start, ident.Span.End}})
-					defaultCase = &DefaultCase{
+					defaultCase = &DefaultCaseWithBlock{
 						NodeBase: NodeBase{
 							Span: NodeSpan{ident.Span.Start, ident.Span.End},
 						},

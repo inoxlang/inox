@@ -1513,15 +1513,15 @@ func (ContinueStatement) Kind() NodeKind {
 type SwitchStatement struct {
 	NodeBase
 	Discriminant Node
-	Cases        []*SwitchCase
-	DefaultCases []*DefaultCase
+	Cases        []*SwitchStatementCase
+	DefaultCases []*DefaultCaseWithBlock
 }
 
 func (SwitchStatement) Kind() NodeKind {
 	return Stmt
 }
 
-type SwitchCase struct {
+type SwitchStatementCase struct {
 	NodeBase
 	Values []Node
 	Block  *Block
@@ -1530,22 +1530,22 @@ type SwitchCase struct {
 type MatchStatement struct {
 	NodeBase
 	Discriminant Node
-	Cases        []*MatchCase
-	DefaultCases []*DefaultCase
+	Cases        []*MatchStatementCase
+	DefaultCases []*DefaultCaseWithBlock
 }
 
 func (MatchStatement) Kind() NodeKind {
 	return Stmt
 }
 
-type MatchCase struct {
+type MatchStatementCase struct {
 	NodeBase
 	Values                []Node
 	GroupMatchingVariable Node //can be nil
 	Block                 *Block
 }
 
-type DefaultCase struct {
+type DefaultCaseWithBlock struct {
 	NodeBase
 	Block *Block
 }
@@ -2873,7 +2873,7 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 		for _, defaultCase := range n.DefaultCases {
 			walk(defaultCase, node, ancestorChain, fn, afterFn)
 		}
-	case *SwitchCase:
+	case *SwitchStatementCase:
 		for _, val := range n.Values {
 			walk(val, node, ancestorChain, fn, afterFn)
 		}
@@ -2886,13 +2886,13 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 		for _, defaultCase := range n.DefaultCases {
 			walk(defaultCase, node, ancestorChain, fn, afterFn)
 		}
-	case *MatchCase:
+	case *MatchStatementCase:
 		walk(n.GroupMatchingVariable, node, ancestorChain, fn, afterFn)
 		for _, val := range n.Values {
 			walk(val, node, ancestorChain, fn, afterFn)
 		}
 		walk(n.Block, node, ancestorChain, fn, afterFn)
-	case *DefaultCase:
+	case *DefaultCaseWithBlock:
 		walk(n.Block, node, ancestorChain, fn, afterFn)
 	case *LazyExpression:
 		walk(n.Expression, node, ancestorChain, fn, afterFn)

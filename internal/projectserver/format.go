@@ -284,7 +284,7 @@ func needsIndentation(n parse.Node, parent parse.Node, ancestors []parse.Node) b
 	case *parse.ObjectMetaProperty, *parse.ObjectProperty, *parse.ObjectPatternProperty,
 		*parse.DictionaryEntry,
 		*parse.StaticMappingEntry, *parse.DynamicMappingEntry,
-		*parse.SwitchCase, *parse.MatchCase, *parse.DefaultCase,
+		*parse.SwitchStatementCase, *parse.MatchStatementCase, *parse.DefaultCaseWithBlock,
 		*parse.GlobalConstantDeclaration:
 		return true
 	}
