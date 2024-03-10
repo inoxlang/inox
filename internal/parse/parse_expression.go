@@ -1,9 +1,17 @@
 package parse
 
+type exprParsingConfig struct {
+	precededByOpeningParen bool
+	statement              bool
+}
+
 // parseExpression parses any expression, if $expr is a *MissingExpression $isMissingExpr will be true.
 // The term 'expression' is quite broad here, it refers to any standalone node type that is not a statement
-func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isMissingExpr bool) {
+func (p *parser) parseExpression(config ...exprParsingConfig) (expr Node, isMissingExpr bool) {
 	p.panicIfContextDone()
+
+	precededByOpeningParen := len(config) > 0 && config[0].precededByOpeningParen
+	stmt := len(config) > 0 && config[0].statement
 
 	exprStartIndex := p.i
 	// these variables are only used for expressions that can be on the left side of a member/slice/index/call expression,
@@ -96,7 +104,7 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 	//TODO: refactor ?
 	case '_', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
 		'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
-		e, returnNow := p.parseUnderscoreAlphaStartingExpression(precededByOpeningParen...)
+		e, returnNow := p.parseUnderscoreAlphaStartingExpression(precededByOpeningParen, stmt)
 		if returnNow {
 			return e, false
 		}
@@ -140,7 +148,7 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 	case '.':
 		return p.parseDotStartingExpression(), false
 	case '-':
-		return p.parseDashStartingExpression(len(precededByOpeningParen) > 0 && precededByOpeningParen[0]), false
+		return p.parseDashStartingExpression(precededByOpeningParen), false
 	case '#':
 		if p.i < p.len-1 {
 			switch p.s[p.i+1] {
@@ -196,7 +204,7 @@ func (p *parser) parseExpression(precededByOpeningParen ...bool) (expr Node, isM
 			}, false
 		}
 	case '%':
-		patt := p.parsePercentPrefixedPattern(len(precededByOpeningParen) > 0 && precededByOpeningParen[0])
+		patt := p.parsePercentPrefixedPattern(precededByOpeningParen)
 
 		switch patt.(type) {
 		case *PatternIdentifierLiteral, *PatternNamespaceMemberExpression:
@@ -291,7 +299,7 @@ loop:
 	}, true
 }
 
-func (p *parser) parseUnderscoreAlphaStartingExpression(precededByOpeningParen ...bool) (node Node, returnNow bool) {
+func (p *parser) parseUnderscoreAlphaStartingExpression(precededByOpeningParen bool, stmt bool) (node Node, returnNow bool) {
 	returnNow = true
 	identStartingExpr := p.parseIdentStartingExpression(p.inPattern)
 
@@ -327,7 +335,7 @@ func (p *parser) parseUnderscoreAlphaStartingExpression(precededByOpeningParen .
 			node = p.parseTreedataLiteral(v)
 			return
 		case tokenStrings[CONCAT_KEYWORD]:
-			node = p.parseConcatenationExpression(v, len(precededByOpeningParen) > 0 && precededByOpeningParen[0])
+			node = p.parseConcatenationExpression(v, precededByOpeningParen)
 			return
 		case tokenStrings[TESTSUITE_KEYWORD]:
 			node = p.parseTestSuiteExpression(v)
@@ -352,6 +360,11 @@ func (p *parser) parseUnderscoreAlphaStartingExpression(precededByOpeningParen .
 		case NEW_KEYWORD_STRING:
 			node = p.parseNewExpression(v)
 			return
+		default:
+			if !stmt && (name == SWITCH_KEYWORD_STRING || name == MATCH_KEYWORD_STRING) {
+				node = p.parseSwitchMatchExpression(v)
+				return
+			}
 		}
 		if isKeyword(name) {
 			node = v

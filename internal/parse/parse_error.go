@@ -298,23 +298,48 @@ const (
 	UNTERMINATED_LIST_TUPLE_PATT_LIT_MISSING_BRACE           = "unterminated list/tuple pattern literal, missing closing bracket ']'"
 	INVALID_LIST_TUPLE_PATT_GENERAL_ELEMENT_IF_ELEMENTS      = "invalid list/tuple pattern literal, the general element (after ']') should not be specified if there are elements"
 
-	UNTERMINATED_SWITCH_CASE_MISSING_BLOCK  = "invalid switch case: missing block"
-	UNTERMINATED_MATCH_CASE_MISSING_BLOCK   = "invalid match case: missing block"
-	UNTERMINATED_DEFAULT_CASE_MISSING_BLOCK = "invalid default case: missing block"
+	UNTERMINATED_SWITCH_CASE_MISSING_BLOCK       = "invalid switch case: missing block"
+	UNTERMINATED_MATCH_CASE_MISSING_BLOCK        = "invalid match case: missing block"
+	UNTERMINATED_DEFAULT_CASE_MISSING_BLOCK      = "invalid default case: missing block"
+	UNTERMINATED_DEFAULT_CASE_MISSING_RESULT     = "invalid default case: missing result"
+	UNTERMINATED_DEFAULT_CASE_UNTERMINATED_ARROW = "invalid default case: unterminated arrow before value (=>)"
 
 	DEFAULT_CASE_MUST_BE_UNIQUE = "default case must be unique"
 
-	UNTERMINATED_SWITCH_STMT_MISSING_CLOSING_BRACE = "unterminated switch statement: missing closing body brace '}'"
-	UNTERMINATED_MATCH_STMT_MISSING_CLOSING_BRACE  = "unterminated match statement: missing closing body brace '}'"
+	//switch statement
 
-	INVALID_SWITCH_CASE_VALUE_EXPLANATION   = "invalid switch case: only simple value literals (1, 1.0, /home, ..) are supported"
-	INVALID_MATCH_CASE_VALUE_EXPLANATION    = "invalid match case: only values that are statically known can be used"
-	UNTERMINATED_MATCH_STMT                 = "unterminated match statement"
-	UNTERMINATED_SWITCH_STMT                = "unterminated switch statement"
-	UNTERMINATED_SWITCH_STMT_MISSING_BODY   = "unterminated switch statement: missing body"
-	UNTERMINATED_MATCH_STMT_MISSING_BODY    = "unterminated match statement: missing body"
-	UNTERMINATED_SWITCH_STMT_MISSING_VALUE  = "unterminated switch statement: missing value"
-	UNTERMINATED_MATCH_STMT_MISSING_VALUE   = "unterminated match statement: missing value"
+	UNTERMINATED_SWITCH_STMT_MISSING_CLOSING_BRACE = "unterminated switch statement: missing closing body brace '}'"
+	INVALID_SWITCH_CASE_VALUE_EXPLANATION          = "invalid switch case: only simple value literals (1, 1.0, /home, ..) are supported"
+	UNTERMINATED_SWITCH_STMT                       = "unterminated switch statement"
+	UNTERMINATED_SWITCH_STMT_MISSING_BODY          = "unterminated switch statement: missing body"
+	UNTERMINATED_SWITCH_STMT_MISSING_VALUE         = "unterminated switch statement: missing value"
+
+	//switch expression
+
+	UNTERMINATED_SWITCH_EXPR_MISSING_CLOSING_BRACE   = "unterminated switch expression: missing closing body brace '}'"
+	UNTERMINATED_SWITCH_EXPR                         = "unterminated switch expression"
+	UNTERMINATED_SWITCH_EXPR_MISSING_BODY            = "unterminated switch expression: missing body"
+	UNTERMINATED_SWITCH_EXPR_MISSING_VALUE           = "unterminated switch expression: missing value"
+	UNTERMINATED_SWITCH_EXPR_CASE_MISSING_RESULT     = "unterminated switch expression case: missing result"
+	UNTERMINATED_SWITCH_EXPR_CASE_UNTERMINATED_ARROW = "unterminated switch expression case: unterminated arrow before value (=>)"
+
+	//match statement
+
+	UNTERMINATED_MATCH_STMT                       = "unterminated match statement"
+	UNTERMINATED_MATCH_STMT_MISSING_BODY          = "unterminated match statement: missing body"
+	UNTERMINATED_MATCH_STMT_MISSING_CLOSING_BRACE = "unterminated match statement: missing closing body brace '}'"
+	INVALID_MATCH_CASE_VALUE_EXPLANATION          = "invalid match case: only values that are statically known can be used"
+	UNTERMINATED_MATCH_STMT_MISSING_VALUE         = "unterminated match statement: missing value"
+
+	//match expression
+
+	UNTERMINATED_MATCH_EXPR                         = "unterminated match expression"
+	UNTERMINATED_MATCH_EXPR_MISSING_BODY            = "unterminated match expression: missing body"
+	UNTERMINATED_MATCH_EXPR_MISSING_CLOSING_BRACE   = "unterminated match expression: missing closing body brace '}'"
+	UNTERMINATED_MATCH_EXPR_MISSING_VALUE           = "unterminated match expression: missing value"
+	UNTERMINATED_MATCH_EXPR_CASE_MISSING_RESULT     = "unterminated match expression case: missing result"
+	UNTERMINATED_MATCH_EXPR_CASE_UNTERMINATED_ARROW = "unterminated match expression case: unterminated arrow before value (=>)"
+
 	DROP_PERM_KEYWORD_SHOULD_BE_FOLLOWED_BY = "permission dropping statement: 'drop-perms' keyword should be followed by an object literal (permissions)"
 
 	//module import
@@ -718,6 +743,10 @@ func fmtUnexpectedCharInObjectPattern(r rune) string {
 
 func fmtUnexpectedCharInSwitchOrMatchStatement(r rune) string {
 	return fmt.Sprintf("unexpected char %s in switch or match statement", fmtRuneInfo(r))
+}
+
+func fmtUnexpectedCharInSwitchOrMatchExpression(r rune) string {
+	return fmt.Sprintf("unexpected char %s in switch or match expression", fmtRuneInfo(r))
 }
 
 func fmtUnexpectedCharInMappingExpression(r rune) string {

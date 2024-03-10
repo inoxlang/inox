@@ -19570,6 +19570,231 @@ func testParse(
 		})
 	})
 
+	t.Run("switch expression", func(t *testing.T) {
+
+		testCases := []struct {
+			input    string
+			hasError bool
+			result   Node
+		}{
+			{
+				input:    "(switch 1 { })",
+				hasError: false,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
+					Statements: []Node{
+						&SwitchExpression{
+							NodeBase: NodeBase{NodeSpan{1, 13}, nil, true},
+							Discriminant: &IntLiteral{
+								NodeBase: NodeBase{NodeSpan{8, 9}, nil, false},
+								Raw:      "1",
+								Value:    1,
+							},
+							Cases: nil,
+						},
+					},
+				},
+			},
+			{
+				input:    "(switch 1 { 1 => 1 })",
+				hasError: false,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
+					Statements: []Node{
+						&SwitchExpression{
+							NodeBase: NodeBase{NodeSpan{1, 20}, nil, true},
+							Discriminant: &IntLiteral{
+								NodeBase: NodeBase{NodeSpan{8, 9}, nil, false},
+								Raw:      "1",
+								Value:    1,
+							},
+							Cases: []*SwitchExpressionCase{
+								{
+									NodeBase: NodeBase{NodeSpan{12, 18}, nil, false},
+									Values: []Node{
+										&IntLiteral{
+											NodeBase: NodeBase{NodeSpan{12, 13}, nil, false},
+											Raw:      "1",
+											Value:    1,
+										},
+									},
+									Result: &IntLiteral{
+										NodeBase: NodeBase{NodeSpan{17, 18}, nil, false},
+										Raw:      "1",
+										Value:    1,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				input:    "(switch 1 { defaultcase => 0 })",
+				hasError: false,
+			},
+			{
+				input:    "(switch 1 { defaultcase=>0 })",
+				hasError: false,
+			},
+			{
+				hasError: false,
+				input:    "(switch 1 { 1 => 1 2 => 2 })",
+			},
+			{
+				hasError: false,
+				input:    "(switch 1 { 1, 2 => 2 })",
+			},
+			{
+				input:    "(switch 1 { ) })",
+				hasError: true,
+			},
+			{
+				input:    "(switch 1 { % })",
+				hasError: true,
+			},
+			{
+				input:    "(switch 1 { 1 ) })",
+				hasError: true,
+			},
+			{
+				input:    "(switch 1 { 1 ) => 1 })",
+				hasError: true,
+			},
+			{
+				input:    "(switch 1 { 1 => 1 ) })",
+				hasError: true,
+			},
+			{
+				input:    "(switch 1 { $a { } })",
+				hasError: true,
+			},
+			{
+				input:    "(switch 1 { defaultcase ) })",
+				hasError: true,
+			},
+			{
+				input:    "(switch 1 { defaultcase ) => 1 })",
+				hasError: true,
+			},
+			{
+				input:    "(switch 1 { defaultcase => 1 ) })",
+				hasError: true,
+			},
+			{
+				input:    "(switch 1 { defaultcase {}\n defaultcase => 1 })",
+				hasError: true,
+			},
+		}
+
+		for _, testCase := range testCases {
+			t.Run(testCase.input, func(t *testing.T) {
+				n, err := parseChunk(t, testCase.input, "")
+				if testCase.hasError {
+					assert.Error(t, err)
+				} else {
+					assert.NoError(t, err)
+				}
+
+				if testCase.result != nil {
+					assert.Equal(t, testCase.result, n)
+				}
+			})
+		}
+	})
+
+	t.Run("match expression", func(t *testing.T) {
+		t.SkipNow()
+		t.Run("case is not a simple literal and is not statically known", func(t *testing.T) {
+			assert.Panics(t, func() {
+				mustparseChunk(t, "(match 1 { $a { } })")
+			})
+		})
+
+		t.Run("case is not a simple literal but is statically known", func(t *testing.T) {
+
+			n := mustparseChunk(t, "(match 1 { ({}) =>1 })")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 22}, nil, false},
+				Statements: []Node{
+					&MatchExpression{
+						NodeBase: NodeBase{Span: NodeSpan{1, 21}},
+						Discriminant: &IntLiteral{
+							NodeBase: NodeBase{NodeSpan{7, 8}, nil, false},
+							Raw:      "1",
+							Value:    1,
+						},
+						Cases: []*MatchExpressionCase{
+							{
+								NodeBase: NodeBase{NodeSpan{11, 19}, nil, false},
+								Values: []Node{
+									&ObjectLiteral{
+										NodeBase: NodeBase{Span: NodeSpan{11, 13}},
+									},
+								},
+
+								Result: &IntLiteral{
+									NodeBase: NodeBase{NodeSpan{18, 19}, nil, false},
+									Raw:      "1",
+									Value:    1,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("case with group match variable", func(t *testing.T) {
+			n := mustparseChunk(t, "(match 1 { %/home/{:username} m => 1 })")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 39}, nil, false},
+				Statements: []Node{
+					&MatchExpression{
+						NodeBase: NodeBase{Span: NodeSpan{1, 38}},
+						Discriminant: &IntLiteral{
+							NodeBase: NodeBase{NodeSpan{7, 8}, nil, false},
+							Raw:      "1",
+							Value:    1,
+						},
+						Cases: []*MatchExpressionCase{
+							{
+								NodeBase: NodeBase{NodeSpan{11, 35}, nil, false},
+								Values: []Node{
+									&NamedSegmentPathPatternLiteral{
+										NodeBase: NodeBase{Span: NodeSpan{11, 29}},
+										Slices: []Node{
+											&PathPatternSlice{
+												NodeBase: NodeBase{NodeSpan{12, 18}, nil, false},
+												Value:    "/home/",
+											},
+											&NamedPathSegment{
+												NodeBase: NodeBase{NodeSpan{19, 28}, nil, false},
+												Name:     "username",
+											},
+										},
+										Raw:         "%/home/{:username}",
+										StringValue: "%/home/{:username}",
+									},
+								},
+								GroupMatchingVariable: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{29, 30}, nil, false},
+									Name:     "m",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("group match variable should not be a keyword", func(t *testing.T) {
+			n, err := parseChunk(t, "(match 1 { %/home/{:username} manifest => 1 })", "")
+			assert.NotNil(t, n)
+			assert.ErrorContains(t, err, KEYWORDS_SHOULD_NOT_BE_USED_IN_ASSIGNMENT_LHS)
+		})
+	})
+
 	t.Run("empty single line comment", func(t *testing.T) {
 		n := mustparseChunk(t, "# ")
 		assert.EqualValues(t, &Chunk{

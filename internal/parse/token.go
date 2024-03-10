@@ -17,6 +17,9 @@ const (
 	OTHERPROPS_KEYWORD_STRING       = "otherprops"
 	ASSERT_KEYWORD_STRING           = "assert"
 	IF_KEYWORD_STRING               = "if"
+	FOR_KEYWORD_STRING              = "for"
+	SWITCH_KEYWORD_STRING           = "switch"
+	MATCH_KEYWORD_STRING            = "match"
 	STRUCT_KEYWORD_STRING           = "struct"
 	NEW_KEYWORD_STRING              = "new"
 	INCLUDABLE_CHUNK_KEYWORD_STRING = "includable-file"
@@ -317,14 +320,14 @@ var tokenStrings = [...]string{
 	CONST_KEYWORD:                  "const",
 	VAR_KEYWORD:                    "var",
 	GLOBALVAR_KEYWORD:              "globalvar",
-	FOR_KEYWORD:                    "for",
+	FOR_KEYWORD:                    FOR_KEYWORD_STRING,
 	WALK_KEYWORD:                   "walk",
 	IN_KEYWORD:                     "in",
 	GO_KEYWORD:                     "go",
 	IMPORT_KEYWORD:                 "import",
 	FN_KEYWORD:                     "fn",
-	SWITCH_KEYWORD:                 "switch",
-	MATCH_KEYWORD:                  "match",
+	SWITCH_KEYWORD:                 SWITCH_KEYWORD_STRING,
+	MATCH_KEYWORD:                  MATCH_KEYWORD_STRING,
 	DEFAULTCASE_KEYWORD:            "defaultcase",
 	RETURN_KEYWORD:                 "return",
 	YIELD_KEYWORD:                  "yield",

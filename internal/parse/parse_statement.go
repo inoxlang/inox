@@ -5,7 +5,7 @@ import "log"
 func (p *parser) parseStatement() Node {
 	// no p.panicIfContextDone() call because there is one in the following statement.
 
-	expr, _ := p.parseExpression()
+	expr, _ := p.parseExpression(exprParsingConfig{statement: true})
 
 	var b rune
 	followedBySpace := false
@@ -104,11 +104,11 @@ func (p *parser) parseStatement() Node {
 			}
 		case IF_KEYWORD_STRING:
 			return p.parseIfStatement(ev)
-		case tokenStrings[FOR_KEYWORD]:
+		case FOR_KEYWORD_STRING:
 			return p.parseForStatement(ev)
 		case tokenStrings[WALK_KEYWORD]:
 			return p.parseWalkStatement(ev)
-		case tokenStrings[SWITCH_KEYWORD], "match":
+		case SWITCH_KEYWORD_STRING, MATCH_KEYWORD_STRING:
 			return p.parseSwitchMatchStatement(ev)
 		case tokenStrings[FN_KEYWORD]:
 			log.Panic("invalid state: function parsing should be hanlded by p.parseExpression")

@@ -433,6 +433,21 @@ func TestPrint(t *testing.T) {
 		"switch 1 { 1 {} 2 {} defaultcase {} }",
 		"switch 1 { defaultcase { }",
 		"switch 1 { defaultcase ) }",
+		//switch expression
+		"(switch)",
+		"(switch 1)",
+		"(switch 1 {)",
+		"(switch 1 {})",
+		"(switch 1 { 1 })",
+		"(switch 1 { 1 => 1})",
+		"(switch 1 { 1 =>})",
+		"(switch 1 { 1 =})",
+		"(switch 1 { 1 => 1 2 => 2)",
+		"(switch 1 { 1, 2 => 1 })",
+		"(switch 1 { 1 => 1 2 => 2 defaultcase => 0 })",
+		"(switch 1 { defaultcase = })",
+		"(switch 1 { defaultcase => })",
+		"a = switch 1 {",
 		//match statement
 		"match",
 		"match 1",
@@ -447,6 +462,21 @@ func TestPrint(t *testing.T) {
 		"match 1 { 1 {} 2 {} defaultcase {} }",
 		"match 1 { defaultcase { }",
 		"match 1 { defaultcase ) }",
+		//match expression
+		"(match)",
+		"(match 1)",
+		"(match 1 {)",
+		"(match 1 {})",
+		"(match 1 { 1 })",
+		"(match 1 { 1 => 1})",
+		"(match 1 { 1 =>})",
+		"(match 1 { 1 =})",
+		"(match 1 { 1 => 1 2 => 2)",
+		"(match 1 { 1, 2 => 1 })",
+		"(match 1 { 1 => 1 2 => 2 defaultcase => 0 })",
+		"(match 1 { defaultcase = })",
+		"(match 1 { defaultcase => })",
+		"a = match 1 {",
 		//function expressions
 		"fn(){}",
 		"fn(arg){}",
@@ -534,7 +564,8 @@ func TestPrint(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase, func(t *testing.T) {
-			n, _ := ParseChunk(testCase, "")
+			n, err := ParseChunk(testCase, "")
+			_ = err
 			s := SPrint(n, n, PrintConfig{KeepLeadingSpace: true, KeepTrailingSpace: true})
 			assert.Equal(t, testCase, s)
 		})

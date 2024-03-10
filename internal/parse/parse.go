@@ -4497,7 +4497,7 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(openingParenIndex in
 		//XML expression without namespace.
 		left = p.parseXMLExpression(nil, p.i)
 	} else {
-		left, isMissingExpr = p.parseExpression(true)
+		left, isMissingExpr = p.parseExpression(exprParsingConfig{precededByOpeningParen: true})
 	}
 
 	if ident, ok := left.(*IdentifierLiteral); ok && !hasPreviousOperator {
@@ -8934,7 +8934,7 @@ func (p *parser) parseIfStatement(ifIdent *IdentifierLiteral) *IfStatement {
 				alternate = p.parseBlock()
 				end = alternate.(*Block).Span.End
 			case p.i < p.len-1 && p.s[p.i] == 'i' && p.s[p.i+1] == 'f' && (p.i >= p.len-2 || !IsIdentChar(p.s[p.i+2])):
-				ident, _ := p.parseExpression(false)
+				ident, _ := p.parseExpression(exprParsingConfig{precededByOpeningParen: false})
 				alternate = p.parseIfStatement(ident.(*IdentifierLiteral))
 				end = alternate.(*IfStatement).Span.End
 			default:
@@ -9502,7 +9502,7 @@ func (p *parser) parseSwitchMatchStatement(keywordIdent *IdentifierLiteral) Node
 			}
 		}
 
-		return &SwitchStatement{
+		return &MatchStatement{
 			NodeBase: NodeBase{
 				Span: NodeSpan{keywordIdent.Span.Start, p.i},
 				Err:  &ParsingError{UnspecifiedParsingError, UNTERMINATED_MATCH_STMT_MISSING_VALUE},
@@ -9771,6 +9771,314 @@ top_loop:
 	}
 
 	return &SwitchStatement{
+		NodeBase: NodeBase{
+			NodeSpan{keywordIdent.Span.Start, p.i},
+			parsingErr,
+			false,
+		},
+		Discriminant: discriminant,
+		Cases:        switchCases,
+		DefaultCases: defaultCases,
+	}
+}
+
+func (p *parser) parseSwitchMatchExpression(keywordIdent *IdentifierLiteral) Node {
+	p.panicIfContextDone()
+
+	if keywordIdent.Name[0] == 's' {
+		p.tokens = append(p.tokens, Token{Type: SWITCH_KEYWORD, Span: keywordIdent.Base().Span})
+	} else {
+		p.tokens = append(p.tokens, Token{Type: MATCH_KEYWORD, Span: keywordIdent.Base().Span})
+	}
+
+	isMatchExpr := keywordIdent.Name == "match"
+
+	p.eatSpace()
+
+	if p.i >= p.len {
+
+		if keywordIdent.Name == "switch" {
+			return &SwitchExpression{
+				NodeBase: NodeBase{
+					Span: NodeSpan{keywordIdent.Span.Start, p.i},
+					Err:  &ParsingError{UnspecifiedParsingError, UNTERMINATED_SWITCH_EXPR_MISSING_VALUE},
+				},
+			}
+		}
+
+		return &MatchExpression{
+			NodeBase: NodeBase{
+				Span: NodeSpan{keywordIdent.Span.Start, p.i},
+				Err:  &ParsingError{UnspecifiedParsingError, UNTERMINATED_MATCH_EXPR_MISSING_VALUE},
+			},
+		}
+	}
+
+	discriminant, _ := p.parseExpression()
+	var switchCases []*SwitchExpressionCase
+	var matchCases []*MatchExpressionCase
+	var defaultCases []*DefaultCaseWithResult
+
+	p.eatSpace()
+
+	if p.i >= p.len || p.s[p.i] != '{' {
+		if !isMatchExpr {
+			return &SwitchExpression{
+				NodeBase: NodeBase{
+					Span: NodeSpan{keywordIdent.Span.Start, p.i},
+					Err:  &ParsingError{UnspecifiedParsingError, UNTERMINATED_SWITCH_EXPR_MISSING_BODY},
+				},
+				Discriminant: discriminant,
+			}
+		}
+
+		return &MatchExpression{
+			NodeBase: NodeBase{
+				Span: NodeSpan{keywordIdent.Span.Start, p.i},
+				Err:  &ParsingError{UnspecifiedParsingError, UNTERMINATED_MATCH_EXPR_MISSING_BODY},
+			},
+			Discriminant: discriminant,
+		}
+	}
+
+	p.tokens = append(p.tokens, Token{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
+	p.i++
+
+top_loop:
+	for p.i < p.len && !isUnpairedOrIsClosingDelim(p.s[p.i]) {
+		p.eatSpaceNewlineSemicolonComment()
+
+		if p.i < p.len && isUnpairedOrIsClosingDelim(p.s[p.i]) {
+			break
+		}
+
+		var switchCase *SwitchExpressionCase
+		var matchCase *MatchExpressionCase
+		var defaultCase *DefaultCaseWithResult
+
+		if isMatchExpr {
+			matchCase = &MatchExpressionCase{
+				NodeBase: NodeBase{
+					Span: NodeSpan{p.i, 0},
+				},
+			}
+			matchCases = append(matchCases, matchCase)
+		} else {
+			switchCase = &SwitchExpressionCase{
+				NodeBase: NodeBase{
+					Span: NodeSpan{p.i, 0},
+				},
+			}
+			switchCases = append(switchCases, switchCase)
+		}
+
+		//parse case's values
+		for p.i < p.len && p.s[p.i] != '=' {
+			valueNode, isMissingExpr := p.parseExpression()
+
+			//if unexpected character, add case with error, increment p.i & parse next value
+			if isMissingExpr && (p.i >= p.len || p.s[p.i] != '}') {
+				p.tokens = append(p.tokens, Token{Type: UNEXPECTED_CHAR, Span: NodeSpan{p.i, p.i + 1}, Raw: string(p.s[p.i])})
+				valueNode = &UnknownNode{
+					NodeBase: NodeBase{
+						NodeSpan{p.i, p.i + 1},
+						&ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInSwitchOrMatchExpression(p.s[p.i])},
+						false,
+					},
+				}
+
+				if isMatchExpr {
+					matchCase.Values = append(matchCase.Values, valueNode)
+				} else {
+					switchCase.Values = append(switchCase.Values, valueNode)
+				}
+
+				p.i++
+				continue top_loop
+			}
+			//if ok
+
+			//default case
+			if ident, ok := valueNode.(*IdentifierLiteral); ok && ident.Name == tokenStrings[DEFAULTCASE_KEYWORD] {
+
+				//remove case
+				if isMatchExpr {
+					matchCases = matchCases[:len(matchCases)-1]
+				} else {
+					switchCases = switchCases[:len(switchCases)-1]
+				}
+
+				p.tokens = append(p.tokens, Token{Type: DEFAULTCASE_KEYWORD, Span: NodeSpan{ident.Span.Start, ident.Span.End}})
+				defaultCase = &DefaultCaseWithResult{
+					NodeBase: NodeBase{
+						Span: NodeSpan{ident.Span.Start, ident.Span.End},
+					},
+				}
+
+				defaultCases = append(defaultCases, defaultCase)
+
+				if len(defaultCases) > 1 {
+					defaultCase.Err = &ParsingError{UnspecifiedParsingError, DEFAULT_CASE_MUST_BE_UNIQUE}
+				}
+
+				p.eatSpace()
+
+				goto parse_case_result
+			}
+
+			if isMatchExpr && !isAllowedMatchCase(valueNode) {
+				matchCase.Err = &ParsingError{UnspecifiedParsingError, INVALID_MATCH_CASE_VALUE_EXPLANATION}
+			} else if !isMatchExpr && !NodeIsSimpleValueLiteral(valueNode) {
+				switchCase.Err = &ParsingError{UnspecifiedParsingError, INVALID_SWITCH_CASE_VALUE_EXPLANATION}
+			}
+
+			if isMatchExpr {
+				matchCase.Values = append(matchCase.Values, valueNode)
+			} else {
+				switchCase.Values = append(switchCase.Values, valueNode)
+			}
+
+			p.eatSpace()
+
+			if p.i >= p.len {
+				goto parse_case_result
+			}
+
+			switch {
+			case p.s[p.i] == ',': //comma before next value
+				p.tokens = append(p.tokens, Token{Type: COMMA, Span: NodeSpan{p.i, p.i + 1}})
+				p.i++
+
+			case isAlpha(p.s[p.i]) && isMatchExpr: // group matching variable
+				e, _ := p.parseExpression()
+
+				ident, ok := e.(*IdentifierLiteral)
+				if ok && isKeyword(ident.Name) {
+					matchCase.Err = &ParsingError{UnspecifiedParsingError, KEYWORDS_SHOULD_NOT_BE_USED_IN_ASSIGNMENT_LHS}
+				}
+				matchCase.GroupMatchingVariable = e
+				p.eatSpace()
+				goto parse_case_result
+			case p.s[p.i] != '=' && p.s[p.i] != '}': //unexpected character: we add an error and parse next case
+				p.tokens = append(p.tokens, Token{Type: UNEXPECTED_CHAR, Span: NodeSpan{p.i, p.i + 1}, Raw: string(p.s[p.i])})
+				valueNode = &UnknownNode{
+					NodeBase: NodeBase{
+						NodeSpan{p.i, p.i + 1},
+						&ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInSwitchOrMatchExpression(p.s[p.i])},
+						false,
+					},
+				}
+				p.i++
+
+				if isMatchExpr {
+					matchCase.Values = append(matchCase.Values, valueNode)
+					matchCase.Span.End = p.i
+				} else {
+					switchCase.Values = append(switchCase.Values, valueNode)
+					switchCase.Span.End = p.i
+				}
+				continue top_loop
+			case p.s[p.i] == '}':
+				break top_loop
+			}
+
+			p.eatSpace()
+		}
+
+	parse_case_result:
+		var caseResult Node
+		end := p.i
+
+		p.eatSpace()
+
+		if p.i >= p.len-1 || p.s[p.i] != '=' || p.s[p.i+1] != '>' { // missing or unterminated arrow '=>'
+
+			unterminatedArrow := p.i < p.len && p.s[p.i] == '='
+
+			if unterminatedArrow {
+				p.tokens = append(p.tokens, Token{
+					Type: EQUAL,
+					Span: NodeSpan{p.i, p.i + 1},
+				})
+
+				p.i++
+			}
+
+			switch {
+			case defaultCase != nil:
+				if unterminatedArrow {
+					defaultCase.Err = &ParsingError{MissingBlock, UNTERMINATED_DEFAULT_CASE_UNTERMINATED_ARROW}
+				} else {
+					defaultCase.Err = &ParsingError{MissingBlock, UNTERMINATED_DEFAULT_CASE_MISSING_RESULT}
+				}
+			case isMatchExpr:
+				if unterminatedArrow {
+					matchCase.Err = &ParsingError{MissingBlock, UNTERMINATED_MATCH_EXPR_CASE_UNTERMINATED_ARROW}
+				} else {
+					matchCase.Err = &ParsingError{MissingBlock, UNTERMINATED_MATCH_EXPR_CASE_UNTERMINATED_ARROW}
+				}
+			default:
+				if unterminatedArrow {
+					switchCase.Err = &ParsingError{MissingBlock, UNTERMINATED_SWITCH_EXPR_CASE_UNTERMINATED_ARROW}
+				} else {
+					switchCase.Err = &ParsingError{MissingBlock, UNTERMINATED_SWITCH_EXPR_CASE_MISSING_RESULT}
+				}
+			}
+		} else {
+			p.tokens = append(p.tokens, Token{
+				Type: ARROW,
+				Span: NodeSpan{p.i, p.i + 2},
+			})
+
+			p.i += 2
+
+			p.eatSpace()
+
+			caseResult, _ = p.parseExpression()
+			end = caseResult.Base().Span.End
+		}
+
+		if defaultCase != nil {
+			defaultCase.Span.End = end
+			defaultCase.Result = caseResult
+		} else if isMatchExpr {
+			matchCase.Span.End = end
+			matchCase.Result = caseResult
+		} else {
+			switchCase.Span.End = end
+			switchCase.Result = caseResult
+		}
+
+		p.eatSpaceNewlineSemicolonComment()
+	}
+
+	var parsingErr *ParsingError
+
+	if p.i >= p.len || p.s[p.i] != '}' {
+		if keywordIdent.Name == "switch" {
+			parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_SWITCH_EXPR_MISSING_CLOSING_BRACE}
+		} else {
+			parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_MATCH_EXPR_MISSING_CLOSING_BRACE}
+		}
+	} else {
+		p.tokens = append(p.tokens, Token{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
+		p.i++
+	}
+
+	if isMatchExpr {
+		return &MatchExpression{
+			NodeBase: NodeBase{
+				NodeSpan{keywordIdent.Span.Start, p.i},
+				parsingErr,
+				false,
+			},
+			Discriminant: discriminant,
+			Cases:        matchCases,
+			DefaultCases: defaultCases,
+		}
+	}
+
+	return &SwitchExpression{
 		NodeBase: NodeBase{
 			NodeSpan{keywordIdent.Span.Start, p.i},
 			parsingErr,

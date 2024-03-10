@@ -1550,6 +1550,46 @@ type DefaultCaseWithBlock struct {
 	Block *Block
 }
 
+type SwitchExpression struct {
+	NodeBase
+	Discriminant Node
+	Cases        []*SwitchExpressionCase
+	DefaultCases []*DefaultCaseWithResult
+}
+
+func (SwitchExpression) Kind() NodeKind {
+	return Expr
+}
+
+type SwitchExpressionCase struct {
+	NodeBase
+	Values []Node
+	Result Node
+}
+
+type MatchExpression struct {
+	NodeBase
+	Discriminant Node
+	Cases        []*MatchExpressionCase
+	DefaultCases []*DefaultCaseWithResult
+}
+
+func (MatchExpression) Kind() NodeKind {
+	return Expr
+}
+
+type MatchExpressionCase struct {
+	NodeBase
+	Values                []Node
+	GroupMatchingVariable Node //can be nil
+	Result                Node
+}
+
+type DefaultCaseWithResult struct {
+	NodeBase
+	Result Node
+}
+
 type UnaryOperator int
 
 const (
@@ -2894,6 +2934,34 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 		walk(n.Block, node, ancestorChain, fn, afterFn)
 	case *DefaultCaseWithBlock:
 		walk(n.Block, node, ancestorChain, fn, afterFn)
+	case *SwitchExpression:
+		walk(n.Discriminant, node, ancestorChain, fn, afterFn)
+		for _, switchCase := range n.Cases {
+			walk(switchCase, node, ancestorChain, fn, afterFn)
+		}
+		for _, defaultCase := range n.DefaultCases {
+			walk(defaultCase, node, ancestorChain, fn, afterFn)
+		}
+	case *SwitchExpressionCase:
+		for _, val := range n.Values {
+			walk(val, node, ancestorChain, fn, afterFn)
+		}
+		walk(n.Result, node, ancestorChain, fn, afterFn)
+	case *MatchExpression:
+		walk(n.Discriminant, node, ancestorChain, fn, afterFn)
+		for _, switchCase := range n.Cases {
+			walk(switchCase, node, ancestorChain, fn, afterFn)
+		}
+		for _, defaultCase := range n.DefaultCases {
+			walk(defaultCase, node, ancestorChain, fn, afterFn)
+		}
+	case *MatchExpressionCase:
+		for _, val := range n.Values {
+			walk(val, node, ancestorChain, fn, afterFn)
+		}
+		walk(n.Result, node, ancestorChain, fn, afterFn)
+	case *DefaultCaseWithResult:
+		walk(n.Result, node, ancestorChain, fn, afterFn)
 	case *LazyExpression:
 		walk(n.Expression, node, ancestorChain, fn, afterFn)
 	case *DynamicMemberExpression:
