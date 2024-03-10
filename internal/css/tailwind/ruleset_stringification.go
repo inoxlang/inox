@@ -29,13 +29,14 @@ func WriteRulesets(w io.Writer, rulesets []Ruleset) error {
 	//output
 
 	type breakpointAtRule struct {
-		modifier string
-		node     css.Node
+		modifier   string
+		node       css.Node
+		breakpoint Breakpoint
 	}
 
 	var (
-		regularRulesets []Ruleset
-		breakpoints     []breakpointAtRule
+		regularRulesets   []Ruleset
+		breakpointAtRules []breakpointAtRule
 	)
 
 	for _, ruleset := range deduplicatedRulesets {
@@ -45,18 +46,19 @@ func WriteRulesets(w io.Writer, rulesets []Ruleset) error {
 			//Add the ruleset to the breakpoint's at-rule.
 
 			breakpointInfo := utils.MustGet(GetDefaultBreakpointByName(modifier))
-			breakpointIndex := slices.IndexFunc(breakpoints, func(r breakpointAtRule) bool { return r.modifier == modifier })
+			breakpointIndex := slices.IndexFunc(breakpointAtRules, func(r breakpointAtRule) bool { return r.modifier == modifier })
 
 			var breakpoint *breakpointAtRule
 
 			if breakpointIndex < 0 {
-				breakpoints = append(breakpoints, breakpointAtRule{
-					modifier: modifier,
-					node:     makeMinWidthAtRule(breakpointInfo.MinWidthPx),
+				breakpointAtRules = append(breakpointAtRules, breakpointAtRule{
+					modifier:   modifier,
+					node:       makeMinWidthAtRule(breakpointInfo.MinWidthPx),
+					breakpoint: breakpointInfo,
 				})
-				breakpoint = &breakpoints[len(breakpoints)-1]
+				breakpoint = &breakpointAtRules[len(breakpointAtRules)-1]
 			} else {
-				breakpoint = &breakpoints[breakpointIndex]
+				breakpoint = &breakpointAtRules[breakpointIndex]
 			}
 
 			breakpoint.node.Children = append(breakpoint.node.Children, ruleset.Ruleset)
@@ -71,13 +73,19 @@ func WriteRulesets(w io.Writer, rulesets []Ruleset) error {
 		regularRulesets = append(regularRulesets, ruleset)
 	}
 
+	//Sort at-rules for breakpoints by ascending min-width.
+
+	slices.SortFunc(breakpointAtRules, func(a, b breakpointAtRule) int {
+		return a.breakpoint.MinWidthPx - b.breakpoint.MinWidthPx
+	})
+
 	//Write rulesets and at-rules.
 	_, err := w.Write(linefeeds)
 	if err != nil {
 		return err
 	}
 
-	for _, breakpoint := range breakpoints {
+	for _, breakpoint := range breakpointAtRules {
 		err := breakpoint.node.WriteTo(w)
 		if err != nil {
 			return err

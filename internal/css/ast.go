@@ -51,6 +51,15 @@ func (n Node) SelectorString() string {
 	return n.Children[0].String()
 }
 
+// UpdateFirstSelectorElement updates the first element of the selector node if $n is a Ruleset, it panics otherwise.
+func (n Node) UpdateFirstSelectorElement(fn func(elem Node) Node) {
+	if n.Type != Ruleset {
+		panic(errors.New("node is not a ruleset"))
+	}
+
+	n.Children[0].Children[0] = fn(n.Children[0].Children[0])
+}
+
 func (n Node) String() string {
 	buf := &bytes.Buffer{}
 	n.writeTo(buf, 0)
