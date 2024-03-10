@@ -151,6 +151,22 @@ func (n Node) writeTo(w astStringificatioWriter, indent int) {
 			w.WriteString("}")
 		}
 
+	case MediaQuery:
+		for i, child := range n.Children {
+			if i > 0 {
+				w.WriteByte(' ')
+			}
+			child.writeTo(w, 0)
+		}
+	case MediaFeature:
+		w.WriteByte('(')
+		w.WriteString(n.Data)
+		w.WriteByte(':')
+		for _, child := range n.Children {
+			w.WriteByte(' ')
+			child.writeTo(w, 0)
+		}
+		w.WriteByte(')')
 	case Ruleset:
 		//Selector
 		n.Children[0].writeTo(w, 0)
