@@ -79,14 +79,15 @@ func WriteRulesets(w io.Writer, rulesets []Ruleset) error {
 		return a.breakpoint.MinWidthPx - b.breakpoint.MinWidthPx
 	})
 
-	//Write rulesets and at-rules.
+	//Write rulesets first (less specific).
+
 	_, err := w.Write(linefeeds)
 	if err != nil {
 		return err
 	}
 
-	for _, breakpoint := range breakpointAtRules {
-		err := breakpoint.node.WriteTo(w)
+	for _, ruleset := range regularRulesets {
+		err := ruleset.Ruleset.WriteTo(w)
 		if err != nil {
 			return err
 		}
@@ -96,8 +97,10 @@ func WriteRulesets(w io.Writer, rulesets []Ruleset) error {
 		}
 	}
 
-	for _, ruleset := range regularRulesets {
-		err := ruleset.Ruleset.WriteTo(w)
+	//Write breakpoint at-rules.
+
+	for _, breakpoint := range breakpointAtRules {
+		err := breakpoint.node.WriteTo(w)
 		if err != nil {
 			return err
 		}
