@@ -25,7 +25,7 @@ func (r Ruleset) WithOnlyModifier(modifier string) Ruleset {
 	new := r
 	new.Modifier0 = modifier
 	new.NameWithModifiers = modifier + "\\:" + strings.TrimPrefix(new.BaseName, ".")
-	new.Ruleset.UpdateFirstSelectorElement(func(elem css.Node) css.Node {
+	new.Ruleset = new.Ruleset.WithUpdateFirstSelectorElement(func(elem css.Node) css.Node {
 		if elem.Type == css.ClassName {
 			elem.Data = new.NameWithModifiers
 			return elem

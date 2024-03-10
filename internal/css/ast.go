@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"slices"
 )
 
 type Node struct {
@@ -51,13 +52,17 @@ func (n Node) SelectorString() string {
 	return n.Children[0].String()
 }
 
-// UpdateFirstSelectorElement updates the first element of the selector node if $n is a Ruleset, it panics otherwise.
-func (n Node) UpdateFirstSelectorElement(fn func(elem Node) Node) {
+// WithUpdateFirstSelectorElement updates the first element of the selector node if $n is a Ruleset, it panics otherwise.
+func (n Node) WithUpdateFirstSelectorElement(fn func(elem Node) Node) Node {
 	if n.Type != Ruleset {
 		panic(errors.New("node is not a ruleset"))
 	}
 
-	n.Children[0].Children[0] = fn(n.Children[0].Children[0])
+	new := n
+	new.Children = slices.Clone(new.Children)
+	new.Children[0].Children = slices.Clone(new.Children[0].Children)
+	new.Children[0].Children[0] = fn(new.Children[0].Children[0])
+	return new
 }
 
 func (n Node) String() string {
