@@ -155,6 +155,26 @@ func ProjectServer(mainSubCommand string, mainSubCommandArgs []string, outW, err
 
 	CancelOnSigintSigterm(state.Ctx, ROOT_CTX_TEARDOWN_TIMEOUT)
 
+	ctx.OnDone(func(timeoutCtx context.Context, teardownStatus core.GracefulTeardownStatus) error {
+		//Stops the process 1s after the root context is done.
+		//If the root context is cancelled because of an OS signal the code after the time.Sleep(...) call
+		//will never get executed because the process should already have exited at this point (see CancelOnSigintSigterm).
+		go func() {
+			time.Sleep(time.Second)
+			if teardownStatus == core.NeverStartedGracefulTeardown {
+				os.Exit(2)
+			} else {
+				os.Exit(0) //Success
+			}
+		}()
+		return nil
+	})
+
+	go func() {
+		time.Sleep(5 * time.Second)
+		ctx.CancelGracefully()
+	}()
+
 	//restrict filesystem access at the process level.
 	inoxprocess.RestrictProcessAccess(ctx, inoxprocess.ProcessRestrictionConfig{
 		AllowBrowserAccess: projectServerConfig.AllowBrowserAutomation,

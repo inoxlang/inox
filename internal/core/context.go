@@ -1343,8 +1343,8 @@ func (ctx *Context) IsLongLived() bool {
 	return ctx.longLived.Load()
 }
 
-// CancelGracefully calls the graceful teardown tasks one by one synchronously,
-// then the context is truly cancelled.
+// CancelGracefully calls the graceful teardown tasks one by one synchronously, then the context is truly cancelled.
+// CancelGracefully does not wait for the ungraceful teardown that follows the graceful one to complete.
 // TODO: add cancellation cause
 func (ctx *Context) CancelGracefully() {
 	ignore := ctx.gracefullyTearDown()
@@ -1360,6 +1360,7 @@ func (ctx *Context) CancelGracefully() {
 }
 
 // CancelUngracefully directly cancels the go context, CancelGracefully should always be called instead.
+// CancelUngracefully does not wait for the ungraceful teardown to complete.
 func (ctx *Context) CancelUngracefully() {
 	if ctx.done.CompareAndSwap(false, true) {
 		ctx.lock.Lock()

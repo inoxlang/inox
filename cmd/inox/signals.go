@@ -41,6 +41,7 @@ func CancelOnSigintSigterm(ctx *core.Context, teardownTimeout time.Duration) {
 			}()
 
 			ctx.CancelGracefully()
+			time.Sleep(MAX_UNGRACEFUL_TEARDOWN_DURATION)
 			os.Exit(0) //success
 		}
 	}()
