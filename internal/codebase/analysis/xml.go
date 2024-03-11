@@ -24,6 +24,7 @@ func analyzeXmlAttribute(xmlAttr *parse.XMLAttribute, state *inoxFileAnalysisSta
 	//Tailwind
 	if ident.Name == "class" {
 		addUsedTailwindRulesets(xmlAttr.Value, result)
+		addUsedVarBasedCssClasses(xmlAttr.Value, result)
 		return
 	}
 

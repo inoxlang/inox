@@ -59,8 +59,8 @@ func WriteTemplate(name string, fls afs.Filesystem) error {
 					content = []byte(RESET_CSS)
 				case "vars.css":
 					content = []byte(VARS_CSS)
-				case layout.TAILWIND_FILENAME:
-					content = []byte(layout.TAILWIND_CSS_STYLESHEET_EXPLANATION)
+				case layout.UTILITY_CLASSES_FILENAME:
+					content = []byte(layout.UTILITY_CLASSES_STYLESHEET_EXPLANATION)
 				}
 			}
 

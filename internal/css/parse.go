@@ -293,6 +293,7 @@ func makeSimpleNodeFromToken(t css.Token, precededByDot bool, precedingColonCoun
 		switch {
 		case precededByDot:
 			n.Type = ClassName
+			data = "." + data
 		case precedingColonCount == 1:
 			n.Type = PseudoClassSelector
 			data = ":" + data

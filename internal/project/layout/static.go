@@ -10,16 +10,20 @@ const (
 
 	//static css/
 	STATIC_STYLES_DIRNAME        = "styles"
-	TAILWIND_FILENAME            = "tailwind.css"
+	UTILITY_CLASSES_FILENAME     = "utility-classes.css"
 	MAIN_CSS_FILENAME            = "main.css"
 	MAIN_BUNDLE_MIN_CSS_FILENAME = "main-bundle.min.css"
 
 	//explanation comments in some static JS and CSS files
 
-	TAILWIND_IMPORT = "/* Tailwind */\n\n@import \"" + TAILWIND_FILENAME + "\";"
+	TAILWIND_IMPORT = "/* Tailwind */\n\n@import \"" + UTILITY_CLASSES_FILENAME + "\";"
 
-	TAILWIND_CSS_STYLESHEET_EXPLANATION = "/* This file is generated automatically by scanning the codebase for Tailwind class names. */"
-	HYPERSCRIPT_JS_EXPLANATION          = "/* This file is generated automatically by scanning the codebase for used Hyperscript features. */"
-	HTMX_JS_EXPLANATION                 = "/* This file is generated automatically by scanning the codebase for used HTMX extensions. */"
-	INOX_JS_EXPLANATION                 = "/* This file is generated automatically by scanning the codebase for used libraries among: Surreal, CSS Scope Inline, Preact Signals, .... */"
+	UTILITY_CLASSES_STYLESHEET_EXPLANATION = //
+	"/*\n  This file is generated automatically by scanning the codebase for used utility classes:\n" +
+		"  - Variable-based classes (e.g. --primary-bg)\n" +
+		"  - Tailwind classes (subset)" +
+		"\n*/"
+	HYPERSCRIPT_JS_EXPLANATION = "/* This file is generated automatically by scanning the codebase for used Hyperscript features. */"
+	HTMX_JS_EXPLANATION        = "/* This file is generated automatically by scanning the codebase for used HTMX extensions. */"
+	INOX_JS_EXPLANATION        = "/* This file is generated automatically by scanning the codebase for used libraries among: Surreal, CSS Scope Inline, Preact Signals, .... */"
 )

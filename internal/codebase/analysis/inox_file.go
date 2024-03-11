@@ -29,7 +29,6 @@ func analyzeInoxFile(path string, chunk *parse.Chunk, result *Result) {
 
 		return parse.ContinueTraversal, nil
 	}, nil)
-
 }
 
 type inoxFileAnalysisState struct {

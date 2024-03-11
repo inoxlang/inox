@@ -7,16 +7,22 @@ import (
 )
 
 type Result struct {
-	inner                   *memds.DirectedGraph[Node, Edge, additionalGraphData]
-	UsedHtmxExtensions      map[string]struct{}
+	inner *memds.DirectedGraph[Node, Edge, additionalGraphData]
+
+	UsedHtmxExtensions map[string]struct{}
+
 	UsedHyperscriptCommands map[string]hsgen.Definition
 	UsedHyperscriptFeatures map[string]hsgen.Definition
-	UsedTailwindRules       map[string]tailwind.Ruleset
-	UsedInoxJsLibs          []string
-	IsSurrealUsed           bool
-	IsCssScopeInlineUsed    bool
-	IsPreactSignalsLibUsed  bool
-	IsInoxComponentLibUsed  bool
+
+	UsedTailwindRules    map[string]tailwind.Ruleset
+	CssVariables         map[CssVarName]CssVariable
+	UsedVarBasedCssRules map[CssVarName]CssVariable
+
+	UsedInoxJsLibs         []string
+	IsSurrealUsed          bool
+	IsCssScopeInlineUsed   bool
+	IsPreactSignalsLibUsed bool
+	IsInoxComponentLibUsed bool
 }
 
 type additionalGraphData struct {
@@ -29,6 +35,9 @@ func newEmptyResult() *Result {
 		UsedHyperscriptCommands: make(map[string]hsgen.Definition),
 		UsedHyperscriptFeatures: make(map[string]hsgen.Definition),
 		UsedTailwindRules:       make(map[string]tailwind.Ruleset),
+
+		CssVariables:         make(map[CssVarName]CssVariable),
+		UsedVarBasedCssRules: make(map[CssVarName]CssVariable),
 	}
 
 	return result

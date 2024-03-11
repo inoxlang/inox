@@ -236,7 +236,6 @@ func (n Node) writeTo(w astStringificatioWriter, indent int) {
 			child.writeTo(w, 0)
 		}
 	case ClassName:
-		w.WriteByte('.')
 		w.WriteString(n.Data)
 	case FunctionCall:
 		w.WriteString(n.Data)

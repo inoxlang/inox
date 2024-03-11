@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"path/filepath"
 	"runtime/debug"
+	"slices"
+	"strings"
 	"sync"
 
 	"github.com/inoxlang/inox/internal/afs"
@@ -75,14 +77,19 @@ func (g *CssGenerator) RegenAll(ctx *core.Context, analysis *analysis.Result) {
 		return
 	}
 
-	g.genTailwindcss(ctx, analysis.UsedTailwindRules)
+	g.genUtilities(ctx, analysis.UsedTailwindRules, analysis.UsedVarBasedCssRules)
 	g.genMainBundle(ctx)
 }
 
-func (g *CssGenerator) genTailwindcss(ctx *core.Context, rulesets map[string]tailwind.Ruleset) {
+func (g *CssGenerator) genUtilities(
+	ctx *core.Context,
+	rulesets map[string]tailwind.Ruleset,
+	varBasedCssClasses map[analysis.CssVarName]analysis.CssVariable,
+) {
 
-	//Create or truncate tailwind.css.
-	path := filepath.Join(g.staticDir, layout.STATIC_STYLES_DIRNAME, layout.TAILWIND_FILENAME)
+	//Create or truncate utilities.css.
+	path := filepath.Join(g.staticDir, layout.STATIC_STYLES_DIRNAME, layout.UTILITY_CLASSES_FILENAME)
+	linefeeds := []byte{'\n', '\n'}
 
 	f, err := g.fls.Create(path)
 
@@ -93,7 +100,25 @@ func (g *CssGenerator) genTailwindcss(ctx *core.Context, rulesets map[string]tai
 
 	defer f.Close()
 
-	f.Write([]byte(layout.TAILWIND_CSS_STYLESHEET_EXPLANATION))
+	f.Write([]byte(layout.UTILITY_CLASSES_STYLESHEET_EXPLANATION))
+
+	//Var-based rulesets.
+
+	vars := maps.Values(varBasedCssClasses)
+	slices.SortFunc(vars, func(a, b analysis.CssVariable) int {
+		return strings.Compare(string(a.Name), string(b.Name))
+	})
+
+	for _, cssVar := range vars {
+		f.Write(linefeeds)
+		err := cssVar.AutoRuleset.WriteTo(f)
+		if err != nil {
+			logs.Println(g.owner, err)
+			return
+		}
+	}
+
+	//Tailwind rulesets.
 
 	rulesetList := maps.Values(rulesets)
 

@@ -182,7 +182,7 @@ func TestParse(t *testing.T) {
 		Children: []Node{
 			{
 				Type: ClassName,
-				Data: "div",
+				Data: ".div",
 			},
 		},
 	}, ruleset.Children[0])
@@ -210,7 +210,7 @@ func TestParse(t *testing.T) {
 		Children: []Node{
 			{
 				Type: ClassName,
-				Data: "div",
+				Data: ".div",
 			},
 			{
 				Type: Whitespace,

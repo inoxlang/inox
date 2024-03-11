@@ -10,6 +10,7 @@ import (
 	"github.com/inoxlang/inox/internal/codebase/gen"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/css"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/inoxconsts"
@@ -392,12 +393,14 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 	sessionData.jsGenerator = gen.NewJSGenerator(lspFilesystem, "/static", session.Client())
 
 	chunkCache := parse.NewChunkCache()
+	stylesheetParseCache := css.NewParseCache()
 
 	analyzeCodebaseAndRegen := func(initial bool) {
 		defer utils.Recover()
 		analysisResult, err := analysis.AnalyzeCodebase(sessionCtx, lspFilesystem, analysis.Configuration{
-			TopDirectories: []string{"/"},
-			InoxChunkCache: chunkCache,
+			TopDirectories:     []string{"/"},
+			InoxChunkCache:     chunkCache,
+			CssStylesheetCache: stylesheetParseCache,
 		})
 		if err != nil {
 			logs.Println(session.Client(), err)
