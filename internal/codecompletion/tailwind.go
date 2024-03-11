@@ -8,33 +8,7 @@ import (
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
 )
 
-func findTailwindClassNameSuggestions(attrValueNode parse.SimpleValueLiteral, search completionSearch) (completions []Completion) {
-
-	quotedStrLiteral, ok := attrValueNode.(*parse.DoubleQuotedStringLiteral)
-	if !ok {
-		return
-	}
-
-	cut, ok := parse.CutQuotedStringLiteral(search.cursorIndex, quotedStrLiteral)
-	if !ok {
-		return nil
-	}
-
-	//Do not suggest anything if the cursor is in the middle of a class name.
-	if !cut.IsIndexAtEnd && !cut.HasSpaceAfterIndex {
-		return nil
-	}
-
-	classNamePrefix := ""
-	if index := strings.LastIndex(cut.BeforeIndex, " "); index >= 0 {
-		classNamePrefix = cut.BeforeIndex[index+1:] //Not an issue if empty.
-	} else {
-		classNamePrefix = cut.BeforeIndex //Not an issue if empty.
-	}
-
-	if classNamePrefix == "" || strings.Count(classNamePrefix, ":") > 1 {
-		return nil
-	}
+func findTailwindClassNameSuggestions(classNamePrefix string, search completionSearch) (completions []Completion) {
 
 	replacedRange := search.chunk.GetSourcePosition(parse.NodeSpan{
 		Start: search.cursorIndex - int32(len(classNamePrefix)),

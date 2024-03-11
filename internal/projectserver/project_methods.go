@@ -407,6 +407,10 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 			return
 		}
 
+		sessionData.lock.Lock()
+		sessionData.lastCodebaseAnalysis = analysisResult
+		sessionData.lock.Unlock()
+
 		if initial {
 			sessionData.cssGenerator.InitialGenAndSetup(sessionCtx, analysisResult)
 			sessionData.jsGenerator.InitialGenAndSetup(sessionCtx, analysisResult)

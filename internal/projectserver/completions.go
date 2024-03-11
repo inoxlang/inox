@@ -103,6 +103,7 @@ func getCompletions(fpath string, line, column int32, session *jsonrpc.Session, 
 	}
 
 	serverAPI := sessionData.serverAPI
+	lastCodebaseAnalysis := sessionData.lastCodebaseAnalysis
 	sessionData.lock.Unlock()
 
 	handlingCtx := session.Context().BoundChildWithOptions(core.BoundChildContextOptions{
@@ -153,6 +154,7 @@ func getCompletions(fpath string, line, column int32, session *jsonrpc.Session, 
 		InputData: codecompletion.InputData{
 			StaticFileURLPaths: staticResourcePaths,
 			ServerAPI:          api,
+			CodebaseAnalysis:   lastCodebaseAnalysis,
 		},
 	})
 }

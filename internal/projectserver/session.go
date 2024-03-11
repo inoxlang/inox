@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
+	"github.com/inoxlang/inox/internal/codebase/analysis"
 	"github.com/inoxlang/inox/internal/codebase/gen"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
@@ -34,10 +35,11 @@ type additionalSessionData struct {
 	projectDevSessionKey http_ns.DevSessionKey //set after project is open
 	devSession           *dev.Session
 
-	serverAPI     *serverAPI //set during project opening
-	cssGenerator  *gen.CssGenerator
-	jsGenerator   *gen.JsGenerator
-	fsEventSource *fs_ns.FilesystemEventSource
+	serverAPI            *serverAPI //set during project opening
+	lastCodebaseAnalysis *analysis.Result
+	cssGenerator         *gen.CssGenerator
+	jsGenerator          *gen.JsGenerator
+	fsEventSource        *fs_ns.FilesystemEventSource
 
 	//testing
 	testRuns map[TestRunId]*TestRun
