@@ -27,8 +27,6 @@ func TestWriteTemplate(t *testing.T) {
 		return
 	}
 
-	assert.Equal(t, MAIN_CSS_STYLESHEET_WITH_TAILWIND_IMPORT, string(content))
-	assert.NotEmpty(t, MAIN_CSS_STYLESHEET)
-	assert.NotEmpty(t, MAIN_CSS_STYLESHEET_WITH_TAILWIND_IMPORT)
+	assert.ElementsMatch(t, MAIN_CSS, content)
 
 }

@@ -24,42 +24,15 @@ var (
 	//go:embed common/**
 	COMMON_FILES embed.FS
 
-	MAIN_CSS_STYLESHEET                      string
-	MAIN_CSS_STYLESHEET_WITH_TAILWIND_IMPORT string
+	//go:embed common/main.css
+	MAIN_CSS string
 
-	//Inox.js package
+	//go:embed common/reset.css
+	RESET_CSS string
 
+	//go:embed common/vars.css
+	VARS_CSS string
 )
-
-func init() {
-	err := fs.WalkDir(COMMON_FILES, "common", func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if d.IsDir() {
-			return nil
-		}
-
-		content, err := COMMON_FILES.ReadFile(path)
-		if err != nil {
-			return err
-		}
-		basename := filepath.Base(path)
-
-		switch basename {
-		case "main.css":
-			MAIN_CSS_STYLESHEET = string(content)
-			MAIN_CSS_STYLESHEET_WITH_TAILWIND_IMPORT = layout.TAILWIND_IMPORT + "\n\n" + MAIN_CSS_STYLESHEET
-		}
-
-		return nil
-	})
-
-	if err != nil {
-		panic(err)
-	}
-}
 
 func WriteTemplate(name string, fls afs.Filesystem) error {
 	var DIR = "templates/" + name
@@ -81,7 +54,11 @@ func WriteTemplate(name string, fls afs.Filesystem) error {
 			if len(content) < 20 && bytes.Contains(content, []byte("[auto]")) {
 				switch filepath.Base(pathInFs) {
 				case "main.css":
-					content = []byte(MAIN_CSS_STYLESHEET_WITH_TAILWIND_IMPORT)
+					content = []byte(MAIN_CSS)
+				case "reset.css":
+					content = []byte(RESET_CSS)
+				case "vars.css":
+					content = []byte(VARS_CSS)
 				case layout.TAILWIND_FILENAME:
 					content = []byte(layout.TAILWIND_CSS_STYLESHEET_EXPLANATION)
 				}

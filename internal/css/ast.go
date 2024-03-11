@@ -25,10 +25,13 @@ const (
 	MediaQuery
 	MediaFeature
 	Declaration
+	CustomProperty
 	Dimension
 	Number
 	Ident
 	ClassName
+	PseudoClassSelector
+	PseudoElementSelector
 	FunctionCall
 	ParenthesizedExpr
 	AttributeSelector
@@ -38,7 +41,6 @@ const (
 	Percentage
 	UnicodeRange
 	MatchOperator
-	CustomPropertyName
 	CustomPropertyValue
 	Whitespace
 	Comment
@@ -201,6 +203,19 @@ func (n Node) writeTo(w astStringificatioWriter, indent int) {
 
 		w.WriteString("}")
 	case Declaration:
+		//Name
+		w.WriteString(n.Data)
+
+		w.WriteByte(':')
+
+		//Value
+		for _, child := range n.Children {
+			w.WriteByte(' ')
+			child.writeTo(w, 0)
+		}
+
+		w.WriteByte(';')
+	case CustomProperty:
 		//Name
 		w.WriteString(n.Data)
 

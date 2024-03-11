@@ -11,6 +11,10 @@ import (
 )
 
 func WriteRulesets(w io.Writer, rulesets []Ruleset) error {
+	if len(rulesets) == 0 {
+		return nil
+	}
+
 	rulesets = slices.Clone(rulesets)
 	//remove duplicate
 	slices.SortFunc(rulesets, func(a, b Ruleset) int {

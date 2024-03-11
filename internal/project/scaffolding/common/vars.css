@@ -1,0 +1,23 @@
+:root {
+    --link-fg: #0076c6;
+    --border-radius: 4px; 
+
+    --font-size-small: 12px; 
+    --font-size-medium: 16px;
+    --font-size-large: 20px; 
+}
+
+:root, .light-theme {
+    --primary-bg: white;
+    --secondary-bg: rgb(214, 214, 214);
+
+    --primary-fg: rgb(58, 58, 58);
+    --secondary-fg: rgb(58, 58, 58);
+    --muted-fg: rgb(214, 214, 214);
+    
+    --border-color: #525252; 
+}
+
+.dark-theme {
+    
+}

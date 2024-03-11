@@ -93,6 +93,7 @@ func _parse(ctx context.Context, input *parse.Input) (Node, error) {
 		case css.DeclarationGrammar:
 			stack[current].Children = append(stack[current].Children, Node{
 				Type: Declaration,
+				Data: string(data),
 			})
 
 			declaration := &stack[current].Children[len(stack[current].Children)-1]
@@ -102,6 +103,18 @@ func _parse(ctx context.Context, input *parse.Input) (Node, error) {
 			if err != nil {
 				return Node{}, err
 			}
+		case css.CustomPropertyGrammar:
+			customProperty := Node{
+				Type: CustomProperty,
+				Data: string(data),
+			}
+
+			err := makeNodesFromTokens(parser.Values(), &customProperty)
+			if err != nil {
+				return Node{}, err
+			}
+
+			stack[current].Children = append(stack[current].Children, customProperty)
 		case css.EndAtRuleGrammar, css.EndRulesetGrammar:
 			prev := stack[current]
 			parent--
@@ -134,6 +147,7 @@ func makeNodesFromTokens(tokens []css.Token, parentNode *Node) error {
 func _makeNodesFromTokens(tokens []css.Token, parentNode *Node, i *int, stop func(t css.Token) bool) error {
 
 	precededByDot := false
+	precedingColonCount := 0
 	leadingSpace := true
 
 	inMediaFeature := false
@@ -165,7 +179,7 @@ func _makeNodesFromTokens(tokens []css.Token, parentNode *Node, i *int, stop fun
 			case css.ColonToken, css.WhitespaceToken:
 				//ignore
 			default:
-				node, _ := makeSimpleNodeFromToken(t, precededByDot)
+				node, _ := makeSimpleNodeFromToken(t, precededByDot, precedingColonCount)
 
 				if inMediaFeature {
 					mediaFeature.Children = append(mediaFeature.Children, node)
@@ -205,6 +219,8 @@ func _makeNodesFromTokens(tokens []css.Token, parentNode *Node, i *int, stop fun
 		}
 
 		switch t.TokenType {
+		case css.ColonToken:
+			precedingColonCount++
 		case css.FunctionToken:
 			functionCall := Node{
 				Type: FunctionCall,
@@ -245,21 +261,28 @@ func _makeNodesFromTokens(tokens []css.Token, parentNode *Node, i *int, stop fun
 			}
 			parentNode.Children = append(parentNode.Children, expr)
 		default:
-			node, isSignificant := makeSimpleNodeFromToken(t, precededByDot)
+			node, isSignificant := makeSimpleNodeFromToken(t, precededByDot, precedingColonCount)
 			if isSignificant {
 				parentNode.Children = append(parentNode.Children, node)
 			}
 			precededByDot = false
+			precedingColonCount = 0
 		}
 	}
 	return nil
 }
 
-func makeSimpleNodeFromToken(t css.Token, precededByDot bool) (n Node, significant bool) {
+func makeSimpleNodeFromToken(t css.Token, precededByDot bool, precedingColonCount int) (n Node, significant bool) {
 
 	if precededByDot && t.TokenType != css.IdentToken {
-		panic(fmt.Errorf("onlt identifiers can be preceded by a dot"))
+		panic(fmt.Errorf("only identifiers can be preceded by a dot"))
 	}
+
+	if precededByDot && precedingColonCount > 0 {
+		panic(fmt.Errorf("mixing dots and colons is not possible"))
+	}
+
+	data := string(t.Data)
 
 	switch t.TokenType {
 	case css.NumberToken:
@@ -267,9 +290,16 @@ func makeSimpleNodeFromToken(t css.Token, precededByDot bool) (n Node, significa
 	case css.DimensionToken:
 		n.Type = Dimension
 	case css.IdentToken:
-		if precededByDot {
+		switch {
+		case precededByDot:
 			n.Type = ClassName
-		} else {
+		case precedingColonCount == 1:
+			n.Type = PseudoClassSelector
+			data = ":" + data
+		case precedingColonCount == 2:
+			n.Type = PseudoElementSelector
+			data = "::" + data
+		default:
 			n.Type = Ident
 		}
 	case css.HashToken:
@@ -290,17 +320,15 @@ func makeSimpleNodeFromToken(t css.Token, precededByDot bool) (n Node, significa
 		n.Type = UnicodeRange
 	case css.IncludeMatchToken, css.DashMatchToken, css.SuffixMatchToken, css.SubstringMatchToken:
 		n.Type = MatchOperator
-	case css.CustomPropertyNameToken:
-		n.Type = CustomPropertyName
 	case css.CustomPropertyValueToken:
-		n.Type = CustomPropertyName
+		n.Type = CustomPropertyValue
 	case css.WhitespaceToken:
 		n.Type = Whitespace
 	default:
 		return Node{}, false
 	}
 
-	n.Data = string(t.Data)
+	n.Data = data
 	significant = true
 	return
 }

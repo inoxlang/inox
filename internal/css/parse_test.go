@@ -10,7 +10,6 @@ import (
 func TestParse(t *testing.T) {
 
 	stylesheet, err := ParseString(context.Background(), `
-
 		/* comment */
 
 		@import "style.css";
@@ -29,6 +28,10 @@ func TestParse(t *testing.T) {
 		.div [a] {
 			background: rgb(5, 5, 5);
 		}
+
+		:root {
+			--primary-bg: white;
+		}
 	`)
 
 	if !assert.NoError(t, err) {
@@ -40,7 +43,7 @@ func TestParse(t *testing.T) {
 	}
 
 	assert.Empty(t, stylesheet.Data)
-	if !assert.Len(t, stylesheet.Children, 6) {
+	if !assert.Len(t, stylesheet.Children, 7) {
 		return
 	}
 
@@ -248,6 +251,40 @@ func TestParse(t *testing.T) {
 						Data: "5",
 					},
 				},
+			},
+		},
+	}, decl)
+
+	//Check last ruleset
+
+	ruleset = stylesheet.Children[6]
+	if !assert.Equal(t, Ruleset, ruleset.Type) {
+		return
+	}
+	assert.Empty(t, ruleset.Data)
+	if !assert.Len(t, ruleset.Children, 2) {
+		return
+	}
+
+	assert.Equal(t, Node{
+		Type: Selector,
+		Children: []Node{
+			{
+				Type: PseudoClassSelector,
+				Data: ":root",
+			},
+		},
+	}, ruleset.Children[0])
+
+	decl = ruleset.Children[1]
+
+	assert.Equal(t, Node{
+		Type: CustomProperty,
+		Data: "--primary-bg",
+		Children: []Node{
+			{
+				Type: CustomPropertyValue,
+				Data: " white",
 			},
 		},
 	}, decl)
