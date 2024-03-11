@@ -19630,6 +19630,18 @@ func testParse(
 				},
 			},
 			{
+				hasError: false,
+				input:    "a = switch 1 {\n}",
+			},
+			{
+				hasError: false,
+				input:    "a = switch 1 { \n}",
+			},
+			{
+				hasError: false,
+				input:    "a = switch 1 {\n\n}",
+			},
+			{
 				input:    "(switch 1 { defaultcase => 0 })",
 				hasError: false,
 			},

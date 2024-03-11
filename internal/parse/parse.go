@@ -9845,10 +9845,10 @@ func (p *parser) parseSwitchMatchExpression(keywordIdent *IdentifierLiteral) Nod
 	p.i++
 
 top_loop:
-	for p.i < p.len && !isUnpairedOrIsClosingDelim(p.s[p.i]) {
+	for p.i < p.len && (!isUnpairedOrIsClosingDelim(p.s[p.i]) || p.s[p.i] == '\n') {
 		p.eatSpaceNewlineSemicolonComment()
 
-		if p.i < p.len && isUnpairedOrIsClosingDelim(p.s[p.i]) {
+		if p.i < p.len && p.s[p.i] != '\n' && isUnpairedOrIsClosingDelim(p.s[p.i]) {
 			break
 		}
 
