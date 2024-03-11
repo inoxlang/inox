@@ -42,8 +42,10 @@ const (
 	DENO_BINARY_LOCATION = "/tmp/service-deno"
 )
 
+// ProjectServer starts the project server and some adjacent services. On success ProjectServer never returns.
 func ProjectServer(mainSubCommand string, mainSubCommandArgs []string, outW, errW io.Writer) (exitCode int) {
-	//read & check arguments
+	//Read CLI arguments.
+
 	flags := flag.NewFlagSet(mainSubCommand, flag.ExitOnError)
 	var configOrConfigFile string
 
@@ -58,6 +60,8 @@ func ProjectServer(mainSubCommand string, mainSubCommandArgs []string, outW, err
 		fmt.Fprintln(errW, "project-server:", err)
 		return
 	}
+
+	//Get the configuration of the project server (JSON).
 
 	var projectServerConfig projectserver.IndividualServerConfig
 
@@ -101,7 +105,7 @@ func ProjectServer(mainSubCommand string, mainSubCommandArgs []string, outW, err
 		websocketAddr = "localhost:"
 	}
 
-	//append port
+	//Append port
 	if projectServerConfig.Port > 0 {
 		websocketAddr += strconv.Itoa(projectServerConfig.Port)
 	} else {
@@ -110,7 +114,7 @@ func ProjectServer(mainSubCommand string, mainSubCommandArgs []string, outW, err
 
 	out := os.Stdout
 
-	//cleanup the temporary directories of dead inox processes.
+	//Cleanup the temporary directories of dead inox processes.
 	go func() {
 		defer utils.Recover()
 
@@ -121,7 +125,7 @@ func ProjectServer(mainSubCommand string, mainSubCommandArgs []string, outW, err
 		localdb.DeleteTempDatabaseDirsOfDeadProcesses(logger, TEMP_DB_DIR_CLEANUP_TIMEOUT)
 	}()
 
-	//create a temporary directory for the whole process
+	//Create a temporary directory for the whole process.
 	_, _, removeTempDir := CreateTempDir()
 	defer removeTempDir()
 
@@ -137,13 +141,14 @@ func ProjectServer(mainSubCommand string, mainSubCommandArgs []string, outW, err
 	utils.PanicIfErr(tailwind.InitSubset())
 	htmx.Load()
 
-	//create context & state
+	//Create the root context.
 
 	perms := determineProjectServerPermissions(projectServerConfig)
 
 	filesystem := fs_ns.GetOsFilesystem()
 	ctx := core.NewContext(core.ContextConfig{
-		Permissions:             perms,
+		Permissions: perms,
+		//The project server has access to the OS FS, but Inox applications don't.
 		Filesystem:              filesystem,
 		InitialWorkingDirectory: core.DirPathFrom(utils.Must(os.Getwd())),
 	})
@@ -170,18 +175,13 @@ func ProjectServer(mainSubCommand string, mainSubCommandArgs []string, outW, err
 		return nil
 	})
 
-	go func() {
-		time.Sleep(5 * time.Second)
-		ctx.CancelGracefully()
-	}()
-
-	//restrict filesystem access at the process level.
+	//Restrict filesystem access at the process level.
 	inoxprocess.RestrictProcessAccess(ctx, inoxprocess.ProcessRestrictionConfig{
 		AllowBrowserAccess: projectServerConfig.AllowBrowserAutomation,
 		BrowserBinPath:     chrome_ns.BROWSER_BINPATH,
 	})
 
-	//configure server
+	//Configure server
 
 	opts := projectserver.LSPServerConfiguration{
 		Websocket: &projectserver.WebsocketServerConfiguration{
@@ -225,6 +225,8 @@ func ProjectServer(mainSubCommand string, mainSubCommandArgs []string, outW, err
 		},
 	}
 
+	//Metrics and performance profiles collection.
+
 	if config.METRICS_PERF_BUCKET_NAME == "" {
 		fmt.Fprintln(errW, "credentials of metrics-perf bucket are missing; no metrics will be collected.")
 	} else {
@@ -246,7 +248,7 @@ func ProjectServer(mainSubCommand string, mainSubCommandArgs []string, outW, err
 	}
 
 	if prodDir != "" && !projectServerConfig.BehindCloudProxy {
-		// start the node agent in the same process (temporary solution)
+		// Start the node agent in the same process (temporary solution).
 		nodeAgent, err := nodeimpl.NewAgent(nodeimpl.AgentParameters{
 			GoCtx:  ctx,
 			Logger: zerolog.New(out).With().Str(core.SOURCE_LOG_FIELD_NAME, "node-agent").Logger(),
@@ -263,6 +265,8 @@ func ProjectServer(mainSubCommand string, mainSubCommandArgs []string, outW, err
 
 		node.SetAgent(nodeAgent)
 	}
+
+	//Start adjacent services from another goroutine to speed things up.
 
 	go func() {
 		err := startAdjacentServices(ctx, projectServerConfig)
@@ -289,10 +293,13 @@ func determineProjectServerPermissions(projectServerConfig projectserver.Individ
 	const DEV_LOCALHOST_2 = core.Host("https://localhost:" + inoxconsts.DEV_PORT_2)
 
 	perms := []core.Permission{
+		//Filesystem permissions
 		//TODO: change path patterns
 		core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
 		core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")},
 		core.FilesystemPermission{Kind_: permkind.Delete, Entity: core.PathPattern("/...")},
+
+		//Websocket provide permission
 
 		core.WebsocketPermission{Kind_: permkind.Provide},
 
@@ -329,6 +336,7 @@ func determineProjectServerPermissions(projectServerConfig projectserver.Individ
 
 	perms = append(perms, core.GetDefaultGlobalVarPermissions()...)
 
+	//Add read+write+delete permissions for domains in the allow list.
 	for _, domain := range projectServerConfig.DomainAllowList {
 		httpsHost := core.Host("https://" + domain)
 		httpHost := core.Host("http://" + domain)
@@ -361,6 +369,7 @@ func determineProjectServerPermissions(projectServerConfig projectserver.Individ
 		)
 	}
 
+	//If no domains are specified in the allow list we add the permissions to make any HTTP request.
 	if len(projectServerConfig.DomainAllowList) == 0 {
 		perms = append(perms,
 			core.HttpPermission{Kind_: permkind.Read, AnyEntity: true},
@@ -441,7 +450,7 @@ func startAdjacentServices(ctx *core.Context, projectServerConfig projectserver.
 		case <-time.After(100 * time.Millisecond):
 		}
 
-		//Start the hyperscript parsing service.
+		//Start the Hyperscript parsing service.
 
 		startService := func(program string) (ulid.ULID, error) {
 			return controlServer.StartServiceProcess(controlServerCtx, deno.ServiceConfiguration{
