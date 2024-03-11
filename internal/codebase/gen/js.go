@@ -97,22 +97,27 @@ func (g *JsGenerator) genHyperscript(ctx *core.Context, analysis *analysis.Resul
 
 	defer f.Close()
 
-	defs := maps.Values(analysis.UsedHyperscriptFeatures)
-	defs = append(defs, maps.Values(analysis.UsedHyperscriptCommands)...)
-
-	jsCode, err := hsgen.Generate(hsgen.Config{
-		RequiredDefinitions: defs,
-	})
-	if err != nil {
-		logs.Println(g.owner, err)
-		return
-	}
-
 	f.Write([]byte(layout.HYPERSCRIPT_JS_EXPLANATION))
 	f.Write([]byte{'\n'})
 
-	w := io.MultiWriter(f, bundleWriter) //write to the file and the bundle.
-	w.Write(utils.StringAsBytes(jsCode))
+	defs := maps.Values(analysis.UsedHyperscriptFeatures)
+	defs = append(defs, maps.Values(analysis.UsedHyperscriptCommands)...)
+
+	if len(defs) > 0 {
+		jsCode, err := hsgen.Generate(hsgen.Config{
+			RequiredDefinitions: defs,
+		})
+
+		if err != nil {
+			logs.Println(g.owner, err)
+			return
+		}
+
+		w := io.MultiWriter(f, bundleWriter) //write to the file and the bundle.
+		w.Write(utils.StringAsBytes(jsCode))
+	} else {
+		f.Write(utils.StringAsBytes("\n/* This file is empty because no Hyperscript features or commands are used. */"))
+	}
 }
 
 func (g *JsGenerator) genHTMX(ctx *core.Context, analysis *analysis.Result, bundleWriter io.Writer) {
