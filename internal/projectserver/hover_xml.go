@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/inoxlang/inox/internal/css"
 	"github.com/inoxlang/inox/internal/css/tailwind"
 	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/globals/html_ns"
@@ -16,6 +17,7 @@ func getTagOrAttributeHoverHelp(
 	node parse.Node,
 	ancestors []parse.Node,
 	cursorIndex int32,
+	hoverContentParams hoverContentParams,
 ) (result string, shouldSpecificValBeIgnored bool, hasResult bool) {
 	if len(ancestors) < 3 {
 		return
@@ -36,7 +38,7 @@ func getTagOrAttributeHoverHelp(
 		if !ok {
 			return
 		}
-		return getAttributeValueHoverHelp(n, xmlAttr, xmlExpr, ancestors, cursorIndex)
+		return getAttributeValueHoverHelp(n, xmlAttr, xmlExpr, ancestors, cursorIndex, hoverContentParams)
 	case *parse.IdentifierLiteral:
 		ident = n
 	default:
@@ -118,6 +120,7 @@ func getAttributeValueHoverHelp(
 	xmlExpr *parse.XMLExpression,
 	ancestors []parse.Node,
 	index int32,
+	hoverContentParams hoverContentParams,
 ) (help string, shouldSpecificValBeIgnored bool, hasResult bool) {
 
 	attrNameIdent, ok := parent.Name.(*parse.IdentifierLiteral)
@@ -134,7 +137,7 @@ func getAttributeValueHoverHelp(
 
 	switch attrName {
 	case "class":
-		help = getCssClassHoverHelp(node, index)
+		help = getCssClassHoverHelp(node, index, hoverContentParams)
 		hasResult = help != ""
 		shouldSpecificValBeIgnored = hasResult
 	}
@@ -148,7 +151,7 @@ func getHyperscriptHelpMarkdown(attribute *parse.HyperscriptAttributeShorthand, 
 	return hshelp.GetHoverHelpMarkdown(parsingResult.Tokens, cursorIndexInHsCode)
 }
 
-func getCssClassHoverHelp(attrValue parse.Node, index int32) string {
+func getCssClassHoverHelp(attrValue parse.Node, index int32, hoverContentParams hoverContentParams) string {
 	help := ""
 
 	//Determine the hovered class name.
@@ -186,6 +189,31 @@ func getCssClassHoverHelp(attrValue parse.Node, index int32) string {
 	ruleset, ok := tailwind.GetBaseRuleset("." + className)
 	if ok {
 		help += fmt.Sprintf("```css\n%s\n```", ruleset.Ruleset.String())
+	} else if analysis := hoverContentParams.lastCodebaseAnalysis; analysis != nil {
+
+		if css.HasValidVarNamePrefix(className) {
+			varname := css.VarName(className)
+
+			cssVar, isDefined := analysis.CssVariables[varname]
+			isUsed := isDefined
+
+			if !isDefined {
+				cssVar, isUsed = analysis.UsedVarBasedCssRules[varname]
+			}
+
+			if isUsed {
+				if cssVar.AffectedProperty == "" {
+					help += fmt.Sprintf(
+						"The CSS variable `%s` (custom property) has not associated ruleset because it does not affect any CSS property."+
+							" A valid example would be `--primary-bg`  because it includes `bg`.", varname)
+				} else {
+					if !isDefined {
+						help += fmt.Sprintf("(The CSS variable `%s` is not defined in the codebase)\n", varname)
+					}
+					help += fmt.Sprintf("```css\n%s\n```", cssVar.AutoRuleset.String())
+				}
+			}
+		}
 	}
 
 	return help

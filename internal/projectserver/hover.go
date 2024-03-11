@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/inoxlang/inox/internal/codebase/analysis"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/help"
@@ -17,10 +18,11 @@ import (
 )
 
 type hoverContentParams struct {
-	fpath           string
-	line, column    int32
-	session         *jsonrpc.Session
-	memberAuthToken string
+	fpath                string
+	line, column         int32
+	session              *jsonrpc.Session
+	memberAuthToken      string
+	lastCodebaseAnalysis *analysis.Result //optional
 }
 
 // getHoverContent gets hover content for a specific position in an Inox code file.
@@ -109,7 +111,7 @@ func getHoverContent(handlingCtx *core.Context, params hoverContentParams) (*def
 		}, nil
 	}
 
-	tagOrAttrHelp, shouldSpecificValBeIgnored, hasTagOrAttrHelp := getTagOrAttributeHoverHelp(hoveredNode, ancestors, cursorIndex)
+	tagOrAttrHelp, shouldSpecificValBeIgnored, hasTagOrAttrHelp := getTagOrAttributeHoverHelp(hoveredNode, ancestors, cursorIndex, params)
 
 	//Try getting the hovered node's value.
 	mostSpecificVal, ok := state.SymbolicData.GetMostSpecificNodeValue(hoveredNode)

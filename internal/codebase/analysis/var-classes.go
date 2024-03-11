@@ -8,19 +8,16 @@ import (
 )
 
 type CssVariable struct {
-	Name             CssVarName //example: "--primary-bg"
-	AffectedProperty string     //example: "background", can be empty
-	AutoRuleset      css.Node   //empty if not property is affected
+	Name             css.VarName //example: "--primary-bg"
+	AffectedProperty string      //example: "background", can be empty
+	AutoRuleset      css.Node    //empty if not property is affected
 }
-
-// Example: "--primary-bg"
-type CssVarName string
 
 func addCssVariables(stylesheet css.Node, result *Result) {
 
 	css.WalkAST(stylesheet, func(node, parent css.Node, ancestorChain []css.Node, after bool) (css.AstTraversalAction, error) {
 		if node.Type == css.CustomProperty {
-			varname := CssVarName(node.Data)
+			varname := css.VarName(node.Data)
 
 			if _, ok := result.CssVariables[varname]; !ok {
 				cssVar := getCssVar(varname)
@@ -32,11 +29,11 @@ func addCssVariables(stylesheet css.Node, result *Result) {
 	}, nil)
 }
 
-func getCssVar(name CssVarName) CssVariable {
+func getCssVar(name css.VarName) CssVariable {
 	varname := string(name)
 	parts := strings.Split(varname[2:], "-")
 	cssVar := CssVariable{
-		Name: CssVarName(varname),
+		Name: css.VarName(varname),
 	}
 
 	for _, part := range parts {
@@ -79,7 +76,7 @@ func addUsedVarBasedCssClasses(classAttributeValue parse.Node, result *Result) {
 		name = strings.TrimSpace(name)
 
 		if strings.HasPrefix(name, "--") {
-			varname := CssVarName(name)
+			varname := css.VarName(name)
 			result.UsedVarBasedCssRules[varname] = getCssVar(varname)
 		}
 	}

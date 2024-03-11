@@ -246,6 +246,7 @@ func handleHover(ctx context.Context, req *defines.HoverParams) (result *defines
 	projectMode := sessionData.projectMode
 	fls := sessionData.filesystem
 	memberAuthToken := sessionData.memberAuthToken
+	lastCodebaseAnalysis := sessionData.lastCodebaseAnalysis
 	sessionData.lock.Unlock()
 
 	if fls == nil {
@@ -264,11 +265,12 @@ func handleHover(ctx context.Context, req *defines.HoverParams) (result *defines
 	defer handlingCtx.CancelGracefully()
 
 	return getHoverContent(handlingCtx, hoverContentParams{
-		fpath:           fpath,
-		line:            line,
-		column:          column,
-		session:         session,
-		memberAuthToken: memberAuthToken,
+		fpath:                fpath,
+		line:                 line,
+		column:               column,
+		session:              session,
+		memberAuthToken:      memberAuthToken,
+		lastCodebaseAnalysis: lastCodebaseAnalysis,
 	})
 }
 

@@ -1,6 +1,7 @@
 package analysis
 
 import (
+	"github.com/inoxlang/inox/internal/css"
 	"github.com/inoxlang/inox/internal/css/tailwind"
 	"github.com/inoxlang/inox/internal/hyperscript/hsgen"
 	"github.com/inoxlang/inox/internal/memds"
@@ -15,8 +16,8 @@ type Result struct {
 	UsedHyperscriptFeatures map[string]hsgen.Definition
 
 	UsedTailwindRules    map[string]tailwind.Ruleset
-	CssVariables         map[CssVarName]CssVariable
-	UsedVarBasedCssRules map[CssVarName]CssVariable
+	CssVariables         map[css.VarName]CssVariable
+	UsedVarBasedCssRules map[css.VarName]CssVariable
 
 	UsedInoxJsLibs         []string
 	IsSurrealUsed          bool
@@ -36,8 +37,8 @@ func newEmptyResult() *Result {
 		UsedHyperscriptFeatures: make(map[string]hsgen.Definition),
 		UsedTailwindRules:       make(map[string]tailwind.Ruleset),
 
-		CssVariables:         make(map[CssVarName]CssVariable),
-		UsedVarBasedCssRules: make(map[CssVarName]CssVariable),
+		CssVariables:         make(map[css.VarName]CssVariable),
+		UsedVarBasedCssRules: make(map[css.VarName]CssVariable),
 	}
 
 	return result

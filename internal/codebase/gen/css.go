@@ -84,7 +84,7 @@ func (g *CssGenerator) RegenAll(ctx *core.Context, analysis *analysis.Result) {
 func (g *CssGenerator) genUtilities(
 	ctx *core.Context,
 	rulesets map[string]tailwind.Ruleset,
-	varBasedCssClasses map[analysis.CssVarName]analysis.CssVariable,
+	varBasedCssClasses map[css.VarName]analysis.CssVariable,
 ) {
 
 	//Create or truncate utilities.css.
