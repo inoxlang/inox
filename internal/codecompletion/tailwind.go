@@ -65,7 +65,7 @@ func findTailwindClassNameSuggestions(attrValueNode parse.SimpleValueLiteral, se
 			completions = append(completions, completion)
 		}
 
-		rulesets := tailwind.GetRulesetsFromSubset("." + basename)
+		rulesets := tailwind.GetRulesetsFromSubset("." + classNamePrefix)
 
 		for _, set := range rulesets {
 			className := strings.TrimPrefix(set.UserFriendlyBaseName, ".")

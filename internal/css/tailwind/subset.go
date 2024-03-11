@@ -84,7 +84,7 @@ func GetBaseRuleset(selector string) (Ruleset, bool) {
 // Note that '.5', ':' and '/<digit>' (e.g. /2) sequences in $prefix are respectively escaped into '\.5', '\:' and '\/<digit>' (e.g. \/2).
 func GetRulesetsFromSubset(prefix string) []Ruleset {
 
-	if len(prefix) == 0 {
+	if len(prefix) == 0 || prefix == "." {
 		return nil
 	}
 
