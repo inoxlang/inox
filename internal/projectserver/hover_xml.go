@@ -6,6 +6,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/css"
 	"github.com/inoxlang/inox/internal/css/tailwind"
+	"github.com/inoxlang/inox/internal/css/varclasses"
 	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/globals/html_ns"
 	"github.com/inoxlang/inox/internal/hyperscript/hscode"
@@ -203,12 +204,12 @@ func getCssClassHoverHelp(attrValue parse.Node, index int32, hoverContentParams 
 
 			if isUsed {
 				if cssVar.AffectedProperty == "" {
-					help += fmt.Sprintf(
-						"The CSS variable `%s` (custom property) has not associated ruleset because it does not affect any CSS property."+
-							" A valid example would be `--primary-bg`  because it includes `bg`.", varname)
+					help += varclasses.FmtNoAssociatedRuleset(varname)
 				} else {
 					if !isDefined {
-						help += fmt.Sprintf("(The CSS variable `%s` is not defined in the codebase)\n", varname)
+						help += fmt.Sprintf(
+							"_The utility has been generated but the CSS variable `%s` is not defined in the codebase. "+
+								"This is fine if the variable is provided externally._\n", varname)
 					}
 					help += fmt.Sprintf("```css\n%s\n```", cssVar.AutoRuleset.String())
 				}

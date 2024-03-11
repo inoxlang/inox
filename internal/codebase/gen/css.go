@@ -15,6 +15,7 @@ import (
 	"github.com/inoxlang/inox/internal/css"
 	cssbundle "github.com/inoxlang/inox/internal/css/bundle"
 	"github.com/inoxlang/inox/internal/css/tailwind"
+	"github.com/inoxlang/inox/internal/css/varclasses"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/project/layout"
 	"github.com/inoxlang/inox/internal/projectserver/logs"
@@ -84,7 +85,7 @@ func (g *CssGenerator) RegenAll(ctx *core.Context, analysis *analysis.Result) {
 func (g *CssGenerator) genUtilities(
 	ctx *core.Context,
 	rulesets map[string]tailwind.Ruleset,
-	varBasedCssClasses map[css.VarName]analysis.CssVariable,
+	varBasedCssClasses map[css.VarName]varclasses.Variable,
 ) {
 
 	//Create or truncate utilities.css.
@@ -105,7 +106,7 @@ func (g *CssGenerator) genUtilities(
 	//Var-based rulesets.
 
 	vars := maps.Values(varBasedCssClasses)
-	slices.SortFunc(vars, func(a, b analysis.CssVariable) int {
+	slices.SortFunc(vars, func(a, b varclasses.Variable) int {
 		return strings.Compare(string(a.Name), string(b.Name))
 	})
 

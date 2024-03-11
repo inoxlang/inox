@@ -4,7 +4,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/inoxlang/inox/internal/codebase/analysis"
+	"github.com/inoxlang/inox/internal/css/varclasses"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
 	"golang.org/x/exp/maps"
@@ -57,7 +57,7 @@ func findCssVarBasedClassSuggestions(classNamePrefix string, search completionSe
 	})
 
 	vars := maps.Values(search.inputData.CodebaseAnalysis.CssVariables)
-	slices.SortFunc(vars, func(a, b analysis.CssVariable) int {
+	slices.SortFunc(vars, func(a, b varclasses.Variable) int {
 		return strings.Compare(string(a.Name), string(b.Name))
 	})
 
