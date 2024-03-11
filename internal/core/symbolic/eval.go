@@ -567,6 +567,8 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		return evalWalkStatement(n, state)
 	case *parse.SwitchStatement:
 		return evalSwitchStatement(n, state)
+	case *parse.SwitchExpression:
+		return evalSwitchExpression(n, state)
 	case *parse.MatchStatement:
 		return evalMatchStatement(n, state)
 	case *parse.UnaryExpression:
@@ -2641,6 +2643,62 @@ func evalSwitchStatement(n *parse.SwitchStatement, state *State) (_ Value, final
 	state.join(forks...)
 
 	return nil, nil
+}
+
+func evalSwitchExpression(n *parse.SwitchExpression, state *State) (_ Value, finalErr error) {
+	_, err := symbolicEval(n.Discriminant, state)
+	if err != nil {
+		return nil, err
+	}
+
+	var forks []*State
+
+	var results []Value
+
+	for _, switchCase := range n.Cases {
+		for _, valNode := range switchCase.Values {
+			caseValue, err := symbolicEval(valNode, state)
+			if err != nil {
+				return nil, err
+			}
+
+			if switchCase.Result == nil {
+				continue
+			}
+
+			blockStateFork := state.fork()
+			forks = append(forks, blockStateFork)
+			narrowChain(n.Discriminant, setExactValue, caseValue, blockStateFork, 0)
+
+			result, err := symbolicEval(switchCase.Result, blockStateFork)
+			if err != nil {
+				return nil, err
+			}
+			results = append(results, result)
+		}
+	}
+
+	for _, defaultCase := range n.DefaultCases {
+		if defaultCase.Result == nil {
+			continue
+		}
+
+		blockStateFork := state.fork()
+		forks = append(forks, blockStateFork)
+		result, err := symbolicEval(defaultCase.Result, blockStateFork)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, result)
+	}
+
+	state.join(forks...)
+
+	if len(n.DefaultCases) == 0 {
+		results = append(results, Nil)
+	}
+
+	return joinValues(results), nil
 }
 
 func evalMatchStatement(n *parse.MatchStatement, state *State) (_ Value, finalErr error) {

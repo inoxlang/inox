@@ -8992,6 +8992,102 @@ func TestSymbolicEval(t *testing.T) {
 
 	})
 
+	t.Run("switch expression", func(t *testing.T) {
+
+		t.Run("empty", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				v = int
+				return switch v {}
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, Nil, res)
+		})
+
+		t.Run("several cases, no default case", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				v = int
+				return switch v {
+					1 => 1
+					2 => 2
+				}
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, NewMultivalue(INT_1, INT_2, Nil), res)
+		})
+
+		t.Run("several cases + default case", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				v = int
+				return switch v {
+					1 => 1
+					2 => 2
+					defaultcase => 3
+				}
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, NewMultivalue(INT_1, INT_2, INT_3), res)
+		})
+
+		t.Run("only default case", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				v = int
+				return switch v {
+					defaultcase => 3
+				}
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, INT_3, res)
+		})
+
+		t.Run("error in every block (no default case)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				v = int
+				return switch v {
+					0 => !"s"
+					int => !"s"
+				}
+			`)
+			unaryExprs := parse.FindNodes(n, (*parse.UnaryExpression)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(unaryExprs[0], state, fmtOperandOfBoolNegateShouldBeBool(NewString("s"))),
+				makeSymbolicEvalError(unaryExprs[1], state, fmtOperandOfBoolNegateShouldBeBool(NewString("s"))),
+			}, state.errors())
+			assert.Equal(t, NewMultivalue(ANY_BOOL, Nil), res)
+		})
+
+		t.Run("error in every block (with default case)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				v = int
+				return switch v {
+					0 => !"s"
+					int => !"s"
+					defaultcase => !"s"
+				}
+			`)
+			unaryExprs := parse.FindNodes(n, (*parse.UnaryExpression)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(unaryExprs[0], state, fmtOperandOfBoolNegateShouldBeBool(NewString("s"))),
+				makeSymbolicEvalError(unaryExprs[1], state, fmtOperandOfBoolNegateShouldBeBool(NewString("s"))),
+				makeSymbolicEvalError(unaryExprs[2], state, fmtOperandOfBoolNegateShouldBeBool(NewString("s"))),
+			}, state.errors())
+			assert.Equal(t, ANY_BOOL, res)
+		})
+	})
+
 	t.Run("match statement", func(t *testing.T) {
 		t.Run("join", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
