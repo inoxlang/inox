@@ -30,7 +30,7 @@ var (
 	//go:embed common/reset.css
 	RESET_CSS string
 
-	//go:embed common/vars.css
+	//go:embed common/variables.css
 	VARS_CSS string
 )
 
@@ -57,7 +57,7 @@ func WriteTemplate(name string, fls afs.Filesystem) error {
 					content = []byte(MAIN_CSS)
 				case "reset.css":
 					content = []byte(RESET_CSS)
-				case "vars.css":
+				case "variables.css":
 					content = []byte(VARS_CSS)
 				case layout.UTILITY_CLASSES_FILENAME:
 					content = []byte(layout.UTILITY_CLASSES_STYLESHEET_EXPLANATION)
