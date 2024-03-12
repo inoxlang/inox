@@ -22,8 +22,7 @@ const (
 )
 
 var (
-	STRING_LIKE_PSEUDOPROPS = []string{"replace", "trim_space", "has_prefix", "has_suffix"}
-	RUNE_SLICE_PROPNAMES    = []string{"insert", "remove_position", "remove_position_range"}
+	RUNE_SLICE_PROPNAMES = []string{"insert", "remove_position", "remove_position_range"}
 
 	_ = []GoString{
 		String(""), Path(""), PathPattern(""), Host(""), HostPattern(""), EmailAddress(""), Identifier(""),
@@ -86,22 +85,12 @@ func (s String) slice(start, end int) Sequence {
 }
 
 func (s String) PropertyNames(ctx *Context) []string {
-	return STRING_LIKE_PSEUDOPROPS
+	return symbolic.STRING_LIKE_PSEUDOPROPS
 }
 
 func (s String) Prop(ctx *Context, name string) Value {
-	switch name {
-	case "replace":
-		return ValOf(s.Replace)
-	case "trim_space":
-		return ValOf(s.TrimSpace)
-	case "has_prefix":
-		return ValOf(s.HasPrefix)
-	case "has_suffix":
-		return ValOf(s.HasSuffix)
-	default:
-		return nil
-	}
+	res, _ := getStringLikePseudoProp(name, s)
+	return res
 }
 
 func (String) SetProp(ctx *Context, name string, value Value) error {
@@ -343,17 +332,9 @@ func (str *CheckedString) Prop(ctx *Context, name string) Value {
 		return String(str.matchingPatternName)
 	case "pattern":
 		return str.matchingPattern
-
-	case "replace":
-		return ValOf(str.Replace)
-	case "trim_space":
-		return ValOf(str.TrimSpace)
-	case "has_prefix":
-		return ValOf(str.HasPrefix)
-	case "has_suffix":
-		return ValOf(str.HasSuffix)
 	default:
-		return nil
+		res, _ := getStringLikePseudoProp(name, str)
+		return res
 	}
 }
 
@@ -755,22 +736,12 @@ func (c *StringConcatenation) slice(start, end int) Sequence {
 }
 
 func (c *StringConcatenation) PropertyNames(ctx *Context) []string {
-	return STRING_LIKE_PSEUDOPROPS
+	return symbolic.STRING_LIKE_PSEUDOPROPS
 }
 
 func (c *StringConcatenation) Prop(ctx *Context, name string) Value {
-	switch name {
-	case "replace":
-		return ValOf(c.Replace)
-	case "trim_space":
-		return ValOf(c.TrimSpace)
-	case "has_prefix":
-		return ValOf(c.HasPrefix)
-	case "has_suffix":
-		return ValOf(c.HasSuffix)
-	default:
-		return nil
-	}
+	res, _ := getStringLikePseudoProp(name, c)
+	return res
 }
 
 func (*StringConcatenation) SetProp(ctx *Context, name string, value Value) error {
@@ -917,4 +888,23 @@ func isSubstrOf(ctx *Context, a, b Value) bool {
 		}
 	}
 	panic(ErrUnreachable)
+}
+
+func getStringLikePseudoProp[S StringLike](name string, strLike S) (Value, bool) {
+	switch name {
+	case "byte-count":
+		return ByteCount(strLike.ByteLen()), true
+	case "rune-count":
+		return RuneCount(strLike.RuneCount()), true
+	case "replace":
+		return ValOf(strLike.Replace), true
+	case "trim_space":
+		return ValOf(strLike.TrimSpace), true
+	case "has_prefix":
+		return ValOf(strLike.HasPrefix), true
+	case "has_suffix":
+		return ValOf(strLike.HasSuffix), true
+	}
+
+	return nil, false
 }

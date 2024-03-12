@@ -30,7 +30,7 @@ var (
 
 	_ANY_STR_TYPE_PATTERN = &TypePattern{val: ANY_STRING}
 
-	STRING_LIKE_PSEUDOPROPS  = []string{"replace", "trim_space", "has_prefix", "has_suffix"}
+	STRING_LIKE_PSEUDOPROPS  = []string{"byte-count", "rune-count", "replace", "trim_space", "has_prefix", "has_suffix"}
 	RUNE_SLICE_PROPNAMES     = []string{"insert", "remove_position", "remove_position_range"}
 	CHECKED_STRING_PROPNAMES = append([]string{"pattern-name", "pattern"}, STRING_LIKE_PSEUDOPROPS...)
 	RUNE_PROPNAMES           = []string{"is-space", "is-printable", "is-letter"}
@@ -236,7 +236,7 @@ func (p *String) PropertyNames() []string {
 }
 
 func (s *String) Prop(name string) Value {
-	fn, ok := getStringLikePseudoMethod(name)
+	fn, ok := getStringLikePseudoProp(name)
 	if ok {
 		return fn
 	}
@@ -383,7 +383,7 @@ func (s *CheckedString) Prop(name string) Value {
 	case "pattern":
 		return ANY_STR_PATTERN
 	default:
-		fn, ok := getStringLikePseudoMethod(name)
+		fn, ok := getStringLikePseudoProp(name)
 		if ok {
 			return fn
 		}
@@ -601,7 +601,7 @@ func (c *StringConcatenation) PropertyNames() []string {
 }
 
 func (c *StringConcatenation) Prop(name string) Value {
-	fn, ok := getStringLikePseudoMethod(name)
+	fn, ok := getStringLikePseudoProp(name)
 	if ok {
 		return fn
 	}
@@ -675,15 +675,19 @@ func (p *AnyStringLike) PropertyNames() []string {
 }
 
 func (s *AnyStringLike) Prop(name string) Value {
-	fn, ok := getStringLikePseudoMethod(name)
+	fn, ok := getStringLikePseudoProp(name)
 	if ok {
 		return fn
 	}
 	panic(FormatErrPropertyDoesNotExist(name, s))
 }
 
-func getStringLikePseudoMethod(name string) (*GoFunction, bool) {
+func getStringLikePseudoProp(name string) (Value, bool) {
 	switch name {
+	case "byte-count":
+		return ANY_BYTECOUNT, true
+	case "rune-count":
+		return ANY_RUNECOUNT, true
 	case "replace":
 		return WrapGoFunction(func(ctx *Context, old, new StringLike) *String {
 			return ANY_STRING
