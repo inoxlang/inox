@@ -59,6 +59,10 @@ var (
 
 	FILEINFO_PROPNAMES   = []string{"name", "abs-path", "size", "mode", "mod-time", "is-dir"}
 	EMAIL_ADDR_PROPNAMES = []string{"username", "domain"}
+
+	_ = []IProps{
+		&Path{}, &PathPattern{}, &Host{}, &HostPattern{},
+		&EmailAddress{}, &URLPattern{}, &CheckedString{}}
 )
 
 // A Value represents a Value during symbolic evaluation, its underlying data should be immutable.
@@ -100,22 +104,12 @@ func deeplyMatch(v1, v2 Value) bool {
 	return v1.Test(v2, RecTestCallState{}) && v2.Test(v1, RecTestCallState{})
 }
 
-type PseudoPropsValue interface {
-	Value
-	PropertyNames() []string
-	Prop(name string) Value
-}
-
 type StaticDataHolder interface {
 	Value
 
 	//AddStatic returns a new StaticDataHolder with the added static data.
 	AddStatic(Pattern) (StaticDataHolder, error)
 }
-
-var _ = []PseudoPropsValue{
-	&Path{}, &PathPattern{}, &Host{}, &HostPattern{},
-	&EmailAddress{}, &URLPattern{}, &CheckedString{}}
 
 //symbolic value types with no data have a dummy field to avoid same address for empty structs
 
@@ -254,6 +248,7 @@ func (b *Bool) WidestOfType() Value {
 // A EmailAddress represents a symbolic EmailAddress.
 type EmailAddress struct {
 	SerializableMixin
+	UnassignablePropsMixin
 	value    string
 	hasValue bool
 }
@@ -1425,7 +1420,7 @@ func (r *Frequency) WidestOfType() Value {
 }
 
 type ResourceName interface {
-	WrappedString
+	GoString
 	ResourceName() *String
 }
 
@@ -1543,7 +1538,7 @@ func (i *TreedataHiearchyEntry) WidestOfType() Value {
 
 func IsSimpleSymbolicInoxVal(v Value) bool {
 	switch v.(type) {
-	case *NilT, *Rune, *Byte, *Bool, *Int, *Float, WrappedString, *Port:
+	case *NilT, *Rune, *Byte, *Bool, *Int, *Float, GoString, *Port:
 		return true
 	default:
 		return false

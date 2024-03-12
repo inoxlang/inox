@@ -386,6 +386,7 @@ func (mv *ipropsMultivalue) as(itf reflect.Type) Value {
 type strLikeMultivalue struct {
 	*Multivalue
 	SerializableMixin
+	UnassignablePropsMixin
 }
 
 func (c *strLikeMultivalue) IteratorElementKey() Value {
@@ -461,10 +462,6 @@ func (c *strLikeMultivalue) Prop(name string) Value {
 	default:
 		panic(FormatErrPropertyDoesNotExist(name, c))
 	}
-}
-
-func (mv *strLikeMultivalue) WithExistingPropReplaced(name string, value Value) (StringLike, error) {
-	return nil, errors.New(FmtCannotAssignPropertyOf(mv))
 }
 
 func (mv *strLikeMultivalue) as(itf reflect.Type) Value {

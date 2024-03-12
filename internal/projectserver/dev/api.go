@@ -66,5 +66,5 @@ func (a *API) getDatabaseNames(_ *core.Context) *core.List {
 		return strings.Compare(a.GetOrBuildString(), b.GetOrBuildString())
 	})
 
-	return core.NewWrappedStringListFrom(nameSlice)
+	return core.NewStringLikeFrom(nameSlice)
 }

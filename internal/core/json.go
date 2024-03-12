@@ -120,9 +120,9 @@ func parseJson(ctx *Context, v any) (any, error) {
 	var b []byte
 
 	switch val := v.(type) {
-	case WrappedBytes:
+	case GoBytes:
 		b = val.UnderlyingBytes()
-	case WrappedString:
+	case GoString:
 		b = []byte(val.UnderlyingString())
 	default:
 		return "", fmt.Errorf("cannot parse non string|bytes: %T", val)

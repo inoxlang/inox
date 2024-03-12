@@ -94,7 +94,7 @@ func NewEventSourceWithFilesystem(ctx *core.Context, fls afs.Filesystem, resourc
 	eventSource := &FilesystemEventSource{}
 
 	recursive := false
-	var permissionEntity core.WrappedString
+	var permissionEntity core.GoString
 
 	switch v := resourceNameOrPattern.(type) {
 	case core.PathPattern:

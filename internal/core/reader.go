@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	_ = []Readable{String(""), WrappedBytes(nil), (*StringConcatenation)(nil)}
+	_ = []Readable{String(""), GoBytes(nil), (*StringConcatenation)(nil)}
 
 	ErrCannotReadWithNoCopy = errors.New("cannot read with no copy")
 )

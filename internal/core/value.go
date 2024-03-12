@@ -82,7 +82,7 @@ func SamePointer(a, b interface{}) bool {
 
 func IsSimpleInoxVal(v Value) bool {
 	switch v.(type) {
-	case NilT, Rune, Byte, String, Bool, Int, Float, WrappedString, Port:
+	case NilT, Rune, Byte, String, Bool, Int, Float, GoString, Port:
 		return true
 	default:
 		return false

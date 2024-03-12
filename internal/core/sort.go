@@ -59,7 +59,7 @@ func (l *List) Sorted(ctx *Context, orderIdent Identifier) *List {
 			panic(fmt.Errorf("%s unsupported order for strings: '%s'", ERR_PREFIX, orderIdent))
 		}
 
-		return NewWrappedStringListFrom(utils.MapSlice(strings, func(s string) StringLike {
+		return NewStringLikeFrom(utils.MapSlice(strings, func(s string) StringLike {
 			return String(s)
 		}))
 	case Int:

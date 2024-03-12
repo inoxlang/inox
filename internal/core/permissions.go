@@ -131,10 +131,10 @@ func (perm LThreadPermission) String() string {
 
 type FilesystemPermission struct {
 	Kind_  PermissionKind
-	Entity WrappedString //Path, PathPattern ...
+	Entity GoString //Path, PathPattern ...
 }
 
-func CreateFsReadPerm(entity WrappedString) FilesystemPermission {
+func CreateFsReadPerm(entity GoString) FilesystemPermission {
 	return FilesystemPermission{Kind_: permkind.Read, Entity: entity}
 }
 
@@ -168,8 +168,8 @@ func (perm FilesystemPermission) String() string {
 }
 
 type CommandPermission struct {
-	CommandName         WrappedString //string or Path or PathPattern
-	SubcommandNameChain []string      //can be empty
+	CommandName         GoString //string or Path or PathPattern
+	SubcommandNameChain []string //can be empty
 }
 
 func (perm CommandPermission) InternalPermTypename() permkind.InternalPermissionTypename {
@@ -243,11 +243,11 @@ func (perm CommandPermission) String() string {
 
 type HttpPermission struct {
 	Kind_     PermissionKind
-	Entity    WrappedString //URL, URLPattern, HTTPHost, HTTPHostPattern ....
+	Entity    GoString //URL, URLPattern, HTTPHost, HTTPHostPattern ....
 	AnyEntity bool
 }
 
-func CreateHttpReadPerm(entity WrappedString) HttpPermission {
+func CreateHttpReadPerm(entity GoString) HttpPermission {
 	return HttpPermission{Kind_: permkind.Read, Entity: entity}
 }
 
@@ -331,7 +331,7 @@ func (perm HttpPermission) String() string {
 
 type DatabasePermission struct {
 	Kind_  PermissionKind
-	Entity WrappedString
+	Entity GoString
 }
 
 func (perm DatabasePermission) Kind() PermissionKind {
@@ -436,7 +436,7 @@ func (perm WebsocketPermission) Includes(otherPerm Permission) bool {
 
 type DNSPermission struct {
 	Kind_  PermissionKind
-	Domain WrappedString //Host | HostPattern
+	Domain GoString //Host | HostPattern
 }
 
 func (perm DNSPermission) Kind() PermissionKind {
@@ -482,7 +482,7 @@ func (perm DNSPermission) Includes(otherPerm Permission) bool {
 
 type RawTcpPermission struct {
 	Kind_  PermissionKind
-	Domain WrappedString //Host | HostPattern
+	Domain GoString //Host | HostPattern
 }
 
 func (perm RawTcpPermission) Kind() PermissionKind {

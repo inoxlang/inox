@@ -11523,7 +11523,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, CheckedString{
+			assert.Equal(t, &CheckedString{
 				str:                 "3",
 				matchingPatternName: "digit",
 				matchingPattern:     state.Ctx.ResolveNamedPattern("digit"),
@@ -11556,7 +11556,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, CheckedString{
+			assert.Equal(t, &CheckedString{
 				str:                 "SELECT * FROM users WHERE id = 5",
 				matchingPatternName: "sql.stmt",
 				matchingPattern:     state.Ctx.ResolvePatternNamespace("sql").Patterns["stmt"],
@@ -11579,7 +11579,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, CheckedString{
+			assert.Equal(t, &CheckedString{
 				str:                 "integer = 5",
 				matchingPatternName: "ns.any_str",
 				matchingPattern:     state.Ctx.ResolvePatternNamespace("ns").Patterns["any_str"],

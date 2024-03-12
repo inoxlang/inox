@@ -171,7 +171,7 @@ type DatabaseConfigs []DatabaseConfig
 type DatabaseConfig struct {
 	Name                 string       //declared name, this is NOT the basename.
 	Resource             SchemeHolder //URL or Host
-	ResolutionData       Serializable        //ResourceName or Nil
+	ResolutionData       Serializable //ResourceName or Nil
 	ExpectedSchemaUpdate bool
 	ExpectedSchema       *ObjectPattern //can be nil, not related to .ExpectedSchemaUpdate
 	Owned                bool
@@ -1633,7 +1633,7 @@ func getDnsPermissions(permKind PermissionKind, desc Value) ([]Permission, error
 	}
 
 	for _, dnsReqNode := range dnsReqNodes {
-		var domain WrappedString
+		var domain GoString
 
 		switch simpleVal := dnsReqNode.(type) {
 		case Host:
@@ -1672,7 +1672,7 @@ func getRawTcpPermissions(permKind PermissionKind, desc Value) ([]Permission, er
 	}
 
 	for _, dnsReqNode := range tcpRequirementNodes {
-		var domain WrappedString
+		var domain GoString
 
 		switch simpleVal := dnsReqNode.(type) {
 		case Host:
@@ -1770,7 +1770,7 @@ func getCommandPermissions(n Value) ([]Permission, error) {
 		}
 
 		var cmdNameKey = name
-		var cmdName WrappedString
+		var cmdName GoString
 		if strings.HasPrefix(cmdNameKey, "./") || strings.HasPrefix(cmdNameKey, "/") || strings.HasPrefix(cmdNameKey, "%") {
 
 			const PATH_ERR = INVALID_COMMANDS_PREFIX + "command starting with / or ./ should be valid paths"
@@ -1827,7 +1827,7 @@ func getCommandPermissions(n Value) ([]Permission, error) {
 	return perms, nil
 }
 
-func getSubcommandPermissions(cmdName WrappedString, cmdDesc *Object, perms *[]Permission) error {
+func getSubcommandPermissions(cmdName GoString, cmdDesc *Object, perms *[]Permission) error {
 	return cmdDesc.ForEachEntry(func(subcmdName string, cmdDescPropVal Serializable) error {
 		if subcmdName == inoxconsts.IMPLICIT_PROP_NAME {
 			return errors.New(INVALID_COMMANDS_PREFIX + "elements (values without a key) are not allowed")

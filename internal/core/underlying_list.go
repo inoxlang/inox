@@ -327,11 +327,11 @@ type StringList struct {
 	constraintId ConstraintId
 }
 
-func NewWrappedStringList(elements ...StringLike) *List {
+func NewStringList(elements ...StringLike) *List {
 	return &List{underlyingList: newStringList(elements...)}
 }
 
-func NewWrappedStringListFrom(elements []StringLike) *List {
+func NewStringLikeFrom(elements []StringLike) *List {
 	return &List{underlyingList: &StringList{elements: elements}}
 }
 

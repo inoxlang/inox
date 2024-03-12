@@ -25,15 +25,15 @@ var (
 	STRING_LIKE_PSEUDOPROPS = []string{"replace", "trim_space", "has_prefix", "has_suffix"}
 	RUNE_SLICE_PROPNAMES    = []string{"insert", "remove_position", "remove_position_range"}
 
-	_ = []WrappedString{
+	_ = []GoString{
 		String(""), Path(""), PathPattern(""), Host(""), HostPattern(""), EmailAddress(""), Identifier(""),
-		URL(""), URLPattern(""), CheckedString{},
+		URL(""), URLPattern(""),
 	}
-	_ = []StringLike{String(""), (*StringConcatenation)(nil)}
+	_ = []StringLike{String(""), (*StringConcatenation)(nil), (*CheckedString)(nil)}
 )
 
-// A StringLike represents a value that wraps a Go string.
-type WrappedString interface {
+// A GoString represents a Go string value.
+type GoString interface {
 	Serializable
 
 	//UnderlyingString() should instantly retrieves the wrapped string
@@ -53,7 +53,7 @@ type StringLike interface {
 	Replace(ctx *Context, old, new StringLike) StringLike
 	TrimSpace(ctx *Context) StringLike
 	HasPrefix(ctx *Context, prefix StringLike) Bool
-	HasSuffix(ctx *Context, prefix StringLike) Bool
+	HasSuffix(ctx *Context, suffix StringLike) Bool
 
 	//TODO: EqualStringLike(ctx *Context, s StringLike)
 }
@@ -195,7 +195,7 @@ func (r RuneRange) Random(ctx *Context) interface{} {
 }
 
 type CheckedString struct {
-	str                 string
+	str                 String
 	matchingPatternName string //if the matching pattern is in the namespace the name will contain a dot '.'
 	matchingPattern     Pattern
 }
@@ -228,7 +228,7 @@ func NewStringFromSlices(slices []Value, node *parse.StringTemplateLiteral, ctx 
 }
 
 // NewCheckedString creates a CheckedString in a secure way.
-func NewCheckedString(slices []Value, node *parse.StringTemplateLiteral, ctx *Context) (CheckedString, error) {
+func NewCheckedString(slices []Value, node *parse.StringTemplateLiteral, ctx *Context) (*CheckedString, error) {
 	patternIdent, isPatternAnIdent := node.Pattern.(*parse.PatternIdentifierLiteral)
 
 	var (
@@ -239,11 +239,11 @@ func NewCheckedString(slices []Value, node *parse.StringTemplateLiteral, ctx *Co
 	)
 	if isPatternAnIdent {
 		if node.HasInterpolations() {
-			return CheckedString{}, errors.New("string template literals with interpolations should be preceded by a pattern which name has a prefix")
+			return nil, errors.New("string template literals with interpolations should be preceded by a pattern which name has a prefix")
 		}
 		finalPattern = ctx.ResolveNamedPattern(patternIdent.Name)
 		if finalPattern == nil {
-			return CheckedString{}, fmt.Errorf("pattern %%%s does not exist", patternIdent.Name)
+			return nil, fmt.Errorf("pattern %%%s does not exist", patternIdent.Name)
 		}
 		matchingPatternName = patternIdent.Name
 	} else {
@@ -252,13 +252,13 @@ func NewCheckedString(slices []Value, node *parse.StringTemplateLiteral, ctx *Co
 		namespace = ctx.ResolvePatternNamespace(namespaceName)
 
 		if namespace == nil {
-			return CheckedString{}, fmt.Errorf("cannot interpolate: pattern namespace '%s' does not exist", namespaceName)
+			return nil, fmt.Errorf("cannot interpolate: pattern namespace '%s' does not exist", namespaceName)
 		}
 
 		memberName := namespaceMembExpr.MemberName.Name
 		pattern, ok := namespace.Patterns[memberName]
 		if !ok {
-			return CheckedString{}, fmt.Errorf("cannot interpolate: member .%s of pattern namespace '%s' does not exist", memberName, namespaceName)
+			return nil, fmt.Errorf("cannot interpolate: member .%s of pattern namespace '%s' does not exist", memberName, namespaceName)
 		}
 
 		matchingPatternName = namespaceName + "." + memberName
@@ -279,14 +279,14 @@ func NewCheckedString(slices []Value, node *parse.StringTemplateLiteral, ctx *Co
 				name, conversion, _ := strings.Cut(memberName, ".")
 				memberName = name
 				if conversion != "from" {
-					return CheckedString{}, fmt.Errorf("pattern namespace member should be followed by .from not .%s", conversion)
+					return nil, fmt.Errorf("pattern namespace member should be followed by .from not .%s", conversion)
 				}
 				shouldConvert = true
 			}
 
 			pattern, ok := namespace.Patterns[memberName]
 			if !ok {
-				return CheckedString{}, fmt.Errorf("cannot interpolate: member .%s of pattern namespace '%s' does not exist", memberName, namespaceName)
+				return nil, fmt.Errorf("cannot interpolate: member .%s of pattern namespace '%s' does not exist", memberName, namespaceName)
 			}
 			patternName := namespaceName + "." + memberName
 
@@ -295,12 +295,12 @@ func NewCheckedString(slices []Value, node *parse.StringTemplateLiteral, ctx *Co
 			if shouldConvert {
 				patt, ok := pattern.(ToStringConversionCapableStringPattern)
 				if !ok {
-					return CheckedString{}, fmt.Errorf("pattern %s is not capable of conversion", patternName)
+					return nil, fmt.Errorf("pattern %s is not capable of conversion", patternName)
 				}
 				pattern = patt
 				s, err := patt.StringFrom(ctx, sliceValue)
 				if err != nil {
-					return CheckedString{}, fmt.Errorf("pattern %s failed to convert value", patternName)
+					return nil, fmt.Errorf("pattern %s failed to convert value", patternName)
 				}
 				str = String(s)
 			} else {
@@ -308,45 +308,50 @@ func NewCheckedString(slices []Value, node *parse.StringTemplateLiteral, ctx *Co
 			}
 
 			if !pattern.Test(ctx, str) {
-				return CheckedString{}, fmt.Errorf("runtime check error: `%s` does not match %%%s", str, patternName)
+				return nil, fmt.Errorf("runtime check error: `%s` does not match %%%s", str, patternName)
 			}
 
 			buff.WriteString(string(str))
 		default:
-			return CheckedString{}, fmt.Errorf("runtime check error: slice value of type %T", sliceValue)
+			return nil, fmt.Errorf("runtime check error: slice value of type %T", sliceValue)
 		}
 	}
 
 	str := String(buff.String())
 	if !finalPattern.Test(ctx, str) {
-		return CheckedString{}, fmt.Errorf("runtime check error: final string `%s` does not match %%%s", str, matchingPatternName)
+		return nil, fmt.Errorf("runtime check error: final string `%s` does not match %%%s", str, matchingPatternName)
 	}
 
-	return CheckedString{
-		str:                 buff.String(),
+	return &CheckedString{
+		str:                 String(buff.String()),
 		matchingPatternName: matchingPatternName,
 		matchingPattern:     finalPattern,
 	}, nil
 }
 
-func (str CheckedString) String() string {
-	return "`" + str.str + "`"
+func (str *CheckedString) GetOrBuildString() string {
+	return str.str.GetOrBuildString()
 }
 
-func (str CheckedString) UnderlyingString() string {
-	return str.str
-}
-
-func (str CheckedString) PropertyNames(ctx *Context) []string {
+func (str *CheckedString) PropertyNames(ctx *Context) []string {
 	return symbolic.CHECKED_STRING_PROPNAMES
 }
 
-func (str CheckedString) Prop(ctx *Context, name string) Value {
+func (str *CheckedString) Prop(ctx *Context, name string) Value {
 	switch name {
 	case "pattern-name":
 		return String(str.matchingPatternName)
 	case "pattern":
 		return str.matchingPattern
+
+	case "replace":
+		return ValOf(str.Replace)
+	case "trim_space":
+		return ValOf(str.TrimSpace)
+	case "has_prefix":
+		return ValOf(str.HasPrefix)
+	case "has_suffix":
+		return ValOf(str.HasSuffix)
 	default:
 		return nil
 	}
@@ -354,6 +359,43 @@ func (str CheckedString) Prop(ctx *Context, name string) Value {
 
 func (CheckedString) SetProp(ctx *Context, name string, value Value) error {
 	return ErrCannotSetProp
+}
+
+func (s *CheckedString) slice(start, end int) Sequence {
+	return s.str.slice(start, end)
+}
+
+func (s *CheckedString) Len() int {
+	return s.str.Len()
+}
+
+func (s *CheckedString) ByteLen() int {
+	return s.str.ByteLen()
+}
+
+func (s *CheckedString) RuneCount() int {
+	return s.str.RuneCount()
+}
+
+func (s *CheckedString) At(ctx *Context, i int) Value {
+	return s.str.At(ctx, i)
+}
+
+func (s *CheckedString) Replace(ctx *Context, old, new StringLike) StringLike {
+	return s.str.Replace(ctx, old, new)
+}
+
+func (s *CheckedString) TrimSpace(ctx *Context) StringLike {
+	return s.str.TrimSpace(ctx)
+}
+
+func (s *CheckedString) HasPrefix(ctx *Context, prefix StringLike) Bool {
+	return s.str.HasPrefix(ctx, prefix)
+
+}
+
+func (s *CheckedString) HasSuffix(ctx *Context, suffix StringLike) Bool {
+	return s.str.HasSuffix(ctx, suffix)
 }
 
 type RuneSlice struct {

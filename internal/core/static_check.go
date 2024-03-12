@@ -1320,7 +1320,7 @@ func (c *checker) checkImportStmt(node *parse.ImportStatement, parent, closestMo
 		return parse.ContinueTraversal
 	}
 
-	var importedModuleSource WrappedString
+	var importedModuleSource GoString
 
 	switch node.Source.(type) {
 	case *parse.URLLiteral, *parse.AbsolutePathLiteral, *parse.RelativePathLiteral:

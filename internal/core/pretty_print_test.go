@@ -848,7 +848,7 @@ func TestCheckedStringPrettyPrint(t *testing.T) {
 	defer reprTestCtx.CancelGracefully()
 
 	pattern := &ExactValuePattern{value: String("foo")}
-	str := CheckedString{str: "foo", matchingPatternName: "ident_name", matchingPattern: pattern}
+	str := &CheckedString{str: "foo", matchingPatternName: "ident_name", matchingPattern: pattern}
 
 	expectedRepr := "%ident_name`foo`"
 

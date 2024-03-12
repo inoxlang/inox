@@ -536,7 +536,7 @@ func (v *VM) run() {
 		case OpStrConcat:
 			right := v.stack[v.sp-1]
 			left := v.stack[v.sp-2]
-			res := String(left.(WrappedString).UnderlyingString() + right.(WrappedString).UnderlyingString())
+			res := String(left.(GoString).UnderlyingString() + right.(GoString).UnderlyingString())
 
 			v.stack[v.sp-2] = res
 			v.sp--

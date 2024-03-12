@@ -30,9 +30,9 @@ func coerceToBool(ctx *Context, val Value) bool {
 		return !v.IsEmpty(ctx)
 	case Bool:
 		return bool(v)
-	case WrappedString:
+	case GoString:
 		return v.UnderlyingString() != ""
-	case WrappedBytes:
+	case GoBytes:
 		return len(v.UnderlyingBytes()) != 0
 	default:
 		return true

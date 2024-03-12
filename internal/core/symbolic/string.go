@@ -9,14 +9,14 @@ import (
 )
 
 var (
-	_ = []WrappedString{
+	_ = []GoString{
 		(*String)(nil), (*Identifier)(nil), (*Path)(nil), (*PathPattern)(nil), (*Host)(nil),
-		(*HostPattern)(nil), (*URLPattern)(nil), (*CheckedString)(nil),
+		(*HostPattern)(nil), (*URLPattern)(nil),
 	}
 
 	_ = []StringLike{
 		(*String)(nil), (*StringConcatenation)(nil), (*AnyStringLike)(nil),
-		(*strLikeMultivalue)(nil),
+		(*strLikeMultivalue)(nil), (*CheckedString)(nil),
 	}
 
 	ANY_STRING         = &String{}
@@ -32,15 +32,15 @@ var (
 
 	STRING_LIKE_PSEUDOPROPS  = []string{"replace", "trim_space", "has_prefix", "has_suffix"}
 	RUNE_SLICE_PROPNAMES     = []string{"insert", "remove_position", "remove_position_range"}
-	CHECKED_STRING_PROPNAMES = []string{"pattern-name", "pattern"}
+	CHECKED_STRING_PROPNAMES = append([]string{"pattern-name", "pattern"}, STRING_LIKE_PSEUDOPROPS...)
 	RUNE_PROPNAMES           = []string{"is-space", "is-printable", "is-letter"}
 
 	RUNE_SLICE__INSERT_PARAMS      = &[]Value{NewMultivalue(ANY_RUNE, NewAnySequenceOf(ANY_RUNE))}
 	RUNE_SLICE__INSERT_PARAM_NAMES = []string{"rune", "index"}
 )
 
-// A WrappedString represents a symbolic WrappedString.
-type WrappedString interface {
+// A GoString represents a symbolic GoString.
+type GoString interface {
 	Value
 	underlyingString() *String
 }
@@ -49,7 +49,7 @@ type WrappedString interface {
 type StringLike interface {
 	Serializable
 	Sequence
-	PseudoPropsValue
+	IProps
 	GetOrBuildString() *String
 }
 
@@ -236,34 +236,11 @@ func (p *String) PropertyNames() []string {
 }
 
 func (s *String) Prop(name string) Value {
-	switch name {
-	case "replace":
-		return &GoFunction{
-			fn: func(ctx *Context, old, new StringLike) StringLike {
-				return ANY_STR_LIKE
-			},
-		}
-	case "trim_space":
-		return &GoFunction{
-			fn: func(ctx *Context) StringLike {
-				return ANY_STR_LIKE
-			},
-		}
-	case "has_prefix":
-		return &GoFunction{
-			fn: func(ctx *Context, s StringLike) *Bool {
-				return ANY_BOOL
-			},
-		}
-	case "has_suffix":
-		return &GoFunction{
-			fn: func(ctx *Context, s StringLike) *Bool {
-				return ANY_BOOL
-			},
-		}
-	default:
-		panic(FormatErrPropertyDoesNotExist(name, s))
+	fn, ok := getStringLikePseudoMethod(name)
+	if ok {
+		return fn
 	}
+	panic(FormatErrPropertyDoesNotExist(name, s))
 }
 
 func (s *String) slice(start, end *Int) Sequence {
@@ -347,7 +324,8 @@ func (r *Rune) Prop(name string) Value {
 
 // A CheckedString represents a symbolic CheckedString.
 type CheckedString struct {
-	_ int
+	SerializableMixin
+	UnassignablePropsMixin
 }
 
 func (s *CheckedString) Test(v Value, state RecTestCallState) bool {
@@ -356,6 +334,38 @@ func (s *CheckedString) Test(v Value, state RecTestCallState) bool {
 
 	_, ok := v.(*CheckedString)
 	return ok
+}
+
+func (s *CheckedString) IteratorElementKey() Value {
+	return ANY_STRING.IteratorElementKey()
+}
+
+func (s *CheckedString) IteratorElementValue() Value {
+	return ANY_STRING.IteratorElementKey()
+}
+
+func (s *CheckedString) HasKnownLen() bool {
+	return false
+}
+
+func (s *CheckedString) KnownLen() int {
+	return -1
+}
+
+func (s *CheckedString) Element() Value {
+	return ANY_STRING.Element()
+}
+
+func (s *CheckedString) ElementAt(i int) Value {
+	return ANY_STRING.ElementAt(i)
+}
+
+func (s *CheckedString) slice(start, end *Int) Sequence {
+	return ANY_STRING.slice(start, end)
+}
+
+func (s *CheckedString) GetOrBuildString() *String {
+	return ANY_STRING
 }
 
 func (s *CheckedString) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
@@ -373,12 +383,13 @@ func (s *CheckedString) Prop(name string) Value {
 	case "pattern":
 		return ANY_STR_PATTERN
 	default:
+		fn, ok := getStringLikePseudoMethod(name)
+		if ok {
+			return fn
+		}
+
 		panic(FormatErrPropertyDoesNotExist(name, s))
 	}
-}
-
-func (s *CheckedString) underlyingString() *String {
-	return ANY_STRING
 }
 
 func (s *CheckedString) WidestOfType() Value {
@@ -590,34 +601,11 @@ func (c *StringConcatenation) PropertyNames() []string {
 }
 
 func (c *StringConcatenation) Prop(name string) Value {
-	switch name {
-	case "replace":
-		return &GoFunction{
-			fn: func(ctx *Context, old, new StringLike) *String {
-				return ANY_STRING
-			},
-		}
-	case "trim_space":
-		return &GoFunction{
-			fn: func(ctx *Context) StringLike {
-				return ANY_STR_LIKE
-			},
-		}
-	case "has_prefix":
-		return &GoFunction{
-			fn: func(ctx *Context, s StringLike) *Bool {
-				return ANY_BOOL
-			},
-		}
-	case "has_suffix":
-		return &GoFunction{
-			fn: func(ctx *Context, s StringLike) *Bool {
-				return ANY_BOOL
-			},
-		}
-	default:
-		panic(FormatErrPropertyDoesNotExist(name, c))
+	fn, ok := getStringLikePseudoMethod(name)
+	if ok {
+		return fn
 	}
+	panic(FormatErrPropertyDoesNotExist(name, c))
 }
 
 func isAnyStringLike(v Value) bool {
@@ -687,32 +675,32 @@ func (p *AnyStringLike) PropertyNames() []string {
 }
 
 func (s *AnyStringLike) Prop(name string) Value {
+	fn, ok := getStringLikePseudoMethod(name)
+	if ok {
+		return fn
+	}
+	panic(FormatErrPropertyDoesNotExist(name, s))
+}
+
+func getStringLikePseudoMethod(name string) (*GoFunction, bool) {
 	switch name {
 	case "replace":
-		return &GoFunction{
-			fn: func(ctx *Context, old, new StringLike) StringLike {
-				return ANY_STR_LIKE
-			},
-		}
+		return WrapGoFunction(func(ctx *Context, old, new StringLike) *String {
+			return ANY_STRING
+		}), true
 	case "trim_space":
-		return &GoFunction{
-			fn: func(ctx *Context) StringLike {
-				return ANY_STR_LIKE
-			},
-		}
+		return WrapGoFunction(func(ctx *Context) StringLike {
+			return ANY_STR_LIKE
+		}), true
 	case "has_prefix":
-		return &GoFunction{
-			fn: func(ctx *Context, s StringLike) *Bool {
-				return ANY_BOOL
-			},
-		}
+		return WrapGoFunction(func(ctx *Context, s StringLike) *Bool {
+			return ANY_BOOL
+		}), true
 	case "has_suffix":
-		return &GoFunction{
-			fn: func(ctx *Context, s StringLike) *Bool {
-				return ANY_BOOL
-			},
-		}
-	default:
-		panic(FormatErrPropertyDoesNotExist(name, s))
+		return WrapGoFunction(func(ctx *Context, s StringLike) *Bool {
+			return ANY_BOOL
+		}), true
 	}
+
+	return nil, false
 }

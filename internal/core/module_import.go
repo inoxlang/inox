@@ -277,7 +277,7 @@ func fetchParseImportedModules(parentMod *Module, ctx *Context, fls afs.Filesyst
 	importStmts := parse.FindNodes(parentMod.MainChunk.Node, (*parse.ImportStatement)(nil), nil)
 
 	stmtSources := map[ResourceName]*parse.ImportStatement{}
-	validationStrings := map[WrappedString]string{}
+	validationStrings := map[GoString]string{}
 
 	for _, importStmt := range importStmts {
 		//ignore import if the source or the config has an error

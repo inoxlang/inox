@@ -15,12 +15,12 @@ var (
 	ErrAttemptToMutateReadonlyByteSlice            = errors.New("attempt to write a readonly byte slice")
 	ErrAttemptToCreateMutableSpecificTypeByteSlice = errors.New("attempt to create a mutable byte slice with specific content type")
 
-	_ = []WrappedBytes{(*ByteSlice)(nil)}
+	_ = []GoBytes{(*ByteSlice)(nil)}
 	_ = []BytesLike{(*ByteSlice)(nil), (*BytesConcatenation)(nil)}
 )
 
-// A WrappedBytes represents a value that wraps a byte slice ( []byte ).
-type WrappedBytes interface {
+// The GoString interfaces is implemented by types that are of kind reflect.String
+type GoBytes interface {
 	Readable
 	//the returned bytes should NOT be modified
 	UnderlyingBytes() []byte

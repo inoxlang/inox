@@ -2365,7 +2365,7 @@ func parseListJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern *L
 			if !checkLength(len(elements)) {
 				return
 			}
-			return NewWrappedStringListFrom(elements), nil
+			return NewStringLikeFrom(elements), nil
 		} //else
 		elements := parseSameTypeListJSONRepr[Serializable](ctx, it, pattern, try, &finalErr)
 		if finalErr != nil {

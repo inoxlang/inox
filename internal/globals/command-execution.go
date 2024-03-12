@@ -26,7 +26,7 @@ func _execute(ctx *core.Context, args ...core.Value) (core.String, error) {
 
 	var subcommandNameChain []string
 	var cmdArgs []string
-	var cmdName core.WrappedString
+	var cmdName core.GoString
 	var timeoutDuration core.Duration
 	var maxMemory core.ByteCount //future use
 	var noTimeout bool

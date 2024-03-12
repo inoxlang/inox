@@ -299,6 +299,14 @@ func (s String) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
 	})
 }
 
+func (s *CheckedString) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
+	return config.CreateIterator(&indexableIterator{
+		i:   -1,
+		len: s.Len(),
+		val: s,
+	})
+}
+
 func (c *BytesConcatenation) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
 	return config.CreateIterator(&indexableIterator{
 		i:   -1,

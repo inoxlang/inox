@@ -21,7 +21,7 @@ func TestHttpPermission(t *testing.T) {
 	for kind := permkind.Read; kind <= permkind.Provide; kind++ {
 		for _, entity := range ENTITIES {
 			t.Run(kind.String()+"_"+fmt.Sprint(entity)+"_includes_itself", func(t *testing.T) {
-				perm := HttpPermission{Kind_: kind, Entity: entity.(WrappedString)}
+				perm := HttpPermission{Kind_: kind, Entity: entity.(GoString)}
 				assert.True(t, perm.Includes(perm))
 			})
 		}
@@ -31,8 +31,8 @@ func TestHttpPermission(t *testing.T) {
 		for i, entity := range ENTITIES {
 			for _, prevEntity := range ENTITIES[:i] {
 				t.Run(fmt.Sprintf("%s_%s_includes_%s", kind, entity, prevEntity), func(t *testing.T) {
-					perm := HttpPermission{Kind_: kind, Entity: entity.(WrappedString)}
-					otherPerm := HttpPermission{Kind_: kind, Entity: prevEntity.(WrappedString)}
+					perm := HttpPermission{Kind_: kind, Entity: entity.(GoString)}
+					otherPerm := HttpPermission{Kind_: kind, Entity: prevEntity.(GoString)}
 
 					assert.True(t, perm.Includes(otherPerm))
 				})
@@ -114,8 +114,8 @@ func TestWebsocketPermission(t *testing.T) {
 
 func TestDNSPermission(t *testing.T) {
 	testCases := []struct {
-		domain1        WrappedString
-		domain2        WrappedString
+		domain1        GoString
+		domain2        GoString
 		oneIncludesTwo bool
 	}{
 		{Host("://a.com"), Host("://a.com"), true},
@@ -153,8 +153,8 @@ func TestDNSPermission(t *testing.T) {
 
 func TestRawTcpPermission(t *testing.T) {
 	testCases := []struct {
-		domain1        WrappedString
-		domain2        WrappedString
+		domain1        GoString
+		domain2        GoString
 		oneIncludesTwo bool
 	}{
 		{Host("://a.com"), Host("://a.com"), true},
@@ -225,15 +225,15 @@ func TestFilesystemPermission(t *testing.T) {
 	for kind := permkind.Read; kind <= permkind.Provide; kind++ {
 		for _, entity := range ENTITIES {
 			t.Run(kind.String()+"_"+fmt.Sprint(entity), func(t *testing.T) {
-				perm := FilesystemPermission{Kind_: kind, Entity: entity.(WrappedString)}
+				perm := FilesystemPermission{Kind_: kind, Entity: entity.(GoString)}
 				assert.True(t, perm.Includes(perm))
 			})
 		}
 	}
 
 	testCases := []struct {
-		entity1        WrappedString
-		entity2        WrappedString
+		entity1        GoString
+		entity2        GoString
 		oneIncludesTwo bool
 	}{
 		{PathPattern("/..."), Path("/"), true},
@@ -321,7 +321,7 @@ func TestDatabasePermission(t *testing.T) {
 	for kind := permkind.Read; kind <= permkind.Provide; kind++ {
 		for _, entity := range ENTITIES {
 			t.Run(kind.String()+"_"+fmt.Sprint(entity)+"_includes_itself", func(t *testing.T) {
-				perm := DatabasePermission{Kind_: kind, Entity: entity.(WrappedString)}
+				perm := DatabasePermission{Kind_: kind, Entity: entity.(GoString)}
 				assert.True(t, perm.Includes(perm))
 			})
 		}
@@ -331,8 +331,8 @@ func TestDatabasePermission(t *testing.T) {
 		for i, entity := range ENTITIES {
 			for _, prevEntity := range ENTITIES[:i] {
 				t.Run(fmt.Sprintf("%s_%s_includes_%s", kind, entity, prevEntity), func(t *testing.T) {
-					perm := DatabasePermission{Kind_: kind, Entity: entity.(WrappedString)}
-					otherPerm := DatabasePermission{Kind_: kind, Entity: prevEntity.(WrappedString)}
+					perm := DatabasePermission{Kind_: kind, Entity: entity.(GoString)}
+					otherPerm := DatabasePermission{Kind_: kind, Entity: prevEntity.(GoString)}
 
 					assert.True(t, perm.Includes(otherPerm))
 				})

@@ -107,7 +107,7 @@ func sprintPrompt(state *core.TreeWalkState, config REPLConfiguration) (prompt s
 		switch p := part.(type) {
 		case core.StringLike:
 			s = string(p.GetOrBuildString())
-		case core.WrappedString:
+		case core.GoString:
 			s = string(p.UnderlyingString())
 		case core.AstNode:
 			if call, isCall := p.Node.(*parse.CallExpression); isCall {

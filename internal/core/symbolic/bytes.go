@@ -5,11 +5,6 @@ import (
 )
 
 var (
-	_ = []WrappedString{
-		(*String)(nil), (*Identifier)(nil), (*Path)(nil), (*PathPattern)(nil), (*Host)(nil),
-		(*HostPattern)(nil), (*URLPattern)(nil), (*CheckedString)(nil),
-	}
-
 	_ = []BytesLike{(*AnyBytesLike)(nil), (*ByteSlice)(nil), (*BytesConcatenation)(nil)}
 
 	ANY_BYTES_LIKE   = &AnyBytesLike{}
@@ -18,8 +13,8 @@ var (
 	ANY_BYTES_CONCAT = &BytesConcatenation{}
 )
 
-// An WrappedBytes represents a symbolic WrappedBytes.
-type WrappedBytes interface {
+// The GoBytes interfaces is implemented by types that are of kind reflect.Slice with byte elements ([]byte).
+type GoBytes interface {
 	Iterable
 	underlyingBytes() *ByteSlice //TODO: change return type ? --> it isn't equivalent to concrete version
 }
