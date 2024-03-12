@@ -86,6 +86,22 @@ _From more relevant to less relevant._
 - Generic directed graph types
 - Generic queue types (array queue)
 
+[css](./css/README.md)
+- Parsing
+- Minification
+- Import graph computation
+- Database of standard properties
+- Tailwind subset
+- Basic bundler
+- Var-based utility classes
+
+[deno](./deno/README.md)
+- JS Services (startup + RPC)
+- Deno binary download and installation
+
+[sourcecontrol](./sourcecontrol/README.md)
+- Git API subset with virtual filesystem support
+
 [codecompletion](./codecompletion/README.md)
 - Code completion
 
