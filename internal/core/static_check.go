@@ -627,9 +627,10 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 		}
 	case *parse.PruneStatement:
 		return c.checkPruneStmt(node, ancestorChain)
+	case *parse.SwitchStatement:
+		return c.checkSwitchStatement(node, scopeNode, closestModule)
 	case *parse.MatchStatement:
-		variablesBeforeStmt := c.getScopeLocalVarsCopy(scopeNode)
-		c.store[node] = variablesBeforeStmt
+		return c.checkMatchStatement(node, scopeNode, closestModule)
 	case *parse.MatchStatementCase:
 		return c.checkMatchCase(node, scopeNode, closestModule)
 	case *parse.Variable:
@@ -1986,6 +1987,24 @@ loop1:
 	return parse.ContinueTraversal
 }
 
+func (c *checker) checkSwitchStatement(node *parse.SwitchStatement, scopeNode, closestModule parse.Node) parse.TraversalAction {
+	variablesBeforeStmt := c.getScopeLocalVarsCopy(scopeNode)
+	c.store[node] = variablesBeforeStmt
+
+	//default case uniqueness is checked by the parser.
+
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkMatchStatement(node *parse.MatchStatement, scopeNode, closestModule parse.Node) parse.TraversalAction {
+	variablesBeforeStmt := c.getScopeLocalVarsCopy(scopeNode)
+	c.store[node] = variablesBeforeStmt
+
+	//default case uniqueness is checked by the parser.
+
+	return parse.ContinueTraversal
+}
+
 func (c *checker) checkMatchCase(node *parse.MatchStatementCase, scopeNode, closestModule parse.Node) parse.TraversalAction {
 
 	//define the variables named after groups if the literal is used as a case in a match statement
@@ -2827,7 +2846,7 @@ func (checker *checker) postCheckSingleNode(node, parent, scopeNode parse.Node, 
 	case *parse.ForStatement, *parse.ForExpression, *parse.WalkStatement:
 		varsBefore := checker.store[node].(map[string]localVarInfo)
 		checker.setScopeLocalVars(scopeNode, varsBefore)
-	case *parse.MatchStatement:
+	case *parse.SwitchStatement, *parse.MatchStatement:
 		varsBefore, ok := checker.store[node]
 		if ok {
 			checker.setScopeLocalVars(scopeNode, varsBefore.(map[string]localVarInfo))

@@ -4590,6 +4590,31 @@ func TestCheck(t *testing.T) {
 		})
 	})
 
+	t.Run("switch statement", func(t *testing.T) {
+
+		t.Run("variables defined inside cases are not accessible after the statement", func(t *testing.T) {
+			n, src := mustParseCode(`
+				switch 1 {
+					0 {
+						a = 1
+					}
+					defaultcase {
+						b = 2
+					}
+				}
+				a
+				b
+			`)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(n.Statements[1], src, fmtVarIsNotDeclared("a")),
+				makeError(n.Statements[2], src, fmtVarIsNotDeclared("b")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+	})
+
 	t.Run("match statement", func(t *testing.T) {
 		t.Run("group matching variable shadows a global", func(t *testing.T) {
 			n, src := mustParseCode(`
@@ -4642,6 +4667,27 @@ func TestCheck(t *testing.T) {
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
 				makeError(variable, src, fmtVarIsNotDeclared("m")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("variables defined inside cases are not accessible after the statement", func(t *testing.T) {
+			n, src := mustParseCode(`
+				match 1 {
+					0 {
+						a = 1
+					}
+					defaultcase {
+						b = 2
+					}
+				}
+				a
+				b
+			`)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(n.Statements[1], src, fmtVarIsNotDeclared("a")),
+				makeError(n.Statements[2], src, fmtVarIsNotDeclared("b")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
