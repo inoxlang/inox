@@ -2,6 +2,8 @@ package lsp
 
 const structItemTemp = `	on%s func(ctx context.Context, req *%s) (*%s, %s)`
 
+const interfRespStructItemTemp = `	on%s func(ctx context.Context, req *%s) (%s, %s)`
+
 const noRespStructItemTemp = `	on%s func(ctx context.Context, req *%s) %s`
 
 const structTemp = `
@@ -13,6 +15,12 @@ type Methods struct {
 
 const methodsTemp = `
 func (m *Methods) On%s(f func(ctx context.Context, req *%s) (result *%s, err %s)) {
+	m.on%s = f
+}
+`
+
+const interfRespMethodsTemp = `
+func (m *Methods) On%s(f func(ctx context.Context, req *%s) (result %s, err %s)) {
 	m.on%s = f
 }
 `

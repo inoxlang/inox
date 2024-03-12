@@ -36,6 +36,11 @@ func removeNamePrefix(s string) string {
 }
 
 func getTypeOne(i interface{}) typ_ {
+
+	if _, ok := i.(_any); ok {
+		return typ_{"any", "any"}
+	}
+
 	t := reflect.TypeOf(i)
 	strT := t.String()
 	name := removeNamePrefix(strT)
@@ -88,8 +93,16 @@ func firstUp(s string) string {
 func generateOne(name, regName, args, result, error, code string, withBuiltin bool, rateLimits string, sensitiveData bool) (string, string, string) {
 	name = firstUp(name)
 	nameFirstLow := firstLow(name)
-	structField := fmt.Sprintf(structItemTemp, name, args, result, error)
-	method := fmt.Sprintf(methodsTemp, name, args, result, error, name)
+	structFieldFmt := structItemTemp
+	methodsTempFmt := methodsTemp
+	if result == "any" {
+		structFieldFmt = interfRespStructItemTemp
+		methodsTempFmt = interfRespMethodsTemp
+	}
+
+	structField := fmt.Sprintf(structFieldFmt, name, args, result, error)
+	method := fmt.Sprintf(methodsTempFmt, name, args, result, error, name)
+
 	defaultOpt := noBuiltinTemp
 	if withBuiltin {
 		defaultOpt = fmt.Sprintf(builtinTemp, name, code)

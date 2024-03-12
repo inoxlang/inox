@@ -1285,7 +1285,7 @@ func (m *Methods) selectionRangesMethodInfo() *jsonrpc.MethodInfo {
 	}
 }
 
-func (m *Methods) OnDocumentDiagnostic(f func(ctx context.Context, req *defines.DocumentDiagnosticParams) (any, error)) {
+func (m *Methods) OnDocumentDiagnostic(f func(ctx context.Context, req *defines.DocumentDiagnosticParams) (result any, err error)) {
 	m.onDocumentDiagnostic = f
 }
 
@@ -1304,7 +1304,6 @@ func (m *Methods) documentDiagnosticMethodInfo() *jsonrpc.MethodInfo {
 	if m.onDocumentDiagnostic == nil {
 		return nil
 	}
-
 	return &jsonrpc.MethodInfo{
 		Name: "textDocument/diagnostic",
 		NewRequest: func() interface{} {

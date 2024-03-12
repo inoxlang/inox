@@ -20,6 +20,8 @@ type method struct {
 
 type or []interface{}
 
+type _any struct{ _ int }
+
 var methods = []method{
 	{
 		Name:        "Initialize",
@@ -269,5 +271,11 @@ var methods = []method{
 		Args:          defines.SelectionRangeParams{},
 		Result:        []defines.SelectionRange{},
 		ProgressToken: []defines.SelectionRange{},
+	},
+	{
+		Name:         "DocumentDiagnostic",
+		RegisterName: "textDocument/diagnostic",
+		Args:         defines.DocumentDiagnosticParams{},
+		Result:       _any{},
 	},
 }
