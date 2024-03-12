@@ -9298,6 +9298,230 @@ func TestSymbolicEval(t *testing.T) {
 		})
 	})
 
+	t.Run("match expression", func(t *testing.T) {
+		t.Run("join", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return match 1 {
+					%int => {a: 1}
+					%str => {b: 1}
+				}
+				return v
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewMultivalue(
+				NewInexactObject(map[string]Serializable{"a": NewInt(1)}, nil, map[string]Pattern{"a": ANY_INT.Static()}),
+				NewInexactObject(map[string]Serializable{"b": NewInt(1)}, nil, map[string]Pattern{"b": ANY_INT.Static()}),
+				Nil,
+			), res)
+		})
+
+		t.Run("error in a case value", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				v = /path
+				return match v {
+					undefined_var => 0
+				}
+			`)
+
+			ident := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
+				return n.Name == "undefined_var"
+			})
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(ident, state, fmtVarIsNotDeclared("undefined_var")),
+			}, state.errors())
+			assert.Equal(t, Nil, res)
+		})
+
+		t.Run("an exact value used as a match case should be serializable", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				v = /path
+				non_serializable_value = go do {}
+
+				return match v {
+					non_serializable_value => 0
+				}
+			`)
+
+			ident := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
+				return n.Name == "non_serializable_value"
+			})
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(ident, state, AN_EXACT_VALUE_USED_AS_MATCH_CASE_SHOULD_BE_SERIALIZABLE),
+			}, state.errors())
+			assert.Equal(t, Nil, res)
+		})
+
+		t.Run("error in every block", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				v = /path
+				return match v {
+					/ => !"s"
+					/... => !"s"
+				}
+			`)
+
+			unaryExprs := parse.FindNodes(n, (*parse.UnaryExpression)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(unaryExprs[0], state, fmtOperandOfBoolNegateShouldBeBool(NewString("s"))),
+				makeSymbolicEvalError(unaryExprs[1], state, fmtOperandOfBoolNegateShouldBeBool(NewString("s"))),
+			}, state.errors())
+			assert.Equal(t, NewMultivalue(ANY_BOOL, Nil), res)
+		})
+
+		t.Run("single group matching case", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return match /home/user {
+					%/home/{:username} m => m.username
+				}
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewMultivalue(ANY_STRING, Nil), res)
+		})
+
+		t.Run("two group matching cases with same variable", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return match /home/user {
+					%/home/{:username} m => m.username
+					%/x/{:username} m => m.username
+				}
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewMultivalue(ANY_STRING, Nil), res)
+		})
+
+		t.Run("narrowing of variable's value (no default case)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(v){
+					return match v {
+						%int => (v + 1)
+						%str => concat v "!"
+					}
+				}
+				return f
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+
+			fnExpr := n.Statements[0].(*parse.FunctionDeclaration).Function
+			expectedFn := &InoxFunction{
+				node:           fnExpr,
+				nodeChunk:      n,
+				parameters:     []Value{ANY},
+				parameterNames: []string{"v"},
+				result:         NewMultivalue(ANY_INT, ANY_STR_LIKE, Nil),
+			}
+			assert.Equal(t, expectedFn, res)
+		})
+
+		t.Run("narrowing of variable's value (with default case)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(v %| int | str | bool){
+					return match v {
+						%int => (v + 1)
+						%str => concat v "!"
+						defaultcase => !v # should be a boolean
+					}
+				}
+				return f
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+
+			fnExpr := n.Statements[0].(*parse.FunctionDeclaration).Function
+			expectedFn := &InoxFunction{
+				node:           fnExpr,
+				nodeChunk:      n,
+				parameters:     []Value{NewMultivalue(ANY_INT, ANY_STR_LIKE, ANY_BOOL)},
+				parameterNames: []string{"v"},
+				result:         NewMultivalue(ANY_INT, ANY_STR_LIKE, ANY_BOOL),
+			}
+			assert.Equal(t, expectedFn, res)
+		})
+
+		t.Run("narrowing of property", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(v %{a: %| %int | %str}){
+					return match v.a {
+						%int => v.a
+						%str => v.a
+					}
+				}
+				return f
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+
+			fnExpr := n.Statements[0].(*parse.FunctionDeclaration).Function
+			expectedFn := &InoxFunction{
+				node:      fnExpr,
+				nodeChunk: n,
+				parameters: []Value{
+					NewInexactObject(
+						map[string]Serializable{
+							"a": AsSerializableChecked(NewMultivalue(ANY_INT, ANY_STR_LIKE)),
+						},
+						nil,
+						map[string]Pattern{
+							"a": utils.Must(NewUnionPattern(
+								[]Pattern{
+									state.ctx.ResolveNamedPattern("int"),
+									state.ctx.ResolveNamedPattern("str"),
+								},
+								false,
+							)),
+						},
+					),
+				},
+				parameterNames: []string{"v"},
+				result:         NewMultivalue(ANY_INT, ANY_STR_LIKE, Nil),
+			}
+			assert.Equal(t, expectedFn, res)
+		})
+
+		t.Run("error in one block + missing block", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				v = /path
+				return match v {
+					/ => !"s"
+					/...
+				}
+			`, nil)
+
+			unaryExpr := parse.FindNode(n, (*parse.UnaryExpression)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(unaryExpr, state, fmtOperandOfBoolNegateShouldBeBool(NewString("s"))),
+			}, state.errors())
+			assert.Equal(t, NewMultivalue(ANY_BOOL, Nil), res)
+		})
+	})
+
 	t.Run("regex literal", func(t *testing.T) {
 		n, state := MakeTestStateAndChunk("%`a`")
 

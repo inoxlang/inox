@@ -571,6 +571,8 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		return evalSwitchExpression(n, state)
 	case *parse.MatchStatement:
 		return evalMatchStatement(n, state)
+	case *parse.MatchExpression:
+		return evalMatchExpression(n, state)
 	case *parse.UnaryExpression:
 		return evalUnaryExpression(n, state, options)
 	case *parse.BinaryExpression:
@@ -2763,8 +2765,8 @@ func evalMatchStatement(n *parse.MatchStatement, state *State) (_ Value, finalEr
 				if !ok {
 					state.addError(makeSymbolicEvalError(valNode, state, fmtXisNotAGroupMatchingPattern(pattern)))
 				} else {
-					ok, groups := groupPattern.MatchGroups(discriminant)
-					if ok {
+					_, possible, groups := groupPattern.MatchGroups(discriminant)
+					if possible {
 						groupsObj := NewInexactObject(groups, nil, nil)
 						blockStateFork.setLocal(variable.Name, groupsObj, nil, matchCase.GroupMatchingVariable)
 						state.symbolicData.SetMostSpecificNodeValue(variable, groupsObj)
@@ -2801,6 +2803,116 @@ func evalMatchStatement(n *parse.MatchStatement, state *State) (_ Value, finalEr
 	state.join(forks...)
 
 	return nil, nil
+}
+
+func evalMatchExpression(n *parse.MatchExpression, state *State) (_ Value, finalErr error) {
+	discriminant, err := symbolicEval(n.Discriminant, state)
+	if err != nil {
+		return nil, err
+	}
+
+	var forks []*State
+	var possibleValues []Value
+	var results []Value
+
+	for _, matchCase := range n.Cases {
+		for _, valNode := range matchCase.Values { //TODO: fix handling of multi cases
+			if valNode.Base().Err != nil {
+				continue
+			}
+
+			errCount := len(state.errors())
+
+			val, err := symbolicEval(valNode, state)
+			if err != nil {
+				return nil, err
+			}
+
+			newEvalErr := len(state.errors()) > errCount
+			pattern, ok := val.(Pattern)
+
+			if !ok { //if the value of the case is not a pattern we just check for equality
+				serializable, ok := AsSerializable(val).(Serializable)
+
+				if !ok {
+					if !newEvalErr {
+						state.addError(makeSymbolicEvalError(valNode, state, AN_EXACT_VALUE_USED_AS_MATCH_CASE_SHOULD_BE_SERIALIZABLE))
+					}
+					continue
+				} else {
+					patt, err := NewExactValuePattern(serializable)
+					if err == nil {
+						pattern = patt
+					} else {
+						state.addError(makeSymbolicEvalError(valNode, state, err.Error()))
+						continue
+					}
+				}
+			}
+
+			if matchCase.Result == nil {
+				continue
+			}
+
+			blockStateFork := state.fork()
+			forks = append(forks, blockStateFork)
+			patternMatchingValue := pattern.SymbolicValue()
+			possibleValues = append(possibleValues, patternMatchingValue)
+
+			narrowChain(n.Discriminant, setExactValue, patternMatchingValue, blockStateFork, 0)
+
+			if matchCase.GroupMatchingVariable != nil {
+				variable := matchCase.GroupMatchingVariable.(*parse.IdentifierLiteral)
+				groupPattern, ok := pattern.(GroupPattern)
+
+				if !ok {
+					state.addError(makeSymbolicEvalError(valNode, state, fmtXisNotAGroupMatchingPattern(pattern)))
+				} else {
+					_, possible, groups := groupPattern.MatchGroups(discriminant)
+					if possible {
+						groupsObj := NewInexactObject(groups, nil, nil)
+						blockStateFork.setLocal(variable.Name, groupsObj, nil, matchCase.GroupMatchingVariable)
+						state.symbolicData.SetMostSpecificNodeValue(variable, groupsObj)
+
+						result, err := symbolicEval(matchCase.Result, blockStateFork)
+						if err != nil {
+							return nil, err
+						}
+						results = append(results, result)
+					}
+				}
+			} else {
+				result, err := symbolicEval(matchCase.Result, blockStateFork)
+				if err != nil {
+					return nil, err
+				}
+				results = append(results, result)
+			}
+		}
+	}
+
+	for _, defaultCase := range n.DefaultCases {
+		blockStateFork := state.fork()
+		forks = append(forks, blockStateFork)
+
+		for _, val := range possibleValues {
+			narrowChain(n.Discriminant, removePossibleValue, val, blockStateFork, 0)
+		}
+
+		result, err := symbolicEval(defaultCase.Result, blockStateFork)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, result)
+	}
+
+	if len(n.DefaultCases) == 0 {
+		results = append(results, Nil)
+	}
+
+	state.join(forks...)
+
+	return joinValues(results), nil
 }
 
 func evalUnaryExpression(n *parse.UnaryExpression, state *State, options evalOptions) (_ Value, finalErr error) {

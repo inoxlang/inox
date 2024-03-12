@@ -143,7 +143,7 @@ func (NotCallablePatternMixin) Call(ctx *Context, values []Value) (Pattern, erro
 // A GroupPattern represents a symbolic GroupPattern.
 type GroupPattern interface {
 	Pattern
-	MatchGroups(Value) (ok bool, groups map[string]Serializable)
+	MatchGroups(Value) (yes bool, possible bool, groups map[string]Serializable)
 }
 
 func isAnyPattern(val Value) bool {
@@ -861,9 +861,26 @@ func (p *NamedSegmentPathPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
-func (p *NamedSegmentPathPattern) MatchGroups(v Value) (bool, map[string]Serializable) {
-	//TODO
-	return false, nil
+func (p *NamedSegmentPathPattern) MatchGroups(v Value) (yes, possible bool, groups map[string]Serializable) {
+
+	_, ok := v.(*Path)
+	if !ok {
+		return
+	}
+	possible = true
+	//TODO:
+
+	groups = map[string]Serializable{}
+	if p.node != nil {
+		for _, s := range p.node.Slices {
+			segment, ok := s.(*parse.NamedPathSegment)
+			if ok {
+				groups[segment.Name] = ANY_STRING
+			}
+		}
+	}
+
+	return
 }
 
 func (p *NamedSegmentPathPattern) PropertyNames() []string {
