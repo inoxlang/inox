@@ -278,4 +278,10 @@ var methods = []method{
 		Args:         defines.DocumentDiagnosticParams{},
 		Result:       _any{},
 	},
+	{
+		Name:         "WorkspaceDiagnostic",
+		RegisterName: "workspace/diagnostic",
+		Args:         defines.WorkspaceDiagnosticParams{},
+		Result:       defines.WorkspaceDiagnosticReport{},
+	},
 }

@@ -52,6 +52,7 @@ type Methods struct {
 	onFoldingRanges                            func(ctx context.Context, req *defines.FoldingRangeParams) (*[]defines.FoldingRange, error)
 	onSelectionRanges                          func(ctx context.Context, req *defines.SelectionRangeParams) (*[]defines.SelectionRange, error)
 	onDocumentDiagnostic                       func(ctx context.Context, req *defines.DocumentDiagnosticParams) (any, error)
+	onWorkspaceDiagnostic                      func(ctx context.Context, req *defines.WorkspaceDiagnosticParams) (*defines.WorkspaceDiagnosticReport, error)
 }
 
 func (m *Methods) OnInitialize(f func(ctx context.Context, req *defines.InitializeParams) (result *defines.InitializeResult, err *defines.InitializeError)) {
@@ -1315,6 +1316,36 @@ func (m *Methods) documentDiagnosticMethodInfo() *jsonrpc.MethodInfo {
 	}
 }
 
+func (m *Methods) OnWorkspaceDiagnostic(f func(ctx context.Context, req *defines.WorkspaceDiagnosticParams) (result *defines.WorkspaceDiagnosticReport, err error)) {
+	m.onWorkspaceDiagnostic = f
+}
+
+func (m *Methods) workspaceDiagnostic(ctx context.Context, req interface{}) (interface{}, error) {
+	params := req.(*defines.WorkspaceDiagnosticParams)
+	if m.onWorkspaceDiagnostic != nil {
+		res, err := m.onWorkspaceDiagnostic(ctx, params)
+		e := wrapErrorToRespError(err, 0)
+		return res, e
+	}
+	return nil, nil
+}
+
+func (m *Methods) workspaceDiagnosticMethodInfo() *jsonrpc.MethodInfo {
+
+	if m.onWorkspaceDiagnostic == nil {
+		return nil
+	}
+	return &jsonrpc.MethodInfo{
+		Name: "workspace/diagnostic",
+		NewRequest: func() interface{} {
+			return &defines.WorkspaceDiagnosticParams{}
+		},
+		Handler:       m.workspaceDiagnostic,
+		RateLimits:    []int{},
+		SensitiveData: false,
+	}
+}
+
 func (m *Methods) GetMethods() []*jsonrpc.MethodInfo {
 	return []*jsonrpc.MethodInfo{
 		m.initializeMethodInfo(),
@@ -1359,5 +1390,6 @@ func (m *Methods) GetMethods() []*jsonrpc.MethodInfo {
 		m.foldingRangesMethodInfo(),
 		m.selectionRangesMethodInfo(),
 		m.documentDiagnosticMethodInfo(),
+		m.workspaceDiagnosticMethodInfo(),
 	}
 }
