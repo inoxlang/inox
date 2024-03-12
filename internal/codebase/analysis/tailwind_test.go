@@ -51,8 +51,8 @@ func TestAnalyzeTailwind(t *testing.T) {
 		flexRowRule := utils.MustGet(tailwind.GetBaseRuleset(".flex-row"))
 
 		expectedResult.UsedTailwindRules = map[string]tailwind.Ruleset{
-			flexColRule.BaseName: flexColRule,
-			flexRowRule.BaseName: flexRowRule,
+			"flex-col": flexColRule,
+			"flex-row": flexRowRule,
 		}
 	}
 

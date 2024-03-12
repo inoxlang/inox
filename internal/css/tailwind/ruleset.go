@@ -15,7 +15,7 @@ var (
 type Ruleset struct {
 	BaseName             string   //e.g. .h-0, .h-0\.5, .h-1\/2 (no breakpoint or media query ...)
 	UserFriendlyBaseName string   //e.g. .h-0, .h-0.5, .h-1/2
-	NameWithModifiers    string   //e.g. sm\:h-0
+	NameWithModifiers    string   //e.g. sm\:h-0 (no leading point)
 	Ruleset              css.Node //Ruleset (not an at-rule)
 	Modifier0            string
 	//TODO: support multiple modifiers (at least 2)

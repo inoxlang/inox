@@ -16,7 +16,7 @@ type Result struct {
 	UsedHyperscriptCommands map[string]hsgen.Definition
 	UsedHyperscriptFeatures map[string]hsgen.Definition
 
-	UsedTailwindRules    map[string]tailwind.Ruleset
+	UsedTailwindRules    map[ /* name with modifiers */ string]tailwind.Ruleset
 	CssVariables         map[css.VarName]varclasses.Variable
 	UsedVarBasedCssRules map[css.VarName]varclasses.Variable
 
