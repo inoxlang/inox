@@ -1,6 +1,5 @@
 # HTMX
 
-
 This package embeds the source code for [HTMX](https://github.com/bigskysoftware/htmx), several HTMX extensions
 and [Morphdom](https://github.com/patrick-steele-idem/morphdom).
 

@@ -102,6 +102,16 @@ _From more relevant to less relevant._
 [sourcecontrol](./sourcecontrol/README.md)
 - Git API subset with virtual filesystem support
 
+[htmx](./htmx/README.md)
+- htmx.js
+- HTMX extensions
+- Data on headers (e.g. `HX-Target`)
+
+[hyperscript](./hyperscript/README.md)
+- hyperscript.js subset generation
+- AST Node types and parsers
+- Help data
+
 [codecompletion](./codecompletion/README.md)
 - Code completion
 
