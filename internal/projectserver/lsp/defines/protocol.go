@@ -75,6 +75,8 @@ type ServerCapabilities_ struct {
 	// The server provides document formatting on typing.
 	DocumentOnTypeFormattingProvider *DocumentOnTypeFormattingOptions `json:"documentOnTypeFormattingProvider,omitempty"`
 
+	DocumentDiagnosticProvider interface{} `json:"diagnosticProvider,omitempty"` //DiagnosticOptions, DiagnosticRegistrationOptions
+
 	// The server provides rename support. RenameOptions may only be
 	// specified if the client states that it supports
 	// `prepareSupport` in its initial `initialize` request.
@@ -523,7 +525,32 @@ type TextDocumentRegistrationOptions struct {
 
 	// A document selector to identify the scope of the registration. If set to null
 	// the document selector provided on the client side will be used.
-	DocumentSelector interface{} `json:"documentSelector,omitempty"` // DocumentSelector, null,
+	DocumentSelector interface{} `json:"documentSelector,omitempty"` // DocumentSelector ([]DocumentFilter), null,
+}
+
+type DocumentFilter struct {
+	//A language id, like `typescript`.
+	Language string `json:"language,omitempty"`
+
+	//A Uri [scheme](#Uri.scheme), like `file` or `untitled`.
+	Scheme string `json:"scheme,omitempty"`
+
+	/**
+	 * A glob pattern, like `*.{ts,js}`.
+	 *
+	 * Glob patterns can have the following syntax:
+	 * - `*` to match one or more characters in a path segment
+	 * - `?` to match on one character in a path segment
+	 * - `**` to match any number of path segments, including none
+	 * - `{}` to group sub patterns into an OR expression. (e.g. `**​/*.{ts,js}`
+	 *   matches all TypeScript and JavaScript files)
+	 * - `[]` to declare a range of characters to match in a path segment
+	 *   (e.g., `example.[0-9]` to match on `example.0`, `example.1`, …)
+	 * - `[!...]` to negate a range of characters to match in a path segment
+	 *   (e.g., `example.[!0-9]` to match on `example.a`, `example.b`, but
+	 *   not `example.0`)
+	 */
+	Pattern string `json:"pattern,omitempty"`
 }
 
 /**

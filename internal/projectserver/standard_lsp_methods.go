@@ -71,6 +71,10 @@ func registerStandardMethodHandlers(server *lsp.Server, serverConfig LSPServerCo
 
 	server.OnDefinition(handleDefinition)
 
+	//Diagnostics
+
+	//server.OnDocumentDiagnostic(handleDocumentDiagnostic)
+
 	//Document synchronization
 
 	server.OnDidOpenTextDocument(handleDidOpenDocument)
@@ -137,33 +141,53 @@ func handleInitialize(ctx context.Context, req *defines.InitializeParams, projec
 	session := jsonrpc.GetSession(ctx)
 	s := &defines.InitializeResult{}
 
-	s.Capabilities.HoverProvider = true
-	s.Capabilities.SignatureHelpProvider = &defines.SignatureHelpOptions{
+	var capabilities defines.ServerCapabilities
+
+	capabilities.HoverProvider = true
+
+	capabilities.SignatureHelpProvider = &defines.SignatureHelpOptions{
 		TriggerCharacters:   &[]string{"(", ","},
 		RetriggerCharacters: &[]string{","},
 	}
-	s.Capabilities.WorkspaceSymbolProvider = true
-	s.Capabilities.DefinitionProvider = true
-	s.Capabilities.CodeActionProvider = &defines.CodeActionOptions{
-		CodeActionKinds: &[]defines.CodeActionKind{defines.CodeActionKindQuickFix},
-	}
-	s.Capabilities.DocumentFormattingProvider = true
-
-	if *req.Capabilities.TextDocument.Synchronization.DidSave && *req.Capabilities.TextDocument.Synchronization.DynamicRegistration {
-		s.Capabilities.TextDocumentSync = defines.TextDocumentSyncKindIncremental
-	} else {
-		s.Capabilities.TextDocumentSync = defines.TextDocumentSyncKindFull
-	}
-
-	s.Capabilities.CompletionProvider = &defines.CompletionOptions{
+	capabilities.CompletionProvider = &defines.CompletionOptions{
 		TriggerCharacters: &[]string{".", ":", "{", "-", "/"},
 	}
+
+	capabilities.WorkspaceSymbolProvider = true
+	capabilities.DefinitionProvider = true
+	capabilities.CodeActionProvider = &defines.CodeActionOptions{
+		CodeActionKinds: &[]defines.CodeActionKind{defines.CodeActionKindQuickFix},
+	}
+	capabilities.DocumentFormattingProvider = true
+
+	if *req.Capabilities.TextDocument.Synchronization.DidSave && *req.Capabilities.TextDocument.Synchronization.DynamicRegistration {
+		capabilities.TextDocumentSync = defines.TextDocumentSyncKindIncremental
+	} else {
+		capabilities.TextDocumentSync = defines.TextDocumentSyncKindFull
+	}
+
+	// capabilities.DocumentDiagnosticProvider = &defines.DiagnosticRegistrationOptions{
+	// 	DiagnosticOptions: defines.DiagnosticOptions{
+	// 		InterFileDependencies: true,
+	// 	},
+	// 	// TextDocumentRegistrationOptions: defines.TextDocumentRegistrationOptions{
+	// 	// 	DocumentSelector: []defines.DocumentFilter{
+	// 	// 		{
+	// 	// 			Language: "inox",
+	// 	// 			Scheme:   "inox",
+	// 	// 			Pattern:  "**/*.ix'",
+	// 	// 		},
+	// 	// 	},
+	// 	// },
+	// }
+
+	s.Capabilities = capabilities
 
 	//create session data
 	{
 		sessionData := getLockedSessionData(session)
 		sessionData.clientCapabilities = req.Capabilities
-		sessionData.serverCapabilities = s.Capabilities
+		sessionData.serverCapabilities = capabilities
 		sessionData.projectMode = projectMode
 		sessionData.lock.Unlock()
 	}
@@ -471,6 +495,37 @@ func handleDefinition(ctx context.Context, req *defines.DefinitionParams) (resul
 		},
 	}
 	return &links, nil
+}
+
+func handleDocumentDiagnostic(ctx context.Context, req *defines.DocumentDiagnosticParams) (any, error) {
+	session := jsonrpc.GetSession(ctx)
+	sessionCtx := session.Context()
+
+	sessionData := getLockedSessionData(session)
+	projectMode := sessionData.projectMode
+	fls := sessionData.filesystem
+	memberAuthToken := sessionData.memberAuthToken
+	sessionData.lock.Unlock()
+
+	if fls == nil {
+		return nil, errors.New(string(FsNoFilesystem))
+	}
+
+	fpath, err := getFilePath(req.TextDocument.Uri, projectMode)
+	if err != nil {
+		return nil, err
+	}
+
+	unchanged := defines.UnchangedDocumentDiagnosticReport{
+		Kind:     defines.DocumentDiagnosticReportKindUnChanged,
+		ResultId: "0",
+	}
+
+	_ = sessionCtx
+	_ = memberAuthToken
+	_ = fpath
+
+	return unchanged, nil
 }
 
 func handleFormatDocument(ctx context.Context, req *defines.DocumentFormattingParams) (result *[]defines.TextEdit, err error) {

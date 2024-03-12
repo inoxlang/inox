@@ -177,5 +177,5 @@ const (
 	 * A report indicating that the last
 	 * returned report is still accurate.
 	 */
-	DocumentDiagnosticReportKindUnChanged DocumentDiagnosticReportKind = "unChanged"
+	DocumentDiagnosticReportKindUnChanged DocumentDiagnosticReportKind = "unchanged"
 )

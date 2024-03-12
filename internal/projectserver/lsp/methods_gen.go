@@ -1,63 +1,62 @@
 // code gen by methods_gen_test.go, do not edit!
 package lsp
 
-	import (
-		"context"
-	
-		"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
-		"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
-	)
-	
-type Methods struct {
-    Opt Config
-	onInitialize func(ctx context.Context, req *defines.InitializeParams) (*defines.InitializeResult, *defines.InitializeError)
-	onInitialized func(ctx context.Context, req *defines.InitializeParams) error
-	onShutdown func(ctx context.Context, req *defines.NoParams) error
-	onExit func(ctx context.Context, req *defines.NoParams) error
-	onDidChangeConfiguration func(ctx context.Context, req *defines.DidChangeConfigurationParams) error
-	onDidChangeWatchedFiles func(ctx context.Context, req *defines.DidChangeWatchedFilesParams) error
-	onDidOpenTextDocument func(ctx context.Context, req *defines.DidOpenTextDocumentParams) error
-	onDidChangeTextDocument func(ctx context.Context, req *defines.DidChangeTextDocumentParams) error
-	onDidCloseTextDocument func(ctx context.Context, req *defines.DidCloseTextDocumentParams) error
-	onWillSaveTextDocument func(ctx context.Context, req *defines.WillSaveTextDocumentParams) error
-	onDidSaveTextDocument func(ctx context.Context, req *defines.DidSaveTextDocumentParams) error
-	onExecuteCommand func(ctx context.Context, req *defines.ExecuteCommandParams) error
-	onHover func(ctx context.Context, req *defines.HoverParams) (*defines.Hover, error)
-	onCompletion func(ctx context.Context, req *defines.CompletionParams) (*[]defines.CompletionItem, error)
-	onCompletionResolve func(ctx context.Context, req *defines.CompletionItem) (*defines.CompletionItem, error)
-	onSignatureHelp func(ctx context.Context, req *defines.SignatureHelpParams) (*defines.SignatureHelp, error)
-	onDeclaration func(ctx context.Context, req *defines.DeclarationParams) (*[]defines.LocationLink, error)
-	onDefinition func(ctx context.Context, req *defines.DefinitionParams) (*[]defines.LocationLink, error)
-	onTypeDefinition func(ctx context.Context, req *defines.TypeDefinitionParams) (*[]defines.LocationLink, error)
-	onImplementation func(ctx context.Context, req *defines.ImplementationParams) (*[]defines.LocationLink, error)
-	onReferences func(ctx context.Context, req *defines.ReferenceParams) (*[]defines.Location, error)
-	onDocumentHighlight func(ctx context.Context, req *defines.DocumentHighlightParams) (*[]defines.DocumentHighlight, error)
-	onDocumentSymbolWithSliceDocumentSymbol func(ctx context.Context, req *defines.DocumentSymbolParams) (*[]defines.DocumentSymbol, error)
-	onDocumentSymbolWithSliceSymbolInformation func(ctx context.Context, req *defines.DocumentSymbolParams) (*[]defines.SymbolInformation, error)
-	onWorkspaceSymbol func(ctx context.Context, req *defines.WorkspaceSymbolParams) (*[]defines.SymbolInformation, error)
-	onCodeActionWithSliceCommand func(ctx context.Context, req *defines.CodeActionParams) (*[]defines.Command, error)
-	onCodeActionWithSliceCodeAction func(ctx context.Context, req *defines.CodeActionParams) (*[]defines.CodeAction, error)
-	onCodeActionResolve func(ctx context.Context, req *defines.CodeAction) (*defines.CodeAction, error)
-	onCodeLens func(ctx context.Context, req *defines.CodeLensParams) (*[]defines.CodeLens, error)
-	onCodeLensResolve func(ctx context.Context, req *defines.CodeLens) (*defines.CodeLens, error)
-	onDocumentFormatting func(ctx context.Context, req *defines.DocumentFormattingParams) (*[]defines.TextEdit, error)
-	onDocumentRangeFormatting func(ctx context.Context, req *defines.DocumentRangeFormattingParams) (*[]defines.TextEdit, error)
-	onDocumentOnTypeFormatting func(ctx context.Context, req *defines.DocumentOnTypeFormattingParams) (*[]defines.TextEdit, error)
-	onRenameRequest func(ctx context.Context, req *defines.RenameParams) (*defines.WorkspaceEdit, error)
-	onPrepareRename func(ctx context.Context, req *defines.PrepareRenameParams) (*defines.Range, error)
-	onDocumentLinks func(ctx context.Context, req *defines.DocumentLinkParams) (*[]defines.DocumentLink, error)
-	onDocumentLinkResolve func(ctx context.Context, req *defines.DocumentLink) (*defines.DocumentLink, error)
-	onDocumentColor func(ctx context.Context, req *defines.DocumentColorParams) (*[]defines.ColorInformation, error)
-	onColorPresentation func(ctx context.Context, req *defines.ColorPresentationParams) (*[]defines.ColorPresentation, error)
-	onFoldingRanges func(ctx context.Context, req *defines.FoldingRangeParams) (*[]defines.FoldingRange, error)
-	onSelectionRanges func(ctx context.Context, req *defines.SelectionRangeParams) (*[]defines.SelectionRange, error)
-}
+import (
+	"context"
 
+	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
+	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
+)
+
+type Methods struct {
+	Opt                                        Config
+	onInitialize                               func(ctx context.Context, req *defines.InitializeParams) (*defines.InitializeResult, *defines.InitializeError)
+	onInitialized                              func(ctx context.Context, req *defines.InitializeParams) error
+	onShutdown                                 func(ctx context.Context, req *defines.NoParams) error
+	onExit                                     func(ctx context.Context, req *defines.NoParams) error
+	onDidChangeConfiguration                   func(ctx context.Context, req *defines.DidChangeConfigurationParams) error
+	onDidChangeWatchedFiles                    func(ctx context.Context, req *defines.DidChangeWatchedFilesParams) error
+	onDidOpenTextDocument                      func(ctx context.Context, req *defines.DidOpenTextDocumentParams) error
+	onDidChangeTextDocument                    func(ctx context.Context, req *defines.DidChangeTextDocumentParams) error
+	onDidCloseTextDocument                     func(ctx context.Context, req *defines.DidCloseTextDocumentParams) error
+	onWillSaveTextDocument                     func(ctx context.Context, req *defines.WillSaveTextDocumentParams) error
+	onDidSaveTextDocument                      func(ctx context.Context, req *defines.DidSaveTextDocumentParams) error
+	onExecuteCommand                           func(ctx context.Context, req *defines.ExecuteCommandParams) error
+	onHover                                    func(ctx context.Context, req *defines.HoverParams) (*defines.Hover, error)
+	onCompletion                               func(ctx context.Context, req *defines.CompletionParams) (*[]defines.CompletionItem, error)
+	onCompletionResolve                        func(ctx context.Context, req *defines.CompletionItem) (*defines.CompletionItem, error)
+	onSignatureHelp                            func(ctx context.Context, req *defines.SignatureHelpParams) (*defines.SignatureHelp, error)
+	onDeclaration                              func(ctx context.Context, req *defines.DeclarationParams) (*[]defines.LocationLink, error)
+	onDefinition                               func(ctx context.Context, req *defines.DefinitionParams) (*[]defines.LocationLink, error)
+	onTypeDefinition                           func(ctx context.Context, req *defines.TypeDefinitionParams) (*[]defines.LocationLink, error)
+	onImplementation                           func(ctx context.Context, req *defines.ImplementationParams) (*[]defines.LocationLink, error)
+	onReferences                               func(ctx context.Context, req *defines.ReferenceParams) (*[]defines.Location, error)
+	onDocumentHighlight                        func(ctx context.Context, req *defines.DocumentHighlightParams) (*[]defines.DocumentHighlight, error)
+	onDocumentSymbolWithSliceDocumentSymbol    func(ctx context.Context, req *defines.DocumentSymbolParams) (*[]defines.DocumentSymbol, error)
+	onDocumentSymbolWithSliceSymbolInformation func(ctx context.Context, req *defines.DocumentSymbolParams) (*[]defines.SymbolInformation, error)
+	onWorkspaceSymbol                          func(ctx context.Context, req *defines.WorkspaceSymbolParams) (*[]defines.SymbolInformation, error)
+	onCodeActionWithSliceCommand               func(ctx context.Context, req *defines.CodeActionParams) (*[]defines.Command, error)
+	onCodeActionWithSliceCodeAction            func(ctx context.Context, req *defines.CodeActionParams) (*[]defines.CodeAction, error)
+	onCodeActionResolve                        func(ctx context.Context, req *defines.CodeAction) (*defines.CodeAction, error)
+	onCodeLens                                 func(ctx context.Context, req *defines.CodeLensParams) (*[]defines.CodeLens, error)
+	onCodeLensResolve                          func(ctx context.Context, req *defines.CodeLens) (*defines.CodeLens, error)
+	onDocumentFormatting                       func(ctx context.Context, req *defines.DocumentFormattingParams) (*[]defines.TextEdit, error)
+	onDocumentRangeFormatting                  func(ctx context.Context, req *defines.DocumentRangeFormattingParams) (*[]defines.TextEdit, error)
+	onDocumentOnTypeFormatting                 func(ctx context.Context, req *defines.DocumentOnTypeFormattingParams) (*[]defines.TextEdit, error)
+	onRenameRequest                            func(ctx context.Context, req *defines.RenameParams) (*defines.WorkspaceEdit, error)
+	onPrepareRename                            func(ctx context.Context, req *defines.PrepareRenameParams) (*defines.Range, error)
+	onDocumentLinks                            func(ctx context.Context, req *defines.DocumentLinkParams) (*[]defines.DocumentLink, error)
+	onDocumentLinkResolve                      func(ctx context.Context, req *defines.DocumentLink) (*defines.DocumentLink, error)
+	onDocumentColor                            func(ctx context.Context, req *defines.DocumentColorParams) (*[]defines.ColorInformation, error)
+	onColorPresentation                        func(ctx context.Context, req *defines.ColorPresentationParams) (*[]defines.ColorPresentation, error)
+	onFoldingRanges                            func(ctx context.Context, req *defines.FoldingRangeParams) (*[]defines.FoldingRange, error)
+	onSelectionRanges                          func(ctx context.Context, req *defines.SelectionRangeParams) (*[]defines.SelectionRange, error)
+	onDocumentDiagnostic                       func(ctx context.Context, req *defines.DocumentDiagnosticParams) (any, error)
+}
 
 func (m *Methods) OnInitialize(f func(ctx context.Context, req *defines.InitializeParams) (result *defines.InitializeResult, err *defines.InitializeError)) {
 	m.onInitialize = f
 }
-
 
 func (m *Methods) initialize(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.InitializeParams)
@@ -73,25 +72,22 @@ func (m *Methods) initialize(ctx context.Context, req interface{}) (interface{},
 
 }
 
-
 func (m *Methods) initializeMethodInfo() *jsonrpc.MethodInfo {
-	
-    return &jsonrpc.MethodInfo{
+
+	return &jsonrpc.MethodInfo{
 		Name: "initialize",
 		NewRequest: func() interface{} {
 			return &defines.InitializeParams{}
 		},
-		Handler: m.initialize,
-		RateLimits: []int{},
+		Handler:       m.initialize,
+		RateLimits:    []int{},
 		SensitiveData: false,
 	}
 }
 
-
 func (m *Methods) OnInitialized(f func(ctx context.Context, req *defines.InitializeParams) (err error)) {
 	m.onInitialized = f
 }
-
 
 func (m *Methods) initialized(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.InitializeParams)
@@ -100,31 +96,28 @@ func (m *Methods) initialized(ctx context.Context, req interface{}) (interface{}
 		e := wrapErrorToRespError(err, 0)
 		return nil, e
 	}
-    return nil, nil
+	return nil, nil
 }
-
 
 func (m *Methods) initializedMethodInfo() *jsonrpc.MethodInfo {
 
-    if m.onInitialized == nil{
+	if m.onInitialized == nil {
 		return nil
-	}	
-    return &jsonrpc.MethodInfo{
+	}
+	return &jsonrpc.MethodInfo{
 		Name: "initialized",
 		NewRequest: func() interface{} {
 			return &defines.InitializeParams{}
 		},
-		Handler: m.initialized,
-		RateLimits: []int{},
+		Handler:       m.initialized,
+		RateLimits:    []int{},
 		SensitiveData: false,
 	}
 }
 
-
 func (m *Methods) OnShutdown(f func(ctx context.Context, req *defines.NoParams) (err error)) {
 	m.onShutdown = f
 }
-
 
 func (m *Methods) shutdown(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.NoParams)
@@ -133,31 +126,28 @@ func (m *Methods) shutdown(ctx context.Context, req interface{}) (interface{}, e
 		e := wrapErrorToRespError(err, 0)
 		return nil, e
 	}
-    return nil, nil
+	return nil, nil
 }
-
 
 func (m *Methods) shutdownMethodInfo() *jsonrpc.MethodInfo {
 
-    if m.onShutdown == nil{
+	if m.onShutdown == nil {
 		return nil
-	}	
-    return &jsonrpc.MethodInfo{
+	}
+	return &jsonrpc.MethodInfo{
 		Name: "shutdown",
 		NewRequest: func() interface{} {
 			return &defines.NoParams{}
 		},
-		Handler: m.shutdown,
-		RateLimits: []int{},
+		Handler:       m.shutdown,
+		RateLimits:    []int{},
 		SensitiveData: false,
 	}
 }
 
-
 func (m *Methods) OnExit(f func(ctx context.Context, req *defines.NoParams) (err error)) {
 	m.onExit = f
 }
-
 
 func (m *Methods) exit(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.NoParams)
@@ -166,31 +156,28 @@ func (m *Methods) exit(ctx context.Context, req interface{}) (interface{}, error
 		e := wrapErrorToRespError(err, 0)
 		return nil, e
 	}
-    return nil, nil
+	return nil, nil
 }
-
 
 func (m *Methods) exitMethodInfo() *jsonrpc.MethodInfo {
 
-    if m.onExit == nil{
+	if m.onExit == nil {
 		return nil
-	}	
-    return &jsonrpc.MethodInfo{
+	}
+	return &jsonrpc.MethodInfo{
 		Name: "exit",
 		NewRequest: func() interface{} {
 			return &defines.NoParams{}
 		},
-		Handler: m.exit,
-		RateLimits: []int{},
+		Handler:       m.exit,
+		RateLimits:    []int{},
 		SensitiveData: false,
 	}
 }
 
-
 func (m *Methods) OnDidChangeConfiguration(f func(ctx context.Context, req *defines.DidChangeConfigurationParams) (err error)) {
 	m.onDidChangeConfiguration = f
 }
-
 
 func (m *Methods) didChangeConfiguration(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.DidChangeConfigurationParams)
@@ -199,31 +186,28 @@ func (m *Methods) didChangeConfiguration(ctx context.Context, req interface{}) (
 		e := wrapErrorToRespError(err, 0)
 		return nil, e
 	}
-    return nil, nil
+	return nil, nil
 }
-
 
 func (m *Methods) didChangeConfigurationMethodInfo() *jsonrpc.MethodInfo {
 
-    if m.onDidChangeConfiguration == nil{
+	if m.onDidChangeConfiguration == nil {
 		return nil
-	}	
-    return &jsonrpc.MethodInfo{
+	}
+	return &jsonrpc.MethodInfo{
 		Name: "workspace/didChangeConfiguration",
 		NewRequest: func() interface{} {
 			return &defines.DidChangeConfigurationParams{}
 		},
-		Handler: m.didChangeConfiguration,
-		RateLimits: []int{},
+		Handler:       m.didChangeConfiguration,
+		RateLimits:    []int{},
 		SensitiveData: true,
 	}
 }
 
-
 func (m *Methods) OnDidChangeWatchedFiles(f func(ctx context.Context, req *defines.DidChangeWatchedFilesParams) (err error)) {
 	m.onDidChangeWatchedFiles = f
 }
-
 
 func (m *Methods) didChangeWatchedFiles(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.DidChangeWatchedFilesParams)
@@ -232,31 +216,28 @@ func (m *Methods) didChangeWatchedFiles(ctx context.Context, req interface{}) (i
 		e := wrapErrorToRespError(err, 0)
 		return nil, e
 	}
-    return nil, nil
+	return nil, nil
 }
-
 
 func (m *Methods) didChangeWatchedFilesMethodInfo() *jsonrpc.MethodInfo {
 
-    if m.onDidChangeWatchedFiles == nil{
+	if m.onDidChangeWatchedFiles == nil {
 		return nil
-	}	
-    return &jsonrpc.MethodInfo{
+	}
+	return &jsonrpc.MethodInfo{
 		Name: "workspace/didChangeWatchedFiles",
 		NewRequest: func() interface{} {
 			return &defines.DidChangeWatchedFilesParams{}
 		},
-		Handler: m.didChangeWatchedFiles,
-		RateLimits: []int{},
+		Handler:       m.didChangeWatchedFiles,
+		RateLimits:    []int{},
 		SensitiveData: false,
 	}
 }
 
-
 func (m *Methods) OnDidOpenTextDocument(f func(ctx context.Context, req *defines.DidOpenTextDocumentParams) (err error)) {
 	m.onDidOpenTextDocument = f
 }
-
 
 func (m *Methods) didOpenTextDocument(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.DidOpenTextDocumentParams)
@@ -265,31 +246,28 @@ func (m *Methods) didOpenTextDocument(ctx context.Context, req interface{}) (int
 		e := wrapErrorToRespError(err, 0)
 		return nil, e
 	}
-    return nil, nil
+	return nil, nil
 }
-
 
 func (m *Methods) didOpenTextDocumentMethodInfo() *jsonrpc.MethodInfo {
 
-    if m.onDidOpenTextDocument == nil{
+	if m.onDidOpenTextDocument == nil {
 		return nil
-	}	
-    return &jsonrpc.MethodInfo{
+	}
+	return &jsonrpc.MethodInfo{
 		Name: "textDocument/didOpen",
 		NewRequest: func() interface{} {
 			return &defines.DidOpenTextDocumentParams{}
 		},
-		Handler: m.didOpenTextDocument,
-		RateLimits: []int{},
+		Handler:       m.didOpenTextDocument,
+		RateLimits:    []int{},
 		SensitiveData: false,
 	}
 }
 
-
 func (m *Methods) OnDidChangeTextDocument(f func(ctx context.Context, req *defines.DidChangeTextDocumentParams) (err error)) {
 	m.onDidChangeTextDocument = f
 }
-
 
 func (m *Methods) didChangeTextDocument(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.DidChangeTextDocumentParams)
@@ -298,31 +276,28 @@ func (m *Methods) didChangeTextDocument(ctx context.Context, req interface{}) (i
 		e := wrapErrorToRespError(err, 0)
 		return nil, e
 	}
-    return nil, nil
+	return nil, nil
 }
-
 
 func (m *Methods) didChangeTextDocumentMethodInfo() *jsonrpc.MethodInfo {
 
-    if m.onDidChangeTextDocument == nil{
+	if m.onDidChangeTextDocument == nil {
 		return nil
-	}	
-    return &jsonrpc.MethodInfo{
+	}
+	return &jsonrpc.MethodInfo{
 		Name: "textDocument/didChange",
 		NewRequest: func() interface{} {
 			return &defines.DidChangeTextDocumentParams{}
 		},
-		Handler: m.didChangeTextDocument,
-		RateLimits: []int{20, 60, 300},
+		Handler:       m.didChangeTextDocument,
+		RateLimits:    []int{20, 60, 300},
 		SensitiveData: false,
 	}
 }
 
-
 func (m *Methods) OnDidCloseTextDocument(f func(ctx context.Context, req *defines.DidCloseTextDocumentParams) (err error)) {
 	m.onDidCloseTextDocument = f
 }
-
 
 func (m *Methods) didCloseTextDocument(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.DidCloseTextDocumentParams)
@@ -331,31 +306,28 @@ func (m *Methods) didCloseTextDocument(ctx context.Context, req interface{}) (in
 		e := wrapErrorToRespError(err, 0)
 		return nil, e
 	}
-    return nil, nil
+	return nil, nil
 }
-
 
 func (m *Methods) didCloseTextDocumentMethodInfo() *jsonrpc.MethodInfo {
 
-    if m.onDidCloseTextDocument == nil{
+	if m.onDidCloseTextDocument == nil {
 		return nil
-	}	
-    return &jsonrpc.MethodInfo{
+	}
+	return &jsonrpc.MethodInfo{
 		Name: "textDocument/didClose",
 		NewRequest: func() interface{} {
 			return &defines.DidCloseTextDocumentParams{}
 		},
-		Handler: m.didCloseTextDocument,
-		RateLimits: []int{},
+		Handler:       m.didCloseTextDocument,
+		RateLimits:    []int{},
 		SensitiveData: false,
 	}
 }
 
-
 func (m *Methods) OnWillSaveTextDocument(f func(ctx context.Context, req *defines.WillSaveTextDocumentParams) (err error)) {
 	m.onWillSaveTextDocument = f
 }
-
 
 func (m *Methods) willSaveTextDocument(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.WillSaveTextDocumentParams)
@@ -364,31 +336,28 @@ func (m *Methods) willSaveTextDocument(ctx context.Context, req interface{}) (in
 		e := wrapErrorToRespError(err, 0)
 		return nil, e
 	}
-    return nil, nil
+	return nil, nil
 }
-
 
 func (m *Methods) willSaveTextDocumentMethodInfo() *jsonrpc.MethodInfo {
 
-    if m.onWillSaveTextDocument == nil{
+	if m.onWillSaveTextDocument == nil {
 		return nil
-	}	
-    return &jsonrpc.MethodInfo{
+	}
+	return &jsonrpc.MethodInfo{
 		Name: "textDocument/willSave",
 		NewRequest: func() interface{} {
 			return &defines.WillSaveTextDocumentParams{}
 		},
-		Handler: m.willSaveTextDocument,
-		RateLimits: []int{},
+		Handler:       m.willSaveTextDocument,
+		RateLimits:    []int{},
 		SensitiveData: false,
 	}
 }
 
-
 func (m *Methods) OnDidSaveTextDocument(f func(ctx context.Context, req *defines.DidSaveTextDocumentParams) (err error)) {
 	m.onDidSaveTextDocument = f
 }
-
 
 func (m *Methods) didSaveTextDocument(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.DidSaveTextDocumentParams)
@@ -397,31 +366,28 @@ func (m *Methods) didSaveTextDocument(ctx context.Context, req interface{}) (int
 		e := wrapErrorToRespError(err, 0)
 		return nil, e
 	}
-    return nil, nil
+	return nil, nil
 }
-
 
 func (m *Methods) didSaveTextDocumentMethodInfo() *jsonrpc.MethodInfo {
 
-    if m.onDidSaveTextDocument == nil{
+	if m.onDidSaveTextDocument == nil {
 		return nil
-	}	
-    return &jsonrpc.MethodInfo{
+	}
+	return &jsonrpc.MethodInfo{
 		Name: "textDocument/didSave",
 		NewRequest: func() interface{} {
 			return &defines.DidSaveTextDocumentParams{}
 		},
-		Handler: m.didSaveTextDocument,
-		RateLimits: []int{},
+		Handler:       m.didSaveTextDocument,
+		RateLimits:    []int{},
 		SensitiveData: true,
 	}
 }
 
-
 func (m *Methods) OnExecuteCommand(f func(ctx context.Context, req *defines.ExecuteCommandParams) (err error)) {
 	m.onExecuteCommand = f
 }
-
 
 func (m *Methods) executeCommand(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.ExecuteCommandParams)
@@ -430,31 +396,28 @@ func (m *Methods) executeCommand(ctx context.Context, req interface{}) (interfac
 		e := wrapErrorToRespError(err, 0)
 		return nil, e
 	}
-    return nil, nil
+	return nil, nil
 }
-
 
 func (m *Methods) executeCommandMethodInfo() *jsonrpc.MethodInfo {
 
-    if m.onExecuteCommand == nil{
+	if m.onExecuteCommand == nil {
 		return nil
-	}	
-    return &jsonrpc.MethodInfo{
+	}
+	return &jsonrpc.MethodInfo{
 		Name: "executeCommand",
 		NewRequest: func() interface{} {
 			return &defines.ExecuteCommandParams{}
 		},
-		Handler: m.executeCommand,
-		RateLimits: []int{},
+		Handler:       m.executeCommand,
+		RateLimits:    []int{},
 		SensitiveData: false,
 	}
 }
 
-
 func (m *Methods) OnHover(f func(ctx context.Context, req *defines.HoverParams) (result *defines.Hover, err error)) {
 	m.onHover = f
 }
-
 
 func (m *Methods) hover(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.HoverParams)
@@ -463,31 +426,28 @@ func (m *Methods) hover(ctx context.Context, req interface{}) (interface{}, erro
 		e := wrapErrorToRespError(err, 0)
 		return res, e
 	}
-    return nil, nil
+	return nil, nil
 }
-
 
 func (m *Methods) hoverMethodInfo() *jsonrpc.MethodInfo {
 
-    if m.onHover == nil{
+	if m.onHover == nil {
 		return nil
-	}	
-    return &jsonrpc.MethodInfo{
+	}
+	return &jsonrpc.MethodInfo{
 		Name: "textDocument/hover",
 		NewRequest: func() interface{} {
 			return &defines.HoverParams{}
 		},
-		Handler: m.hover,
-		RateLimits: []int{},
+		Handler:       m.hover,
+		RateLimits:    []int{},
 		SensitiveData: false,
 	}
 }
 
-
 func (m *Methods) OnCompletion(f func(ctx context.Context, req *defines.CompletionParams) (result *[]defines.CompletionItem, err error)) {
 	m.onCompletion = f
 }
-
 
 func (m *Methods) completion(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.CompletionParams)
@@ -496,31 +456,28 @@ func (m *Methods) completion(ctx context.Context, req interface{}) (interface{},
 		e := wrapErrorToRespError(err, 0)
 		return res, e
 	}
-    return nil, nil
+	return nil, nil
 }
-
 
 func (m *Methods) completionMethodInfo() *jsonrpc.MethodInfo {
 
-    if m.onCompletion == nil{
+	if m.onCompletion == nil {
 		return nil
-	}	
-    return &jsonrpc.MethodInfo{
+	}
+	return &jsonrpc.MethodInfo{
 		Name: "textDocument/completion",
 		NewRequest: func() interface{} {
 			return &defines.CompletionParams{}
 		},
-		Handler: m.completion,
-		RateLimits: []int{10, 35, 100},
+		Handler:       m.completion,
+		RateLimits:    []int{10, 35, 100},
 		SensitiveData: false,
 	}
 }
 
-
 func (m *Methods) OnCompletionResolve(f func(ctx context.Context, req *defines.CompletionItem) (result *defines.CompletionItem, err error)) {
 	m.onCompletionResolve = f
 }
-
 
 func (m *Methods) completionResolve(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.CompletionItem)
@@ -529,31 +486,28 @@ func (m *Methods) completionResolve(ctx context.Context, req interface{}) (inter
 		e := wrapErrorToRespError(err, 0)
 		return res, e
 	}
-    return nil, nil
+	return nil, nil
 }
-
 
 func (m *Methods) completionResolveMethodInfo() *jsonrpc.MethodInfo {
 
-    if m.onCompletionResolve == nil{
+	if m.onCompletionResolve == nil {
 		return nil
-	}	
-    return &jsonrpc.MethodInfo{
+	}
+	return &jsonrpc.MethodInfo{
 		Name: "completionItem/resolve",
 		NewRequest: func() interface{} {
 			return &defines.CompletionItem{}
 		},
-		Handler: m.completionResolve,
-		RateLimits: []int{},
+		Handler:       m.completionResolve,
+		RateLimits:    []int{},
 		SensitiveData: false,
 	}
 }
 
-
 func (m *Methods) OnSignatureHelp(f func(ctx context.Context, req *defines.SignatureHelpParams) (result *defines.SignatureHelp, err error)) {
 	m.onSignatureHelp = f
 }
-
 
 func (m *Methods) signatureHelp(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.SignatureHelpParams)
@@ -562,31 +516,28 @@ func (m *Methods) signatureHelp(ctx context.Context, req interface{}) (interface
 		e := wrapErrorToRespError(err, 0)
 		return res, e
 	}
-    return nil, nil
+	return nil, nil
 }
-
 
 func (m *Methods) signatureHelpMethodInfo() *jsonrpc.MethodInfo {
 
-    if m.onSignatureHelp == nil{
+	if m.onSignatureHelp == nil {
 		return nil
-	}	
-    return &jsonrpc.MethodInfo{
+	}
+	return &jsonrpc.MethodInfo{
 		Name: "textDocument/signatureHelp",
 		NewRequest: func() interface{} {
 			return &defines.SignatureHelpParams{}
 		},
-		Handler: m.signatureHelp,
-		RateLimits: []int{},
+		Handler:       m.signatureHelp,
+		RateLimits:    []int{},
 		SensitiveData: false,
 	}
 }
 
-
 func (m *Methods) OnDeclaration(f func(ctx context.Context, req *defines.DeclarationParams) (result *[]defines.LocationLink, err error)) {
 	m.onDeclaration = f
 }
-
 
 func (m *Methods) declaration(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.DeclarationParams)
@@ -595,31 +546,28 @@ func (m *Methods) declaration(ctx context.Context, req interface{}) (interface{}
 		e := wrapErrorToRespError(err, 0)
 		return res, e
 	}
-    return nil, nil
+	return nil, nil
 }
-
 
 func (m *Methods) declarationMethodInfo() *jsonrpc.MethodInfo {
 
-    if m.onDeclaration == nil{
+	if m.onDeclaration == nil {
 		return nil
-	}	
-    return &jsonrpc.MethodInfo{
+	}
+	return &jsonrpc.MethodInfo{
 		Name: "textDocument/declaration",
 		NewRequest: func() interface{} {
 			return &defines.DeclarationParams{}
 		},
-		Handler: m.declaration,
-		RateLimits: []int{},
+		Handler:       m.declaration,
+		RateLimits:    []int{},
 		SensitiveData: false,
 	}
 }
 
-
 func (m *Methods) OnDefinition(f func(ctx context.Context, req *defines.DefinitionParams) (result *[]defines.LocationLink, err error)) {
 	m.onDefinition = f
 }
-
 
 func (m *Methods) definition(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.DefinitionParams)
@@ -628,31 +576,28 @@ func (m *Methods) definition(ctx context.Context, req interface{}) (interface{},
 		e := wrapErrorToRespError(err, 0)
 		return res, e
 	}
-    return nil, nil
+	return nil, nil
 }
-
 
 func (m *Methods) definitionMethodInfo() *jsonrpc.MethodInfo {
 
-    if m.onDefinition == nil{
+	if m.onDefinition == nil {
 		return nil
-	}	
-    return &jsonrpc.MethodInfo{
+	}
+	return &jsonrpc.MethodInfo{
 		Name: "textDocument/definition",
 		NewRequest: func() interface{} {
 			return &defines.DefinitionParams{}
 		},
-		Handler: m.definition,
-		RateLimits: []int{},
+		Handler:       m.definition,
+		RateLimits:    []int{},
 		SensitiveData: false,
 	}
 }
 
-
 func (m *Methods) OnTypeDefinition(f func(ctx context.Context, req *defines.TypeDefinitionParams) (result *[]defines.LocationLink, err error)) {
 	m.onTypeDefinition = f
 }
-
 
 func (m *Methods) typeDefinition(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.TypeDefinitionParams)
@@ -661,31 +606,28 @@ func (m *Methods) typeDefinition(ctx context.Context, req interface{}) (interfac
 		e := wrapErrorToRespError(err, 0)
 		return res, e
 	}
-    return nil, nil
+	return nil, nil
 }
-
 
 func (m *Methods) typeDefinitionMethodInfo() *jsonrpc.MethodInfo {
 
-    if m.onTypeDefinition == nil{
+	if m.onTypeDefinition == nil {
 		return nil
-	}	
-    return &jsonrpc.MethodInfo{
+	}
+	return &jsonrpc.MethodInfo{
 		Name: "textDocument/typeDefinition",
 		NewRequest: func() interface{} {
 			return &defines.TypeDefinitionParams{}
 		},
-		Handler: m.typeDefinition,
-		RateLimits: []int{},
+		Handler:       m.typeDefinition,
+		RateLimits:    []int{},
 		SensitiveData: false,
 	}
 }
 
-
 func (m *Methods) OnImplementation(f func(ctx context.Context, req *defines.ImplementationParams) (result *[]defines.LocationLink, err error)) {
 	m.onImplementation = f
 }
-
 
 func (m *Methods) implementation(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.ImplementationParams)
@@ -694,31 +636,28 @@ func (m *Methods) implementation(ctx context.Context, req interface{}) (interfac
 		e := wrapErrorToRespError(err, 0)
 		return res, e
 	}
-    return nil, nil
+	return nil, nil
 }
-
 
 func (m *Methods) implementationMethodInfo() *jsonrpc.MethodInfo {
 
-    if m.onImplementation == nil{
+	if m.onImplementation == nil {
 		return nil
-	}	
-    return &jsonrpc.MethodInfo{
+	}
+	return &jsonrpc.MethodInfo{
 		Name: "textDocument/implementation",
 		NewRequest: func() interface{} {
 			return &defines.ImplementationParams{}
 		},
-		Handler: m.implementation,
-		RateLimits: []int{},
+		Handler:       m.implementation,
+		RateLimits:    []int{},
 		SensitiveData: false,
 	}
 }
 
-
 func (m *Methods) OnReferences(f func(ctx context.Context, req *defines.ReferenceParams) (result *[]defines.Location, err error)) {
 	m.onReferences = f
 }
-
 
 func (m *Methods) references(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.ReferenceParams)
@@ -727,31 +666,28 @@ func (m *Methods) references(ctx context.Context, req interface{}) (interface{},
 		e := wrapErrorToRespError(err, 0)
 		return res, e
 	}
-    return nil, nil
+	return nil, nil
 }
-
 
 func (m *Methods) referencesMethodInfo() *jsonrpc.MethodInfo {
 
-    if m.onReferences == nil{
+	if m.onReferences == nil {
 		return nil
-	}	
-    return &jsonrpc.MethodInfo{
+	}
+	return &jsonrpc.MethodInfo{
 		Name: "textDocument/references",
 		NewRequest: func() interface{} {
 			return &defines.ReferenceParams{}
 		},
-		Handler: m.references,
-		RateLimits: []int{},
+		Handler:       m.references,
+		RateLimits:    []int{},
 		SensitiveData: false,
 	}
 }
 
-
 func (m *Methods) OnDocumentHighlight(f func(ctx context.Context, req *defines.DocumentHighlightParams) (result *[]defines.DocumentHighlight, err error)) {
 	m.onDocumentHighlight = f
 }
-
 
 func (m *Methods) documentHighlight(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.DocumentHighlightParams)
@@ -760,31 +696,28 @@ func (m *Methods) documentHighlight(ctx context.Context, req interface{}) (inter
 		e := wrapErrorToRespError(err, 0)
 		return res, e
 	}
-    return nil, nil
+	return nil, nil
 }
-
 
 func (m *Methods) documentHighlightMethodInfo() *jsonrpc.MethodInfo {
 
-    if m.onDocumentHighlight == nil{
+	if m.onDocumentHighlight == nil {
 		return nil
-	}	
-    return &jsonrpc.MethodInfo{
+	}
+	return &jsonrpc.MethodInfo{
 		Name: "textDocument/documentHighlight",
 		NewRequest: func() interface{} {
 			return &defines.DocumentHighlightParams{}
 		},
-		Handler: m.documentHighlight,
-		RateLimits: []int{},
+		Handler:       m.documentHighlight,
+		RateLimits:    []int{},
 		SensitiveData: false,
 	}
 }
 
-
 func (m *Methods) OnDocumentSymbolWithSliceDocumentSymbol(f func(ctx context.Context, req *defines.DocumentSymbolParams) (result *[]defines.DocumentSymbol, err error)) {
 	m.onDocumentSymbolWithSliceDocumentSymbol = f
 }
-
 
 func (m *Methods) documentSymbolWithSliceDocumentSymbol(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.DocumentSymbolParams)
@@ -793,31 +726,28 @@ func (m *Methods) documentSymbolWithSliceDocumentSymbol(ctx context.Context, req
 		e := wrapErrorToRespError(err, 0)
 		return res, e
 	}
-    return nil, nil
+	return nil, nil
 }
-
 
 func (m *Methods) documentSymbolWithSliceDocumentSymbolMethodInfo() *jsonrpc.MethodInfo {
 
-    if m.onDocumentSymbolWithSliceDocumentSymbol == nil{
+	if m.onDocumentSymbolWithSliceDocumentSymbol == nil {
 		return nil
-	}	
-    return &jsonrpc.MethodInfo{
+	}
+	return &jsonrpc.MethodInfo{
 		Name: "textDocument/documentSymbol",
 		NewRequest: func() interface{} {
 			return &defines.DocumentSymbolParams{}
 		},
-		Handler: m.documentSymbolWithSliceDocumentSymbol,
-		RateLimits: []int{},
+		Handler:       m.documentSymbolWithSliceDocumentSymbol,
+		RateLimits:    []int{},
 		SensitiveData: false,
 	}
 }
 
-
 func (m *Methods) OnDocumentSymbolWithSliceSymbolInformation(f func(ctx context.Context, req *defines.DocumentSymbolParams) (result *[]defines.SymbolInformation, err error)) {
 	m.onDocumentSymbolWithSliceSymbolInformation = f
 }
-
 
 func (m *Methods) documentSymbolWithSliceSymbolInformation(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.DocumentSymbolParams)
@@ -826,31 +756,28 @@ func (m *Methods) documentSymbolWithSliceSymbolInformation(ctx context.Context, 
 		e := wrapErrorToRespError(err, 0)
 		return res, e
 	}
-    return nil, nil
+	return nil, nil
 }
-
 
 func (m *Methods) documentSymbolWithSliceSymbolInformationMethodInfo() *jsonrpc.MethodInfo {
 
-    if m.onDocumentSymbolWithSliceSymbolInformation == nil{
+	if m.onDocumentSymbolWithSliceSymbolInformation == nil {
 		return nil
-	}	
-    return &jsonrpc.MethodInfo{
+	}
+	return &jsonrpc.MethodInfo{
 		Name: "textDocument/documentSymbol",
 		NewRequest: func() interface{} {
 			return &defines.DocumentSymbolParams{}
 		},
-		Handler: m.documentSymbolWithSliceSymbolInformation,
-		RateLimits: []int{},
+		Handler:       m.documentSymbolWithSliceSymbolInformation,
+		RateLimits:    []int{},
 		SensitiveData: false,
 	}
 }
 
-
 func (m *Methods) OnWorkspaceSymbol(f func(ctx context.Context, req *defines.WorkspaceSymbolParams) (result *[]defines.SymbolInformation, err error)) {
 	m.onWorkspaceSymbol = f
 }
-
 
 func (m *Methods) workspaceSymbol(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.WorkspaceSymbolParams)
@@ -859,31 +786,28 @@ func (m *Methods) workspaceSymbol(ctx context.Context, req interface{}) (interfa
 		e := wrapErrorToRespError(err, 0)
 		return res, e
 	}
-    return nil, nil
+	return nil, nil
 }
-
 
 func (m *Methods) workspaceSymbolMethodInfo() *jsonrpc.MethodInfo {
 
-    if m.onWorkspaceSymbol == nil{
+	if m.onWorkspaceSymbol == nil {
 		return nil
-	}	
-    return &jsonrpc.MethodInfo{
+	}
+	return &jsonrpc.MethodInfo{
 		Name: "workspace/symbol",
 		NewRequest: func() interface{} {
 			return &defines.WorkspaceSymbolParams{}
 		},
-		Handler: m.workspaceSymbol,
-		RateLimits: []int{},
+		Handler:       m.workspaceSymbol,
+		RateLimits:    []int{},
 		SensitiveData: false,
 	}
 }
 
-
 func (m *Methods) OnCodeActionWithSliceCommand(f func(ctx context.Context, req *defines.CodeActionParams) (result *[]defines.Command, err error)) {
 	m.onCodeActionWithSliceCommand = f
 }
-
 
 func (m *Methods) codeActionWithSliceCommand(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.CodeActionParams)
@@ -892,31 +816,28 @@ func (m *Methods) codeActionWithSliceCommand(ctx context.Context, req interface{
 		e := wrapErrorToRespError(err, 0)
 		return res, e
 	}
-    return nil, nil
+	return nil, nil
 }
-
 
 func (m *Methods) codeActionWithSliceCommandMethodInfo() *jsonrpc.MethodInfo {
 
-    if m.onCodeActionWithSliceCommand == nil{
+	if m.onCodeActionWithSliceCommand == nil {
 		return nil
-	}	
-    return &jsonrpc.MethodInfo{
+	}
+	return &jsonrpc.MethodInfo{
 		Name: "textDocument/codeAction",
 		NewRequest: func() interface{} {
 			return &defines.CodeActionParams{}
 		},
-		Handler: m.codeActionWithSliceCommand,
-		RateLimits: []int{},
+		Handler:       m.codeActionWithSliceCommand,
+		RateLimits:    []int{},
 		SensitiveData: false,
 	}
 }
 
-
 func (m *Methods) OnCodeActionWithSliceCodeAction(f func(ctx context.Context, req *defines.CodeActionParams) (result *[]defines.CodeAction, err error)) {
 	m.onCodeActionWithSliceCodeAction = f
 }
-
 
 func (m *Methods) codeActionWithSliceCodeAction(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.CodeActionParams)
@@ -925,31 +846,28 @@ func (m *Methods) codeActionWithSliceCodeAction(ctx context.Context, req interfa
 		e := wrapErrorToRespError(err, 0)
 		return res, e
 	}
-    return nil, nil
+	return nil, nil
 }
-
 
 func (m *Methods) codeActionWithSliceCodeActionMethodInfo() *jsonrpc.MethodInfo {
 
-    if m.onCodeActionWithSliceCodeAction == nil{
+	if m.onCodeActionWithSliceCodeAction == nil {
 		return nil
-	}	
-    return &jsonrpc.MethodInfo{
+	}
+	return &jsonrpc.MethodInfo{
 		Name: "textDocument/codeAction",
 		NewRequest: func() interface{} {
 			return &defines.CodeActionParams{}
 		},
-		Handler: m.codeActionWithSliceCodeAction,
-		RateLimits: []int{},
+		Handler:       m.codeActionWithSliceCodeAction,
+		RateLimits:    []int{},
 		SensitiveData: false,
 	}
 }
 
-
 func (m *Methods) OnCodeActionResolve(f func(ctx context.Context, req *defines.CodeAction) (result *defines.CodeAction, err error)) {
 	m.onCodeActionResolve = f
 }
-
 
 func (m *Methods) codeActionResolve(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.CodeAction)
@@ -958,31 +876,28 @@ func (m *Methods) codeActionResolve(ctx context.Context, req interface{}) (inter
 		e := wrapErrorToRespError(err, 0)
 		return res, e
 	}
-    return nil, nil
+	return nil, nil
 }
-
 
 func (m *Methods) codeActionResolveMethodInfo() *jsonrpc.MethodInfo {
 
-    if m.onCodeActionResolve == nil{
+	if m.onCodeActionResolve == nil {
 		return nil
-	}	
-    return &jsonrpc.MethodInfo{
+	}
+	return &jsonrpc.MethodInfo{
 		Name: "codeAction/resolve",
 		NewRequest: func() interface{} {
 			return &defines.CodeAction{}
 		},
-		Handler: m.codeActionResolve,
-		RateLimits: []int{},
+		Handler:       m.codeActionResolve,
+		RateLimits:    []int{},
 		SensitiveData: false,
 	}
 }
 
-
 func (m *Methods) OnCodeLens(f func(ctx context.Context, req *defines.CodeLensParams) (result *[]defines.CodeLens, err error)) {
 	m.onCodeLens = f
 }
-
 
 func (m *Methods) codeLens(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.CodeLensParams)
@@ -991,31 +906,28 @@ func (m *Methods) codeLens(ctx context.Context, req interface{}) (interface{}, e
 		e := wrapErrorToRespError(err, 0)
 		return res, e
 	}
-    return nil, nil
+	return nil, nil
 }
-
 
 func (m *Methods) codeLensMethodInfo() *jsonrpc.MethodInfo {
 
-    if m.onCodeLens == nil{
+	if m.onCodeLens == nil {
 		return nil
-	}	
-    return &jsonrpc.MethodInfo{
+	}
+	return &jsonrpc.MethodInfo{
 		Name: "textDocument/codeLens",
 		NewRequest: func() interface{} {
 			return &defines.CodeLensParams{}
 		},
-		Handler: m.codeLens,
-		RateLimits: []int{},
+		Handler:       m.codeLens,
+		RateLimits:    []int{},
 		SensitiveData: false,
 	}
 }
 
-
 func (m *Methods) OnCodeLensResolve(f func(ctx context.Context, req *defines.CodeLens) (result *defines.CodeLens, err error)) {
 	m.onCodeLensResolve = f
 }
-
 
 func (m *Methods) codeLensResolve(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.CodeLens)
@@ -1024,31 +936,28 @@ func (m *Methods) codeLensResolve(ctx context.Context, req interface{}) (interfa
 		e := wrapErrorToRespError(err, 0)
 		return res, e
 	}
-    return nil, nil
+	return nil, nil
 }
-
 
 func (m *Methods) codeLensResolveMethodInfo() *jsonrpc.MethodInfo {
 
-    if m.onCodeLensResolve == nil{
+	if m.onCodeLensResolve == nil {
 		return nil
-	}	
-    return &jsonrpc.MethodInfo{
+	}
+	return &jsonrpc.MethodInfo{
 		Name: "codeLens/resolve",
 		NewRequest: func() interface{} {
 			return &defines.CodeLens{}
 		},
-		Handler: m.codeLensResolve,
-		RateLimits: []int{},
+		Handler:       m.codeLensResolve,
+		RateLimits:    []int{},
 		SensitiveData: false,
 	}
 }
 
-
 func (m *Methods) OnDocumentFormatting(f func(ctx context.Context, req *defines.DocumentFormattingParams) (result *[]defines.TextEdit, err error)) {
 	m.onDocumentFormatting = f
 }
-
 
 func (m *Methods) documentFormatting(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.DocumentFormattingParams)
@@ -1057,31 +966,28 @@ func (m *Methods) documentFormatting(ctx context.Context, req interface{}) (inte
 		e := wrapErrorToRespError(err, 0)
 		return res, e
 	}
-    return nil, nil
+	return nil, nil
 }
-
 
 func (m *Methods) documentFormattingMethodInfo() *jsonrpc.MethodInfo {
 
-    if m.onDocumentFormatting == nil{
+	if m.onDocumentFormatting == nil {
 		return nil
-	}	
-    return &jsonrpc.MethodInfo{
+	}
+	return &jsonrpc.MethodInfo{
 		Name: "textDocument/formatting",
 		NewRequest: func() interface{} {
 			return &defines.DocumentFormattingParams{}
 		},
-		Handler: m.documentFormatting,
-		RateLimits: []int{},
+		Handler:       m.documentFormatting,
+		RateLimits:    []int{},
 		SensitiveData: true,
 	}
 }
 
-
 func (m *Methods) OnDocumentRangeFormatting(f func(ctx context.Context, req *defines.DocumentRangeFormattingParams) (result *[]defines.TextEdit, err error)) {
 	m.onDocumentRangeFormatting = f
 }
-
 
 func (m *Methods) documentRangeFormatting(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.DocumentRangeFormattingParams)
@@ -1090,31 +996,28 @@ func (m *Methods) documentRangeFormatting(ctx context.Context, req interface{}) 
 		e := wrapErrorToRespError(err, 0)
 		return res, e
 	}
-    return nil, nil
+	return nil, nil
 }
-
 
 func (m *Methods) documentRangeFormattingMethodInfo() *jsonrpc.MethodInfo {
 
-    if m.onDocumentRangeFormatting == nil{
+	if m.onDocumentRangeFormatting == nil {
 		return nil
-	}	
-    return &jsonrpc.MethodInfo{
+	}
+	return &jsonrpc.MethodInfo{
 		Name: "textDocument/rangeFormatting",
 		NewRequest: func() interface{} {
 			return &defines.DocumentRangeFormattingParams{}
 		},
-		Handler: m.documentRangeFormatting,
-		RateLimits: []int{},
+		Handler:       m.documentRangeFormatting,
+		RateLimits:    []int{},
 		SensitiveData: true,
 	}
 }
 
-
 func (m *Methods) OnDocumentOnTypeFormatting(f func(ctx context.Context, req *defines.DocumentOnTypeFormattingParams) (result *[]defines.TextEdit, err error)) {
 	m.onDocumentOnTypeFormatting = f
 }
-
 
 func (m *Methods) documentOnTypeFormatting(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.DocumentOnTypeFormattingParams)
@@ -1123,31 +1026,28 @@ func (m *Methods) documentOnTypeFormatting(ctx context.Context, req interface{})
 		e := wrapErrorToRespError(err, 0)
 		return res, e
 	}
-    return nil, nil
+	return nil, nil
 }
-
 
 func (m *Methods) documentOnTypeFormattingMethodInfo() *jsonrpc.MethodInfo {
 
-    if m.onDocumentOnTypeFormatting == nil{
+	if m.onDocumentOnTypeFormatting == nil {
 		return nil
-	}	
-    return &jsonrpc.MethodInfo{
+	}
+	return &jsonrpc.MethodInfo{
 		Name: "textDocument/onTypeFormatting",
 		NewRequest: func() interface{} {
 			return &defines.DocumentOnTypeFormattingParams{}
 		},
-		Handler: m.documentOnTypeFormatting,
-		RateLimits: []int{},
+		Handler:       m.documentOnTypeFormatting,
+		RateLimits:    []int{},
 		SensitiveData: true,
 	}
 }
 
-
 func (m *Methods) OnRenameRequest(f func(ctx context.Context, req *defines.RenameParams) (result *defines.WorkspaceEdit, err error)) {
 	m.onRenameRequest = f
 }
-
 
 func (m *Methods) renameRequest(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.RenameParams)
@@ -1156,31 +1056,28 @@ func (m *Methods) renameRequest(ctx context.Context, req interface{}) (interface
 		e := wrapErrorToRespError(err, 0)
 		return res, e
 	}
-    return nil, nil
+	return nil, nil
 }
-
 
 func (m *Methods) renameRequestMethodInfo() *jsonrpc.MethodInfo {
 
-    if m.onRenameRequest == nil{
+	if m.onRenameRequest == nil {
 		return nil
-	}	
-    return &jsonrpc.MethodInfo{
+	}
+	return &jsonrpc.MethodInfo{
 		Name: "textDocument/rename",
 		NewRequest: func() interface{} {
 			return &defines.RenameParams{}
 		},
-		Handler: m.renameRequest,
-		RateLimits: []int{},
+		Handler:       m.renameRequest,
+		RateLimits:    []int{},
 		SensitiveData: true,
 	}
 }
 
-
 func (m *Methods) OnPrepareRename(f func(ctx context.Context, req *defines.PrepareRenameParams) (result *defines.Range, err error)) {
 	m.onPrepareRename = f
 }
-
 
 func (m *Methods) prepareRename(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.PrepareRenameParams)
@@ -1189,31 +1086,28 @@ func (m *Methods) prepareRename(ctx context.Context, req interface{}) (interface
 		e := wrapErrorToRespError(err, 0)
 		return res, e
 	}
-    return nil, nil
+	return nil, nil
 }
-
 
 func (m *Methods) prepareRenameMethodInfo() *jsonrpc.MethodInfo {
 
-    if m.onPrepareRename == nil{
+	if m.onPrepareRename == nil {
 		return nil
-	}	
-    return &jsonrpc.MethodInfo{
+	}
+	return &jsonrpc.MethodInfo{
 		Name: "textDocument/rename",
 		NewRequest: func() interface{} {
 			return &defines.PrepareRenameParams{}
 		},
-		Handler: m.prepareRename,
-		RateLimits: []int{},
+		Handler:       m.prepareRename,
+		RateLimits:    []int{},
 		SensitiveData: true,
 	}
 }
 
-
 func (m *Methods) OnDocumentLinks(f func(ctx context.Context, req *defines.DocumentLinkParams) (result *[]defines.DocumentLink, err error)) {
 	m.onDocumentLinks = f
 }
-
 
 func (m *Methods) documentLinks(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.DocumentLinkParams)
@@ -1222,31 +1116,28 @@ func (m *Methods) documentLinks(ctx context.Context, req interface{}) (interface
 		e := wrapErrorToRespError(err, 0)
 		return res, e
 	}
-    return nil, nil
+	return nil, nil
 }
-
 
 func (m *Methods) documentLinksMethodInfo() *jsonrpc.MethodInfo {
 
-    if m.onDocumentLinks == nil{
+	if m.onDocumentLinks == nil {
 		return nil
-	}	
-    return &jsonrpc.MethodInfo{
+	}
+	return &jsonrpc.MethodInfo{
 		Name: "textDocument/documentLink",
 		NewRequest: func() interface{} {
 			return &defines.DocumentLinkParams{}
 		},
-		Handler: m.documentLinks,
-		RateLimits: []int{},
+		Handler:       m.documentLinks,
+		RateLimits:    []int{},
 		SensitiveData: false,
 	}
 }
 
-
 func (m *Methods) OnDocumentLinkResolve(f func(ctx context.Context, req *defines.DocumentLink) (result *defines.DocumentLink, err error)) {
 	m.onDocumentLinkResolve = f
 }
-
 
 func (m *Methods) documentLinkResolve(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.DocumentLink)
@@ -1255,31 +1146,28 @@ func (m *Methods) documentLinkResolve(ctx context.Context, req interface{}) (int
 		e := wrapErrorToRespError(err, 0)
 		return res, e
 	}
-    return nil, nil
+	return nil, nil
 }
-
 
 func (m *Methods) documentLinkResolveMethodInfo() *jsonrpc.MethodInfo {
 
-    if m.onDocumentLinkResolve == nil{
+	if m.onDocumentLinkResolve == nil {
 		return nil
-	}	
-    return &jsonrpc.MethodInfo{
+	}
+	return &jsonrpc.MethodInfo{
 		Name: "documentLink/resolve",
 		NewRequest: func() interface{} {
 			return &defines.DocumentLink{}
 		},
-		Handler: m.documentLinkResolve,
-		RateLimits: []int{},
+		Handler:       m.documentLinkResolve,
+		RateLimits:    []int{},
 		SensitiveData: false,
 	}
 }
 
-
 func (m *Methods) OnDocumentColor(f func(ctx context.Context, req *defines.DocumentColorParams) (result *[]defines.ColorInformation, err error)) {
 	m.onDocumentColor = f
 }
-
 
 func (m *Methods) documentColor(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.DocumentColorParams)
@@ -1288,31 +1176,28 @@ func (m *Methods) documentColor(ctx context.Context, req interface{}) (interface
 		e := wrapErrorToRespError(err, 0)
 		return res, e
 	}
-    return nil, nil
+	return nil, nil
 }
-
 
 func (m *Methods) documentColorMethodInfo() *jsonrpc.MethodInfo {
 
-    if m.onDocumentColor == nil{
+	if m.onDocumentColor == nil {
 		return nil
-	}	
-    return &jsonrpc.MethodInfo{
+	}
+	return &jsonrpc.MethodInfo{
 		Name: "textDocument/documentColor",
 		NewRequest: func() interface{} {
 			return &defines.DocumentColorParams{}
 		},
-		Handler: m.documentColor,
-		RateLimits: []int{},
+		Handler:       m.documentColor,
+		RateLimits:    []int{},
 		SensitiveData: false,
 	}
 }
 
-
 func (m *Methods) OnColorPresentation(f func(ctx context.Context, req *defines.ColorPresentationParams) (result *[]defines.ColorPresentation, err error)) {
 	m.onColorPresentation = f
 }
-
 
 func (m *Methods) colorPresentation(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.ColorPresentationParams)
@@ -1321,31 +1206,28 @@ func (m *Methods) colorPresentation(ctx context.Context, req interface{}) (inter
 		e := wrapErrorToRespError(err, 0)
 		return res, e
 	}
-    return nil, nil
+	return nil, nil
 }
-
 
 func (m *Methods) colorPresentationMethodInfo() *jsonrpc.MethodInfo {
 
-    if m.onColorPresentation == nil{
+	if m.onColorPresentation == nil {
 		return nil
-	}	
-    return &jsonrpc.MethodInfo{
+	}
+	return &jsonrpc.MethodInfo{
 		Name: "textDocument/colorPresentation",
 		NewRequest: func() interface{} {
 			return &defines.ColorPresentationParams{}
 		},
-		Handler: m.colorPresentation,
-		RateLimits: []int{},
+		Handler:       m.colorPresentation,
+		RateLimits:    []int{},
 		SensitiveData: false,
 	}
 }
 
-
 func (m *Methods) OnFoldingRanges(f func(ctx context.Context, req *defines.FoldingRangeParams) (result *[]defines.FoldingRange, err error)) {
 	m.onFoldingRanges = f
 }
-
 
 func (m *Methods) foldingRanges(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.FoldingRangeParams)
@@ -1354,31 +1236,28 @@ func (m *Methods) foldingRanges(ctx context.Context, req interface{}) (interface
 		e := wrapErrorToRespError(err, 0)
 		return res, e
 	}
-    return nil, nil
+	return nil, nil
 }
-
 
 func (m *Methods) foldingRangesMethodInfo() *jsonrpc.MethodInfo {
 
-    if m.onFoldingRanges == nil{
+	if m.onFoldingRanges == nil {
 		return nil
-	}	
-    return &jsonrpc.MethodInfo{
+	}
+	return &jsonrpc.MethodInfo{
 		Name: "textDocument/foldingRange",
 		NewRequest: func() interface{} {
 			return &defines.FoldingRangeParams{}
 		},
-		Handler: m.foldingRanges,
-		RateLimits: []int{},
+		Handler:       m.foldingRanges,
+		RateLimits:    []int{},
 		SensitiveData: false,
 	}
 }
 
-
 func (m *Methods) OnSelectionRanges(f func(ctx context.Context, req *defines.SelectionRangeParams) (result *[]defines.SelectionRange, err error)) {
 	m.onSelectionRanges = f
 }
-
 
 func (m *Methods) selectionRanges(ctx context.Context, req interface{}) (interface{}, error) {
 	params := req.(*defines.SelectionRangeParams)
@@ -1387,69 +1266,99 @@ func (m *Methods) selectionRanges(ctx context.Context, req interface{}) (interfa
 		e := wrapErrorToRespError(err, 0)
 		return res, e
 	}
-    return nil, nil
+	return nil, nil
 }
-
 
 func (m *Methods) selectionRangesMethodInfo() *jsonrpc.MethodInfo {
 
-    if m.onSelectionRanges == nil{
+	if m.onSelectionRanges == nil {
 		return nil
-	}	
-    return &jsonrpc.MethodInfo{
+	}
+	return &jsonrpc.MethodInfo{
 		Name: "textDocument/selectionRange",
 		NewRequest: func() interface{} {
 			return &defines.SelectionRangeParams{}
 		},
-		Handler: m.selectionRanges,
-		RateLimits: []int{},
+		Handler:       m.selectionRanges,
+		RateLimits:    []int{},
 		SensitiveData: false,
 	}
 }
 
+func (m *Methods) OnDocumentDiagnostic(f func(ctx context.Context, req *defines.DocumentDiagnosticParams) (any, error)) {
+	m.onDocumentDiagnostic = f
+}
+
+func (m *Methods) documentDiagnostic(ctx context.Context, req interface{}) (interface{}, error) {
+	params := req.(*defines.DocumentDiagnosticParams)
+	if m.onDocumentDiagnostic != nil {
+		res, err := m.onDocumentDiagnostic(ctx, params)
+		e := wrapErrorToRespError(err, 0)
+		return res, e
+	}
+	return nil, nil
+}
+
+func (m *Methods) documentDiagnosticMethodInfo() *jsonrpc.MethodInfo {
+
+	if m.onDocumentDiagnostic == nil {
+		return nil
+	}
+
+	return &jsonrpc.MethodInfo{
+		Name: "textDocument/diagnostic",
+		NewRequest: func() interface{} {
+			return &defines.DocumentDiagnosticParams{}
+		},
+		Handler:       m.documentDiagnostic,
+		RateLimits:    []int{},
+		SensitiveData: false,
+	}
+}
 
 func (m *Methods) GetMethods() []*jsonrpc.MethodInfo {
 	return []*jsonrpc.MethodInfo{
-	    m.initializeMethodInfo(),
-	    m.initializedMethodInfo(),
-	    m.shutdownMethodInfo(),
-	    m.exitMethodInfo(),
-	    m.didChangeConfigurationMethodInfo(),
-	    m.didChangeWatchedFilesMethodInfo(),
-	    m.didOpenTextDocumentMethodInfo(),
-	    m.didChangeTextDocumentMethodInfo(),
-	    m.didCloseTextDocumentMethodInfo(),
-	    m.willSaveTextDocumentMethodInfo(),
-	    m.didSaveTextDocumentMethodInfo(),
-	    m.executeCommandMethodInfo(),
-	    m.hoverMethodInfo(),
-	    m.completionMethodInfo(),
-	    m.completionResolveMethodInfo(),
-	    m.signatureHelpMethodInfo(),
-	    m.declarationMethodInfo(),
-	    m.definitionMethodInfo(),
-	    m.typeDefinitionMethodInfo(),
-	    m.implementationMethodInfo(),
-	    m.referencesMethodInfo(),
-	    m.documentHighlightMethodInfo(),
-	    m.documentSymbolWithSliceDocumentSymbolMethodInfo(),
-	    m.documentSymbolWithSliceSymbolInformationMethodInfo(),
-	    m.workspaceSymbolMethodInfo(),
-	    m.codeActionWithSliceCommandMethodInfo(),
-	    m.codeActionWithSliceCodeActionMethodInfo(),
-	    m.codeActionResolveMethodInfo(),
-	    m.codeLensMethodInfo(),
-	    m.codeLensResolveMethodInfo(),
-	    m.documentFormattingMethodInfo(),
-	    m.documentRangeFormattingMethodInfo(),
-	    m.documentOnTypeFormattingMethodInfo(),
-	    m.renameRequestMethodInfo(),
-	    m.prepareRenameMethodInfo(),
-	    m.documentLinksMethodInfo(),
-	    m.documentLinkResolveMethodInfo(),
-	    m.documentColorMethodInfo(),
-	    m.colorPresentationMethodInfo(),
-	    m.foldingRangesMethodInfo(),
-	    m.selectionRangesMethodInfo(),
+		m.initializeMethodInfo(),
+		m.initializedMethodInfo(),
+		m.shutdownMethodInfo(),
+		m.exitMethodInfo(),
+		m.didChangeConfigurationMethodInfo(),
+		m.didChangeWatchedFilesMethodInfo(),
+		m.didOpenTextDocumentMethodInfo(),
+		m.didChangeTextDocumentMethodInfo(),
+		m.didCloseTextDocumentMethodInfo(),
+		m.willSaveTextDocumentMethodInfo(),
+		m.didSaveTextDocumentMethodInfo(),
+		m.executeCommandMethodInfo(),
+		m.hoverMethodInfo(),
+		m.completionMethodInfo(),
+		m.completionResolveMethodInfo(),
+		m.signatureHelpMethodInfo(),
+		m.declarationMethodInfo(),
+		m.definitionMethodInfo(),
+		m.typeDefinitionMethodInfo(),
+		m.implementationMethodInfo(),
+		m.referencesMethodInfo(),
+		m.documentHighlightMethodInfo(),
+		m.documentSymbolWithSliceDocumentSymbolMethodInfo(),
+		m.documentSymbolWithSliceSymbolInformationMethodInfo(),
+		m.workspaceSymbolMethodInfo(),
+		m.codeActionWithSliceCommandMethodInfo(),
+		m.codeActionWithSliceCodeActionMethodInfo(),
+		m.codeActionResolveMethodInfo(),
+		m.codeLensMethodInfo(),
+		m.codeLensResolveMethodInfo(),
+		m.documentFormattingMethodInfo(),
+		m.documentRangeFormattingMethodInfo(),
+		m.documentOnTypeFormattingMethodInfo(),
+		m.renameRequestMethodInfo(),
+		m.prepareRenameMethodInfo(),
+		m.documentLinksMethodInfo(),
+		m.documentLinkResolveMethodInfo(),
+		m.documentColorMethodInfo(),
+		m.colorPresentationMethodInfo(),
+		m.foldingRangesMethodInfo(),
+		m.selectionRangesMethodInfo(),
+		m.documentDiagnosticMethodInfo(),
 	}
 }
