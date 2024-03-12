@@ -881,6 +881,55 @@ func (c *compiler) Compile(node parse.Node) error {
 		for _, jump := range jumpAfterStmtPositions {
 			c.changeOperand(jump, curPos)
 		}
+	case *parse.SwitchExpression:
+
+		if len(node.Cases) == 0 {
+			return nil
+		}
+
+		if err := c.Compile(node.Discriminant); err != nil {
+			return err
+		}
+
+		//  jump placeholders
+		var jumpAfterSwitchPositions []int
+
+		for i, case_ := range node.Cases {
+			for j, valueNode := range case_.Values {
+				if i != len(node.Cases)-1 || j != len(case_.Values)-1 {
+					c.emit(node, OpCopyTop)
+				}
+
+				if err := c.Compile(valueNode); err != nil {
+					return err
+				}
+
+				c.emit(node, OpEqual)
+
+				// placeholder for jumping to next case
+				jumpPos := c.emit(node, OpJumpIfFalse, 0)
+
+				if err := c.Compile(case_.Result); err != nil {
+					return err
+				}
+
+				jumpAfterSwitchPositions = append(jumpAfterSwitchPositions, c.emit(node, OpJump, 0))
+
+				curPos := len(c.currentInstructions())
+				c.changeOperand(jumpPos, curPos)
+			}
+		}
+
+		if len(node.DefaultCases) > 0 {
+			if err := c.Compile(node.DefaultCases[0].Result); err != nil {
+				return err
+			}
+		}
+
+		curPos := len(c.currentInstructions())
+		for _, jump := range jumpAfterSwitchPositions {
+			c.changeOperand(jump, curPos)
+		}
 	case *parse.MatchStatement:
 
 		if len(node.Cases) == 0 {
@@ -931,6 +980,65 @@ func (c *compiler) Compile(node parse.Node) error {
 
 		if len(node.DefaultCases) > 0 {
 			if err := c.Compile(node.DefaultCases[0].Block); err != nil {
+				return err
+			}
+		}
+
+		afterStmtPos := len(c.currentInstructions())
+		for _, jump := range jumpAfterStmtPositions {
+			c.changeOperand(jump, afterStmtPos)
+		}
+
+	case *parse.MatchExpression:
+
+		if len(node.Cases) == 0 {
+			return nil
+		}
+
+		if err := c.Compile(node.Discriminant); err != nil {
+			return err
+		}
+
+		//  jump placeholders
+		var jumpAfterStmtPositions []int
+
+		for i, case_ := range node.Cases {
+			for j, valueNode := range case_.Values {
+				if i != len(node.Cases)-1 || j != len(case_.Values)-1 {
+					c.emit(node, OpCopyTop)
+				}
+
+				if err := c.Compile(valueNode); err != nil {
+					return err
+				}
+
+				if case_.GroupMatchingVariable != nil {
+					variable := case_.GroupMatchingVariable.(*parse.IdentifierLiteral)
+					s, exists := c.currentLocalSymbols().Resolve(variable.Name)
+					if !exists {
+						s = c.currentLocalSymbols().Define(variable.Name)
+					}
+					c.emit(node, OpGroupMatch, s.Index)
+				} else {
+					c.emit(node, OpMatch)
+				}
+
+				// placeholder for jumping to next case
+				jumpPos := c.emit(node, OpJumpIfFalse, 0)
+
+				if err := c.Compile(case_.Result); err != nil {
+					return err
+				}
+
+				jumpAfterStmtPositions = append(jumpAfterStmtPositions, c.emit(node, OpJump, 0))
+
+				curPos := len(c.currentInstructions())
+				c.changeOperand(jumpPos, curPos)
+			}
+		}
+
+		if len(node.DefaultCases) > 0 {
+			if err := c.Compile(node.DefaultCases[0].Result); err != nil {
 				return err
 			}
 		}

@@ -1911,6 +1911,28 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 	switch_end:
 
 		return Nil, nil
+	case *parse.SwitchExpression:
+		discriminant, err := TreeWalkEval(n.Discriminant, state)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, switchCase := range n.Cases {
+			for _, valNode := range switchCase.Values {
+				val, err := TreeWalkEval(valNode, state)
+				if err != nil {
+					return nil, err
+				}
+				if discriminant == val {
+					return TreeWalkEval(switchCase.Result, state)
+				}
+			}
+		}
+		//if we are here there was no match
+		if len(n.DefaultCases) > 0 {
+			return TreeWalkEval(n.DefaultCases[0].Result, state)
+		}
+		return DEFAULT_SWITCH_MATCH_EXPR_RESULT, nil
 	case *parse.MatchStatement:
 		discriminant, err := TreeWalkEval(n.Discriminant, state)
 		if err != nil {
@@ -1970,6 +1992,52 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 	match_end:
 
 		return Nil, nil
+	case *parse.MatchExpression:
+		discriminant, err := TreeWalkEval(n.Discriminant, state)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, matchCase := range n.Cases {
+
+			for _, valNode := range matchCase.Values {
+				m, err := TreeWalkEval(valNode, state)
+				if err != nil {
+					return nil, err
+				}
+
+				pattern, ok := m.(Pattern)
+
+				if !ok { //if the value of the case is not a pattern we just check for equality
+					pattern = &ExactValuePattern{value: m.(Serializable)}
+				}
+
+				if matchCase.GroupMatchingVariable != nil {
+					variable := matchCase.GroupMatchingVariable.(*parse.IdentifierLiteral)
+
+					groupPattern, _ := pattern.(GroupPattern)
+					groups, ok, err := groupPattern.MatchGroups(state.Global.Ctx, discriminant.(Serializable))
+
+					if err != nil {
+						return nil, fmt.Errorf("match statement: group maching: %w", err)
+					}
+					if ok {
+						state.CurrentLocalScope()[variable.Name] = objFrom(groups)
+						return TreeWalkEval(matchCase.Result, state)
+					}
+
+				} else if pattern.Test(state.Global.Ctx, discriminant) {
+					return TreeWalkEval(matchCase.Result, state)
+				}
+			}
+		}
+
+		//if we are here there was no match
+		if len(n.DefaultCases) > 0 {
+			return TreeWalkEval(n.DefaultCases[0].Result, state)
+		}
+
+		return DEFAULT_SWITCH_MATCH_EXPR_RESULT, nil
 	case *parse.UnaryExpression:
 
 		operand, err := TreeWalkEval(n.Operand, state)

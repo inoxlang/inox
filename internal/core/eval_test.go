@@ -3531,19 +3531,108 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`,
 				result: newList(&ValueList{elements: []Serializable{Int(0), Int(1)}}),
 			},
+		}
+
+		for _, testCase := range testCases {
+			t.Run(testCase.name, func(t *testing.T) {
+				state := NewGlobalState(NewDefaultTestContext())
+				defer state.Ctx.CancelGracefully()
+				res, err := Eval(testCase.input, state, false)
+				assert.NoError(t, err)
+				assert.Equal(t, testCase.result, res)
+			})
+		}
+	})
+
+	t.Run("switch expression", func(t *testing.T) {
+		testconfig.AllowParallelization(t)
+
+		testCases := []struct {
+			name   string
+			input  string
+			result Value
+		}{
+			{
+				name: "single case (that matches)",
+				input: `
+					return switch 0 { 
+						0 => 1
+					}
+				`,
+				result: Int(1),
+			},
+			{
+				name: "single case (that matches) and defaultcase",
+				input: `
+					return switch 0 { 
+						0 => 1
+						defaultcase => 2
+					}
+				`,
+				result: Int(1),
+			},
+			{
+				name: "single case (that does not match) and defaultcase",
+				input: `
+					return switch 0 { 
+						1 => 0
+						defaultcase => 2
+					}
+				`,
+				result: Int(2),
+			},
+			{
+				name: "two cases: first matches",
+				input: `
+					return switch 0 { 
+						0 => 0
+						1 => 1
+					}; 
+				`,
+				result: Int(0),
+			},
+			{
+				name: "two cases and defaultcase: first matches",
+				input: `
+					return switch 0 { 
+						0 => 0
+						1 => 1
+						defaultcase => 2
+					}; 
+				`,
+				result: Int(0),
+			},
 			{
 				name: "two cases and defaultcase: no match",
 				input: `
-				a = 0
-				b = 0 
-				switch 1 { 
-					2 { a = 1 } 
-					3 { b = 1 } 
-					defaultcase { a = 2; b = 2 }
-				}; 
-				return [$a,$b]
+					return switch 2 { 
+						0 => 0
+						1 => 1
+						defaultcase => 2
+					}; 
+				`,
+				result: Int(2),
+			},
+			{
+				name: "two cases: second matches",
+				input: `
+					return switch 1 { 
+						0 => 0
+						1 => 1
+					}; 
 			`,
-				result: newList(&ValueList{elements: []Serializable{Int(2), Int(2)}}),
+				result: Int(1),
+			},
+			{
+				name: "two cases and defaultcase: second matches",
+				input: `
+					return switch 1 { 
+						0 => 0
+						1 => 1
+						defaultcase => 2
+					}; 
+				`,
+				result: Int(1),
 			},
 		}
 
@@ -3630,6 +3719,77 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return [$a,$b]
 				`,
 				result: newList(&ValueList{elements: []Serializable{Int(0), Int(1)}}),
+			},
+		}
+
+		for _, testCase := range testCases {
+			t.Run(testCase.name, func(t *testing.T) {
+				state := NewGlobalState(NewDefaultTestContext())
+				defer state.Ctx.CancelGracefully()
+				res, err := Eval(testCase.input, state, false)
+				assert.NoError(t, err)
+				assert.Equal(t, testCase.result, res)
+			})
+		}
+	})
+
+	t.Run("match expression", func(t *testing.T) {
+		testconfig.AllowParallelization(t)
+
+		testCases := []struct {
+			name   string
+			input  string
+			result Value
+		}{
+			{
+				name: "patterns : two cases (first matches)",
+				input: `
+					return match / { 
+						%/* => 1
+						%/e* => 2
+					}
+				`,
+				result: Int(1),
+			},
+			{
+				name: "group patterns : two cases (first one matches)",
+				input: `
+					return match /home/user { 
+						%/home/{:username} m => m.username
+						%/hom/{:username} => 1
+					}; 
+				`,
+				result: String("user"),
+			},
+			{
+				name: "group patterns : two cases (second one matches)",
+				input: `
+					return match /e { 
+						%/f* => 1
+						%/e* => 2
+					} 
+				`,
+				result: Int(2),
+			},
+			{
+				name: "equality : two cases (second one matches)",
+				input: `
+					return match /e { 
+						%/f* => 1
+						/e => 2
+					}
+				`,
+				result: Int(2),
+			},
+			{
+				name: "seconde case is not a simple value but is statically known",
+				input: `
+					return match {a:1} { 
+						%/f* => 1
+						({a:1}) => 2
+					}; 
+				`,
+				result: Int(2),
 			},
 		}
 
