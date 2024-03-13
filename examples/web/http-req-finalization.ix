@@ -1,17 +1,19 @@
 const (
     DOMAIN = https://localhost:8081
-    URL = https://localhost:8081/
+    URL = @DOMAIN/
 )
 
 manifest {
     permissions: {
-        read: [URL, IWD_PREFIX]
+        read: {
+            URL
+            IWD_PREFIX # allow reading the working dir
+        }
         create: IWD_PREFIX
         provide: DOMAIN
     }
    
 }
-
 
 fn handle(rw http.resp-writer, r http.req){
     print r.headers

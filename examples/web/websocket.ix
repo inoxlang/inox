@@ -1,14 +1,17 @@
 const (
     WS_HOST = wss://localhost:8080
-    WS_URL = wss://localhost:8080/
+    WS_URL = @WS_HOST/
 )
 
 manifest {
     permissions: {
-        read:  WS_URL
+        read: {
+            WS_URL
+            IWD_PREFIX # allow reading the working dir
+        }
         write: WS_URL
         provide: {
-            (WS_HOST)
+            WS_HOST
             https://localhost:8080
         }
     }

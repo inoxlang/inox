@@ -1,17 +1,18 @@
 const (
-    DOMAIN = https://localhost:8081
-    URL = https://localhost:8081/
+    HOST = https://localhost:8081
+    URL = @HOST/
 )
 
 manifest {
     permissions: {
-        read: [URL, IWD_PREFIX]
+        read: {
+            URL
+            IWD_PREFIX # allow reading the working dir
+        }
         create: IWD_PREFIX
-        provide: DOMAIN
+        provide: HOST
     }
-   
 }
-
 
 fn handle(rw http.resp-writer, r http.req){
     match r.path {
@@ -29,11 +30,11 @@ fn handle(rw http.resp-writer, r http.req){
 
 
 client = http.Client{ save-cookies: true, insecure: true }
-server = http.Server!(DOMAIN, handle)
+server = http.Server!(HOST, handle)
 
 resp = http.get!(URL, --insecure, --client=client)
 
 print "cookies in response:" resp.cookies
-print "cookies in client:" client.get_host_cookies(DOMAIN) 
+print "cookies in client:" client.get_host_cookies(HOST) 
 
 server.close()

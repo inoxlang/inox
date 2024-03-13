@@ -4,7 +4,10 @@ const (
 
 manifest {
     permissions: {
-        read: { HOST, %/... }
+        read: { 
+            HOST
+            IWD_PREFIX # allow reading the working dir
+        }
         provide: HOST
     }
 }

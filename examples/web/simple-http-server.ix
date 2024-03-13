@@ -1,12 +1,17 @@
+const (
+    HOST = https://localhost:8080
+    URL = @HOST/
+)
+
 manifest {
     permissions: {
         read: {
-            https://localhost:8080/
+            URL
+            IWD_PREFIX # allow reading the working dir
         }
-        provide: https://localhost:8080
+        provide: HOST
     }
 }
-
 
 fn handle(rw http.resp-writer, r http.req){
     print "access to http from handler:" (http != nil)
@@ -18,9 +23,8 @@ fn handle(rw http.resp-writer, r http.req){
     }
 }
 
-
-server = http.Server!(https://localhost:8080, handle)
-body = http.read!(https://localhost:8080/, --insecure)
+server = http.Server!(HOST, handle)
+body = http.read!(URL, --insecure)
 print(body)
 
 server.close()

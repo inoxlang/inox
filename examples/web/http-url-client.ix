@@ -1,15 +1,17 @@
 const (
-    DOMAIN = https://localhost:8081
-    URL = https://localhost:8081/
+    HOST = https://localhost:8081
+    URL = @HOST/
 )
 
 manifest {
     permissions: {
-        read: [URL, IWD_PREFIX]
+        read: {
+            URL
+            IWD_PREFIX # allow reading the working dir
+        }
         create: IWD_PREFIX
-        provide: DOMAIN
+        provide: HOST
     }
-   
 }
 
 
@@ -28,7 +30,7 @@ fn handle(rw http.resp-writer, r http.req){
 client = http.Client{ save-cookies: true, insecure: true }
 set_client_for_url(URL, client)
 
-server = http.Server!(DOMAIN, handle)
+server = http.Server!(HOST, handle)
 http.get!(URL, --insecure) # client is automatically used
 
 server.close()

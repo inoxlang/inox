@@ -1,17 +1,25 @@
+const (
+    HOST = https://localhost:8080
+    URL = https://localhost:8080/
+)
+
 manifest {
     permissions: {
         read: {
-            https://localhost:8080/
-            %/...
+            URL
+            IWD_PREFIX # allow reading the working dir
         }
-        provide: https://localhost:8080
+        provide: HOST
     }
 }
 
-server = http.FileServer!(https://localhost:8080, ./examples/static/)
+server = http.FileServer!(HOST, ./examples/static/)
 
-body = http.read!(https://localhost:8080/, --insecure)
-print "response :"
+print "GET /"
+body = http.read!(URL, --insecure)
+
+print "\nResponse:"
 print(body)
 
+print "\nClose the server."
 server.close() # you can replace this line with server.wait_closed() to keep the server running
