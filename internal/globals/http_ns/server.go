@@ -40,6 +40,7 @@ const (
 	DEFAULT_HTTP_SERVER_TX_TIMEOUT          = 20 * time.Second
 	SSE_STREAM_WRITE_TIMEOUT                = 500 * time.Second
 
+	//Time waited for the server to start listening.
 	HTTP_SERVER_STARTING_WAIT_TIME        = 5 * time.Millisecond
 	HTTP_SERVER_GRACEFUL_SHUTDOWN_TIMEOUT = 5 * time.Second
 
@@ -345,7 +346,28 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 	server.endChan = make(chan struct{}, 1)
 	server.initialized.Store(true)
 
-	//listen and serve in a goroutine
+	aboutToStartChan := make(chan struct{}, 1)
+
+	//Log a startup message with one URL per network interface the server binds to.
+
+	ips, err := netaddr.GetGlobalUnicastIPs()
+	if err != nil {
+		return nil, err
+	}
+
+	urls := []string{"https://localhost:" + params.port}
+	if !isLocalhostOr127001Addr(params.effectiveAddr) {
+		urls = append(urls, utils.FilterMapSlice(ips, func(e net.IP) (string, bool) {
+			if e.To4() == nil {
+				return "", false
+			}
+			return "https://" + e.String() + ":" + params.port, e.To4() != nil
+		})...)
+	}
+
+	server.serverLogger.Info().Msgf("start HTTPS server on %s (%s)", params.effectiveAddr, strings.Join(urls, ", "))
+
+	//Listen and serve.
 	go func() {
 		defer func() {
 			recover()
@@ -355,25 +377,7 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 			server.endChan <- struct{}{}
 		}()
 
-		//log
-
-		ips, err := netaddr.GetGlobalUnicastIPs()
-		if err != nil {
-			server.serverLogger.Err(err).Send()
-			return
-		}
-
-		urls := []string{"https://localhost:" + params.port}
-		if !isLocalhostOr127001Addr(params.effectiveAddr) {
-			urls = append(urls, utils.FilterMapSlice(ips, func(e net.IP) (string, bool) {
-				if e.To4() == nil {
-					return "", false
-				}
-				return "https://" + e.String() + ":" + params.port, e.To4() != nil
-			})...)
-		}
-
-		server.serverLogger.Info().Msgf("start HTTPS server on %s (%s)", params.effectiveAddr, strings.Join(urls, ", "))
+		aboutToStartChan <- struct{}{}
 
 		//If the server is virtual we inform the corresponding developement server instead of binding to a port.
 		if server.isVirtual {
@@ -406,6 +410,7 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 		server.ImmediatelyClose(ctx)
 	}()
 
+	<-aboutToStartChan
 	time.Sleep(HTTP_SERVER_STARTING_WAIT_TIME)
 
 	return server, nil

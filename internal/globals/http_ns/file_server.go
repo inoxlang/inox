@@ -110,8 +110,10 @@ func NewFileServer(ctx *core.Context, args ...core.Value) (*HttpsServer, error) 
 	}
 
 	endChan := make(chan struct{}, 1)
+	aboutToStartChan := make(chan struct{}, 1)
 
 	go func() {
+		aboutToStartChan <- struct{}{}
 		defer func() {
 			recover()
 			endChan <- struct{}{}
@@ -123,7 +125,9 @@ func NewFileServer(ctx *core.Context, args ...core.Value) (*HttpsServer, error) 
 		}
 	}()
 
-	time.Sleep(5 * time.Millisecond)
+	<-aboutToStartChan
+	time.Sleep(HTTP_SERVER_STARTING_WAIT_TIME)
+
 	return &HttpsServer{
 		wrappedServer: server,
 		endChan:       endChan,
