@@ -2305,7 +2305,7 @@ func (p *parser) parsePatternUnion(start int32, isPercentPrefixed bool, preceded
 	}
 
 	for p.i < p.len && (p.s[p.i] == '|' ||
-		(!precededByOpeningParen && p.s[p.i] == '\n') ||
+		(precededByOpeningParen && p.s[p.i] == '\n') ||
 		!isUnpairedOrIsClosingDelim(p.s[p.i])) {
 
 		if precededByOpeningParen {

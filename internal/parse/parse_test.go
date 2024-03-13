@@ -26135,7 +26135,7 @@ func testParse(
 
 	t.Run("pattern union", func(t *testing.T) {
 
-		t.Run("single element", func(t *testing.T) {
+		t.Run("single case", func(t *testing.T) {
 			n := mustparseChunk(t, `%| "a"`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, false},
@@ -26154,7 +26154,26 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("single element is an unprefixed pattern", func(t *testing.T) {
+		t.Run("single case followed by a linefeed", func(t *testing.T) {
+			n := mustparseChunk(t, "%| \"a\"\n")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 7}, nil, false},
+				Statements: []Node{
+					&PatternUnion{
+						NodeBase: NodeBase{NodeSpan{0, 6}, nil, false},
+						Cases: []Node{
+							&DoubleQuotedStringLiteral{
+								NodeBase: NodeBase{NodeSpan{3, 6}, nil, false},
+								Raw:      `"a"`,
+								Value:    "a",
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("single case is an unprefixed pattern", func(t *testing.T) {
 			n := mustparseChunk(t, `%| a`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 4}, nil, false},
@@ -26173,7 +26192,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("parenthesized, single element", func(t *testing.T) {
+		t.Run("parenthesized, single case", func(t *testing.T) {
 			n := mustparseChunk(t, `(%| "a")`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
@@ -26201,7 +26220,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("two elements", func(t *testing.T) {
+		t.Run("two cases", func(t *testing.T) {
 			n := mustparseChunk(t, `%| "a" | "b"`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
@@ -26233,7 +26252,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("parenthesized, two elements", func(t *testing.T) {
+		t.Run("parenthesized, two cases", func(t *testing.T) {
 			n := mustparseChunk(t, `(%| "a" | "b")`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
