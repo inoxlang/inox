@@ -149,26 +149,8 @@ func IsCommentFirstSpace(r rune) bool {
 }
 
 func IsDelim(r rune) bool {
-	switch r {
-	case '{', '}', '[', ']', '(', ')', '\n', ',', ';', ':', '|':
-		return true
-	default:
-		return false
-	}
-}
-
-func isOpeningDelim(r rune) bool {
-	switch r {
-	case '{', '[', '(':
-		return true
-	default:
-		return false
-	}
-}
-
-func isUnpairedDelim(r rune) bool {
-	switch r {
-	case '\n', ',', ';', ':', '|':
+	switch {
+	case isPairedDelim(r) || isUnpairedDelim(r):
 		return true
 	default:
 		return false
@@ -184,9 +166,9 @@ func isPairedDelim(r rune) bool {
 	}
 }
 
-func isClosingDelim(r rune) bool {
+func isUnpairedDelim(r rune) bool {
 	switch r {
-	case '}', ')', ']':
+	case '\n', ',', ';', ':', '=', '|', ('>' /*closing bracket of opening tags*/):
 		return true
 	default:
 		return false
@@ -194,8 +176,21 @@ func isClosingDelim(r rune) bool {
 }
 
 func isUnpairedOrIsClosingDelim(r rune) bool {
+	return isUnpairedDelim(r) || isClosingDelim(r)
+}
+
+func isOpeningDelim(r rune) bool {
 	switch r {
-	case '\n', ',', ';', ':', '=', ')', ']', '}', '|':
+	case '{', '[', '(':
+		return true
+	default:
+		return false
+	}
+}
+
+func isClosingDelim(r rune) bool {
+	switch r {
+	case '}', ')', ']':
 		return true
 	default:
 		return false

@@ -1524,9 +1524,13 @@ func (p *parser) parseURLLike(start int32) Node {
 	}
 	afterSchemeIndex := p.i
 
+	isIgnoredDelim := func(r rune) bool {
+		return r == '=' || r == ':' || r == '{'
+	}
+
 	//we eat until we encounter a space or a delimiter different from ':' and '{'
 loop:
-	for p.i < p.len && p.s[p.i] != '\n' && !unicode.IsSpace(p.s[p.i]) && (!IsDelim(p.s[p.i]) || p.s[p.i] == ':' || p.s[p.i] == '{') {
+	for p.i < p.len && p.s[p.i] != '\n' && !unicode.IsSpace(p.s[p.i]) && (!IsDelim(p.s[p.i]) || isIgnoredDelim(p.s[p.i])) {
 		switch p.s[p.i] {
 		case '{':
 			p.i++

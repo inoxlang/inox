@@ -5528,6 +5528,50 @@ func testParse(
 			})
 		})
 
+		t.Run("host followed by > in binary expression", func(t *testing.T) {
+			n := mustparseChunk(t, `(https://example.com> 1)`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 24}, nil, false},
+				Statements: []Node{
+					&BinaryExpression{
+						NodeBase: NodeBase{NodeSpan{0, 24}, nil, true},
+						Operator: GreaterThan,
+						Left: &HostLiteral{
+							NodeBase: NodeBase{NodeSpan{1, 20}, nil, false},
+							Value:    "https://example.com",
+						},
+						Right: &IntLiteral{
+							NodeBase: NodeBase{NodeSpan{22, 23}, nil, false},
+							Raw:      "1",
+							Value:    1,
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("URL followed by > in binary expression", func(t *testing.T) {
+			n := mustparseChunk(t, `(https://example.com/> 1)`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 25}, nil, false},
+				Statements: []Node{
+					&BinaryExpression{
+						NodeBase: NodeBase{NodeSpan{0, 25}, nil, true},
+						Operator: GreaterThan,
+						Left: &URLLiteral{
+							NodeBase: NodeBase{NodeSpan{1, 21}, nil, false},
+							Value:    "https://example.com/",
+						},
+						Right: &IntLiteral{
+							NodeBase: NodeBase{NodeSpan{23, 24}, nil, false},
+							Raw:      "1",
+							Value:    1,
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("long path", func(t *testing.T) {
 			n := mustparseChunk(t, `https://example.com/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`)
 			assert.EqualValues(t, &Chunk{
