@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
@@ -130,9 +131,9 @@ func computeDocumentDiagnostics(params diagnosticNotificationParams) (result *do
 			}
 
 			// //Save the result in the session.
-			// psSession := getLockedSessionData(params.session)
-			// defer psSession.lock.Unlock()
-			// psSession.documentDiagnostics[fpath] = result
+			projSession := getLockedSessionData(params.session)
+			defer projSession.lock.Unlock()
+			projSession.documentDiagnostics[fpath] = result
 		}
 	}()
 
@@ -329,4 +330,5 @@ type documentDiagnostics struct {
 	id                           DocDiagnosticId
 	items                        []defines.Diagnostic
 	containsWorkspaceDiagnostics bool
+	lock                         sync.Mutex
 }

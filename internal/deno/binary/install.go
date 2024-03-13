@@ -21,6 +21,10 @@ const (
 func Install(location string) error {
 	err := tryInstall(location)
 
+	if err == nil {
+		return nil
+	}
+
 	//Remove the file (or directory) at $location and try again.
 	removeErr := os.RemoveAll(location)
 	if removeErr != nil {

@@ -418,6 +418,8 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 			sessionData.cssGenerator.RegenAll(sessionCtx, analysisResult)
 			sessionData.jsGenerator.RegenAll(sessionCtx, analysisResult)
 		}
+
+		publishWorkspaceDiagnostics(session, sessionData, analysisResult)
 	}
 
 	go func() {

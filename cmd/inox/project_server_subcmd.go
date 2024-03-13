@@ -18,6 +18,7 @@ import (
 	"github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/css/tailwind"
 	"github.com/inoxlang/inox/internal/deno"
+	denobinary "github.com/inoxlang/inox/internal/deno/binary"
 	"github.com/inoxlang/inox/internal/globals/chrome_ns"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/s3_ns"
@@ -175,12 +176,6 @@ func ProjectServer(mainSubCommand string, mainSubCommandArgs []string, outW, err
 		return nil
 	})
 
-	//Restrict filesystem access at the process level.
-	inoxprocess.RestrictProcessAccess(ctx, inoxprocess.ProcessRestrictionConfig{
-		AllowBrowserAccess: projectServerConfig.AllowBrowserAutomation,
-		BrowserBinPath:     chrome_ns.BROWSER_BINPATH,
-	})
-
 	//Configure server
 
 	opts := projectserver.LSPServerConfiguration{
@@ -269,7 +264,20 @@ func ProjectServer(mainSubCommand string, mainSubCommandArgs []string, outW, err
 	//Start adjacent services from another goroutine to speed things up.
 
 	go func() {
-		err := startAdjacentServices(ctx, projectServerConfig)
+		err := denobinary.Install(DENO_BINARY_LOCATION)
+
+		if err == nil {
+			//Restrict filesystem access at the process level.
+			//This is done after the installation because Landlock needs to see the Deno binary.
+			//Otherwise executing the binary will not be allowed.
+			inoxprocess.RestrictProcessAccess(ctx, inoxprocess.ProcessRestrictionConfig{
+				AllowBrowserAccess: projectServerConfig.AllowBrowserAutomation,
+				BrowserBinPath:     chrome_ns.BROWSER_BINPATH,
+			})
+
+			err = startAdjacentServices(ctx, projectServerConfig)
+		}
+
 		if err != nil {
 			fmt.Fprintln(errW, err)
 			fmt.Fprintln(errW, "cancel the root context because some adjacent services failed to start")
