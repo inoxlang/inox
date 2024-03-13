@@ -13,6 +13,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/hyperscript/hscode"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
@@ -2200,15 +2201,21 @@ func (p *ComplexStringPatternPiece) IsResolvableAtCheckTime() bool {
 	yes := true
 
 	Walk(p, func(node, parent, scopeNode Node, ancestorChain []Node, after bool) (TraversalAction, error) {
-		switch node.(type) {
-		case *ComplexStringPatternPiece, *PatternPieceElement, *PatternUnion,
+		switch node := node.(type) {
+		case *ComplexStringPatternPiece, *PatternPieceElement, *PatternUnion, *PatternGroupName,
 			*RuneLiteral, *RegularExpressionLiteral, *DoubleQuotedStringLiteral, *MultilineStringLiteral,
-			*IntegerRangeLiteral, *IntLiteral:
-			return ContinueTraversal, nil
+			*IntLiteral:
+		case *RuneRangeExpression:
+			yes = utils.Implements[*RuneLiteral](node.Lower) && (node.Upper == nil || utils.Implements[*RuneLiteral](node.Upper))
+		case *IntegerRangeLiteral:
+			yes = utils.Implements[*IntLiteral](node.LowerBound) && (node.UpperBound == nil || utils.Implements[*IntLiteral](node.UpperBound))
 		default:
 			yes = false
+		}
+		if !yes {
 			return StopTraversal, nil
 		}
+		return ContinueTraversal, nil
 	}, nil)
 
 	return yes
