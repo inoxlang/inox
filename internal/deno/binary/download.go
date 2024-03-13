@@ -81,6 +81,10 @@ func DownloadArchive(archiveInfo archiveInfo, assetInfo github.AssetInfo) (*url.
 		defer resp.Body.Close()
 	}
 
+	if resp.StatusCode >= 400 {
+		return nil, nil, fmt.Errorf("bad status: %s", resp.Status)
+	}
+
 	if err != nil {
 		return nil, nil, err
 	}

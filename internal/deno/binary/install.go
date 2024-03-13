@@ -19,6 +19,17 @@ const (
 )
 
 func Install(location string) error {
+	err := tryInstall(location)
+
+	//Remove the file (or directory) at $location and try again.
+	removeErr := os.RemoveAll(location)
+	if removeErr != nil {
+		return err
+	}
+	return tryInstall(location)
+}
+
+func tryInstall(location string) error {
 
 	assetInfo, archiveInfo, err := GetArchiveAssetInfo()
 
