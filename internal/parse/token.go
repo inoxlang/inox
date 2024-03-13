@@ -196,7 +196,6 @@ const (
 	BOOLEAN_LITERAL
 	QUOTED_STRING_LITERAL
 	UNQUOTED_STRING_LITERAL
-	MULTILINE_STRING_LITERAL
 	REGEX_LITERAL
 	RATE_LITERAL
 	QUANTITY_LITERAL
@@ -441,7 +440,6 @@ var tokenStrings = [...]string{
 	BOOLEAN_LITERAL:                       "<?>",
 	QUOTED_STRING_LITERAL:                 "<?>",
 	UNQUOTED_STRING_LITERAL:               "<?>",
-	MULTILINE_STRING_LITERAL:              "<?>",
 	REGEX_LITERAL:                         "<?>",
 	RATE_LITERAL:                          "<?>",
 	QUANTITY_LITERAL:                      "<?>",
@@ -609,7 +607,6 @@ var tokenTypenames = [...]string{
 	BOOLEAN_LITERAL:                       "BOOLEAN_LITERAL",
 	QUOTED_STRING_LITERAL:                 "QUOTED_STRING_LITERAL",
 	UNQUOTED_STRING_LITERAL:               "UNQUOTED_STRING_LITERAL",
-	MULTILINE_STRING_LITERAL:              "MULTILINE_STRING_LITERAL",
 	REGEX_LITERAL:                         "REGEX_LITERAL",
 	RATE_LITERAL:                          "RATE_LITERAL",
 	QUANTITY_LITERAL:                      "QUANTITY_LITERAL",
@@ -891,8 +888,16 @@ func GetTokens(node Node, chunk *Chunk, addMeta bool) []Token {
 			tokenType = UNQUOTED_STRING_LITERAL
 			raw = n.Raw
 		case *MultilineStringLiteral:
-			tokenType = MULTILINE_STRING_LITERAL
-			raw = n.Raw
+			tokenType = STR_TEMPLATE_SLICE
+			raw = n.RawWithoutQuotes()
+
+			literalSpan.Start = n.NodeBase.Span.Start + 1
+
+			if n.IsUnterminated {
+				literalSpan.End = n.NodeBase.Span.End
+			} else {
+				literalSpan.End = n.NodeBase.Span.End - 1
+			}
 		case *RegularExpressionLiteral:
 			tokenType = REGEX_LITERAL
 			raw = n.Raw

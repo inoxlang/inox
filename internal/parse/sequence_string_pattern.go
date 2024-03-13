@@ -220,7 +220,7 @@ func (p *parser) parseComplexStringPatternElement() Node {
 		}
 
 		return p.parseComplexStringPatternPiece(elemStart, parenthesizedSequencePatternPiece, nil)
-	case p.s[p.i] == '"' || p.s[p.i] == '\'':
+	case p.s[p.i] == '"' || p.s[p.i] == '`' || p.s[p.i] == '\'': //string and rune literals
 		e, _ := p.parseExpression()
 		return e
 	case p.s[p.i] == '-' || isDecDigit(p.s[p.i]):

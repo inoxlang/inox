@@ -529,8 +529,9 @@ func (UnquotedStringLiteral) Kind() NodeKind {
 
 type MultilineStringLiteral struct {
 	NodeBase
-	Raw   string
-	Value string
+	Raw            string
+	Value          string
+	IsUnterminated bool
 }
 
 func (l MultilineStringLiteral) ValueString() string {
@@ -539,6 +540,17 @@ func (l MultilineStringLiteral) ValueString() string {
 
 func (MultilineStringLiteral) Kind() NodeKind {
 	return Expr
+}
+
+func (l MultilineStringLiteral) RawWithoutQuotes() string {
+	raw := l.Raw[1:]
+
+	isTerminated := !l.IsUnterminated
+	if isTerminated {
+		raw = raw[:len(raw)-1]
+	}
+
+	return raw
 }
 
 type StringTemplateLiteral struct {
@@ -2182,6 +2194,24 @@ type ComplexStringPatternPiece struct {
 	NodeBase
 	Unprefixed bool
 	Elements   []*PatternPieceElement
+}
+
+func (p *ComplexStringPatternPiece) IsResolvableAtCheckTime() bool {
+	yes := true
+
+	Walk(p, func(node, parent, scopeNode Node, ancestorChain []Node, after bool) (TraversalAction, error) {
+		switch node.(type) {
+		case *ComplexStringPatternPiece, *PatternPieceElement, *PatternUnion,
+			*RuneLiteral, *RegularExpressionLiteral, *DoubleQuotedStringLiteral, *MultilineStringLiteral,
+			*IntegerRangeLiteral, *IntLiteral:
+			return ContinueTraversal, nil
+		default:
+			yes = false
+			return StopTraversal, nil
+		}
+	}, nil)
+
+	return yes
 }
 
 type OcurrenceCountModifier int

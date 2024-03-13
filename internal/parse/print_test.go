@@ -284,6 +284,8 @@ func TestPrint(t *testing.T) {
 		"%str('a'+)",
 		"%str('a'=3)",
 		"%str('a' 'b')",
+		`%str("a")`,
+		"%str(`a`)",
 		`%str((| "a"))`,
 		`%str((| "a" | "b" ))`,
 		`%str((| "a"+ | "b"* ))`,
@@ -373,6 +375,12 @@ func TestPrint(t *testing.T) {
 		"%p`${int:",
 		"%p`${int",
 		"%p`${",
+		//multiline string literals
+		"``",
+		"`a`",
+		"`",
+		"`a",
+		//URL-like patterns
 		"%https://**",
 		"%https://example.com/...",
 		"%https://example.com/",
@@ -381,6 +389,7 @@ func TestPrint(t *testing.T) {
 		"%https://example.com/a?",
 		"%https://example.com/a?x=1",
 		"%https://**.example.com",
+		//option patterns
 		"%-x=1",
 		"%--x=1",
 		"%--name=\"foo\"",

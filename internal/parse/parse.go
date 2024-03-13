@@ -4097,11 +4097,15 @@ end:
 	if isMultilineStringLiteral {
 		var value string
 		var raw string
+		isUnterminated := false
 
 		if p.i >= p.len && (p.i == openingBackquoteIndex+1 || p.s[p.i-1] != '`') {
 			raw = string(p.s[openingBackquoteIndex:])
 			parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_MULTILINE_STRING_LIT}
+			isUnterminated = true
 		} else {
+			p.tokens = append(p.tokens, Token{Type: BACKQUOTE, Span: NodeSpan{p.i, p.i + 1}})
+
 			p.i++
 
 			raw = string(p.s[openingBackquoteIndex:p.i])
@@ -4113,8 +4117,9 @@ end:
 				Span: NodeSpan{openingBackquoteIndex, p.i},
 				Err:  parsingErr,
 			},
-			Raw:   raw,
-			Value: value,
+			Raw:            raw,
+			Value:          value,
+			IsUnterminated: isUnterminated,
 		}
 	}
 
