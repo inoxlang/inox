@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/inoxlang/inox/internal/parse"
 	"github.com/oklog/ulid/v2"
 )
 
@@ -28,6 +29,8 @@ var (
 		(*TypePattern)(nil),
 
 		(*ExactValuePattern)(nil), (*ExactStringPattern)(nil), (*URLPattern)(nil), (*PathPattern)(nil),
+
+		(*RegexPattern)(nil), (*SequenceStringPattern)(nil),
 
 		(*InoxFunction)(nil),
 
@@ -93,6 +96,9 @@ type ConcreteValueFactories struct {
 
 	CreateExactValuePattern  func(value any) any
 	CreateExactStringPattern func(value any) any
+
+	CreateRegexPattern          func(regex string) any
+	CreateSequenceStringPattern func(ConcreteContext, *parse.ComplexStringPatternPiece) (any, error)
 
 	//CreateFileInfo func() any
 

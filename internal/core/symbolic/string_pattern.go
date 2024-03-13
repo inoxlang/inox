@@ -367,6 +367,21 @@ func (p *SequenceStringPattern) Test(v Value, state RecTestCallState) bool {
 	return p.node == otherPatt.node
 }
 
+func (p *SequenceStringPattern) IsConcretizable() bool {
+	return p.node != nil && p.node.IsResolvableAtCheckTime()
+}
+
+func (p *SequenceStringPattern) Concretize(ctx ConcreteContext) any {
+	if !p.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+	concretePattern, err := extData.ConcreteValueFactories.CreateSequenceStringPattern(ctx, p.node)
+	if err != nil {
+		panic(err)
+	}
+	return concretePattern
+}
+
 func (p *SequenceStringPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("sequence-string-pattern")
 	if p.node != nil {

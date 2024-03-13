@@ -205,6 +205,16 @@ func init() {
 				return NewExactStringPattern(value.(String))
 			},
 
+			CreateRegexPattern: func(regex string) any {
+				return NewRegexPattern(regex)
+			},
+
+			CreateSequenceStringPattern: func(concreteCtx symbolic.ConcreteContext, n *parse.ComplexStringPatternPiece) (any, error) {
+				ctx := concreteCtx.(*Context)
+				state := NewTreeWalkState(ctx)
+				return TreeWalkEval(n, state)
+			},
+
 			CreateNil: func() any {
 				return Nil
 			},

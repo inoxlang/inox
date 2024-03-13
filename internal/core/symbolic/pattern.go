@@ -1070,6 +1070,17 @@ func (p *RegexPattern) Test(v Value, state RecTestCallState) bool {
 	return p.regex == nil || (otherPatt.regex != nil && p.syntax.Equal(otherPatt.syntax))
 }
 
+func (p *RegexPattern) IsConcretizable() bool {
+	return p.regex != nil
+}
+
+func (p *RegexPattern) Concretize(ctx ConcreteContext) any {
+	if !p.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+	return extData.ConcreteValueFactories.CreateRegexPattern(p.regex.String())
+}
+
 func (p *RegexPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if p.regex != nil {
 		w.WriteString("%`" + p.regex.String() + "`")
