@@ -551,10 +551,11 @@ func fmtSlashDotDotDotCanOnlyBePresentAtEndOfPathPattern(value string) string {
 	return fmt.Sprintf("'/...' can only appear at the end of a path pattern '%s'", value)
 }
 
-func fmtAPatternWasExpected(s []rune, i int32) string {
-	before := string(s[max(0, i-5):max(i, len32(s))])
+func fmtAPatternWasExpectedHere(s []rune, i int32) string {
+	left := string(s[max(0, i-5):i])
+	right := string(s[i:min(len(s), int(i+5))])
 
-	return fmt.Sprintf("a pattern was expected at this location: ...%s<<here>>", before)
+	return fmt.Sprintf("a pattern was expected: ...%s<<here>>%s...", left, right)
 }
 
 func fmtInvalidObjRecordKeyMissingColonAfterKey(lastKeyName string) string {
@@ -625,13 +626,6 @@ func fmtCaseValueExpectedHere(s []rune, i int32, showRight bool) string {
 	}
 
 	return fmt.Sprintf("a value was expected: ...%s<<here>>%s..., object literals should be surrounded by parentheses", left, right)
-}
-
-func fmtAPatternWasExpectedHere(s []rune, i int32) string {
-	left := string(s[max(0, i-5):i])
-	right := string(s[i:min(len(s), int(i+5))])
-
-	return fmt.Sprintf("a pattern was expected: ...%s<<here>>%s...", left, right)
 }
 
 func fmtInvalidConstDeclMissingEqualsSign(name string) string {

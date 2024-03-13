@@ -381,7 +381,7 @@ func (p *parser) parseUnderscoreAlphaStartingExpression(precededByOpeningParen b
 				case '(', '{':
 					if v.Name == "str" && p.s[p.i] == '(' {
 						p.i++
-						node = p.parseComplexStringPatternPiece(result.Span.Start, result)
+						node = p.parseComplexStringPatternPiece(result.Span.Start, rootSequencePatternPiece, result)
 						return
 					}
 

@@ -286,6 +286,8 @@ func TestPrint(t *testing.T) {
 		"%str('a' 'b')",
 		`%str((| "a"))`,
 		`%str((| "a" | "b" ))`,
+		`%str((| "a"+ | "b"* ))`,
+		`%str((| "a" "b" | "c" "d" ))`,
 		"%``",
 		"%`a`",
 		"%`é`",

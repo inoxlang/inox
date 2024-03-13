@@ -25377,7 +25377,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("pattern union: 2 elements", func(t *testing.T) {
+		t.Run("pattern union: 2 cases", func(t *testing.T) {
 			n := mustparseChunk(t, `%str( (| "a" | "b" ) )`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 22}, nil, false},
@@ -25428,7 +25428,122 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("pattern union: 3 elements", func(t *testing.T) {
+		t.Run("pattern union: 2 cases with occurrence modifiers", func(t *testing.T) {
+			n := mustparseChunk(t, `%str( (| "a"* | "b"+ ) )`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 24}, nil, false},
+				Statements: []Node{
+					&ComplexStringPatternPiece{
+						NodeBase: NodeBase{Span: NodeSpan{0, 24}},
+						Elements: []*PatternPieceElement{
+							{
+								NodeBase: NodeBase{NodeSpan{6, 22}, nil, false},
+								Expr: &PatternUnion{
+									NodeBase: NodeBase{Span: NodeSpan{6, 22}},
+									Cases: []Node{
+										&ComplexStringPatternPiece{
+											NodeBase: NodeBase{Span: NodeSpan{9, 14}},
+											Elements: []*PatternPieceElement{
+												{
+													NodeBase: NodeBase{Span: NodeSpan{9, 13}},
+													Expr: &DoubleQuotedStringLiteral{
+														NodeBase: NodeBase{NodeSpan{9, 12}, nil, false},
+														Raw:      `"a"`,
+														Value:    "a",
+													},
+													Ocurrence: ZeroOrMoreOcurrence,
+												},
+											},
+										},
+										&ComplexStringPatternPiece{
+											NodeBase: NodeBase{Span: NodeSpan{16, 21}},
+											Elements: []*PatternPieceElement{
+												{
+
+													NodeBase: NodeBase{Span: NodeSpan{16, 20}},
+													Expr: &DoubleQuotedStringLiteral{
+														NodeBase: NodeBase{NodeSpan{16, 19}, nil, false},
+														Raw:      `"b"`,
+														Value:    "b",
+													},
+													Ocurrence: AtLeastOneOcurrence,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("pattern union: 2 cases with several elements", func(t *testing.T) {
+			n := mustparseChunk(t, `%str( (| "a" "b" | "c" "d" ) )`)
+
+			assert.EqualValues(t, &ComplexStringPatternPiece{
+				NodeBase: NodeBase{Span: NodeSpan{0, 30}},
+				Elements: []*PatternPieceElement{
+					{
+						NodeBase: NodeBase{NodeSpan{6, 28}, nil, false},
+						Expr: &PatternUnion{
+							NodeBase: NodeBase{Span: NodeSpan{6, 28}},
+							Cases: []Node{
+								&ComplexStringPatternPiece{
+									NodeBase: NodeBase{Span: NodeSpan{9, 17}},
+									Elements: []*PatternPieceElement{
+										{
+											NodeBase: NodeBase{Span: NodeSpan{9, 12}},
+											Expr: &DoubleQuotedStringLiteral{
+												NodeBase: NodeBase{NodeSpan{9, 12}, nil, false},
+												Raw:      `"a"`,
+												Value:    "a",
+											},
+											Ocurrence: ExactlyOneOcurrence,
+										},
+										{
+											NodeBase: NodeBase{Span: NodeSpan{13, 16}},
+											Expr: &DoubleQuotedStringLiteral{
+												NodeBase: NodeBase{NodeSpan{13, 16}, nil, false},
+												Raw:      `"b"`,
+												Value:    "b",
+											},
+											Ocurrence: ExactlyOneOcurrence,
+										},
+									},
+								},
+								&ComplexStringPatternPiece{
+									NodeBase: NodeBase{Span: NodeSpan{19, 27}},
+									Elements: []*PatternPieceElement{
+										{
+											NodeBase: NodeBase{Span: NodeSpan{19, 22}},
+											Expr: &DoubleQuotedStringLiteral{
+												NodeBase: NodeBase{NodeSpan{19, 22}, nil, false},
+												Raw:      `"c"`,
+												Value:    "c",
+											},
+											Ocurrence: ExactlyOneOcurrence,
+										},
+										{
+											NodeBase: NodeBase{Span: NodeSpan{23, 26}},
+											Expr: &DoubleQuotedStringLiteral{
+												NodeBase: NodeBase{NodeSpan{23, 26}, nil, false},
+												Raw:      `"d"`,
+												Value:    "d",
+											},
+											Ocurrence: ExactlyOneOcurrence,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n.Statements[0])
+		})
+
+		t.Run("pattern union: 3 cases", func(t *testing.T) {
 			n := mustparseChunk(t, `%str( (| "a" | "b" | "c" ) )`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 28}, nil, false},
@@ -25485,7 +25600,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("pattern union: 3 elements but last element is missing", func(t *testing.T) {
+		t.Run("pattern union: 3 cases but last case is missing", func(t *testing.T) {
 			n, err := parseChunk(t, `%str( (| "a" | "b" | ) )`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
@@ -25705,6 +25820,43 @@ func testParse(
 					},
 				},
 			}, n)
+		})
+
+		t.Run("complex nesting", func(t *testing.T) {
+			n, err := parseChunk(t, `
+				%str(
+					hour: (
+						| '1' '0'..'2'
+						| '0'? '1'..'9'
+					)
+					':'
+					minute: ('0'..'5' '0'..'9')
+					' '
+					period: (| "AM" | "PM")
+				)
+			`, "")
+
+			assert.NoError(t, err)
+			assert.NotNil(t, n)
+		})
+
+		t.Run("complex nesting with missing case in pattern", func(t *testing.T) {
+			n, err := parseChunk(t, `
+				%str(
+					hour: (
+						| '1' '0'..'2'
+						| '0'? '1'..'9'
+						|
+					)
+					':'
+					minute: ('0'..'5' '0'..'9')
+					' '
+					period: (| "AM" | "PM")
+				)
+			`, "")
+
+			assert.Error(t, err)
+			assert.NotNil(t, n)
 		})
 	})
 
