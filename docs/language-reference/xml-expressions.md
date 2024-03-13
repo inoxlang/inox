@@ -9,10 +9,14 @@ namespace that interprets it:
 
 ```
 string = "world"
-element = html<div> Hello {string} ! </div>
+element = (<div> Hello {string} ! </div>)
 
-# self closing tag
-html<img src="..."/>
+# Self closing tag
+(<img src="..."/>)
+
+
+# Parentheses can be omitted by prefixing the expression with `html`
+html<div></div>
 ```
 
 In the `<script>` and `<style>` tags, anything inside single brackets is not

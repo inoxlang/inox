@@ -192,11 +192,11 @@ expressions.
 # matches any string containing only 'a's.
 %str('a'+)
 
-# matches any string that starts with a 'a' followed by zero or more 'b's.
+# matches any string that starts with an 'a' followed by zero or more 'b's.
 %str('a' 'b'*)
 
-# matches any string that starts with a 'a' followed by zero or more 'b's and 'c's.
-%str('a' (|'b' | 'c')*)
+# matches any string that starts with an 'a' followed by zero or more 'b's and 'c's.
+%str('a' (| 'b' | 'c')*)
 
 # shorthand syntax for string patterns only containing a union.
 %str(| 'b' | 'c')
@@ -210,7 +210,6 @@ pattern email-address = (("user1" | "user2") domain)
 ```
 
 ### Recursive String Patterns
-
 
 Recursive string patterns are defined by putting a `@` symbol in front of the
 pattern. ⚠️ This feature still needs some bug fixes. Also **recursive string patterns are pretty limited and slow: don't use

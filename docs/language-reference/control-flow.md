@@ -64,17 +64,30 @@ output:
 ## Switch Expression
 
 ```
-str = switch 1 {
+# "a"
+result = switch 1 {
     1 => "a"
     2 => "b"
     defaultcase => "c"
 }
-
-print(str)
-
-output:
-a
 ```
+
+Switch expressions without a `defaultcase` return `nil` if there is no match.
+
+```
+# 0
+result = switch 1 {
+    0 => 0
+}
+```
+
+Switch expressions with no cases always return `nil`.
+
+```
+# nil
+result = switch 1 {}
+```
+
 
 ## Match Statement
 
@@ -121,16 +134,33 @@ fn print_type(arg){
 ```
 value = /a 
 
-str = match value {
+result = match value {
     %/a => "/a"
     %/... => "any absolute path"
     defaultcase => "?"
 }
 
-print(str)
+print(result)
 
 output:
 /a
+```
+
+
+Match expressions without a `defaultcase` return `nil` if there is no match.
+
+```
+# 0
+result = match 1 {
+    %string => "s"
+}
+```
+
+Match expressions with no cases always return `nil`.
+
+```
+# nil
+result = match 1 {}
 ```
 
 ## For Statement

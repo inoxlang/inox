@@ -6,6 +6,8 @@ Inox comes with a subset of [Tailwind](https://tailwindcss.com/) and a utility c
 - Theming is implemented using CSS variables, not Tailwind.
 - Used utility classes are automatically added to the file `/static/css/utility-classes.css`.
 
+
+
 - [Tailwind](#tailwind)
     - [Breakpoint modifiers](#breakpoint-modifiers)
 
@@ -17,6 +19,15 @@ Inox comes with a subset of [Tailwind](https://tailwindcss.com/) and a utility c
     - [font-color](#font-color)
     - [font-size](#font-size)
     - [font-weight](#font-weight)
+
+
+<details>
+
+_<summary>✨ You can hover a utility class to its associated rule.</summary>_
+
+![ezgif-6-c4870884fa](https://github.com/inoxlang/inox/assets/113632189/228cc727-de00-4521-b058-721273355647)
+
+</details>
 
 ## Tailwind
 
@@ -76,6 +87,7 @@ Here is the list of supported CSS properties:
 - [font-color](#font-color)
 - [font-size](#font-size)
 - [font-weight](#font-weight)
+
 
 **More properties will be supported.**
 

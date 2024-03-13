@@ -20,18 +20,21 @@ func publishWorkspaceDiagnostics(session *jsonrpc.Session, projSession *addition
 			continue
 		}
 
-		func() {
+		go func(uri defines.DocumentUri, diagnostics *documentDiagnostics) {
 			diagnostics.lock.Lock()
 			defer diagnostics.lock.Unlock()
 
-			if !diagnostics.containsWorkspaceDiagnostics {
-				diagnostics.items = append(diagnostics.items, defines.Diagnostic{
-					Range:   defines.Range{Start: defines.Position{1, 2}, End: defines.Position{1, 2}},
-					Message: "LOL",
-				})
+			if diagnostics.containsWorkspaceDiagnostics {
+				return
 			}
+
+			// diagnostics.items = append(diagnostics.items, defines.Diagnostic{
+			// 	Range:   defines.Range{Start: defines.Position{1, 2}, End: defines.Position{1, 2}},
+			// 	Message: "LOL",
+			// })
+			diagnostics.containsWorkspaceDiagnostics = true
 			sendDocumentDiagnostics(session, uri, diagnostics.items)
-		}()
+		}(uri, diagnostics)
 
 	}
 
