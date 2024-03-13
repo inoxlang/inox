@@ -67,6 +67,23 @@ func (n Node) WithUpdateFirstSelectorElement(fn func(elem Node) Node) Node {
 	return new
 }
 
+// SelectorString returns the list of rules if $n is a Ruleset, it panics otherwise.
+func (n Node) StringifiedRules(sep string) string {
+	if n.Type != Ruleset {
+		panic(errors.New("node is not a ruleset"))
+	}
+	buf := &bytes.Buffer{}
+
+	for i, child := range n.Children[1:] {
+		if i != 0 {
+			buf.WriteString(sep)
+		}
+		child.writeTo(buf, 0)
+	}
+
+	return buf.String()
+}
+
 func (n Node) String() string {
 	buf := &bytes.Buffer{}
 	n.writeTo(buf, 0)

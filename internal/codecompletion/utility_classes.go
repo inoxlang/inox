@@ -70,8 +70,10 @@ func findCssVarBasedClassSuggestions(classNamePrefix string, search completionSe
 			Value:                 string(cssVar.Name),
 			Kind:                  defines.CompletionItemKindConstant,
 			ReplacedRange:         replacedRange,
+			LabelDetail:           cssVar.AutoRuleset.StringifiedRules(" "),
 			MarkdownDocumentation: "```css\n" + cssVar.AutoRuleset.String() + "\n```",
 		}
+
 		completions = append(completions, c)
 	}
 
