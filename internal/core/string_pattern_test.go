@@ -12,7 +12,7 @@ import (
 
 func TestEvalStringPatternNode(t *testing.T) {
 
-	t.Run("single element : string literal", func(t *testing.T) {
+	t.Run("single element : double-quoted string literal", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		defer ctx.CancelGracefully()
 
@@ -26,6 +26,33 @@ func TestEvalStringPatternNode(t *testing.T) {
 				{
 					Ocurrence: parse.ExactlyOneOcurrence,
 					Expr:      &parse.DoubleQuotedStringLiteral{Value: "s"},
+				},
+			},
+		}, state, false)
+
+		assert.NoError(t, err)
+		assert.IsType(t, (*SequenceStringPattern)(nil), patt)
+		assert.Equal(t, "s", patt.Regex())
+		assert.True(t, patt.Test(nil, String("s")))
+		assert.False(t, patt.Test(nil, String("ss")))
+		assert.False(t, patt.Test(nil, String("sa")))
+		assert.False(t, patt.Test(nil, String("as")))
+	})
+
+	t.Run("single element : multiline string literal", func(t *testing.T) {
+		ctx := NewContext(ContextConfig{})
+		defer ctx.CancelGracefully()
+
+		state := NewTreeWalkState(ctx)
+		chunk := &parse.ChunkStackItem{Chunk: &parse.ParsedChunkSource{Node: &parse.Chunk{}}}
+		state.chunkStack = append(state.chunkStack, chunk)
+		state.fullChunkStack = append(state.fullChunkStack, chunk)
+
+		patt, err := evalStringPatternNode(&parse.ComplexStringPatternPiece{
+			Elements: []*parse.PatternPieceElement{
+				{
+					Ocurrence: parse.ExactlyOneOcurrence,
+					Expr:      &parse.MultilineStringLiteral{Value: "s"},
 				},
 			},
 		}, state, false)

@@ -2885,6 +2885,8 @@ func (c *compiler) CompileStringPatternNode(node parse.Node) error {
 	switch v := node.(type) {
 	case *parse.DoubleQuotedStringLiteral:
 		c.emit(node, OpPushConstant, c.addConstant(NewExactStringPattern(String(v.Value))))
+	case *parse.MultilineStringLiteral:
+		c.emit(node, OpPushConstant, c.addConstant(NewExactStringPattern(String(v.Value))))
 	case *parse.RuneLiteral:
 		c.emit(node, OpPushConstant, c.addConstant(NewExactStringPattern(String(v.Value))))
 	case *parse.RuneRangeExpression:

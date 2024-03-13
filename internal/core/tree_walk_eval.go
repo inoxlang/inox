@@ -3196,6 +3196,8 @@ func evalStringPatternNode(node parse.Node, state *TreeWalkState, lazy bool) (St
 	switch v := node.(type) {
 	case *parse.DoubleQuotedStringLiteral:
 		return NewExactStringPattern(String(v.Value)), nil
+	case *parse.MultilineStringLiteral:
+		return NewExactStringPattern(String(v.Value)), nil
 	case *parse.RuneLiteral:
 		return NewExactStringPattern(String(v.Value)), nil
 	case *parse.RuneRangeExpression:

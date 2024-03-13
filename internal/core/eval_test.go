@@ -3939,7 +3939,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		assert.Equal(t, RuneRange{'a', 'z'}, res)
 	})
 
-	t.Run("string pattern", func(t *testing.T) {
+	t.Run("sequence string pattern", func(t *testing.T) {
 
 		t.Run("single element", func(t *testing.T) {
 			code := `
@@ -3978,6 +3978,20 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				parse.FindNode(state.Module.MainChunk.Node, (*parse.IntegerRangeLiteral)(nil), nil),
 			)
 			assert.Equal(t, expectedPattern, patt.elements[0])
+		})
+
+		t.Run("single element: multiline string literal", func(t *testing.T) {
+			code := "pattern s = str( `a` )\n" +
+				"return %s"
+
+			state := NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+			res, err := Eval(code, state, false)
+
+			assert.NoError(t, err)
+			assert.IsType(t, (*SequenceStringPattern)(nil), res)
+			patt := res.(*SequenceStringPattern)
+			assert.Len(t, patt.elements, 1)
 		})
 	})
 
