@@ -15,6 +15,30 @@ var (
 	ErrComptimeTypeAlreadyDefined = errors.New("comptile-time type is already defined")
 )
 
+// SetLocalScopeData calls s.symbolicData.SetLocalScopeData if we are currently not evaluating an Inox call.
+func (s *State) SetLocalScopeData(n parse.Node, scopeData ScopeData) {
+	if s.inNonInitialInoxCall() {
+		return
+	}
+	s.symbolicData.SetLocalScopeData(n, scopeData)
+}
+
+// SetGlobalScopeData calls s.symbolicData.SetGlobalScopeData if we are currently not evaluating an Inox call.
+func (s *State) SetGlobalScopeData(n parse.Node, scopeData ScopeData) {
+	if s.inNonInitialInoxCall() {
+		return
+	}
+	s.symbolicData.SetGlobalScopeData(n, scopeData)
+}
+
+// SetMostSpecificNodeValue calls s.symbolicData.SetMostSpecificNodeValue if we are currently not evaluating an Inox call.
+func (s *State) SetMostSpecificNodeValue(node parse.Node, v Value) {
+	if s.inNonInitialInoxCall() {
+		return
+	}
+	s.symbolicData.SetMostSpecificNodeValue(node, v)
+}
+
 // Data represents the data produced by the symbolic execution of an AST.
 type Data struct {
 	mostSpecificNodeValues      map[parse.Node]Value
@@ -26,7 +50,7 @@ type Data struct {
 	allowedNonPresentKeys       map[parse.Node][]string
 	runtimeTypeCheckPatterns    map[parse.Node]any //concrete Pattern or nil (nil means the check is disabled)
 	usedTypeExtensions          map[*parse.DoubleColonExpression]*TypeExtension
-	typeExtensions              map[*parse.DoubleColonExpression][]*TypeExtension
+	availableTypeExtensions     map[*parse.DoubleColonExpression][]*TypeExtension
 	urlReferencedEntities       map[*parse.DoubleColonExpression]Value
 
 	comptimeTypes map[ /* *Chunk or *EmbeddModule */ parse.Node]*ModuleCompileTimeTypes
@@ -49,7 +73,7 @@ func NewSymbolicData() *Data {
 		contextData:                 make(map[parse.Node]ContextData),
 		runtimeTypeCheckPatterns:    make(map[parse.Node]any, 0),
 		usedTypeExtensions:          make(map[*parse.DoubleColonExpression]*TypeExtension, 0),
-		typeExtensions:              make(map[*parse.DoubleColonExpression][]*TypeExtension, 0),
+		availableTypeExtensions:     make(map[*parse.DoubleColonExpression][]*TypeExtension, 0),
 		urlReferencedEntities:       make(map[*parse.DoubleColonExpression]Value, 0),
 
 		comptimeTypes: make(map[parse.Node]*ModuleCompileTimeTypes, 0),
@@ -226,8 +250,8 @@ func (data *Data) AddData(newData *Data) {
 		data.SetUsedTypeExtension(k, v)
 	}
 
-	for k, v := range newData.typeExtensions {
-		data.SetAllTypeExtensions(k, v)
+	for k, v := range newData.availableTypeExtensions {
+		data.SetAvailableTypeExtensions(k, v)
 	}
 
 	for k, v := range newData.urlReferencedEntities {
@@ -417,22 +441,22 @@ func (d *Data) SetUsedTypeExtension(n *parse.DoubleColonExpression, ext *TypeExt
 	d.usedTypeExtensions[n] = ext
 }
 
-func (d *Data) GetAllTypeExtensions(n *parse.DoubleColonExpression) ([]*TypeExtension, bool) {
-	extensions, ok := d.typeExtensions[n]
+func (d *Data) GetAvailableTypeExtensions(n *parse.DoubleColonExpression) ([]*TypeExtension, bool) {
+	extensions, ok := d.availableTypeExtensions[n]
 	return extensions, ok
 }
 
-func (d *Data) SetAllTypeExtensions(n *parse.DoubleColonExpression, extensions []*TypeExtension) {
+func (d *Data) SetAvailableTypeExtensions(n *parse.DoubleColonExpression, extensions []*TypeExtension) {
 	if d == nil {
 		return
 	}
 
-	_, ok := d.typeExtensions[n]
+	_, ok := d.availableTypeExtensions[n]
 	if ok {
 		panic(errors.New("type extensions are already set for this node"))
 	}
 
-	d.typeExtensions[n] = extensions
+	d.availableTypeExtensions[n] = extensions
 }
 
 func (d *Data) GetURLReferencedEntity(n *parse.DoubleColonExpression) (Value, bool) {

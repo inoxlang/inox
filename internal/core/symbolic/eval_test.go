@@ -14187,13 +14187,14 @@ func TestSymbolicEval(t *testing.T) {
 
 				assert.Len(t, extension.PropertyExpressions, 1)
 
-				extensions, ok := state.symbolicData.GetAllTypeExtensions(parse.FindNode(n, (*parse.DoubleColonExpression)(nil), nil))
+				extensions, ok := state.symbolicData.GetAvailableTypeExtensions(parse.FindNode(n, (*parse.DoubleColonExpression)(nil), nil))
 				if !assert.True(t, ok) {
 					return
 				}
 
 				assert.Len(t, extensions, 1)
 			})
+
 		})
 
 		t.Run("extension's method", func(t *testing.T) {
@@ -14307,6 +14308,50 @@ func TestSymbolicEval(t *testing.T) {
 
 			})
 
+		})
+
+		t.Run("extensions should be available inside functions: declarations and calls", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				pattern o = {
+					# we do not use "int" because it is not concretizable (concrete type pattern is not available)
+					a: 1
+				}
+
+				extend o {
+					b: - self.a
+				}
+
+				var o o = {
+					a: 1
+				}
+				
+				fn get_b(arg o){
+					return arg::b
+				}
+
+				return get_b(o)
+			`)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_INT, res)
+
+			extension, ok := state.symbolicData.GetUsedTypeExtension(parse.FindNode(n, (*parse.DoubleColonExpression)(nil), nil))
+			if !assert.True(t, ok) {
+				return
+			}
+
+			assert.Len(t, extension.PropertyExpressions, 1)
+
+			extensions, ok := state.symbolicData.GetAvailableTypeExtensions(parse.FindNode(n, (*parse.DoubleColonExpression)(nil), nil))
+			if !assert.True(t, ok) {
+				return
+			}
+
+			assert.Len(t, extensions, 1)
 		})
 
 		t.Run("retrieval of the property of a URL-referenced entity", func(t *testing.T) {

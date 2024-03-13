@@ -558,6 +558,11 @@ func (state *State) currentInoxCall() (inoxCallInfo, bool) {
 	return inoxCallInfo{}, false
 }
 
+func (state *State) inNonInitialInoxCall() bool {
+	call, yes := state.currentInoxCall()
+	return yes && !call.isInitialCheckCall
+}
+
 func (state *State) fork() *State {
 	if len(state.scopeStack) == 0 { // 1 ?
 		panic("cannot fork state with no local scope")

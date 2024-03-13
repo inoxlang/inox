@@ -170,7 +170,10 @@ func (ctx *Context) GetExtensions(v Value) (extensions []*TypeExtension) {
 		}
 		return 0
 	})
-	//
+
+	if len(extensions) == 0 && ctx.forkingParent != nil {
+		return ctx.forkingParent.GetExtensions(v)
+	}
 
 	return
 }
@@ -178,6 +181,9 @@ func (ctx *Context) GetExtensions(v Value) (extensions []*TypeExtension) {
 func (ctx *Context) CopyTypeExtensions(destCtx *Context) {
 	for _, extension := range ctx.typeExtensions {
 		destCtx.AddTypeExtension(extension)
+	}
+	if ctx.forkingParent != nil {
+		ctx.forkingParent.CopyTypeExtensions(destCtx)
 	}
 }
 

@@ -1022,7 +1022,7 @@ func handleDoubleColonExpressionCompletions(n *parse.DoubleColonExpression, sear
 		})
 	}
 
-	extensions, _ := state.Global.SymbolicData.GetAllTypeExtensions(n)
+	extensions, _ := state.Global.SymbolicData.GetAvailableTypeExtensions(n)
 
 	for _, ext := range extensions {
 		for _, propExpr := range ext.PropertyExpressions {

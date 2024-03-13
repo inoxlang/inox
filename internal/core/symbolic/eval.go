@@ -264,7 +264,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		}
 
 		if !options.ignoreNodeValue && !options.reEval && finalErr == nil && result != nil && state.symbolicData != nil {
-			state.symbolicData.SetMostSpecificNodeValue(node, result)
+			state.SetMostSpecificNodeValue(node, result)
 		}
 	}()
 
@@ -405,7 +405,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 			}
 
 			if isStaticPathSlice {
-				state.symbolicData.SetMostSpecificNodeValue(node, ANY_PATH)
+				state.SetMostSpecificNodeValue(node, ANY_PATH)
 			}
 		}
 
@@ -708,7 +708,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 			val = joinValues([]Value{val, Nil})
 		}
 
-		state.symbolicData.SetMostSpecificNodeValue(n.PropertyName, val)
+		state.SetMostSpecificNodeValue(n.PropertyName, val)
 
 		return val, nil
 	case *parse.ComputedMemberExpression:
@@ -746,13 +746,13 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		var prevIdent *parse.IdentifierLiteral
 		for _, ident := range n.PropertyNames {
 			if prevIdent != nil {
-				state.symbolicData.SetMostSpecificNodeValue(prevIdent, v)
+				state.SetMostSpecificNodeValue(prevIdent, v)
 			}
 			v = symbolicMemb(v, ident.Name, false, n, state)
 			prevIdent = ident
 		}
 
-		state.symbolicData.SetMostSpecificNodeValue(prevIdent, v)
+		state.SetMostSpecificNodeValue(prevIdent, v)
 
 		return v, nil
 	case *parse.DynamicMemberExpression:
@@ -823,7 +823,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 			return nil, err
 		}
 		//TODO: add checks
-		state.symbolicData.SetMostSpecificNodeValue(n.Left, pattern)
+		state.SetMostSpecificNodeValue(n.Left, pattern)
 
 		name, ok := n.PatternName()
 		if !ok {
@@ -863,7 +863,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 
 		defer func() {
 			if result != nil && state.symbolicData != nil {
-				state.symbolicData.SetMostSpecificNodeValue(n.MemberName, result)
+				state.SetMostSpecificNodeValue(n.MemberName, result)
 			}
 		}()
 		namespaceName := n.Namespace.Name
@@ -947,8 +947,8 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 				}
 			}
 		}
-		state.symbolicData.SetLocalScopeData(n, state.currentLocalScopeData())
-		state.symbolicData.SetGlobalScopeData(n, state.currentGlobalScopeData())
+		state.SetLocalScopeData(n, state.currentLocalScopeData())
+		state.SetGlobalScopeData(n, state.currentGlobalScopeData())
 
 		return nil, nil
 	case *parse.RuntimeTypeCheckExpression:
@@ -1057,7 +1057,7 @@ func evalChunk(n *parse.Chunk, state *State) (_ Value, finalErr error) {
 			if err != nil {
 				return nil, err
 			}
-			state.symbolicData.SetMostSpecificNodeValue(decl.Left, constVal)
+			state.SetMostSpecificNodeValue(decl.Left, constVal)
 			if !state.setGlobal(decl.Ident().Name, constVal, GlobalConst, decl.Left) {
 				return nil, fmt.Errorf("failed to set global '%s'", decl.Ident().Name)
 			}
@@ -1110,7 +1110,7 @@ func evalChunk(n *parse.Chunk, state *State) (_ Value, finalErr error) {
 		}
 	}
 
-	state.symbolicData.SetGlobalScopeData(n, state.currentGlobalScopeData())
+	state.SetGlobalScopeData(n, state.currentGlobalScopeData())
 	state.symbolicData.SetContextData(n, state.ctx.currentData())
 
 	//If the chunk is the main one, recursively register all structs defined in the current module.
@@ -1174,9 +1174,9 @@ func evalURLExpression(n *parse.URLExpression, state *State) (_ Value, finalErr 
 
 	if !ImplementsOrIsMultivalueWithAllValuesImplementing[*Host](host) {
 		state.addError(makeSymbolicEvalError(n.HostPart, state, HOST_PART_SHOULD_HAVE_A_HOST_VALUE))
-		state.symbolicData.SetMostSpecificNodeValue(n.HostPart, ANY_HOST)
+		state.SetMostSpecificNodeValue(n.HostPart, ANY_HOST)
 	} else {
-		state.symbolicData.SetMostSpecificNodeValue(n.HostPart, host)
+		state.SetMostSpecificNodeValue(n.HostPart, host)
 	}
 
 	//path evaluation
@@ -1189,7 +1189,7 @@ func evalURLExpression(n *parse.URLExpression, state *State) (_ Value, finalErr 
 		}
 
 		if isStaticPathSlice {
-			state.symbolicData.SetMostSpecificNodeValue(node, ANY_URL)
+			state.SetMostSpecificNodeValue(node, ANY_URL)
 		}
 	}
 
@@ -1198,7 +1198,7 @@ func evalURLExpression(n *parse.URLExpression, state *State) (_ Value, finalErr 
 	for _, p := range n.QueryParams {
 		param := p.(*parse.URLQueryParameter)
 
-		state.symbolicData.SetMostSpecificNodeValue(param, ANY_URL)
+		state.SetMostSpecificNodeValue(param, ANY_URL)
 
 		for _, slice := range param.Value {
 			val, err := symbolicEval(slice, state)
@@ -1412,9 +1412,9 @@ func evalLocalVariableDeclarations(n *parse.LocalVariableDeclarations, state *St
 		}
 
 		state.setLocal(name, right, static, decl.Left)
-		state.symbolicData.SetMostSpecificNodeValue(decl.Left, right)
+		state.SetMostSpecificNodeValue(decl.Left, right)
 	}
-	state.symbolicData.SetLocalScopeData(n, state.currentLocalScopeData())
+	state.SetLocalScopeData(n, state.currentLocalScopeData())
 	return nil
 }
 
@@ -1480,9 +1480,9 @@ func evalGlobalVariableDeclarations(n *parse.GlobalVariableDeclarations, state *
 		}
 
 		state.setGlobal(name, right, GlobalVar, decl.Left)
-		state.symbolicData.SetMostSpecificNodeValue(decl.Left, right)
+		state.SetMostSpecificNodeValue(decl.Left, right)
 	}
-	state.symbolicData.SetGlobalScopeData(n, state.currentGlobalScopeData())
+	state.SetGlobalScopeData(n, state.currentGlobalScopeData())
 	return nil
 }
 
@@ -1536,8 +1536,8 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 				}
 			}
 
-			state.symbolicData.SetLocalScopeData(node, state.currentLocalScopeData())
-			state.symbolicData.SetGlobalScopeData(node, state.currentGlobalScopeData())
+			state.SetLocalScopeData(node, state.currentLocalScopeData())
+			state.SetGlobalScopeData(node, state.currentGlobalScopeData())
 		}
 	}()
 
@@ -1575,8 +1575,8 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 		}
 
 		//TODO: set to previous value instead ?
-		state.symbolicData.SetMostSpecificNodeValue(lhs, __rhs)
-		state.symbolicData.SetLocalScopeData(node, state.currentLocalScopeData())
+		state.SetMostSpecificNodeValue(lhs, __rhs)
+		state.SetLocalScopeData(node, state.currentLocalScopeData())
 	case *parse.IdentifierLiteral:
 		name := lhs.Name
 
@@ -1630,8 +1630,8 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 		}
 
 		//TODO: set to previous value instead ?
-		state.symbolicData.SetMostSpecificNodeValue(lhs, __rhs)
-		state.symbolicData.SetLocalScopeData(node, state.currentLocalScopeData())
+		state.SetMostSpecificNodeValue(lhs, __rhs)
+		state.SetLocalScopeData(node, state.currentLocalScopeData())
 	case *parse.GlobalVariable:
 		name := lhs.Name
 
@@ -1670,8 +1670,8 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 		}
 
 		//TODO: set to previous value instead ?
-		state.symbolicData.SetMostSpecificNodeValue(lhs, __rhs)
-		state.symbolicData.SetGlobalScopeData(node, state.currentGlobalScopeData())
+		state.SetMostSpecificNodeValue(lhs, __rhs)
+		state.SetGlobalScopeData(node, state.currentGlobalScopeData())
 	case *parse.MemberExpression:
 		object, err := _symbolicEval(lhs.Left, state, evalOptions{
 			doubleColonExprAncestorChain: []parse.Node{node},
@@ -1764,7 +1764,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 
 		if hasPrevValue {
 			prevValue := iprops.Prop(propName)
-			state.symbolicData.SetMostSpecificNodeValue(lhs.PropertyName, prevValue)
+			state.SetMostSpecificNodeValue(lhs.PropertyName, prevValue)
 
 			checkNotClonedObjectPropMutation(lhs, state, true)
 
@@ -1834,7 +1834,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 
 		for _, ident := range lhs.PropertyNames[:len(lhs.PropertyNames)-1] {
 			v = symbolicMemb(v, ident.Name, false, lhs, state)
-			state.symbolicData.SetMostSpecificNodeValue(ident, v)
+			state.SetMostSpecificNodeValue(ident, v)
 		}
 
 		//handle IProps and structs LHS separately
@@ -1918,7 +1918,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 
 		if hasPrevValue {
 			prevValue := iprops.Prop(lastPropName)
-			state.symbolicData.SetMostSpecificNodeValue(lastPropNameNode, prevValue)
+			state.SetMostSpecificNodeValue(lastPropNameNode, prevValue)
 
 			checkNotClonedObjectPropMutation(lhs, state, true)
 
@@ -2305,7 +2305,7 @@ func evalMultiAssignment(n *parse.MultiAssignment, state *State) (_ Value, final
 			if !state.hasLocal(name) {
 				state.setLocal(name, ANY, nil, var_)
 			}
-			state.symbolicData.SetMostSpecificNodeValue(var_, ANY)
+			state.SetMostSpecificNodeValue(var_, ANY)
 		}
 	} else {
 		if seq.HasKnownLen() && seq.KnownLen() < len(n.Variables) && !isNillable {
@@ -2325,11 +2325,11 @@ func evalMultiAssignment(n *parse.MultiAssignment, state *State) (_ Value, final
 			} else {
 				state.setLocal(name, val, nil, var_)
 			}
-			state.symbolicData.SetMostSpecificNodeValue(var_, val)
+			state.SetMostSpecificNodeValue(var_, val)
 		}
 	}
 
-	state.symbolicData.SetLocalScopeData(n, state.currentLocalScopeData())
+	state.SetLocalScopeData(n, state.currentLocalScopeData())
 	return nil, nil
 }
 
@@ -2349,8 +2349,8 @@ func evalIfStatement(n *parse.IfStatement, state *State) (_ Value, finalErr erro
 		{
 			consequentStateFork = state.fork()
 			narrow(true, n.Test, state, consequentStateFork)
-			state.symbolicData.SetLocalScopeData(n.Consequent, consequentStateFork.currentLocalScopeData())
-			state.symbolicData.SetGlobalScopeData(n.Consequent, consequentStateFork.currentGlobalScopeData())
+			state.SetLocalScopeData(n.Consequent, consequentStateFork.currentLocalScopeData())
+			state.SetGlobalScopeData(n.Consequent, consequentStateFork.currentGlobalScopeData())
 
 			_, err = symbolicEval(n.Consequent, consequentStateFork)
 			if err != nil {
@@ -2362,8 +2362,8 @@ func evalIfStatement(n *parse.IfStatement, state *State) (_ Value, finalErr erro
 		if n.Alternate != nil {
 			alternateStateFork = state.fork()
 			narrow(false, n.Test, state, alternateStateFork)
-			state.symbolicData.SetLocalScopeData(n.Alternate, alternateStateFork.currentLocalScopeData())
-			state.symbolicData.SetGlobalScopeData(n.Alternate, alternateStateFork.currentGlobalScopeData())
+			state.SetLocalScopeData(n.Alternate, alternateStateFork.currentLocalScopeData())
+			state.SetGlobalScopeData(n.Alternate, alternateStateFork.currentGlobalScopeData())
 
 			_, err = symbolicEval(n.Alternate, alternateStateFork)
 			if err != nil {
@@ -2395,8 +2395,8 @@ func evalIfExpression(n *parse.IfExpression, state *State) (_ Value, finalErr er
 		if n.Consequent != nil {
 			consequentStateFork := state.fork()
 			narrow(true, n.Test, state, consequentStateFork)
-			state.symbolicData.SetLocalScopeData(n.Consequent, consequentStateFork.currentLocalScopeData())
-			state.symbolicData.SetGlobalScopeData(n.Consequent, consequentStateFork.currentGlobalScopeData())
+			state.SetLocalScopeData(n.Consequent, consequentStateFork.currentLocalScopeData())
+			state.SetGlobalScopeData(n.Consequent, consequentStateFork.currentGlobalScopeData())
 
 			consequentValue, err = symbolicEval(n.Consequent, consequentStateFork)
 			if err != nil {
@@ -2407,8 +2407,8 @@ func evalIfExpression(n *parse.IfExpression, state *State) (_ Value, finalErr er
 			if n.Alternate != nil {
 				alternateStateFork := state.fork()
 				narrow(false, n.Test, state, alternateStateFork)
-				state.symbolicData.SetLocalScopeData(n.Alternate, alternateStateFork.currentLocalScopeData())
-				state.symbolicData.SetGlobalScopeData(n.Alternate, alternateStateFork.currentGlobalScopeData())
+				state.SetLocalScopeData(n.Alternate, alternateStateFork.currentLocalScopeData())
+				state.SetGlobalScopeData(n.Alternate, alternateStateFork.currentGlobalScopeData())
 
 				atlernateValue, err = symbolicEval(n.Alternate, alternateStateFork)
 				if err != nil {
@@ -2542,7 +2542,7 @@ func evalForStatementAndExpr(n parse.Node, state *State) (_ Value, finalErr erro
 
 		state.join(stateFork)
 		//we set the local scope data at the for statement, not the body
-		state.symbolicData.SetLocalScopeData(n, state.currentLocalScopeData())
+		state.SetLocalScopeData(n, state.currentLocalScopeData())
 	}
 
 	if isForExpr {
@@ -2592,7 +2592,7 @@ func evalWalkStatement(n *parse.WalkStatement, state *State) (_ Value, finalErr 
 
 		state.join(stateFork)
 		//we set the local scope data at the for statement, not the body
-		state.symbolicData.SetLocalScopeData(n, state.currentLocalScopeData())
+		state.SetLocalScopeData(n, state.currentLocalScopeData())
 	}
 
 	state.iterationChange = NoIterationChange
@@ -2769,7 +2769,7 @@ func evalMatchStatement(n *parse.MatchStatement, state *State) (_ Value, finalEr
 					if possible {
 						groupsObj := NewInexactObject(groups, nil, nil)
 						blockStateFork.setLocal(variable.Name, groupsObj, nil, matchCase.GroupMatchingVariable)
-						state.symbolicData.SetMostSpecificNodeValue(variable, groupsObj)
+						state.SetMostSpecificNodeValue(variable, groupsObj)
 
 						_, err := symbolicEval(matchCase.Block, blockStateFork)
 						if err != nil {
@@ -2872,7 +2872,7 @@ func evalMatchExpression(n *parse.MatchExpression, state *State) (_ Value, final
 					if possible {
 						groupsObj := NewInexactObject(groups, nil, nil)
 						blockStateFork.setLocal(variable.Name, groupsObj, nil, matchCase.GroupMatchingVariable)
-						state.symbolicData.SetMostSpecificNodeValue(variable, groupsObj)
+						state.SetMostSpecificNodeValue(variable, groupsObj)
 
 						result, err := symbolicEval(matchCase.Result, blockStateFork)
 						if err != nil {
@@ -3252,11 +3252,11 @@ func evalFunctionExpression(n *parse.FunctionExpression, state *State, options e
 			}
 			paramType = pattern
 			paramValue = pattern.SymbolicValue()
-			state.symbolicData.SetMostSpecificNodeValue(p.Type, pattern)
+			state.SetMostSpecificNodeValue(p.Type, pattern)
 		}
 
 		stateFork.setLocal(name, paramValue, paramType, p.Var)
-		state.symbolicData.SetMostSpecificNodeValue(p.Var, paramValue)
+		state.SetMostSpecificNodeValue(p.Var, paramValue)
 		params[i] = paramValue
 		paramNames[i] = name
 	}
@@ -3458,8 +3458,8 @@ func evalFunctionDeclaration(n *parse.FunctionDeclaration, state *State, options
 	}
 
 	if n.Function == nil {
-		state.symbolicData.SetMostSpecificNodeValue(n.Name, startValue)
-		state.symbolicData.SetGlobalScopeData(n, state.currentGlobalScopeData())
+		state.SetMostSpecificNodeValue(n.Name, startValue)
+		state.SetGlobalScopeData(n, state.currentGlobalScopeData())
 		return nil, nil
 	}
 
@@ -3474,8 +3474,8 @@ func evalFunctionDeclaration(n *parse.FunctionDeclaration, state *State, options
 		state.symbolicData.UpdateAllPreviousGlobalScopeDataWithInoxFunction(state.currentChunk().Node, funcName, v.(*InoxFunction))
 
 		state.overrideGlobal(funcName, v)
-		state.symbolicData.SetMostSpecificNodeValue(n.Name, v)
-		state.symbolicData.SetGlobalScopeData(n, state.currentGlobalScopeData())
+		state.SetMostSpecificNodeValue(n.Name, v)
+		state.SetGlobalScopeData(n, state.currentGlobalScopeData())
 	}
 	return nil, err
 }
@@ -3521,7 +3521,7 @@ func evalFunctionPatternExpression(n *parse.FunctionPatternExpression, state *St
 
 		if p.Var != nil {
 			stateFork.setLocal(name, paramType, nil, p.Var)
-			state.symbolicData.SetMostSpecificNodeValue(p.Var, paramType)
+			state.SetMostSpecificNodeValue(p.Var, paramType)
 		}
 	}
 
@@ -3547,7 +3547,7 @@ func evalFunctionPatternExpression(n *parse.FunctionPatternExpression, state *St
 		parameterNames[len(parameterTypes)-1] = name
 
 		stateFork.setLocal(name, paramType, nil, variadicParam.Var)
-		state.symbolicData.SetMostSpecificNodeValue(variadicParam.Var, paramType)
+		state.SetMostSpecificNodeValue(variadicParam.Var, paramType)
 	}
 
 	//-----------------------------
@@ -3615,8 +3615,8 @@ func evalInclusionImportStatement(n *parse.InclusionImportStatement, state *Stat
 	defer state.popChunk()
 
 	_, err := symbolicEval(chunk.Node, state)
-	state.symbolicData.SetLocalScopeData(n, state.currentLocalScopeData())
-	state.symbolicData.SetGlobalScopeData(n, state.currentGlobalScopeData())
+	state.SetLocalScopeData(n, state.currentLocalScopeData())
+	state.SetGlobalScopeData(n, state.currentGlobalScopeData())
 	state.symbolicData.SetContextData(n, state.ctx.currentData())
 	return nil, err
 }
@@ -3625,8 +3625,8 @@ func evalImportStatement(n *parse.ImportStatement, state *State) (_ Value, final
 	value := ANY
 	state.setGlobal(n.Identifier.Name, value, GlobalConst)
 
-	state.symbolicData.SetMostSpecificNodeValue(n.Identifier, value)
-	state.symbolicData.SetGlobalScopeData(n, state.currentGlobalScopeData())
+	state.SetMostSpecificNodeValue(n.Identifier, value)
+	state.SetGlobalScopeData(n, state.currentGlobalScopeData())
 
 	var pathOrURL string
 
@@ -3910,13 +3910,13 @@ func evalMappingExpression(n *parse.MappingExpression, state *State) (_ Value, f
 				keyVal = patt.SymbolicValue()
 			}
 			fork.setLocal(keyVarname, keyVal, nil, e.KeyVar)
-			state.symbolicData.SetMostSpecificNodeValue(e.KeyVar, keyVal)
+			state.SetMostSpecificNodeValue(e.KeyVar, keyVal)
 
 			if e.GroupMatchingVariable != nil {
 				matchingVarName := e.GroupMatchingVariable.(*parse.IdentifierLiteral).Name
 				anyObj := NewAnyObject()
 				fork.setLocal(matchingVarName, anyObj, nil, e.GroupMatchingVariable)
-				state.symbolicData.SetMostSpecificNodeValue(e.GroupMatchingVariable, anyObj)
+				state.SetMostSpecificNodeValue(e.GroupMatchingVariable, anyObj)
 			}
 
 			_, err = symbolicEval(e.ValueComputation, fork)
@@ -4202,7 +4202,7 @@ func evalObjectLiteral(n *parse.ObjectLiteral, state *State, options evalOptions
 		}
 
 		obj.initNewProp(key, serializable, static)
-		state.symbolicData.SetMostSpecificNodeValue(p.Key, propVal)
+		state.SetMostSpecificNodeValue(p.Key, propVal)
 	}
 
 	//evaluate elements that don't have a key.
@@ -4212,7 +4212,7 @@ func evalObjectLiteral(n *parse.ObjectLiteral, state *State, options evalOptions
 		if err != nil {
 			return nil, err
 		}
-		state.symbolicData.SetMostSpecificNodeValue(p.Key, propVal)
+		state.SetMostSpecificNodeValue(p.Key, propVal)
 
 		//additional checks if expected object is readonly
 		if expectedObj.readonly {
@@ -4366,7 +4366,7 @@ func evalRecordLiteral(n *parse.RecordLiteral, state *State, options evalOptions
 			return nil, err
 		}
 
-		state.symbolicData.SetMostSpecificNodeValue(p.Key, propVal)
+		state.SetMostSpecificNodeValue(p.Key, propVal)
 
 		serializable, ok := AsSerializable(propVal).(Serializable)
 		if !ok {
@@ -4752,7 +4752,7 @@ func evalDictionaryLiteral(n *parse.DictionaryLiteral, state *State, options eva
 
 		entries[keyRepr] = v.(Serializable)
 		keys[keyRepr] = key.(Serializable)
-		state.symbolicData.SetMostSpecificNodeValue(entry.Key, key)
+		state.SetMostSpecificNodeValue(entry.Key, key)
 	}
 
 	return NewDictionary(entries, keys), nil
@@ -4827,7 +4827,7 @@ func evalObjectPatternLiteral(n *parse.ObjectPatternLiteral, state *State, optio
 		if state.symbolicData != nil {
 			val, ok := state.symbolicData.GetMostSpecificNodeValue(p.Value)
 			if ok {
-				state.symbolicData.SetMostSpecificNodeValue(p.Key, val)
+				state.SetMostSpecificNodeValue(p.Key, val)
 			}
 		}
 		if p.Optional {
@@ -4913,7 +4913,7 @@ func evalRecordPatternLiteral(n *parse.RecordPatternLiteral, state *State, optio
 		if state.symbolicData != nil {
 			val, ok := state.symbolicData.GetMostSpecificNodeValue(p.Value)
 			if ok {
-				state.symbolicData.SetMostSpecificNodeValue(p.Key, val)
+				state.SetMostSpecificNodeValue(p.Key, val)
 			}
 		}
 		if p.Optional {
@@ -5309,7 +5309,7 @@ func evalPatternNamespaceDefinition(n *parse.PatternNamespaceDefinition, state *
 
 	if namespaceName != "" && state.ctx.ResolvePatternNamespace(namespaceName) == nil {
 		state.ctx.AddPatternNamespace(namespaceName, namespace, state.inPreinit, pos)
-		state.symbolicData.SetMostSpecificNodeValue(n.Left, namespace)
+		state.SetMostSpecificNodeValue(n.Left, namespace)
 		state.symbolicData.SetContextData(n, state.ctx.currentData())
 	}
 
@@ -5715,9 +5715,9 @@ func evalXMLElement(n *parse.XMLElement, state *State, options evalOptions) (Val
 
 	xmlElem := NewXmlElement(name, attrs, children)
 
-	state.symbolicData.SetMostSpecificNodeValue(n.Opening.Name, xmlElem)
+	state.SetMostSpecificNodeValue(n.Opening.Name, xmlElem)
 	if n.Closing != nil {
-		state.symbolicData.SetMostSpecificNodeValue(n.Closing.Name, xmlElem)
+		state.SetMostSpecificNodeValue(n.Closing.Name, xmlElem)
 	}
 
 	return xmlElem, nil
@@ -5730,7 +5730,9 @@ func evalDoubleColonExpression(n *parse.DoubleColonExpression, state *State, opt
 	}
 
 	extensions := state.ctx.GetExtensions(left)
-	state.symbolicData.SetAllTypeExtensions(n, extensions)
+	if !state.inNonInitialInoxCall() {
+		state.symbolicData.SetAvailableTypeExtensions(n, extensions)
+	}
 
 	obj, isLeftObject := left.(*Object)
 	url, isLeftURL := left.(*URL) //ignore URL multivalues because the property resolution would be too ambiguous.
@@ -5742,7 +5744,7 @@ func evalDoubleColonExpression(n *parse.DoubleColonExpression, state *State, opt
 		//get actual value of the property.
 
 		memb := symbolicMemb(obj, elementName, false, n, state)
-		state.symbolicData.SetMostSpecificNodeValue(n.Element, memb)
+		state.SetMostSpecificNodeValue(n.Element, memb)
 
 		if IsAnyOrAnySerializable(memb) || utils.Ret0(IsSharable(memb)) {
 			state.addError(makeSymbolicEvalError(n, state, RHS_OF_DOUBLE_COLON_EXPRS_WITH_OBJ_LHS_SHOULD_BE_THE_NAME_OF_A_MUTABLE_NON_SHARABLE_VALUE_PROPERTY))
@@ -5794,7 +5796,7 @@ func evalDoubleColonExpression(n *parse.DoubleColonExpression, state *State, opt
 		iprops, ok := valAtURL.(IProps)
 		if !ok {
 			state.addError(makeSymbolicEvalError(n.Element, state, fmtValueAtURLHasNoProperties(valAtURL)))
-			state.symbolicData.SetMostSpecificNodeValue(n.Element, ANY_SERIALIZABLE)
+			state.SetMostSpecificNodeValue(n.Element, ANY_SERIALIZABLE)
 			return ANY_SERIALIZABLE, nil
 		}
 		state.symbolicData.SetURLReferencedEntity(n, iprops)
@@ -5808,12 +5810,12 @@ func evalDoubleColonExpression(n *parse.DoubleColonExpression, state *State, opt
 
 		if !slices.Contains(iprops.PropertyNames(), elementName) {
 			state.addError(makeSymbolicEvalError(n.Element, state, fmtValueAtURLDoesNotHavePropX(valAtURL, elementName)))
-			state.symbolicData.SetMostSpecificNodeValue(n.Element, ANY_SERIALIZABLE)
+			state.SetMostSpecificNodeValue(n.Element, ANY_SERIALIZABLE)
 			return ANY_SERIALIZABLE, nil
 		}
 
 		val := iprops.Prop(elementName)
-		state.symbolicData.SetMostSpecificNodeValue(n.Element, val)
+		state.SetMostSpecificNodeValue(n.Element, val)
 
 		return val, nil
 	default:
@@ -5881,8 +5883,10 @@ func evalDoubleColonExpression(n *parse.DoubleColonExpression, state *State, opt
 					return nil, err
 				}
 			}
-			state.symbolicData.SetMostSpecificNodeValue(n.Element, result)
-			state.symbolicData.SetUsedTypeExtension(n, extension)
+			state.SetMostSpecificNodeValue(n.Element, result)
+			if !state.inNonInitialInoxCall() {
+				state.symbolicData.SetUsedTypeExtension(n, extension)
+			}
 			return result, nil
 		}
 		//not found (error)
@@ -6319,7 +6323,7 @@ func evalExtendStatement(n *parse.ExtendStatement, state *State, options evalOpt
 	// 	}
 
 	// 	obj.initNewProp(key, serializable, static)
-	// 	state.symbolicData.SetMostSpecificNodeValue(p.Key, propVal)
+	// 	state.SetMostSpecificNodeValue(p.Key, propVal)
 	// }
 	// state.unsetNextSelf()
 	// if restoreNextSelf {
