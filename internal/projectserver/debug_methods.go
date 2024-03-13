@@ -652,7 +652,7 @@ func handleDebugLaunch(ctx context.Context, req interface{}) (interface{}, error
 			}
 		}()
 
-		defer notifyDiagnostics(diagnosticsParams{
+		defer computeNotifyDocumentDiagnostics(diagnosticNotificationParams{
 			session:         session,
 			docURI:          debugSession.programURI,
 			usingInoxFS:     debugSession.inProjectMode,

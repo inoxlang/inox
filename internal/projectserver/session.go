@@ -35,11 +35,13 @@ type additionalSessionData struct {
 	projectDevSessionKey http_ns.DevSessionKey //set after project is open
 	devSession           *dev.Session
 
-	serverAPI            *serverAPI //set during project opening
-	lastCodebaseAnalysis *analysis.Result
-	cssGenerator         *gen.CssGenerator
-	jsGenerator          *gen.JsGenerator
-	fsEventSource        *fs_ns.FilesystemEventSource
+	serverAPI                  *serverAPI //set during project opening
+	lastCodebaseAnalysis       *analysis.Result
+	cssGenerator               *gen.CssGenerator
+	jsGenerator                *gen.JsGenerator
+	fsEventSource              *fs_ns.FilesystemEventSource
+	postEditDiagnosticDebounce func(f func()) //Used to debounce the computation of diagnostics after the user stops making edits.
+	//documentDiagnostics        map[ /*absolute path */ string]*documentDiagnostics
 
 	//testing
 	testRuns map[TestRunId]*TestRun
@@ -73,6 +75,7 @@ func getSessionData(session *jsonrpc.Session) *additionalSessionData {
 			didSaveCapabilityRegistrationIds: make(map[defines.DocumentUri]uuid.UUID, 0),
 			unsavedDocumentSyncData:          make(map[string]*unsavedDocumentSyncData, 0),
 			testRuns:                         make(map[TestRunId]*TestRun, 0),
+			//documentDiagnostics:              make(map[string]*documentDiagnostics),
 		}
 		sessionToAdditionalData[session] = sessionData
 	}

@@ -12,6 +12,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/bep/debounce"
 	fsutil "github.com/go-git/go-billy/v5/util"
 	"github.com/google/uuid"
 
@@ -73,7 +74,7 @@ func registerStandardMethodHandlers(server *lsp.Server, serverConfig LSPServerCo
 
 	//Diagnostics
 
-	//server.OnDocumentDiagnostic(handleDocumentDiagnostic)
+	server.OnDocumentDiagnostic(handleDocumentDiagnostic)
 
 	//Document synchronization
 
@@ -166,20 +167,20 @@ func handleInitialize(ctx context.Context, req *defines.InitializeParams, projec
 		capabilities.TextDocumentSync = defines.TextDocumentSyncKindFull
 	}
 
-	// capabilities.DocumentDiagnosticProvider = &defines.DiagnosticRegistrationOptions{
-	// 	DiagnosticOptions: defines.DiagnosticOptions{
-	// 		InterFileDependencies: true,
-	// 	},
-	// 	// TextDocumentRegistrationOptions: defines.TextDocumentRegistrationOptions{
-	// 	// 	DocumentSelector: []defines.DocumentFilter{
-	// 	// 		{
-	// 	// 			Language: "inox",
-	// 	// 			Scheme:   "inox",
-	// 	// 			Pattern:  "**/*.ix'",
-	// 	// 		},
-	// 	// 	},
-	// 	// },
-	// }
+	capabilities.DocumentDiagnosticProvider = &defines.DiagnosticRegistrationOptions{
+		DiagnosticOptions: defines.DiagnosticOptions{
+			InterFileDependencies: true,
+		},
+		// TextDocumentRegistrationOptions: defines.TextDocumentRegistrationOptions{
+		// 	DocumentSelector: []defines.DocumentFilter{
+		// 		{
+		// 			Language: "inox",
+		// 			Scheme:   "inox",
+		// 			Pattern:  "**/*.ix'",
+		// 		},
+		// 	},
+		// },
+	}
 
 	s.Capabilities = capabilities
 
@@ -497,37 +498,6 @@ func handleDefinition(ctx context.Context, req *defines.DefinitionParams) (resul
 	return &links, nil
 }
 
-func handleDocumentDiagnostic(ctx context.Context, req *defines.DocumentDiagnosticParams) (any, error) {
-	session := jsonrpc.GetSession(ctx)
-	sessionCtx := session.Context()
-
-	sessionData := getLockedSessionData(session)
-	projectMode := sessionData.projectMode
-	fls := sessionData.filesystem
-	memberAuthToken := sessionData.memberAuthToken
-	sessionData.lock.Unlock()
-
-	if fls == nil {
-		return nil, errors.New(string(FsNoFilesystem))
-	}
-
-	fpath, err := getFilePath(req.TextDocument.Uri, projectMode)
-	if err != nil {
-		return nil, err
-	}
-
-	unchanged := defines.UnchangedDocumentDiagnosticReport{
-		Kind:     defines.DocumentDiagnosticReportKindUnChanged,
-		ResultId: "0",
-	}
-
-	_ = sessionCtx
-	_ = memberAuthToken
-	_ = fpath
-
-	return unchanged, nil
-}
-
 func handleFormatDocument(ctx context.Context, req *defines.DocumentFormattingParams) (result *[]defines.TextEdit, err error) {
 	session := jsonrpc.GetSession(ctx)
 
@@ -635,7 +605,7 @@ func handleDidOpenDocument(ctx context.Context, req *defines.DidOpenTextDocument
 		sessionData.lock.Unlock()
 	}
 
-	return notifyDiagnostics(diagnosticsParams{
+	return computeNotifyDocumentDiagnostics(diagnosticNotificationParams{
 		session:         session,
 		docURI:          req.TextDocument.Uri,
 		usingInoxFS:     projectMode,
@@ -730,7 +700,7 @@ func handleDidSaveDocument(ctx context.Context, req *defines.DidSaveTextDocument
 		}
 	}
 
-	return notifyDiagnostics(diagnosticsParams{
+	return computeNotifyDocumentDiagnostics(diagnosticNotificationParams{
 		session:         session,
 		docURI:          req.TextDocument.Uri,
 		usingInoxFS:     projectMode,
@@ -755,6 +725,11 @@ func handleDidChangeDocument(ctx context.Context, req *defines.DidChangeTextDocu
 	}
 
 	syncData, hasSyncData := sessionData.unsavedDocumentSyncData[fpath]
+
+	if sessionData.postEditDiagnosticDebounce == nil {
+		sessionData.postEditDiagnosticDebounce = debounce.New(POST_EDIT_DIAGNOSTIC_DEBOUNCE_DURATION)
+	}
+
 	sessionData.lock.Unlock()
 	//----------------------------------------
 
@@ -770,6 +745,18 @@ func handleDidChangeDocument(ctx context.Context, req *defines.DidChangeTextDocu
 	}
 
 	sessionData.preparedSourceFilesCache.acknowledgeSourceFileChange(fpath)
+
+	//Schedule a diagnostic.
+	sessionData.postEditDiagnosticDebounce(func() {
+		defer utils.Recover()
+		computeNotifyDocumentDiagnostics(diagnosticNotificationParams{
+			session:         session,
+			docURI:          req.TextDocument.Uri,
+			usingInoxFS:     projectMode,
+			fls:             fls,
+			memberAuthToken: memberAuthToken,
+		})
+	})
 
 	if syncFull {
 		fullDocumentText = req.ContentChanges[0].Text.(string)
@@ -864,13 +851,7 @@ func handleDidChangeDocument(ctx context.Context, req *defines.DidChangeTextDocu
 		}
 	}
 
-	return notifyDiagnostics(diagnosticsParams{
-		session:         session,
-		docURI:          req.TextDocument.Uri,
-		usingInoxFS:     projectMode,
-		fls:             fls,
-		memberAuthToken: memberAuthToken,
-	})
+	return nil
 }
 
 func handleDidCloseDocument(ctx context.Context, req *defines.DidCloseTextDocumentParams) (err error) {

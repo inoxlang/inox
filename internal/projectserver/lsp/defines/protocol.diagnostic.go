@@ -100,9 +100,9 @@ type PreviousResultId struct {
 }
 
 type FullDocumentDiagnosticReport struct {
-	Kind     interface{}   `json:"kind,omitempty"` // DocumentDiagnosticReportKind.full
-	ResultId *string       `json:"resultId,omitempty"`
-	Items    []interface{} `json:"items,omitempty"`
+	Kind     interface{}  `json:"kind,omitempty"` // DocumentDiagnosticReportKind.full
+	ResultId *string      `json:"resultId,omitempty"`
+	Items    []Diagnostic `json:"items"` //omitempty should not be present because this can cause issues on the client.
 }
 
 /**

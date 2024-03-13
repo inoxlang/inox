@@ -1,20 +1,93 @@
 package projectserver
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
+	"github.com/oklog/ulid/v2"
 
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
-type diagnosticsParams struct {
+const (
+	//Duration before computing and publishing diagnostics after the user stops making edits.
+	POST_EDIT_DIAGNOSTIC_DEBOUNCE_DURATION = 400 * time.Millisecond
+)
+
+// This handler does not return any diagnostics. Instead it spawns a goroutine that will compute, and push them using textDocument/publisDiagnostics.
+// This is a bit of a hack, but unexpected bugs and issues arose when mixing the two diagnostic retrieval models (push and pull) was tried.
+func handleDocumentDiagnostic(ctx context.Context, req *defines.DocumentDiagnosticParams) (any, error) {
+	session := jsonrpc.GetSession(ctx)
+	//sessionCtx := session.Context()
+
+	sessionData := getLockedSessionData(session)
+	projectMode := sessionData.projectMode
+	fls := sessionData.filesystem
+	memberAuthToken := sessionData.memberAuthToken
+	sessionData.lock.Unlock()
+
+	if fls == nil {
+		return &defines.FullDocumentDiagnosticReport{
+			Kind:  defines.DocumentDiagnosticReportKindFull,
+			Items: []defines.Diagnostic{},
+		}, nil
+	}
+
+	_, err := getFilePath(req.TextDocument.Uri, projectMode)
+	if err != nil {
+		return nil, err
+	}
+
+	go func() {
+		defer utils.Recover()
+		computeNotifyDocumentDiagnostics(diagnosticNotificationParams{
+			session:         session,
+			docURI:          req.TextDocument.Uri,
+			usingInoxFS:     projectMode,
+			fls:             fls,
+			memberAuthToken: memberAuthToken,
+		})
+	}()
+
+	// _ = fpath
+
+	// // unchanged := defines.UnchangedDocumentDiagnosticReport{
+	// // 	Kind:     defines.DocumentDiagnosticReportKindUnChanged,
+	// // 	ResultId: "0",
+	// // }
+
+	// diagostics, err := computeDocumentDiagnostics(diagnosticNotificationParams{
+	// 	session:         session,
+	// 	docURI:          req.TextDocument.Uri,
+	// 	usingInoxFS:     projectMode,
+	// 	fls:             fls,
+	// 	memberAuthToken: memberAuthToken,
+	// })
+
+	// if err != nil {
+	// 	return nil, jsonrpc.ResponseError{
+	// 		Code:    jsonrpc.InternalError.Code,
+	// 		Message: err.Error(),
+	// 	}
+	// }
+
+	report := &defines.FullDocumentDiagnosticReport{
+		Kind:  defines.DocumentDiagnosticReportKindFull,
+		Items: []defines.Diagnostic{},
+	}
+
+	return report, nil
+}
+
+type diagnosticNotificationParams struct {
 	session         *jsonrpc.Session
 	docURI          defines.DocumentUri
 	usingInoxFS     bool
@@ -22,9 +95,18 @@ type diagnosticsParams struct {
 	memberAuthToken string
 }
 
-// notifyDiagnostics prepares a source file, constructs a list of defines.Diagnostic from errors at different phases
-// (parsing, static check, and symbolic evaluation) and notifies the LSP client (textDocument/publishDiagnostics).
-func notifyDiagnostics(params diagnosticsParams) error {
+// computeNotifyDocumentDiagnostics diagnostics a document and notifies the LSP client (textDocument/publishDiagnostics).
+func computeNotifyDocumentDiagnostics(params diagnosticNotificationParams) error {
+	diagnostics, err := computeDocumentDiagnostics(params)
+	if err != nil {
+		return err
+	}
+	return sendDocumentDiagnostics(params.session, params.docURI, diagnostics.items)
+}
+
+// computes prepares a source file, constructs a list of defines.Diagnostic from errors at different phases
+// (parsing, static check, and symbolic evaluation). The list is saved in the session before being returned.
+func computeDocumentDiagnostics(params diagnosticNotificationParams) (result *documentDiagnostics, _ error) {
 
 	session, docURI, usingInoxFS, fls, memberAuthToken := params.session, params.docURI, params.usingInoxFS, params.fls, params.memberAuthToken
 
@@ -35,8 +117,24 @@ func notifyDiagnostics(params diagnosticsParams) error {
 
 	fpath, err := getFilePath(docURI, usingInoxFS)
 	if err != nil {
-		return err
+		return nil, err
 	}
+
+	defer func() {
+		if result != nil {
+			//Finalize the result.
+			result.id = MakeDocDiagnosticId(fpath)
+			if result.items == nil {
+				//Make sure the items are serialized as an empty array, not 'null'.
+				result.items = []defines.Diagnostic{}
+			}
+
+			// //Save the result in the session.
+			// psSession := getLockedSessionData(params.session)
+			// defer psSession.lock.Unlock()
+			// psSession.documentDiagnostics[fpath] = result
+		}
+	}()
 
 	errSeverity := defines.DiagnosticSeverityError
 	warningSeverity := defines.DiagnosticSeverityWarning
@@ -46,6 +144,7 @@ func notifyDiagnostics(params diagnosticsParams) error {
 		session:         session,
 		requiresState:   false,
 		memberAuthToken: memberAuthToken,
+		ignoreCache:     true,
 	})
 
 	state := preparationResult.state
@@ -69,8 +168,7 @@ func notifyDiagnostics(params diagnosticsParams) error {
 	diagnostics := make([]defines.Diagnostic, 0)
 
 	if !ok {
-		sendDiagnostics(session, docURI, diagnostics)
-		return nil
+		return &documentDiagnostics{items: diagnostics}, nil
 	}
 
 	i := -1
@@ -99,8 +197,7 @@ func notifyDiagnostics(params diagnosticsParams) error {
 	diagnostics = append(diagnostics, parsingDiagnostics...)
 
 	if state == nil {
-		sendDiagnostics(session, docURI, diagnostics)
-		return nil
+		return &documentDiagnostics{items: diagnostics}, nil
 	}
 
 	if state.PrenitStaticCheckErrors != nil {
@@ -197,16 +294,39 @@ func notifyDiagnostics(params diagnosticsParams) error {
 		diagnostics = append(diagnostics, symbolicCheckWarningDiagnostics...)
 	}
 
-	sendDiagnostics(session, docURI, diagnostics)
-	return nil
+	return &documentDiagnostics{items: diagnostics}, nil
 }
 
-func sendDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, diagnostics []defines.Diagnostic) error {
+func sendDocumentDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, diagnostics []defines.Diagnostic) error {
+
+	version := int(
+		time.Since(core.PROCESS_BEGIN_TIME) /
+			/* Divide to prevent an overflow. A precision of 0.1 second should be fine. */
+			(100 * time.Millisecond))
+
 	return session.Notify(jsonrpc.NotificationMessage{
 		Method: "textDocument/publishDiagnostics",
 		Params: utils.Must(json.Marshal(defines.PublishDiagnosticsParams{
 			Uri:         docURI,
 			Diagnostics: diagnostics,
+			//Setting a version seens to make VSCode more likely to override old pulled diagnostics with published ones.
+			Version: &version,
 		})),
 	})
+}
+
+// Format: <ULID>-absolute-document-path
+// Example: 01HRTBRGXEWG6T4M6N4V4QVP0F-/main.ix
+type DocDiagnosticId string
+
+// MakeDocDiagnosticId returns a DocDiagnosticId for the document at $absPath.
+// The time of the ULID part is the current time.
+func MakeDocDiagnosticId(absPath string) DocDiagnosticId {
+	return DocDiagnosticId(ulid.Make().String() + "-" + absPath)
+}
+
+type documentDiagnostics struct {
+	id                           DocDiagnosticId
+	items                        []defines.Diagnostic
+	containsWorkspaceDiagnostics bool
 }
