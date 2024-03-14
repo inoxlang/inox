@@ -5,8 +5,8 @@ import (
 )
 
 // A ChunkCache caches *Chunk by source code (string).
-type ChunkCache = parsecache.Cache[Chunk, error]
+type ChunkCache = parsecache.Cache[ParsedChunkSource, error]
 
 func NewChunkCache() *ChunkCache {
-	return parsecache.New[Chunk, error]()
+	return parsecache.New[ParsedChunkSource, error]()
 }

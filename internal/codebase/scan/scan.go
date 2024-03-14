@@ -127,7 +127,7 @@ func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) e
 		//Inox file ----------------------------------------------------------------------------
 		case inoxconsts.INOXLANG_FILE_EXTENSION:
 			var (
-				chunk    *parse.Chunk
+				chunk    *parse.ParsedChunkSource
 				cacheHit bool
 			)
 
@@ -142,7 +142,16 @@ func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) e
 
 				//Parse the file.
 
-				result, err := parse.ParseChunk(contentS, path, parse.ParserOptions{
+				sourceFile := parse.SourceFile{
+					NameString:             path,
+					UserFriendlyNameString: path,
+					Resource:               path,
+					ResourceDir:            filepath.Dir(path),
+					IsResourceURL:          false,
+					CodeString:             contentS,
+				}
+
+				result, err := parse.ParseChunkSource(sourceFile, parse.ParserOptions{
 					Timeout: config.FileParsingTimeout,
 				})
 				if result == nil { //critical error
@@ -159,7 +168,7 @@ func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) e
 			seenInoxFiles = append(seenInoxFiles, path)
 
 			for _, handler := range config.InoxFileHandlers {
-				err := handler(path, contentS, chunk)
+				err := handler(path, contentS, chunk.Node)
 
 				if err != nil {
 					return fmt.Errorf("an iNox file handler returned an error for %s", path)
