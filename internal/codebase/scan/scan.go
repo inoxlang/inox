@@ -62,7 +62,7 @@ func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) e
 		return err
 	}
 
-	//Track the cached chunks in order
+	//Track the encountered files in order to remove deleted ASTs from the cache.
 	seenInoxFiles := []string{}
 	seenCssFiles := []string{}
 	chunkCache := config.ChunkCache
@@ -126,49 +126,31 @@ func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) e
 		switch filepath.Ext(path) {
 		//Inox file ----------------------------------------------------------------------------
 		case inoxconsts.INOXLANG_FILE_EXTENSION:
-			var (
-				chunk    *parse.ParsedChunkSource
-				cacheHit bool
-			)
 
 			contentS := string(content)
 
-			//Check the cache.
-			if chunkCache != nil {
-				chunk, cacheHit = chunkCache.GetResult(contentS)
+			sourceFile := parse.SourceFile{
+				NameString:             path,
+				UserFriendlyNameString: path,
+				Resource:               path,
+				ResourceDir:            filepath.Dir(path),
+				IsResourceURL:          false,
+				CodeString:             contentS,
 			}
 
-			if !cacheHit {
+			result, _ := parse.ParseChunkSource(sourceFile, parse.ParserOptions{
+				Timeout:         config.FileParsingTimeout,
+				ParsedFileCache: chunkCache,
+			})
 
-				//Parse the file.
-
-				sourceFile := parse.SourceFile{
-					NameString:             path,
-					UserFriendlyNameString: path,
-					Resource:               path,
-					ResourceDir:            filepath.Dir(path),
-					IsResourceURL:          false,
-					CodeString:             contentS,
-				}
-
-				result, err := parse.ParseChunkSource(sourceFile, parse.ParserOptions{
-					Timeout: config.FileParsingTimeout,
-				})
-				if result == nil { //critical error
-					return nil
-				}
-
-				chunk = result
-
-				//Update the cache.
-				if chunkCache != nil {
-					config.ChunkCache.Put(path, contentS, result, err)
-				}
+			if result == nil { //critical error
+				return nil
 			}
+
 			seenInoxFiles = append(seenInoxFiles, path)
 
 			for _, handler := range config.InoxFileHandlers {
-				err := handler(path, contentS, chunk.Node)
+				err := handler(path, contentS, result.Node)
 
 				if err != nil {
 					return fmt.Errorf("an iNox file handler returned an error for %s", path)
