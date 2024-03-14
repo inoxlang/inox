@@ -14,7 +14,7 @@ var (
 // An API is used internally by an Inox web application to provide development tools.
 // This type implements the core.Value interface.
 type API struct {
-	session *Instance
+	instance *Instance
 }
 
 func (a *API) DevAPI__() {
@@ -22,17 +22,17 @@ func (a *API) DevAPI__() {
 }
 
 func (a *API) getDB(ctx *core.Context, name core.String) (*dbProxy, error) {
-	a.session.lock.Lock()
-	defer a.session.lock.Unlock()
+	a.instance.lock.Lock()
+	defer a.instance.lock.Unlock()
 
 	nameS := string(name)
 
-	proxy, ok := a.session.dbProxies[nameS]
+	proxy, ok := a.instance.dbProxies[nameS]
 	if ok {
 		return proxy, nil
 	}
 
-	proxy = newDBProxy(nameS, a.session)
+	proxy = newDBProxy(nameS, a.instance)
 
 	lockSession := false
 	_, err := proxy.dbNoLock(lockSession)
@@ -40,22 +40,22 @@ func (a *API) getDB(ctx *core.Context, name core.String) (*dbProxy, error) {
 		return nil, err
 	}
 
-	a.session.dbProxies[nameS] = proxy
+	a.instance.dbProxies[nameS] = proxy
 
 	return proxy, nil
 }
 
 func (a *API) getDatabaseNames(_ *core.Context) *core.List {
-	a.session.lock.Lock()
-	defer a.session.lock.Unlock()
+	a.instance.lock.Lock()
+	defer a.instance.lock.Unlock()
 
 	names := map[string]struct{}{}
 
-	for name := range a.session.dbProxies {
+	for name := range a.instance.dbProxies {
 		names[name] = struct{}{}
 	}
 
-	for name := range a.session.runningProgramDatabases {
+	for name := range a.instance.runningProgramDatabases {
 		names[name] = struct{}{}
 	}
 

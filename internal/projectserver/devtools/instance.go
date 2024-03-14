@@ -25,6 +25,8 @@ var (
 	ErrDevtoolsInstanceAlreadyInitialized    = errors.New("devtools instance is already initialized")
 )
 
+// A devtools Instance is the main structure of this package. It provides an API to tooling scripts and to a web application it manages.
+// See the API type for more details. During a development session Inox programs are launched through a devtools Instance.
 type Instance struct {
 	lock        sync.Mutex
 	initialized bool
@@ -73,17 +75,13 @@ func NewInstance(args InstanceParams) (*Instance, error) {
 		memberAuthToken: args.MemberAuthToken,
 	}
 
-	instance.api = &API{session: instance}
+	instance.api = &API{instance: instance}
 
 	if !inoxconsts.IsDevPort(instance.toolsServerPort) {
 		return nil, fmt.Errorf("%s is not a dev port", instance.toolsServerPort)
 	}
 
 	return instance, nil
-}
-
-func (inst *Instance) DevAPI() *API {
-	return inst.api
 }
 
 func (inst *Instance) InitWithPreparedMainModule(state *core.GlobalState) error {

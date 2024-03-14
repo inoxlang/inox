@@ -345,7 +345,7 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 			devtoolsInstance.InitWithPreparedMainModule(result.state)
 		}
 
-		err := devtoolsInstance.DevToolsServer()
+		err := devtoolsInstance.StartWebApp()
 		if err != nil {
 			logs.Println(rpcSession.Client(), "failed to start dev tools server:", err)
 		} else {

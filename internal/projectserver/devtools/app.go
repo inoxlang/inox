@@ -24,15 +24,17 @@ var (
 	ErrInexistingOrInvalidDevToolsEntryPoint = errors.New("entry point for the dev tools server does not exist or is invalid")
 )
 
-func (s *Instance) DevToolsServer() error {
+// StartWebApp starts an Inox web application that provides development tools.
+// The application servers listens on a development port on localhost, therefore it is virtual and do not directly bind.
+func (inst *Instance) StartWebApp() error {
 
-	_, ok := http_ns.GetDevServer(s.toolsServerPort)
+	_, ok := http_ns.GetDevServer(inst.toolsServerPort)
 	if !ok {
-		return fmt.Errorf("failed to start dev tools server: dev server on port %s is not listening", s.toolsServerPort)
+		return fmt.Errorf("failed to start dev tools server: dev server on port %s is not listening", inst.toolsServerPort)
 	}
 
 	entryPoint := layout.DEV_TOOLS_SERVER_ENTRY_POINT
-	stat, err := s.developerWorkingFS.Stat(entryPoint)
+	stat, err := inst.developerWorkingFS.Stat(entryPoint)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			return ErrInexistingOrInvalidDevToolsEntryPoint
@@ -51,16 +53,16 @@ func (s *Instance) DevToolsServer() error {
 			Fpath:                    entryPoint,
 			SingleFileParsingTimeout: SINGLE_FILE_PARSING_TIMEOUT,
 
-			ParsingCompilationContext:      s.context,
-			ParentContext:                  s.context,
+			ParsingCompilationContext:      inst.context,
+			ParentContext:                  inst.context,
 			ParentContextRequired:          true,
-			PreinitFilesystem:              s.developerWorkingFS,
+			PreinitFilesystem:              inst.developerWorkingFS,
 			AllowMissingEnvVars:            false,
 			IgnoreHighRiskScore:            true,
 			FullAccessToDatabases:          true,
-			Project:                        s.project,
-			MemberAuthToken:                s.memberAuthToken,
-			ListeningPort:                  inoxconsts.Uint16DevPort(s.toolsServerPort),
+			Project:                        inst.project,
+			MemberAuthToken:                inst.memberAuthToken,
+			ListeningPort:                  inoxconsts.Uint16DevPort(inst.toolsServerPort),
 			ForceLocalhostListeningAddress: true,
 
 			Out:    io.Discard,
@@ -72,7 +74,7 @@ func (s *Instance) DevToolsServer() error {
 
 			OnPrepared: func(state *core.GlobalState) error {
 				//Give access to the dev API to the dev tools app.
-				state.Ctx.PutUserData(inoxconsts.DEV_CTX_DATA_ENTRY, s.api)
+				state.Ctx.PutUserData(inoxconsts.DEV_CTX_DATA_ENTRY, inst.api)
 				return nil
 			},
 		})

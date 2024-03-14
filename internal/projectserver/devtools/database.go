@@ -13,17 +13,17 @@ var (
 
 // A dbProxy allows a tooling program to interact with an Inox dbProxy.
 type dbProxy struct {
-	dbName  string
-	session *Instance
-	lock    sync.Mutex
+	dbName   string
+	instance *Instance
+	lock     sync.Mutex
 
 	current *core.DatabaseIL
 }
 
 func newDBProxy(name string, session *Instance) *dbProxy {
 	return &dbProxy{
-		dbName:  name,
-		session: session,
+		dbName:   name,
+		instance: session,
 	}
 }
 
@@ -52,23 +52,23 @@ func (p *dbProxy) dbNoLock(lockSession bool) (*core.DatabaseIL, error) {
 	}
 
 	if lockSession {
-		p.session.lock.Lock()
-		defer p.session.lock.Unlock()
+		p.instance.lock.Lock()
+		defer p.instance.lock.Unlock()
 	}
 
-	db, ok := p.session.runningProgramDatabases[p.dbName]
+	db, ok := p.instance.runningProgramDatabases[p.dbName]
 	if ok {
 		p.current = db
 		return db, nil
 	}
 
-	config, ok := p.session.databaseOpeningConfigurations[p.dbName]
+	config, ok := p.instance.databaseOpeningConfigurations[p.dbName]
 	if ok {
-		dbLower, err := config.open(p.session.context, config.config)
+		dbLower, err := config.open(p.instance.context, config.config)
 		if err != nil {
 			return nil, err
 		}
-		db, err := core.WrapDatabase(p.session.context, core.DatabaseWrappingArgs{
+		db, err := core.WrapDatabase(p.instance.context, core.DatabaseWrappingArgs{
 			Name:  p.dbName,
 			Inner: dbLower,
 		})
