@@ -160,7 +160,7 @@ func (c *Cache[R, D]) KeepEntriesByPath(paths ...string) {
 	for dataKey := range c.additionalDataEntries {
 		if slices.Contains(keptPathHashes, dataKey.pathHash()) {
 			//Keep entry.
-			return
+			continue
 		}
 
 		//Remove entry.

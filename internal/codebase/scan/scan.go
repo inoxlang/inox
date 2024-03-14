@@ -63,8 +63,8 @@ func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) e
 	}
 
 	//Track the cached chunks in order
-	seenChunks := []*parse.Chunk{}
-	seenStylesheets := []*css.Node{}
+	seenInoxFiles := []string{}
+	seenCssFiles := []string{}
 	chunkCache := config.ChunkCache
 	stylesheetCache := config.StylesheetParseCache
 
@@ -156,7 +156,7 @@ func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) e
 					config.ChunkCache.Put(path, contentS, result, err)
 				}
 			}
-			seenChunks = append(seenChunks, chunk)
+			seenInoxFiles = append(seenInoxFiles, path)
 
 			for _, handler := range config.InoxFileHandlers {
 				err := handler(path, contentS, chunk)
@@ -195,7 +195,7 @@ func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) e
 					stylesheetCache.Put(path, contentS, stylesheet, err)
 				}
 			}
-			seenStylesheets = append(seenStylesheets, stylesheet)
+			seenCssFiles = append(seenCssFiles, path)
 
 			for _, handler := range config.CSSFileHandlers {
 				err := handler(path, contentS, *stylesheet)
@@ -223,10 +223,10 @@ func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) e
 
 	//Remove the cache entries of old file versions.
 	if chunkCache != nil {
-		chunkCache.KeepEntriesByParsingResult(seenChunks...)
+		chunkCache.KeepEntriesByPath(seenInoxFiles...)
 	}
 	if stylesheetCache != nil {
-		stylesheetCache.KeepEntriesByParsingResult(seenStylesheets...)
+		stylesheetCache.KeepEntriesByPath(seenCssFiles...)
 	}
 
 	return nil
