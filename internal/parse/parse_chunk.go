@@ -19,21 +19,25 @@ func MustParseChunk(str string, opts ...ParserOptions) (result *Chunk) {
 }
 
 // parses an Inox file, resultErr is either a non-syntax error or an aggregation of syntax errors (*ParsingErrorAggregation).
-// result and resultErr can be both non-nil at the same time because syntax errors are also stored in nodes.
-func ParseChunk(str string, fpath string, opts ...ParserOptions) (result *Chunk, resultErr error) {
-	_, result, resultErr = ParseChunk2(str, fpath, opts...)
+// result and resultErr can be both non-nil at the same time because syntax errors are also stored in nodes. The returned
+// *Chunk does not contain references to the source's location, but $resultErr may. ParseChunk does not use the cache provided
+// in the options.
+func ParseChunk(str string, sourceName string, opts ...ParserOptions) (result *Chunk, resultErr error) {
+	_, result, resultErr = ParseChunk2(str, sourceName, opts...)
 	return
 }
 
-// ParseChunk2 has the same behavior as ParseChunk2 but returns the rune slice created for parsing.
-func ParseChunk2(str string, fpath string, opts ...ParserOptions) (runes []rune, result *Chunk, resultErr error) {
+// ParseChunk2 has the same behavior as ParseChunk2 but also returns the rune slice created for parsing. The rune slice should not be modified.
+// The returned *Chunk does not contain references to the source's location, but $resultErr may. ParseChunk2 does not use the cache provided
+// in the options.
+func ParseChunk2(str string, sourceName string, opts ...ParserOptions) (runes []rune, result *Chunk, resultErr error) {
 
 	if int32(len(str)) > MAX_MODULE_BYTE_LEN {
 		return nil, nil, &ParsingError{UnspecifiedParsingError, fmt.Sprintf("module'p.s code is too long (%d bytes)", len(str))}
 	}
 
-	//check that the passed context is not done.
 	if len(opts) > 0 {
+		//Check that the passed context is not done.
 		ctx := opts[0].ParentContext
 		if ctx != nil {
 			select {
@@ -93,7 +97,7 @@ func ParseChunk2(str string, fpath string, opts ...ParserOptions) (runes []rune,
 						HYPERSCRIPT_PARSING_ERROR_PREFIX + hsParsingError.MessageAtToken,
 					})
 					aggregation.ErrorPositions = append(aggregation.ErrorPositions, SourcePositionRange{
-						SourceName:  fpath,
+						SourceName:  sourceName,
 						StartLine:   startLine,
 						StartColumn: startCol,
 						EndLine:     endLine,
@@ -123,7 +127,7 @@ func ParseChunk2(str string, fpath string, opts ...ParserOptions) (runes []rune,
 						HYPERSCRIPT_PARSING_ERROR_PREFIX + hsParsingError.MessageAtToken,
 					})
 					aggregation.ErrorPositions = append(aggregation.ErrorPositions, SourcePositionRange{
-						SourceName:  fpath,
+						SourceName:  sourceName,
 						StartLine:   startLine,
 						StartColumn: startCol,
 						EndLine:     endLine,
@@ -150,7 +154,7 @@ func ParseChunk2(str string, fpath string, opts ...ParserOptions) (runes []rune,
 
 				aggregation.Errors = append(aggregation.Errors, parsingErr)
 				aggregation.ErrorPositions = append(aggregation.ErrorPositions, SourcePositionRange{
-					SourceName:  fpath,
+					SourceName:  sourceName,
 					StartLine:   startLine,
 					StartColumn: startCol,
 					EndLine:     endLine,
@@ -158,11 +162,10 @@ func ParseChunk2(str string, fpath string, opts ...ParserOptions) (runes []rune,
 					Span:        nodeBase.Span,
 				})
 
-				aggregation.Message = fmt.Sprintf("%s\n%s:%d:%d: %s", aggregation.Message, fpath, startLine, startCol, parsingErr.Message)
+				aggregation.Message = fmt.Sprintf("%s\n%s:%d:%d: %s", aggregation.Message, sourceName, startLine, startCol, parsingErr.Message)
 				return ContinueTraversal, nil
 			}, nil)
 		}
-
 	}()
 
 	result, resultErr = p.parseChunk()

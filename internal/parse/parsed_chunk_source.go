@@ -16,18 +16,50 @@ type ParsedChunkSource struct {
 	runesLock sync.Mutex
 }
 
-func ParseChunkSource(src ChunkSource, options ...ParserOptions) (*ParsedChunkSource, error) {
-	runes, chunk, err := ParseChunk2(src.Code(), src.Name(), options...)
+// ParseChunkSource parses an Inox chunk. The returned error is either a non-syntax error or an aggregation of
+// syntax errors (*ParsingErrorAggregation). On a critical error (nil, error) is returned.
+//
+// === Caching ===
+// Contrary to ParseChunk, ParseChunkSource uses the cache provided  in the options. The cache is only used for
+// *SourceFile sources. SourceFile.Location is used as the 'path' for the cache entry.
+func ParseChunkSource(src ChunkSource, options ...ParserOptions) (parsed *ParsedChunkSource, resultErr error) {
 
-	if chunk == nil {
-		return nil, err
+	sourceCode := src.Code()
+	sourceName := src.Name()
+
+	//Check the cache if the code source is a file.
+	var (
+		cache            *ChunkCache
+		resourceLocation string
+	)
+	if srcFile, ok := src.(SourceFile); ok && len(options) > 0 && options[0].ParsedFileCache != nil {
+		cache = options[0].ParsedFileCache
+		resourceLocation = srcFile.Resource
+		parsedChunk, err, ok := cache.GetResultAndDataByPathSourcePair(resourceLocation, sourceCode)
+
+		if ok {
+			return parsedChunk, err
+		}
 	}
 
-	return &ParsedChunkSource{
-		Node:   chunk,
-		Source: src,
-		runes:  runes,
-	}, err
+	runes, chunk, err := ParseChunk2(sourceCode, sourceName, options...)
+
+	resultErr = err
+
+	if chunk != nil { //No critical error.
+		parsed = &ParsedChunkSource{
+			Node:   chunk,
+			Source: src,
+			runes:  runes,
+		}
+	}
+
+	//Update the cache.
+	if cache != nil {
+		cache.Put(resourceLocation, sourceCode, parsed, resultErr)
+	}
+
+	return
 }
 
 func NewParsedChunkSource(node *Chunk, src ChunkSource) *ParsedChunkSource {

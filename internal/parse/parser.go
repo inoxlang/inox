@@ -47,6 +47,9 @@ type ParserOptions struct {
 	// - GlobalVariableDeclarations if there is no IncludableChunkDescription nor Manifest.
 	// - Manifest
 	Start bool
+
+	//The cache is only read and written to by ParseChunkSource.
+	ParsedFileCache *ChunkCache
 }
 
 func newParser(s []rune, opts ...ParserOptions) *parser {

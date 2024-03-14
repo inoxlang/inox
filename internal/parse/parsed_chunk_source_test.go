@@ -7,6 +7,70 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestParseChunkSource(t *testing.T) {
+
+	srcV1 := SourceFile{
+		NameString:             "/file.ix",
+		UserFriendlyNameString: "/file.ix",
+		Resource:               "/file.ix",
+		ResourceDir:            "/",
+		CodeString:             "manifest {}; ?", //code with a single error
+	}
+
+	cache := NewChunkCache()
+
+	//Parse a first time to populate the cache.
+
+	parsed1, err1 := ParseChunkSource(srcV1, ParserOptions{ParsedFileCache: cache})
+
+	if !assert.Error(t, err1) {
+		return
+	}
+
+	//Parse the same code a second time.
+
+	parsed2, err2 := ParseChunkSource(srcV1, ParserOptions{ParsedFileCache: cache})
+
+	//Check that cached results are returned.
+
+	if !assert.Same(t, parsed1, parsed2) {
+		return
+	}
+
+	if !assert.Same(t, err1, err2) {
+		return
+	}
+
+	//Update the code and add an error.
+
+	srcV2 := srcV1
+	srcV2.CodeString += " ?"
+
+	//Parse with the new source code.
+
+	parsed3, err3 := ParseChunkSource(srcV2, ParserOptions{ParsedFileCache: cache})
+
+	//Check that new results are returned.
+
+	if !assert.NotSame(t, parsed1, parsed3) {
+		return
+	}
+
+	assert.NotEqual(t, err1.Error(), err3.Error())
+
+	//Parse the new code again.
+
+	parsed4, err4 := ParseChunkSource(srcV2, ParserOptions{ParsedFileCache: cache})
+
+	//Check that cached results are returned.
+
+	if !assert.Same(t, parsed3, parsed4) {
+		return
+	}
+
+	assert.Same(t, err3, err4)
+}
+
 func TestGetNodeAtSpan(t *testing.T) {
 
 	t.Run("shallow", func(t *testing.T) {
