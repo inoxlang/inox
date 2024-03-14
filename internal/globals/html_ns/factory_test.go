@@ -11,6 +11,33 @@ import (
 func TestCreateHTMLNodeFromXMLElement(t *testing.T) {
 	testconfig.AllowParallelization(t)
 
+	t.Run("interpolation with a Go string value", func(t *testing.T) {
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		element := CreateHTMLNodeFromXMLElement(ctx, core.NewXmlElement("div", nil, []core.Value{
+			core.Host("https://localhost"),
+		}))
+
+		bytes := Render(ctx, element)
+		s := string(bytes.UnderlyingBytes())
+
+		assert.Equal(t, "<div>https://localhost</div>", s)
+	})
+
+	t.Run("attribute with a Go string value", func(t *testing.T) {
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		attrs := []core.XMLAttribute{core.NewXMLAttribute("a", core.Host("https://localhost"))}
+		element := CreateHTMLNodeFromXMLElement(ctx, core.NewXmlElement("div", attrs, nil))
+
+		bytes := Render(ctx, element)
+		s := string(bytes.UnderlyingBytes())
+
+		assert.Equal(t, `<div a="https://localhost"></div>`, s)
+	})
+
 	t.Run("script tag", func(t *testing.T) {
 		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()

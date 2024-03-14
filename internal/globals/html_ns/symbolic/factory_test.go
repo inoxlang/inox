@@ -28,6 +28,14 @@ func TestSymbolicCreateHTMLNodeFromXMLElement(t *testing.T) {
 			assert.NotEmpty(t, errors)
 		})
 
+		t.Run("interpolation with a Go string value", func(t *testing.T) {
+			chunk, state := symbolic.MakeTestStateAndChunk("html<div>{https://localhost}</div>", globals())
+
+			_, err := symbolic.SymbolicEval(chunk, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.Errors())
+		})
+
 		t.Run("HTML node", func(t *testing.T) {
 			chunk, state := symbolic.MakeTestStateAndChunk("html<div>{html<span></span>}</div>", globals())
 
@@ -83,6 +91,13 @@ func TestSymbolicCreateHTMLNodeFromXMLElement(t *testing.T) {
 				return
 			}
 			assert.Contains(t, errors[0].Error(), fmtAttrValueNotAccepted(symbolic.FLOAT_1, "a"))
+		})
+
+		t.Run("attribute with a Go string value", func(t *testing.T) {
+			chunk, state := symbolic.MakeTestStateAndChunk("html<div a=https://localhost></div>", globals())
+
+			_, err := symbolic.SymbolicEval(chunk, state)
+			assert.NoError(t, err)
 		})
 	})
 

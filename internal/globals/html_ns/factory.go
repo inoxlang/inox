@@ -49,6 +49,8 @@ func CreateHTMLNodeFromXMLElement(ctx *core.Context, arg *core.XMLElement) *HTML
 		switch val := attrValue.(type) {
 		case core.StringLike:
 			attributes[index].Val = val.GetOrBuildString()
+		case core.GoString:
+			attributes[index].Val = val.UnderlyingString()
 		case core.Int:
 			attributes[index].Val = strconv.FormatInt(int64(val), 10)
 		default:
@@ -81,6 +83,8 @@ func createChildNodesFromValue(ctx *core.Context, child core.Value, childNodes *
 		*childNodes = append(*childNodes, c)
 	case core.StringLike:
 		*childNodes = append(*childNodes, CreateTextNode(c))
+	case core.GoString:
+		*childNodes = append(*childNodes, CreateTextNode(core.String(c.UnderlyingString())))
 	case core.Int:
 		*childNodes = append(*childNodes, CreateTextNode(core.String(strconv.FormatInt(int64(c), 10))))
 	case *core.List:

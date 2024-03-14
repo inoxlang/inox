@@ -8,7 +8,7 @@ import (
 	"github.com/inoxlang/inox/internal/parse"
 )
 
-const INTERPOLATION_LIMITATION_ERROR_MSG = "only HTML nodes, string-like and integer values are allowed"
+const INTERPOLATION_LIMITATION_ERROR_MSG = "only HTML nodes, strings, integers, and resource names (e.g. paths, URLs) are allowed"
 
 func init() {
 	symbolic.RegisterXMLInterpolationCheckingFunction(
@@ -40,6 +40,7 @@ func checkInterpolationValue(value symbolic.Value) (errMsg string) {
 
 	switch {
 	case symbolic.ImplementsOrIsMultivalueWithAllValuesImplementing[symbolic.StringLike](value),
+		symbolic.ImplementsOrIsMultivalueWithAllValuesImplementing[symbolic.GoString](value),
 		symbolic.ImplementsOrIsMultivalueWithAllValuesImplementing[*HTMLNode](value),
 		symbolic.ImplementsOrIsMultivalueWithAllValuesImplementing[*symbolic.Int](value):
 		return ""
@@ -49,6 +50,7 @@ func checkInterpolationValue(value symbolic.Value) (errMsg string) {
 		elem := list.IteratorElementValue()
 		switch {
 		case symbolic.ImplementsOrIsMultivalueWithAllValuesImplementing[symbolic.StringLike](elem),
+			symbolic.ImplementsOrIsMultivalueWithAllValuesImplementing[symbolic.GoString](value),
 			symbolic.ImplementsOrIsMultivalueWithAllValuesImplementing[*HTMLNode](elem),
 			symbolic.ImplementsOrIsMultivalueWithAllValuesImplementing[*symbolic.Int](elem):
 			return ""
@@ -63,7 +65,7 @@ func CreateHTMLNodeFromXMLElement(ctx *symbolic.Context, elem *symbolic.XMLEleme
 	checkElem = func(e *symbolic.XMLElement) {
 		for name, val := range e.Attributes() {
 			switch val.(type) {
-			case symbolic.StringLike, *symbolic.Int:
+			case symbolic.GoString, symbolic.StringLike, *symbolic.Int:
 			default:
 				ctx.AddSymbolicGoFunctionError(fmtAttrValueNotAccepted(val, name))
 			}
@@ -86,5 +88,7 @@ func CreateHTMLNodeFromXMLElement(ctx *symbolic.Context, elem *symbolic.XMLEleme
 }
 
 func fmtAttrValueNotAccepted(val symbolic.Value, name string) string {
-	return fmt.Sprintf("value of attribute '%s' is not accepted for now (%s), use a string or an integer", name, symbolic.Stringify(val))
+	return fmt.Sprintf(
+		"The value provided for the attribute '%s' is not accepted (%s)."+
+			"Only HTML nodes, strings, integers, and resource names (e.g. paths, URLs) are allowed", name, symbolic.Stringify(val))
 }
