@@ -126,7 +126,7 @@ func NewFileServer(ctx *core.Context, args ...core.Value) (*HttpsServer, error) 
 	}()
 
 	<-aboutToStartChan
-	time.Sleep(HTTP_SERVER_STARTING_WAIT_TIME)
+	time.Sleep(SERVER_STARTING_WAIT_TIME)
 
 	return &HttpsServer{
 		wrappedServer: server,

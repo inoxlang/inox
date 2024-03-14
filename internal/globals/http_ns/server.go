@@ -41,8 +41,9 @@ const (
 	SSE_STREAM_WRITE_TIMEOUT                = 500 * time.Second
 
 	//Time waited for the server to start listening.
-	HTTP_SERVER_STARTING_WAIT_TIME        = 5 * time.Millisecond
-	HTTP_SERVER_GRACEFUL_SHUTDOWN_TIMEOUT = 5 * time.Second
+	SERVER_STARTING_WAIT_TIME         = 10 * time.Millisecond
+	VIRTUAL_SERVER_STARTING_WAIT_TIME = 5 * time.Millisecond
+	SERVER_GRACEFUL_SHUTDOWN_TIMEOUT  = 5 * time.Second
 
 	NO_HANDLER_PLACEHOLDER_MESSAGE = "hello"
 
@@ -411,7 +412,12 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 	}()
 
 	<-aboutToStartChan
-	time.Sleep(HTTP_SERVER_STARTING_WAIT_TIME)
+
+	if server.isVirtual {
+		time.Sleep(VIRTUAL_SERVER_STARTING_WAIT_TIME)
+	} else {
+		time.Sleep(SERVER_STARTING_WAIT_TIME)
+	}
 
 	return server, nil
 }
@@ -558,7 +564,7 @@ func (serv *HttpsServer) Close(ctx *core.Context) {
 	}
 
 	// gracefully shutdown the server
-	timeoutCtx, cancel := context.WithTimeout(ctx, HTTP_SERVER_GRACEFUL_SHUTDOWN_TIMEOUT)
+	timeoutCtx, cancel := context.WithTimeout(ctx, SERVER_GRACEFUL_SHUTDOWN_TIMEOUT)
 	defer cancel()
 	serv.wrappedServer.Shutdown(timeoutCtx)
 
