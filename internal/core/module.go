@@ -392,7 +392,9 @@ func ParseLocalModule(fpath string, config ModuleParsingConfig) (*Module, error)
 }
 
 type ModuleParsingConfig struct {
-	Context *Context //this context is used for checking permissions + getting the filesystem
+	Context                  *Context //this context is used for checking permissions + getting the filesystem
+	SingleFileParsingTimeout time.Duration
+	ChunkCache               *parse.ChunkCache
 
 	RecoverFromNonExistingIncludedFiles bool
 	IgnoreBadlyConfiguredModuleImports  bool
@@ -400,8 +402,7 @@ type ModuleParsingConfig struct {
 	//DefaultLimits          []Limit
 	//CustomPermissionTypeHandler CustomPermissionTypeHandler
 
-	moduleGraph              *memds.DirectedGraph[string, struct{}, map[string]memds.NodeId]
-	SingleFileParsingTimeout time.Duration
+	moduleGraph *memds.DirectedGraph[string, struct{}, map[string]memds.NodeId]
 }
 
 func ParseModuleFromSource(src parse.ChunkSource, resource ResourceName, config ModuleParsingConfig) (*Module, error) {
@@ -439,8 +440,9 @@ func ParseModuleFromSource(src parse.ChunkSource, resource ResourceName, config 
 	}
 
 	code, err := parse.ParseChunkSource(src, parse.ParserOptions{
-		ParentContext: config.Context,
-		Timeout:       config.SingleFileParsingTimeout,
+		ParentContext:   config.Context,
+		Timeout:         config.SingleFileParsingTimeout,
+		ParsedFileCache: config.ChunkCache,
 	})
 
 	if err != nil && code == nil {
@@ -519,6 +521,7 @@ func ParseModuleFromSource(src parse.ChunkSource, resource ResourceName, config 
 		Filesystem:                          fls,
 		RecoverFromNonExistingIncludedFiles: config.RecoverFromNonExistingIncludedFiles,
 		SingleFileParsingTimeout:            config.SingleFileParsingTimeout,
+		Cache:                               config.ChunkCache,
 	})
 	if unrecoverableError != nil {
 		return nil, unrecoverableError
@@ -541,10 +544,12 @@ func ParseModuleFromSource(src parse.ChunkSource, resource ResourceName, config 
 }
 
 type IncludedFilesParsingConfig struct {
+	SingleFileParsingTimeout time.Duration
+	Cache                    *parse.ChunkCache
+
 	Module                              *Module
 	Filesystem                          afs.Filesystem
 	RecoverFromNonExistingIncludedFiles bool
-	SingleFileParsingTimeout            time.Duration
 }
 
 // ParseLocalIncludedFiles parses all the files included by $mod.
@@ -571,12 +576,14 @@ func ParseLocalIncludedFiles(ctx *Context, config IncludedFilesParsingConfig) (u
 		stmtPos := mod.MainChunk.GetSourcePosition(stmt.Span)
 
 		includedChunk, absoluteChunkPath, err := ParseIncludedChunk(LocalSecondaryChunkParsingConfig{
-			ChunkFilepath:                       chunkFilepath,
+			Context:                  ctx,
+			ChunkFilepath:            chunkFilepath,
+			SingleFileParsingTimeout: config.SingleFileParsingTimeout,
+			ChunkCache:               config.Cache,
+
 			Module:                              mod,
-			Context:                             ctx,
 			ImportPosition:                      stmtPos,
 			RecoverFromNonExistingIncludedFiles: recoverFromNonExistingIncludedFiles,
-			SingleFileParsingTimeout:            config.SingleFileParsingTimeout,
 		})
 
 		if err != nil && includedChunk == nil { //critical error
@@ -610,12 +617,14 @@ type IncludedChunk struct {
 }
 
 type LocalSecondaryChunkParsingConfig struct {
-	ChunkFilepath                       string
+	Context                  *Context
+	SingleFileParsingTimeout time.Duration
+	ChunkCache               *parse.ChunkCache
+	ChunkFilepath            string
+
 	Module                              *Module
-	Context                             *Context
 	ImportPosition                      parse.SourcePositionRange
 	RecoverFromNonExistingIncludedFiles bool
-	SingleFileParsingTimeout            time.Duration
 }
 
 func ParseIncludedChunk(config LocalSecondaryChunkParsingConfig) (_ *IncludedChunk, absolutePath string, _ error) {
@@ -695,8 +704,9 @@ func ParseIncludedChunk(config LocalSecondaryChunkParsingConfig) (_ *IncludedChu
 	//parse
 
 	chunk, err := parse.ParseChunkSource(src, parse.ParserOptions{
-		ParentContext: config.Context,
-		Timeout:       config.SingleFileParsingTimeout,
+		ParentContext:   config.Context,
+		Timeout:         config.SingleFileParsingTimeout,
+		ParsedFileCache: config.ChunkCache,
 	})
 
 	if err != nil && chunk == nil { //critical error
@@ -765,12 +775,14 @@ func ParseIncludedChunk(config LocalSecondaryChunkParsingConfig) (_ *IncludedChu
 		stmtPos := chunk.GetSourcePosition(stmt.Span)
 
 		chunk, absoluteChunkPath, err := ParseIncludedChunk(LocalSecondaryChunkParsingConfig{
-			ChunkFilepath:                       chunkFilepath,
+			Context:                  config.Context,
+			ChunkFilepath:            chunkFilepath,
+			SingleFileParsingTimeout: config.SingleFileParsingTimeout,
+			ChunkCache:               config.ChunkCache,
+
 			Module:                              mod,
-			Context:                             config.Context,
 			ImportPosition:                      stmtPos,
 			RecoverFromNonExistingIncludedFiles: config.RecoverFromNonExistingIncludedFiles,
-			SingleFileParsingTimeout:            config.SingleFileParsingTimeout,
 		})
 
 		if err != nil && chunk == nil {

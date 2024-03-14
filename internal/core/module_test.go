@@ -1138,6 +1138,192 @@ func TestParseLocalModule(t *testing.T) {
 	})
 }
 
+func TestParseLocalModuleWithCache(t *testing.T) {
+
+	t.Run("included file", func(t *testing.T) {
+		fls := newMemFilesystemRootWD()
+		modpath := "/main.ix"
+		util.WriteFile(fls, modpath, []byte(`
+			manifest {}
+			import ./dep.ix
+		`), 0o400)
+		util.WriteFile(fls, "/dep.ix", []byte(`includable-file`), 0o400)
+
+		includedFilePath := filepath.Join(filepath.Dir(modpath), "/dep.ix")
+
+		parsingCtx := NewContextWithEmptyState(ContextConfig{
+			Permissions: []Permission{
+				CreateFsReadPerm(Path(modpath)),
+				CreateFsReadPerm(Path(includedFilePath)),
+			},
+			Filesystem: fls,
+		}, nil)
+		defer parsingCtx.CancelGracefully()
+
+		cache := parse.NewChunkCache()
+
+		//First parsing
+
+		mod1, err1 := ParseLocalModule(modpath, ModuleParsingConfig{
+			Context:    parsingCtx,
+			ChunkCache: cache,
+		})
+		assert.NoError(t, err1)
+
+		//Second parsing
+
+		mod2, err2 := ParseLocalModule(modpath, ModuleParsingConfig{
+			Context:    parsingCtx,
+			ChunkCache: cache,
+		})
+
+		if !assert.NoError(t, err2) {
+			return
+		}
+
+		assert.Same(t, mod1.MainChunk, mod2.MainChunk)
+
+		assert.NotNil(t, mod2.MainChunk)
+		assert.NotNil(t, mod2.ManifestTemplate)
+
+		if !assert.Len(t, mod2.IncludedChunkForest, 1) {
+			return
+		}
+		assert.Len(t, mod2.FlattenedIncludedChunkList, 1)
+		assert.Contains(t, mod2.IncludedChunkMap, "/dep.ix")
+
+		originalIncludedChunk := mod1.IncludedChunkForest[0]
+		includedChunk := mod2.IncludedChunkForest[0]
+
+		assert.Same(t, originalIncludedChunk.ParsedChunkSource, includedChunk.ParsedChunkSource)
+	})
+
+	t.Run("included file in included file", func(t *testing.T) {
+		fls := newMemFilesystemRootWD()
+		modpath := "/main.ix"
+		util.WriteFile(fls, modpath, []byte(`
+			manifest {}
+			import ./dep1.ix
+		`), 0o400)
+
+		util.WriteFile(fls, "/dep1.ix", []byte(`includable-file; import ./dep2.ix`), 0o400)
+		util.WriteFile(fls, "/dep2.ix", []byte(`includable-file`), 0o400)
+
+		includedFilePath1 := filepath.Join(filepath.Dir(modpath), "/dep1.ix")
+		includedFilePath2 := filepath.Join(filepath.Dir(modpath), "/dep2.ix")
+
+		parsingCtx := NewContextWithEmptyState(ContextConfig{
+			Permissions: []Permission{
+				CreateFsReadPerm(Path(modpath)),
+				CreateFsReadPerm(Path(includedFilePath1)),
+				CreateFsReadPerm(Path(includedFilePath2)),
+			},
+			Filesystem: fls,
+		}, nil)
+		defer parsingCtx.CancelGracefully()
+
+		cache := parse.NewChunkCache()
+
+		//First parsing
+
+		mod1, err1 := ParseLocalModule(modpath, ModuleParsingConfig{
+			Context:    parsingCtx,
+			ChunkCache: cache,
+		})
+
+		assert.NoError(t, err1)
+
+		//Second parsing
+
+		mod2, err2 := ParseLocalModule(modpath, ModuleParsingConfig{
+			Context:    parsingCtx,
+			ChunkCache: cache,
+		})
+
+		if !assert.NoError(t, err2) {
+			return
+		}
+
+		assert.Same(t, mod1.MainChunk, mod2.MainChunk)
+
+		assert.NotNil(t, mod2.MainChunk)
+		assert.NotNil(t, mod2.ManifestTemplate)
+
+		if !assert.Len(t, mod2.IncludedChunkForest, 1) {
+			return
+		}
+		assert.Len(t, mod2.FlattenedIncludedChunkList, 2)
+		assert.Contains(t, mod2.IncludedChunkMap, "/dep1.ix")
+		assert.Contains(t, mod2.IncludedChunkMap, "/dep2.ix")
+
+		originalIncludedChunk1 := mod1.FlattenedIncludedChunkList[0]
+		includedChunk1 := mod2.FlattenedIncludedChunkList[0]
+
+		assert.Same(t, originalIncludedChunk1.ParsedChunkSource, includedChunk1.ParsedChunkSource)
+
+		originalIncludedChunk2 := mod1.FlattenedIncludedChunkList[1]
+		includedChunk2 := mod2.FlattenedIncludedChunkList[1]
+
+		assert.Same(t, originalIncludedChunk2.ParsedChunkSource, includedChunk2.ParsedChunkSource)
+	})
+
+	t.Run("module import", func(t *testing.T) {
+		moduleName := "mymod.ix"
+
+		modpath := writeModuleAndIncludedFiles(t, moduleName, `
+				manifest {}
+				import res ./lib.ix {}
+			`, map[string]string{"./lib.ix": "manifest {}"})
+
+		importedModPath := filepath.Join(filepath.Dir(modpath), "/lib.ix")
+
+		parsingCtx := NewContextWithEmptyState(ContextConfig{
+			Permissions: []Permission{
+				CreateFsReadPerm(Path(modpath)),
+				CreateFsReadPerm(Path(importedModPath)),
+			},
+			Filesystem: newOsFilesystem(),
+		}, nil)
+		defer parsingCtx.CancelGracefully()
+
+		cache := parse.NewChunkCache()
+
+		//First parsing
+
+		mod1, err1 := ParseLocalModule(modpath, ModuleParsingConfig{
+			Context:    parsingCtx,
+			ChunkCache: cache,
+		})
+
+		if !assert.NoError(t, err1) {
+			return
+		}
+
+		//Second parsing
+
+		mod2, err2 := ParseLocalModule(modpath, ModuleParsingConfig{
+			Context:    parsingCtx,
+			ChunkCache: cache,
+		})
+
+		if !assert.NoError(t, err2) {
+			return
+		}
+
+		assert.Same(t, mod1.MainChunk, mod2.MainChunk)
+
+		if !assert.Len(t, mod2.DirectlyImportedModules, 1) || !assert.Contains(t, mod2.DirectlyImportedModules, importedModPath) {
+			return
+		}
+
+		originalImportedMod := mod2.DirectlyImportedModules[importedModPath]
+		importedMod := mod2.DirectlyImportedModules[importedModPath]
+
+		assert.Same(t, originalImportedMod.MainChunk, importedMod.MainChunk)
+	})
+
+}
+
 func TestManifestPreinit(t *testing.T) {
 	//TODO
 }
