@@ -1,9 +1,7 @@
 package parsecache
 
 import (
-	"bytes"
 	"crypto/sha256"
-	"reflect"
 	"slices"
 	"sync"
 
@@ -14,7 +12,7 @@ type Cache[
 	/* parsing result, stored by source code*/ R any,
 	/*additional data stored by (path, source code) pair*/ D comparable] struct {
 	resultEntries         map[ /*hash of source code*/ [32]byte]*R
-	additionalDataEntries map[ /* hash of source code + hash of the path*/ [64]byte]D
+	additionalDataEntries map[ /* hash of source code + hash of the path*/ dataKey]D
 	lock                  sync.Mutex
 }
 
@@ -23,7 +21,7 @@ type Cache[
 func New[R any, D comparable]() *Cache[R, D] {
 	return &Cache[R, D]{
 		resultEntries:         make(map[[32]byte]*R, 0),
-		additionalDataEntries: make(map[[64]byte]D, 0),
+		additionalDataEntries: make(map[dataKey]D, 0),
 	}
 }
 
@@ -60,9 +58,7 @@ func (c *Cache[R, D]) GetResultAndDataByPathSourceBytesPair(path string, sourceC
 	pathHash := sha256.Sum256(utils.StringAsBytes(path))
 	sourceHash := sha256.Sum256(sourceCode)
 
-	var dataKey [64]byte
-	copy(dataKey[:32], sourceHash[:])
-	copy(dataKey[32:], pathHash[:])
+	dataKey := makeDataKey(sourceHash, pathHash)
 
 	c.lock.Lock()
 	defer c.lock.Unlock()
@@ -87,14 +83,33 @@ func (c *Cache[R, D]) Put(path string, sourceCode string, chunk *R, additionalDa
 	pathHash := sha256.Sum256(utils.StringAsBytes(path))
 	sourceHash := sha256.Sum256(utils.StringAsBytes(sourceCode))
 
-	var dataKey [64]byte
-	copy(dataKey[:32], sourceHash[:])
-	copy(dataKey[32:], pathHash[:])
-
 	c.lock.Lock()
 	defer c.lock.Unlock()
+
+	//Remove the previous entry.
+
+	prevEntryFound := false
+	var prevEntrySourceCodeHash [32]byte
+
+	for dataKey := range c.additionalDataEntries {
+		if dataKey.pathHash() == pathHash {
+			delete(c.additionalDataEntries, dataKey)
+			prevEntrySourceCodeHash = dataKey.sourceCodeHash()
+			prevEntryFound = true
+			break
+		}
+	}
+
+	if prevEntryFound && !c.doesAnEntryHaveSourceCodeHash(prevEntrySourceCodeHash) {
+		delete(c.resultEntries, prevEntrySourceCodeHash)
+	}
+
+	//Add the new entry.
+
+	newDataKey := makeDataKey(sourceHash, pathHash)
+
 	c.resultEntries[sourceHash] = chunk
-	c.additionalDataEntries[dataKey] = additionalData
+	c.additionalDataEntries[newDataKey] = additionalData
 }
 
 // DeleteEntriesByParsingResult removes all entries with $chunk as parsing result.
@@ -140,32 +155,26 @@ func (c *Cache[R, D]) KeepEntriesByPath(paths ...string) {
 		return sha256.Sum256(utils.StringAsBytes(p))
 	})
 
-	for dataKey := range c.additionalDataEntries {
-		entryPathHash := [32]byte(dataKey[32:])
+	var sourceCodeHashesOfRemovedEntries [][32]byte
 
-		if slices.Contains(keptPathHashes, entryPathHash) {
+	for dataKey := range c.additionalDataEntries {
+		if slices.Contains(keptPathHashes, dataKey.pathHash()) {
 			//Keep entry.
 			return
 		}
 
 		//Remove entry.
 		delete(c.additionalDataEntries, dataKey)
-		removedEntrySourceCodeHash := [32]byte(dataKey[:32])
+		removedEntrySourceCodeHash := dataKey.sourceCodeHash()
+		sourceCodeHashesOfRemovedEntries = append(sourceCodeHashesOfRemovedEntries, removedEntrySourceCodeHash)
+	}
 
-		isParsingResultOnlyOwnedByRemovedEntry := true
+	//Remove unused parsing results. Doing this in the previous loop is not valid
+	//because we could incorrectly keep parsing results of removed entries.
 
-		//Find other entries with the same parsing result.
-		for entryDataKey := range c.additionalDataEntries {
-			sourceCodeHash := [32]byte(entryDataKey[:32])
-
-			if sourceCodeHash == removedEntrySourceCodeHash {
-				isParsingResultOnlyOwnedByRemovedEntry = false
-				break
-			}
-		}
-
-		if isParsingResultOnlyOwnedByRemovedEntry {
-			delete(c.resultEntries, removedEntrySourceCodeHash)
+	for _, hash := range sourceCodeHashesOfRemovedEntries {
+		if !c.doesAnEntryHaveSourceCodeHash(hash) {
+			delete(c.resultEntries, hash)
 		}
 	}
 
@@ -177,7 +186,7 @@ data_removal_loop:
 	for dataKey := range c.additionalDataEntries {
 
 		for _, sourceCodeHash := range sourceCodeHashes {
-			if bytes.Equal(dataKey[:32], sourceCodeHash[:]) {
+			if dataKey.sourceCodeHash() == sourceCodeHash {
 				delete(c.additionalDataEntries, dataKey)
 				continue data_removal_loop
 			}
@@ -185,23 +194,32 @@ data_removal_loop:
 	}
 }
 
-func equalData[D any](_a, _b D) bool {
-	a := any(_a)
-	b := any(_b)
+func (c *Cache[R, D]) doesAnEntryHaveSourceCodeHash(hash [32]byte) bool {
+	for entryDataKey := range c.additionalDataEntries {
+		sourceCodeHash := entryDataKey.sourceCodeHash()
 
-	reflA := reflect.ValueOf(a)
-	reflB := reflect.ValueOf(b)
-
-	switch a := a.(type) {
-	case error:
-		return a.Error() == b.(error).Error()
-	case string:
-		return a == b
-	}
-
-	if reflA.Kind() == reflect.Pointer {
-		return reflA.Pointer() == reflB.Pointer()
+		if sourceCodeHash == hash {
+			return true
+		}
 	}
 
 	return false
+}
+
+/* Hash of source code concatenated with tge hash of the path. */
+type dataKey [64]byte
+
+func makeDataKey(sourceCodeHash, pathHash [32]byte) dataKey {
+	var dataKey [64]byte
+	copy(dataKey[:32], sourceCodeHash[:])
+	copy(dataKey[32:], pathHash[:])
+	return dataKey
+}
+
+func (k dataKey) sourceCodeHash() [32]byte {
+	return [32]byte(k[:32])
+}
+
+func (k dataKey) pathHash() [32]byte {
+	return [32]byte(k[32:])
 }

@@ -126,4 +126,30 @@ func TestParseCache(t *testing.T) {
 	}
 	assert.Same(t, &parsedA, res)
 	assert.Equal(t, "error-B", data)
+
+	cache.InvalidateAllEntries()
+
+	//Put two different parsing results for the same path.
+
+	cache.Put("/a", sourceCodeA, &parsedA, "error-A")
+	cache.Put("/a", sourceCodeB, &parsedB, "error-A")
+
+	//Check that the previous version of the entry is no long present.
+
+	_, ok = cache.GetResult(sourceCodeA)
+	assert.False(t, ok)
+
+	res, data, ok = cache.GetResultAndDataByPathSourcePair("/a", sourceCodeA)
+	assert.False(t, ok)
+	assert.Nil(t, res)
+	assert.Zero(t, data)
+
+	//Check that the new version of the entry is present.
+
+	res, data, ok = cache.GetResultAndDataByPathSourcePair("/a", sourceCodeB)
+	if !assert.True(t, ok) {
+		return
+	}
+	assert.Same(t, &parsedB, res)
+	assert.Equal(t, "error-A", data)
 }
