@@ -99,17 +99,17 @@ func TestScan(t *testing.T) {
 
 		//Check that the cache has been populated.
 
-		_, ok := cache.Get(codeA)
+		_, ok := cache.GetResult(codeA)
 		if !assert.True(t, ok) {
 			return
 		}
 
-		_, ok = cache.Get(codeB)
+		_, ok = cache.GetResult(codeB)
 		if !assert.True(t, ok) {
 			return
 		}
 
-		_, ok = cache.Get(codeC)
+		_, ok = cache.GetResult(codeC)
 		if !assert.True(t, ok) {
 			return
 		}
@@ -138,17 +138,17 @@ func TestScan(t *testing.T) {
 
 		//Check that the entries for the removed and updated files have been deleted.
 
-		_, ok = cache.Get(codeA)
+		_, ok = cache.GetResult(codeA)
 		if !assert.True(t, ok) {
 			return
 		}
 
-		_, ok = cache.Get(codeB)
+		_, ok = cache.GetResult(codeB)
 		if !assert.False(t, ok) {
 			return
 		}
 
-		_, ok = cache.Get(codeC)
+		_, ok = cache.GetResult(codeC)
 		if !assert.False(t, ok) {
 			return
 		}

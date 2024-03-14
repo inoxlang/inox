@@ -1,11 +1,11 @@
 package css
 
 import (
-	"github.com/inoxlang/inox/internal/cache"
+	"github.com/inoxlang/inox/internal/cache/parsecache"
 )
 
-type StylesheetCache = cache.ParseCache[Node]
+type StylesheetCache = parsecache.Cache[Node, error]
 
 func NewParseCache() *StylesheetCache {
-	return cache.NewParseCache[Node]()
+	return parsecache.New[Node, error]()
 }

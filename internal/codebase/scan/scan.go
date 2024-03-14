@@ -135,14 +135,14 @@ func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) e
 
 			//Check the cache.
 			if chunkCache != nil {
-				chunk, cacheHit = chunkCache.Get(contentS)
+				chunk, cacheHit = chunkCache.GetResult(contentS)
 			}
 
 			if !cacheHit {
 
 				//Parse the file.
 
-				result, _ := parse.ParseChunk(contentS, path, parse.ParserOptions{
+				result, err := parse.ParseChunk(contentS, path, parse.ParserOptions{
 					Timeout: config.FileParsingTimeout,
 				})
 				if result == nil { //critical error
@@ -153,7 +153,7 @@ func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) e
 
 				//Update the cache.
 				if chunkCache != nil {
-					config.ChunkCache.Put(contentS, result)
+					config.ChunkCache.Put(path, contentS, result, err)
 				}
 			}
 			seenChunks = append(seenChunks, chunk)
@@ -176,7 +176,7 @@ func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) e
 
 			//Check the cache.
 			if stylesheetCache != nil {
-				stylesheet, cacheHit = stylesheetCache.Get(contentS)
+				stylesheet, cacheHit = stylesheetCache.GetResult(contentS)
 			}
 
 			if !cacheHit {
@@ -192,7 +192,7 @@ func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) e
 
 				//Update the cache.
 				if stylesheetCache != nil {
-					stylesheetCache.Put(contentS, stylesheet)
+					stylesheetCache.Put(path, contentS, stylesheet, err)
 				}
 			}
 			seenStylesheets = append(seenStylesheets, stylesheet)
@@ -223,10 +223,10 @@ func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) e
 
 	//Remove the cache entries of old file versions.
 	if chunkCache != nil {
-		chunkCache.KeepEntriesByValue(seenChunks...)
+		chunkCache.KeepEntriesByParsingResult(seenChunks...)
 	}
 	if stylesheetCache != nil {
-		stylesheetCache.KeepEntriesByValue(seenStylesheets...)
+		stylesheetCache.KeepEntriesByParsingResult(seenStylesheets...)
 	}
 
 	return nil
