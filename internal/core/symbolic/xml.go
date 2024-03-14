@@ -32,6 +32,8 @@ type XMLElement struct {
 	name       string //if "" matches any node value
 	attributes map[string]Value
 	children   []Value
+
+	sourceNode *parse.XMLElement
 }
 
 func NewXmlElement(name string, attributes map[string]Value, children []Value) *XMLElement {
@@ -50,6 +52,14 @@ func (e *XMLElement) Attributes() map[string]Value {
 // result should not be modified.
 func (e *XMLElement) Children() []Value {
 	return e.children
+}
+
+// result should not be modified.
+func (e *XMLElement) SourceNode() (*parse.XMLElement, bool) {
+	if e.sourceNode == nil {
+		return nil, false
+	}
+	return e.sourceNode, true
 }
 
 func (r *XMLElement) Test(v Value, state RecTestCallState) bool {

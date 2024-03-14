@@ -256,8 +256,13 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 			callLikeNode:      callNode,
 		})
 
-		state.consumeSymbolicGoFunctionErrors(func(msg string) {
-			state.addError(makeSymbolicEvalError(callNode, state, msg))
+		state.consumeSymbolicGoFunctionErrors(func(msg string, optionalLocation parse.Node) {
+			var location parse.Node = callNode
+			if optionalLocation != nil {
+				location = optionalLocation
+			}
+
+			state.addError(makeSymbolicEvalError(location, state, msg))
 		})
 		state.consumeSymbolicGoFunctionWarnings(func(msg string) {
 			state.addWarning(makeSymbolicEvalWarning(callNode, state, msg))

@@ -1334,8 +1334,13 @@ func evalPatternCallExpression(n *parse.PatternCallExpression, state *State) (_ 
 
 	if len(state.errors()) == errCount {
 		patt, err := callee.(Pattern).Call(state.ctx, args)
-		state.consumeSymbolicGoFunctionErrors(func(msg string) {
-			state.addError(makeSymbolicEvalError(n, state, msg))
+		state.consumeSymbolicGoFunctionErrors(func(msg string, optionalLocation parse.Node) {
+			var location parse.Node = n
+			if optionalLocation != nil {
+				location = optionalLocation
+			}
+
+			state.addError(makeSymbolicEvalError(location, state, msg))
 		})
 		state.consumeSymbolicGoFunctionWarnings(func(msg string) {
 			state.addWarning(makeSymbolicEvalWarning(n, state, msg))
@@ -5668,8 +5673,13 @@ func evalXMLExpression(n *parse.XMLExpression, state *State, options evalOptions
 			callLikeNode:      n,
 		})
 
-		state.consumeSymbolicGoFunctionErrors(func(msg string) {
-			state.addError(makeSymbolicEvalError(n, state, msg))
+		state.consumeSymbolicGoFunctionErrors(func(msg string, optionalLocation parse.Node) {
+			var location parse.Node = n
+			if optionalLocation != nil {
+				location = optionalLocation
+			}
+
+			state.addError(makeSymbolicEvalError(location, state, msg))
 		})
 		state.consumeSymbolicGoFunctionWarnings(func(msg string) {
 			state.addWarning(makeSymbolicEvalWarning(n, state, msg))
@@ -5714,6 +5724,7 @@ func evalXMLElement(n *parse.XMLElement, state *State, options evalOptions) (Val
 	}
 
 	xmlElem := NewXmlElement(name, attrs, children)
+	xmlElem.sourceNode = n
 
 	state.SetMostSpecificNodeValue(n.Opening.Name, xmlElem)
 	if n.Closing != nil {

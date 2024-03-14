@@ -146,7 +146,7 @@ func TestRuneSlice(t *testing.T) {
 			assert.False(t, ok)
 			assert.Nil(t, updatedSelf)
 
-			state.consumeSymbolicGoFunctionErrors(func(msg string) {
+			state.consumeSymbolicGoFunctionErrors(func(msg string, optionalLocation parse.Node) {
 				assert.Fail(t, "no error expected")
 			})
 		})
@@ -161,7 +161,7 @@ func TestRuneSlice(t *testing.T) {
 			updatedSelf, ok := state.consumeUpdatedSelf()
 			assert.False(t, ok)
 			assert.Nil(t, updatedSelf)
-			state.consumeSymbolicGoFunctionErrors(func(msg string) {
+			state.consumeSymbolicGoFunctionErrors(func(msg string, optionalLocation parse.Node) {
 				assert.Fail(t, "no error expected")
 			})
 		})
@@ -179,7 +179,7 @@ func TestRuneSlice(t *testing.T) {
 
 			called := false
 
-			state.consumeSymbolicGoFunctionErrors(func(msg string) {
+			state.consumeSymbolicGoFunctionErrors(func(msg string, optionalLocation parse.Node) {
 				called = true
 				assert.Equal(t, fmtHasElementsOfType(slice, ANY_RUNE), msg)
 			})
@@ -199,7 +199,7 @@ func TestRuneSlice(t *testing.T) {
 			assert.False(t, ok)
 			assert.Nil(t, updatedSelf)
 
-			state.consumeSymbolicGoFunctionErrors(func(msg string) {
+			state.consumeSymbolicGoFunctionErrors(func(msg string, optionalLocation parse.Node) {
 				assert.Fail(t, "no error expected")
 			})
 		})
@@ -214,7 +214,7 @@ func TestRuneSlice(t *testing.T) {
 			updatedSelf, ok := state.consumeUpdatedSelf()
 			assert.False(t, ok)
 			assert.Nil(t, updatedSelf)
-			state.consumeSymbolicGoFunctionErrors(func(msg string) {
+			state.consumeSymbolicGoFunctionErrors(func(msg string, optionalLocation parse.Node) {
 				assert.Fail(t, "no error expected")
 			})
 		})
@@ -232,7 +232,7 @@ func TestRuneSlice(t *testing.T) {
 
 			called := false
 
-			state.consumeSymbolicGoFunctionErrors(func(msg string) {
+			state.consumeSymbolicGoFunctionErrors(func(msg string, optionalLocation parse.Node) {
 				called = true
 				assert.Equal(t, fmtHasElementsOfType(slice, ANY_RUNE), msg)
 			})

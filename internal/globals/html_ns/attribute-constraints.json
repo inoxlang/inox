@@ -1,0 +1,13 @@
+{
+    "href": {
+        "*": {
+            "types": ["path", "url"]
+        }
+    },
+    "src": {
+        "*": {
+            "types": ["path", "url"]
+        }
+    }
+}
+

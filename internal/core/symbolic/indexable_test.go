@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/inoxlang/inox/internal/parse"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -202,7 +203,7 @@ func TestList(t *testing.T) {
 			list.Pop(ctx)
 
 			err := false
-			state.consumeSymbolicGoFunctionErrors(func(msg string) {
+			state.consumeSymbolicGoFunctionErrors(func(msg string, optionalLocation parse.Node) {
 				err = true
 				assert.Equal(t, CANNOT_POP_FROM_EMPTY_LIST, msg)
 			})
@@ -226,7 +227,7 @@ func TestList(t *testing.T) {
 
 			assert.Equal(t, NewList(), updatedSelf)
 
-			state.consumeSymbolicGoFunctionErrors(func(msg string) {
+			state.consumeSymbolicGoFunctionErrors(func(msg string, optionalLocation parse.Node) {
 				assert.Fail(t, "unexcepted error: "+msg)
 			})
 		})
@@ -245,7 +246,7 @@ func TestList(t *testing.T) {
 
 			assert.Equal(t, NewList(INT_1), updatedSelf)
 
-			state.consumeSymbolicGoFunctionErrors(func(msg string) {
+			state.consumeSymbolicGoFunctionErrors(func(msg string, optionalLocation parse.Node) {
 				assert.Fail(t, "unexcepted error: "+msg)
 			})
 		})
@@ -260,7 +261,7 @@ func TestList(t *testing.T) {
 			_, ok := state.consumeUpdatedSelf()
 			assert.False(t, ok)
 
-			state.consumeSymbolicGoFunctionErrors(func(msg string) {
+			state.consumeSymbolicGoFunctionErrors(func(msg string, optionalLocation parse.Node) {
 				assert.Fail(t, "unexcepted error: "+msg)
 			})
 		})

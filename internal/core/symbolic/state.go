@@ -40,7 +40,7 @@ type State struct {
 
 	//temporary fields storing information provided by symbolic Go functions during calls
 
-	tempSymbolicGoFunctionErrors         []string
+	tempSymbolicGoFunctionErrors         []symbolicGoFunctionError
 	tempSymbolicGoFunctionWarnings       []string
 	tempSymbolicGoFunctionParameters     *[]Value
 	tempSymbolicGoFunctionParameterNames []string
@@ -55,6 +55,11 @@ type State struct {
 
 	//nil if no project
 	projectFilesystem billy.Filesystem
+}
+
+type symbolicGoFunctionError struct {
+	message  string
+	location parse.Node //optional
 }
 
 type scopeInfo struct {
@@ -656,13 +661,22 @@ func (state *State) addWarning(warning SymbolicEvaluationWarning) {
 }
 
 func (state *State) addSymbolicGoFunctionError(msg string) {
-	state.tempSymbolicGoFunctionErrors = append(state.tempSymbolicGoFunctionErrors, msg)
+	state.tempSymbolicGoFunctionErrors = append(state.tempSymbolicGoFunctionErrors, symbolicGoFunctionError{
+		message: msg,
+	})
 }
 
-func (state *State) consumeSymbolicGoFunctionErrors(fn func(msg string)) {
+func (state *State) addLocatedSymbolicGoFunctionError(msg string, location parse.Node) {
+	state.tempSymbolicGoFunctionErrors = append(state.tempSymbolicGoFunctionErrors, symbolicGoFunctionError{
+		message:  msg,
+		location: location,
+	})
+}
+
+func (state *State) consumeSymbolicGoFunctionErrors(fn func(msg string, optionalLocaction parse.Node)) {
 	errors := state.tempSymbolicGoFunctionErrors
 	for _, err := range errors {
-		fn(err)
+		fn(err.message, err.location)
 	}
 	state.tempSymbolicGoFunctionErrors = state.tempSymbolicGoFunctionErrors[:0]
 }

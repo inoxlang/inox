@@ -191,8 +191,16 @@ func (ctx *Context) AddSymbolicGoFunctionError(msg string) {
 	ctx.associatedState.addSymbolicGoFunctionError(msg)
 }
 
+func (ctx *Context) AddLocatedSymbolicGoFunctionError(location parse.Node, msg string) {
+	ctx.associatedState.addLocatedSymbolicGoFunctionError(msg, location)
+}
+
 func (ctx *Context) AddSymbolicGoFunctionErrorf(fmtS string, args ...any) {
 	ctx.associatedState.addSymbolicGoFunctionError(fmt.Sprintf(fmtS, args...))
+}
+
+func (ctx *Context) AddLocatedSymbolicGoFunctionErrorf(location parse.Node, fmtS string, args ...any) {
+	ctx.associatedState.addLocatedSymbolicGoFunctionError(fmt.Sprintf(fmtS, args...), location)
 }
 
 func (ctx *Context) AddSymbolicGoFunctionWarning(msg string) {

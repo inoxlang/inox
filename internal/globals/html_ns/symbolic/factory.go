@@ -67,7 +67,13 @@ func CreateHTMLNodeFromXMLElement(ctx *symbolic.Context, elem *symbolic.XMLEleme
 			switch val.(type) {
 			case symbolic.GoString, symbolic.StringLike, *symbolic.Int:
 			default:
-				ctx.AddSymbolicGoFunctionError(fmtAttrValueNotAccepted(val, name))
+				errMsg := fmtAttrValueNotAccepted(val, name)
+				sourceNode, ok := e.SourceNode()
+				if ok {
+					ctx.AddLocatedSymbolicGoFunctionError(sourceNode.Opening, errMsg)
+				} else {
+					ctx.AddSymbolicGoFunctionError(errMsg)
+				}
 			}
 		}
 
