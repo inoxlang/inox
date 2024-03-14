@@ -80,13 +80,13 @@ func registerTestingMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 		},
 		RateLimits: []int{0, 2},
 		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
-			session := jsonrpc.GetSession(ctx)
+			rpcSession := jsonrpc.GetSession(ctx)
 			//TODO
 			// params := req.(*EnableContinuousTestDiscoveryParams)
 
 			// data := getLockedSessionData(session)
 
-			_ = session
+			_ = rpcSession
 			return nil, nil
 		},
 	})
@@ -98,14 +98,16 @@ func registerTestingMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 		},
 		RateLimits: []int{2, 10, 30},
 		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
-			session := jsonrpc.GetSession(ctx)
+			rpcSession := jsonrpc.GetSession(ctx)
 			params := req.(*TestFileParams)
 
-			data := getLockedSessionData(session)
-			memberAuthToken := data.memberAuthToken
-			data.lock.Unlock()
+			//-----------------------------------------------
+			session := getCreateLockedProjectSession(rpcSession)
+			memberAuthToken := session.memberAuthToken
+			session.lock.Unlock()
+			//-----------------------------------------------
 
-			return testModuleAsync(params.Path, params.Filters(), session, memberAuthToken)
+			return testModuleAsync(params.Path, params.Filters(), rpcSession, memberAuthToken)
 		},
 	})
 
@@ -116,13 +118,13 @@ func registerTestingMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 		},
 		RateLimits: []int{2, 10, 30},
 		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
-			session := jsonrpc.GetSession(ctx)
+			rpcSession := jsonrpc.GetSession(ctx)
 			params := req.(*StopTestRunParams)
 
-			data := getLockedSessionData(session)
-			run, ok := data.testRuns[params.TestRunId]
-			delete(data.testRuns, params.TestRunId)
-			data.lock.Unlock()
+			session := getCreateLockedProjectSession(rpcSession)
+			run, ok := session.testRuns[params.TestRunId]
+			delete(session.testRuns, params.TestRunId)
+			session.lock.Unlock()
 
 			if ok {
 				run.state.Ctx.CancelGracefully()

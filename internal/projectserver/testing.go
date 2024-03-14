@@ -25,14 +25,14 @@ type TestRunId string
 // without waiting for the tests to finish. The goroutine notifies the LSP client with TEST_RUN_FINISHED_METHOD when it is done.
 // testModuleAsync should NOT be called while the session data is locked because it acquires the lock in order to
 // store the testRunId in additionalSessionData.testRuns.
-func testModuleAsync(path string, filters core.TestFilters, session *jsonrpc.Session, memberAuthToken string) (TestFileResponse, error) {
+func testModuleAsync(path string, filters core.TestFilters, rpcSession *jsonrpc.Session, memberAuthToken string) (TestFileResponse, error) {
 
-	fls, ok := getLspFilesystem(session)
+	fls, ok := getLspFilesystem(rpcSession)
 	if !ok {
 		return TestFileResponse{}, errors.New(string(FsNoFilesystem))
 	}
 
-	project, ok := getProject(session)
+	project, ok := getProject(rpcSession)
 	if !ok {
 		return TestFileResponse{}, jsonrpc.ResponseError{
 			Code:    jsonrpc.InternalError.Code,
@@ -40,7 +40,7 @@ func testModuleAsync(path string, filters core.TestFilters, session *jsonrpc.Ses
 		}
 	}
 
-	handlingCtx := session.Context().BoundChildWithOptions(core.BoundChildContextOptions{
+	handlingCtx := rpcSession.Context().BoundChildWithOptions(core.BoundChildContextOptions{
 		Filesystem: fls,
 	})
 
@@ -71,7 +71,7 @@ func testModuleAsync(path string, filters core.TestFilters, session *jsonrpc.Ses
 		Out: utils.FnWriter{
 			WriteFn: func(p []byte) (n int, err error) {
 				p = utils.StripANSISequencesInBytes(p)
-				sendTestOutput(p, session)
+				sendTestOutput(p, rpcSession)
 				return len(p), nil
 			},
 		},
@@ -88,22 +88,25 @@ func testModuleAsync(path string, filters core.TestFilters, session *jsonrpc.Ses
 		id:    makeTestRunId(),
 		state: state,
 	}
-	data := getLockedSessionData(session)
-	data.testRuns[testRun.id] = testRun
-	data.lock.Unlock()
+
+	//-----------------------------------------------
+	session := getCreateLockedProjectSession(rpcSession)
+	session.testRuns[testRun.id] = testRun
+	session.lock.Unlock()
+	//-----------------------------------------------
 
 	go func() {
 		defer utils.Recover()
 
 		defer func() {
-			sendTestRunFinished(session)
+			sendTestRunFinished(rpcSession)
 		}()
 
 		twState := core.NewTreeWalkStateWithGlobal(state)
 
 		_, err := core.TreeWalkEval(state.Module.MainChunk.Node, twState)
 		if err != nil {
-			sendTestOutput(utils.StringAsBytes(err.Error()), session)
+			sendTestOutput(utils.StringAsBytes(err.Error()), rpcSession)
 			return
 		}
 
@@ -121,7 +124,7 @@ func testModuleAsync(path string, filters core.TestFilters, session *jsonrpc.Ses
 			fmt.Fprint(buf, msg)
 		}
 
-		sendTestOutput(buf.Bytes(), session)
+		sendTestOutput(buf.Bytes(), rpcSession)
 	}()
 
 	return TestFileResponse{
@@ -129,7 +132,7 @@ func testModuleAsync(path string, filters core.TestFilters, session *jsonrpc.Ses
 	}, nil
 }
 
-func sendTestOutput(bytesOrStringBytes []byte, session *jsonrpc.Session) {
+func sendTestOutput(bytesOrStringBytes []byte, rpcSession *jsonrpc.Session) {
 	//TODO: split in chunks
 
 	//improve output
@@ -139,16 +142,16 @@ func sendTestOutput(bytesOrStringBytes []byte, session *jsonrpc.Session) {
 		DataBase64: base64.StdEncoding.EncodeToString(msg),
 	}
 
-	session.Notify(jsonrpc.NotificationMessage{
+	rpcSession.Notify(jsonrpc.NotificationMessage{
 		Method: TEST_OUTPUT_EVENT_METHOD,
 		Params: utils.Must(json.Marshal(outputEvent)),
 	})
 }
 
-func sendTestRunFinished(session *jsonrpc.Session) {
+func sendTestRunFinished(rpcSession *jsonrpc.Session) {
 	runFinished := RunFinishedParams{}
 
-	session.Notify(jsonrpc.NotificationMessage{
+	rpcSession.Notify(jsonrpc.NotificationMessage{
 		Method: TEST_RUN_FINISHED_METHOD,
 		Params: utils.Must(json.Marshal(runFinished)),
 	})

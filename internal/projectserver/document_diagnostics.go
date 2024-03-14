@@ -26,14 +26,14 @@ const (
 // This handler does not return any diagnostics. Instead it spawns a goroutine that will compute, and push them using textDocument/publisDiagnostics.
 // This is a bit of a hack, but unexpected bugs and issues arose when mixing the two diagnostic retrieval models (push and pull) was tried.
 func handleDocumentDiagnostic(ctx context.Context, req *defines.DocumentDiagnosticParams) (any, error) {
-	session := jsonrpc.GetSession(ctx)
+	rpcSession := jsonrpc.GetSession(ctx)
 	//sessionCtx := session.Context()
 
-	sessionData := getLockedSessionData(session)
-	projectMode := sessionData.projectMode
-	fls := sessionData.filesystem
-	memberAuthToken := sessionData.memberAuthToken
-	sessionData.lock.Unlock()
+	session := getCreateLockedProjectSession(rpcSession)
+	projectMode := session.inProjectMode
+	fls := session.filesystem
+	memberAuthToken := session.memberAuthToken
+	session.lock.Unlock()
 
 	if fls == nil {
 		return &defines.FullDocumentDiagnosticReport{
@@ -50,7 +50,7 @@ func handleDocumentDiagnostic(ctx context.Context, req *defines.DocumentDiagnost
 	go func() {
 		defer utils.Recover()
 		computeNotifyDocumentDiagnostics(diagnosticNotificationParams{
-			session:         session,
+			rpcSession:      rpcSession,
 			docURI:          req.TextDocument.Uri,
 			usingInoxFS:     projectMode,
 			fls:             fls,
@@ -89,7 +89,7 @@ func handleDocumentDiagnostic(ctx context.Context, req *defines.DocumentDiagnost
 }
 
 type diagnosticNotificationParams struct {
-	session         *jsonrpc.Session
+	rpcSession      *jsonrpc.Session
 	docURI          defines.DocumentUri
 	usingInoxFS     bool
 	fls             *Filesystem
@@ -102,14 +102,14 @@ func computeNotifyDocumentDiagnostics(params diagnosticNotificationParams) error
 	if err != nil {
 		return err
 	}
-	return sendDocumentDiagnostics(params.session, params.docURI, diagnostics.items)
+	return sendDocumentDiagnostics(params.rpcSession, params.docURI, diagnostics.items)
 }
 
 // computes prepares a source file, constructs a list of defines.Diagnostic from errors at different phases
 // (parsing, static check, and symbolic evaluation). The list is saved in the session before being returned.
 func computeDocumentDiagnostics(params diagnosticNotificationParams) (result *documentDiagnostics, _ error) {
 
-	session, docURI, usingInoxFS, fls, memberAuthToken := params.session, params.docURI, params.usingInoxFS, params.fls, params.memberAuthToken
+	session, docURI, usingInoxFS, fls, memberAuthToken := params.rpcSession, params.docURI, params.usingInoxFS, params.fls, params.memberAuthToken
 
 	sessionCtx := session.Context()
 	ctx := sessionCtx.BoundChildWithOptions(core.BoundChildContextOptions{
@@ -131,7 +131,7 @@ func computeDocumentDiagnostics(params diagnosticNotificationParams) (result *do
 			}
 
 			// //Save the result in the session.
-			projSession := getLockedSessionData(params.session)
+			projSession := getCreateLockedProjectSession(params.rpcSession)
 			defer projSession.lock.Unlock()
 			projSession.documentDiagnostics[fpath] = result
 		}
@@ -298,14 +298,14 @@ func computeDocumentDiagnostics(params diagnosticNotificationParams) (result *do
 	return &documentDiagnostics{items: diagnostics}, nil
 }
 
-func sendDocumentDiagnostics(session *jsonrpc.Session, docURI defines.DocumentUri, diagnostics []defines.Diagnostic) error {
+func sendDocumentDiagnostics(rpcSession *jsonrpc.Session, docURI defines.DocumentUri, diagnostics []defines.Diagnostic) error {
 
 	version := int(
 		time.Since(core.PROCESS_BEGIN_TIME) /
 			/* Divide to prevent an overflow. A precision of 0.1 second should be fine. */
 			(100 * time.Millisecond))
 
-	return session.Notify(jsonrpc.NotificationMessage{
+	return rpcSession.Notify(jsonrpc.NotificationMessage{
 		Method: "textDocument/publishDiagnostics",
 		Params: utils.Must(json.Marshal(defines.PublishDiagnosticsParams{
 			Uri:         docURI,

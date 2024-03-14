@@ -165,13 +165,13 @@ func handleGetStagedOrUnstagedChanges(ctx context.Context, req interface{}) (int
 }
 
 func handleGetChanges(ctx context.Context, staged bool, req interface{}) ([]SourceControlFileChange, error) {
-	session := jsonrpc.GetSession(ctx)
+	rpcSession := jsonrpc.GetSession(ctx)
 
 	//----------------------------------------
-	sessionData := getLockedSessionData(session)
-	fls := sessionData.filesystem
-	repo := sessionData.repository
-	sessionData.lock.Unlock()
+	session := getCreateLockedProjectSession(rpcSession)
+	fls := session.filesystem
+	repo := session.repository
+	session.lock.Unlock()
 	//----------------------------------------
 
 	if fls == nil {
@@ -218,14 +218,14 @@ func handleGetChanges(ctx context.Context, staged bool, req interface{}) ([]Sour
 }
 
 func handleStageFileOrDir(ctx context.Context, req interface{}) (interface{}, error) {
-	session := jsonrpc.GetSession(ctx)
+	rpcSession := jsonrpc.GetSession(ctx)
 	params := req.(*StageParams)
 
 	//----------------------------------------
-	sessionData := getLockedSessionData(session)
-	fls := sessionData.filesystem
-	repo := sessionData.repository
-	sessionData.lock.Unlock()
+	session := getCreateLockedProjectSession(rpcSession)
+	fls := session.filesystem
+	repo := session.repository
+	session.lock.Unlock()
 	//----------------------------------------
 
 	if fls == nil {
@@ -254,14 +254,14 @@ func handleStageFileOrDir(ctx context.Context, req interface{}) (interface{}, er
 }
 
 func handleUnstageFileOrDir(ctx context.Context, req interface{}) (interface{}, error) {
-	session := jsonrpc.GetSession(ctx)
+	rpcSession := jsonrpc.GetSession(ctx)
 	params := req.(*UnstageParams)
 
 	//----------------------------------------
-	sessionData := getLockedSessionData(session)
-	fls := sessionData.filesystem
-	repo := sessionData.repository
-	sessionData.lock.Unlock()
+	session := getCreateLockedProjectSession(rpcSession)
+	fls := session.filesystem
+	repo := session.repository
+	session.lock.Unlock()
 	//----------------------------------------
 
 	if fls == nil {
@@ -291,14 +291,14 @@ func handleUnstageFileOrDir(ctx context.Context, req interface{}) (interface{}, 
 }
 
 func handleCommitInLocalRepo(ctx context.Context, req interface{}) (interface{}, error) {
-	session := jsonrpc.GetSession(ctx)
+	rpcSession := jsonrpc.GetSession(ctx)
 	params := req.(*CommitParams)
 
 	//----------------------------------------
-	sessionData := getLockedSessionData(session)
-	fls := sessionData.filesystem
-	repo := sessionData.repository
-	sessionData.lock.Unlock()
+	session := getCreateLockedProjectSession(rpcSession)
+	fls := session.filesystem
+	repo := session.repository
+	session.lock.Unlock()
 	//----------------------------------------
 
 	if fls == nil {
@@ -325,14 +325,14 @@ func handleCommitInLocalRepo(ctx context.Context, req interface{}) (interface{},
 }
 
 func handleGetLastDevCommit(ctx context.Context, req interface{}) (interface{}, error) {
-	session := jsonrpc.GetSession(ctx)
+	rpcSession := jsonrpc.GetSession(ctx)
 	_ = req.(*GetLastDevCommitParams)
 
 	//----------------------------------------
-	sessionData := getLockedSessionData(session)
-	fls := sessionData.filesystem
-	repo := sessionData.repository
-	sessionData.lock.Unlock()
+	session := getCreateLockedProjectSession(rpcSession)
+	fls := session.filesystem
+	repo := session.repository
+	session.lock.Unlock()
 	//----------------------------------------
 
 	if fls == nil {
@@ -366,14 +366,14 @@ func handleGetLastDevCommit(ctx context.Context, req interface{}) (interface{}, 
 }
 
 func handleGetDevLog(ctx context.Context, req interface{}) (interface{}, error) {
-	session := jsonrpc.GetSession(ctx)
+	rpcSession := jsonrpc.GetSession(ctx)
 	params := req.(*LogDevCommitsParams)
 
 	//----------------------------------------
-	sessionData := getLockedSessionData(session)
-	fls := sessionData.filesystem
-	repo := sessionData.repository
-	sessionData.lock.Unlock()
+	session := getCreateLockedProjectSession(rpcSession)
+	fls := session.filesystem
+	repo := session.repository
+	session.lock.Unlock()
 	//----------------------------------------
 
 	if fls == nil {

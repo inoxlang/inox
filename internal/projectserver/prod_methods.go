@@ -38,10 +38,10 @@ func registerProdMethodHandlers(server *lsp.Server, opts LSPServerConfiguration)
 		},
 		RateLimits: []int{0, 2, 5},
 		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
-			session := jsonrpc.GetSession(ctx)
+			rpcSession := jsonrpc.GetSession(ctx)
 			params := req.(*DeployAppParams)
 
-			proj, ok := getProject(session)
+			proj, ok := getProject(rpcSession)
 			if !ok {
 				return jsonrpc.ResponseError{
 					Code:    jsonrpc.InternalError.Code,
@@ -56,7 +56,7 @@ func registerProdMethodHandlers(server *lsp.Server, opts LSPServerConfiguration)
 			//TODO: in nodeimpl/app.go return an error on startup burst and add a specific status.
 
 			handlerCtx := core.NewContextWithEmptyState(core.ContextConfig{
-				ParentContext: session.Context(),
+				ParentContext: rpcSession.Context(),
 			}, nil)
 			defer handlerCtx.CancelGracefully()
 
@@ -90,10 +90,10 @@ func registerProdMethodHandlers(server *lsp.Server, opts LSPServerConfiguration)
 		},
 		RateLimits: []int{0, 5, 20},
 		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
-			session := jsonrpc.GetSession(ctx)
+			rpcSession := jsonrpc.GetSession(ctx)
 			params := req.(*StopAppParams)
 
-			proj, ok := getProject(session)
+			proj, ok := getProject(rpcSession)
 			if !ok {
 				return jsonrpc.ResponseError{
 					Code:    jsonrpc.InternalError.Code,
@@ -102,7 +102,7 @@ func registerProdMethodHandlers(server *lsp.Server, opts LSPServerConfiguration)
 			}
 
 			handlerCtx := core.NewContextWithEmptyState(core.ContextConfig{
-				ParentContext: session.Context(),
+				ParentContext: rpcSession.Context(),
 			}, nil)
 			defer handlerCtx.CancelGracefully()
 

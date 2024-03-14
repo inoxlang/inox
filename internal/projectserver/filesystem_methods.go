@@ -281,11 +281,11 @@ func registerFilesystemMethodHandlers(server *lsp.Server) {
 	})
 }
 
-func getLspFilesystem(session *jsonrpc.Session) (*Filesystem, bool) {
-	sessionData := getLockedSessionData(session)
-	defer sessionData.lock.Unlock()
+func getLspFilesystem(rpcSession *jsonrpc.Session) (*Filesystem, bool) {
+	session := getCreateLockedProjectSession(rpcSession)
+	defer session.lock.Unlock()
 
-	return sessionData.filesystem, sessionData.filesystem != nil
+	return session.filesystem, session.filesystem != nil
 }
 
 // unsavedDocumentSyncData contains data about the synchronization of an unsaved document.
@@ -329,7 +329,7 @@ func (d *unsavedDocumentSyncData) reactToDidChange(fls *Filesystem) {
 	}
 }
 
-func updateFile(fpath string, contentParts [][]byte, create, overwrite bool, fls *Filesystem, session *jsonrpc.Session) (FsNonCriticalError, error) {
+func updateFile(fpath string, parts [][]byte, create, overwrite bool, fls *Filesystem, rpcSession *jsonrpc.Session) (FsNonCriticalError, error) {
 	unsavedDocumentsFS := fls.unsavedDocumentsFS()
 
 	// attempt to synchronize the unsaved document with the new content,
@@ -337,13 +337,13 @@ func updateFile(fpath string, contentParts [][]byte, create, overwrite bool, fls
 	if fls != unsavedDocumentsFS && false {
 		func() {
 			//get & read the synchronization data
-			sessionData := getLockedSessionData(session)
-			syncData := sessionData.unsavedDocumentSyncData[fpath]
+			session := getCreateLockedProjectSession(rpcSession)
+			syncData := session.unsavedDocumentSyncData[fpath]
 			if syncData == nil {
 				syncData = &unsavedDocumentSyncData{path: fpath}
-				sessionData.unsavedDocumentSyncData[fpath] = syncData
+				session.unsavedDocumentSyncData[fpath] = syncData
 			}
-			sessionData.lock.Unlock()
+			session.lock.Unlock()
 
 			updated := false
 			defer func() {
@@ -386,7 +386,7 @@ func updateFile(fpath string, contentParts [][]byte, create, overwrite bool, fls
 			doc.Truncate(0)
 			doc.Seek(0, 0)
 
-			for _, part := range contentParts {
+			for _, part := range parts {
 				_, _ = doc.Write(part)
 			}
 
@@ -415,12 +415,12 @@ func updateFile(fpath string, contentParts [][]byte, create, overwrite bool, fls
 				return "", fmtInternalError("failed to create file %s: already exists and overwrite option is false", fpath)
 			}
 
-			if err := f.Truncate(int64(len(contentParts))); err != nil {
+			if err := f.Truncate(int64(len(parts))); err != nil {
 				return "", fmtInternalError("failed to truncate file before write %s: %s", fpath, err)
 			}
 		}
 
-		for _, part := range contentParts {
+		for _, part := range parts {
 			_, err = f.Write(part)
 		}
 
@@ -442,11 +442,11 @@ func updateFile(fpath string, contentParts [][]byte, create, overwrite bool, fls
 			return "", fmtInternalError("failed to write file %s: failed to open: %s", fpath, err)
 		}
 
-		if err := f.Truncate(int64(len(contentParts))); err != nil {
+		if err := f.Truncate(int64(len(parts))); err != nil {
 			return "nil", fmtInternalError("failed to truncate file before write: %s: %s", fpath, err)
 		}
 
-		for _, part := range contentParts {
+		for _, part := range parts {
 			_, err = f.Write(part)
 		}
 
@@ -525,9 +525,9 @@ func startNotifyingFilesystemStructureEvents(session *jsonrpc.Session, fls afs.F
 }
 
 func handleFileStat(ctx context.Context, req interface{}) (interface{}, error) {
-	session := jsonrpc.GetSession(ctx)
+	rpcSession := jsonrpc.GetSession(ctx)
 	params := req.(*FsFileStatParams)
-	fls, ok := getLspFilesystem(session)
+	fls, ok := getLspFilesystem(rpcSession)
 	if !ok {
 		return nil, errors.New(string(FsNoFilesystem))
 	}
@@ -559,9 +559,9 @@ func handleFileStat(ctx context.Context, req interface{}) (interface{}, error) {
 }
 
 func handleReadFile(ctx context.Context, req interface{}) (interface{}, error) {
-	session := jsonrpc.GetSession(ctx)
+	rpcSession := jsonrpc.GetSession(ctx)
 	params := req.(*FsReadFileParams)
-	fls, ok := getLspFilesystem(session)
+	fls, ok := getLspFilesystem(rpcSession)
 	if !ok {
 		return nil, errors.New(string(FsNoFilesystem))
 	}
@@ -583,9 +583,9 @@ func handleReadFile(ctx context.Context, req interface{}) (interface{}, error) {
 }
 
 func handleWriteFile(ctx context.Context, req interface{}) (interface{}, error) {
-	session := jsonrpc.GetSession(ctx)
+	rpcSession := jsonrpc.GetSession(ctx)
 	params := req.(*FsWriteFileParams)
-	fls, ok := getLspFilesystem(session)
+	fls, ok := getLspFilesystem(rpcSession)
 	if !ok {
 		return nil, errors.New(string(FsNoFilesystem))
 	}
@@ -600,23 +600,23 @@ func handleWriteFile(ctx context.Context, req interface{}) (interface{}, error) 
 		return nil, fmt.Errorf("failed to decode received content for file %s: %w", fpath, err)
 	}
 
-	return updateFile(fpath, [][]byte{content}, params.Create, params.Overwrite, fls, session)
+	return updateFile(fpath, [][]byte{content}, params.Create, params.Overwrite, fls, rpcSession)
 }
 
 func handleStartFileUpload(ctx context.Context, req interface{}) (interface{}, error) {
-	session := jsonrpc.GetSession(ctx)
+	rpcSession := jsonrpc.GetSession(ctx)
 	params := req.(*FsStartUploadParams)
-	fls, ok := getLspFilesystem(session)
+	fls, ok := getLspFilesystem(rpcSession)
 	if !ok {
 		return nil, errors.New(string(FsNoFilesystem))
 	}
 
-	data := getLockedSessionData(session)
+	session := getCreateLockedProjectSession(rpcSession)
 	var projectId core.ProjectID
-	if data.project != nil {
-		projectId = data.project.Id()
+	if session.project != nil {
+		projectId = session.project.Id()
 	}
-	data.lock.Unlock()
+	session.lock.Unlock()
 
 	if projectId == "" {
 		return nil, jsonrpc.ResponseError{
@@ -638,7 +638,7 @@ func handleStartFileUpload(ctx context.Context, req interface{}) (interface{}, e
 	}
 
 	info := uploadInfo{create: params.Create, overwrite: params.Overwrite}
-	uploadId, err := editionState.startFileUpload(fpath, firstPart, info, session)
+	uploadId, err := editionState.startFileUpload(fpath, firstPart, info, rpcSession)
 
 	if err != nil {
 		return nil, jsonrpc.ResponseError{
@@ -648,7 +648,7 @@ func handleStartFileUpload(ctx context.Context, req interface{}) (interface{}, e
 	}
 
 	if params.Last {
-		parts, info, err := editionState.finishFileUpload(fpath, nil, uploadId, session)
+		parts, info, err := editionState.finishFileUpload(fpath, nil, uploadId, rpcSession)
 
 		if err != nil {
 			return nil, jsonrpc.ResponseError{
@@ -657,7 +657,7 @@ func handleStartFileUpload(ctx context.Context, req interface{}) (interface{}, e
 			}
 		}
 
-		nonCritialErr, err := updateFile(fpath, parts, info.create, info.overwrite, fls, session)
+		nonCritialErr, err := updateFile(fpath, parts, info.create, info.overwrite, fls, rpcSession)
 
 		if err != nil {
 			return nil, jsonrpc.ResponseError{
@@ -682,19 +682,21 @@ func handleStartFileUpload(ctx context.Context, req interface{}) (interface{}, e
 }
 
 func writeFileUploadPart(ctx context.Context, req interface{}) (interface{}, error) {
-	session := jsonrpc.GetSession(ctx)
+	rpcSession := jsonrpc.GetSession(ctx)
 	params := req.(*FsWriteUploadPartParams)
-	fls, ok := getLspFilesystem(session)
+	fls, ok := getLspFilesystem(rpcSession)
 	if !ok {
 		return nil, errors.New(string(FsNoFilesystem))
 	}
 
-	data := getLockedSessionData(session)
+	//-----------------------------------------------
+	session := getCreateLockedProjectSession(rpcSession)
 	var projectId core.ProjectID
-	if data.project != nil {
-		projectId = data.project.Id()
+	if session.project != nil {
+		projectId = session.project.Id()
 	}
-	data.lock.Unlock()
+	session.lock.Unlock()
+	//-----------------------------------------------
 
 	if projectId == "" {
 		return nil, jsonrpc.ResponseError{
@@ -716,7 +718,7 @@ func writeFileUploadPart(ctx context.Context, req interface{}) (interface{}, err
 	}
 
 	if params.Last {
-		parts, info, err := editionState.finishFileUpload(fpath, part, params.UploadId, session)
+		parts, info, err := editionState.finishFileUpload(fpath, part, params.UploadId, rpcSession)
 
 		if err != nil {
 			return nil, jsonrpc.ResponseError{
@@ -725,9 +727,9 @@ func writeFileUploadPart(ctx context.Context, req interface{}) (interface{}, err
 			}
 		}
 
-		return updateFile(fpath, parts, info.create, info.overwrite, fls, session)
+		return updateFile(fpath, parts, info.create, info.overwrite, fls, rpcSession)
 	} else {
-		_, err := editionState.continueFileUpload(fpath, part, params.UploadId, session)
+		_, err := editionState.continueFileUpload(fpath, part, params.UploadId, rpcSession)
 
 		if err != nil {
 			return nil, jsonrpc.ResponseError{
@@ -741,9 +743,9 @@ func writeFileUploadPart(ctx context.Context, req interface{}) (interface{}, err
 }
 
 func handleRenameFile(ctx context.Context, req interface{}) (interface{}, error) {
-	session := jsonrpc.GetSession(ctx)
+	rpcSession := jsonrpc.GetSession(ctx)
 	params := req.(*FsRenameFileParams)
-	fls, ok := getLspFilesystem(session)
+	fls, ok := getLspFilesystem(rpcSession)
 	if !ok {
 		return nil, errors.New(string(FsNoFilesystem))
 	}
@@ -788,9 +790,9 @@ func handleRenameFile(ctx context.Context, req interface{}) (interface{}, error)
 }
 
 func handleDeleteFile(ctx context.Context, req interface{}) (interface{}, error) {
-	session := jsonrpc.GetSession(ctx)
+	rpcSession := jsonrpc.GetSession(ctx)
 	params := req.(*FsDeleteFileParams)
-	fls, ok := getLspFilesystem(session)
+	fls, ok := getLspFilesystem(rpcSession)
 	if !ok {
 		return nil, errors.New(string(FsNoFilesystem))
 	}
@@ -823,9 +825,9 @@ func handleDeleteFile(ctx context.Context, req interface{}) (interface{}, error)
 }
 
 func handleReadDir(ctx context.Context, req interface{}) (interface{}, error) {
-	session := jsonrpc.GetSession(ctx)
+	rpcSession := jsonrpc.GetSession(ctx)
 	params := req.(*FsReadirParams)
-	fls, ok := getLspFilesystem(session)
+	fls, ok := getLspFilesystem(rpcSession)
 	if !ok {
 		return nil, errors.New(string(FsNoFilesystem))
 	}
@@ -856,9 +858,9 @@ func handleReadDir(ctx context.Context, req interface{}) (interface{}, error) {
 }
 
 func handleCreateDir(ctx context.Context, req interface{}) (interface{}, error) {
-	session := jsonrpc.GetSession(ctx)
+	rpcSession := jsonrpc.GetSession(ctx)
 	params := req.(*FsCreateDirParams)
-	fls, ok := getLspFilesystem(session)
+	fls, ok := getLspFilesystem(rpcSession)
 	if !ok {
 		return nil, errors.New(string(FsNoFilesystem))
 	}

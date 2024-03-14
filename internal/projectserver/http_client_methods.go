@@ -65,25 +65,26 @@ func registerHttpClientMethods(server *lsp.Server, opts LSPServerConfiguration) 
 }
 
 func handleHttpRequest(goCtx context.Context, req interface{}) (interface{}, error) {
-	session := jsonrpc.GetSession(goCtx)
+	rpcSession := jsonrpc.GetSession(goCtx)
 	params := req.(*HttpRequestParams)
-	ctx := session.Context()
+	ctx := rpcSession.Context()
 
-	data := getLockedSessionData(session)
+	//-----------------------------------------------
+	session := getCreateLockedProjectSession(rpcSession)
 	var client *http.Client
 
 	func() {
-		defer data.lock.Unlock()
+		defer session.lock.Unlock()
 
-		if data.secureHttpClient == nil {
-			data.secureHttpClient = &http.Client{
+		if session.secureHttpClient == nil {
+			session.secureHttpClient = &http.Client{
 				CheckRedirect: ignoreRedirects,
 				Timeout:       DEFAULT_HTTP_CLIENT_TIMEOUT,
 			}
 
 		}
-		if data.insecureHttpClient == nil {
-			data.insecureHttpClient = &http.Client{
+		if session.insecureHttpClient == nil {
+			session.insecureHttpClient = &http.Client{
 				CheckRedirect: ignoreRedirects,
 				Timeout:       DEFAULT_HTTP_CLIENT_TIMEOUT,
 				Transport: &http.Transport{
@@ -94,6 +95,7 @@ func handleHttpRequest(goCtx context.Context, req interface{}) (interface{}, err
 			}
 		}
 	}()
+	//-----------------------------------------------
 
 	//Create a HTTP request from the information and body present in parameters.
 
@@ -105,7 +107,7 @@ func handleHttpRequest(goCtx context.Context, req interface{}) (interface{}, err
 		}
 	}
 	if u.Hostname() == "localhost" {
-		client = data.insecureHttpClient
+		client = session.insecureHttpClient
 	} else { //for now only sending requests to localhost is allowed.
 		event := HttpResponseEvent{
 			RequestID: params.RequestID,
@@ -120,7 +122,7 @@ func handleHttpRequest(goCtx context.Context, req interface{}) (interface{}, err
 		go func() {
 			defer utils.Recover()
 
-			session.Notify(jsonrpc.NotificationMessage{
+			rpcSession.Notify(jsonrpc.NotificationMessage{
 				Method: HTTP_RESPONSE_EVENT_METHOD,
 				Params: json.RawMessage(notifParams),
 			})
@@ -179,7 +181,7 @@ func handleHttpRequest(goCtx context.Context, req interface{}) (interface{}, err
 			}
 		}()
 
-		ctx := session.Context().BoundChild()
+		ctx := rpcSession.Context().BoundChild()
 		defer ctx.CancelGracefully()
 
 		result := HttpResponseEvent{RequestID: params.RequestID}
@@ -219,7 +221,7 @@ func handleHttpRequest(goCtx context.Context, req interface{}) (interface{}, err
 			return
 		}
 
-		session.Notify(jsonrpc.NotificationMessage{
+		rpcSession.Notify(jsonrpc.NotificationMessage{
 			Method: HTTP_RESPONSE_EVENT_METHOD,
 			Params: json.RawMessage(notifParams),
 		})

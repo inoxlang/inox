@@ -20,7 +20,7 @@ import (
 type hoverContentParams struct {
 	fpath                string
 	line, column         int32
-	session              *jsonrpc.Session
+	rpcSession           *jsonrpc.Session
 	memberAuthToken      string
 	lastCodebaseAnalysis *analysis.Result //optional
 }
@@ -28,7 +28,7 @@ type hoverContentParams struct {
 // getHoverContent gets hover content for a specific position in an Inox code file.
 func getHoverContent(handlingCtx *core.Context, params hoverContentParams) (*defines.Hover, error) {
 
-	fpath, line, column, session, memberAuthToken := params.fpath, params.line, params.column, params.session, params.memberAuthToken
+	fpath, line, column, session, memberAuthToken := params.fpath, params.line, params.column, params.rpcSession, params.memberAuthToken
 
 	preparationResult, ok := prepareSourceFileInExtractionMode(handlingCtx, filePreparationParams{
 		fpath:                              fpath,

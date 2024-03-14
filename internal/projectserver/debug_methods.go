@@ -306,7 +306,7 @@ const (
 	ConsoleDebugEvent   = "console"
 )
 
-func notifyOutputEvent(msg string, category DebugEventCategory, debugSession *DebugSession, session *jsonrpc.Session) {
+func notifyOutputEvent(msg string, category DebugEventCategory, debugSession *DebugSession, rpcSession *jsonrpc.Session) {
 	outputEvent := dap.OutputEvent{
 		Event: dap.Event{
 			ProtocolMessage: dap.ProtocolMessage{
@@ -321,13 +321,13 @@ func notifyOutputEvent(msg string, category DebugEventCategory, debugSession *De
 		},
 	}
 
-	session.Notify(jsonrpc.NotificationMessage{
+	rpcSession.Notify(jsonrpc.NotificationMessage{
 		Method: "debug/outputEvent",
 		Params: utils.Must(json.Marshal(outputEvent)),
 	})
 }
 
-func startDebugEventSenders(debugSession *DebugSession, session *jsonrpc.Session) {
+func startDebugEventSenders(debugSession *DebugSession, rpcSession *jsonrpc.Session) {
 	//goroutine sending a "stopped" event each time the program stops.
 	go func() {
 		defer func() {
@@ -371,7 +371,7 @@ func startDebugEventSenders(debugSession *DebugSession, session *jsonrpc.Session
 					stoppedEvent.Body.HitBreakpointIds = []int{int(stop.Breakpoint.Id)}
 				}
 
-				session.Notify(jsonrpc.NotificationMessage{
+				rpcSession.Notify(jsonrpc.NotificationMessage{
 					Method: "debug/stoppedEvent",
 					Params: utils.Must(json.Marshal(stoppedEvent)),
 				})
@@ -413,7 +413,7 @@ func startDebugEventSenders(debugSession *DebugSession, session *jsonrpc.Session
 				//handle some events separately
 				switch e := debugEvent.(type) {
 				case core.LThreadSpawnedEvent:
-					session.Notify(jsonrpc.NotificationMessage{
+					rpcSession.Notify(jsonrpc.NotificationMessage{
 						Method: "debug/threadEvent",
 						Params: utils.Must(json.Marshal(dap.ThreadEvent{
 							Event: commonEventData,
@@ -433,7 +433,7 @@ func startDebugEventSenders(debugSession *DebugSession, session *jsonrpc.Session
 					Body:  debugEvent,
 				}
 
-				session.Notify(jsonrpc.NotificationMessage{
+				rpcSession.Notify(jsonrpc.NotificationMessage{
 					Method: "debug/" + eventType + "Event",
 					Params: utils.Must(json.Marshal(dapEvent)),
 				})
@@ -448,11 +448,11 @@ func startDebugEventSenders(debugSession *DebugSession, session *jsonrpc.Session
 }
 
 func handleInitializeDebug(ctx context.Context, req interface{}) (interface{}, error) {
-	session := jsonrpc.GetSession(ctx)
+	rpcSession := jsonrpc.GetSession(ctx)
 	params := req.(*DebugInitializeParams)
 	dapRequest := params.Request
 
-	debugSession, err := createDebugSession(session, params.SessionId)
+	debugSession, err := createDebugSession(rpcSession, params.SessionId)
 	if err != nil {
 		return dap.InitializeResponse{
 			Response: dap.Response{
@@ -495,11 +495,11 @@ func handleInitializeDebug(ctx context.Context, req interface{}) (interface{}, e
 }
 
 func handleDebugConfigDone(ctx context.Context, req interface{}) (interface{}, error) {
-	session := jsonrpc.GetSession(ctx)
+	rpcSession := jsonrpc.GetSession(ctx)
 	params := req.(*DebugConfigurationDoneParams)
 	dapRequest := params.Request
 
-	debugSession, err := getDebugSession(session, params.SessionId)
+	debugSession, err := getDebugSession(rpcSession, params.SessionId)
 
 	if err != nil {
 		return dap.ConfigurationDoneResponse{
@@ -545,11 +545,11 @@ func handleDebugConfigDone(ctx context.Context, req interface{}) (interface{}, e
 }
 
 func handleDebugLaunch(ctx context.Context, req interface{}) (interface{}, error) {
-	session := jsonrpc.GetSession(ctx)
+	rpcSession := jsonrpc.GetSession(ctx)
 	params := req.(*DebugLaunchRequestParams)
 	dapRequest := params.Request
 
-	debugSession, err := getDebugSession(session, params.SessionId)
+	debugSession, err := getDebugSession(rpcSession, params.SessionId)
 
 	makeDAPErrorResponse := func(msg string) dap.LaunchResponse {
 		return dap.LaunchResponse{
@@ -570,15 +570,15 @@ func handleDebugLaunch(ctx context.Context, req interface{}) (interface{}, error
 		return makeDAPErrorResponse(err.Error()), nil
 	}
 
-	fls, ok := getLspFilesystem(session)
+	fls, ok := getLspFilesystem(rpcSession)
 	if !ok {
-		removeDebugSession(debugSession, session)
+		removeDebugSession(debugSession, rpcSession)
 		return nil, errors.New(string(FsNoFilesystem))
 	}
 
-	sessionData := getLockedSessionData(session)
-	memberAuthToken := sessionData.memberAuthToken
-	sessionData.lock.Unlock()
+	session := getCreateLockedProjectSession(rpcSession)
+	memberAuthToken := session.memberAuthToken
+	session.lock.Unlock()
 
 	//check the configuration is done
 
@@ -597,7 +597,7 @@ func handleDebugLaunch(ctx context.Context, req interface{}) (interface{}, error
 	var launchArgs DebugLaunchArgs
 	err = json.Unmarshal(([]byte(dapRequest.Arguments)), &launchArgs)
 	if err != nil {
-		removeDebugSession(debugSession, session)
+		removeDebugSession(debugSession, rpcSession)
 
 		return nil, jsonrpc.ResponseError{
 			Code:    jsonrpc.InternalError.Code,
@@ -608,7 +608,7 @@ func handleDebugLaunch(ctx context.Context, req interface{}) (interface{}, error
 	//check user arguments
 
 	if launchArgs.Program == "" {
-		removeDebugSession(debugSession, session)
+		removeDebugSession(debugSession, rpcSession)
 		return makeDAPErrorResponse("missing program in launch arguments"), nil
 	}
 
@@ -620,13 +620,13 @@ func handleDebugLaunch(ctx context.Context, req interface{}) (interface{}, error
 
 	logLevels, err := readLogLevelSettings(launchArgs)
 	if err != nil {
-		removeDebugSession(debugSession, session)
+		removeDebugSession(debugSession, rpcSession)
 		return makeDAPErrorResponse(err.Error()), nil
 	}
 
 	// inform the user about the log level configuration
 	logLevelConfigMessage := "log level config from your IDE: " + string(utils.Must(json.Marshal(launchArgs.LogLevels))) + "\n"
-	notifyOutputEvent(logLevelConfigMessage, ConsoleDebugEvent, debugSession, session)
+	notifyOutputEvent(logLevelConfigMessage, ConsoleDebugEvent, debugSession, rpcSession)
 
 	// update the debug session
 
@@ -636,7 +636,7 @@ func handleDebugLaunch(ctx context.Context, req interface{}) (interface{}, error
 	debugSession.programPath = programPath
 	debugSession.programURI, err = getFileURI(programPath, debugSession.inProjectMode)
 	if err != nil {
-		removeDebugSession(debugSession, session)
+		removeDebugSession(debugSession, rpcSession)
 		return makeDAPErrorResponse(err.Error()), nil
 	}
 
@@ -653,21 +653,21 @@ func handleDebugLaunch(ctx context.Context, req interface{}) (interface{}, error
 		}()
 
 		defer computeNotifyDocumentDiagnostics(diagnosticNotificationParams{
-			session:         session,
+			rpcSession:      rpcSession,
 			docURI:          debugSession.programURI,
 			usingInoxFS:     debugSession.inProjectMode,
 			fls:             fls,
 			memberAuthToken: memberAuthToken,
 		})
-		defer removeDebugSession(debugSession, session)
+		defer removeDebugSession(debugSession, rpcSession)
 
 		select {
-		case <-session.Context().Done():
+		case <-rpcSession.Context().Done():
 			return
 		case err := <-debugSession.programDoneChan:
 			isExpectedCancelError := errors.Is(err, context.Canceled) && debugSession.receivedDisconnectRequest.Load()
 			if err != nil && !isExpectedCancelError {
-				notifyOutputEvent("program failed: "+err.Error(), ImportantDebugEvent, debugSession, session)
+				notifyOutputEvent("program failed: "+err.Error(), ImportantDebugEvent, debugSession, rpcSession)
 			}
 		}
 	}()
@@ -675,21 +675,21 @@ func handleDebugLaunch(ctx context.Context, req interface{}) (interface{}, error
 	go launchDebuggedProgram(debuggedProgramLaunch{
 		programPath:     programPath,
 		logLevels:       logLevels,
-		session:         session,
+		rpcSession:      rpcSession,
 		debugSession:    debugSession,
-		devSession:      sessionData.devSession,
+		devSession:      session.devSession,
 		fls:             fls,
 		memberAuthToken: memberAuthToken,
 	})
 
 	err = <-debugSession.programPreparedOrFailedToChan
 	if err != nil {
-		removeDebugSession(debugSession, session)
+		removeDebugSession(debugSession, rpcSession)
 
 		return makeDAPErrorResponse("program: " + err.Error()), nil
 	}
 
-	startDebugEventSenders(debugSession, session)
+	startDebugEventSenders(debugSession, rpcSession)
 
 	return dap.LaunchResponse{
 		Response: dap.Response{
@@ -705,11 +705,11 @@ func handleDebugLaunch(ctx context.Context, req interface{}) (interface{}, error
 }
 
 func handleGetThreads(ctx context.Context, req interface{}) (interface{}, error) {
-	session := jsonrpc.GetSession(ctx)
+	rpcSession := jsonrpc.GetSession(ctx)
 	params := req.(*DebugThreadsParams)
 	dapRequest := params.Request
 
-	debugSession, err := getDebugSession(session, params.SessionId)
+	debugSession, err := getDebugSession(rpcSession, params.SessionId)
 
 	if err != nil {
 		return dap.ThreadsResponse{
@@ -767,11 +767,11 @@ func handleGetThreads(ctx context.Context, req interface{}) (interface{}, error)
 }
 
 func handleGetStackTrace(ctx context.Context, req interface{}) (interface{}, error) {
-	session := jsonrpc.GetSession(ctx)
+	rpcSession := jsonrpc.GetSession(ctx)
 	params := req.(*DebugStackTraceParams)
 	dapRequest := params.Request
 
-	debugSession, err := getDebugSession(session, params.SessionId)
+	debugSession, err := getDebugSession(rpcSession, params.SessionId)
 
 	if err != nil {
 		return dap.StackTraceResponse{
@@ -861,11 +861,11 @@ func handleGetStackTrace(ctx context.Context, req interface{}) (interface{}, err
 }
 
 func handleGetScopes(ctx context.Context, req interface{}) (interface{}, error) {
-	session := jsonrpc.GetSession(ctx)
+	rpcSession := jsonrpc.GetSession(ctx)
 	params := req.(*DebugScopesParams)
 	dapRequest := params.Request
 
-	debugSession, err := getDebugSession(session, params.SessionId)
+	debugSession, err := getDebugSession(rpcSession, params.SessionId)
 
 	if err != nil {
 		return dap.ScopesResponse{
@@ -958,11 +958,11 @@ func handleGetScopes(ctx context.Context, req interface{}) (interface{}, error) 
 }
 
 func handleGetVariables(ctx context.Context, req interface{}) (interface{}, error) {
-	session := jsonrpc.GetSession(ctx)
+	rpcSession := jsonrpc.GetSession(ctx)
 	params := req.(*DebugVariablesParams)
 	dapRequest := params.Request
 
-	debugSession, err := getDebugSession(session, params.SessionId)
+	debugSession, err := getDebugSession(rpcSession, params.SessionId)
 
 	if err != nil {
 		return dap.VariablesResponse{
@@ -1005,7 +1005,7 @@ func handleGetVariables(ctx context.Context, req interface{}) (interface{}, erro
 		Get: func(globalScope, localScope map[string]core.Value) {
 			var variables []dap.Variable
 
-			handlingCtx := session.Context().BoundChild()
+			handlingCtx := rpcSession.Context().BoundChild()
 
 			var scope map[string]core.Value
 
@@ -1062,11 +1062,11 @@ func handleGetVariables(ctx context.Context, req interface{}) (interface{}, erro
 }
 
 func handleSetBreakpoints(ctx context.Context, req interface{}) (interface{}, error) {
-	session := jsonrpc.GetSession(ctx)
+	rpcSession := jsonrpc.GetSession(ctx)
 	params := req.(*DebugSetBreakpointsParams)
 	dapRequest := params.Request
 
-	debugSession, err := getDebugSession(session, params.SessionId)
+	debugSession, err := getDebugSession(rpcSession, params.SessionId)
 
 	if err != nil {
 		return dap.SetBreakpointsResponse{
@@ -1108,7 +1108,7 @@ func handleSetBreakpoints(ctx context.Context, req interface{}) (interface{}, er
 	}
 
 	//read & parse file
-	fls, ok := getLspFilesystem(session)
+	fls, ok := getLspFilesystem(rpcSession)
 	if !ok {
 		return nil, errors.New(string(FsNoFilesystem))
 	}
@@ -1245,11 +1245,11 @@ func handleSetBreakpoints(ctx context.Context, req interface{}) (interface{}, er
 }
 
 func handleSetExceptionBreakpoints(ctx context.Context, req interface{}) (interface{}, error) {
-	session := jsonrpc.GetSession(ctx)
+	rpcSession := jsonrpc.GetSession(ctx)
 	params := req.(*DebugSetExceptionBreakpointsParams)
 	dapRequest := params.Request
 
-	debugSession, err := getDebugSession(session, params.SessionId)
+	debugSession, err := getDebugSession(rpcSession, params.SessionId)
 
 	if err != nil {
 		return dap.SetExceptionBreakpointsResponse{
@@ -1357,11 +1357,11 @@ func handleSetExceptionBreakpoints(ctx context.Context, req interface{}) (interf
 }
 
 func handleDebugPause(ctx context.Context, req interface{}) (interface{}, error) {
-	session := jsonrpc.GetSession(ctx)
+	rpcSession := jsonrpc.GetSession(ctx)
 	params := req.(*DebugPauseParams)
 	dapRequest := params.Request
 
-	debugSession, err := getDebugSession(session, params.SessionId)
+	debugSession, err := getDebugSession(rpcSession, params.SessionId)
 
 	if err != nil {
 		return dap.PauseResponse{
@@ -1399,11 +1399,11 @@ func handleDebugPause(ctx context.Context, req interface{}) (interface{}, error)
 }
 
 func handleDebugContinue(ctx context.Context, req interface{}) (interface{}, error) {
-	session := jsonrpc.GetSession(ctx)
+	rpcSession := jsonrpc.GetSession(ctx)
 	params := req.(*DebugContinueParams)
 	dapRequest := params.Request
 
-	debugSession, err := getDebugSession(session, params.SessionId)
+	debugSession, err := getDebugSession(rpcSession, params.SessionId)
 
 	if err != nil {
 		return dap.ContinueResponse{
@@ -1446,11 +1446,11 @@ func handleDebugContinue(ctx context.Context, req interface{}) (interface{}, err
 }
 
 func handleDebugNext(ctx context.Context, req interface{}) (interface{}, error) {
-	session := jsonrpc.GetSession(ctx)
+	rpcSession := jsonrpc.GetSession(ctx)
 	params := req.(*DebugNextParams)
 	dapRequest := params.Request
 
-	debugSession, err := getDebugSession(session, params.SessionId)
+	debugSession, err := getDebugSession(rpcSession, params.SessionId)
 
 	if err != nil {
 		return dap.NextResponse{
@@ -1489,11 +1489,11 @@ func handleDebugNext(ctx context.Context, req interface{}) (interface{}, error) 
 }
 
 func handleDebugStepIn(ctx context.Context, req interface{}) (interface{}, error) {
-	session := jsonrpc.GetSession(ctx)
+	rpcSession := jsonrpc.GetSession(ctx)
 	params := req.(*DebugStepInParams)
 	dapRequest := params.Request
 
-	debugSession, err := getDebugSession(session, params.SessionId)
+	debugSession, err := getDebugSession(rpcSession, params.SessionId)
 
 	if err != nil {
 		return dap.StepInResponse{
@@ -1532,11 +1532,11 @@ func handleDebugStepIn(ctx context.Context, req interface{}) (interface{}, error
 }
 
 func handleDebugStepOut(ctx context.Context, req interface{}) (interface{}, error) {
-	session := jsonrpc.GetSession(ctx)
+	rpcSession := jsonrpc.GetSession(ctx)
 	params := req.(*DebugStepOutParams)
 	dapRequest := params.Request
 
-	debugSession, err := getDebugSession(session, params.SessionId)
+	debugSession, err := getDebugSession(rpcSession, params.SessionId)
 
 	if err != nil {
 		return dap.StepOutResponse{
@@ -1575,11 +1575,11 @@ func handleDebugStepOut(ctx context.Context, req interface{}) (interface{}, erro
 }
 
 func handleDebugDisconnect(ctx context.Context, req interface{}) (interface{}, error) {
-	session := jsonrpc.GetSession(ctx)
+	rpcSession := jsonrpc.GetSession(ctx)
 	params := req.(*DebugDisconnectParams)
 	dapRequest := params.Request
 
-	debugSession, err := getDebugSession(session, params.SessionId)
+	debugSession, err := getDebugSession(rpcSession, params.SessionId)
 	if err != nil {
 		return dap.DisconnectResponse{
 			Response: dap.Response{
@@ -1607,7 +1607,7 @@ func handleDebugDisconnect(ctx context.Context, req interface{}) (interface{}, e
 			},
 		}
 
-		defer removeDebugSession(debugSession, session)
+		defer removeDebugSession(debugSession, rpcSession)
 
 		select {
 		case <-doneChan:

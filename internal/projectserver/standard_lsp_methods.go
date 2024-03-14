@@ -8,8 +8,6 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
-	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/bep/debounce"
@@ -36,9 +34,6 @@ const (
 )
 
 var (
-	sessionToAdditionalData     = make(map[*jsonrpc.Session]*additionalSessionData)
-	sessionToAdditionalDataLock sync.Mutex
-
 	ErrFileURIExpected        = errors.New("a file: URI was expected")
 	ErrInoxURIExpected        = errors.New("a inox: URI was expected")
 	ErrMemberNotAuthenticated = errors.New("member not authenticated")
@@ -139,124 +134,80 @@ func getPath(uri defines.URI, usingInoxFS bool) (string, error) {
 }
 
 func handleInitialize(ctx context.Context, req *defines.InitializeParams, projectMode bool) (result *defines.InitializeResult, err *defines.InitializeError) {
-	session := jsonrpc.GetSession(ctx)
-	s := &defines.InitializeResult{}
+	rpcSession := jsonrpc.GetSession(ctx)
+	initResult := &defines.InitializeResult{}
 
-	var capabilities defines.ServerCapabilities
+	clientCapabilities := req.Capabilities.ClientCapabilities_
 
-	capabilities.HoverProvider = true
-
-	capabilities.SignatureHelpProvider = &defines.SignatureHelpOptions{
-		TriggerCharacters:   &[]string{"(", ","},
-		RetriggerCharacters: &[]string{","},
-	}
-	capabilities.CompletionProvider = &defines.CompletionOptions{
-		TriggerCharacters: &[]string{".", ":", "{", "-", "/"},
-	}
-
-	capabilities.WorkspaceSymbolProvider = true
-	capabilities.DefinitionProvider = true
-	capabilities.CodeActionProvider = &defines.CodeActionOptions{
-		CodeActionKinds: &[]defines.CodeActionKind{defines.CodeActionKindQuickFix},
-	}
-	capabilities.DocumentFormattingProvider = true
-
-	if *req.Capabilities.TextDocument.Synchronization.DidSave && *req.Capabilities.TextDocument.Synchronization.DynamicRegistration {
-		capabilities.TextDocumentSync = defines.TextDocumentSyncKindIncremental
-	} else {
-		capabilities.TextDocumentSync = defines.TextDocumentSyncKindFull
-	}
-
-	capabilities.DocumentDiagnosticProvider = &defines.DiagnosticRegistrationOptions{
-		DiagnosticOptions: defines.DiagnosticOptions{
-			InterFileDependencies: true,
+	serverCapabilities := defines.ServerCapabilities{
+		ServerCapabilities_: defines.ServerCapabilities_{
+			HoverProvider:              true,
+			WorkspaceSymbolProvider:    true,
+			DefinitionProvider:         true,
+			DocumentFormattingProvider: true,
+			CompletionProvider: &defines.CompletionOptions{
+				TriggerCharacters: &[]string{".", ":", "{", "-", "/"},
+			},
+			SignatureHelpProvider: &defines.SignatureHelpOptions{
+				TriggerCharacters:   &[]string{"(", ","},
+				RetriggerCharacters: &[]string{","},
+			},
+			CodeActionProvider: &defines.CodeActionOptions{
+				CodeActionKinds: &[]defines.CodeActionKind{defines.CodeActionKindQuickFix},
+			},
+			DocumentDiagnosticProvider: &defines.DiagnosticRegistrationOptions{
+				DiagnosticOptions: defines.DiagnosticOptions{
+					InterFileDependencies: true,
+				},
+				// TextDocumentRegistrationOptions: defines.TextDocumentRegistrationOptions{
+				// 	DocumentSelector: []defines.DocumentFilter{
+				// 		{
+				// 			Language: "inox",
+				// 			Scheme:   "inox",
+				// 			Pattern:  "**/*.ix'",
+				// 		},
+				// 	},
+				// },
+			},
 		},
-		// TextDocumentRegistrationOptions: defines.TextDocumentRegistrationOptions{
-		// 	DocumentSelector: []defines.DocumentFilter{
-		// 		{
-		// 			Language: "inox",
-		// 			Scheme:   "inox",
-		// 			Pattern:  "**/*.ix'",
-		// 		},
-		// 	},
-		// },
 	}
 
-	s.Capabilities = capabilities
-
-	//create session data
-	{
-		sessionData := getLockedSessionData(session)
-		sessionData.clientCapabilities = req.Capabilities
-		sessionData.serverCapabilities = capabilities
-		sessionData.projectMode = projectMode
-		sessionData.lock.Unlock()
+	//Document synchronization.
+	if *clientCapabilities.TextDocument.Synchronization.DidSave && *clientCapabilities.TextDocument.Synchronization.DynamicRegistration {
+		serverCapabilities.TextDocumentSync = defines.TextDocumentSyncKindIncremental
+	} else {
+		serverCapabilities.TextDocumentSync = defines.TextDocumentSyncKindFull
 	}
 
-	//remove closed sessions
-	sessionToAdditionalDataLock.Lock()
-	for s, data := range sessionToAdditionalData {
-		sessionToRemove := s
-		if sessionToRemove.Closed() {
-			logs.Println("remove one closed session: " + s.Client())
-			delete(sessionToAdditionalData, sessionToRemove)
-			func() {
-				data.lock.Lock()
-				defer data.lock.Unlock()
-				if data.preparedSourceFilesCache != nil {
-					data.preparedSourceFilesCache.acknowledgeSessionEnd()
-					data.preparedSourceFilesCache = nil
-				}
-			}()
-		}
-	}
-	newCount := len(sessionToAdditionalData)
-	sessionToAdditionalDataLock.Unlock()
-	logs.Println("current session count:", newCount)
+	initResult.Capabilities = serverCapabilities
 
-	// remove session and data on shutdown or when closed
-	var removed atomic.Bool
-	removeSession := func(s *jsonrpc.Session) {
-		if !removed.CompareAndSwap(false, true) {
-			return
-		}
-		logs.Println("remove one session that has just finished: " + s.Client())
-		sessionToAdditionalDataLock.Lock()
-		sessionData, ok := sessionToAdditionalData[s]
-		delete(sessionToAdditionalData, s)
-		sessionToAdditionalDataLock.Unlock()
+	//Create a project server session.
+	session := getCreateLockedProjectSession(rpcSession)
+	session.clientCapabilities = req.Capabilities
+	session.serverCapabilities = serverCapabilities
+	session.inProjectMode = projectMode
+	session.lock.Unlock()
 
-		if ok {
-			func() {
-				sessionData.lock.Lock()
-				defer sessionData.lock.Unlock()
-				sessionData.preparedSourceFilesCache.acknowledgeSessionEnd()
-				sessionData.preparedSourceFilesCache = nil
+	removeClosedSessions()
 
-				if sessionData.serverAPI != nil {
-					sessionData.serverAPI.acknowledgeSessionEnd()
-				}
-			}()
-		}
-	}
+	// Remove project server session on shutdown or when closed.
+	rpcSession.SetShutdownCallbackFn(session.remove)
+	rpcSession.SetClosedCallbackFn(session.remove)
 
-	session.SetShutdownCallbackFn(removeSession)
-	session.SetClosedCallbackFn(removeSession)
-
-	return s, nil
+	return initResult, nil
 }
 
 func handleShutdown(ctx context.Context, req *defines.NoParams) (err error) {
-	session := jsonrpc.GetSession(ctx)
-	session.Close()
+	rpcSession := jsonrpc.GetSession(ctx)
+	rpcSession.Close()
 	return nil
 }
 
 func handleExit(ctx context.Context, req *defines.NoParams) (err error) {
-	session := jsonrpc.GetSession(ctx)
-	defer session.Close()
+	rpcSession := jsonrpc.GetSession(ctx)
+	defer rpcSession.Close()
 
-	if !session.IsShuttingDown() {
+	if !rpcSession.IsShuttingDown() {
 		return errors.New("the client should make a shutdown request before sending an exit notification")
 	}
 
@@ -264,15 +215,15 @@ func handleExit(ctx context.Context, req *defines.NoParams) (err error) {
 }
 
 func handleHover(ctx context.Context, req *defines.HoverParams) (result *defines.Hover, err error) {
-	session := jsonrpc.GetSession(ctx)
-	sessionCtx := session.Context()
+	rpcSession := jsonrpc.GetSession(ctx)
+	rpcSessionCtx := rpcSession.Context()
 
-	sessionData := getLockedSessionData(session)
-	projectMode := sessionData.projectMode
-	fls := sessionData.filesystem
-	memberAuthToken := sessionData.memberAuthToken
-	lastCodebaseAnalysis := sessionData.lastCodebaseAnalysis
-	sessionData.lock.Unlock()
+	session := getCreateLockedProjectSession(rpcSession)
+	projectMode := session.inProjectMode
+	fls := session.filesystem
+	memberAuthToken := session.memberAuthToken
+	lastCodebaseAnalysis := session.lastCodebaseAnalysis
+	session.lock.Unlock()
 
 	if fls == nil {
 		return nil, errors.New(string(FsNoFilesystem))
@@ -284,7 +235,7 @@ func handleHover(ctx context.Context, req *defines.HoverParams) (result *defines
 	}
 	line, column := getLineColumn(req.Position)
 
-	handlingCtx := sessionCtx.BoundChildWithOptions(core.BoundChildContextOptions{
+	handlingCtx := rpcSessionCtx.BoundChildWithOptions(core.BoundChildContextOptions{
 		Filesystem: fls,
 	})
 	defer handlingCtx.CancelGracefully()
@@ -293,21 +244,21 @@ func handleHover(ctx context.Context, req *defines.HoverParams) (result *defines
 		fpath:                fpath,
 		line:                 line,
 		column:               column,
-		session:              session,
+		rpcSession:           rpcSession,
 		memberAuthToken:      memberAuthToken,
 		lastCodebaseAnalysis: lastCodebaseAnalysis,
 	})
 }
 
 func handleSignatureHelp(ctx context.Context, req *defines.SignatureHelpParams) (result *defines.SignatureHelp, err error) {
-	session := jsonrpc.GetSession(ctx)
-	sessionCtx := session.Context()
+	rpcSession := jsonrpc.GetSession(ctx)
+	rpcSessionCtx := rpcSession.Context()
 
-	sessionData := getLockedSessionData(session)
-	projectMode := sessionData.projectMode
-	fls := sessionData.filesystem
-	memberAuthToken := sessionData.memberAuthToken
-	sessionData.lock.Unlock()
+	session := getCreateLockedProjectSession(rpcSession)
+	projectMode := session.inProjectMode
+	fls := session.filesystem
+	memberAuthToken := session.memberAuthToken
+	session.lock.Unlock()
 
 	if fls == nil {
 		return nil, errors.New(string(FsNoFilesystem))
@@ -323,7 +274,7 @@ func handleSignatureHelp(ctx context.Context, req *defines.SignatureHelpParams) 
 	}
 	line, column := getLineColumn(req.Position)
 
-	handlingCtx := sessionCtx.BoundChildWithOptions(core.BoundChildContextOptions{
+	handlingCtx := rpcSessionCtx.BoundChildWithOptions(core.BoundChildContextOptions{
 		Filesystem: fls,
 	})
 	defer handlingCtx.CancelGracefully()
@@ -332,17 +283,17 @@ func handleSignatureHelp(ctx context.Context, req *defines.SignatureHelpParams) 
 		fpath:           fpath,
 		line:            line,
 		column:          column,
-		session:         session,
+		session:         rpcSession,
 		memberAuthToken: memberAuthToken,
 	})
 }
 
 func handleCodeActionWithSliceCodeAction(ctx context.Context, req *defines.CodeActionParams) (result *[]defines.CodeAction, err error) {
-	session := jsonrpc.GetSession(ctx)
-	sessionData := getLockedSessionData(session)
-	projectMode := sessionData.projectMode
-	fls := sessionData.filesystem
-	sessionData.lock.Unlock()
+	rpcSession := jsonrpc.GetSession(ctx)
+	session := getCreateLockedProjectSession(rpcSession)
+	projectMode := session.inProjectMode
+	fls := session.filesystem
+	session.lock.Unlock()
 
 	if fls == nil {
 		return nil, nil
@@ -353,7 +304,7 @@ func handleCodeActionWithSliceCodeAction(ctx context.Context, req *defines.CodeA
 		return nil, err
 	}
 
-	actions, err := getCodeActions(session, req.Context.Diagnostics, req.Range, req.TextDocument, fpath, fls)
+	actions, err := getCodeActions(rpcSession, req.Context.Diagnostics, req.Range, req.TextDocument, fpath, fls)
 
 	if err != nil {
 		logs.Println("failed to get code actions", err)
@@ -363,14 +314,14 @@ func handleCodeActionWithSliceCodeAction(ctx context.Context, req *defines.CodeA
 }
 
 func handleDefinition(ctx context.Context, req *defines.DefinitionParams) (result *[]defines.LocationLink, err error) {
-	session := jsonrpc.GetSession(ctx)
-	sessionCtx := session.Context()
+	rpcSession := jsonrpc.GetSession(ctx)
+	rpcSessionCtx := rpcSession.Context()
 
-	sessionData := getLockedSessionData(session)
-	projectMode := sessionData.projectMode
-	fls := sessionData.filesystem
-	memberAuthToken := sessionData.memberAuthToken
-	sessionData.lock.Unlock()
+	session := getCreateLockedProjectSession(rpcSession)
+	projectMode := session.inProjectMode
+	fls := session.filesystem
+	memberAuthToken := session.memberAuthToken
+	session.lock.Unlock()
 
 	if fls == nil {
 		return nil, errors.New(string(FsNoFilesystem))
@@ -382,14 +333,14 @@ func handleDefinition(ctx context.Context, req *defines.DefinitionParams) (resul
 	}
 	line, column := getLineColumn(req.Position)
 
-	handlingCtx := sessionCtx.BoundChildWithOptions(core.BoundChildContextOptions{
+	handlingCtx := rpcSessionCtx.BoundChildWithOptions(core.BoundChildContextOptions{
 		Filesystem: fls,
 	})
 	defer handlingCtx.CancelGracefully()
 
 	preparationResult, ok := prepareSourceFileInExtractionMode(handlingCtx, filePreparationParams{
 		fpath:           fpath,
-		session:         session,
+		session:         rpcSession,
 		requiresState:   true,
 		memberAuthToken: memberAuthToken,
 	})
@@ -490,7 +441,7 @@ func handleDefinition(ctx context.Context, req *defines.DefinitionParams) (resul
 
 	links := []defines.LocationLink{
 		{
-			TargetUri:            defines.DocumentUri(sessionData.Scheme() + "://" + position.SourceName),
+			TargetUri:            defines.DocumentUri(session.Scheme() + "://" + position.SourceName),
 			TargetRange:          rangeToLspRange(position),
 			TargetSelectionRange: rangeToLspRange(position),
 		},
@@ -499,13 +450,13 @@ func handleDefinition(ctx context.Context, req *defines.DefinitionParams) (resul
 }
 
 func handleFormatDocument(ctx context.Context, req *defines.DocumentFormattingParams) (result *[]defines.TextEdit, err error) {
-	session := jsonrpc.GetSession(ctx)
+	rpcSession := jsonrpc.GetSession(ctx)
 
 	//----------------------------------------
-	sessionData := getLockedSessionData(session)
-	projectMode := sessionData.projectMode
-	fls := sessionData.filesystem
-	sessionData.lock.Unlock()
+	session := getCreateLockedProjectSession(rpcSession)
+	projectMode := session.inProjectMode
+	fls := session.filesystem
+	session.lock.Unlock()
 	//----------------------------------------
 
 	if fls == nil {
@@ -539,14 +490,14 @@ func handleFormatDocument(ctx context.Context, req *defines.DocumentFormattingPa
 }
 
 func handleDidOpenDocument(ctx context.Context, req *defines.DidOpenTextDocumentParams) (err error) {
-	session := jsonrpc.GetSession(ctx)
+	rpcSession := jsonrpc.GetSession(ctx)
 
 	//----------------------------------------
-	sessionData := getLockedSessionData(session)
-	projectMode := sessionData.projectMode
-	fls := sessionData.filesystem
-	memberAuthToken := sessionData.memberAuthToken
-	sessionData.lock.Unlock()
+	session := getCreateLockedProjectSession(rpcSession)
+	projectMode := session.inProjectMode
+	fls := session.filesystem
+	memberAuthToken := session.memberAuthToken
+	session.lock.Unlock()
 	//----------------------------------------
 
 	if fls == nil {
@@ -567,21 +518,21 @@ func handleDidOpenDocument(ctx context.Context, req *defines.DidOpenTextDocument
 
 	registrationId := uuid.New()
 
-	sessionData.lock.Lock()
+	session.lock.Lock()
 
 	//create synchronization data if it does not exists
-	_, hasSyncData := sessionData.unsavedDocumentSyncData[fpath]
+	_, hasSyncData := session.unsavedDocumentSyncData[fpath]
 	if !hasSyncData {
-		sessionData.unsavedDocumentSyncData[fpath] = &unsavedDocumentSyncData{
+		session.unsavedDocumentSyncData[fpath] = &unsavedDocumentSyncData{
 			path: fpath,
 		}
 	}
 
-	if _, ok := sessionData.didSaveCapabilityRegistrationIds[req.TextDocument.Uri]; !ok {
-		sessionData.didSaveCapabilityRegistrationIds[req.TextDocument.Uri] = registrationId
-		sessionData.lock.Unlock()
+	if _, ok := session.didSaveCapabilityRegistrationIds[req.TextDocument.Uri]; !ok {
+		session.didSaveCapabilityRegistrationIds[req.TextDocument.Uri] = registrationId
+		session.lock.Unlock()
 
-		session.SendRequest(jsonrpc.RequestMessage{
+		rpcSession.SendRequest(jsonrpc.RequestMessage{
 			Method: "client/registerCapability",
 			Params: utils.Must(json.Marshal(defines.RegistrationParams{
 				Registrations: []defines.Registration{
@@ -602,11 +553,11 @@ func handleDidOpenDocument(ctx context.Context, req *defines.DidOpenTextDocument
 		})
 
 	} else {
-		sessionData.lock.Unlock()
+		session.lock.Unlock()
 	}
 
 	return computeNotifyDocumentDiagnostics(diagnosticNotificationParams{
-		session:         session,
+		rpcSession:      rpcSession,
 		docURI:          req.TextDocument.Uri,
 		usingInoxFS:     projectMode,
 		fls:             fls,
@@ -615,22 +566,22 @@ func handleDidOpenDocument(ctx context.Context, req *defines.DidOpenTextDocument
 }
 
 func handleDidSaveDocument(ctx context.Context, req *defines.DidSaveTextDocumentParams) (err error) {
-	session := jsonrpc.GetSession(ctx)
+	rpcSession := jsonrpc.GetSession(ctx)
 
 	//----------------------------------------
-	sessionData := getLockedSessionData(session)
-	projectMode := sessionData.projectMode
-	fls := sessionData.filesystem
-	memberAuthToken := sessionData.memberAuthToken
+	session := getCreateLockedProjectSession(rpcSession)
+	projectMode := session.inProjectMode
+	fls := session.filesystem
+	memberAuthToken := session.memberAuthToken
 
 	fpath, err := getFilePath(req.TextDocument.Uri, projectMode)
 	if err != nil {
-		sessionData.lock.Unlock()
+		session.lock.Unlock()
 		return err
 	}
 
-	syncData, hasSyncData := sessionData.unsavedDocumentSyncData[fpath]
-	sessionData.lock.Unlock()
+	syncData, hasSyncData := session.unsavedDocumentSyncData[fpath]
+	session.lock.Unlock()
 	//----------------------------------------
 
 	if fls == nil {
@@ -652,16 +603,16 @@ func handleDidSaveDocument(ctx context.Context, req *defines.DidSaveTextDocument
 			logs.Println("failed to update state of document", fpath+":", fsErr)
 		}
 
-		sessionData := getLockedSessionData(session)
-		registrationId, ok := sessionData.didSaveCapabilityRegistrationIds[req.TextDocument.Uri]
+		session := getCreateLockedProjectSession(rpcSession)
+		registrationId, ok := session.didSaveCapabilityRegistrationIds[req.TextDocument.Uri]
 
 		if !ok {
-			sessionData.lock.Unlock()
+			session.lock.Unlock()
 		} else {
-			delete(sessionData.didSaveCapabilityRegistrationIds, req.TextDocument.Uri)
-			sessionData.lock.Unlock()
+			delete(session.didSaveCapabilityRegistrationIds, req.TextDocument.Uri)
+			session.lock.Unlock()
 
-			session.SendRequest(jsonrpc.RequestMessage{
+			rpcSession.SendRequest(jsonrpc.RequestMessage{
 				Method: "client/unregisterCapability",
 				ID:     uuid.New(),
 				Params: utils.Must(json.Marshal(defines.UnregistrationParams{
@@ -678,7 +629,7 @@ func handleDidSaveDocument(ctx context.Context, req *defines.DidSaveTextDocument
 			//notifications with the text included so we register the capability again but this time
 			//we ask the client to not include the full text.
 
-			session.SendRequest(jsonrpc.RequestMessage{
+			rpcSession.SendRequest(jsonrpc.RequestMessage{
 				Method: "client/registerCapability",
 				Params: utils.Must(json.Marshal(defines.RegistrationParams{
 					Registrations: []defines.Registration{
@@ -701,7 +652,7 @@ func handleDidSaveDocument(ctx context.Context, req *defines.DidSaveTextDocument
 	}
 
 	return computeNotifyDocumentDiagnostics(diagnosticNotificationParams{
-		session:         session,
+		rpcSession:      rpcSession,
 		docURI:          req.TextDocument.Uri,
 		usingInoxFS:     projectMode,
 		fls:             fls,
@@ -710,47 +661,47 @@ func handleDidSaveDocument(ctx context.Context, req *defines.DidSaveTextDocument
 }
 
 func handleDidChangeDocument(ctx context.Context, req *defines.DidChangeTextDocumentParams) (err error) {
-	session := jsonrpc.GetSession(ctx)
+	rpcSession := jsonrpc.GetSession(ctx)
 
 	//----------------------------------------
-	sessionData := getLockedSessionData(session)
-	projectMode := sessionData.projectMode
-	fls := sessionData.filesystem
-	memberAuthToken := sessionData.memberAuthToken
+	session := getCreateLockedProjectSession(rpcSession)
+	projectMode := session.inProjectMode
+	fls := session.filesystem
+	memberAuthToken := session.memberAuthToken
 
 	fpath, err := getFilePath(req.TextDocument.Uri, projectMode)
 	if err != nil {
-		sessionData.lock.Unlock()
+		session.lock.Unlock()
 		return err
 	}
 
-	syncData, hasSyncData := sessionData.unsavedDocumentSyncData[fpath]
+	syncData, hasSyncData := session.unsavedDocumentSyncData[fpath]
 
-	if sessionData.postEditDiagnosticDebounce == nil {
-		sessionData.postEditDiagnosticDebounce = debounce.New(POST_EDIT_DIAGNOSTIC_DEBOUNCE_DURATION)
+	if session.postEditDiagnosticDebounce == nil {
+		session.postEditDiagnosticDebounce = debounce.New(POST_EDIT_DIAGNOSTIC_DEBOUNCE_DURATION)
 	}
 
-	sessionData.lock.Unlock()
+	session.lock.Unlock()
 	//----------------------------------------
 
 	if fls == nil {
 		return errors.New(string(FsNoFilesystem))
 	}
 
-	syncFull := sessionData.serverCapabilities.TextDocumentSync == defines.TextDocumentSyncKindFull
+	syncFull := session.serverCapabilities.TextDocumentSync == defines.TextDocumentSyncKindFull
 	var fullDocumentText string
 
 	if hasSyncData {
 		syncData.reactToDidChange(fls)
 	}
 
-	sessionData.preparedSourceFilesCache.acknowledgeSourceFileChange(fpath)
+	session.preparedSourceFilesCache.acknowledgeSourceFileChange(fpath)
 
 	//Schedule a diagnostic.
-	sessionData.postEditDiagnosticDebounce(func() {
+	session.postEditDiagnosticDebounce(func() {
 		defer utils.Recover()
 		computeNotifyDocumentDiagnostics(diagnosticNotificationParams{
-			session:         session,
+			rpcSession:      rpcSession,
 			docURI:          req.TextDocument.Uri,
 			usingInoxFS:     projectMode,
 			fls:             fls,
@@ -770,8 +721,8 @@ func handleDidChangeDocument(ctx context.Context, req *defines.DidChangeTextDocu
 		}
 
 		beforeEditContentString := string(beforeEditContent)
-		if sessionData.serverAPI != nil {
-			sessionData.serverAPI.acknowledgeSourceFileChange(fpath, beforeEditContentString, req.ContentChanges)
+		if session.serverAPI != nil {
+			session.serverAPI.acknowledgeSourceFileChange(fpath, beforeEditContentString, req.ContentChanges)
 		}
 
 		var (
@@ -820,7 +771,7 @@ func handleDidChangeDocument(ctx context.Context, req *defines.DidChangeTextDocu
 			go func() {
 				defer utils.Recover()
 
-				session.SendRequest(jsonrpc.RequestMessage{
+				rpcSession.SendRequest(jsonrpc.RequestMessage{
 					Method: "workspace/applyEdit",
 					Params: utils.Must(json.Marshal(defines.ApplyWorkspaceEditParams{
 						Edit: defines.WorkspaceEdit{
@@ -831,7 +782,7 @@ func handleDidChangeDocument(ctx context.Context, req *defines.DidChangeTextDocu
 
 				time.Sleep(100 * time.Millisecond)
 
-				session.SendRequest(jsonrpc.RequestMessage{
+				rpcSession.SendRequest(jsonrpc.RequestMessage{
 					Method: "cursor/setPosition",
 					Params: utils.Must(json.Marshal(defines.Range{
 						Start: textEdit.Range.Start,
@@ -855,28 +806,28 @@ func handleDidChangeDocument(ctx context.Context, req *defines.DidChangeTextDocu
 }
 
 func handleDidCloseDocument(ctx context.Context, req *defines.DidCloseTextDocumentParams) (err error) {
-	session := jsonrpc.GetSession(ctx)
+	rpcSession := jsonrpc.GetSession(ctx)
 
 	//----------------------------------------
-	sessionData := getLockedSessionData(session)
-	projectMode := sessionData.projectMode
-	fls := sessionData.filesystem
+	session := getCreateLockedProjectSession(rpcSession)
+	projectMode := session.inProjectMode
+	fls := session.filesystem
 
 	if fls == nil {
-		sessionData.lock.Unlock()
+		session.lock.Unlock()
 		return errors.New(string(FsNoFilesystem))
 	}
 
 	fpath, err := getFilePath(req.TextDocument.Uri, projectMode)
 	if err != nil {
-		sessionData.lock.Unlock()
+		session.lock.Unlock()
 		return err
 	}
 
-	delete(sessionData.unsavedDocumentSyncData, fpath)
+	delete(session.unsavedDocumentSyncData, fpath)
 
 	//NOTE: the file cache is not removed because other modules may still need it
-	sessionData.lock.Unlock()
+	session.lock.Unlock()
 	//----------------------------------------
 
 	docsFs := fls.unsavedDocumentsFS()
@@ -888,8 +839,8 @@ func handleDidCloseDocument(ctx context.Context, req *defines.DidCloseTextDocume
 
 // IsLspSessionInitialized tells whether the 'initialize' method has been called by the client.
 // Important: IsLspSessionInitialized locks/unlocks the session's data.
-func IsLspSessionInitialized(session *jsonrpc.Session) bool {
-	sessionData := getLockedSessionData(session)
-	defer sessionData.lock.Unlock()
-	return sessionData.clientCapabilities != (defines.ClientCapabilities{})
+func IsLspSessionInitialized(rpcSession *jsonrpc.Session) bool {
+	session := getCreateLockedProjectSession(rpcSession)
+	defer session.lock.Unlock()
+	return session.clientCapabilities != (defines.ClientCapabilities{})
 }

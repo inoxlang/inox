@@ -18,7 +18,7 @@ import (
 type debuggedProgramLaunch struct {
 	programPath     string
 	logLevels       *core.LogLevels
-	session         *jsonrpc.Session
+	rpcSession      *jsonrpc.Session
 	debugSession    *DebugSession
 	devSession      *dev.Session
 	fls             *Filesystem
@@ -28,8 +28,8 @@ type debuggedProgramLaunch struct {
 func launchDebuggedProgram(args debuggedProgramLaunch) {
 	programPath := args.programPath
 	logLevels := args.logLevels
-	session := args.session
-	sessionCtx := session.Context()
+	rpcSession := args.rpcSession
+	sessionCtx := rpcSession.Context()
 	debugSession := args.debugSession
 	fls := args.fls
 	memberAuthToken := args.memberAuthToken
@@ -50,11 +50,11 @@ func launchDebuggedProgram(args debuggedProgramLaunch) {
 
 		debugSession.finished.Store(true)
 
-		session.Notify(jsonrpc.NotificationMessage{
+		rpcSession.Notify(jsonrpc.NotificationMessage{
 			Method: "debug/terminatedEvent",
 		})
 
-		session.Notify(jsonrpc.NotificationMessage{
+		rpcSession.Notify(jsonrpc.NotificationMessage{
 			Method: "debug/exitedEvent",
 		})
 	}()
@@ -63,18 +63,18 @@ func launchDebuggedProgram(args debuggedProgramLaunch) {
 		Filesystem: fls,
 	})
 
-	project, _ := getProject(session)
+	project, _ := getProject(rpcSession)
 
 	programOut := utils.FnWriter{
 		WriteFn: func(p []byte) (n int, err error) {
-			notifyOutputEvent(string(p), StdoutDebugEvent, debugSession, session)
+			notifyOutputEvent(string(p), StdoutDebugEvent, debugSession, rpcSession)
 			return len(p), nil
 		},
 	}
 
 	debuggerOut := utils.FnWriter{
 		WriteFn: func(p []byte) (n int, err error) {
-			notifyOutputEvent(string(p), ConsoleDebugEvent, debugSession, session)
+			notifyOutputEvent(string(p), ConsoleDebugEvent, debugSession, rpcSession)
 			return len(p), nil
 		},
 	}

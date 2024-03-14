@@ -36,16 +36,16 @@ type serverAPI struct {
 	appModPath string
 
 	fls             *Filesystem
-	session         *jsonrpc.Session
+	rpcSession      *jsonrpc.Session
 	memberAuthToken string
 }
 
-func newServerAPI(fls *Filesystem, session *jsonrpc.Session, memberAuthToken string) *serverAPI {
+func newServerAPI(fls *Filesystem, rpcSession *jsonrpc.Session, memberAuthToken string) *serverAPI {
 	api := &serverAPI{
 		dynamicDir:      "/routes",
 		appModPath:      "/main.ix",
 		fls:             fls,
-		session:         session,
+		rpcSession:      rpcSession,
 		memberAuthToken: memberAuthToken,
 	}
 	api.dynamicDir = core.AppendTrailingSlashIfNotPresent(api.dynamicDir)
@@ -139,7 +139,7 @@ func (a *serverAPI) tryUpdateAPI() {
 		}
 	}()
 
-	if utils.IsContextDone(a.session.Context()) {
+	if utils.IsContextDone(a.rpcSession.Context()) {
 		return
 	}
 
@@ -154,7 +154,7 @@ func (a *serverAPI) tryUpdateAPI() {
 	}
 
 	handlingCtx := core.NewContext(core.ContextConfig{
-		ParentContext: a.session.Context(),
+		ParentContext: a.rpcSession.Context(),
 		Permissions: []core.Permission{
 			core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
 		},
@@ -168,7 +168,7 @@ func (a *serverAPI) tryUpdateAPI() {
 
 	prepResult, ok := prepareSourceFileInExtractionMode(handlingCtx, filePreparationParams{
 		fpath:                              a.appModPath,
-		session:                            a.session,
+		session:                            a.rpcSession,
 		memberAuthToken:                    a.memberAuthToken,
 		requiresState:                      true,
 		requiresCache:                      true,

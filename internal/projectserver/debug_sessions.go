@@ -10,15 +10,15 @@ import (
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
 )
 
-func getDebugSession(session *jsonrpc.Session, sessionId string) (*DebugSession, error) {
-	sessionData := getLockedSessionData(session)
+func getDebugSession(rpcSession *jsonrpc.Session, sessionId string) (*DebugSession, error) {
+	session := getCreateLockedProjectSession(rpcSession)
 
-	debugSessions := sessionData.debugSessions
+	debugSessions := session.debugSessions
 	if debugSessions == nil {
 		debugSessions = &DebugSessions{}
-		sessionData.debugSessions = debugSessions
+		session.debugSessions = debugSessions
 	}
-	sessionData.lock.Unlock()
+	session.lock.Unlock()
 
 	debugSession, ok := debugSessions.GetSession(sessionId)
 	if !ok {
@@ -28,15 +28,15 @@ func getDebugSession(session *jsonrpc.Session, sessionId string) (*DebugSession,
 	return debugSession, nil
 }
 
-func createDebugSession(session *jsonrpc.Session, sessionId string) (*DebugSession, error) {
-	sessionData := getLockedSessionData(session)
+func createDebugSession(rpcSession *jsonrpc.Session, sessionId string) (*DebugSession, error) {
+	session := getCreateLockedProjectSession(rpcSession)
 
-	debugSessions := sessionData.debugSessions
+	debugSessions := session.debugSessions
 	if debugSessions == nil {
 		debugSessions = &DebugSessions{}
-		sessionData.debugSessions = debugSessions
+		session.debugSessions = debugSessions
 	}
-	sessionData.lock.Unlock()
+	session.lock.Unlock()
 
 	if len(debugSessions.sessions) >= DEFAULT_MAX_SESSION_COUNT {
 		return nil, ErrMaxParallelDebugSessionReached
@@ -53,7 +53,7 @@ func createDebugSession(session *jsonrpc.Session, sessionId string) (*DebugSessi
 		id:                             sessionId,
 		sourcePathToInitialBreakpoints: make(map[string][]core.BreakpointInfo),
 		nextInitialBreakpointId:        core.INITIAL_BREAKPOINT_ID,
-		inProjectMode:                  sessionData.projectMode,
+		inProjectMode:                  session.inProjectMode,
 
 		variablesReferences: make(map[core.StateId]*variablesReferences, 0),
 	}
@@ -63,10 +63,10 @@ func createDebugSession(session *jsonrpc.Session, sessionId string) (*DebugSessi
 	return debugSession, nil
 }
 
-func removeDebugSession(debugSession *DebugSession, session *jsonrpc.Session) {
-	sessionData := getLockedSessionData(session)
-	debugSessions := sessionData.debugSessions
-	sessionData.lock.Unlock()
+func removeDebugSession(debugSession *DebugSession, rpcSession *jsonrpc.Session) {
+	session := getCreateLockedProjectSession(rpcSession)
+	debugSessions := session.debugSessions
+	session.lock.Unlock()
 	if debugSessions != nil {
 		debugSessions.RemoveSession(debugSession)
 	}

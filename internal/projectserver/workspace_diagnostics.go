@@ -8,14 +8,14 @@ import (
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
 )
 
-func publishWorkspaceDiagnostics(session *jsonrpc.Session, projSession *additionalSessionData, lastAnalysis *analysis.Result) {
+func publishWorkspaceDiagnostics(rpcSession *jsonrpc.Session, projSession *Session, lastAnalysis *analysis.Result) {
 
 	projSession.lock.Lock()
 	docDiagnostics := maps.Clone(projSession.documentDiagnostics)
 	projSession.lock.Unlock()
 
 	for absPath, diagnostics := range docDiagnostics {
-		uri, err := getFileURI(absPath, projSession.projectMode)
+		uri, err := getFileURI(absPath, projSession.inProjectMode)
 		if err != nil {
 			continue
 		}
@@ -33,7 +33,7 @@ func publishWorkspaceDiagnostics(session *jsonrpc.Session, projSession *addition
 			// 	Message: "LOL",
 			// })
 			diagnostics.containsWorkspaceDiagnostics = true
-			sendDocumentDiagnostics(session, uri, diagnostics.items)
+			sendDocumentDiagnostics(rpcSession, uri, diagnostics.items)
 		}(uri, diagnostics)
 
 	}

@@ -16,12 +16,12 @@ import (
 )
 
 func handleCompletion(ctx context.Context, req *defines.CompletionParams) (result *[]defines.CompletionItem, err error) {
-	session := jsonrpc.GetSession(ctx)
+	rpcSession := jsonrpc.GetSession(ctx)
 
-	sessionData := getLockedSessionData(session)
-	projectMode := sessionData.projectMode
-	memberAuthToken := sessionData.memberAuthToken
-	sessionData.lock.Unlock()
+	session := getCreateLockedProjectSession(rpcSession)
+	projectMode := session.inProjectMode
+	memberAuthToken := session.memberAuthToken
+	session.lock.Unlock()
 
 	fpath, err := getFilePath(req.TextDocument.Uri, projectMode)
 	if err != nil {
@@ -34,7 +34,7 @@ func handleCompletion(ctx context.Context, req *defines.CompletionParams) (resul
 
 	line, column := getLineColumn(req.Position)
 
-	completions := getCompletions(fpath, line, column, session, memberAuthToken)
+	completions := getCompletions(fpath, line, column, rpcSession, memberAuthToken)
 	completionIndex := 0
 
 	lspCompletions := utils.MapSlice(completions, func(completion codecompletion.Completion) defines.CompletionItem {
@@ -93,26 +93,26 @@ func handleCompletion(ctx context.Context, req *defines.CompletionParams) (resul
 }
 
 // getCompletions gets the completions for a specific position in an Inox code file.
-func getCompletions(fpath string, line, column int32, session *jsonrpc.Session, memberAuthToken string) []codecompletion.Completion {
-	sessionData := getLockedSessionData(session)
+func getCompletions(fpath string, line, column int32, rpcSession *jsonrpc.Session, memberAuthToken string) []codecompletion.Completion {
+	session := getCreateLockedProjectSession(rpcSession)
 
-	fls := sessionData.filesystem
+	fls := session.filesystem
 	if fls == nil {
-		sessionData.lock.Unlock()
+		session.lock.Unlock()
 		return nil
 	}
 
-	serverAPI := sessionData.serverAPI
-	lastCodebaseAnalysis := sessionData.lastCodebaseAnalysis
-	sessionData.lock.Unlock()
+	serverAPI := session.serverAPI
+	lastCodebaseAnalysis := session.lastCodebaseAnalysis
+	session.lock.Unlock()
 
-	handlingCtx := session.Context().BoundChildWithOptions(core.BoundChildContextOptions{
+	handlingCtx := rpcSession.Context().BoundChildWithOptions(core.BoundChildContextOptions{
 		Filesystem: fls,
 	})
 
 	prepResult, ok := prepareSourceFileInExtractionMode(handlingCtx, filePreparationParams{
 		fpath:           fpath,
-		session:         session,
+		session:         rpcSession,
 		requiresState:   true,
 		memberAuthToken: memberAuthToken,
 	})

@@ -48,7 +48,7 @@ func getCreateProjectEditionState(id core.ProjectID) *projectEditionState {
 	return state
 }
 
-func (s *projectEditionState) startFileUpload(fpath string, firstPart []byte, info uploadInfo, session *jsonrpc.Session) (uploadId, error) {
+func (s *projectEditionState) startFileUpload(fpath string, firstPart []byte, info uploadInfo, rpcSession *jsonrpc.Session) (uploadId, error) {
 	s.lock.Lock()
 	s.cleanupInactiveFilesNoLock("")
 	file, ok := s.files[fpath]
@@ -58,10 +58,10 @@ func (s *projectEditionState) startFileUpload(fpath string, firstPart []byte, in
 		s.files[fpath] = file
 	}
 	s.lock.Unlock()
-	return file.startFileUpload(session, firstPart, info)
+	return file.startFileUpload(rpcSession, firstPart, info)
 }
 
-func (s *projectEditionState) continueFileUpload(fpath string, part []byte, id uploadId, session *jsonrpc.Session) (uploadInfo, error) {
+func (s *projectEditionState) continueFileUpload(fpath string, part []byte, id uploadId, rpcSession *jsonrpc.Session) (uploadInfo, error) {
 	s.lock.Lock()
 	s.cleanupInactiveFilesNoLock(fpath)
 	file, ok := s.files[fpath]
@@ -71,10 +71,10 @@ func (s *projectEditionState) continueFileUpload(fpath string, part []byte, id u
 		s.files[fpath] = file
 	}
 	s.lock.Unlock()
-	return file.continueFileUpload(session, part, id)
+	return file.continueFileUpload(rpcSession, part, id)
 }
 
-func (s *projectEditionState) finishFileUpload(fpath string, lastPart []byte, id uploadId, session *jsonrpc.Session) ([][]byte, uploadInfo, error) {
+func (s *projectEditionState) finishFileUpload(fpath string, lastPart []byte, id uploadId, rpcSession *jsonrpc.Session) ([][]byte, uploadInfo, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -86,7 +86,7 @@ func (s *projectEditionState) finishFileUpload(fpath string, lastPart []byte, id
 		s.files[fpath] = file
 	}
 
-	parts, info, err := file.finishFileUpload(session, lastPart, id)
+	parts, info, err := file.finishFileUpload(rpcSession, lastPart, id)
 	if err == nil {
 		delete(s.files, fpath)
 		return parts, info, nil
@@ -136,15 +136,15 @@ func (s *projectFileState) LastActivity() time.Time {
 	return t
 }
 
-func (s *projectFileState) startFileUpload(session *jsonrpc.Session, firstPart []byte, info uploadInfo) (uploadId, error) {
+func (s *projectFileState) startFileUpload(rpcSession *jsonrpc.Session, firstPart []byte, info uploadInfo) (uploadId, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
 	s.lastActivity.Store(time.Now())
 
 	if s.modifyingSession == nil {
-		s.modifyingSession = session
-	} else if s.modifyingSession != session {
+		s.modifyingSession = rpcSession
+	} else if s.modifyingSession != rpcSession {
 		return "", ErrFileBeingCreatedOrModifiedByAnotherSession
 	} else {
 		return "", ErrFileBeingCreatedBySameSession
@@ -156,17 +156,17 @@ func (s *projectFileState) startFileUpload(session *jsonrpc.Session, firstPart [
 		overwrite: info.overwrite,
 	}
 	s.uploadParts = append(s.uploadParts, slices.Clone(firstPart))
-	s.modifyingSession = session
+	s.modifyingSession = rpcSession
 	return s.uploadInfo.id, nil
 }
 
-func (s *projectFileState) continueFileUpload(session *jsonrpc.Session, part []byte, id uploadId) (uploadInfo, error) {
+func (s *projectFileState) continueFileUpload(rpcSession *jsonrpc.Session, part []byte, id uploadId) (uploadInfo, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
 	s.lastActivity.Store(time.Now())
 
-	if s.modifyingSession != session {
+	if s.modifyingSession != rpcSession {
 		return uploadInfo{}, ErrFileBeingCreatedOrModifiedByAnotherSession
 	}
 
@@ -178,13 +178,13 @@ func (s *projectFileState) continueFileUpload(session *jsonrpc.Session, part []b
 	return s.uploadInfo, nil
 }
 
-func (s *projectFileState) finishFileUpload(session *jsonrpc.Session, part []byte, id uploadId) ([][]byte, uploadInfo, error) {
+func (s *projectFileState) finishFileUpload(rpcSession *jsonrpc.Session, part []byte, id uploadId) ([][]byte, uploadInfo, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
 	s.lastActivity.Store(time.Now())
 
-	if s.modifyingSession != session {
+	if s.modifyingSession != rpcSession {
 		return nil, uploadInfo{}, ErrFileBeingCreatedOrModifiedByAnotherSession
 	}
 

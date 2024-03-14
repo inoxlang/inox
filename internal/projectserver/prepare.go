@@ -65,32 +65,32 @@ type preparationResult struct {
 // The returned values SHOULD NOT BE MODIFIED.
 func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparationParams) (prepResult preparationResult, success bool) {
 	fpath := params.fpath
-	session := params.session
+	rpcSession := params.session
 	requiresState := params.requiresState
-	project, _ := getProject(session)
+	project, _ := getProject(rpcSession)
 	singleFileParsingTimeout := utils.DefaultIfZero(params.singleFileParsingTimeout, SINGLE_FILE_PARSING_TIMEOUT)
 
-	fls, new := getLspFilesystem(session)
+	fls, new := getLspFilesystem(rpcSession)
 	if !new {
 		logs.Println("failed to get LSP filesystem")
 		return
 	}
 
-	sessionData := getSessionData(params.session)
+	session := getCreateProjectSession(params.session)
 	var fileCache *preparedFileCacheEntry
 
 	if params._depth > MAX_PREPARATION_DEPTH {
-		session.Notify(NewShowMessage(defines.MessageTypeError, "maximum recursive preparation depth reached"))
+		rpcSession.Notify(NewShowMessage(defines.MessageTypeError, "maximum recursive preparation depth reached"))
 		return
 	}
 
 	//we avoid locking the session data
-	if sessionData.lock.TryLock() {
-		if sessionData.preparedSourceFilesCache == nil {
-			sessionData.preparedSourceFilesCache = newPreparedFileCache()
+	if session.lock.TryLock() {
+		if session.preparedSourceFilesCache == nil {
+			session.preparedSourceFilesCache = newPreparedFileCache()
 		}
-		cache := sessionData.preparedSourceFilesCache
-		sessionData.lock.Unlock()
+		cache := session.preparedSourceFilesCache
+		session.lock.Unlock()
 		func() {
 			fileCache, _ = cache.getOrCreate(fpath)
 		}()
@@ -139,7 +139,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 	if chunk == nil { //unrecoverable parsing error
 		logs.Println("unrecoverable parsing error", err.Error())
 		if params._depth == 0 {
-			session.Notify(NewShowMessage(defines.MessageTypeError, err.Error()))
+			rpcSession.Notify(NewShowMessage(defines.MessageTypeError, err.Error()))
 		}
 		return
 	}
@@ -156,7 +156,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 
 		if includedChunk == nil {
 			logs.Println("unrecoverable parsing error", err.Error())
-			session.Notify(NewShowMessage(defines.MessageTypeError, err.Error()))
+			rpcSession.Notify(NewShowMessage(defines.MessageTypeError, err.Error()))
 			return
 		}
 
@@ -200,7 +200,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 				if pathLiteral, ok := node.(*parse.AbsolutePathLiteral); ok {
 					preparationResult, ok := prepareSourceFileInExtractionMode(ctx, filePreparationParams{
 						fpath:                    pathLiteral.Value,
-						session:                  session,
+						session:                  rpcSession,
 						requiresState:            true,
 						notifyUserAboutDbError:   true,
 						_depth:                   params._depth + 1,
@@ -245,7 +245,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 
 		if mod == nil {
 			logs.Println("unrecoverable parsing error", err.Error())
-			session.Notify(NewShowMessage(defines.MessageTypeError, err.Error()))
+			rpcSession.Notify(NewShowMessage(defines.MessageTypeError, err.Error()))
 			return
 		}
 
@@ -265,7 +265,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 
 		if params.notifyUserAboutDbError && state != nil && state.FirstDatabaseOpeningError != nil {
 			msg := fmt.Sprintf("failed to open at least one database in module %q: %s", params.fpath, state.FirstDatabaseOpeningError.Error())
-			session.Notify(NewShowMessage(defines.MessageTypeWarning, msg))
+			rpcSession.Notify(NewShowMessage(defines.MessageTypeWarning, msg))
 		}
 
 		cached := false
