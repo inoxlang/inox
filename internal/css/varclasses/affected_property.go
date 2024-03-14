@@ -6,6 +6,8 @@ import (
 )
 
 var (
+	/* ====== Background ====== */
+
 	//Base names of 'background-XXX' properties that have no diminutives.
 	BACKGROUND_PROP_BASES_WITHOUT_DIMINUTIVES = []string{
 		"attachment",
@@ -17,7 +19,9 @@ var (
 		"size",
 	}
 
-	//Base names of 'background-image-XXX' properties.
+	/* ====== Border ====== */
+
+	//Base names of 'border-image-XXX' properties.
 	BORDER_IMAGE_PROP_BASES = []string{
 		"outset",
 		"repeat",
@@ -137,6 +141,18 @@ func inferAffectedProperty(varname string) string {
 			if strings.Contains(varname, substring) {
 				return "font-weight"
 			}
+		}
+
+		if strings.Contains(varname, "font-family") {
+			return "font-family"
+		}
+
+		if strings.Contains(varname, "font-style") {
+			return "font-style"
+		}
+
+		if strings.Contains(varname, "font-") || strings.Contains(varname, "-font") {
+			return "font"
 		}
 	}
 

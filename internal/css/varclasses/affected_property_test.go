@@ -33,6 +33,9 @@ func TestInferAffectedProperty(t *testing.T) {
 		{first(BORDER_RADIUS_PROPS), "_same"},
 
 		{"border-left-" + first(COMMON_BORDER_PROP_BASES), "_same"},
+
+		{"heading-font-family", "font-family"},
+		{"heading-font", "font"},
 	}
 
 	for _, testCase := range testCases {
