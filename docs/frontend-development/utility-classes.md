@@ -1,29 +1,23 @@
 # Utility Classes
 
-Inox comes with a subset of [Tailwind](https://tailwindcss.com/) and a utility class system based on CSS variables (custom properties).
+Inox comes with a subset of [Tailwind](https://tailwindcss.com/) and a small utility class system based on CSS variables.
 
-- The provided Tailwind's subset is relatively small: **you don't need to read the official documentation and no configuration is required by default.** An optional configuration system will likely be supported in the future.
+- The provided Tailwind's subset does not require reading the official documentation and it can be used without any configuration. An optional configuration system will likely be supported in the future.
 - Theming is implemented using CSS variables, not Tailwind.
 - Used utility classes are automatically added to the file `/static/css/utility-classes.css`.
 
-
+**Documentation sections**:
 
 - [Tailwind](#tailwind)
     - [Breakpoint modifiers](#breakpoint-modifiers)
 
 - [Variable-Based Utilities](#variable-based-utilities)
     - [Variable definitions and theming](#variable-definitions-and-theming)
-    - [background-color](#background-color)
-    - [background-image](#background-image)
-    - [background and more](#background)
-    - [font-color](#font-color)
-    - [font-size](#font-size)
-    - [font-weight](#font-weight)
-
+    - [Property inference](#property-inference-rules)
 
 <details>
 
-_<summary>✨ You can hover a utility class to its associated rule.</summary>_
+_<summary>✨ You can hover a utility class to see its associated rule.</summary>_
 
 ![ezgif-6-c4870884fa](https://github.com/inoxlang/inox/assets/113632189/228cc727-de00-4521-b058-721273355647)
 
@@ -79,18 +73,6 @@ So it adds a rule to `/static/css/utility-classes.css`:
 }
 ```
 
-Here is the list of supported CSS properties:
-
-- [background-color](#background-color)
-- [background-image](#background-image)
-- [background and more](#background)
-- [font-color](#font-color)
-- [font-size](#font-size)
-- [font-weight](#font-weight)
-
-
-**More properties will be supported.**
-
 
 ### Variable Definitions And Theming
 
@@ -124,10 +106,40 @@ If you want to apply the theme you just have to add the corresponding class to `
 ```html
 <body class="dark-theme">
     ...
-    <!-- A theme can also be selectively applied in a specic region. -->
+    <!-- A theme can also be selectively applied in a specific region. -->
     <div class="my-custom-theme">...</div>
 </body>
 ```
+
+### Property Inference Rules
+
+The inference rules are quite simple. here is a quick overview:
+- Names including a CSS property name affect the corresponding CSS property.
+  For examples: `--default-border` affects `border`, and `--primary-border-color` affects `border-color`
+- `bg` is a shorthand for `background` 
+- Names including `foreground` or `fg` affect the `color` property, for example `--primary-fg`
+- `text` is an alias for `font`. For example: `--heading-text-size` affects `font-size`
+
+**Background**
+
+- [background-color](#background-color)
+- [background-image](#background-image)
+- [background and more](#background)
+
+**Font**
+
+- [font-color](#font-color)
+- [font-size](#font-size)
+- [font-weight](#font-weight)
+- [font-family](#font-family)
+- [font-style](#font-style)
+- [font](#font)
+
+
+**Border**
+
+- [border-image](#border-image)
+- [border and more](#border)
 
 ### `background-color`
 
@@ -137,7 +149,9 @@ set the value of the `background-color` property.
 - `background-color`
 - `bg-color`
 - `color-bg`
-- `color-bg`
+
+Examples: 
+- `--primary-bg-color`
 
 ### `background-image`
 
@@ -149,6 +163,9 @@ set the value of the `background-image` property.
 - `bg-img`
 - `img-bg`
 
+Examples: 
+- `--bg-img-url`
+
 ### `background`
 
 Variables whose name contains any of the following substrings will be used to
@@ -157,6 +174,9 @@ set the value of the `background` property.
 - `background`
 - `-bg`
 - `bg-`
+
+Examples: 
+- `--primary-bg`
 
 ⚠️ Variables whose names contains any of the following substrings will not be used
 for `background`.
@@ -167,7 +187,6 @@ for `background`.
 - `(background|bg)-clip`
 - `(background|bg)-origin`
 - `(background|bg)-position`
-- `(background|bg)-size`
 - `(background|bg)-size`
 
 ### `font-color`
@@ -180,6 +199,9 @@ to set the value of the `font-color` property.
 - `foreground`
 - `fg-`
 - `-fg`
+
+Examples: 
+- `--primary-fg`
 
 ### `font-size`
 
@@ -194,6 +216,9 @@ set the value of the `font-size` property.
 - `ts-`
 - `-ts`
 
+Examples: 
+- `--heading-fs`
+
 ### `font-weight`
 
 Variables whose name contains any of the following substrings will be used to
@@ -203,3 +228,36 @@ set the value of the `font-weight` property.
 - `text-weight`
 - `fw-`
 - `-fw`
+
+Examples: 
+- `--heading-fw`
+
+### `font-family`
+
+Variables whose name contains `font-family` will be used to
+set the value of the `font-family` property.
+
+### `font-style`
+
+Variables whose name contains `font-style` will be used to
+set the value of the `font-style` property.
+
+### `font`
+
+Variables whose name contains `font` will be used to
+set the value of the `font` property.
+
+### `border-image`
+
+- `border-(image|img)` -> `border-image`
+- `border-(image|img)-<prop>` -> `border-image-<prop>`
+
+### `border`
+
+- `border` -> `border`
+- `border-color` -> `border-color`
+- `border-top-color` -> `border-top-color`
+
+Examples: 
+- `--muted-border-color` affects `border-color`
+- `--muted-border` affects `border`
