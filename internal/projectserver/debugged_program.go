@@ -9,20 +9,20 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/hack"
-	"github.com/inoxlang/inox/internal/projectserver/dev"
+	"github.com/inoxlang/inox/internal/projectserver/devtools"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
 )
 
 type debuggedProgramLaunch struct {
-	programPath     string
-	logLevels       *core.LogLevels
-	rpcSession      *jsonrpc.Session
-	debugSession    *DebugSession
-	devSession      *dev.Session
-	fls             *Filesystem
-	memberAuthToken string
+	programPath      string
+	logLevels        *core.LogLevels
+	rpcSession       *jsonrpc.Session
+	debugSession     *DebugSession
+	devtoolsInstance *devtools.Instance
+	fls              *Filesystem
+	memberAuthToken  string
 }
 
 func launchDebuggedProgram(args debuggedProgramLaunch) {
@@ -127,7 +127,7 @@ func launchDebuggedProgram(args debuggedProgramLaunch) {
 		}
 	}))
 
-	preparationOk, err := args.devSession.RunProgram(dev.RunProgramParams{
+	preparationOk, err := args.devtoolsInstance.RunProgram(devtools.RunProgramParams{
 		Path:          programPath,
 		ParentContext: ctx,
 
@@ -143,7 +143,7 @@ func launchDebuggedProgram(args debuggedProgramLaunch) {
 		ProgramPreparedOrFailedToChan: debugSession.programPreparedOrFailedToChan,
 	})
 
-	if preparationOk || errors.Is(err, dev.ErrDevSessionAlreadyRunningProgram) {
+	if preparationOk || errors.Is(err, devtools.ErrDevtoolsInstanceAlreadyRunningProgram) {
 		debugSession.programDoneChan <- err
 	} else {
 		debugSession.debugger.Closed()

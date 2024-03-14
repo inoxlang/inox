@@ -25,7 +25,7 @@ const (
 	SERVER_API_UPDATE_DEBOUNCE_DURATION = time.Second / 2
 )
 
-// serverAPI stores the API of a FS-routing HTTP Server. It is primarilyt used for code completion.
+// serverAPI stores the API of a FS-routing HTTP Server. It is primarily used for code completion.
 // It is not shared between LSP sessions.
 type serverAPI struct {
 	lock     sync.Mutex
@@ -126,7 +126,7 @@ func (a *serverAPI) acknowledgeSessionEnd() {
 
 }
 
-// tryUpdateAPI tries to update the API by calling httpspec.GetFSRoutingServerAPI on a.dynamiDir.
+// tryUpdateAPI tries to update the API by calling httpspec.GetFSRoutingServerAPI on .dynamicDir.
 // tryUpdateAPI should be called in a separate goroutine because it calls prepareSourceFileInExtractionMode
 // that locks the session data.
 func (a *serverAPI) tryUpdateAPI() {

@@ -19,7 +19,7 @@ import (
 	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/project/access"
 	"github.com/inoxlang/inox/internal/project/layout"
-	"github.com/inoxlang/inox/internal/projectserver/dev"
+	"github.com/inoxlang/inox/internal/projectserver/devtools"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/projectserver/logs"
 	"github.com/inoxlang/inox/internal/projectserver/lsp"
@@ -301,7 +301,7 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 		),
 	}, nil)
 
-	devSession, err := dev.NewDevSession(dev.SessionParams{
+	devtoolsInstance, err := devtools.NewInstance(devtools.InstanceParams{
 		WorkingFS:       lspFilesystem,
 		Project:         project,
 		SessionContext:  devSessionCtx,
@@ -342,10 +342,10 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 		})
 
 		if ok {
-			devSession.InitWithPreparedMainModule(result.state)
+			devtoolsInstance.InitWithPreparedMainModule(result.state)
 		}
 
-		err := devSession.DevToolsServer()
+		err := devtoolsInstance.DevToolsServer()
 		if err != nil {
 			logs.Println(rpcSession.Client(), "failed to start dev tools server:", err)
 		} else {
@@ -353,7 +353,7 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 		}
 	}()
 
-	//Update session data.
+	//Update session.
 
 	session := getCreateLockedProjectSession(rpcSession)
 	defer session.lock.Unlock()
@@ -366,9 +366,9 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 	session.repository = gitRepo
 	session.project = project
 	session.fsEventSource = evs
-	session.devSession = devSession
+	session.devtools = devtoolsInstance
 
-	//Create the server API (application).
+	//Create the server API.
 
 	session.serverAPI = newServerAPI(lspFilesystem, rpcSession, memberAuthToken)
 

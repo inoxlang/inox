@@ -1,4 +1,4 @@
-package dev
+package devtools
 
 import (
 	"errors"
@@ -20,37 +20,36 @@ const (
 )
 
 var (
-	ErrDevSessionAlreadyRunningProgram = errors.New("development session is already running a program")
-	ErrDevSessionNotInitialized        = errors.New("development session is not initialized")
-	ErrDevSessionAlreadyInitialized    = errors.New("development session is already initialized")
+	ErrDevtoolsInstanceAlreadyRunningProgram = errors.New("devtools instance is already running a program")
+	ErrDevtoolsInstanceNotInitialized        = errors.New("devtools instance is not initialized")
+	ErrDevtoolsInstanceAlreadyInitialized    = errors.New("devtools instance is already initialized")
 )
 
-type Session struct {
-	lock sync.Mutex
+type Instance struct {
+	lock        sync.Mutex
+	initialized bool
+	context     *core.Context
+
+	toolsServerPort string
+	api             *API
 
 	key             http_ns.DevSessionKey
 	memberAuthToken string
 
-	initialized bool
-	context     *core.Context
+	//Project
 
 	developerWorkingFS afs.Filesystem
 	project            *project.Project
 
-	//main program and databases
+	//Main program and databases
 
 	isRunningAProgram             atomic.Bool
 	runningProgramDatabases       map[string]*core.DatabaseIL
 	databaseOpeningConfigurations map[string]databaseOpeningConfig
 	dbProxies                     map[string]*dbProxy //proxies should be unique because they may open a database
-
-	//tools
-
-	toolsServerPort string
-	devAPI          *API
 }
 
-type SessionParams struct {
+type InstanceParams struct {
 	WorkingFS      afs.Filesystem
 	Project        *project.Project
 	SessionContext *core.Context //context of the development session
@@ -60,8 +59,8 @@ type SessionParams struct {
 	MemberAuthToken string
 }
 
-func NewDevSession(args SessionParams) (*Session, error) {
-	s := &Session{
+func NewInstance(args InstanceParams) (*Instance, error) {
+	instance := &Instance{
 		developerWorkingFS:            args.WorkingFS,
 		project:                       args.Project,
 		runningProgramDatabases:       map[string]*core.DatabaseIL{},
@@ -74,37 +73,37 @@ func NewDevSession(args SessionParams) (*Session, error) {
 		memberAuthToken: args.MemberAuthToken,
 	}
 
-	s.devAPI = &API{session: s}
+	instance.api = &API{session: instance}
 
-	if !inoxconsts.IsDevPort(s.toolsServerPort) {
-		return nil, fmt.Errorf("%s is not a dev port", s.toolsServerPort)
+	if !inoxconsts.IsDevPort(instance.toolsServerPort) {
+		return nil, fmt.Errorf("%s is not a dev port", instance.toolsServerPort)
 	}
 
-	return s, nil
+	return instance, nil
 }
 
-func (s *Session) DevAPI() *API {
-	return s.devAPI
+func (inst *Instance) DevAPI() *API {
+	return inst.api
 }
 
-func (s *Session) InitWithPreparedMainModule(state *core.GlobalState) error {
+func (inst *Instance) InitWithPreparedMainModule(state *core.GlobalState) error {
 	src, ok := state.Module.AbsoluteSource()
 	if !ok || src.ResourceName() != layout.MAIN_PROGRAM_PATH {
 		return errors.New("provided state is not the main module's state")
 	}
 
-	s.lock.Lock()
-	defer s.lock.Unlock()
+	inst.lock.Lock()
+	defer inst.lock.Unlock()
 
-	if s.initialized {
-		return ErrDevSessionAlreadyInitialized
+	if inst.initialized {
+		return ErrDevtoolsInstanceAlreadyInitialized
 	}
 
 	for name, db := range state.Databases {
 		open, config, ok := db.OpeningConfiguration()
 
 		if ok {
-			s.databaseOpeningConfigurations[name] = databaseOpeningConfig{
+			inst.databaseOpeningConfigurations[name] = databaseOpeningConfig{
 				open:   open,
 				config: config,
 			}

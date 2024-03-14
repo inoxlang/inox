@@ -1,4 +1,4 @@
-package dev
+package devtools
 
 import (
 	"errors"
@@ -14,13 +14,13 @@ var (
 // A dbProxy allows a tooling program to interact with an Inox dbProxy.
 type dbProxy struct {
 	dbName  string
-	session *Session
+	session *Instance
 	lock    sync.Mutex
 
 	current *core.DatabaseIL
 }
 
-func newDBProxy(name string, session *Session) *dbProxy {
+func newDBProxy(name string, session *Instance) *dbProxy {
 	return &dbProxy{
 		dbName:  name,
 		session: session,

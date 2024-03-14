@@ -1,4 +1,4 @@
-package dev
+package devtools
 
 import (
 	"io"
@@ -29,17 +29,17 @@ type RunProgramParams struct {
 	ProgramPreparedOrFailedToChan chan error
 }
 
-func (s *Session) RunProgram(args RunProgramParams) (preparationOk bool, _ error) {
+func (inst *Instance) RunProgram(args RunProgramParams) (preparationOk bool, _ error) {
 
-	if !s.isRunningAProgram.CompareAndSwap(false, true) {
-		return false, ErrDevSessionAlreadyRunningProgram
+	if !inst.isRunningAProgram.CompareAndSwap(false, true) {
+		return false, ErrDevtoolsInstanceAlreadyRunningProgram
 	}
 
-	defer s.isRunningAProgram.Store(false)
+	defer inst.isRunningAProgram.Store(false)
 	defer func() {
-		s.lock.Lock()
-		defer s.lock.Unlock()
-		clear(s.runningProgramDatabases)
+		inst.lock.Lock()
+		defer inst.lock.Unlock()
+		clear(inst.runningProgramDatabases)
 	}()
 
 	_, _, _, preparationOk, err := mod.RunLocalModule(mod.RunLocalModuleArgs{
@@ -68,13 +68,13 @@ func (s *Session) RunProgram(args RunProgramParams) (preparationOk bool, _ error
 				return nil
 			}
 
-			state.Ctx.PutUserData(inoxconsts.DEV_CTX_DATA_ENTRY, s.devAPI)
+			state.Ctx.PutUserData(inoxconsts.DEV_CTX_DATA_ENTRY, inst.api)
 
-			s.lock.Lock()
-			defer s.lock.Unlock()
+			inst.lock.Lock()
+			defer inst.lock.Unlock()
 
-			clear(s.runningProgramDatabases)
-			maps.Copy(s.runningProgramDatabases, state.Databases)
+			clear(inst.runningProgramDatabases)
+			maps.Copy(inst.runningProgramDatabases, state.Databases)
 			return nil
 		},
 	})

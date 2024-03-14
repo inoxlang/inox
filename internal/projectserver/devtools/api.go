@@ -1,4 +1,4 @@
-package dev
+package devtools
 
 import (
 	"slices"
@@ -11,8 +11,10 @@ var (
 	_ = core.DevAPI((*API)(nil))
 )
 
+// An API is used internally by an Inox web application to provide development tools.
+// This type implements the core.Value interface.
 type API struct {
-	session *Session
+	session *Instance
 }
 
 func (a *API) DevAPI__() {

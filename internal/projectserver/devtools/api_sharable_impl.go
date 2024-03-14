@@ -1,4 +1,4 @@
-package dev
+package devtools
 
 import "github.com/inoxlang/inox/internal/core"
 

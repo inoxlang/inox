@@ -1,4 +1,4 @@
-package dev
+package devtools
 
 import (
 	"errors"
@@ -24,7 +24,7 @@ var (
 	ErrInexistingOrInvalidDevToolsEntryPoint = errors.New("entry point for the dev tools server does not exist or is invalid")
 )
 
-func (s *Session) DevToolsServer() error {
+func (s *Instance) DevToolsServer() error {
 
 	_, ok := http_ns.GetDevServer(s.toolsServerPort)
 	if !ok {
@@ -72,7 +72,7 @@ func (s *Session) DevToolsServer() error {
 
 			OnPrepared: func(state *core.GlobalState) error {
 				//Give access to the dev API to the dev tools app.
-				state.Ctx.PutUserData(inoxconsts.DEV_CTX_DATA_ENTRY, s.devAPI)
+				state.Ctx.PutUserData(inoxconsts.DEV_CTX_DATA_ENTRY, s.api)
 				return nil
 			},
 		})

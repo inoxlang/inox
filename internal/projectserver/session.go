@@ -11,7 +11,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/project"
-	"github.com/inoxlang/inox/internal/projectserver/dev"
+	"github.com/inoxlang/inox/internal/projectserver/devtools"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/projectserver/logs"
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
@@ -47,11 +47,13 @@ func getCreateLockedProjectSession(rpcSession *jsonrpc.Session) *Session {
 	return session
 }
 
-// A Session contains
+// A Session represents the state of a development session on the project server.
+// LSP handlers retrieve and store data from/to it.
 type Session struct {
 	lock            sync.RWMutex
 	removed         atomic.Bool
 	memberAuthToken string
+	devSessionKey   http_ns.DevSessionKey //set after project is open
 
 	//LSP
 
@@ -84,10 +86,9 @@ type Session struct {
 	cssGenerator *gen.CssGenerator
 	jsGenerator  *gen.JsGenerator
 
-	//Dev session
+	//Dev tools
 
-	devSession    *dev.Session
-	devSessionKey http_ns.DevSessionKey //set after project is open
+	devtools *devtools.Instance
 
 	//Testing
 

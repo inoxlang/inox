@@ -673,13 +673,13 @@ func handleDebugLaunch(ctx context.Context, req interface{}) (interface{}, error
 	}()
 
 	go launchDebuggedProgram(debuggedProgramLaunch{
-		programPath:     programPath,
-		logLevels:       logLevels,
-		rpcSession:      rpcSession,
-		debugSession:    debugSession,
-		devSession:      session.devSession,
-		fls:             fls,
-		memberAuthToken: memberAuthToken,
+		programPath:      programPath,
+		logLevels:        logLevels,
+		rpcSession:       rpcSession,
+		debugSession:     debugSession,
+		devtoolsInstance: session.devtools,
+		fls:              fls,
+		memberAuthToken:  memberAuthToken,
 	})
 
 	err = <-debugSession.programPreparedOrFailedToChan
