@@ -27,29 +27,28 @@ type filePreparationParams struct {
 	fpath      string
 	rpcSession *jsonrpc.Session
 
-	//if true and the state preparation failed then ok is false and results are nil.
+	//If true and the state preparation failed then ok is false and results are nil.
 	requiresState bool
 
-	//if true and the file is not cached then ok is false and results are nil.
-	//This setting has lower priority than forcePrepareIfNoVeryRecentActivity.
+	//If true and the file is not cached then ok is false and results are nil.
+	//This setting has lower priority than forcePrepareIfNoVeryRecentActivity and alwaysForcePrepare.
 	requiresCache bool
 
-	//preparation is attempted if true and the file is not cached
-	//or the cache has not been updated/accessed very recently (VERY_RECENT_ACTIVITY_DELTA).
+	//Forces the preparation if the prepared file is not cached AND the cache has not been updated/accessed very recently (VERY_RECENT_ACTIVITY_DELTA).
 	forcePrepareIfNoVeryRecentActivity bool
 
-	//preparation is attempted if true and the file is not cached.
+	//Always forces the preparation if the prepared file is not cached.
 	alwaysForcePrepare bool
 
-	//if true the cache is not read but the resulting prepared file is cached.
+	//If true the cache is not read but the resulting prepared file is cached.
 	ignoreCache bool
-
-	notifyUserAboutDbError bool
-
-	_depth int //should not be set by the caller, it is used internally by prepareSourceFileInExtractionMode
 
 	//Defaults to SINGLE_FILE_PARSING_TIMEOUT.
 	singleFileParsingTimeout time.Duration
+
+	notifyUserAboutDbError bool
+
+	_depth int //The field should not be set by the caller, it is used internally by prepareSourceFileInExtractionMode
 
 	//The following fields are passed directly to prepareSourceFileInExtractionMode so that it does not have to lock the session to retrieve them.
 
