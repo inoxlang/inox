@@ -8,8 +8,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/inoxlang/inox/internal/codebase/analysis"
 	"github.com/inoxlang/inox/internal/codebase/gen"
+	"github.com/inoxlang/inox/internal/css"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
+	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/projectserver/devtools"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
@@ -23,6 +25,9 @@ var (
 	sessionsLock sync.Mutex
 )
 
+// getCreateProjectSession retrieves or creates a *Session. When getCreateProjectSession
+// creates a *Session it only sets its rpcSession field and map fields. Other fields
+// are initialized by the LSP handler for 'project/open'.
 func getCreateProjectSession(rpcSession *jsonrpc.Session) *Session {
 	sessionsLock.Lock()
 	session := sessions[rpcSession]
@@ -47,8 +52,9 @@ func getCreateLockedProjectSession(rpcSession *jsonrpc.Session) *Session {
 	return session
 }
 
-// A Session represents the state of a development session on the project server.
-// LSP handlers retrieve and store data from/to it.
+// A Session represents the state of a development session on the project server, it also holds references to major
+// components such as a devtools instance, a Git repository, and the open project. During a LSP session, method
+// handlers retrieve and store data from/to a *Session and interact with the referenced components.
 type Session struct {
 	lock            sync.RWMutex
 	removed         atomic.Bool
@@ -70,8 +76,10 @@ type Session struct {
 
 	//Working copy
 
-	filesystem    *Filesystem
-	fsEventSource *fs_ns.FilesystemEventSource
+	filesystem      *Filesystem
+	fsEventSource   *fs_ns.FilesystemEventSource
+	inoxChunkCache  *parse.ChunkCache
+	stylesheetCache *css.StylesheetCache
 
 	//Analysis and diagnostics
 

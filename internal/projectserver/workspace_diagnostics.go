@@ -4,11 +4,10 @@ import (
 	"maps"
 
 	"github.com/inoxlang/inox/internal/codebase/analysis"
-	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
 )
 
-func publishWorkspaceDiagnostics(rpcSession *jsonrpc.Session, projSession *Session, lastAnalysis *analysis.Result) {
+func publishWorkspaceDiagnostics(projSession *Session, lastAnalysis *analysis.Result) {
 
 	projSession.lock.Lock()
 	docDiagnostics := maps.Clone(projSession.documentDiagnostics)
@@ -33,7 +32,7 @@ func publishWorkspaceDiagnostics(rpcSession *jsonrpc.Session, projSession *Sessi
 			// 	Message: "LOL",
 			// })
 			diagnostics.containsWorkspaceDiagnostics = true
-			sendDocumentDiagnostics(rpcSession, uri, diagnostics.items)
+			sendDocumentDiagnostics(projSession.rpcSession, uri, diagnostics.items)
 		}(uri, diagnostics)
 
 	}

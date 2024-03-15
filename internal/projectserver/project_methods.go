@@ -6,7 +6,6 @@ import (
 	"runtime/debug"
 	"time"
 
-	"github.com/inoxlang/inox/internal/codebase/analysis"
 	"github.com/inoxlang/inox/internal/codebase/gen"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/permkind"
@@ -195,6 +194,8 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 		}
 	}
 
+	//Check parameters
+
 	projectId := core.ProjectID(params.ProjectID)
 	if err := projectId.Validate(); err != nil {
 		return nil, jsonrpc.ResponseError{
@@ -211,6 +212,8 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 		}
 	}
 
+	//Open the project
+
 	project, err := projectRegistry.OpenProject(sessionCtx, project.OpenProjectParams{
 		Id:               projectId,
 		DevSideConfig:    params.DevSideConfig,
@@ -224,6 +227,8 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 			Message: err.Error(),
 		}
 	}
+
+	//Authenticate the project member
 
 	_, err = project.AuthenticateMember(sessionCtx, memberId)
 	if err != nil {
@@ -247,7 +252,7 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 		}
 	}
 
-	//Update the project copy of the member.
+	//Open the project copy of the member.
 
 	developerCopy, err := project.DevCopy(sessionCtx, memberAuthToken)
 
@@ -274,7 +279,8 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 		}
 	}
 
-	//Create filesystem and FS event source.
+	//Create a LSP filesystem and a FS event source. The event source is primarly used to trigger codebase analysis & code generation
+	//when the developer stops making file changes (IDLE state).
 
 	lspFilesystem := NewFilesystem(workingFs, fs_ns.NewMemFilesystem(10_000_000))
 
@@ -286,12 +292,12 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 		}
 	}
 
-	//Create a development session.
+	//Create a dev tools instance.
 
 	devSessionKey := http_ns.RandomDevSessionKey()
 	toolsServerPort := DEFAULT_DEV_TOOLS_PORT
 
-	devSessionCtx := core.NewContextWithEmptyState(core.ContextConfig{
+	devtoolsCtx := core.NewContextWithEmptyState(core.ContextConfig{
 		ParentContext: sessionCtx,
 		Filesystem:    lspFilesystem,
 		Permissions: append(core.GetDefaultGlobalVarPermissions(),
@@ -304,7 +310,7 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 	devtoolsInstance, err := devtools.NewInstance(devtools.InstanceParams{
 		WorkingFS:       lspFilesystem,
 		Project:         project,
-		SessionContext:  devSessionCtx,
+		SessionContext:  devtoolsCtx,
 		ToolsServerPort: toolsServerPort,
 		DevSessionKey:   devSessionKey,
 		MemberAuthToken: memberAuthToken,
@@ -317,7 +323,11 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 		}
 	}
 
+	//In a separate goroutine initialize the devtools instance with information about the program /main.ix
+	//and start the devtools web application.
+
 	go func() {
+
 		defer func() {
 			e := recover()
 			if e != nil {
@@ -353,7 +363,7 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 		}
 	}()
 
-	//Update session.
+	//Update the session with the retrieved and created components.
 
 	session := getCreateLockedProjectSession(rpcSession)
 	defer session.lock.Unlock()
@@ -392,40 +402,11 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 	session.cssGenerator = gen.NewCssGenerator(lspFilesystem, "/static", rpcSession.Client())
 	session.jsGenerator = gen.NewJSGenerator(lspFilesystem, "/static", rpcSession.Client())
 
-	chunkCache := parse.NewChunkCache()
-	stylesheetParseCache := css.NewParseCache()
+	session.inoxChunkCache = parse.NewChunkCache()
+	session.stylesheetCache = css.NewParseCache()
 
-	analyzeCodebaseAndRegen := func(initial bool) {
-		defer utils.Recover()
-		analysisResult, err := analysis.AnalyzeCodebase(sessionCtx, lspFilesystem, analysis.Configuration{
-			TopDirectories:     []string{"/"},
-			InoxChunkCache:     chunkCache,
-			CssStylesheetCache: stylesheetParseCache,
-		})
-		if err != nil {
-			logs.Println(rpcSession.Client(), err)
-			return
-		}
-
-		session.lock.Lock()
-		session.lastCodebaseAnalysis = analysisResult
-		session.lock.Unlock()
-
-		if initial {
-			session.cssGenerator.InitialGenAndSetup(sessionCtx, analysisResult)
-			session.jsGenerator.InitialGenAndSetup(sessionCtx, analysisResult)
-		} else {
-			session.cssGenerator.RegenAll(sessionCtx, analysisResult)
-			session.jsGenerator.RegenAll(sessionCtx, analysisResult)
-		}
-
-		publishWorkspaceDiagnostics(rpcSession, session, analysisResult)
-	}
-
-	go func() {
-		//Initial generation.
-		analyzeCodebaseAndRegen(true)
-	}()
+	//Initial generation.
+	go analyzeCodebaseAndRegen(true, session)
 
 	//Each time an Inox file changes we analyze the codebase and regenerate static CSS & JS.
 	evs.OnIDLE(core.IdleEventSourceHandler{
@@ -437,7 +418,7 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 			return
 		},
 		Microtask: func() {
-			go analyzeCodebaseAndRegen(false)
+			go analyzeCodebaseAndRegen(false, session)
 		},
 	})
 
