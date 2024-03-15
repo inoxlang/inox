@@ -345,10 +345,13 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 		defer handlerCtx.CancelGracefully()
 
 		result, ok := prepareSourceFileInExtractionMode(handlerCtx, filePreparationParams{
-			fpath:           layout.MAIN_PROGRAM_PATH,
-			session:         rpcSession,
+			fpath:         layout.MAIN_PROGRAM_PATH,
+			requiresState: true,
+
+			rpcSession:      rpcSession,
+			project:         project,
+			lspFilesystem:   lspFilesystem,
 			memberAuthToken: memberAuthToken,
-			requiresState:   true,
 		})
 
 		if ok {
@@ -380,7 +383,7 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 
 	//Create the server API.
 
-	session.serverAPI = newServerAPI(lspFilesystem, rpcSession, memberAuthToken)
+	session.serverAPI = newServerAPI(project, lspFilesystem, rpcSession, memberAuthToken)
 
 	go session.serverAPI.tryUpdateAPI() //use a goroutine to avoid deadlock
 

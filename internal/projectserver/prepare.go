@@ -10,6 +10,7 @@ import (
 	fs_ns "github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/projectserver/logs"
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
@@ -24,9 +25,8 @@ const (
 )
 
 type filePreparationParams struct {
-	fpath           string
-	session         *jsonrpc.Session
-	memberAuthToken string
+	fpath      string
+	rpcSession *jsonrpc.Session
 
 	//if true and the state preparation failed then ok is false and results are nil.
 	requiresState bool
@@ -48,6 +48,12 @@ type filePreparationParams struct {
 
 	//Defaults to SINGLE_FILE_PARSING_TIMEOUT.
 	singleFileParsingTimeout time.Duration
+
+	//The following fields are passed directly to prepareSourceFileInExtractionMode so that it does not have to lock the session to retrieve them.
+
+	memberAuthToken string
+	project         *project.Project
+	lspFilesystem   *Filesystem
 }
 
 type preparationResult struct {
@@ -65,18 +71,14 @@ type preparationResult struct {
 // The returned values SHOULD NOT BE MODIFIED.
 func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparationParams) (prepResult preparationResult, success bool) {
 	fpath := params.fpath
-	rpcSession := params.session
+	rpcSession := params.rpcSession
 	requiresState := params.requiresState
-	project, _ := getProject(rpcSession)
+	project := params.project
+	lspFilesystem := params.lspFilesystem
+
 	singleFileParsingTimeout := utils.DefaultIfZero(params.singleFileParsingTimeout, SINGLE_FILE_PARSING_TIMEOUT)
 
-	fls, new := getLspFilesystem(rpcSession)
-	if !new {
-		logs.Println("failed to get LSP filesystem")
-		return
-	}
-
-	session := getCreateProjectSession(params.session)
+	session := getCreateProjectSession(params.rpcSession)
 	var fileCache *preparedFileCacheEntry
 
 	if params._depth > MAX_PREPARATION_DEPTH {
@@ -84,27 +86,31 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 		return
 	}
 
-	//we avoid locking the session data
+	//Try to lock the session to get the cache.
 	if session.lock.TryLock() {
+		//-------------------------------------------------------------
 		if session.preparedSourceFilesCache == nil {
 			session.preparedSourceFilesCache = newPreparedFileCache()
 		}
 		cache := session.preparedSourceFilesCache
 		session.lock.Unlock()
+		//-------------------------------------------------------------
+
 		func() {
 			fileCache, _ = cache.getOrCreate(fpath)
 		}()
 
-		//we lock the cache to pause parallel preparation of the same file
+		//Lock the cache entry to prevent parallel preparation of the same file.
 		fileCache.Lock()
 		defer fileCache.Unlock()
 
 		fileCache.acknowledgeAccess()
 	} else if params.requiresCache {
+		//Failure
 		return
 	}
 
-	//check the cache
+	//Check the cache entry.
 	if !params.ignoreCache && fileCache != nil {
 		if fileCache.chunk != nil {
 			logs.Println("cache hit for file", fpath)
@@ -132,7 +138,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 		return
 	}
 
-	chunk, err := core.ParseFileChunk(fpath, fls, parse.ParserOptions{
+	chunk, err := core.ParseFileChunk(fpath, lspFilesystem, parse.ParserOptions{
 		Timeout: singleFileParsingTimeout,
 	})
 
@@ -150,7 +156,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 			ParsingContext:                 ctx,
 			Out:                            io.Discard,
 			LogOut:                         io.Discard,
-			IncludedChunkContextFileSystem: fls,
+			IncludedChunkContextFileSystem: lspFilesystem,
 			SingleFileParsingTimeout:       singleFileParsingTimeout,
 		})
 
@@ -200,12 +206,15 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 				if pathLiteral, ok := node.(*parse.AbsolutePathLiteral); ok {
 					preparationResult, ok := prepareSourceFileInExtractionMode(ctx, filePreparationParams{
 						fpath:                    pathLiteral.Value,
-						session:                  rpcSession,
 						requiresState:            true,
 						notifyUserAboutDbError:   true,
 						_depth:                   params._depth + 1,
-						memberAuthToken:          params.memberAuthToken,
 						singleFileParsingTimeout: singleFileParsingTimeout,
+
+						rpcSession:      rpcSession,
+						project:         project,
+						lspFilesystem:   lspFilesystem,
+						memberAuthToken: params.memberAuthToken,
 					})
 					if ok {
 						parentCtx = preparationResult.state.Ctx
@@ -230,8 +239,8 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 
 			Out:                     io.Discard,
 			DataExtractionMode:      true,
-			ScriptContextFileSystem: fls,
-			PreinitFilesystem:       fls,
+			ScriptContextFileSystem: lspFilesystem,
+			PreinitFilesystem:       lspFilesystem,
 
 			Project:         project,
 			MemberAuthToken: params.memberAuthToken,

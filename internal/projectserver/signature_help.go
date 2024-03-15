@@ -6,6 +6,7 @@ import (
 	"github.com/inoxlang/inox/internal/help"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/prettyprint"
+	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/projectserver/logs"
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
@@ -13,9 +14,12 @@ import (
 )
 
 type signatureHelpParams struct {
-	fpath           string
-	line, column    int32
-	session         *jsonrpc.Session
+	fpath        string
+	line, column int32
+	session      *jsonrpc.Session
+
+	project         *project.Project
+	lspFilesystem   *Filesystem
 	memberAuthToken string
 }
 
@@ -25,11 +29,14 @@ func getSignatureHelp(handlingCtx *core.Context, params signatureHelpParams) (*d
 	fpath, line, column, session, memberAuthToken := params.fpath, params.line, params.column, params.session, params.memberAuthToken
 
 	preparationResult, ok := prepareSourceFileInExtractionMode(handlingCtx, filePreparationParams{
-		fpath:           fpath,
-		session:         session,
+		fpath:         fpath,
+		requiresState: true,
+		requiresCache: true,
+
+		rpcSession:      session,
+		project:         params.project,
+		lspFilesystem:   params.lspFilesystem,
 		memberAuthToken: memberAuthToken,
-		requiresState:   true,
-		requiresCache:   true,
 	})
 
 	if !ok {

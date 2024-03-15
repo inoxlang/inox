@@ -16,7 +16,7 @@ const (
 )
 
 var (
-	//Used to clear unused caches. A cache is removed when its corresponding LSP session ends.
+	//Used to clear unused caches. A cache is removed when the *Session that owns it ends.
 	preparedFileCaches     = map[*preparedFileCache]struct{}{}
 	preparedFileCachesLock sync.Mutex
 
@@ -41,6 +41,7 @@ func newPreparedFileCache() *preparedFileCache {
 		entries: map[string]*preparedFileCacheEntry{},
 	}
 
+	//Add the cache to the global set of caches.
 	preparedFileCachesLock.Lock()
 	defer preparedFileCachesLock.Unlock()
 	preparedFileCaches[cache] = struct{}{}
@@ -48,6 +49,7 @@ func newPreparedFileCache() *preparedFileCache {
 	return cache
 }
 
+// getOrCreate retrieves or creates an entry for a given file.
 func (c *preparedFileCache) getOrCreate(fpath string) (_ *preparedFileCacheEntry, new bool) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
@@ -117,6 +119,7 @@ func (c *preparedFileCacheEntry) Unlock() {
 	c.lock.Unlock()
 }
 
+// acknowledgeAccess assumes that the cache entry has been locked by the caller.
 func (c *preparedFileCacheEntry) acknowledgeAccess() {
 	c.lastAccess.Store(time.Now())
 	c.clearIfSourceChanged()
@@ -145,8 +148,7 @@ func (c *preparedFileCacheEntry) LastUpdateOrInvalidation() time.Time {
 	return c.lastUpdateOrInvalidation
 }
 
-// preparedFileCacheEntry clears the cache,
-// it is assumed that the cache entry has been locked by the caller.
+// preparedFileCacheEntry clears the cache, it is assumed that the cache entry has been locked by the caller.
 func (c *preparedFileCacheEntry) clear() {
 	c.lastUpdateOrInvalidation = time.Now()
 
@@ -188,8 +190,7 @@ func (c *preparedFileCacheEntry) update(state *core.GlobalState, mod *core.Modul
 	}
 }
 
-// clearUnusedCachePeriodically periodically iterates over file caches
-// and clear them if necessary.
+// clearUnusedCachePeriodically periodically iterates over prepared file caches to conditionally invalidate and remove entries.
 func clearUnusedCachePeriodically() {
 	if !cacheClearingGoroutineStarted.CompareAndSwap(false, true) {
 		return
@@ -201,7 +202,7 @@ func clearUnusedCachePeriodically() {
 	var entriesToClear []*preparedFileCacheEntry
 	var entriesToClearIfSourceChanged []*preparedFileCacheEntry
 
-	handleSessionCache := func(cache *preparedFileCache, t time.Time) {
+	cleanupCache := func(cache *preparedFileCache, t time.Time) {
 		entriesToClear = entriesToClear[:0]
 		entriesToClearIfSourceChanged = entriesToClearIfSourceChanged[:0]
 
@@ -209,7 +210,7 @@ func clearUnusedCachePeriodically() {
 			cache.lock.Lock()
 			defer cache.lock.Unlock()
 
-			//get what entries to clear, clear() is not called inside this function
+			//Get what entries to clear. The clear() method is not called inside this function
 			//in order to minize the time spent with cache.lock locked.
 			for fpath, entry := range cache.entries {
 				func() {
@@ -246,7 +247,7 @@ func clearUnusedCachePeriodically() {
 			defer preparedFileCachesLock.Unlock()
 
 			for cache := range preparedFileCaches {
-				handleSessionCache(cache, time.Now())
+				cleanupCache(cache, time.Now())
 			}
 		}()
 	}

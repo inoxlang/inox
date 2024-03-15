@@ -11,6 +11,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/oklog/ulid/v2"
 
@@ -29,11 +30,14 @@ func handleDocumentDiagnostic(ctx context.Context, req *defines.DocumentDiagnost
 	rpcSession := jsonrpc.GetSession(ctx)
 	//sessionCtx := session.Context()
 
+	//----------------------------------------------------------
 	session := getCreateLockedProjectSession(rpcSession)
 	projectMode := session.inProjectMode
+	project := session.project
 	fls := session.filesystem
 	memberAuthToken := session.memberAuthToken
 	session.lock.Unlock()
+	//----------------------------------------------------------
 
 	if fls == nil {
 		return &defines.FullDocumentDiagnosticReport{
@@ -50,10 +54,12 @@ func handleDocumentDiagnostic(ctx context.Context, req *defines.DocumentDiagnost
 	go func() {
 		defer utils.Recover()
 		computeNotifyDocumentDiagnostics(diagnosticNotificationParams{
+			docURI:      req.TextDocument.Uri,
+			usingInoxFS: projectMode,
+
 			rpcSession:      rpcSession,
-			docURI:          req.TextDocument.Uri,
-			usingInoxFS:     projectMode,
 			fls:             fls,
+			project:         project,
 			memberAuthToken: memberAuthToken,
 		})
 	}()
@@ -89,10 +95,12 @@ func handleDocumentDiagnostic(ctx context.Context, req *defines.DocumentDiagnost
 }
 
 type diagnosticNotificationParams struct {
-	rpcSession      *jsonrpc.Session
-	docURI          defines.DocumentUri
-	usingInoxFS     bool
+	rpcSession  *jsonrpc.Session
+	docURI      defines.DocumentUri
+	usingInoxFS bool
+
 	fls             *Filesystem
+	project         *project.Project
 	memberAuthToken string
 }
 
@@ -109,7 +117,8 @@ func computeNotifyDocumentDiagnostics(params diagnosticNotificationParams) error
 // (parsing, static check, and symbolic evaluation). The list is saved in the session before being returned.
 func computeDocumentDiagnostics(params diagnosticNotificationParams) (result *documentDiagnostics, _ error) {
 
-	session, docURI, usingInoxFS, fls, memberAuthToken := params.rpcSession, params.docURI, params.usingInoxFS, params.fls, params.memberAuthToken
+	session, docURI, usingInoxFS, fls, project, memberAuthToken :=
+		params.rpcSession, params.docURI, params.usingInoxFS, params.fls, params.project, params.memberAuthToken
 
 	sessionCtx := session.Context()
 	ctx := sessionCtx.BoundChildWithOptions(core.BoundChildContextOptions{
@@ -141,11 +150,14 @@ func computeDocumentDiagnostics(params diagnosticNotificationParams) (result *do
 	warningSeverity := defines.DiagnosticSeverityWarning
 
 	preparationResult, ok := prepareSourceFileInExtractionMode(ctx, filePreparationParams{
-		fpath:           fpath,
-		session:         session,
-		requiresState:   false,
+		fpath:         fpath,
+		requiresState: false,
+		ignoreCache:   true,
+
+		rpcSession:      session,
+		project:         project,
+		lspFilesystem:   fls,
 		memberAuthToken: memberAuthToken,
-		ignoreCache:     true,
 	})
 
 	state := preparationResult.state

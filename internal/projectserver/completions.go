@@ -104,18 +104,25 @@ func getCompletions(fpath string, line, column int32, rpcSession *jsonrpc.Sessio
 
 	serverAPI := session.serverAPI
 	lastCodebaseAnalysis := session.lastCodebaseAnalysis
+	project := session.project
+	lspFilesystem := session.filesystem
 	session.lock.Unlock()
+	//-------------------------------------
 
 	handlingCtx := rpcSession.Context().BoundChildWithOptions(core.BoundChildContextOptions{
 		Filesystem: fls,
 	})
 
 	prepResult, ok := prepareSourceFileInExtractionMode(handlingCtx, filePreparationParams{
-		fpath:           fpath,
-		session:         rpcSession,
-		requiresState:   true,
+		fpath:         fpath,
+		requiresState: true,
+
+		rpcSession:      rpcSession,
+		lspFilesystem:   lspFilesystem,
+		project:         project,
 		memberAuthToken: memberAuthToken,
 	})
+
 	if !ok {
 		return nil
 	}

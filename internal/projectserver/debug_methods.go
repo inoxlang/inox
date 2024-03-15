@@ -576,9 +576,12 @@ func handleDebugLaunch(ctx context.Context, req interface{}) (interface{}, error
 		return nil, errors.New(string(FsNoFilesystem))
 	}
 
+	//-----------------------------------------------------
 	session := getCreateLockedProjectSession(rpcSession)
 	memberAuthToken := session.memberAuthToken
+	project := session.project
 	session.lock.Unlock()
+	//-----------------------------------------------------
 
 	//check the configuration is done
 
@@ -653,10 +656,12 @@ func handleDebugLaunch(ctx context.Context, req interface{}) (interface{}, error
 		}()
 
 		defer computeNotifyDocumentDiagnostics(diagnosticNotificationParams{
-			rpcSession:      rpcSession,
-			docURI:          debugSession.programURI,
-			usingInoxFS:     debugSession.inProjectMode,
+			rpcSession:  rpcSession,
+			docURI:      debugSession.programURI,
+			usingInoxFS: debugSession.inProjectMode,
+
 			fls:             fls,
+			project:         project,
 			memberAuthToken: memberAuthToken,
 		})
 		defer removeDebugSession(debugSession, rpcSession)

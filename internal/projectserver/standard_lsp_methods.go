@@ -220,6 +220,7 @@ func handleHover(ctx context.Context, req *defines.HoverParams) (result *defines
 
 	session := getCreateLockedProjectSession(rpcSession)
 	projectMode := session.inProjectMode
+	project := session.project
 	fls := session.filesystem
 	memberAuthToken := session.memberAuthToken
 	lastCodebaseAnalysis := session.lastCodebaseAnalysis
@@ -244,9 +245,12 @@ func handleHover(ctx context.Context, req *defines.HoverParams) (result *defines
 		fpath:                fpath,
 		line:                 line,
 		column:               column,
-		rpcSession:           rpcSession,
-		memberAuthToken:      memberAuthToken,
 		lastCodebaseAnalysis: lastCodebaseAnalysis,
+
+		rpcSession:      rpcSession,
+		fls:             fls,
+		project:         project,
+		memberAuthToken: memberAuthToken,
 	})
 }
 
@@ -254,11 +258,14 @@ func handleSignatureHelp(ctx context.Context, req *defines.SignatureHelpParams) 
 	rpcSession := jsonrpc.GetSession(ctx)
 	rpcSessionCtx := rpcSession.Context()
 
+	//---------------------------------------------------
 	session := getCreateLockedProjectSession(rpcSession)
 	projectMode := session.inProjectMode
+	project := session.project
 	fls := session.filesystem
 	memberAuthToken := session.memberAuthToken
 	session.lock.Unlock()
+	//---------------------------------------------------
 
 	if fls == nil {
 		return nil, errors.New(string(FsNoFilesystem))
@@ -280,10 +287,13 @@ func handleSignatureHelp(ctx context.Context, req *defines.SignatureHelpParams) 
 	defer handlingCtx.CancelGracefully()
 
 	return getSignatureHelp(handlingCtx, signatureHelpParams{
-		fpath:           fpath,
-		line:            line,
-		column:          column,
+		fpath:  fpath,
+		line:   line,
+		column: column,
+
 		session:         rpcSession,
+		project:         project,
+		lspFilesystem:   fls,
 		memberAuthToken: memberAuthToken,
 	})
 }
@@ -317,11 +327,14 @@ func handleDefinition(ctx context.Context, req *defines.DefinitionParams) (resul
 	rpcSession := jsonrpc.GetSession(ctx)
 	rpcSessionCtx := rpcSession.Context()
 
+	//-------------------------------------------------------
 	session := getCreateLockedProjectSession(rpcSession)
 	projectMode := session.inProjectMode
+	project := session.project
 	fls := session.filesystem
 	memberAuthToken := session.memberAuthToken
 	session.lock.Unlock()
+	//-------------------------------------------------------
 
 	if fls == nil {
 		return nil, errors.New(string(FsNoFilesystem))
@@ -339,9 +352,12 @@ func handleDefinition(ctx context.Context, req *defines.DefinitionParams) (resul
 	defer handlingCtx.CancelGracefully()
 
 	preparationResult, ok := prepareSourceFileInExtractionMode(handlingCtx, filePreparationParams{
-		fpath:           fpath,
-		session:         rpcSession,
-		requiresState:   true,
+		fpath:         fpath,
+		requiresState: true,
+
+		rpcSession:      rpcSession,
+		project:         project,
+		lspFilesystem:   fls,
 		memberAuthToken: memberAuthToken,
 	})
 
@@ -495,6 +511,7 @@ func handleDidOpenDocument(ctx context.Context, req *defines.DidOpenTextDocument
 	//----------------------------------------
 	session := getCreateLockedProjectSession(rpcSession)
 	projectMode := session.inProjectMode
+	project := session.project
 	fls := session.filesystem
 	memberAuthToken := session.memberAuthToken
 	session.lock.Unlock()
@@ -557,10 +574,12 @@ func handleDidOpenDocument(ctx context.Context, req *defines.DidOpenTextDocument
 	}
 
 	return computeNotifyDocumentDiagnostics(diagnosticNotificationParams{
-		rpcSession:      rpcSession,
-		docURI:          req.TextDocument.Uri,
-		usingInoxFS:     projectMode,
+		rpcSession:  rpcSession,
+		docURI:      req.TextDocument.Uri,
+		usingInoxFS: projectMode,
+
 		fls:             fls,
+		project:         project,
 		memberAuthToken: memberAuthToken,
 	})
 }
@@ -571,6 +590,7 @@ func handleDidSaveDocument(ctx context.Context, req *defines.DidSaveTextDocument
 	//----------------------------------------
 	session := getCreateLockedProjectSession(rpcSession)
 	projectMode := session.inProjectMode
+	project := session.project
 	fls := session.filesystem
 	memberAuthToken := session.memberAuthToken
 
@@ -652,9 +672,11 @@ func handleDidSaveDocument(ctx context.Context, req *defines.DidSaveTextDocument
 	}
 
 	return computeNotifyDocumentDiagnostics(diagnosticNotificationParams{
-		rpcSession:      rpcSession,
-		docURI:          req.TextDocument.Uri,
-		usingInoxFS:     projectMode,
+		rpcSession:  rpcSession,
+		docURI:      req.TextDocument.Uri,
+		usingInoxFS: projectMode,
+
+		project:         project,
 		fls:             fls,
 		memberAuthToken: memberAuthToken,
 	})
@@ -666,6 +688,7 @@ func handleDidChangeDocument(ctx context.Context, req *defines.DidChangeTextDocu
 	//----------------------------------------
 	session := getCreateLockedProjectSession(rpcSession)
 	projectMode := session.inProjectMode
+	project := session.project
 	fls := session.filesystem
 	memberAuthToken := session.memberAuthToken
 
@@ -701,10 +724,12 @@ func handleDidChangeDocument(ctx context.Context, req *defines.DidChangeTextDocu
 	session.postEditDiagnosticDebounce(func() {
 		defer utils.Recover()
 		computeNotifyDocumentDiagnostics(diagnosticNotificationParams{
-			rpcSession:      rpcSession,
-			docURI:          req.TextDocument.Uri,
-			usingInoxFS:     projectMode,
+			rpcSession:  rpcSession,
+			docURI:      req.TextDocument.Uri,
+			usingInoxFS: projectMode,
+
 			fls:             fls,
+			project:         project,
 			memberAuthToken: memberAuthToken,
 		})
 	})

@@ -15,6 +15,7 @@ import (
 	httpspec "github.com/inoxlang/inox/internal/globals/http_ns/spec"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/projectserver/logs"
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
@@ -37,15 +38,17 @@ type serverAPI struct {
 
 	fls             *Filesystem
 	rpcSession      *jsonrpc.Session
+	project         *project.Project
 	memberAuthToken string
 }
 
-func newServerAPI(fls *Filesystem, rpcSession *jsonrpc.Session, memberAuthToken string) *serverAPI {
+func newServerAPI(project *project.Project, fls *Filesystem, rpcSession *jsonrpc.Session, memberAuthToken string) *serverAPI {
 	api := &serverAPI{
 		dynamicDir:      "/routes",
 		appModPath:      "/main.ix",
 		fls:             fls,
 		rpcSession:      rpcSession,
+		project:         project,
 		memberAuthToken: memberAuthToken,
 	}
 	api.dynamicDir = core.AppendTrailingSlashIfNotPresent(api.dynamicDir)
@@ -168,11 +171,14 @@ func (a *serverAPI) tryUpdateAPI() {
 
 	prepResult, ok := prepareSourceFileInExtractionMode(handlingCtx, filePreparationParams{
 		fpath:                              a.appModPath,
-		session:                            a.rpcSession,
-		memberAuthToken:                    a.memberAuthToken,
 		requiresState:                      true,
 		requiresCache:                      true,
 		forcePrepareIfNoVeryRecentActivity: true,
+
+		rpcSession:      a.rpcSession,
+		memberAuthToken: a.memberAuthToken,
+		lspFilesystem:   a.fls,
+		project:         a.project,
 	})
 
 	if !ok {

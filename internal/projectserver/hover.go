@@ -11,6 +11,7 @@ import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/help"
 	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/projectserver/logs"
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
@@ -21,8 +22,11 @@ type hoverContentParams struct {
 	fpath                string
 	line, column         int32
 	rpcSession           *jsonrpc.Session
-	memberAuthToken      string
 	lastCodebaseAnalysis *analysis.Result //optional
+
+	memberAuthToken string
+	fls             *Filesystem
+	project         *project.Project
 }
 
 // getHoverContent gets hover content for a specific position in an Inox code file.
@@ -32,11 +36,14 @@ func getHoverContent(handlingCtx *core.Context, params hoverContentParams) (*def
 
 	preparationResult, ok := prepareSourceFileInExtractionMode(handlingCtx, filePreparationParams{
 		fpath:                              fpath,
-		session:                            session,
 		requiresState:                      true,
 		requiresCache:                      true,
 		forcePrepareIfNoVeryRecentActivity: true,
-		memberAuthToken:                    memberAuthToken,
+
+		rpcSession:      session,
+		lspFilesystem:   params.fls,
+		project:         params.project,
+		memberAuthToken: memberAuthToken,
 	})
 
 	if !ok {
