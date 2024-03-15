@@ -55,6 +55,7 @@ type filePreparationParams struct {
 	memberAuthToken string
 	project         *project.Project
 	lspFilesystem   *Filesystem
+	inoxChunkCache  *parse.ChunkCache
 }
 
 type preparationResult struct {
@@ -152,12 +153,14 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 
 	if chunk.Node.IncludableChunkDesc != nil { //prepare includable file
 		state, mod, includedChunk, err := core.PrepareExtractionModeIncludableFile(core.IncludableFilePreparationArgs{
-			Fpath:                          fpath,
-			ParsingContext:                 ctx,
+			Fpath:                    fpath,
+			ParsingContext:           ctx,
+			SingleFileParsingTimeout: singleFileParsingTimeout,
+			InoxChunkCache:           params.inoxChunkCache,
+
 			Out:                            io.Discard,
 			LogOut:                         io.Discard,
 			IncludedChunkContextFileSystem: lspFilesystem,
-			SingleFileParsingTimeout:       singleFileParsingTimeout,
 		})
 
 		if includedChunk == nil {
@@ -214,6 +217,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 						rpcSession:      rpcSession,
 						project:         project,
 						lspFilesystem:   lspFilesystem,
+						inoxChunkCache:  params.inoxChunkCache,
 						memberAuthToken: params.memberAuthToken,
 					})
 					if ok {
@@ -229,6 +233,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 			Fpath:                     fpath,
 			ParsingCompilationContext: ctx,
 			SingleFileParsingTimeout:  singleFileParsingTimeout,
+			InoxChunkCache:            params.inoxChunkCache,
 
 			//set if the module uses databases from another module.
 			ParentContext:         parentCtx,

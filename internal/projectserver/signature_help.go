@@ -19,6 +19,7 @@ type signatureHelpParams struct {
 
 	project         *project.Project
 	lspFilesystem   *Filesystem
+	chunkCache      *parse.ChunkCache
 	memberAuthToken string
 }
 
@@ -36,6 +37,7 @@ func getSignatureHelp(handlingCtx *core.Context, params signatureHelpParams) (*d
 		rpcSession:      rpcSession,
 		project:         params.project,
 		lspFilesystem:   params.lspFilesystem,
+		inoxChunkCache:  params.chunkCache,
 		memberAuthToken: memberAuthToken,
 	})
 

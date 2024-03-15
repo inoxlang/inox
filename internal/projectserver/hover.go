@@ -25,6 +25,7 @@ type hoverContentParams struct {
 
 	memberAuthToken string
 	fls             *Filesystem
+	chunkCache      *parse.ChunkCache
 	project         *project.Project
 }
 
@@ -41,6 +42,7 @@ func getHoverContent(handlingCtx *core.Context, params hoverContentParams) (*def
 
 		rpcSession:      rpcSession,
 		lspFilesystem:   params.fls,
+		inoxChunkCache:  params.chunkCache,
 		project:         params.project,
 		memberAuthToken: memberAuthToken,
 	})

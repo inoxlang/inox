@@ -36,19 +36,30 @@ type serverAPI struct {
 	appModPath string
 
 	fls             *Filesystem
+	chunkCache      *parse.ChunkCache
 	rpcSession      *jsonrpc.Session
 	project         *project.Project
 	memberAuthToken string
 }
 
-func newServerAPI(project *project.Project, fls *Filesystem, rpcSession *jsonrpc.Session, memberAuthToken string) *serverAPI {
+type serverAPIParams struct {
+	project    *project.Project
+	fls        *Filesystem
+	chunkCache *parse.ChunkCache
+
+	rpcSession      *jsonrpc.Session
+	memberAuthToken string
+}
+
+func newServerAPI(params serverAPIParams) *serverAPI {
 	api := &serverAPI{
 		dynamicDir:      "/routes",
 		appModPath:      "/main.ix",
-		fls:             fls,
-		rpcSession:      rpcSession,
-		project:         project,
-		memberAuthToken: memberAuthToken,
+		fls:             params.fls,
+		chunkCache:      params.chunkCache,
+		rpcSession:      params.rpcSession,
+		project:         params.project,
+		memberAuthToken: params.memberAuthToken,
 	}
 	api.dynamicDir = core.AppendTrailingSlashIfNotPresent(api.dynamicDir)
 	api.debounce = debounce.New(SERVER_API_UPDATE_DEBOUNCE_DURATION)
@@ -177,6 +188,7 @@ func (a *serverAPI) tryUpdateAPI() {
 		rpcSession:      a.rpcSession,
 		memberAuthToken: a.memberAuthToken,
 		lspFilesystem:   a.fls,
+		inoxChunkCache:  a.chunkCache,
 		project:         a.project,
 	})
 

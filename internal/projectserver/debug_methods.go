@@ -579,6 +579,7 @@ func handleDebugLaunch(ctx context.Context, req interface{}) (interface{}, error
 	session := getCreateLockedProjectSession(rpcSession)
 	memberAuthToken := session.memberAuthToken
 	project := session.project
+	chunkCache := session.inoxChunkCache
 	session.lock.Unlock()
 	//-----------------------------------------------------
 
@@ -662,6 +663,7 @@ func handleDebugLaunch(ctx context.Context, req interface{}) (interface{}, error
 			fls:             fls,
 			project:         project,
 			memberAuthToken: memberAuthToken,
+			inoxChunkCache:  chunkCache,
 		})
 		defer removeDebugSession(debugSession, rpcSession)
 

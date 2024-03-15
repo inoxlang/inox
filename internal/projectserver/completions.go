@@ -96,6 +96,7 @@ func handleCompletion(ctx context.Context, req *defines.CompletionParams) (resul
 
 // getCompletions gets the completions for a specific position in an Inox code file.
 func getCompletions(fpath string, line, column int32, rpcSession *jsonrpc.Session, memberAuthToken string) []codecompletion.Completion {
+	//----------------------------------------------------
 	session := getCreateLockedProjectSession(rpcSession)
 
 	fls := session.filesystem
@@ -108,8 +109,9 @@ func getCompletions(fpath string, line, column int32, rpcSession *jsonrpc.Sessio
 	lastCodebaseAnalysis := session.lastCodebaseAnalysis
 	project := session.project
 	lspFilesystem := session.filesystem
+	chunkCache := session.inoxChunkCache
 	session.lock.Unlock()
-	//-------------------------------------
+	//----------------------------------------------------
 
 	handlingCtx := rpcSession.Context().BoundChildWithOptions(core.BoundChildContextOptions{
 		Filesystem: fls,
@@ -123,6 +125,7 @@ func getCompletions(fpath string, line, column int32, rpcSession *jsonrpc.Sessio
 		lspFilesystem:   lspFilesystem,
 		project:         project,
 		memberAuthToken: memberAuthToken,
+		inoxChunkCache:  chunkCache,
 	})
 
 	if !ok {

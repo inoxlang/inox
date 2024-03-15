@@ -382,7 +382,13 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 
 	//Create the server API.
 
-	session.serverAPI = newServerAPI(project, lspFilesystem, rpcSession, memberAuthToken)
+	session.serverAPI = newServerAPI(serverAPIParams{
+		project:         project,
+		fls:             lspFilesystem,
+		chunkCache:      session.inoxChunkCache,
+		rpcSession:      rpcSession,
+		memberAuthToken: memberAuthToken,
+	})
 
 	go session.serverAPI.tryUpdateAPI() //use a goroutine to avoid deadlock
 

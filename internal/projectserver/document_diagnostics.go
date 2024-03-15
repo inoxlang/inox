@@ -102,6 +102,7 @@ type diagnosticNotificationParams struct {
 	fls             *Filesystem
 	project         *project.Project
 	memberAuthToken string
+	inoxChunkCache  *parse.ChunkCache
 }
 
 // computeNotifyDocumentDiagnostics diagnostics a document and notifies the LSP client (textDocument/publishDiagnostics).
@@ -157,6 +158,7 @@ func computeDocumentDiagnostics(params diagnosticNotificationParams) (result *do
 		rpcSession:      session,
 		project:         project,
 		lspFilesystem:   fls,
+		inoxChunkCache:  params.inoxChunkCache,
 		memberAuthToken: memberAuthToken,
 	})
 

@@ -231,6 +231,7 @@ func handleHover(ctx context.Context, req *defines.HoverParams) (result *defines
 	projectMode := session.inProjectMode
 	project := session.project
 	fls := session.filesystem
+	chunkCache := session.inoxChunkCache
 	memberAuthToken := session.memberAuthToken
 	lastCodebaseAnalysis := session.lastCodebaseAnalysis
 	session.lock.Unlock()
@@ -258,6 +259,7 @@ func handleHover(ctx context.Context, req *defines.HoverParams) (result *defines
 
 		rpcSession:      rpcSession,
 		fls:             fls,
+		chunkCache:      chunkCache,
 		project:         project,
 		memberAuthToken: memberAuthToken,
 	})
@@ -272,6 +274,7 @@ func handleSignatureHelp(ctx context.Context, req *defines.SignatureHelpParams) 
 	projectMode := session.inProjectMode
 	project := session.project
 	fls := session.filesystem
+	chunkCache := session.inoxChunkCache
 	memberAuthToken := session.memberAuthToken
 	session.lock.Unlock()
 	//---------------------------------------------------
@@ -303,6 +306,7 @@ func handleSignatureHelp(ctx context.Context, req *defines.SignatureHelpParams) 
 		session:         rpcSession,
 		project:         project,
 		lspFilesystem:   fls,
+		chunkCache:      chunkCache,
 		memberAuthToken: memberAuthToken,
 	})
 }
@@ -341,6 +345,7 @@ func handleDefinition(ctx context.Context, req *defines.DefinitionParams) (resul
 	projectMode := session.inProjectMode
 	project := session.project
 	fls := session.filesystem
+	chunkCache := session.inoxChunkCache
 	memberAuthToken := session.memberAuthToken
 	session.lock.Unlock()
 	//-------------------------------------------------------
@@ -367,6 +372,7 @@ func handleDefinition(ctx context.Context, req *defines.DefinitionParams) (resul
 		rpcSession:      rpcSession,
 		project:         project,
 		lspFilesystem:   fls,
+		inoxChunkCache:  chunkCache,
 		memberAuthToken: memberAuthToken,
 	})
 
@@ -522,6 +528,7 @@ func handleDidOpenDocument(ctx context.Context, req *defines.DidOpenTextDocument
 	projectMode := session.inProjectMode
 	project := session.project
 	fls := session.filesystem
+	chunkCache := session.inoxChunkCache
 	memberAuthToken := session.memberAuthToken
 	session.lock.Unlock()
 	//----------------------------------------
@@ -587,8 +594,9 @@ func handleDidOpenDocument(ctx context.Context, req *defines.DidOpenTextDocument
 		docURI:      req.TextDocument.Uri,
 		usingInoxFS: projectMode,
 
-		fls:             fls,
 		project:         project,
+		fls:             fls,
+		inoxChunkCache:  chunkCache,
 		memberAuthToken: memberAuthToken,
 	})
 }
@@ -601,6 +609,7 @@ func handleDidSaveDocument(ctx context.Context, req *defines.DidSaveTextDocument
 	projectMode := session.inProjectMode
 	project := session.project
 	fls := session.filesystem
+	chunkCache := session.inoxChunkCache
 	memberAuthToken := session.memberAuthToken
 
 	fpath, err := getFilePath(req.TextDocument.Uri, projectMode)
@@ -686,6 +695,7 @@ func handleDidSaveDocument(ctx context.Context, req *defines.DidSaveTextDocument
 		usingInoxFS: projectMode,
 
 		project:         project,
+		inoxChunkCache:  chunkCache,
 		fls:             fls,
 		memberAuthToken: memberAuthToken,
 	})
@@ -699,6 +709,7 @@ func handleDidChangeDocument(ctx context.Context, req *defines.DidChangeTextDocu
 	projectMode := session.inProjectMode
 	project := session.project
 	fls := session.filesystem
+	chunkCache := session.inoxChunkCache
 	memberAuthToken := session.memberAuthToken
 
 	fpath, err := getFilePath(req.TextDocument.Uri, projectMode)
@@ -737,8 +748,9 @@ func handleDidChangeDocument(ctx context.Context, req *defines.DidChangeTextDocu
 			docURI:      req.TextDocument.Uri,
 			usingInoxFS: projectMode,
 
-			fls:             fls,
 			project:         project,
+			fls:             fls,
+			inoxChunkCache:  chunkCache,
 			memberAuthToken: memberAuthToken,
 		})
 	})
