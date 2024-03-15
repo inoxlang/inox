@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"runtime/debug"
 	"time"
 
@@ -15,7 +14,6 @@ import (
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
-	"github.com/inoxlang/inox/internal/projectserver/logs"
 	"github.com/inoxlang/inox/internal/projectserver/lsp"
 )
 
@@ -59,11 +57,7 @@ type WebsocketServerConfiguration struct {
 }
 
 func StartLSPServer(ctx *core.Context, serverConfig LSPServerConfiguration) (finalErr error) {
-	//Setup logs.
-
 	zerologLogger := ctx.NewChildLoggerForInternalSource(PROJECT_SERVER_LOG_SRC)
-	logger := log.New(zerologLogger, "", 0)
-	logs.Init(logger)
 
 	defer func() {
 		e := recover()
@@ -72,7 +66,7 @@ func StartLSPServer(ctx *core.Context, serverConfig LSPServerConfiguration) (fin
 			if err, ok := e.(error); ok {
 				finalErr = err
 			}
-			logs.Println(e, "at", string(debug.Stack()))
+			zerologLogger.Println(e, "at", string(debug.Stack()))
 		}
 	}()
 
@@ -80,6 +74,7 @@ func StartLSPServer(ctx *core.Context, serverConfig LSPServerConfiguration) (fin
 
 	options := &lsp.Config{
 		OnSession: serverConfig.OnSession,
+		Logger:    zerologLogger,
 	}
 
 	if serverConfig.InternalStdio != nil {
@@ -185,6 +180,6 @@ func StartLSPServer(ctx *core.Context, serverConfig LSPServerConfiguration) (fin
 		registerSourceControlMethodHandlers(server, serverConfig)
 	}
 
-	logs.Println("LSP server configured, start listening")
+	zerologLogger.Println("LSP server configured, start listening")
 	return server.Run()
 }

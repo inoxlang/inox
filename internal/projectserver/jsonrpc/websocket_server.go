@@ -8,7 +8,6 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/ws_ns"
 	netaddr "github.com/inoxlang/inox/internal/netaddr"
-	"github.com/inoxlang/inox/internal/projectserver/logs"
 	"github.com/rs/zerolog"
 )
 
@@ -85,7 +84,7 @@ func (server *JsonRpcWebsocketServer) HandleNew(httpRespWriter http.ResponseWrit
 
 	socket := NewJsonRpcWebsocket(conn, *server.logger)
 	server.rpcServer.MsgConnComeIn(socket, func(session *Session) {
-		logs.Printf("new session for %s (client)\n", socket.conn.RemoteAddrWithPort())
+		server.logger.Printf("new session for %s (client)\n", socket.conn.RemoteAddrWithPort())
 		socket.sessionContext = session.Context()
 	})
 }
@@ -108,6 +107,6 @@ func (server *JsonRpcWebsocketServer) allowNewConnection(
 	}
 
 	const format = "refuse to create RPC session for %s (client) because the maximum number of connections from the same IP is already reached (%d)\n"
-	logs.Printf(format, remoteAddrPort, currentConnCount)
+	server.logger.Printf(format, remoteAddrPort, currentConnCount)
 	return ws_ns.ErrTooManyWsConnectionsOnIp
 }

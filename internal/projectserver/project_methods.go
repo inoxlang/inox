@@ -20,7 +20,6 @@ import (
 	"github.com/inoxlang/inox/internal/project/layout"
 	"github.com/inoxlang/inox/internal/projectserver/devtools"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
-	"github.com/inoxlang/inox/internal/projectserver/logs"
 	"github.com/inoxlang/inox/internal/projectserver/lsp"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -333,7 +332,7 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 			if e != nil {
 				err := utils.ConvertPanicValueToError(e)
 				err = fmt.Errorf("%w: %s", err, debug.Stack())
-				logs.Println(rpcSession.Client(), err)
+				rpcSession.Logger().Println(rpcSession.Client(), err)
 			}
 		}()
 
@@ -360,9 +359,9 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 
 		err := devtoolsInstance.StartWebApp()
 		if err != nil {
-			logs.Println(rpcSession.Client(), "failed to start dev tools server:", err)
+			rpcSession.Logger().Println(rpcSession.Client(), "failed to start dev tools server:", err)
 		} else {
-			logs.Println(rpcSession.Client(), "dev tools server started")
+			rpcSession.Logger().Println(rpcSession.Client(), "dev tools server started")
 		}
 	}()
 

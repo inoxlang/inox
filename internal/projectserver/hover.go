@@ -13,7 +13,6 @@ import (
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
-	"github.com/inoxlang/inox/internal/projectserver/logs"
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -32,7 +31,7 @@ type hoverContentParams struct {
 // getHoverContent gets hover content for a specific position in an Inox code file.
 func getHoverContent(handlingCtx *core.Context, params hoverContentParams) (*defines.Hover, error) {
 
-	fpath, line, column, session, memberAuthToken := params.fpath, params.line, params.column, params.rpcSession, params.memberAuthToken
+	fpath, line, column, rpcSession, memberAuthToken := params.fpath, params.line, params.column, params.rpcSession, params.memberAuthToken
 
 	preparationResult, ok := prepareSourceFileInExtractionMode(handlingCtx, filePreparationParams{
 		fpath:                              fpath,
@@ -40,7 +39,7 @@ func getHoverContent(handlingCtx *core.Context, params hoverContentParams) (*def
 		requiresCache:                      true,
 		forcePrepareIfNoVeryRecentActivity: true,
 
-		rpcSession:      session,
+		rpcSession:      rpcSession,
 		lspFilesystem:   params.fls,
 		project:         params.project,
 		memberAuthToken: memberAuthToken,
@@ -64,7 +63,7 @@ func getHoverContent(handlingCtx *core.Context, params hoverContentParams) (*def
 	}
 
 	if preparationResult.state == nil || state.SymbolicData == nil {
-		logs.Println("no data")
+		rpcSession.Logger().Println("no data")
 		return &defines.Hover{}, nil
 	}
 
@@ -73,7 +72,7 @@ func getHoverContent(handlingCtx *core.Context, params hoverContentParams) (*def
 	cursorIndex := span.Start
 
 	if !ok || hoveredNode == nil {
-		logs.Println("no data")
+		rpcSession.Logger().Println("no data")
 		return &defines.Hover{}, nil
 	}
 
@@ -134,7 +133,7 @@ func getHoverContent(handlingCtx *core.Context, params hoverContentParams) (*def
 			}, nil
 		}
 
-		logs.Println("no data")
+		rpcSession.Logger().Println("no data")
 		return &defines.Hover{}, nil
 	}
 

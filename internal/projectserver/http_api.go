@@ -17,7 +17,6 @@ import (
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
-	"github.com/inoxlang/inox/internal/projectserver/logs"
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -138,7 +137,7 @@ func (a *serverAPI) tryUpdateAPI() {
 		if e != nil {
 			err := utils.ConvertPanicValueToError(e)
 			err = fmt.Errorf("%w: %s", err, debug.Stack())
-			logs.Println(err)
+			a.rpcSession.Logger().Println(err)
 		}
 	}()
 
@@ -192,7 +191,7 @@ func (a *serverAPI) tryUpdateAPI() {
 	})
 
 	if err != nil {
-		logs.Println(err)
+		a.rpcSession.Logger().Println(err)
 		return
 	}
 

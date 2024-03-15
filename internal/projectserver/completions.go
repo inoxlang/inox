@@ -18,10 +18,12 @@ import (
 func handleCompletion(ctx context.Context, req *defines.CompletionParams) (result *[]defines.CompletionItem, err error) {
 	rpcSession := jsonrpc.GetSession(ctx)
 
+	//--------------------------------------------------------
 	session := getCreateLockedProjectSession(rpcSession)
 	projectMode := session.inProjectMode
 	memberAuthToken := session.memberAuthToken
 	session.lock.Unlock()
+	//--------------------------------------------------------
 
 	fpath, err := getFilePath(req.TextDocument.Uri, projectMode)
 	if err != nil {

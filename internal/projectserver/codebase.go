@@ -2,7 +2,6 @@ package projectserver
 
 import (
 	"github.com/inoxlang/inox/internal/codebase/analysis"
-	"github.com/inoxlang/inox/internal/projectserver/logs"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -17,7 +16,7 @@ func analyzeCodebaseAndRegen(initial bool, session *Session) {
 		CssStylesheetCache: session.stylesheetCache,
 	})
 	if err != nil {
-		logs.Println(session.rpcSession.Client(), err)
+		session.Logger().Println(session.rpcSession.Client(), err)
 		return
 	}
 

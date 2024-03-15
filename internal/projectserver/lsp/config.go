@@ -6,6 +6,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
+	"github.com/rs/zerolog"
 )
 
 type Config struct {
@@ -22,6 +23,7 @@ type Config struct {
 
 	StdioInput  io.Reader
 	StdioOutput io.Writer
+	Logger      zerolog.Logger
 
 	MessageReaderWriter jsonrpc.MessageReaderWriter
 

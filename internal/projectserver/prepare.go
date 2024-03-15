@@ -12,7 +12,6 @@ import (
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
-	"github.com/inoxlang/inox/internal/projectserver/logs"
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -38,6 +37,9 @@ type filePreparationParams struct {
 	//preparation is attempted if true and the file is not cached
 	//or the cache has not been updated/accessed very recently (VERY_RECENT_ACTIVITY_DELTA).
 	forcePrepareIfNoVeryRecentActivity bool
+
+	//preparation is attempted if true and the file is not cached.
+	alwaysForcePrepare bool
 
 	//if true the cache is not read but the resulting prepared file is cached.
 	ignoreCache bool
@@ -78,7 +80,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 
 	singleFileParsingTimeout := utils.DefaultIfZero(params.singleFileParsingTimeout, SINGLE_FILE_PARSING_TIMEOUT)
 
-	session := getCreateProjectSession(params.rpcSession)
+	session := getCreateProjectSession(rpcSession)
 	var fileCache *preparedFileCacheEntry
 
 	if params._depth > MAX_PREPARATION_DEPTH {
@@ -90,7 +92,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 	if session.lock.TryLock() {
 		//-------------------------------------------------------------
 		if session.preparedSourceFilesCache == nil {
-			session.preparedSourceFilesCache = newPreparedFileCache()
+			session.preparedSourceFilesCache = newPreparedFileCache(*rpcSession.Logger())
 		}
 		cache := session.preparedSourceFilesCache
 		session.lock.Unlock()
@@ -113,7 +115,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 	//Check the cache entry.
 	if !params.ignoreCache && fileCache != nil {
 		if fileCache.chunk != nil {
-			logs.Println("cache hit for file", fpath)
+			rpcSession.Logger().Println("cache hit for file", fpath)
 
 			cachedChunk := fileCache.chunk
 			cachedModule := fileCache.module
@@ -128,12 +130,11 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 			success = true
 			return
 
-		} else if params.requiresCache && (!params.forcePrepareIfNoVeryRecentActivity ||
-			time.Since(fileCache.LastUpdateOrInvalidation()) < VERY_RECENT_ACTIVITY_DELTA) {
+		} else if params.requiresCache && !params.alwaysForcePrepare &&
+			(!params.forcePrepareIfNoVeryRecentActivity || time.Since(fileCache.LastUpdateOrInvalidation()) < VERY_RECENT_ACTIVITY_DELTA) {
 			return
-		} else {
-			_ = 1
 		}
+		//else: prepare
 	} else if params.requiresCache {
 		return
 	}
@@ -143,14 +144,14 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 	})
 
 	if chunk == nil { //unrecoverable parsing error
-		logs.Println("unrecoverable parsing error", err.Error())
+		rpcSession.Logger().Println("unrecoverable parsing error", err.Error())
 		if params._depth == 0 {
 			rpcSession.Notify(NewShowMessage(defines.MessageTypeError, err.Error()))
 		}
 		return
 	}
 
-	if chunk.Node.IncludableChunkDesc != nil {
+	if chunk.Node.IncludableChunkDesc != nil { //prepare includable file
 		state, mod, includedChunk, err := core.PrepareExtractionModeIncludableFile(core.IncludableChunkfilePreparationArgs{
 			Fpath:                          fpath,
 			ParsingContext:                 ctx,
@@ -161,13 +162,13 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 		})
 
 		if includedChunk == nil {
-			logs.Println("unrecoverable parsing error", err.Error())
+			rpcSession.Logger().Println("unrecoverable parsing error", err.Error())
 			rpcSession.Notify(NewShowMessage(defines.MessageTypeError, err.Error()))
 			return
 		}
 
 		if requiresState && (state == nil || state.SymbolicData == nil) {
-			logs.Println("failed to prepare includable-file", err.Error())
+			rpcSession.Logger().Println("failed to prepare includable-file", err.Error())
 
 			if state != nil {
 				//teardown
@@ -195,7 +196,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 		}
 		success = true
 		return
-	} else {
+	} else { //prepare module
 		var parentCtx *core.Context
 
 		if chunk.Node.Manifest != nil {
@@ -253,13 +254,13 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 		state, mod, _, err := core.PrepareLocalModule(args)
 
 		if mod == nil {
-			logs.Println("unrecoverable parsing error", err.Error())
+			rpcSession.Logger().Println("unrecoverable parsing error", err.Error())
 			rpcSession.Notify(NewShowMessage(defines.MessageTypeError, err.Error()))
 			return
 		}
 
 		if requiresState && (state == nil || state.SymbolicData == nil) {
-			logs.Println("failed to prepare module", err.Error())
+			rpcSession.Logger().Println("failed to prepare module", err.Error())
 
 			if state != nil {
 				//teardown

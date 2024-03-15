@@ -9,7 +9,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
-	"github.com/inoxlang/inox/internal/projectserver/logs"
+	"github.com/rs/zerolog"
 
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 )
@@ -19,6 +19,7 @@ type Server struct {
 	customMethods []*jsonrpc.MethodInfo
 	rpcServer     *jsonrpc.Server
 	ctx           *core.Context //same context as the JSON RPC server.
+	logger        zerolog.Logger
 
 	//websocket mode
 	ServerCertificate    string
@@ -33,11 +34,17 @@ func NewServer(ctx *core.Context, opt *Config) *Server {
 	s.Opt = *opt
 	s.rpcServer = jsonrpc.NewServer(ctx, opt.OnSession)
 	s.ServerHttpHandler = opt.HttpHandler
+	s.logger = opt.Logger
+
 	return s
 }
 
 func (s *Server) Context() *core.Context {
 	return s.ctx
+}
+
+func (s *Server) Logger() zerolog.Logger {
+	return s.logger
 }
 
 func (s *Server) Run() error {
@@ -71,7 +78,7 @@ func (s *Server) run() error {
 	netType := s.Opt.Network
 
 	if s.Opt.MessageReaderWriter != nil {
-		logs.Println("use custom message reader+writer.")
+		s.logger.Println("use custom message reader+writer.")
 
 		s.rpcServer.MsgConnComeIn(s.Opt.MessageReaderWriter, func(session *jsonrpc.Session) {})
 	} else if netType != "" {
@@ -84,7 +91,7 @@ func (s *Server) run() error {
 			return fmt.Errorf("network type %s is not supported/allowed", netType)
 		}
 	} else {
-		logs.Println("use stdio mode.")
+		s.logger.Println("use stdio mode.")
 		// use stdio mode
 
 		var stdio jsonrpc.ReaderWriter
@@ -114,7 +121,7 @@ func (s *Server) startTcpServer(netType string, addr string) error {
 		return err
 	}
 
-	logs.Printf("use socket mode: net: %s, addr: %s\n", netType, addr)
+	s.logger.Printf("use socket mode: net: %s, addr: %s\n", netType, addr)
 	listener, err := net.Listen(netType, addr)
 	if err != nil {
 		panic(err)

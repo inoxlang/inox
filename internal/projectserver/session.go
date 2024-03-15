@@ -15,9 +15,9 @@ import (
 	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/projectserver/devtools"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
-	"github.com/inoxlang/inox/internal/projectserver/logs"
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
 	"github.com/inoxlang/inox/internal/sourcecontrol"
+	"github.com/rs/zerolog"
 )
 
 var (
@@ -117,18 +117,23 @@ type Session struct {
 	insecureHttpClient *http.Client //used for requests to localhost
 }
 
-func (d *Session) Scheme() string {
-	if d.inProjectMode {
+func (s *Session) Scheme() string {
+	if s.inProjectMode {
 		return INOX_FS_SCHEME
 	}
 	return "file"
+}
+
+// Logger returns the logger of the RPC session.
+func (d *Session) Logger() *zerolog.Logger {
+	return d.rpcSession.Logger()
 }
 
 func (s *Session) remove(_ *jsonrpc.Session) {
 	if !s.removed.CompareAndSwap(false, true) {
 		return
 	}
-	logs.Println("remove one session that has just finished: " + s.rpcSession.Client())
+	s.Logger().Println("remove one session that has just finished: " + s.rpcSession.Client())
 	sessionsLock.Lock()
 	session, ok := sessions[s.rpcSession]
 	delete(sessions, s.rpcSession)
@@ -148,13 +153,13 @@ func (s *Session) remove(_ *jsonrpc.Session) {
 	}
 }
 
-func removeClosedSessions() {
+func removeClosedSessions(serverLogger zerolog.Logger) {
 	//remove closed sessions
 	sessionsLock.Lock()
 	for s, session := range sessions {
 		sessionToRemove := s
 		if sessionToRemove.Closed() {
-			logs.Println("remove one closed session: " + s.Client())
+			serverLogger.Println("remove one closed session: " + s.Client())
 			delete(sessions, sessionToRemove)
 			func() {
 				session.lock.Lock()
@@ -168,5 +173,5 @@ func removeClosedSessions() {
 	}
 	newCount := len(sessions)
 	sessionsLock.Unlock()
-	logs.Println("current session count:", newCount)
+	serverLogger.Println("current session count:", newCount)
 }

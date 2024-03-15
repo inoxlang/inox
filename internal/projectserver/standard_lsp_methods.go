@@ -13,11 +13,11 @@ import (
 	"github.com/bep/debounce"
 	fsutil "github.com/go-git/go-billy/v5/util"
 	"github.com/google/uuid"
+	"github.com/rs/zerolog"
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
-	"github.com/inoxlang/inox/internal/projectserver/logs"
 	"github.com/inoxlang/inox/internal/projectserver/lsp"
 
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
@@ -48,7 +48,7 @@ func registerStandardMethodHandlers(server *lsp.Server, serverConfig LSPServerCo
 	//Session initialization and shutdown
 
 	server.OnInitialize(func(ctx context.Context, req *defines.InitializeParams) (result *defines.InitializeResult, err *defines.InitializeError) {
-		return handleInitialize(ctx, req, projectMode)
+		return handleInitialize(ctx, req, projectMode, server.Logger())
 	})
 
 	server.OnShutdown(handleShutdown)
@@ -133,7 +133,16 @@ func getPath(uri defines.URI, usingInoxFS bool) (string, error) {
 	return filepath.Clean(u.Path), nil
 }
 
-func handleInitialize(ctx context.Context, req *defines.InitializeParams, projectMode bool) (result *defines.InitializeResult, err *defines.InitializeError) {
+func handleInitialize(
+	ctx context.Context,
+	req *defines.InitializeParams,
+	projectMode bool,
+	serverLogger zerolog.Logger,
+) (
+	result *defines.InitializeResult,
+	err *defines.InitializeError,
+) {
+
 	rpcSession := jsonrpc.GetSession(ctx)
 	initResult := &defines.InitializeResult{}
 
@@ -188,7 +197,7 @@ func handleInitialize(ctx context.Context, req *defines.InitializeParams, projec
 	session.inProjectMode = projectMode
 	session.lock.Unlock()
 
-	removeClosedSessions()
+	removeClosedSessions(serverLogger)
 
 	// Remove project server session on shutdown or when closed.
 	rpcSession.SetShutdownCallbackFn(session.remove)
@@ -317,7 +326,7 @@ func handleCodeActionWithSliceCodeAction(ctx context.Context, req *defines.CodeA
 	actions, err := getCodeActions(rpcSession, req.Context.Diagnostics, req.Range, req.TextDocument, fpath, fls)
 
 	if err != nil {
-		logs.Println("failed to get code actions", err)
+		rpcSession.Logger().Println("failed to get code actions", err)
 		return nil, nil
 	}
 	return actions, nil
@@ -376,7 +385,7 @@ func handleDefinition(ctx context.Context, req *defines.DefinitionParams) (resul
 	}
 
 	if !ok || state == nil || state.SymbolicData == nil {
-		logs.Println("failed to prepare source file", err)
+		rpcSession.Logger().Println("failed to prepare source file", err)
 		return nil, nil
 	}
 
@@ -384,7 +393,7 @@ func handleDefinition(ctx context.Context, req *defines.DefinitionParams) (resul
 	foundNode, ancestors, ok := chunk.GetNodeAndChainAtSpan(span)
 
 	if !ok || foundNode == nil {
-		logs.Println("no data: node not found")
+		rpcSession.Logger().Println("no data: node not found")
 		return nil, nil
 	}
 
@@ -451,7 +460,7 @@ func handleDefinition(ctx context.Context, req *defines.DefinitionParams) (resul
 	}
 
 	if !positionSet {
-		logs.Println("no data")
+		rpcSession.Logger().Println("no data")
 		return nil, nil
 	}
 
@@ -530,7 +539,7 @@ func handleDidOpenDocument(ctx context.Context, req *defines.DidOpenTextDocument
 
 	fsErr := fsutil.WriteFile(fls.unsavedDocumentsFS(), fpath, []byte(fullDocumentText), 0700)
 	if fsErr != nil {
-		logs.Println("failed to update state of document", fpath+":", fsErr)
+		rpcSession.Logger().Println("failed to update state of document", fpath+":", fsErr)
 	}
 
 	registrationId := uuid.New()
@@ -609,7 +618,7 @@ func handleDidSaveDocument(ctx context.Context, req *defines.DidSaveTextDocument
 	}
 
 	if hasSyncData {
-		syncData.reactToDidChange(fls)
+		syncData.reactToDidChange(fls, rpcSession.Logger())
 	}
 
 	// The document's text should be included because we asked for it:
@@ -620,7 +629,7 @@ func handleDidSaveDocument(ctx context.Context, req *defines.DidSaveTextDocument
 	if req.Text != nil {
 		fsErr := fsutil.WriteFile(fls.unsavedDocumentsFS(), fpath, []byte(*req.Text), 0700)
 		if fsErr != nil {
-			logs.Println("failed to update state of document", fpath+":", fsErr)
+			rpcSession.Logger().Println("failed to update state of document", fpath+":", fsErr)
 		}
 
 		session := getCreateLockedProjectSession(rpcSession)
@@ -715,7 +724,7 @@ func handleDidChangeDocument(ctx context.Context, req *defines.DidChangeTextDocu
 	var fullDocumentText string
 
 	if hasSyncData {
-		syncData.reactToDidChange(fls)
+		syncData.reactToDidChange(fls, rpcSession.Logger())
 	}
 
 	session.preparedSourceFilesCache.acknowledgeSourceFileChange(fpath)

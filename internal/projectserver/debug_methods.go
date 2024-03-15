@@ -14,7 +14,6 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
-	"github.com/inoxlang/inox/internal/projectserver/logs"
 	"github.com/inoxlang/inox/internal/projectserver/lsp"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
@@ -333,7 +332,7 @@ func startDebugEventSenders(debugSession *DebugSession, rpcSession *jsonrpc.Sess
 		defer func() {
 			if e := recover(); e != nil {
 				err := utils.ConvertPanicValueToError(e)
-				logs.Println(fmt.Errorf("%w: %s", err, string(debug.Stack())))
+				rpcSession.Logger().Println(fmt.Errorf("%w: %s", err, string(debug.Stack())))
 			}
 		}()
 
@@ -388,7 +387,7 @@ func startDebugEventSenders(debugSession *DebugSession, rpcSession *jsonrpc.Sess
 		defer func() {
 			if e := recover(); e != nil {
 				err := utils.ConvertPanicValueToError(e)
-				logs.Println(fmt.Errorf("%w: %s", err, string(debug.Stack())))
+				rpcSession.Logger().Println(fmt.Errorf("%w: %s", err, string(debug.Stack())))
 			}
 		}()
 
@@ -633,7 +632,7 @@ func handleDebugLaunch(ctx context.Context, req interface{}) (interface{}, error
 
 	// update the debug session
 
-	logs.Println("program: ", launchArgs.Program)
+	session.Logger().Println("program: ", launchArgs.Program)
 	programPath := filepath.Clean(launchArgs.Program)
 
 	debugSession.programPath = programPath
@@ -651,7 +650,7 @@ func handleDebugLaunch(ctx context.Context, req interface{}) (interface{}, error
 		defer func() {
 			if e := recover(); e != nil {
 				err := utils.ConvertPanicValueToError(e)
-				logs.Println(fmt.Errorf("%w: %s", err, string(debug.Stack())))
+				session.Logger().Println(fmt.Errorf("%w: %s", err, string(debug.Stack())))
 			}
 		}()
 

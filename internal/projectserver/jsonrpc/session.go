@@ -21,7 +21,6 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/ws_ns"
-	"github.com/inoxlang/inox/internal/projectserver/logs"
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -44,6 +43,7 @@ type Session struct {
 	id     int
 	server *Server
 	ctx    *core.Context
+	logger *zerolog.Logger //initialized with zerolog.Nop() then set to the context's logger
 
 	// Only one connection is non-nil
 	conn      ReaderWriter
@@ -87,8 +87,11 @@ func newSession(id int, server *Server) *Session {
 			methodRateLimits:  DEFAULT_METHOD_RATE_LIMITS,
 			messageRateLimits: DEFAULT_MESSAGE_RATE_LIMITS,
 		}),
+		executors: make(map[interface{}]*executor),
 	}
-	s.executors = make(map[interface{}]*executor)
+
+	logger := zerolog.Nop()
+	s.logger = &logger
 	return s
 }
 
@@ -276,7 +279,7 @@ func (s *Session) execute(mtdInfo MethodInfo, req RequestMessage, args interface
 		defer func() {
 			if e := recover(); e != nil {
 				err := utils.ConvertPanicValueToError(e)
-				logs.Println(fmt.Errorf("%w: %s", err, string(debug.Stack())))
+				s.logger.Println(fmt.Errorf("%w: %s", err, string(debug.Stack())))
 			}
 		}()
 
@@ -328,12 +331,12 @@ func (s *Session) handlerRequest(req RequestMessage) error {
 			params = params[:min(MAX_PARAMS_LOGGING_SIZE, len(req.Params))]
 			suffix = "..." + string(params[len(params)-1])
 		}
-		logs.Printf("Request: [%v] [%s] (from %s), content: [%s]%s\n", stringifiedID, req.Method, s.Client(), params, suffix)
+		s.logger.Printf("Request: [%v] [%s] (from %s), content: [%s]%s\n", stringifiedID, req.Method, s.Client(), params, suffix)
 		return MethodNotFound
 	}
 
 	if mtdInfo.SensitiveData || mtdInfo.AvoidLogging {
-		logs.Printf("Request: [%v] [%s] (from %s), content: ...\n", stringifiedID, req.Method, s.Client())
+		s.logger.Printf("Request: [%v] [%s] (from %s), content: ...\n", stringifiedID, req.Method, s.Client())
 	} else {
 		params := req.Params
 		suffix := ""
@@ -341,7 +344,7 @@ func (s *Session) handlerRequest(req RequestMessage) error {
 			params = params[:min(MAX_PARAMS_LOGGING_SIZE, len(req.Params))]
 			suffix = "..." + string(params[len(params)-1])
 		}
-		logs.Printf("Request: [%v] [%s] (from %s), content: [%s]%s\n", stringifiedID, req.Method, s.Client(), params, suffix)
+		s.logger.Printf("Request: [%v] [%s] (from %s), content: [%s]%s\n", stringifiedID, req.Method, s.Client(), params, suffix)
 	}
 
 	if s.IsShuttingDown() && mtdInfo.Name != "exit" {
@@ -385,9 +388,9 @@ func (s *Session) write(resp ResponseMessage, dontLogContent bool) error {
 	}
 
 	if dontLogContent {
-		logs.Printf("Response: [%v] (to %s) res: ...\n", resp.ID, s.Client())
+		s.logger.Printf("Response: [%v] (to %s) res: ...\n", resp.ID, s.Client())
 	} else {
-		logs.Printf("Response: [%v] (to %s) res: [%v]\n", resp.ID, s.Client(), string(res))
+		s.logger.Printf("Response: [%v] (to %s) res: [%v]\n", resp.ID, s.Client(), string(res))
 	}
 
 	if s.msgConn != nil {
@@ -409,7 +412,7 @@ func (s *Session) Notify(notif NotificationMessage) error {
 	if err != nil {
 		return err
 	}
-	logs.Printf("Notification: [%v] (to %s)\n", string(notif.Method), s.Client())
+	s.logger.Printf("Notification: [%v] (to %s)\n", string(notif.Method), s.Client())
 
 	if s.msgConn != nil {
 		return s.msgConn.WriteMessage(notifBytes)
@@ -431,7 +434,7 @@ func (s *Session) SendRequest(req RequestMessage) error {
 	if err != nil {
 		return err
 	}
-	logs.Printf("Request To Client: [%v] (to %s)\n", string(reqBytes), s.Client())
+	s.logger.Printf("Request To Client: [%v] (to %s)\n", string(reqBytes), s.Client())
 
 	if s.msgConn != nil {
 		return s.msgConn.WriteMessage(reqBytes)
@@ -502,9 +505,9 @@ func (s *Session) handlerError(err error) (continueLoop bool) {
 	t := time.Now().Format(time.TimeOnly)
 
 	if s.msgConn != nil {
-		logs.Printf("error: for client <%s> at %s: %s\n", s.msgConn.Client(), t, err)
+		s.logger.Printf("error: for client <%s> at %s: %s\n", s.msgConn.Client(), t, err)
 	} else {
-		logs.Println("error: ", err, "at", t)
+		s.logger.Println("error: ", err, "at", t)
 	}
 
 	return
@@ -512,6 +515,10 @@ func (s *Session) handlerError(err error) (continueLoop bool) {
 
 func (s *Session) Context() *core.Context {
 	return s.ctx
+}
+
+func (s *Session) Logger() *zerolog.Logger {
+	return s.logger
 }
 
 func (s *Session) Client() string {
@@ -586,12 +593,12 @@ func (s *Session) Close() error {
 	if s.conn != nil {
 		err := s.conn.Close()
 		if err != nil {
-			logs.Println("close error: ", err)
+			s.logger.Println("close error: ", err)
 		}
 	} else {
 		err := s.msgConn.Close()
 		if err != nil {
-			logs.Println("message connection: close error: ", err)
+			s.logger.Println("message connection: close error: ", err)
 		}
 	}
 
@@ -617,6 +624,7 @@ func (s *Session) SetContextOnce(ctx *core.Context) error {
 		return errors.New("already set")
 	}
 	s.ctx = ctx
+	s.logger = ctx.Logger()
 	return nil
 }
 

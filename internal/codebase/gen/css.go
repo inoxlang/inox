@@ -18,7 +18,6 @@ import (
 	"github.com/inoxlang/inox/internal/css/varclasses"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/project/layout"
-	"github.com/inoxlang/inox/internal/projectserver/logs"
 	"github.com/inoxlang/inox/internal/utils"
 	"golang.org/x/exp/maps"
 )
@@ -58,6 +57,7 @@ func (g *CssGenerator) RegenAll(ctx *core.Context, analysis *analysis.Result) {
 	g.lock.Lock()
 	defer g.lock.Unlock()
 
+	logger := ctx.Logger()
 	g.buf = g.buf[0:0:cap(g.buf)]
 
 	defer func() {
@@ -65,7 +65,7 @@ func (g *CssGenerator) RegenAll(ctx *core.Context, analysis *analysis.Result) {
 		if e != nil {
 			err := utils.ConvertPanicValueToError(e)
 			err = fmt.Errorf("%w: %s", err, debug.Stack())
-			logs.Println(g.owner, err)
+			logger.Println(g.owner, err)
 		}
 	}()
 
@@ -74,7 +74,7 @@ func (g *CssGenerator) RegenAll(ctx *core.Context, analysis *analysis.Result) {
 	err := g.fls.MkdirAll(filepath.Join(g.staticDir, layout.STATIC_STYLES_DIRNAME), 0700)
 
 	if err != nil {
-		logs.Println(g.owner, err)
+		logger.Println(g.owner, err)
 		return
 	}
 
@@ -87,7 +87,7 @@ func (g *CssGenerator) genUtilities(
 	rulesets map[string]tailwind.Ruleset,
 	varBasedCssClasses map[css.VarName]varclasses.Variable,
 ) {
-
+	logger := ctx.Logger()
 	//Create or truncate utilities.css.
 	path := filepath.Join(g.staticDir, layout.STATIC_STYLES_DIRNAME, layout.UTILITY_CLASSES_FILENAME)
 	linefeeds := []byte{'\n', '\n'}
@@ -95,7 +95,7 @@ func (g *CssGenerator) genUtilities(
 	f, err := g.fls.Create(path)
 
 	if err != nil {
-		logs.Println(g.owner, err)
+		logger.Println(g.owner, err)
 		return
 	}
 
@@ -114,7 +114,7 @@ func (g *CssGenerator) genUtilities(
 		f.Write(linefeeds)
 		err := cssVar.AutoRuleset.WriteTo(f)
 		if err != nil {
-			logs.Println(g.owner, err)
+			logger.Println(g.owner, err)
 			return
 		}
 	}
@@ -125,12 +125,13 @@ func (g *CssGenerator) genUtilities(
 
 	err = tailwind.WriteRulesets(f, rulesetList)
 	if err != nil {
-		logs.Println(g.owner, err)
+		logger.Println(g.owner, err)
 	}
 }
 
 func (g *CssGenerator) genMainBundle(ctx *core.Context) {
 
+	logger := ctx.Logger()
 	mainCSSPath := filepath.Join(g.staticDir, layout.STATIC_STYLES_DIRNAME, layout.MAIN_CSS_FILENAME)
 
 	stylesheet, err := cssbundle.Bundle(ctx, cssbundle.BundlingParams{
@@ -139,7 +140,7 @@ func (g *CssGenerator) genMainBundle(ctx *core.Context) {
 	})
 
 	if err != nil {
-		logs.Println(g.owner, err)
+		logger.Println(g.owner, err)
 		return
 	}
 
@@ -149,7 +150,7 @@ func (g *CssGenerator) genMainBundle(ctx *core.Context) {
 	f, err := g.fls.Create(path)
 
 	if err != nil {
-		logs.Println(g.owner, err)
+		logger.Println(g.owner, err)
 		return
 	}
 
@@ -161,7 +162,7 @@ func (g *CssGenerator) genMainBundle(ctx *core.Context) {
 	err = stylesheet.WriteTo(buff)
 
 	if err != nil {
-		logs.Println(g.owner, err)
+		logger.Println(g.owner, err)
 		return
 	}
 
@@ -169,7 +170,7 @@ func (g *CssGenerator) genMainBundle(ctx *core.Context) {
 
 	err = css.MinifyStream(bytes.NewReader(buff.Bytes()), f)
 	if err != nil {
-		logs.Println(g.owner, err)
+		logger.Println(g.owner, err)
 		return
 	}
 

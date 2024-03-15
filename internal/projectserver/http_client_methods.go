@@ -18,7 +18,6 @@ import (
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
-	"github.com/inoxlang/inox/internal/projectserver/logs"
 	"github.com/inoxlang/inox/internal/projectserver/lsp"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -177,7 +176,7 @@ func handleHttpRequest(goCtx context.Context, req interface{}) (interface{}, err
 			if e != nil {
 				err := utils.ConvertPanicValueToError(e)
 				err = fmt.Errorf("%w: %s", err, debug.Stack())
-				logs.Println("HTTP Request", "(id "+params.RequestID+")", err)
+				rpcSession.Logger().Println("HTTP Request", "(id "+params.RequestID+")", err)
 			}
 		}()
 

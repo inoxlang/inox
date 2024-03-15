@@ -15,7 +15,6 @@ import (
 	"github.com/inoxlang/inox/internal/js"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/project/layout"
-	"github.com/inoxlang/inox/internal/projectserver/logs"
 	"github.com/inoxlang/inox/internal/utils"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
@@ -53,12 +52,11 @@ func (g *JsGenerator) InitialGenAndSetup(ctx *core.Context, analysis *analysis.R
 func (g *JsGenerator) RegenAll(ctx *core.Context, analysis *analysis.Result) {
 	defer utils.Recover()
 
-	//TODO: make more flexible
-
+	logger := ctx.Logger()
 	err := g.fls.MkdirAll(filepath.Join(g.staticDir, layout.STATIC_JS_DIRNAME), 0700)
 
 	if err != nil {
-		logs.Println(g.owner, err)
+		logger.Println(g.owner, err)
 		return
 	}
 
@@ -73,16 +71,17 @@ func (g *JsGenerator) RegenAll(ctx *core.Context, analysis *analysis.Result) {
 	g.genInox(ctx, analysis, concatenated)
 	concatenated.WriteByte(';')
 
-	g.writeBundle(concatenated)
+	g.writeBundle(ctx, concatenated)
 }
 
 func (g *JsGenerator) genHyperscript(ctx *core.Context, analysis *analysis.Result, bundleWriter io.Writer) {
 	defer utils.Recover()
+	logger := ctx.Logger()
 
 	err := g.fls.MkdirAll(filepath.Join(g.staticDir, layout.STATIC_JS_DIRNAME), 0700)
 
 	if err != nil {
-		logs.Println(g.owner, err)
+		logger.Println(g.owner, err)
 		return
 	}
 
@@ -91,7 +90,7 @@ func (g *JsGenerator) genHyperscript(ctx *core.Context, analysis *analysis.Resul
 	f, err := g.fls.Create(path)
 
 	if err != nil {
-		logs.Println(g.owner, err)
+		logger.Println(g.owner, err)
 		return
 	}
 
@@ -109,7 +108,7 @@ func (g *JsGenerator) genHyperscript(ctx *core.Context, analysis *analysis.Resul
 		})
 
 		if err != nil {
-			logs.Println(g.owner, err)
+			logger.Println(g.owner, err)
 			return
 		}
 
@@ -124,11 +123,12 @@ func (g *JsGenerator) genHTMX(ctx *core.Context, analysis *analysis.Result, bund
 	defer utils.Recover()
 
 	path := filepath.Join(g.staticDir, layout.STATIC_JS_DIRNAME, layout.HTMX_JS_FILENAME)
+	logger := ctx.Logger()
 
 	f, err := g.fls.Create(path)
 
 	if err != nil {
-		logs.Println(g.owner, err)
+		logger.Println(g.owner, err)
 		return
 	}
 
@@ -143,7 +143,7 @@ func (g *JsGenerator) genHTMX(ctx *core.Context, analysis *analysis.Result, bund
 		Extensions: extensions,
 	})
 	if err != nil {
-		logs.Println(g.owner, err)
+		logger.Println(g.owner, err)
 		return
 	}
 
@@ -157,10 +157,11 @@ func (g *JsGenerator) genHTMX(ctx *core.Context, analysis *analysis.Result, bund
 func (g *JsGenerator) genInox(ctx *core.Context, analysis *analysis.Result, bundleWriter io.Writer) {
 	defer utils.Recover()
 
+	logger := ctx.Logger()
 	err := g.fls.MkdirAll(filepath.Join(g.staticDir, layout.STATIC_JS_DIRNAME), 0700)
 
 	if err != nil {
-		logs.Println(g.owner, err)
+		logger.Println(g.owner, err)
 		return
 	}
 
@@ -169,7 +170,7 @@ func (g *JsGenerator) genInox(ctx *core.Context, analysis *analysis.Result, bund
 	f, err := g.fls.Create(path)
 
 	if err != nil {
-		logs.Println(g.owner, err)
+		logger.Println(g.owner, err)
 		return
 	}
 
@@ -179,7 +180,7 @@ func (g *JsGenerator) genInox(ctx *core.Context, analysis *analysis.Result, bund
 		Libraries: analysis.UsedInoxJsLibs,
 	})
 	if err != nil {
-		logs.Println(g.owner, err)
+		logger.Println(g.owner, err)
 		return
 	}
 
@@ -190,11 +191,13 @@ func (g *JsGenerator) genInox(ctx *core.Context, analysis *analysis.Result, bund
 	w.Write(utils.StringAsBytes(jsCode))
 }
 
-func (g *JsGenerator) writeBundle(concatenatedJsFiles *bytes.Buffer) {
+func (g *JsGenerator) writeBundle(ctx *core.Context, concatenatedJsFiles *bytes.Buffer) {
 	err := g.fls.MkdirAll(filepath.Join(g.staticDir, layout.STATIC_JS_DIRNAME), 0700)
 
+	logger := ctx.Logger()
+
 	if err != nil {
-		logs.Println(g.owner, err)
+		logger.Println(g.owner, err)
 		return
 	}
 
@@ -203,7 +206,7 @@ func (g *JsGenerator) writeBundle(concatenatedJsFiles *bytes.Buffer) {
 	f, err := g.fls.Create(path)
 
 	if err != nil {
-		logs.Println(g.owner, err)
+		logger.Println(g.owner, err)
 		return
 	}
 
@@ -211,6 +214,6 @@ func (g *JsGenerator) writeBundle(concatenatedJsFiles *bytes.Buffer) {
 
 	err = js.MinifyStream(concatenatedJsFiles, f, nil)
 	if err != nil {
-		logs.Println("bundle minification and writing", g.owner, err)
+		logger.Println("bundle minification and writing", g.owner, err)
 	}
 }

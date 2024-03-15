@@ -7,7 +7,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/parse"
-	"github.com/inoxlang/inox/internal/projectserver/logs"
+	"github.com/rs/zerolog"
 )
 
 const (
@@ -29,16 +29,20 @@ func init() {
 }
 
 // preparedFileCache contains prepared file cache entries for a single LSP session.
+// Its entries are only used for data extraction, not to speed up the preparation
+// of a program that will be executed.
 type preparedFileCache struct {
 	lock    sync.RWMutex
 	entries map[ /* fpath */ string]*preparedFileCacheEntry
+	logger  zerolog.Logger
 }
 
 // newPreparedFileCache creates a new *newPreparedFileCache and puts in the
 // global preparedFileCaches map.
-func newPreparedFileCache() *preparedFileCache {
+func newPreparedFileCache(logger zerolog.Logger) *preparedFileCache {
 	cache := &preparedFileCache{
 		entries: map[string]*preparedFileCacheEntry{},
+		logger:  logger,
 	}
 
 	//Add the cache to the global set of caches.
@@ -57,7 +61,7 @@ func (c *preparedFileCache) getOrCreate(fpath string) (_ *preparedFileCacheEntry
 	entry, ok := c.entries[fpath]
 	if !ok {
 		ok = true
-		entry = newPreparedFileCacheEntry(fpath)
+		entry = newPreparedFileCacheEntry(fpath, c.logger)
 		c.entries[fpath] = entry
 	}
 	return entry, ok
@@ -101,11 +105,14 @@ type preparedFileCacheEntry struct {
 
 	sourceChanged atomic.Bool
 	lastAccess    atomic.Value //time.Time
+
+	logger zerolog.Logger
 }
 
-func newPreparedFileCacheEntry(fpath string) *preparedFileCacheEntry {
+func newPreparedFileCacheEntry(fpath string, logger zerolog.Logger) *preparedFileCacheEntry {
 	cache := &preparedFileCacheEntry{
-		fpath: fpath,
+		fpath:  fpath,
+		logger: logger,
 	}
 	cache.lastAccess.Store(time.Now().Add(CLEAR_UNUSED_CACHE_TIMEOUT))
 	return cache
@@ -156,13 +163,13 @@ func (c *preparedFileCacheEntry) clear() {
 		return
 	}
 
-	logs.Printf("clear cache for %q", c.fpath)
+	c.logger.Printf("clear cache for %q", c.fpath)
 	if c.state != nil {
 		func() {
 			defer func() {
 				err := recover()
 				if err != nil {
-					logs.Printf("failed to cancel cached context: %#v", err)
+					c.logger.Printf("failed to cancel cached context: %#v", err)
 				}
 			}()
 			c.state.Ctx.CancelGracefully()
@@ -175,7 +182,7 @@ func (c *preparedFileCacheEntry) clear() {
 
 // update updates the cache, it is assumed that the cache entry has been locked by the caller.
 func (c *preparedFileCacheEntry) update(state *core.GlobalState, mod *core.Module, chunk *parse.ParsedChunkSource) {
-	logs.Println("update cache for file", c.fpath, "new length", len(mod.MainChunk.Source.Code()))
+	c.logger.Println("update cache for file", c.fpath, "new length", len(mod.MainChunk.Source.Code()))
 
 	now := time.Now()
 	c.lastUpdateOrInvalidation = now

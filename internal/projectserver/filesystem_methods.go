@@ -17,10 +17,10 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	fs_ns "github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
-	"github.com/inoxlang/inox/internal/projectserver/logs"
 	"github.com/inoxlang/inox/internal/projectserver/lsp"
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
 	"github.com/inoxlang/inox/internal/utils"
+	"github.com/rs/zerolog"
 
 	fsutil "github.com/go-git/go-billy/v5/util"
 )
@@ -302,7 +302,7 @@ type unsavedDocumentSyncData struct {
 
 // reactToDidChange updates the unsavedDocumentSyncData & reverse the last synchronization
 // if it happened too recently (likely during a sequence of LSP changes).
-func (d *unsavedDocumentSyncData) reactToDidChange(fls *Filesystem) {
+func (d *unsavedDocumentSyncData) reactToDidChange(fls *Filesystem, logger *zerolog.Logger) {
 	d.lock.Lock()
 	defer d.lock.Unlock()
 	defer func() {
@@ -316,7 +316,7 @@ func (d *unsavedDocumentSyncData) reactToDidChange(fls *Filesystem) {
 
 	if time.Since(d.lastFileWrite) < MIN_LAST_FILE_WRITE_AGE_FOR_UNSAVED_DOC_SYNC_REVERSING && !d.reversed {
 		d.reversed = true
-		logs.Println("reverse 'unsaved' doc synchronization")
+		logger.Println("reverse 'unsaved' doc synchronization")
 
 		f, err := unsavedDocFS.Open(d.path)
 		if err != nil {
@@ -349,7 +349,7 @@ func updateFile(fpath string, parts [][]byte, create, overwrite bool, fls *Files
 			defer func() {
 				if updated {
 					//we log after to reduce the time spent locked
-					logs.Printf("'unsaved' document %q was updated with the content of the persisted file\n", fpath)
+					session.Logger().Printf("'unsaved' document %q was updated with the content of the persisted file\n", fpath)
 				}
 			}()
 
@@ -479,7 +479,7 @@ func startNotifyingFilesystemStructureEvents(session *jsonrpc.Session, fls afs.F
 			if e != nil {
 				err := utils.ConvertPanicValueToError(err)
 				err = fmt.Errorf("%w: %s", err, debug.Stack())
-				logs.Println(err)
+				session.Logger().Println(err)
 			}
 		}()
 
@@ -513,7 +513,7 @@ func startNotifyingFilesystemStructureEvents(session *jsonrpc.Session, fls afs.F
 					if e != nil {
 						err := utils.ConvertPanicValueToError(e)
 						err = fmt.Errorf("%w: %s", err, debug.Stack())
-						logs.Println(err)
+						session.Logger().Println(err)
 					}
 				}()
 				listener(fsEvent)

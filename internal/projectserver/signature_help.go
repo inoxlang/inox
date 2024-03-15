@@ -8,7 +8,6 @@ import (
 	"github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
-	"github.com/inoxlang/inox/internal/projectserver/logs"
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -26,14 +25,15 @@ type signatureHelpParams struct {
 func getSignatureHelp(handlingCtx *core.Context, params signatureHelpParams) (*defines.SignatureHelp, error) {
 	const NO_DATA_MSG = "no data"
 
-	fpath, line, column, session, memberAuthToken := params.fpath, params.line, params.column, params.session, params.memberAuthToken
+	fpath, line, column, rpcSession, memberAuthToken := params.fpath, params.line, params.column, params.session, params.memberAuthToken
 
 	preparationResult, ok := prepareSourceFileInExtractionMode(handlingCtx, filePreparationParams{
-		fpath:         fpath,
-		requiresState: true,
-		requiresCache: true,
+		fpath:              fpath,
+		requiresState:      true,
+		requiresCache:      true,
+		alwaysForcePrepare: true,
 
-		rpcSession:      session,
+		rpcSession:      rpcSession,
 		project:         params.project,
 		lspFilesystem:   params.lspFilesystem,
 		memberAuthToken: memberAuthToken,
@@ -59,7 +59,7 @@ func getSignatureHelp(handlingCtx *core.Context, params signatureHelpParams) (*d
 
 	signatureHelp, ok := getSignatureHelpAt(line, column, chunk, state)
 	if !ok {
-		logs.Println(NO_DATA_MSG)
+		rpcSession.Logger().Println(NO_DATA_MSG)
 		return &defines.SignatureHelp{}, nil
 	}
 

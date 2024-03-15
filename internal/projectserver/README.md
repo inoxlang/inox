@@ -12,7 +12,6 @@ The Project Server is basically an LSP server with extra features:
 Subpackages:
 
 - **jsonrpc**
-- **logs**
 - **lsp**: language-agnostic logic & types
 
 ## Architecture
