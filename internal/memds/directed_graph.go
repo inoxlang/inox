@@ -282,16 +282,16 @@ func (g *DirectedGraph[NodeData, EdgeData, InternalData]) CountSourceNodes(id No
 
 // HasEdgeBetween returns whether an edge exists between nodes x and y without
 // considering direction.
-func (g *DirectedGraph[NodeData, EdgeData, InternalData]) HasEdgeBetween(xid, yid NodeId) bool {
+func (g *DirectedGraph[NodeData, EdgeData, InternalData]) HasEdgeBetween(srcId, destId NodeId) bool {
 	if g.lock != nil {
 		g.lock.RLock()
 		defer g.lock.RUnlock()
 	}
 
-	if _, ok := g.from[xid][yid]; ok {
+	if _, ok := g.from[srcId][destId]; ok {
 		return true
 	}
-	_, ok := g.from[yid][xid]
+	_, ok := g.from[destId][srcId]
 	return ok
 }
 
@@ -456,6 +456,11 @@ func (g *DirectedGraph[NodeData, EdgeData, InternalData]) SetEdge(from, to NodeI
 		panic(ErrSelfEdgeNotSupportedYet)
 	}
 
+	if g.lock != nil {
+		g.lock.Lock()
+		defer g.lock.Unlock()
+	}
+
 	_, ok := g.nodes[e.From]
 	if !ok {
 		panic(ErrSrcNodeNotExist)
@@ -483,5 +488,16 @@ func (g *DirectedGraph[NodeData, EdgeData, InternalData]) SetEdge(from, to NodeI
 		toMap[e.From] = e.Data
 	} else {
 		g.to[e.To] = map[NodeId]EdgeData{e.From: e.Data}
+	}
+}
+
+func (g *DirectedGraph[NodeData, EdgeData, InternalData]) forEachNodeIdInternal(fn func(id NodeId)) {
+	if g.lock != nil {
+		g.lock.Lock()
+		defer g.lock.Unlock()
+	}
+
+	for id := range g.nodes {
+		fn(id)
 	}
 }
