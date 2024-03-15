@@ -84,7 +84,6 @@ type Session struct {
 	//Analysis and diagnostics
 
 	preparedSourceFilesCache   *preparedFileCache
-	serverAPI                  *serverAPI //set during project opening
 	lastCodebaseAnalysis       *analysis.Result
 	postEditDiagnosticDebounce func(f func()) //Used to debounce the computation of diagnostics after the user stops making edits.
 	documentDiagnostics        map[ /*absolute path */ string]*documentDiagnostics
@@ -145,10 +144,6 @@ func (s *Session) remove(_ *jsonrpc.Session) {
 			defer session.lock.Unlock()
 			session.preparedSourceFilesCache.acknowledgeSessionEnd()
 			session.preparedSourceFilesCache = nil
-
-			if session.serverAPI != nil {
-				session.serverAPI.acknowledgeSessionEnd()
-			}
 		}()
 	}
 }

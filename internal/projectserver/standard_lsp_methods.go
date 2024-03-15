@@ -767,9 +767,6 @@ func handleDidChangeDocument(ctx context.Context, req *defines.DidChangeTextDocu
 		}
 
 		beforeEditContentString := string(beforeEditContent)
-		if session.serverAPI != nil {
-			session.serverAPI.acknowledgeSourceFileChange(fpath, beforeEditContentString, req.ContentChanges)
-		}
 
 		var (
 			lastReplacementStirng string

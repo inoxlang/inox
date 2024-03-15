@@ -382,21 +382,9 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 
 	//Create the server API.
 
-	session.serverAPI = newServerAPI(serverAPIParams{
-		project:         project,
-		fls:             lspFilesystem,
-		chunkCache:      session.inoxChunkCache,
-		rpcSession:      rpcSession,
-		memberAuthToken: memberAuthToken,
-	})
+	//Notify the LSP client about FS events.
 
-	go session.serverAPI.tryUpdateAPI() //use a goroutine to avoid deadlock
-
-	//Notify the LSP client about FS events and refresh the server API on certain events.
-
-	err = startNotifyingFilesystemStructureEvents(rpcSession, workingFs, func(event fs_ns.Event) {
-		session.serverAPI.acknowledgeStructureChangeEvent(event)
-	})
+	err = startNotifyingFilesystemStructureEvents(rpcSession, workingFs, func(event fs_ns.Event) {})
 
 	if err != nil {
 		return nil, jsonrpc.ResponseError{

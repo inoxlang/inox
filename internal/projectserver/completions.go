@@ -8,7 +8,6 @@ import (
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/codecompletion"
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/globals/http_ns/spec"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
@@ -105,7 +104,6 @@ func getCompletions(fpath string, line, column int32, rpcSession *jsonrpc.Sessio
 		return nil
 	}
 
-	serverAPI := session.serverAPI
 	lastCodebaseAnalysis := session.lastCodebaseAnalysis
 	project := session.project
 	lspFilesystem := session.filesystem
@@ -152,10 +150,6 @@ func getCompletions(fpath string, line, column int32, rpcSession *jsonrpc.Sessio
 
 	pos := chunk.GetLineColumnPosition(line, column)
 	staticResourcePaths := getStaticResourcePaths(fls, "/static")
-	var api *spec.API
-	if serverAPI != nil {
-		api = serverAPI.API()
-	}
 
 	return codecompletion.FindCompletions(codecompletion.SearchArgs{
 		State:       core.NewTreeWalkStateWithGlobal(state),
@@ -165,7 +159,6 @@ func getCompletions(fpath string, line, column int32, rpcSession *jsonrpc.Sessio
 
 		InputData: codecompletion.InputData{
 			StaticFileURLPaths: staticResourcePaths,
-			ServerAPI:          api,
 			CodebaseAnalysis:   lastCodebaseAnalysis,
 		},
 	})
