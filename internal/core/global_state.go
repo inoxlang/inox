@@ -65,7 +65,7 @@ type GlobalState struct {
 
 	//Related states
 
-	MainState            *GlobalState //never nil except for parents of main states,this field should be set by user of GlobalState.
+	MainState            *GlobalState //never nil except for parents of main states. This field should be set by the user of GlobalState.
 	descendantStates     map[ResourceName]*GlobalState
 	descendantStatesLock sync.Mutex
 

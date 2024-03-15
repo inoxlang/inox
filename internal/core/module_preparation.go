@@ -719,11 +719,12 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 	return state, mod, manifest, finalErr
 }
 
-type IncludableChunkfilePreparationArgs struct {
+type IncludableFilePreparationArgs struct {
 	Fpath string //path of the file in the .ParsingCompilationContext's filesystem.
 
 	ParsingContext *Context
 	StdlibCtx      context.Context //used as core.DefaultContextConfig.ParentStdLibContext
+	InoxChunkCache *parse.ChunkCache
 
 	Out    io.Writer //defaults to os.Stdout
 	LogOut io.Writer //defaults to Out
@@ -735,9 +736,9 @@ type IncludableChunkfilePreparationArgs struct {
 	SingleFileParsingTimeout time.Duration
 }
 
-// PrepareExtractionModeIncludableFile parses & checks an includable file located in the filesystem and initializes its state.
-func PrepareExtractionModeIncludableFile(args IncludableChunkfilePreparationArgs) (state *GlobalState, _ *Module, _ *IncludedChunk, finalErr error) {
-	// parse module
+// PrepareExtractionModeIncludableFile parses & checks an includable file located in the filesystem and initializes the state
+// of a fake module that includes it.
+func PrepareExtractionModeIncludableFile(args IncludableFilePreparationArgs) (state *GlobalState, _ *Module, _ *IncludedChunk, finalErr error) {
 
 	absPath, err := args.ParsingContext.GetFileSystem().Absolute(args.Fpath)
 	if err != nil {
@@ -745,6 +746,8 @@ func PrepareExtractionModeIncludableFile(args IncludableChunkfilePreparationArgs
 		return
 	}
 	args.Fpath = absPath
+
+	//Create a fake module that imports (includes) the includable file.
 
 	includedChunkBaseName := filepath.Base(absPath)
 	includedChunkDir := filepath.Dir(absPath)
@@ -758,7 +761,9 @@ func PrepareExtractionModeIncludableFile(args IncludableChunkfilePreparationArgs
 		ResourceDir: includedChunkDir,
 	}
 
-	parsedChunk := utils.Must(parse.ParseChunkSource(modSource))
+	parsedChunk := utils.Must(parse.ParseChunkSource(modSource, parse.ParserOptions{
+		ParsedFileCache: args.InoxChunkCache,
+	}))
 
 	mod := &Module{
 		MainChunk:             parsedChunk,
@@ -771,7 +776,9 @@ func PrepareExtractionModeIncludableFile(args IncludableChunkfilePreparationArgs
 		Module:                              mod,
 		Filesystem:                          args.IncludedChunkContextFileSystem,
 		RecoverFromNonExistingIncludedFiles: true,
-		SingleFileParsingTimeout:            args.SingleFileParsingTimeout,
+
+		SingleFileParsingTimeout: args.SingleFileParsingTimeout,
+		Cache:                    args.InoxChunkCache,
 	})
 
 	if criticalParsingError != nil {
@@ -786,7 +793,7 @@ func PrepareExtractionModeIncludableFile(args IncludableChunkfilePreparationArgs
 		parsingErr = CombineParsingErrorValues(mod.ParsingErrors, mod.ParsingErrorPositions)
 	}
 
-	//create context and state
+	//Create a context for the the fake module
 
 	ctx, ctxErr := NewDefaultContext(DefaultContextConfig{
 		Permissions:         nil,
@@ -812,7 +819,7 @@ func PrepareExtractionModeIncludableFile(args IncludableChunkfilePreparationArgs
 		out = os.Stdout
 	}
 
-	// create the included chunk's state
+	// Create a state for the fake module
 
 	globalState, err := NewDefaultGlobalState(ctx, DefaultGlobalStateConfig{
 		AllowMissingEnvVars: false,
@@ -828,7 +835,7 @@ func PrepareExtractionModeIncludableFile(args IncludableChunkfilePreparationArgs
 	state.Manifest = NewEmptyManifest()
 	state.MainState = state
 
-	// static check
+	// Static check
 
 	staticCheckData, staticCheckErr := StaticCheck(StaticCheckInput{
 		State:             state,
@@ -856,7 +863,7 @@ func PrepareExtractionModeIncludableFile(args IncludableChunkfilePreparationArgs
 		//we continue if there is a single error AND the error is supported by the symbolic evaluation
 	}
 
-	// symbolic check
+	// Symbolic check
 
 	globals := map[string]symbolic.ConcreteGlobalValue{}
 	state.Globals.Foreach(func(k string, v Value, isConst bool) error {

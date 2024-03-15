@@ -3014,7 +3014,7 @@ func TestPrepareDevModeIncludableChunkFile(t *testing.T) {
 			Filesystem:  fs,
 		}, nil)
 
-		state, _, _, err := core.PrepareExtractionModeIncludableFile(core.IncludableChunkfilePreparationArgs{
+		state, _, _, err := core.PrepareExtractionModeIncludableFile(core.IncludableFilePreparationArgs{
 			Fpath:                          "/included.ix",
 			ParsingContext:                 ctx,
 			LogOut:                         io.Discard,
@@ -3060,7 +3060,7 @@ func TestPrepareDevModeIncludableChunkFile(t *testing.T) {
 			Filesystem:  fs,
 		}, nil)
 
-		state, _, _, err := core.PrepareExtractionModeIncludableFile(core.IncludableChunkfilePreparationArgs{
+		state, _, _, err := core.PrepareExtractionModeIncludableFile(core.IncludableFilePreparationArgs{
 			Fpath:                          "/included.ix",
 			ParsingContext:                 ctx,
 			LogOut:                         io.Discard,

@@ -151,7 +151,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 	}
 
 	if chunk.Node.IncludableChunkDesc != nil { //prepare includable file
-		state, mod, includedChunk, err := core.PrepareExtractionModeIncludableFile(core.IncludableChunkfilePreparationArgs{
+		state, mod, includedChunk, err := core.PrepareExtractionModeIncludableFile(core.IncludableFilePreparationArgs{
 			Fpath:                          fpath,
 			ParsingContext:                 ctx,
 			Out:                            io.Discard,
