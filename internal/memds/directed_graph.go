@@ -187,6 +187,10 @@ func (g *DirectedGraph[NodeData, EdgeData, InternalData]) Edge(srcId, destId Nod
 		defer g.lock.RUnlock()
 	}
 
+	return g.edgeNoLock(srcId, destId)
+}
+
+func (g *DirectedGraph[NodeData, EdgeData, InternalData]) edgeNoLock(srcId, destId NodeId) (GraphEdge[EdgeData], bool) {
 	data, ok := g.from[srcId][destId]
 	if !ok {
 		return GraphEdge[EdgeData]{}, false
@@ -219,6 +223,10 @@ func (g *DirectedGraph[NodeData, EdgeData, InternalData]) DestinationNodes(id No
 		defer g.lock.RUnlock()
 	}
 
+	return g.destinationNodesNoLock(id)
+}
+
+func (g *DirectedGraph[NodeData, EdgeData, InternalData]) destinationNodesNoLock(id NodeId) []GraphNode[NodeData] {
 	destIds := g.from[id]
 	if len(destIds) == 0 {
 		return nil
@@ -227,7 +235,7 @@ func (g *DirectedGraph[NodeData, EdgeData, InternalData]) DestinationNodes(id No
 	var nodes []GraphNode[NodeData]
 
 	for destId := range destIds {
-		nodes = append(nodes, utils.MustGet(g.Node(destId)))
+		nodes = append(nodes, utils.MustGet(g.nodeNoLock(destId)))
 	}
 
 	return nodes
@@ -255,6 +263,10 @@ func (g *DirectedGraph[NodeData, EdgeData, InternalData]) SourceNodes(id NodeId)
 		defer g.lock.RUnlock()
 	}
 
+	return g.sourceNodesNoLock(id)
+}
+
+func (g *DirectedGraph[NodeData, EdgeData, InternalData]) sourceNodesNoLock(id NodeId) []GraphNode[NodeData] {
 	srcIds := g.to[id]
 	if len(srcIds) == 0 {
 		return nil
@@ -288,6 +300,10 @@ func (g *DirectedGraph[NodeData, EdgeData, InternalData]) HasEdgeBetween(srcId, 
 		defer g.lock.RUnlock()
 	}
 
+	return g.hasEdgeBetweenNoLock(srcId, destId)
+}
+
+func (g *DirectedGraph[NodeData, EdgeData, InternalData]) hasEdgeBetweenNoLock(srcId, destId NodeId) bool {
 	if _, ok := g.from[srcId][destId]; ok {
 		return true
 	}
@@ -302,6 +318,10 @@ func (g *DirectedGraph[NodeData, EdgeData, InternalData]) HasEdgeFromTo(srcId, d
 		defer g.lock.RUnlock()
 	}
 
+	return g.hasEdgeFromToNoLock(srcId, destId)
+}
+
+func (g *DirectedGraph[NodeData, EdgeData, InternalData]) hasEdgeFromToNoLock(srcId, destId NodeId) bool {
 	if _, ok := g.from[srcId][destId]; !ok {
 		return false
 	}
@@ -315,6 +335,10 @@ func (g *DirectedGraph[NodeData, EdgeData, InternalData]) Node(id NodeId) (Graph
 		defer g.lock.RUnlock()
 	}
 
+	return g.nodeNoLock(id)
+}
+
+func (g *DirectedGraph[NodeData, EdgeData, InternalData]) nodeNoLock(id NodeId) (GraphNode[NodeData], bool) {
 	node, ok := g.nodes[id]
 	return node, ok
 }
@@ -497,6 +521,10 @@ func (g *DirectedGraph[NodeData, EdgeData, InternalData]) forEachNodeIdInternal(
 		defer g.lock.Unlock()
 	}
 
+	g.forEachNodeIdInternalNoLock(fn)
+}
+
+func (g *DirectedGraph[NodeData, EdgeData, InternalData]) forEachNodeIdInternalNoLock(fn func(id NodeId)) {
 	for id := range g.nodes {
 		fn(id)
 	}

@@ -251,6 +251,23 @@ func TestDirectedGraphHasCycle(t *testing.T) {
 			return
 		}
 
+		if !t.Run("[thread safe] four nodes, A -> (B & C), C -> D, D -> A (cycle)", func(t *testing.T) {
+			g := NewDirectedGraph[string, int](ThreadSafe)
+			A := g.AddNode("A")
+			B := g.AddNode("B")
+			C := g.AddNode("C")
+			D := g.AddNode("D")
+
+			g.SetEdge(A, B, -1)
+			g.SetEdge(A, C, -1)
+			g.SetEdge(C, D, -1)
+			g.SetEdge(D, A, -1)
+
+			assert.True(t, g.HasCycle())
+		}) {
+			return
+		}
+
 	}
 }
 

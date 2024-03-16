@@ -12,14 +12,23 @@ var (
 )
 
 type simpleDirectedGraphAdapter[NodeData, EdgeData, InternalData any] struct {
-	graph *DirectedGraph[NodeData, EdgeData, InternalData]
+	graph         *DirectedGraph[NodeData, EdgeData, InternalData]
+	isGraphLocked bool
 }
 
 func (g *simpleDirectedGraphAdapter[NodeData, EdgeData, InternalData]) Edge(uid int64, vid int64) graph.Edge {
-	_, ok := g.graph.Edge(NodeId(uid), NodeId(vid))
+
+	var ok bool
+	if g.isGraphLocked {
+		_, ok = g.graph.edgeNoLock(NodeId(uid), NodeId(vid))
+	} else {
+		_, ok = g.graph.Edge(NodeId(uid), NodeId(vid))
+	}
+
 	if !ok {
 		return nil
 	}
+
 	edgeAdapter := simpleEdgeAdapter{
 		from: NodeId(uid),
 		to:   NodeId(vid),
@@ -28,7 +37,14 @@ func (g *simpleDirectedGraphAdapter[NodeData, EdgeData, InternalData]) Edge(uid 
 }
 
 func (g *simpleDirectedGraphAdapter[NodeData, EdgeData, InternalData]) From(id int64) graph.Nodes {
-	nodes := g.graph.DestinationNodes(NodeId(id))
+
+	var nodes []GraphNode[NodeData]
+	if g.isGraphLocked {
+		nodes = g.graph.destinationNodesNoLock(NodeId(id))
+	} else {
+		nodes = g.graph.DestinationNodes(NodeId(id))
+	}
+
 	nodeMap := map[int64]graph.Node{}
 
 	for _, node := range nodes {
@@ -39,7 +55,14 @@ func (g *simpleDirectedGraphAdapter[NodeData, EdgeData, InternalData]) From(id i
 }
 
 func (g *simpleDirectedGraphAdapter[NodeData, EdgeData, InternalData]) To(id int64) graph.Nodes {
-	nodes := g.graph.SourceNodes(NodeId(id))
+
+	var nodes []GraphNode[NodeData]
+	if g.isGraphLocked {
+		nodes = g.graph.sourceNodesNoLock(NodeId(id))
+	} else {
+		nodes = g.graph.SourceNodes(NodeId(id))
+	}
+
 	nodeMap := map[int64]graph.Node{}
 
 	for _, node := range nodes {
@@ -50,10 +73,16 @@ func (g *simpleDirectedGraphAdapter[NodeData, EdgeData, InternalData]) To(id int
 }
 
 func (g *simpleDirectedGraphAdapter[NodeData, EdgeData, InternalData]) HasEdgeBetween(xid int64, yid int64) bool {
+	if g.isGraphLocked {
+		return g.graph.hasEdgeBetweenNoLock(NodeId(xid), NodeId(yid))
+	}
 	return g.graph.HasEdgeBetween(NodeId(xid), NodeId(yid))
 }
 
 func (g *simpleDirectedGraphAdapter[NodeData, EdgeData, InternalData]) HasEdgeFromTo(uid int64, vid int64) bool {
+	if g.isGraphLocked {
+		return g.graph.hasEdgeFromToNoLock(NodeId(uid), NodeId(vid))
+	}
 	return g.graph.HasEdgeFromTo(NodeId(uid), NodeId(vid))
 }
 
@@ -68,9 +97,15 @@ func (g *simpleDirectedGraphAdapter[NodeData, EdgeData, InternalData]) Node(id i
 func (g *simpleDirectedGraphAdapter[NodeData, EdgeData, InternalData]) Nodes() graph.Nodes {
 	nodeMap := map[int64]graph.Node{}
 
-	g.graph.forEachNodeIdInternal(func(id NodeId) {
-		nodeMap[int64(id)] = &simpleNodeAdapter{id: id}
-	})
+	if g.isGraphLocked {
+		g.graph.forEachNodeIdInternalNoLock(func(id NodeId) {
+			nodeMap[int64(id)] = &simpleNodeAdapter{id: id}
+		})
+	} else {
+		g.graph.forEachNodeIdInternal(func(id NodeId) {
+			nodeMap[int64(id)] = &simpleNodeAdapter{id: id}
+		})
+	}
 
 	return iterator.NewNodes(nodeMap)
 }

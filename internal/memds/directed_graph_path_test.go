@@ -483,4 +483,29 @@ func TestDirectedGraphLongestPath(t *testing.T) {
 		assert.Equal(t, 3, len)
 		assert.Equal(t, []NodeId{A, C, D, E}, path)
 	})
+
+	t.Run("[thread safe] six nodes, A -> (B & C), C -> D, D -> E, B -> F", func(t *testing.T) {
+		g := NewDirectedGraph[string, int](ThreadSafe)
+		A := g.AddNode("A")
+		B := g.AddNode("B")
+		C := g.AddNode("C")
+		D := g.AddNode("D")
+		E := g.AddNode("E")
+		F := g.AddNode("F")
+
+		g.SetEdge(A, B, -1)
+		g.SetEdge(A, C, -1)
+		g.SetEdge(C, D, -1)
+		g.SetEdge(D, E, -1)
+		g.SetEdge(B, F, -1)
+
+		//A -> C -> D -> E
+		if !assert.Equal(t, 3, g.LongestPathLen()) {
+			return
+		}
+
+		path, len := g.LongestPath()
+		assert.Equal(t, 3, len)
+		assert.Equal(t, []NodeId{A, C, D, E}, path)
+	})
 }

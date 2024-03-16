@@ -20,7 +20,7 @@ func (g *DirectedGraph[NodeData, EdgeData, InternalData]) LongestPath() (nodesIn
 		return nil, 0
 	}
 
-	if g.HasCycle() {
+	if g.hasCycleNoLock() {
 		return nil, -1
 	}
 
@@ -119,7 +119,7 @@ func (g *DirectedGraph[NodeData, EdgeData, InternalData]) LongestPathLen() int {
 		defer g.lock.RUnlock()
 	}
 
-	if g.HasCycle() {
+	if g.hasCycleNoLock() {
 		return -1
 	}
 
