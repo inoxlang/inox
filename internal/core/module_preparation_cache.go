@@ -6,13 +6,71 @@ import (
 	"sync"
 	"time"
 
+	"github.com/goccy/go-json"
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
+type PreparationCache struct {
+	lock    sync.Mutex
+	entries map[ /*JSON of PreparationCacheKey*/ string]*PreparationCacheEntry
+}
+
+type PreparationCacheConfig struct {
+	//If true the cache can only contains entries retrievable with a PreparationCacheKey whose .DataExtractionMode is true.
+	RestrictToDataExtractionMode bool
+}
+
+func NewPreparationCache() *PreparationCache {
+	return &PreparationCache{
+		entries: make(map[string]*PreparationCacheEntry, 0),
+	}
+}
+
+func (c *PreparationCache) RemoveAllEntries() {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	clear(c.entries)
+}
+
+// Get returns a cache entry that is not guaranteed to be
+func (c *PreparationCache) Get(key PreparationCacheKey) (*PreparationCacheEntry, bool) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	e, ok := c.entries[string(utils.Must(json.Marshal(key)))]
+	return e, ok
+}
+
+func (c *PreparationCache) Put(key PreparationCacheKey, update PreparationCacheEntryUpdate) {
+	c.lock.Lock()
+	keyS := string(utils.Must(json.Marshal(key)))
+	entry := c.entries[keyS]
+
+	if entry == nil {
+		defer c.lock.Unlock()
+		entry = NewPreparationCacheEntry(key, update)
+		c.entries[keyS] = entry
+	} else {
+		c.lock.Unlock()
+		entry.Refresh(update)
+	}
+}
+
+type PreparationCacheKey struct {
+	AbsoluteModulePath  string `json:"absoluteModulePath"`
+	TestingEnabled      bool   `json:"testingEnabled,omitempty"`
+	DataExtractionMode  bool   `json:"dataExtractionMode,omitempty"`
+	AllowMissingEnvVars bool   `json:"allowMissingEnvVars,omitempty"`
+	//EffectiveListeningAddress Host   `json:"effectiveListeningAddr,omitempty"`
+}
+
 type PreparationCacheEntry struct {
-	lock                  sync.Mutex
+	lock sync.Mutex
+	key  PreparationCacheKey
+
 	module                *Module
 	time                  time.Time
 	staticCheckData       *StaticCheckData //may be nil
@@ -30,10 +88,21 @@ type PreparationCacheEntryUpdate struct {
 	FinalSymbolicCheckErr error            //optional
 }
 
-func NewModulePreparationCache(args PreparationCacheEntryUpdate) *PreparationCacheEntry {
-	cache := &PreparationCacheEntry{}
+// NewPreparationCacheEntry creates a module preparation cache entry that is not connected to a PreparationCache.
+// The passed key should be properly initialized.
+func NewPreparationCacheEntry(key PreparationCacheKey, args PreparationCacheEntryUpdate) *PreparationCacheEntry {
+
+	if key.AbsoluteModulePath == "" {
+		panic(errors.New("missong module path in cache key"))
+	}
+
+	cache := &PreparationCacheEntry{key: key}
 	cache.update(args)
 	return cache
+}
+
+func (c *PreparationCacheEntry) Key() PreparationCacheKey {
+	return c.key
 }
 
 func (c *PreparationCacheEntry) update(args PreparationCacheEntryUpdate) {

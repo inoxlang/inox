@@ -32,20 +32,30 @@ const (
 )
 
 var (
-	ErrDatabaseOpenFunctionNotFound = errors.New("function to open database not found")
-	ErrNonMatchingCachedModulePath  = errors.New("the cached module's path is not the same as the absolute version of the provided path")
+	ErrDatabaseOpenFunctionNotFound           = errors.New("function to open database not found")
+	ErrNonMatchingCachedEntryModulePath       = errors.New("the module path of the preparation cache entry has not the same as the absolute version of the provided path")
+	ErrNonMatchingCacheEntryPreparationParams = errors.New("the preparation cache entry has not the same preparation parameters as the ones provided")
 )
 
 type ModulePreparationArgs struct {
-	//Path of the script in the .ParsingCompilationContext's filesystem.
+	//Path of the module in the .ParsingCompilationContext's filesystem.
 	Fpath string
 
 	//Timeout duration set in parse.ParserOptions.
 	SingleFileParsingTimeout time.Duration
 
-	//If not nil the module is not parsed and this value is used.
-	Cache          *PreparationCacheEntry
-	ForceUseCache  bool //if true .Cache is assumed to be valid
+	//If not nil and contains an entry corresponding to the module, some operations are not performed
+	//(module parsing, static check, symbolic check), and the cached data is used instead.
+	//The cache entry is retreived using a PreparationCacheKey created from the effetive preparation parameters.
+	Cache *PreparationCache
+
+	//If not nil and valid, some operations are not performed (module parsing, static check, symbolic check),
+	//and the cached data is used instead. This field should not be set if .Cache is set.
+	CacheEntry *PreparationCacheEntry
+
+	//If true .CacheEntry and entries from .Cache are assumed to be valid.
+	ForceUseCache bool
+
 	InoxChunkCache *parse.ChunkCache
 
 	IsUnderTest bool
@@ -111,10 +121,16 @@ type ModulePreparationArgs struct {
 	AdditionalGlobalsTestOnly map[string]Value
 }
 
+type EffectivePreparationParameters struct {
+	PreparationCacheKey //subset of effective parameters
+}
+
 // PrepareLocalModule parses & checks a module located in the filesystem and initializes its state.
 func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Module, manif *Manifest, finalErr error) {
 
-	//check arguments
+	preparationStart := time.Now()
+
+	//Check arguments
 
 	if args.ParentContextRequired && args.ParentContext == nil {
 		return nil, nil, nil, errors.New(".ParentContextRequired is set to true but passed .ParentContext is nil")
@@ -128,6 +144,11 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 		return nil, nil, nil, errors.New(".UseParentStateAsMainState is true but .Project was set")
 	}
 
+	if args.Cache != nil && args.CacheEntry != nil {
+		finalErr = errors.New(".CacheEntry is set but .Cache is also set")
+		return
+	}
+
 	fls := args.ParsingCompilationContext.GetFileSystem()
 	absPath, err := fls.Absolute(args.Fpath)
 	if err != nil {
@@ -136,39 +157,100 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 	}
 	args.Fpath = absPath
 
+	//Create logger
+
+	//the src field is not added to the logger because it is very likely present.
+	preparationLogger := args.ParsingCompilationContext.NewChildLoggerForInternalSource(MOD_PREP_LOG_SRC)
+
+	//Get project
+
+	parentContext := args.ParentContext
+
+	var (
+		parentState *GlobalState
+		project     Project = args.Project
+	)
+
+	if parentContext != nil {
+		parentState = parentContext.GetClosestState()
+	}
+
+	if (project == nil || reflect.ValueOf(project).IsZero()) && args.UseParentStateAsMainState && parentState != nil {
+		project = parentState.Project
+	} else if project != nil && reflect.ValueOf(project).IsZero() {
+		project = nil
+	}
+
+	//Start
+
+	//Determine listening address (if any)
+	var applicationListeningAddr Host
+
+	if project != nil {
+		port := inoxconsts.DEV_PORT_0
+		if args.ListeningPort != 0 {
+			port = strconv.Itoa(int(args.ListeningPort))
+		}
+
+		applicationListeningAddr = Host("https://localhost:" + port)
+		if project.Configuration().AreExposedWebServersAllowed() && !args.ForceLocalhostListeningAddress {
+			applicationListeningAddr = Host("https://0.0.0.0:" + port)
+		}
+	}
+
+	//Determine effective parameters
+
+	effectiveParams := EffectivePreparationParameters{}
+	effectiveParams.AbsoluteModulePath = args.Fpath
+	effectiveParams.DataExtractionMode = args.DataExtractionMode
+	effectiveParams.AllowMissingEnvVars = args.AllowMissingEnvVars
+	effectiveParams.TestingEnabled = args.EnableTesting
+	//effectiveParams.EffectiveListeningAddress = applicationListeningAddr
+
 	isCacheValid := false
 
 	//Some of the following variables will be set if the cache is valid.
 	var (
+		cache                       = args.Cache
+		cacheEntry                  = args.CacheEntry
 		cachedModule                *Module
 		cachedStaticCheckData       *StaticCheckData
 		cachedSymbolicData          *symbolic.Data
 		cachedFinalSymbolicCheckErr error
 	)
 
-	if args.Cache != nil {
-		cache := args.Cache
-		if cache.ModuleName() != absPath {
-			finalErr = fmt.Errorf("%w: (%q != %q)", ErrNonMatchingCachedModulePath, cache.ModuleName(), absPath)
+	if cache != nil {
+		cacheEntry, _ = cache.Get(effectiveParams.PreparationCacheKey)
+	}
+
+	if cacheEntry != nil {
+		//Check that the cache entry has the same preparation parameters as the current ones.
+
+		if cacheEntry.ModuleName() != absPath {
+			finalErr = fmt.Errorf("%w: (%q != %q)", ErrNonMatchingCachedEntryModulePath, cacheEntry.ModuleName(), absPath)
 			return
 		}
 
-		isCacheValid = args.ForceUseCache || cache.CheckValidity(fls)
+		if cacheEntry.Key() != effectiveParams.PreparationCacheKey {
+			finalErr = ErrNonMatchingCacheEntryPreparationParams
+			return
+		}
+
+		//Check whether the cache entry is still valid.
+
+		isCacheValid = args.ForceUseCache || cacheEntry.CheckValidity(fls)
 
 		if isCacheValid {
 			func() {
-				cache.lock.Lock()
-				defer cache.lock.Unlock()
-				cachedModule = cache.module
-				cachedStaticCheckData = cache.staticCheckData
-				cachedSymbolicData = cache.symbolicData
-				cachedFinalSymbolicCheckErr = cache.finalSymbolicCheckErr
+				cacheEntry.lock.Lock()
+				defer cacheEntry.lock.Unlock()
+				cachedModule = cacheEntry.module
+				cachedStaticCheckData = cacheEntry.staticCheckData
+				cachedSymbolicData = cacheEntry.symbolicData
+				cachedFinalSymbolicCheckErr = cacheEntry.finalSymbolicCheckErr
 			}()
 		}
 	}
-
-	//the src field is not added to the logger because it is very likely present.
-	preparationLogger := args.ParsingCompilationContext.NewChildLoggerForInternalSource(MOD_PREP_LOG_SRC)
 
 	// parse module or use cache
 
@@ -201,39 +283,12 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 
 	var ctx *Context
 
-	parentContext := args.ParentContext
-
 	var (
-		parentState              *GlobalState
 		manifest                 *Manifest
 		preinitState             *TreeWalkState
 		preinitErr               error
 		preinitStaticCheckErrors []*StaticCheckError
-		project                  Project = args.Project
 	)
-
-	if parentContext != nil {
-		parentState = parentContext.GetClosestState()
-	}
-
-	if (project == nil || reflect.ValueOf(project).IsZero()) && args.UseParentStateAsMainState && parentState != nil {
-		project = parentState.Project
-	} else if project != nil && reflect.ValueOf(project).IsZero() {
-		project = nil
-	}
-
-	var applicationListeningAddr Host
-	if project != nil {
-		port := inoxconsts.DEV_PORT_0
-		if args.ListeningPort != 0 {
-			port = strconv.Itoa(int(args.ListeningPort))
-		}
-
-		applicationListeningAddr = Host("https://localhost:" + port)
-		if project.Configuration().AreExposedWebServersAllowed() && !args.ForceLocalhostListeningAddress {
-			applicationListeningAddr = Host("https://0.0.0.0:" + port)
-		}
-	}
 
 	if mod != nil {
 		preinitStart := time.Now()
@@ -368,6 +423,10 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 		state.MemberAuthToken = args.MemberAuthToken
 	}
 	state.OutputFieldsInitialized.Store(true)
+
+	//Save a subset of the preparation parameters.
+
+	state.EffectivePreparationParameters = effectiveParams
 
 	//connect to databases
 	//TODO: disconnect if connection still not used after a few minutes
@@ -706,15 +765,21 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 	//At this point we know there is no critical error.
 
 	//Update cache.
-	if args.Cache != nil {
-		args.Cache.Refresh(PreparationCacheEntryUpdate{
-			Module:                mod,
-			Time:                  time.Now(),
-			StaticCheckData:       staticCheckData,
-			SymbolicData:          symbolicData,
-			FinalSymbolicCheckErr: symbolicCheckError,
-		})
+	update := PreparationCacheEntryUpdate{
+		Module:                mod,
+		Time:                  preparationStart,
+		StaticCheckData:       staticCheckData,
+		SymbolicData:          symbolicData,
+		FinalSymbolicCheckErr: symbolicCheckError,
 	}
+
+	if cacheEntry != nil {
+		cacheEntry.Refresh(update)
+	} else if cache != nil {
+		cache.Put(effectiveParams.PreparationCacheKey, update)
+	}
+
+	preparationLogger.Debug().Dur("total-dur", time.Since(preparationStart)).Send()
 
 	return state, mod, manifest, finalErr
 }

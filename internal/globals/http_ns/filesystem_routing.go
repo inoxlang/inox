@@ -267,7 +267,7 @@ func (router *filesystemRouter) handleDynamic(req *Request, rw *ResponseWriter, 
 
 	state, _, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 		Fpath:                 modulePath,
-		Cache:                 module,
+		CacheEntry:            module,
 		ForceUseCache:         true,
 		ParentContext:         handlerCtx,
 		ParentContextRequired: true,

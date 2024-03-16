@@ -441,7 +441,9 @@ func addHandlerModule(
 		return
 	}
 
-	operation.handlerModule = core.NewModulePreparationCache(core.PreparationCacheEntryUpdate{
+	cacheKey := state.EffectivePreparationParameters.PreparationCacheKey
+
+	operation.handlerModule = core.NewPreparationCacheEntry(cacheKey, core.PreparationCacheEntryUpdate{
 		Time:            preparationStartTime,
 		Module:          mod,
 		StaticCheckData: state.StaticCheckData,

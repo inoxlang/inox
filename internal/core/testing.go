@@ -719,14 +719,19 @@ func runTestItem(
 	var testedProgramDatabases *Namespace
 
 	if programToExecute != "" {
+		programPath := string(programToExecute)
+		cacheKey := PreparationCacheKey{
+			AbsoluteModulePath: programPath,
+		}
+
 		programState, _, _, err := PrepareLocalModule(ModulePreparationArgs{
 			IsUnderTest:             true,
 			FullAccessToDatabases:   true,
 			ForceExpectSchemaUpdate: true,
 
-			Fpath:   string(programToExecute),
+			Fpath:   programPath,
 			Project: programProject,
-			Cache: NewModulePreparationCache(PreparationCacheEntryUpdate{
+			CacheEntry: NewPreparationCacheEntry(cacheKey, PreparationCacheEntryUpdate{
 				Module: programModuleCache,
 				Time:   time.Now(),
 			}),

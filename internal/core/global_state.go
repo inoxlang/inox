@@ -88,6 +88,10 @@ type GlobalState struct {
 	StaticCheckData           *StaticCheckData
 	SymbolicData              *SymbolicData
 	FinalSymbolicCheckError   error
+
+	//Information on preparation
+
+	EffectivePreparationParameters EffectivePreparationParameters
 }
 
 type StateId int64

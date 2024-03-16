@@ -258,9 +258,14 @@ func (app *Application) AutorestartLoop( /*temporary solution*/ project core.Pro
 
 		filesystem := app.ctx.GetFileSystem()
 
+		modPath := modPath.UnderlyingString()
+		cacheKey := core.PreparationCacheKey{
+			AbsoluteModulePath: modPath,
+		}
+
 		state, _, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
-			Fpath: modPath.UnderlyingString(),
-			Cache: core.NewModulePreparationCache(core.PreparationCacheEntryUpdate{
+			Fpath: modPath,
+			CacheEntry: core.NewPreparationCacheEntry(cacheKey, core.PreparationCacheEntryUpdate{
 				Module: appMod,
 				Time:   time.Now(),
 			}),
