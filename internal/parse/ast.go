@@ -3395,6 +3395,24 @@ func FindLocalVarDeclWithName(root Node, name string) *LocalVariableDeclaration 
 	})
 }
 
+func IsIdentLiteralWithName(n Node, name string) bool {
+	ident, ok := n.(*IdentifierLiteral)
+	return ok && ident.Name == name
+}
+
+func IsIdentMemberExprWithNames(n Node, name string, propNames ...string) bool {
+	memberExpr, ok := n.(*IdentifierMemberExpression)
+	if !ok || len(propNames) != len(memberExpr.PropertyNames) {
+		return false
+	}
+	for i, propName := range propNames {
+		if memberExpr.PropertyNames[i] == nil || memberExpr.PropertyNames[i].Name != propName {
+			return false
+		}
+	}
+	return true
+}
+
 func HasErrorAtAnyDepth(n Node) bool {
 	err := false
 	Walk(n, func(node, parent, scopeNode Node, ancestorChain []Node, after bool) (TraversalAction, error) {
