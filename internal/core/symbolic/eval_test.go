@@ -12955,8 +12955,9 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
 			assert.Equal(t, &XMLElement{
-				name:     "div",
-				children: []Value{ANY_STRING, ANY_INT, ANY_STRING},
+				name:       "div",
+				children:   []Value{ANY_STRING, ANY_INT, ANY_STRING},
+				sourceNode: parse.FindNode(n, (*parse.XMLElement)(nil), nil),
 			}, res)
 		})
 
@@ -12981,8 +12982,9 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
 			assert.Equal(t, &XMLElement{
-				name:     "div",
-				children: []Value{ANY_STRING, ANY_INT, ANY_STRING},
+				name:       "div",
+				children:   []Value{ANY_STRING, ANY_INT, ANY_STRING},
+				sourceNode: parse.FindNode(n, (*parse.XMLElement)(nil), nil),
 			}, res)
 		})
 
@@ -13005,8 +13007,9 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, &XMLElement{
-				name:     "div",
-				children: []Value{ANY_STRING, ANY_INT, ANY_STRING},
+				name:       "div",
+				children:   []Value{ANY_STRING, ANY_INT, ANY_STRING},
+				sourceNode: parse.FindNode(n, (*parse.XMLElement)(nil), nil),
 			}, res)
 
 			intIdent := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
@@ -13033,6 +13036,7 @@ func TestSymbolicEval(t *testing.T) {
 				name:       "div",
 				attributes: map[string]Value{"a": NewString("a")},
 				children:   []Value{ANY_STRING},
+				sourceNode: parse.FindNode(n, (*parse.XMLElement)(nil), nil),
 			}, res)
 		})
 
@@ -13051,6 +13055,7 @@ func TestSymbolicEval(t *testing.T) {
 				name:       "div",
 				attributes: map[string]Value{"a": ANY_STRING},
 				children:   []Value{ANY_STRING},
+				sourceNode: parse.FindNode(n, (*parse.XMLElement)(nil), nil),
 			}, res)
 		})
 
@@ -13066,8 +13071,9 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, &XMLElement{
-				name:     "div",
-				children: []Value{ANY_STRING},
+				name:       "div",
+				children:   []Value{ANY_STRING},
+				sourceNode: parse.FindNode(n, (*parse.XMLElement)(nil), nil),
 			}, res)
 
 			xmlExpr := parse.FindNode(n, (*parse.XMLExpression)(nil), nil)
