@@ -92,11 +92,11 @@ func addHandlerFunction(handlerValue core.Value, isMiddleware bool, server *Http
 		var dynamicDir core.Path
 
 		propertyNames := userHandler.PropertyNames(server.state.Ctx)
-		if slices.Contains(propertyNames, "static") {
-			staticDir = userHandler.Prop(server.state.Ctx, "static").(core.Path)
+		if slices.Contains(propertyNames, STATIC_DIR_PROPNAME) {
+			staticDir = userHandler.Prop(server.state.Ctx, STATIC_DIR_PROPNAME).(core.Path)
 		}
-		if slices.Contains(propertyNames, "dynamic") {
-			dynamicDir = userHandler.Prop(server.state.Ctx, "dynamic").(core.Path)
+		if slices.Contains(propertyNames, DYNAMIC_DIR_PROPNAME) {
+			dynamicDir = userHandler.Prop(server.state.Ctx, DYNAMIC_DIR_PROPNAME).(core.Path)
 		}
 
 		return addFilesystemRoutingHandler(server, staticDir, dynamicDir, isMiddleware)

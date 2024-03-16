@@ -498,7 +498,7 @@ func TestFilesystemRouting(t *testing.T) {
 
 		_, err = NewHttpsServer(ctx, host, core.NewObjectFromMapNoInit(core.ValMap{
 			HANDLING_DESC_ROUTING_PROPNAME: core.NewObjectFromMapNoInit(core.ValMap{
-				"dynamic": core.Path("/routes/"),
+				DYNAMIC_DIR_PROPNAME: core.Path("/routes/"),
 			}),
 		}))
 		assert.ErrorContains(t, err, "not declared")

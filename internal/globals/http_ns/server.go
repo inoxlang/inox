@@ -57,6 +57,9 @@ const (
 	HANDLING_DESC_SESSIONS_PROPNAME       = "sessions"
 	SESSIONS_DESC_COLLECTION_PROPNAME     = "collection"
 
+	STATIC_DIR_PROPNAME  = "static"
+	DYNAMIC_DIR_PROPNAME = "dynamic"
+
 	HTTP_SERVER_SRC = "http/server"
 
 	SESSION_ID_PROPNAME = "id"
@@ -67,11 +70,11 @@ var (
 	ErrCannotMutateInitializedServer = errors.New("cannot mutate initialized server")
 
 	HTTP_ROUTING_SYMB_OBJ = symbolic.NewInexactObject(map[string]symbolic.Serializable{
-		"static":  symbolic.ANY_ABS_DIR_PATH,
-		"dynamic": symbolic.ANY_ABS_DIR_PATH,
+		STATIC_DIR_PROPNAME:  symbolic.ANY_ABS_DIR_PATH,
+		DYNAMIC_DIR_PROPNAME: symbolic.ANY_ABS_DIR_PATH,
 	}, map[string]struct{}{
-		"static":  {},
-		"dynamic": {},
+		STATIC_DIR_PROPNAME:  {},
+		DYNAMIC_DIR_PROPNAME: {},
 	}, nil)
 
 	SESSIONS_CONFIG_SYMB_OBJ = symbolic.NewInexactObject2(map[string]symbolic.Serializable{

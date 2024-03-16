@@ -171,14 +171,14 @@ func readServerHandlingObject(ctx *core.Context, handlingParams *core.Object, se
 				}
 			} else if obj, ok := propVal.(*core.Object); ok {
 				properties := obj.PropertyNames(ctx)
-				if slices.Contains(properties, "static") {
-					static, ok := obj.Prop(ctx, "static").(core.Path)
+				if slices.Contains(properties, STATIC_DIR_PROPNAME) {
+					static, ok := obj.Prop(ctx, STATIC_DIR_PROPNAME).(core.Path)
 					if !ok || !static.IsDirPath() {
 						return commonfmt.FmtPropOfArgXShouldBeY(propKey, SERVER_HANDLING_ARG_NAME, symbolic.Stringify(HTTP_ROUTING_SYMB_OBJ))
 					}
 				}
-				if slices.Contains(properties, "dynamic") {
-					static, ok := obj.Prop(ctx, "dynamic").(core.Path)
+				if slices.Contains(properties, DYNAMIC_DIR_PROPNAME) {
+					static, ok := obj.Prop(ctx, DYNAMIC_DIR_PROPNAME).(core.Path)
 					if !ok || !static.IsDirPath() {
 						return commonfmt.FmtPropOfArgXShouldBeY(propKey, SERVER_HANDLING_ARG_NAME, symbolic.Stringify(HTTP_ROUTING_SYMB_OBJ))
 					}
