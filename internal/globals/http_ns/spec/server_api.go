@@ -325,7 +325,7 @@ func addHandlerModule(
 	absEntryPath string,
 	chunk *parse.ParsedChunkSource,
 
-	preparedModuleCache map[string]*core.GlobalState,
+	tempModuleCache map[string]*core.GlobalState,
 	config ServerApiResolutionConfig,
 
 	wg *sync.WaitGroup,
@@ -368,7 +368,7 @@ func addHandlerModule(
 
 	//If the databases are defined in another module we retrieve this module.
 	if path, ok := dbSection.(*parse.AbsolutePathLiteral); ok {
-		if cache, ok := preparedModuleCache[path.Value]; ok {
+		if cache, ok := tempModuleCache[path.Value]; ok {
 			parentCtx = cache.Ctx
 
 			//if false there is nothing to do as the parentCtx is already set to ctx.
@@ -402,7 +402,7 @@ func addHandlerModule(
 				return
 			}
 
-			preparedModuleCache[path.Value] = state
+			tempModuleCache[path.Value] = state
 			parentCtx = state.Ctx
 		}
 	}
@@ -442,6 +442,7 @@ func addHandlerModule(
 	}
 
 	cacheKey := state.EffectivePreparationParameters.PreparationCacheKey
+	cacheKey.DataExtractionMode = false //Prevent core.PreparedLocalModule to refuse using the cache.
 
 	operation.handlerModule = core.NewPreparationCacheEntry(cacheKey, core.PreparationCacheEntryUpdate{
 		Time:            preparationStartTime,

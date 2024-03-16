@@ -2,6 +2,7 @@ package http_ns
 
 import (
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -547,6 +548,7 @@ func TestFilesystemRouting(t *testing.T) {
 						routing: {dynamic: /routes/}
 					}`,
 				avoidTestParallelization: true,
+				outWriter:                os.Stdout,
 				makeFilesystem: func() core.SnapshotableFilesystem {
 					fls := fs_ns.NewMemFilesystem(10_000)
 					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
