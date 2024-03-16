@@ -172,7 +172,7 @@ func (api *API) GetEndpoint(path string) (*ApiEndpoint, error) {
 }
 
 type HandlerModuleVisitFn func(
-	mod *core.ModulePreparationCache,
+	mod *core.PreparationCacheEntry,
 	endpoint *ApiEndpoint,
 	//not set if $endpoint.HasMethodAgnosticHandler() is true.
 	operation ApiOperation,

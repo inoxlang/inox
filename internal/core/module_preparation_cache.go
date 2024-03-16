@@ -11,7 +11,7 @@ import (
 	"github.com/inoxlang/inox/internal/parse"
 )
 
-type ModulePreparationCache struct {
+type PreparationCacheEntry struct {
 	lock                  sync.Mutex
 	module                *Module
 	time                  time.Time
@@ -22,7 +22,7 @@ type ModulePreparationCache struct {
 	//This struct should expose the least amount of data possible.
 }
 
-type ModulePreparationCacheUpdate struct {
+type PreparationCacheEntryUpdate struct {
 	Module                *Module
 	Time                  time.Time
 	StaticCheckData       *StaticCheckData //optional
@@ -30,13 +30,13 @@ type ModulePreparationCacheUpdate struct {
 	FinalSymbolicCheckErr error            //optional
 }
 
-func NewModulePreparationCache(args ModulePreparationCacheUpdate) *ModulePreparationCache {
-	cache := &ModulePreparationCache{}
+func NewModulePreparationCache(args PreparationCacheEntryUpdate) *PreparationCacheEntry {
+	cache := &PreparationCacheEntry{}
 	cache.update(args)
 	return cache
 }
 
-func (c *ModulePreparationCache) update(args ModulePreparationCacheUpdate) {
+func (c *PreparationCacheEntry) update(args PreparationCacheEntryUpdate) {
 	if args.Module == nil {
 		panic(errors.New("module should not be nil"))
 	}
@@ -58,21 +58,21 @@ func (c *ModulePreparationCache) update(args ModulePreparationCacheUpdate) {
 	//TODO: check that all included files and child modules have been analyzed.
 }
 
-func (c *ModulePreparationCache) ModuleName() string {
+func (c *PreparationCacheEntry) ModuleName() string {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
 	return c.module.Name()
 }
 
-func (c *ModulePreparationCache) ModuleAbsoluteSource() (ResourceName, bool) {
+func (c *PreparationCacheEntry) ModuleAbsoluteSource() (ResourceName, bool) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
 	return c.module.AbsoluteSource()
 }
 
-func (c *ModulePreparationCache) CheckValidity(fls afs.Filesystem) bool {
+func (c *PreparationCacheEntry) CheckValidity(fls afs.Filesystem) bool {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -98,7 +98,7 @@ func (c *ModulePreparationCache) CheckValidity(fls afs.Filesystem) bool {
 	return true
 }
 
-func (c *ModulePreparationCache) haveChunkChanged(chunk *parse.ParsedChunkSource, fls afs.Filesystem) bool {
+func (c *PreparationCacheEntry) haveChunkChanged(chunk *parse.ParsedChunkSource, fls afs.Filesystem) bool {
 	srcFile, ok := chunk.Source.(*parse.SourceFile)
 	if !ok {
 		return false
@@ -117,7 +117,7 @@ func (c *ModulePreparationCache) haveChunkChanged(chunk *parse.ParsedChunkSource
 	return false
 }
 
-func (c *ModulePreparationCache) Refresh(update ModulePreparationCacheUpdate) {
+func (c *PreparationCacheEntry) Refresh(update PreparationCacheEntryUpdate) {
 
 	c.lock.Lock()
 	defer c.lock.Unlock()

@@ -260,7 +260,7 @@ func (app *Application) AutorestartLoop( /*temporary solution*/ project core.Pro
 
 		state, _, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath: modPath.UnderlyingString(),
-			Cache: core.NewModulePreparationCache(core.ModulePreparationCacheUpdate{
+			Cache: core.NewModulePreparationCache(core.PreparationCacheEntryUpdate{
 				Module: appMod,
 				Time:   time.Now(),
 			}),

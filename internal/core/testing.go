@@ -726,7 +726,7 @@ func runTestItem(
 
 			Fpath:   string(programToExecute),
 			Project: programProject,
-			Cache: NewModulePreparationCache(ModulePreparationCacheUpdate{
+			Cache: NewModulePreparationCache(PreparationCacheEntryUpdate{
 				Module: programModuleCache,
 				Time:   time.Now(),
 			}),

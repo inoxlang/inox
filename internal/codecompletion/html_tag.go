@@ -46,7 +46,7 @@ func findWholeHTMLTagCompletions(tagName string, ancestors []parse.Node, include
 			prefix = "<"
 		}
 
-		api.ForEachHandlerModule(func(mod *core.ModulePreparationCache, endpoint *spec.ApiEndpoint, operation spec.ApiOperation) error {
+		api.ForEachHandlerModule(func(mod *core.PreparationCacheEntry, endpoint *spec.ApiEndpoint, operation spec.ApiOperation) error {
 			//ignore non-mutating methods.
 			if !endpoint.HasMethodAgnosticHandler() && !http_ns.IsMutationMethod(operation.HttpMethod()) {
 				return nil

@@ -2632,7 +2632,7 @@ func TestPrepareLocalModuleWithCache(t *testing.T) {
 			return
 		}
 
-		cache := core.NewModulePreparationCache(core.ModulePreparationCacheUpdate{
+		cache := core.NewModulePreparationCache(core.PreparationCacheEntryUpdate{
 			Module: module,
 			Time:   time.Now(),
 		})
@@ -2739,7 +2739,7 @@ func TestPrepareLocalModuleWithCache(t *testing.T) {
 			return
 		}
 
-		cache := core.NewModulePreparationCache(core.ModulePreparationCacheUpdate{
+		cache := core.NewModulePreparationCache(core.PreparationCacheEntryUpdate{
 			Module:          module,
 			Time:            time.Now(),
 			StaticCheckData: state1.StaticCheckData,
@@ -2847,7 +2847,7 @@ func TestPrepareLocalModuleWithCache(t *testing.T) {
 			return
 		}
 
-		cache := core.NewModulePreparationCache(core.ModulePreparationCacheUpdate{
+		cache := core.NewModulePreparationCache(core.PreparationCacheEntryUpdate{
 			Module:                module,
 			Time:                  time.Now(),
 			StaticCheckData:       state1.StaticCheckData,
@@ -2974,7 +2974,7 @@ func TestPrepareLocalModuleWithCache(t *testing.T) {
 			ParentContextRequired:     true,
 			Out:                       io.Discard,
 
-			Cache: core.NewModulePreparationCache(core.ModulePreparationCacheUpdate{
+			Cache: core.NewModulePreparationCache(core.PreparationCacheEntryUpdate{
 				Module: module,
 				Time:   time.Now(),
 			}),

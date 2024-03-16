@@ -234,7 +234,7 @@ func (router *filesystemRouter) handleDynamic(req *Request, rw *ResponseWriter, 
 
 	//Determine the module to execute.
 	methodSpecificModule := true
-	var module *core.ModulePreparationCache
+	var module *core.PreparationCacheEntry
 
 	if endpt.HasMethodAgnosticHandler() {
 		methodSpecificModule = false

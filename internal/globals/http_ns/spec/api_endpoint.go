@@ -19,7 +19,7 @@ type ApiEndpoint struct {
 	hasMethodAgnosticHandler bool
 
 	//Only set if filesystem routing is used. If set .operations is nil.
-	methodAgnosticHandler *core.ModulePreparationCache
+	methodAgnosticHandler *core.PreparationCacheEntry
 
 	operations []ApiOperation
 }
@@ -32,7 +32,7 @@ func (e ApiEndpoint) HasMethodAgnosticHandler() bool {
 	return e.hasMethodAgnosticHandler
 }
 
-func (e ApiEndpoint) MethodAgnosticHandler() (*core.ModulePreparationCache, bool) {
+func (e ApiEndpoint) MethodAgnosticHandler() (*core.PreparationCacheEntry, bool) {
 	return e.methodAgnosticHandler, e.methodAgnosticHandler != nil
 }
 
@@ -102,14 +102,14 @@ type ApiOperation struct {
 	jsonRequestBody    core.Pattern
 	jsonResponseBodies map[uint16]core.Pattern
 
-	handlerModule *core.ModulePreparationCache //only set if filesystem routing is used.
+	handlerModule *core.PreparationCacheEntry //only set if filesystem routing is used.
 }
 
 func (op ApiOperation) HttpMethod() string {
 	return op.httpMethod
 }
 
-func (op ApiOperation) HandlerModule() (*core.ModulePreparationCache, bool) {
+func (op ApiOperation) HandlerModule() (*core.PreparationCacheEntry, bool) {
 	return op.handlerModule, op.handlerModule != nil
 }
 

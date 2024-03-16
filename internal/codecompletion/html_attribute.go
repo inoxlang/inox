@@ -138,7 +138,7 @@ func findHtmlAttributeValueCompletions(
 		api := inputData.ServerAPI
 
 		var endpointPaths []string
-		api.ForEachHandlerModule(func(mod *core.ModulePreparationCache, endpoint *spec.ApiEndpoint, operation spec.ApiOperation) error {
+		api.ForEachHandlerModule(func(mod *core.PreparationCacheEntry, endpoint *spec.ApiEndpoint, operation spec.ApiOperation) error {
 			addEndpoint := false
 
 			switch attrName {

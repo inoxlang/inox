@@ -44,7 +44,7 @@ type ModulePreparationArgs struct {
 	SingleFileParsingTimeout time.Duration
 
 	//If not nil the module is not parsed and this value is used.
-	Cache          *ModulePreparationCache
+	Cache          *PreparationCacheEntry
 	ForceUseCache  bool //if true .Cache is assumed to be valid
 	InoxChunkCache *parse.ChunkCache
 
@@ -707,7 +707,7 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 
 	//Update cache.
 	if args.Cache != nil {
-		args.Cache.Refresh(ModulePreparationCacheUpdate{
+		args.Cache.Refresh(PreparationCacheEntryUpdate{
 			Module:                mod,
 			Time:                  time.Now(),
 			StaticCheckData:       staticCheckData,
