@@ -79,8 +79,8 @@ func registerTestingMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 			return &EnableContinuousTestDiscoveryParams{}
 		},
 		RateLimits: []int{0, 2},
-		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
-			rpcSession := jsonrpc.GetSession(ctx)
+		Handler: func(callCtx context.Context, req interface{}) (interface{}, error) {
+			rpcSession := jsonrpc.GetSession(callCtx)
 			//TODO
 			// params := req.(*EnableContinuousTestDiscoveryParams)
 
@@ -97,8 +97,8 @@ func registerTestingMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 			return &TestFileParams{}
 		},
 		RateLimits: []int{2, 10, 30},
-		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
-			rpcSession := jsonrpc.GetSession(ctx)
+		Handler: func(callCtx context.Context, req interface{}) (interface{}, error) {
+			rpcSession := jsonrpc.GetSession(callCtx)
 			params := req.(*TestFileParams)
 
 			//-----------------------------------------------
@@ -107,7 +107,7 @@ func registerTestingMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 			session.lock.Unlock()
 			//-----------------------------------------------
 
-			return testModuleAsync(params.Path, params.Filters(), rpcSession, memberAuthToken)
+			return testModuleAsync(callCtx, params.Path, params.Filters(), rpcSession, memberAuthToken)
 		},
 	})
 
@@ -117,8 +117,8 @@ func registerTestingMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 			return &StopTestRunParams{}
 		},
 		RateLimits: []int{2, 10, 30},
-		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
-			rpcSession := jsonrpc.GetSession(ctx)
+		Handler: func(callCtx context.Context, req interface{}) (interface{}, error) {
+			rpcSession := jsonrpc.GetSession(callCtx)
 			params := req.(*StopTestRunParams)
 
 			session := getCreateLockedProjectSession(rpcSession)

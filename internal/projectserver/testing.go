@@ -2,6 +2,7 @@ package projectserver
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -25,7 +26,16 @@ type TestRunId string
 // without waiting for the tests to finish. The goroutine notifies the LSP client with TEST_RUN_FINISHED_METHOD when it is done.
 // testModuleAsync should NOT be called while the session data is locked because it acquires the lock in order to
 // store the testRunId in additionalSessionData.testRuns.
-func testModuleAsync(path string, filters core.TestFilters, rpcSession *jsonrpc.Session, memberAuthToken string) (TestFileResponse, error) {
+func testModuleAsync(
+	callCtx context.Context,
+	path string,
+	filters core.TestFilters,
+	rpcSession *jsonrpc.Session,
+	memberAuthToken string,
+) (
+	TestFileResponse,
+	error,
+) {
 
 	fls, ok := getLspFilesystem(rpcSession)
 	if !ok {
@@ -41,7 +51,8 @@ func testModuleAsync(path string, filters core.TestFilters, rpcSession *jsonrpc.
 	}
 
 	handlingCtx := rpcSession.Context().BoundChildWithOptions(core.BoundChildContextOptions{
-		Filesystem: fls,
+		Filesystem:              fls,
+		AdditionalParentContext: callCtx,
 	})
 
 	//Set or override the dev session key entry of context data.

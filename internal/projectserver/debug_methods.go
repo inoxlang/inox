@@ -446,8 +446,8 @@ func startDebugEventSenders(debugSession *DebugSession, rpcSession *jsonrpc.Sess
 
 }
 
-func handleInitializeDebug(ctx context.Context, req interface{}) (interface{}, error) {
-	rpcSession := jsonrpc.GetSession(ctx)
+func handleInitializeDebug(callCtx context.Context, req interface{}) (interface{}, error) {
+	rpcSession := jsonrpc.GetSession(callCtx)
 	params := req.(*DebugInitializeParams)
 	dapRequest := params.Request
 
@@ -493,8 +493,8 @@ func handleInitializeDebug(ctx context.Context, req interface{}) (interface{}, e
 	}, nil
 }
 
-func handleDebugConfigDone(ctx context.Context, req interface{}) (interface{}, error) {
-	rpcSession := jsonrpc.GetSession(ctx)
+func handleDebugConfigDone(callCtx context.Context, req interface{}) (interface{}, error) {
+	rpcSession := jsonrpc.GetSession(callCtx)
 	params := req.(*DebugConfigurationDoneParams)
 	dapRequest := params.Request
 
@@ -543,8 +543,8 @@ func handleDebugConfigDone(ctx context.Context, req interface{}) (interface{}, e
 	}, nil
 }
 
-func handleDebugLaunch(ctx context.Context, req interface{}) (interface{}, error) {
-	rpcSession := jsonrpc.GetSession(ctx)
+func handleDebugLaunch(callCtx context.Context, req interface{}) (interface{}, error) {
+	rpcSession := jsonrpc.GetSession(callCtx)
 	params := req.(*DebugLaunchRequestParams)
 	dapRequest := params.Request
 
@@ -710,8 +710,8 @@ func handleDebugLaunch(ctx context.Context, req interface{}) (interface{}, error
 	}, nil
 }
 
-func handleGetThreads(ctx context.Context, req interface{}) (interface{}, error) {
-	rpcSession := jsonrpc.GetSession(ctx)
+func handleGetThreads(callCtx context.Context, req interface{}) (interface{}, error) {
+	rpcSession := jsonrpc.GetSession(callCtx)
 	params := req.(*DebugThreadsParams)
 	dapRequest := params.Request
 
@@ -772,8 +772,8 @@ func handleGetThreads(ctx context.Context, req interface{}) (interface{}, error)
 	}, nil
 }
 
-func handleGetStackTrace(ctx context.Context, req interface{}) (interface{}, error) {
-	rpcSession := jsonrpc.GetSession(ctx)
+func handleGetStackTrace(callCtx context.Context, req interface{}) (interface{}, error) {
+	rpcSession := jsonrpc.GetSession(callCtx)
 	params := req.(*DebugStackTraceParams)
 	dapRequest := params.Request
 
@@ -840,6 +840,8 @@ func handleGetStackTrace(ctx context.Context, req interface{}) (interface{}, err
 				Command: dapRequest.Command,
 			},
 		}, nil
+	case <-callCtx.Done():
+		return nil, ErrCallCancelledByClient
 	}
 
 	totalFrames := len(stackFrames)
@@ -866,8 +868,8 @@ func handleGetStackTrace(ctx context.Context, req interface{}) (interface{}, err
 	}, nil
 }
 
-func handleGetScopes(ctx context.Context, req interface{}) (interface{}, error) {
-	rpcSession := jsonrpc.GetSession(ctx)
+func handleGetScopes(callCtx context.Context, req interface{}) (interface{}, error) {
+	rpcSession := jsonrpc.GetSession(callCtx)
 	params := req.(*DebugScopesParams)
 	dapRequest := params.Request
 
@@ -945,6 +947,8 @@ func handleGetScopes(ctx context.Context, req interface{}) (interface{}, error) 
 				Command: dapRequest.Command,
 			},
 		}, nil
+	case <-callCtx.Done():
+		return nil, ErrCallCancelledByClient
 	}
 
 	return dap.ScopesResponse{
@@ -963,8 +967,8 @@ func handleGetScopes(ctx context.Context, req interface{}) (interface{}, error) 
 	}, nil
 }
 
-func handleGetVariables(ctx context.Context, req interface{}) (interface{}, error) {
-	rpcSession := jsonrpc.GetSession(ctx)
+func handleGetVariables(callCtx context.Context, req interface{}) (interface{}, error) {
+	rpcSession := jsonrpc.GetSession(callCtx)
 	params := req.(*DebugVariablesParams)
 	dapRequest := params.Request
 
@@ -1049,6 +1053,8 @@ func handleGetVariables(ctx context.Context, req interface{}) (interface{}, erro
 				Command: dapRequest.Command,
 			},
 		}, nil
+	case <-callCtx.Done():
+		return nil, ErrCallCancelledByClient
 	}
 
 	return dap.VariablesResponse{
@@ -1067,8 +1073,8 @@ func handleGetVariables(ctx context.Context, req interface{}) (interface{}, erro
 	}, nil
 }
 
-func handleSetBreakpoints(ctx context.Context, req interface{}) (interface{}, error) {
-	rpcSession := jsonrpc.GetSession(ctx)
+func handleSetBreakpoints(callCtx context.Context, req interface{}) (interface{}, error) {
+	rpcSession := jsonrpc.GetSession(callCtx)
 	params := req.(*DebugSetBreakpointsParams)
 	dapRequest := params.Request
 
@@ -1232,6 +1238,8 @@ func handleSetBreakpoints(ctx context.Context, req interface{}) (interface{}, er
 				Command: dapRequest.Command,
 			},
 		}, nil
+	case <-callCtx.Done():
+		return nil, ErrCallCancelledByClient
 	}
 
 	return dap.SetBreakpointsResponse{
@@ -1250,8 +1258,8 @@ func handleSetBreakpoints(ctx context.Context, req interface{}) (interface{}, er
 	}, nil
 }
 
-func handleSetExceptionBreakpoints(ctx context.Context, req interface{}) (interface{}, error) {
-	rpcSession := jsonrpc.GetSession(ctx)
+func handleSetExceptionBreakpoints(callCtx context.Context, req interface{}) (interface{}, error) {
+	rpcSession := jsonrpc.GetSession(callCtx)
 	params := req.(*DebugSetExceptionBreakpointsParams)
 	dapRequest := params.Request
 
@@ -1339,6 +1347,8 @@ func handleSetExceptionBreakpoints(ctx context.Context, req interface{}) (interf
 				Command: dapRequest.Command,
 			},
 		}, nil
+	case <-callCtx.Done():
+		return nil, ErrCallCancelledByClient
 	}
 
 	return dap.SetExceptionBreakpointsResponse{
@@ -1362,8 +1372,8 @@ func handleSetExceptionBreakpoints(ctx context.Context, req interface{}) (interf
 	}, nil
 }
 
-func handleDebugPause(ctx context.Context, req interface{}) (interface{}, error) {
-	rpcSession := jsonrpc.GetSession(ctx)
+func handleDebugPause(callCtx context.Context, req interface{}) (interface{}, error) {
+	rpcSession := jsonrpc.GetSession(callCtx)
 	params := req.(*DebugPauseParams)
 	dapRequest := params.Request
 
@@ -1404,8 +1414,8 @@ func handleDebugPause(ctx context.Context, req interface{}) (interface{}, error)
 	}, nil
 }
 
-func handleDebugContinue(ctx context.Context, req interface{}) (interface{}, error) {
-	rpcSession := jsonrpc.GetSession(ctx)
+func handleDebugContinue(callCtx context.Context, req interface{}) (interface{}, error) {
+	rpcSession := jsonrpc.GetSession(callCtx)
 	params := req.(*DebugContinueParams)
 	dapRequest := params.Request
 
@@ -1451,8 +1461,8 @@ func handleDebugContinue(ctx context.Context, req interface{}) (interface{}, err
 	}, nil
 }
 
-func handleDebugNext(ctx context.Context, req interface{}) (interface{}, error) {
-	rpcSession := jsonrpc.GetSession(ctx)
+func handleDebugNext(callCtx context.Context, req interface{}) (interface{}, error) {
+	rpcSession := jsonrpc.GetSession(callCtx)
 	params := req.(*DebugNextParams)
 	dapRequest := params.Request
 
@@ -1494,8 +1504,8 @@ func handleDebugNext(ctx context.Context, req interface{}) (interface{}, error) 
 	}, nil
 }
 
-func handleDebugStepIn(ctx context.Context, req interface{}) (interface{}, error) {
-	rpcSession := jsonrpc.GetSession(ctx)
+func handleDebugStepIn(callCtx context.Context, req interface{}) (interface{}, error) {
+	rpcSession := jsonrpc.GetSession(callCtx)
 	params := req.(*DebugStepInParams)
 	dapRequest := params.Request
 
@@ -1537,8 +1547,8 @@ func handleDebugStepIn(ctx context.Context, req interface{}) (interface{}, error
 	}, nil
 }
 
-func handleDebugStepOut(ctx context.Context, req interface{}) (interface{}, error) {
-	rpcSession := jsonrpc.GetSession(ctx)
+func handleDebugStepOut(callCtx context.Context, req interface{}) (interface{}, error) {
+	rpcSession := jsonrpc.GetSession(callCtx)
 	params := req.(*DebugStepOutParams)
 	dapRequest := params.Request
 
@@ -1580,8 +1590,8 @@ func handleDebugStepOut(ctx context.Context, req interface{}) (interface{}, erro
 	}, nil
 }
 
-func handleDebugDisconnect(ctx context.Context, req interface{}) (interface{}, error) {
-	rpcSession := jsonrpc.GetSession(ctx)
+func handleDebugDisconnect(callCtx context.Context, req interface{}) (interface{}, error) {
+	rpcSession := jsonrpc.GetSession(callCtx)
 	params := req.(*DebugDisconnectParams)
 	dapRequest := params.Request
 

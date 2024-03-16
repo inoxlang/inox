@@ -139,10 +139,10 @@ func registerSourceControlMethodHandlers(server *lsp.Server, opts LSPServerConfi
 
 }
 
-func handleGetStagedOrUnstagedChanges(ctx context.Context, req interface{}) (interface{}, error) {
+func handleGetStagedOrUnstagedChanges(callCtx context.Context, req interface{}) (interface{}, error) {
 	_, ok := req.(*GetUnstagedChangesParams)
 	if ok { //unstaged
-		changes, err := handleGetChanges(ctx, false, req)
+		changes, err := handleGetChanges(callCtx, false, req)
 		if err != nil {
 			return nil, err
 		}
@@ -154,7 +154,7 @@ func handleGetStagedOrUnstagedChanges(ctx context.Context, req interface{}) (int
 
 	//staged
 
-	changes, err := handleGetChanges(ctx, true, req)
+	changes, err := handleGetChanges(callCtx, true, req)
 	if err != nil {
 		return nil, err
 	}
@@ -164,8 +164,8 @@ func handleGetStagedOrUnstagedChanges(ctx context.Context, req interface{}) (int
 	}, nil
 }
 
-func handleGetChanges(ctx context.Context, staged bool, req interface{}) ([]SourceControlFileChange, error) {
-	rpcSession := jsonrpc.GetSession(ctx)
+func handleGetChanges(callCtx context.Context, staged bool, req interface{}) ([]SourceControlFileChange, error) {
+	rpcSession := jsonrpc.GetSession(callCtx)
 
 	//----------------------------------------
 	session := getCreateLockedProjectSession(rpcSession)
@@ -253,8 +253,8 @@ func handleStageFileOrDir(ctx context.Context, req interface{}) (interface{}, er
 	return nil, nil
 }
 
-func handleUnstageFileOrDir(ctx context.Context, req interface{}) (interface{}, error) {
-	rpcSession := jsonrpc.GetSession(ctx)
+func handleUnstageFileOrDir(callCtx context.Context, req interface{}) (interface{}, error) {
+	rpcSession := jsonrpc.GetSession(callCtx)
 	params := req.(*UnstageParams)
 
 	//----------------------------------------
@@ -290,8 +290,8 @@ func handleUnstageFileOrDir(ctx context.Context, req interface{}) (interface{}, 
 	return nil, nil
 }
 
-func handleCommitInLocalRepo(ctx context.Context, req interface{}) (interface{}, error) {
-	rpcSession := jsonrpc.GetSession(ctx)
+func handleCommitInLocalRepo(callCtx context.Context, req interface{}) (interface{}, error) {
+	rpcSession := jsonrpc.GetSession(callCtx)
 	params := req.(*CommitParams)
 
 	//----------------------------------------
@@ -324,8 +324,8 @@ func handleCommitInLocalRepo(ctx context.Context, req interface{}) (interface{},
 	return nil, nil
 }
 
-func handleGetLastDevCommit(ctx context.Context, req interface{}) (interface{}, error) {
-	rpcSession := jsonrpc.GetSession(ctx)
+func handleGetLastDevCommit(callCtx context.Context, req interface{}) (interface{}, error) {
+	rpcSession := jsonrpc.GetSession(callCtx)
 	_ = req.(*GetLastDevCommitParams)
 
 	//----------------------------------------
@@ -365,8 +365,8 @@ func handleGetLastDevCommit(ctx context.Context, req interface{}) (interface{}, 
 	}, nil
 }
 
-func handleGetDevLog(ctx context.Context, req interface{}) (interface{}, error) {
-	rpcSession := jsonrpc.GetSession(ctx)
+func handleGetDevLog(callCtx context.Context, req interface{}) (interface{}, error) {
+	rpcSession := jsonrpc.GetSession(callCtx)
 	params := req.(*LogDevCommitsParams)
 
 	//----------------------------------------

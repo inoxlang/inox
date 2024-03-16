@@ -37,6 +37,7 @@ var (
 	ErrFileURIExpected        = errors.New("a file: URI was expected")
 	ErrInoxURIExpected        = errors.New("a inox: URI was expected")
 	ErrMemberNotAuthenticated = errors.New("member not authenticated")
+	ErrCallCancelledByClient  = errors.New("call cancelled by client")
 
 	True  = true
 	False = false
@@ -134,7 +135,7 @@ func getPath(uri defines.URI, usingInoxFS bool) (string, error) {
 }
 
 func handleInitialize(
-	ctx context.Context,
+	callCtx context.Context,
 	req *defines.InitializeParams,
 	projectMode bool,
 	serverLogger zerolog.Logger,
@@ -143,7 +144,7 @@ func handleInitialize(
 	err *defines.InitializeError,
 ) {
 
-	rpcSession := jsonrpc.GetSession(ctx)
+	rpcSession := jsonrpc.GetSession(callCtx)
 	initResult := &defines.InitializeResult{}
 
 	clientCapabilities := req.Capabilities.ClientCapabilities_
@@ -206,14 +207,14 @@ func handleInitialize(
 	return initResult, nil
 }
 
-func handleShutdown(ctx context.Context, req *defines.NoParams) (err error) {
-	rpcSession := jsonrpc.GetSession(ctx)
+func handleShutdown(callCtx context.Context, req *defines.NoParams) (err error) {
+	rpcSession := jsonrpc.GetSession(callCtx)
 	rpcSession.Close()
 	return nil
 }
 
-func handleExit(ctx context.Context, req *defines.NoParams) (err error) {
-	rpcSession := jsonrpc.GetSession(ctx)
+func handleExit(callCtx context.Context, req *defines.NoParams) (err error) {
+	rpcSession := jsonrpc.GetSession(callCtx)
 	defer rpcSession.Close()
 
 	if !rpcSession.IsShuttingDown() {
@@ -223,8 +224,8 @@ func handleExit(ctx context.Context, req *defines.NoParams) (err error) {
 	return nil
 }
 
-func handleHover(ctx context.Context, req *defines.HoverParams) (result *defines.Hover, err error) {
-	rpcSession := jsonrpc.GetSession(ctx)
+func handleHover(callCtx context.Context, req *defines.HoverParams) (result *defines.Hover, err error) {
+	rpcSession := jsonrpc.GetSession(callCtx)
 	rpcSessionCtx := rpcSession.Context()
 
 	session := getCreateLockedProjectSession(rpcSession)
@@ -247,8 +248,10 @@ func handleHover(ctx context.Context, req *defines.HoverParams) (result *defines
 	line, column := getLineColumn(req.Position)
 
 	handlingCtx := rpcSessionCtx.BoundChildWithOptions(core.BoundChildContextOptions{
-		Filesystem: fls,
+		Filesystem:              fls,
+		AdditionalParentContext: callCtx,
 	})
+
 	defer handlingCtx.CancelGracefully()
 
 	return getHoverContent(handlingCtx, hoverContentParams{
@@ -265,8 +268,8 @@ func handleHover(ctx context.Context, req *defines.HoverParams) (result *defines
 	})
 }
 
-func handleSignatureHelp(ctx context.Context, req *defines.SignatureHelpParams) (result *defines.SignatureHelp, err error) {
-	rpcSession := jsonrpc.GetSession(ctx)
+func handleSignatureHelp(callCtx context.Context, req *defines.SignatureHelpParams) (result *defines.SignatureHelp, err error) {
+	rpcSession := jsonrpc.GetSession(callCtx)
 	rpcSessionCtx := rpcSession.Context()
 
 	//---------------------------------------------------
@@ -294,7 +297,8 @@ func handleSignatureHelp(ctx context.Context, req *defines.SignatureHelpParams) 
 	line, column := getLineColumn(req.Position)
 
 	handlingCtx := rpcSessionCtx.BoundChildWithOptions(core.BoundChildContextOptions{
-		Filesystem: fls,
+		Filesystem:              fls,
+		AdditionalParentContext: callCtx,
 	})
 	defer handlingCtx.CancelGracefully()
 
@@ -311,12 +315,14 @@ func handleSignatureHelp(ctx context.Context, req *defines.SignatureHelpParams) 
 	})
 }
 
-func handleCodeActionWithSliceCodeAction(ctx context.Context, req *defines.CodeActionParams) (result *[]defines.CodeAction, err error) {
-	rpcSession := jsonrpc.GetSession(ctx)
+func handleCodeActionWithSliceCodeAction(callCtx context.Context, req *defines.CodeActionParams) (result *[]defines.CodeAction, err error) {
+	rpcSession := jsonrpc.GetSession(callCtx)
 	session := getCreateLockedProjectSession(rpcSession)
 	projectMode := session.inProjectMode
+	chunkCache := session.inoxChunkCache
 	fls := session.filesystem
 	session.lock.Unlock()
+	//------------------------------------
 
 	if fls == nil {
 		return nil, nil
@@ -327,7 +333,16 @@ func handleCodeActionWithSliceCodeAction(ctx context.Context, req *defines.CodeA
 		return nil, err
 	}
 
-	actions, err := getCodeActions(rpcSession, req.Context.Diagnostics, req.Range, req.TextDocument, fpath, fls)
+	actions, err := getCodeActions(codeActionsParam{
+		fpath:       fpath,
+		rpcSession:  rpcSession,
+		codeRange:   req.Range,
+		doc:         req.TextDocument,
+		diagnostics: req.Context.Diagnostics,
+
+		fls:        fls,
+		chunkCache: chunkCache,
+	})
 
 	if err != nil {
 		rpcSession.Logger().Println("failed to get code actions", err)
@@ -336,8 +351,8 @@ func handleCodeActionWithSliceCodeAction(ctx context.Context, req *defines.CodeA
 	return actions, nil
 }
 
-func handleDefinition(ctx context.Context, req *defines.DefinitionParams) (result *[]defines.LocationLink, err error) {
-	rpcSession := jsonrpc.GetSession(ctx)
+func handleDefinition(callCtx context.Context, req *defines.DefinitionParams) (result *[]defines.LocationLink, err error) {
+	rpcSession := jsonrpc.GetSession(callCtx)
 	rpcSessionCtx := rpcSession.Context()
 
 	//-------------------------------------------------------
@@ -361,8 +376,10 @@ func handleDefinition(ctx context.Context, req *defines.DefinitionParams) (resul
 	line, column := getLineColumn(req.Position)
 
 	handlingCtx := rpcSessionCtx.BoundChildWithOptions(core.BoundChildContextOptions{
-		Filesystem: fls,
+		Filesystem:              fls,
+		AdditionalParentContext: callCtx,
 	})
+
 	defer handlingCtx.CancelGracefully()
 
 	preparationResult, ok := prepareSourceFileInExtractionMode(handlingCtx, filePreparationParams{
@@ -480,8 +497,8 @@ func handleDefinition(ctx context.Context, req *defines.DefinitionParams) (resul
 	return &links, nil
 }
 
-func handleFormatDocument(ctx context.Context, req *defines.DocumentFormattingParams) (result *[]defines.TextEdit, err error) {
-	rpcSession := jsonrpc.GetSession(ctx)
+func handleFormatDocument(callCtx context.Context, req *defines.DocumentFormattingParams) (result *[]defines.TextEdit, err error) {
+	rpcSession := jsonrpc.GetSession(callCtx)
 
 	//----------------------------------------
 	session := getCreateLockedProjectSession(rpcSession)
@@ -500,8 +517,10 @@ func handleFormatDocument(ctx context.Context, req *defines.DocumentFormattingPa
 	}
 
 	chunk, err := core.ParseFileChunk(fpath, fls, parse.ParserOptions{
-		Timeout: SINGLE_FILE_PARSING_TIMEOUT,
+		Timeout:       SINGLE_FILE_PARSING_TIMEOUT,
+		ParentContext: callCtx,
 	})
+
 	if chunk == nil { //unrecoverable error
 		return nil, jsonrpc.ResponseError{
 			Code:    jsonrpc.InternalError.Code,
@@ -520,8 +539,8 @@ func handleFormatDocument(ctx context.Context, req *defines.DocumentFormattingPa
 	}, nil
 }
 
-func handleDidOpenDocument(ctx context.Context, req *defines.DidOpenTextDocumentParams) (err error) {
-	rpcSession := jsonrpc.GetSession(ctx)
+func handleDidOpenDocument(callCtx context.Context, req *defines.DidOpenTextDocumentParams) (err error) {
+	rpcSession := jsonrpc.GetSession(callCtx)
 
 	//----------------------------------------
 	session := getCreateLockedProjectSession(rpcSession)
@@ -601,8 +620,8 @@ func handleDidOpenDocument(ctx context.Context, req *defines.DidOpenTextDocument
 	})
 }
 
-func handleDidSaveDocument(ctx context.Context, req *defines.DidSaveTextDocumentParams) (err error) {
-	rpcSession := jsonrpc.GetSession(ctx)
+func handleDidSaveDocument(callCtx context.Context, req *defines.DidSaveTextDocumentParams) (err error) {
+	rpcSession := jsonrpc.GetSession(callCtx)
 
 	//----------------------------------------
 	session := getCreateLockedProjectSession(rpcSession)
@@ -701,8 +720,8 @@ func handleDidSaveDocument(ctx context.Context, req *defines.DidSaveTextDocument
 	})
 }
 
-func handleDidChangeDocument(ctx context.Context, req *defines.DidChangeTextDocumentParams) (err error) {
-	rpcSession := jsonrpc.GetSession(ctx)
+func handleDidChangeDocument(callCtx context.Context, req *defines.DidChangeTextDocumentParams) (err error) {
+	rpcSession := jsonrpc.GetSession(callCtx)
 
 	//----------------------------------------
 	session := getCreateLockedProjectSession(rpcSession)
@@ -755,6 +774,8 @@ func handleDidChangeDocument(ctx context.Context, req *defines.DidChangeTextDocu
 		})
 	})
 
+	//Determine the new content of the unsaved document.
+
 	if syncFull {
 		fullDocumentText = req.ContentChanges[0].Text.(string)
 	} else {
@@ -805,6 +826,8 @@ func handleDidChangeDocument(ctx context.Context, req *defines.DidChangeTextDocu
 		}
 
 		fullDocumentText = string(nextContent)
+
+		//Determine auto-edit.
 
 		textEdit, ok := getAutoEditForChange(fullDocumentText, lastReplacementStirng, lastRangeStart, lastRangeExlusiveEnd)
 

@@ -13,26 +13,35 @@ import (
 
 var quickfixKind = defines.CodeActionKindQuickFix
 
-func getCodeActions(
-	session *jsonrpc.Session, diagnostics []defines.Diagnostic, _range defines.Range,
-	doc defines.TextDocumentIdentifier, fpath string, fls *Filesystem,
-) (*[]defines.CodeAction, error) {
+type codeActionsParam struct {
+	diagnostics []defines.Diagnostic
+	codeRange   defines.Range
+	doc         defines.TextDocumentIdentifier
+	fpath       string
 
-	chunk, err := core.ParseFileChunk(fpath, fls, parse.ParserOptions{
+	rpcSession *jsonrpc.Session
+	fls        *Filesystem
+	chunkCache *parse.ChunkCache
+}
+
+func getCodeActions(params codeActionsParam) (*[]defines.CodeAction, error) {
+
+	chunk, err := core.ParseFileChunk(params.fpath, params.fls, parse.ParserOptions{
 		Timeout: SINGLE_FILE_PARSING_TIMEOUT,
 	})
+
 	if err != nil {
 		return nil, err
 	}
 
 	var codeActions []defines.CodeAction
 
-	for _, diagnostic := range diagnostics {
+	for _, diagnostic := range params.diagnostics {
 		if diagnostic.Severity == nil {
 			continue
 		}
 
-		action, ok := tryGetMissingPermissionAction(doc, diagnostic, chunk)
+		action, ok := tryGetMissingPermissionAction(params.doc, diagnostic, chunk)
 		if ok {
 			codeActions = append(codeActions, action)
 		}

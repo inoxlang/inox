@@ -787,8 +787,9 @@ func (ctx *Context) CheckHasPermission(perm Permission) error {
 }
 
 type BoundChildContextOptions struct {
-	Filesystem afs.Filesystem
-	Limits     []Limit //if nil, defaults to the parent's limits
+	AdditionalParentContext context.Context
+	Filesystem              afs.Filesystem
+	Limits                  []Limit //if nil, defaults to the parent's limits
 }
 
 // BoundChild creates a child of the context that also inherits callbacks, named patterns, and protocol clients.
@@ -811,10 +812,11 @@ func (ctx *Context) boundChild(opts BoundChildContextOptions) *Context {
 	}
 
 	child := NewContext(ContextConfig{
-		Permissions:          ctx.grantedPermissions,
-		ForbiddenPermissions: ctx.forbiddenPermissions,
-		Limits:               limits,
-		ParentContext:        ctx,
+		Permissions:             ctx.grantedPermissions,
+		ForbiddenPermissions:    ctx.forbiddenPermissions,
+		Limits:                  limits,
+		ParentContext:           ctx,
+		AdditionalParentContext: opts.AdditionalParentContext,
 
 		Filesystem: opts.Filesystem,
 	})

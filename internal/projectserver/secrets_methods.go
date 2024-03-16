@@ -37,8 +37,8 @@ func registerSecretsMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 			return &UpsertSecretParams{}
 		},
 		SensitiveData: true,
-		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
-			rpcSession := jsonrpc.GetSession(ctx)
+		Handler: func(callCtx context.Context, req interface{}) (interface{}, error) {
+			rpcSession := jsonrpc.GetSession(callCtx)
 			sessionCtx := rpcSession.Context()
 			params := req.(*UpsertSecretParams)
 
@@ -67,8 +67,8 @@ func registerSecretsMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 			return &ListSecretsParams{}
 		},
 		SensitiveData: true,
-		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
-			rpcSession := jsonrpc.GetSession(ctx)
+		Handler: func(callCtx context.Context, req interface{}) (interface{}, error) {
+			rpcSession := jsonrpc.GetSession(callCtx)
 			sessionCtx := rpcSession.Context()
 			_ = req.(*ListSecretsParams)
 
@@ -97,8 +97,8 @@ func registerSecretsMethodHandlers(server *lsp.Server, opts LSPServerConfigurati
 			return &DeleteSecretParams{}
 		},
 		SensitiveData: true,
-		Handler: func(ctx context.Context, req interface{}) (interface{}, error) {
-			rpcSession := jsonrpc.GetSession(ctx)
+		Handler: func(callCtx context.Context, req interface{}) (interface{}, error) {
+			rpcSession := jsonrpc.GetSession(callCtx)
 			sessionCtx := rpcSession.Context()
 			params := req.(*DeleteSecretParams)
 

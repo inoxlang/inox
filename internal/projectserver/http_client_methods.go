@@ -63,8 +63,8 @@ func registerHttpClientMethods(server *lsp.Server, opts LSPServerConfiguration) 
 	})
 }
 
-func handleHttpRequest(goCtx context.Context, req interface{}) (interface{}, error) {
-	rpcSession := jsonrpc.GetSession(goCtx)
+func handleHttpRequest(callCtx context.Context, req interface{}) (interface{}, error) {
+	rpcSession := jsonrpc.GetSession(callCtx)
 	params := req.(*HttpRequestParams)
 	ctx := rpcSession.Context()
 
@@ -168,7 +168,9 @@ func handleHttpRequest(goCtx context.Context, req interface{}) (interface{}, err
 		httpReq.Header.Set(inoxconsts.DEV_SESSION_KEY_HEADER, string(devSessionKey))
 	}
 
-	//Create goroutine that will send the request and notify the response.
+	//Create a goroutine that will send the request and notify the response.
+	//The execution of the goroutine is not cancellable by $callCtx because
+	//the handler returns early.
 
 	go func() {
 		defer func() {
