@@ -133,7 +133,7 @@ type DatabaseWrappingArgs struct {
 	//This field is unrelated to ExpectedSchemaUpdate.
 	ExpectedSchema *ObjectPattern
 
-	//Force the loading top level entities if there is not expected schema update.
+	//Force the loading of top level entities if there is no expected schema update.
 	//This parameter has lower priority than DevMode.
 	ForceLoadBeforeOwnerStateSet bool
 

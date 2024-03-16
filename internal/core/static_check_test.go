@@ -768,9 +768,8 @@ func TestCheck(t *testing.T) {
 				a = {}
 				a.(b)
 			`)
-			ident := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(ident *parse.IdentifierLiteral, _ bool) bool {
-				return ident.Name == "b"
-			})
+
+			ident := parse.FindIdentWithName(n, "b")
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
@@ -894,9 +893,7 @@ func TestCheck(t *testing.T) {
 				go {} do f(myconst)
 			`)
 
-			ident := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
-				return n.Name == "myconst"
-			})
+			ident := parse.FindIdentWithName(n, "myconst")
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
@@ -912,9 +909,7 @@ func TestCheck(t *testing.T) {
 				go {} do f(myglobal)
 			`)
 
-			ident := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
-				return n.Name == "myglobal"
-			})
+			ident := parse.FindIdentWithName(n, "myglobal")
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
@@ -930,9 +925,7 @@ func TestCheck(t *testing.T) {
 				go {} do f(mylocal)
 			`)
 
-			ident := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
-				return n.Name == "mylocal"
-			})
+			ident := parse.FindIdentWithName(n, "mylocal")
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
@@ -1025,9 +1018,10 @@ func TestCheck(t *testing.T) {
 					return global
 				}
 			`)
-			objLit := parse.FindNode(n, (*parse.ObjectLiteral)(nil), func(lit *parse.ObjectLiteral, _ bool) bool {
+			objLit := parse.FindNode(n, (*parse.ObjectLiteral)(nil), func(lit *parse.ObjectLiteral, _ bool, _ []parse.Node) bool {
 				return len(lit.SpreadElements) > 0
 			})
+
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
 				makeError(objLit, src, INVALID_SPAWN_GLOBALS_SHOULD_BE),
@@ -1623,7 +1617,7 @@ func TestCheck(t *testing.T) {
 				return
 			}
 
-			returnStmt := parse.FindNode(n, (*parse.ReturnStatement)(nil), func(n *parse.ReturnStatement, isFirstFound bool) bool {
+			returnStmt := parse.FindNode(n, (*parse.ReturnStatement)(nil), func(n *parse.ReturnStatement, isFirstFound bool, _ []parse.Node) bool {
 				return isFirstFound
 			})
 
@@ -1655,9 +1649,7 @@ func TestCheck(t *testing.T) {
 				return
 			}
 
-			returnStmt := parse.FindNode(n, (*parse.ReturnStatement)(nil), func(n *parse.ReturnStatement, isFirstFound bool) bool {
-				return isFirstFound
-			})
+			returnStmt := parse.FindFirstNode(n, (*parse.ReturnStatement)(nil))
 
 			pos, _ := data.GetEarlyFunctionDeclarationsPosition(n)
 			assert.Equal(t, returnStmt.Span.Start, pos)
@@ -1690,9 +1682,7 @@ func TestCheck(t *testing.T) {
 				return
 			}
 
-			returnStmt := parse.FindNode(n, (*parse.ReturnStatement)(nil), func(n *parse.ReturnStatement, isFirstFound bool) bool {
-				return isFirstFound
-			})
+			returnStmt := parse.FindFirstNode(n, (*parse.ReturnStatement)(nil))
 
 			embeddedMod := parse.FindNode(n, (*parse.EmbeddedModule)(nil), nil)
 
@@ -3965,12 +3955,8 @@ func TestCheck(t *testing.T) {
 				$$v = 1
 				for k, v in [] {}
 			`)
-			keyIdent := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
-				return n.Name == "k"
-			})
-			valueIdent := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
-				return n.Name == "v"
-			})
+			keyIdent := parse.FindIdentWithName(n, "k")
+			valueIdent := parse.FindIdentWithName(n, "v")
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
@@ -4018,12 +4004,8 @@ func TestCheck(t *testing.T) {
 				$$v = 1
 				(for k, v in []: 0)
 			`)
-			keyIdent := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
-				return n.Name == "k"
-			})
-			valueIdent := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
-				return n.Name == "v"
-			})
+			keyIdent := parse.FindIdentWithName(n, "k")
+			valueIdent := parse.FindIdentWithName(n, "v")
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
@@ -4765,9 +4747,7 @@ func TestCheck(t *testing.T) {
 
 			globals := GlobalVariablesFromMap(map[string]Value{}, nil)
 			extendStmt := parse.FindNode(n, (*parse.ExtendStatement)(nil), nil)
-			ident := parse.FindNode(extendStmt, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
-				return n.Name == "a"
-			})
+			ident := parse.FindIdentWithName(extendStmt, "a")
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
 			expectedErr := utils.CombineErrors(
@@ -4787,9 +4767,7 @@ func TestCheck(t *testing.T) {
 
 			globals := GlobalVariablesFromMap(map[string]Value{}, nil)
 			extendStmt := parse.FindNode(n, (*parse.ExtendStatement)(nil), nil)
-			ident := parse.FindNode(extendStmt, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
-				return n.Name == "a"
-			})
+			ident := parse.FindIdentWithName(extendStmt, "a")
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
 			expectedErr := utils.CombineErrors(
@@ -4809,9 +4787,7 @@ func TestCheck(t *testing.T) {
 
 			globals := GlobalVariablesFromMap(map[string]Value{}, nil)
 			extendStmt := parse.FindNode(n, (*parse.ExtendStatement)(nil), nil)
-			globalVar := parse.FindNode(extendStmt, (*parse.GlobalVariable)(nil), func(n *parse.GlobalVariable, isUnique bool) bool {
-				return n.Name == "a"
-			})
+			globalVar := parse.FindGlobalVarWithName(extendStmt, "a")
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
 			expectedErr := utils.CombineErrors(
@@ -4831,9 +4807,7 @@ func TestCheck(t *testing.T) {
 
 			globals := GlobalVariablesFromMap(map[string]Value{}, nil)
 			extendStmt := parse.FindNode(n, (*parse.ExtendStatement)(nil), nil)
-			variable := parse.FindNode(extendStmt, (*parse.Variable)(nil), func(n *parse.Variable, isUnique bool) bool {
-				return n.Name == "a"
-			})
+			variable := parse.FindLocalVarWithName(extendStmt, "a")
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
 			expectedErr := utils.CombineErrors(
@@ -4884,9 +4858,7 @@ func TestCheck(t *testing.T) {
 			`)
 
 			def := parse.FindNode(n, (*parse.StructDefinition)(nil), nil)
-			ident := parse.FindNode(def, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
-				return n.Name == "a"
-			})
+			ident := parse.FindIdentWithName(def, "a")
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
@@ -4904,9 +4876,7 @@ func TestCheck(t *testing.T) {
 			`)
 
 			def := parse.FindNode(n, (*parse.StructDefinition)(nil), nil)
-			ident := parse.FindNode(def, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
-				return n.Name == "a"
-			})
+			ident := parse.FindIdentWithName(def, "a")
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
@@ -4924,9 +4894,7 @@ func TestCheck(t *testing.T) {
 			`)
 
 			def := parse.FindNode(n, (*parse.StructDefinition)(nil), nil)
-			globalVar := parse.FindNode(def, (*parse.GlobalVariable)(nil), func(n *parse.GlobalVariable, isUnique bool) bool {
-				return n.Name == "a"
-			})
+			globalVar := parse.FindGlobalVarWithName(def, "a")
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
@@ -4944,9 +4912,7 @@ func TestCheck(t *testing.T) {
 			`)
 
 			def := parse.FindNode(n, (*parse.StructDefinition)(nil), nil)
-			variable := parse.FindNode(def, (*parse.Variable)(nil), func(n *parse.Variable, isUnique bool) bool {
-				return n.Name == "a"
-			})
+			variable := parse.FindLocalVarWithName(def,  "a")
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(

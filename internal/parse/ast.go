@@ -3221,12 +3221,24 @@ func FindNodesAndChains[T Node](root Node, typ T, handle func(n T) bool) ([]T, [
 	return found, ancestors
 }
 
-func FindNode[T Node](root Node, typ T, handle func(n T, isFirstFound bool) bool) T {
+// FindNodeAndChain walks over an AST node and returns the first node of type $typ for which $handle returns true.
+// If $handle is nil only the type is checked.
+func FindNode[T Node](root Node, typ T, handle func(n T, isFirstFound bool, ancestors []Node) bool) T {
 	n, _ := FindNodeAndChain(root, typ, handle)
 	return n
 }
 
-func FindNodeAndChain[T Node](root Node, typ T, handle func(n T, isUnique bool) bool) (T, []Node) {
+// FindNodeAndChain walks over an AST node and returns the first node of type $typ.
+func FindFirstNode[T Node](root Node, typ T) T {
+	n, _ := FindNodeAndChain(root, typ, func(n T, isUnique bool, ancestors []Node) bool {
+		return isUnique
+	})
+	return n
+}
+
+// FindNodeAndChain walks over an AST node and returns the first node of type $typ (and its ancestors) for which $handle returns true.
+// If $handle is nil only the type is checked.
+func FindNodeAndChain[T Node](root Node, typ T, handle func(n T, isFirstFound bool, ancestors []Node) bool) (T, []Node) {
 	searchedType := reflect.TypeOf(typ)
 	isUnique := true
 
@@ -3235,7 +3247,7 @@ func FindNodeAndChain[T Node](root Node, typ T, handle func(n T, isUnique bool) 
 
 	Walk(root, func(node, parent, scopeNode Node, ancestorChain []Node, after bool) (TraversalAction, error) {
 		if reflect.TypeOf(node) == searchedType {
-			if handle == nil || handle(node.(T), isUnique) {
+			if handle == nil || handle(node.(T), isUnique, _ancestorChain) {
 				found = node.(T)
 				isUnique = false
 				_ancestorChain = ancestorChain
@@ -3338,6 +3350,49 @@ func FindPreviousStatementAndChain(n Node, ancestorChain []Node, climbBlocks boo
 		}
 	}
 	return FindPreviousStatementAndChain(p, ancestorChain[:len(ancestorChain)-1], climbBlocks)
+}
+
+func FindIdentWithName(root Node, name string) Node {
+	return FindNode(root, (*IdentifierLiteral)(nil), func(n *IdentifierLiteral, isFirstFound bool, ancestors []Node) bool {
+		return n.Name == name
+	})
+}
+
+func FindGlobalVarWithName(root Node, name string) Node {
+	return FindNode(root, (*GlobalVariable)(nil), func(n *GlobalVariable, isFirstFound bool, ancestors []Node) bool {
+		return n.Name == name
+	})
+}
+
+func FindLocalVarWithName(root Node, name string) Node {
+	return FindNode(root, (*Variable)(nil), func(n *Variable, isFirstFound bool, ancestors []Node) bool {
+		return n.Name == name
+	})
+}
+
+func FindPatternIdentWithName(root Node, name string) Node {
+	return FindNode(root, (*PatternIdentifierLiteral)(nil), func(n *PatternIdentifierLiteral, isFirstFound bool, ancestors []Node) bool {
+		return n.Name == name
+	})
+}
+
+func FindIntLiteralWithValue(root Node, value int64) *IntLiteral {
+	return FindNode(root, (*IntLiteral)(nil), func(n *IntLiteral, isFirstFound bool, ancestors []Node) bool {
+		return n.Value == value
+	})
+}
+
+func FindObjPropWithName(root Node, name string) *ObjectProperty {
+	return FindNode(root, (*ObjectProperty)(nil), func(n *ObjectProperty, isFirstFound bool, ancestors []Node) bool {
+		return !n.HasImplicitKey() && n.Name() == name
+	})
+}
+
+func FindLocalVarDeclWithName(root Node, name string) *LocalVariableDeclaration {
+	return FindNode(root, (*LocalVariableDeclaration)(nil), func(n *LocalVariableDeclaration, isFirstFound bool, ancestors []Node) bool {
+		ident, ok := n.Left.(*IdentifierLiteral)
+		return ok && ident.Name == name
+	})
 }
 
 func HasErrorAtAnyDepth(n Node) bool {

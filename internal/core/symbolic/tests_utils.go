@@ -75,10 +75,12 @@ func MakeTestStateAndChunks(code string, includedFiles map[string]string, global
 	state.Module.inclusionStatementMap = make(map[*parse.InclusionImportStatement]*IncludedChunk, len(includedFiles))
 
 	for file, content := range includedFiles {
-		importStmt := parse.FindNode(state.Module.mainChunk.Node, (*parse.InclusionImportStatement)(nil), func(stmt *parse.InclusionImportStatement, _ bool) bool {
-			pathLit, ok := stmt.Source.(*parse.RelativePathLiteral)
-			return ok && pathLit.Value == file
-		})
+		importStmt := parse.FindNode(state.Module.mainChunk.Node, (*parse.InclusionImportStatement)(nil),
+			func(stmt *parse.InclusionImportStatement, _ bool, _ []parse.Node) bool {
+				pathLit, ok := stmt.Source.(*parse.RelativePathLiteral)
+				return ok && pathLit.Value == file
+			},
+		)
 
 		if importStmt == nil {
 			panic(fmt.Errorf("import statement with source %s not found", file))

@@ -112,7 +112,7 @@ func TestFindPreviousStatement(t *testing.T) {
 			2
 		`)
 
-		node, chain := FindNodeAndChain(chunk, (*IntLiteral)(nil), func(number *IntLiteral, unique bool) bool {
+		node, chain := FindNodeAndChain(chunk, (*IntLiteral)(nil), func(number *IntLiteral, isFirstFound bool, _ []Node) bool {
 			return number.Value == 2
 		})
 
@@ -146,7 +146,7 @@ func TestFindPreviousStatement(t *testing.T) {
 			}
 		`)
 
-		node, chain := FindNodeAndChain(chunk, (*IntLiteral)(nil), func(number *IntLiteral, unique bool) bool {
+		node, chain := FindNodeAndChain(chunk, (*IntLiteral)(nil), func(number *IntLiteral, unique bool, _ []Node) bool {
 			return number.Value == 2
 		})
 
@@ -168,7 +168,7 @@ func TestFindPreviousStatement(t *testing.T) {
 			}
 		`)
 
-		node, chain := FindNodeAndChain(chunk, (*IntLiteral)(nil), func(number *IntLiteral, unique bool) bool {
+		node, chain := FindNodeAndChain(chunk, (*IntLiteral)(nil), func(number *IntLiteral, unique bool, _ []Node) bool {
 			return number.Value == 2
 		})
 
@@ -190,7 +190,7 @@ func TestFindPreviousStatement(t *testing.T) {
 			}
 		`)
 
-		node, chain := FindNodeAndChain(chunk, (*IntLiteral)(nil), func(number *IntLiteral, unique bool) bool {
+		node, chain := FindNodeAndChain(chunk, (*IntLiteral)(nil), func(number *IntLiteral, unique bool, _ []Node) bool {
 			return number.Value == 2
 		})
 

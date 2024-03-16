@@ -2056,9 +2056,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
-			prop := parse.FindNode(n, (*parse.ObjectProperty)(nil), func(n *parse.ObjectProperty, isUnique bool) bool {
-				return n.Name() == "b"
-			})
+			prop := parse.FindObjPropWithName(n, "b")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(prop.Key, state, PROPERTY_VALUES_OF_READONLY_OBJECTS_SHOULD_BE_READONLY_OR_IMMUTABLE),
@@ -3797,9 +3795,7 @@ func TestSymbolicEval(t *testing.T) {
 				return f(x)
 			`)
 
-			ident := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
-				return n.Name == "f"
-			})
+			ident := parse.FindIdentWithName(n, "f")
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -5852,9 +5848,7 @@ func TestSymbolicEval(t *testing.T) {
 			_, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
-			propIdent := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
-				return n.Name == "list"
-			})
+			propIdent := parse.FindIdentWithName(n, "list")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(propIdent, state, fmtUselessMutationInClonedPropValue("list")),
@@ -5876,9 +5870,7 @@ func TestSymbolicEval(t *testing.T) {
 			_, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
-			propIdent := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
-				return n.Name == "list"
-			})
+			propIdent := parse.FindIdentWithName(n, "list")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(propIdent, state, fmtUselessMutationInClonedPropValue("list")),
@@ -6933,9 +6925,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Nil(t, res)
 
-			identA := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
-				return n.Name == "a"
-			})
+			identA := parse.FindIdentWithName(n, "a")
 
 			calleeValue, ok := state.symbolicData.GetMostSpecificNodeValue(identA)
 			if !assert.True(t, ok) {
@@ -7507,9 +7497,7 @@ func TestSymbolicEval(t *testing.T) {
 				_, err := symbolicEval(n, state)
 				assert.NoError(t, err)
 
-				propIdent := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
-					return n.Name == "list"
-				})
+				propIdent := parse.FindIdentWithName(n, "list")
 
 				assert.Equal(t, []SymbolicEvaluationError{
 					makeSymbolicEvalError(propIdent, state, fmtUselessMutationInClonedPropValue("list")),
@@ -7862,7 +7850,8 @@ func TestSymbolicEval(t *testing.T) {
 					return list
 				`)
 				res, err := symbolicEval(n, state)
-				index := parse.FindNode(n.Statements[1], (*parse.IntLiteral)(nil), func(n *parse.IntLiteral, _ bool) bool {
+
+				index := parse.FindNode(n.Statements[1], (*parse.IntLiteral)(nil), func(n *parse.IntLiteral, _ bool, _ []parse.Node) bool {
 					return n.Value == -1
 				})
 
@@ -7880,7 +7869,7 @@ func TestSymbolicEval(t *testing.T) {
 					return list
 				`)
 				res, err := symbolicEval(n, state)
-				index := parse.FindNode(n.Statements[1], (*parse.IntLiteral)(nil), func(n *parse.IntLiteral, _ bool) bool {
+				index := parse.FindNode(n.Statements[1], (*parse.IntLiteral)(nil), func(n *parse.IntLiteral, _ bool, _ []parse.Node) bool {
 					return n.Value == -1
 				})
 
@@ -7906,9 +7895,7 @@ func TestSymbolicEval(t *testing.T) {
 				_, err := symbolicEval(n, state)
 				assert.NoError(t, err)
 
-				propIdent := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
-					return n.Name == "list"
-				})
+				propIdent := parse.FindIdentWithName(n, "list")
 
 				assert.Equal(t, []SymbolicEvaluationError{
 					makeSymbolicEvalError(propIdent, state, fmtUselessMutationInClonedPropValue("list")),
@@ -7930,9 +7917,7 @@ func TestSymbolicEval(t *testing.T) {
 				_, err := symbolicEval(n, state)
 				assert.NoError(t, err)
 
-				propIdent := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
-					return n.Name == "list"
-				})
+				propIdent := parse.FindIdentWithName(n, "list")
 
 				assert.Equal(t, []SymbolicEvaluationError{
 					makeSymbolicEvalError(propIdent, state, fmtUselessMutationInClonedPropValue("list")),
@@ -8132,9 +8117,7 @@ func TestSymbolicEval(t *testing.T) {
 				_, err := symbolicEval(n, state)
 				assert.NoError(t, err)
 
-				propIdent := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
-					return n.Name == "list"
-				})
+				propIdent := parse.FindIdentWithName(n, "list")
 
 				assert.Equal(t, []SymbolicEvaluationError{
 					makeSymbolicEvalError(propIdent, state, fmtUselessMutationInClonedPropValue("list")),
@@ -8336,7 +8319,7 @@ func TestSymbolicEval(t *testing.T) {
 					return list
 				`)
 				res, err := symbolicEval(n, state)
-				index := parse.FindNode(n.Statements[1], (*parse.IntLiteral)(nil), func(n *parse.IntLiteral, _ bool) bool {
+				index := parse.FindNode(n.Statements[1], (*parse.IntLiteral)(nil), func(n *parse.IntLiteral, _ bool, _ []parse.Node) bool {
 					return n.Value == -1
 				})
 
@@ -8354,7 +8337,7 @@ func TestSymbolicEval(t *testing.T) {
 					return list
 				`)
 				res, err := symbolicEval(n, state)
-				index := parse.FindNode(n.Statements[1], (*parse.IntLiteral)(nil), func(n *parse.IntLiteral, _ bool) bool {
+				index := parse.FindNode(n.Statements[1], (*parse.IntLiteral)(nil), func(n *parse.IntLiteral, _ bool, _ []parse.Node) bool {
 					return n.Value == 2
 				})
 
@@ -8372,9 +8355,7 @@ func TestSymbolicEval(t *testing.T) {
 					return list
 				`)
 				res, err := symbolicEval(n, state)
-				index := parse.FindNode(n.Statements[1], (*parse.IntLiteral)(nil), func(n *parse.IntLiteral, _ bool) bool {
-					return n.Value == 0
-				})
+				index := parse.FindIntLiteralWithValue(n.Statements[1], 0)
 
 				assert.NoError(t, err)
 				assert.Equal(t, []SymbolicEvaluationError{
@@ -8683,9 +8664,8 @@ func TestSymbolicEval(t *testing.T) {
 			state.setGlobal("streamable", ANY_STREAM_SOURCE, GlobalConst)
 
 			_, err := symbolicEval(n, state)
-			keyVar := parse.FindNode(n, &parse.IdentifierLiteral{}, func(n *parse.IdentifierLiteral, isUnique bool) bool {
-				return n.Name == "k"
-			})
+			keyVar := parse.FindIdentWithName(n, "k")
+
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(keyVar, state, KEY_VAR_SHOULD_BE_PROVIDED_ONLY_WHEN_ITERATING_OVER_AN_ITERABLE),
@@ -9122,9 +9102,7 @@ func TestSymbolicEval(t *testing.T) {
 				}
 			`)
 
-			ident := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
-				return n.Name == "undefined_var"
-			})
+			ident := parse.FindIdentWithName(n, "undefined_var")
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -9144,9 +9122,7 @@ func TestSymbolicEval(t *testing.T) {
 				}
 			`)
 
-			ident := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
-				return n.Name == "non_serializable_value"
-			})
+			ident := parse.FindIdentWithName(n, "non_serializable_value")
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -9326,9 +9302,7 @@ func TestSymbolicEval(t *testing.T) {
 				}
 			`)
 
-			ident := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
-				return n.Name == "undefined_var"
-			})
+			ident := parse.FindIdentWithName(n, "undefined_var")
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -9348,9 +9322,7 @@ func TestSymbolicEval(t *testing.T) {
 				}
 			`)
 
-			ident := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
-				return n.Name == "non_serializable_value"
-			})
+			ident := parse.FindIdentWithName(n, "non_serializable_value")
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -9972,7 +9944,7 @@ func TestSymbolicEval(t *testing.T) {
 				return %{x: #{a: {}}}
 			`)
 
-			objectPatternLiteral := parse.FindNode(n, (*parse.ObjectPatternLiteral)(nil), func(lit *parse.ObjectPatternLiteral, _ bool) bool {
+			objectPatternLiteral := parse.FindNode(n, (*parse.ObjectPatternLiteral)(nil), func(lit *parse.ObjectPatternLiteral, _ bool, _ []parse.Node) bool {
 				return len(lit.Properties) == 0
 			})
 
@@ -10100,9 +10072,7 @@ func TestSymbolicEval(t *testing.T) {
 				pattern p = #{a: undefined}
 				return %p
 			`)
-			ident := parse.FindNode(n, (*parse.PatternIdentifierLiteral)(nil), func(n *parse.PatternIdentifierLiteral, isUnique bool) bool {
-				return n.Name == "undefined"
-			})
+			ident := parse.FindPatternIdentWithName(n, "undefined")
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -10125,9 +10095,8 @@ func TestSymbolicEval(t *testing.T) {
 				pattern p = #{a: mutable_nonserializable}
 				return %p
 			`)
-			ident := parse.FindNode(n, (*parse.PatternIdentifierLiteral)(nil), func(n *parse.PatternIdentifierLiteral, isUnique bool) bool {
-				return n.Name == "mutable_nonserializable"
-			})
+
+			ident := parse.FindPatternIdentWithName(n, "mutable_nonserializable")
 
 			state.ctx.AddNamedPattern("mutable_nonserializable", &TypePattern{val: ANY_TEST_CASE}, false)
 
@@ -10920,17 +10889,9 @@ func TestSymbolicEval(t *testing.T) {
 			_, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
-			bDecl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), func(n *parse.LocalVariableDeclaration, isUnique bool) bool {
-				return n.Left.(*parse.IdentifierLiteral).Name == "b"
-			})
-
-			cDecl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), func(n *parse.LocalVariableDeclaration, isUnique bool) bool {
-				return n.Left.(*parse.IdentifierLiteral).Name == "c"
-			})
-
-			dDecl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), func(n *parse.LocalVariableDeclaration, isUnique bool) bool {
-				return n.Left.(*parse.IdentifierLiteral).Name == "d"
-			})
+			bDecl := parse.FindLocalVarDeclWithName(n, "b")
+			cDecl := parse.FindLocalVarDeclWithName(n, "c")
+			dDecl := parse.FindLocalVarDeclWithName(n, "d")
 
 			pattern := utils.Must(NewExactValuePattern(INT_1))
 
@@ -10961,17 +10922,9 @@ func TestSymbolicEval(t *testing.T) {
 			_, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
-			aDecl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), func(n *parse.LocalVariableDeclaration, isUnique bool) bool {
-				return n.Left.(*parse.IdentifierLiteral).Name == "a"
-			})
-
-			bDecl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), func(n *parse.LocalVariableDeclaration, isUnique bool) bool {
-				return n.Left.(*parse.IdentifierLiteral).Name == "b"
-			})
-
-			cDecl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), func(n *parse.LocalVariableDeclaration, isUnique bool) bool {
-				return n.Left.(*parse.IdentifierLiteral).Name == "c"
-			})
+			aDecl := parse.FindLocalVarDeclWithName(n, "a")
+			bDecl := parse.FindLocalVarDeclWithName(n, "b")
+			cDecl := parse.FindLocalVarDeclWithName(n, "c")
 
 			pattern := utils.Must(NewExactValuePattern(AsSerializableChecked(NewRunTimeValue(ANY_INT))))
 
@@ -11003,17 +10956,9 @@ func TestSymbolicEval(t *testing.T) {
 			_, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
-			aDecl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), func(n *parse.LocalVariableDeclaration, isUnique bool) bool {
-				return n.Left.(*parse.IdentifierLiteral).Name == "a"
-			})
-
-			bDecl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), func(n *parse.LocalVariableDeclaration, isUnique bool) bool {
-				return n.Left.(*parse.IdentifierLiteral).Name == "b"
-			})
-
-			cDecl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), func(n *parse.LocalVariableDeclaration, isUnique bool) bool {
-				return n.Left.(*parse.IdentifierLiteral).Name == "c"
-			})
+			aDecl := parse.FindLocalVarDeclWithName(n, "a")
+			bDecl := parse.FindLocalVarDeclWithName(n, "b")
+			cDecl := parse.FindLocalVarDeclWithName(n, "c")
 
 			pattern := utils.Must(NewExactValuePattern(AsSerializableChecked(NewRunTimeValue(AsSerializableChecked(varValue)))))
 
@@ -11047,17 +10992,9 @@ func TestSymbolicEval(t *testing.T) {
 			_, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
-			bDecl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), func(n *parse.LocalVariableDeclaration, isUnique bool) bool {
-				return n.Left.(*parse.IdentifierLiteral).Name == "b"
-			})
-
-			cDecl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), func(n *parse.LocalVariableDeclaration, isUnique bool) bool {
-				return n.Left.(*parse.IdentifierLiteral).Name == "c"
-			})
-
-			dDecl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), func(n *parse.LocalVariableDeclaration, isUnique bool) bool {
-				return n.Left.(*parse.IdentifierLiteral).Name == "d"
-			})
+			bDecl := parse.FindLocalVarDeclWithName(n, "b")
+			cDecl := parse.FindLocalVarDeclWithName(n, "c")
+			dDecl := parse.FindLocalVarDeclWithName(n, "d")
 
 			pattern := NewExactStringPatternWithConcreteValue(NewString("a"))
 
@@ -11088,17 +11025,9 @@ func TestSymbolicEval(t *testing.T) {
 			_, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
-			aDecl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), func(n *parse.LocalVariableDeclaration, isUnique bool) bool {
-				return n.Left.(*parse.IdentifierLiteral).Name == "a"
-			})
-
-			bDecl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), func(n *parse.LocalVariableDeclaration, isUnique bool) bool {
-				return n.Left.(*parse.IdentifierLiteral).Name == "b"
-			})
-
-			cDecl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), func(n *parse.LocalVariableDeclaration, isUnique bool) bool {
-				return n.Left.(*parse.IdentifierLiteral).Name == "c"
-			})
+			aDecl := parse.FindLocalVarDeclWithName(n, "a")
+			bDecl := parse.FindLocalVarDeclWithName(n, "b")
+			cDecl := parse.FindLocalVarDeclWithName(n, "c")
 
 			pattern := NewExactStringPatternWithRunTimeValue(NewRunTimeValue(ANY_STR_LIKE).as(STRLIKE_INTERFACE_TYPE).(*strLikeRunTimeValue))
 
@@ -11130,17 +11059,9 @@ func TestSymbolicEval(t *testing.T) {
 			_, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
-			aDecl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), func(n *parse.LocalVariableDeclaration, isUnique bool) bool {
-				return n.Left.(*parse.IdentifierLiteral).Name == "a"
-			})
-
-			bDecl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), func(n *parse.LocalVariableDeclaration, isUnique bool) bool {
-				return n.Left.(*parse.IdentifierLiteral).Name == "b"
-			})
-
-			cDecl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), func(n *parse.LocalVariableDeclaration, isUnique bool) bool {
-				return n.Left.(*parse.IdentifierLiteral).Name == "c"
-			})
+			aDecl := parse.FindLocalVarDeclWithName(n, "a")
+			bDecl := parse.FindLocalVarDeclWithName(n, "b")
+			cDecl := parse.FindLocalVarDeclWithName(n, "c")
 
 			pattern := NewExactStringPatternWithRunTimeValue(NewRunTimeValue(variableValue).as(STRLIKE_INTERFACE_TYPE).(*strLikeRunTimeValue))
 
@@ -11497,7 +11418,7 @@ func TestSymbolicEval(t *testing.T) {
 				testsuite({main-db-migrations: {}}) {}
 			`)
 
-			objectLit := parse.FindNode(n.Statements[0], (*parse.ObjectLiteral)(nil), func(n *parse.ObjectLiteral, isUnique bool) bool {
+			objectLit := parse.FindNode(n.Statements[0], (*parse.ObjectLiteral)(nil), func(n *parse.ObjectLiteral, isUnique bool, _ []parse.Node) bool {
 				return len(n.Properties) == 1
 			})
 
@@ -11517,7 +11438,7 @@ func TestSymbolicEval(t *testing.T) {
 				testsuite({main-db-migrations: {}}) {}
 			`)
 
-			objectLit := parse.FindNode(n.Statements[0], (*parse.ObjectLiteral)(nil), func(n *parse.ObjectLiteral, isUnique bool) bool {
+			objectLit := parse.FindNode(n.Statements[0], (*parse.ObjectLiteral)(nil), func(n *parse.ObjectLiteral, isUnique bool, _ []parse.Node) bool {
 				return len(n.Properties) == 1
 			})
 
@@ -12028,9 +11949,7 @@ func TestSymbolicEval(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				return go {globals: .{}} do f()
 			`)
-			ident := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
-				return n.Name == "f"
-			})
+			ident := parse.FindIdentWithName(n, "f")
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -12068,9 +11987,8 @@ func TestSymbolicEval(t *testing.T) {
 				}
 				return go {globals: .{}} do obj.read()
 			`)
-			objIdent := parse.FindNode(n.Statements[1], (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
-				return n.Name == "obj"
-			})
+
+			objIdent := parse.FindIdentWithName(n.Statements[1], "obj")
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -12099,9 +12017,8 @@ func TestSymbolicEval(t *testing.T) {
 				fn f(arg){ return arg }
 				return go {globals: .{}} do f(myglobal)
 			`)
-			ident := parse.FindNode(n.Statements[1], (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
-				return n.Name == "myglobal"
-			})
+			ident := parse.FindIdentWithName(n.Statements[1], "myglobal")
+
 			state.setGlobal("myglobal", INT_1, GlobalVar)
 
 			res, err := symbolicEval(n, state)
@@ -12118,9 +12035,8 @@ func TestSymbolicEval(t *testing.T) {
 				fn f(arg){ return arg }
 				return go {globals: .{}} do f(v)
 			`)
-			ident := parse.FindNode(n.Statements[2], (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
-				return n.Name == "v"
-			})
+
+			ident := parse.FindIdentWithName(n.Statements[2], "v")
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -13012,9 +12928,7 @@ func TestSymbolicEval(t *testing.T) {
 				sourceNode: parse.FindNode(n, (*parse.XMLElement)(nil), nil),
 			}, res)
 
-			intIdent := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), func(n *parse.IdentifierLiteral, isUnique bool) bool {
-				return n.Name == "int"
-			})
+			intIdent := parse.FindIdentWithName(n, "int")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(intIdent, state, "integers not allowed"),
