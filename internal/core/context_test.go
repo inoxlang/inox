@@ -1017,6 +1017,29 @@ func TestContextDone(t *testing.T) {
 	})
 }
 
+func TestAdditionalParentContextCancellation(t *testing.T) {
+	{
+		runtime.GC()
+		defer utils.AssertNoGoroutineLeak(t, runtime.NumGoroutine())
+	}
+
+	stdlibCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	ctx := NewContextWithEmptyState(ContextConfig{
+		AdditionalParentContext: stdlibCtx,
+	}, nil)
+
+	cancel()
+
+	select {
+	case <-ctx.Done():
+	case <-time.After(100 * time.Millisecond):
+		assert.Fail(t, "context should have been cancelled")
+	}
+
+}
+
 func TestContextPutResolveUserData(t *testing.T) {
 	ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 	defer ctx.CancelGracefully()

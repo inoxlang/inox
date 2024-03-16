@@ -31,7 +31,8 @@ const (
 var (
 	ErrBothCtxFilesystemArgsProvided            = errors.New("invalid arguments: both .CreateFilesystem & .Filesystem provided")
 	ErrBothParentCtxArgsProvided                = errors.New("invalid arguments: both .ParentContext & .ParentStdLibContext provided")
-	ErrInitialWorkingDirProvidedWithoutFS       = errors.New("invalid arguments: .InitialWorkingDirectory is provided but no filesystem is provided")
+	ErrInitialWorkingDirProvidedWithoutFS       = errors.New("invalid arguments: .InitialWorkingDirectory is set but no filesystem is provided")
+	ErrAdditionalParentCtxSetButNoGoroutine     = errors.New("invalid arguments: .AdditionalParentContext is set but DoNotSpawnDoneGoroutine is true")
 	ErrImpossibleToDeterminateInitialWorkingDir = errors.New("impossible to determinate initial working directory")
 
 	ErrNonExistingNamedPattern                 = errors.New("non existing named pattern")
@@ -137,7 +138,7 @@ type ContextConfig struct {
 	ForbiddenPermissions    []Permission
 	DoNotCheckDatabasePerms bool
 
-	//if (cpu time limit is not present) AND (parent context has it) then the limit is inherited.
+	//If (cpu time limit is not present) AND (parent context has it) then the limit is inherited.
 	//The depletion of total limits' tokens for the created context starts when the associated state is set.
 	Limits []Limit
 
@@ -148,14 +149,19 @@ type ContextConfig struct {
 	ParentStdLibContext context.Context //should not be set if ParentContext is set
 	LimitTokens         map[string]int64
 
+	//An optional context whose cancellation causes a call to Context.CancelGracefully().
+	//This field should not be set if DoNotSpawnDoneGoroutine is true.
+	AdditionalParentContext context.Context
+
 	Filesystem       afs.Filesystem
-	CreateFilesystem func(ctx *Context) (afs.Filesystem, error)
-	// if false the context's filesystem is the result of WithSecondaryContextIfPossible(ContextConfig.Filesystem),
+	CreateFilesystem func(ctx *Context) (afs.Filesystem, error) //should not be set if Filesystem is set
+
+	// If false the context's filesystem is the result of WithSecondaryContextIfPossible(ContextConfig.Filesystem),
 	// else the context's filesystem is ContextConfig.Filesystem.
 	DoNotSetFilesystemContext bool
 	InitialWorkingDirectory   Path //if not set defaults to '/'
 
-	// if false a goroutine is created to tear down the context after it is done.
+	// If false a goroutine is created to tear down the context after it is done.
 	// if true IsDone() will always return false until CancelGracefully is called.
 	DoNotSpawnDoneGoroutine bool
 
@@ -239,6 +245,7 @@ func NewContext(config ContextConfig) *Context {
 		filesystem              afs.Filesystem = config.Filesystem
 		initialWorkingDirectory Path           = config.InitialWorkingDirectory
 		ctx                                    = &Context{} //the context is initialized later in the function but we need the address
+		additionalParentCtx                    = config.AdditionalParentContext
 	)
 
 	if config.CreateFilesystem != nil {
@@ -255,6 +262,10 @@ func NewContext(config ContextConfig) *Context {
 
 	if initialWorkingDirectory != "" && filesystem == nil && config.ParentContext == nil {
 		panic(ErrInitialWorkingDirProvidedWithoutFS)
+	}
+
+	if additionalParentCtx != nil && config.DoNotSpawnDoneGoroutine {
+		panic(ErrAdditionalParentCtxSetButNoGoroutine)
 	}
 
 	//create limiters
@@ -416,7 +427,19 @@ func NewContext(config ContextConfig) *Context {
 
 	//tear down
 	go func() {
-		<-ctx.Done()
+		if additionalParentCtx == nil {
+			<-ctx.Done()
+		} else {
+			select {
+			case <-additionalParentCtx.Done():
+				go func() {
+					defer utils.Recover() //recover even if CancelGracefully() should never panic.
+					ctx.CancelGracefully()
+				}()
+				<-ctx.Done()
+			case <-ctx.Done():
+			}
+		}
 		ctx.done.Store(true)
 
 		if ctx.GracefulTearDownStatus() == GracefullyTearingDown {
