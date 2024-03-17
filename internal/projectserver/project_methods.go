@@ -338,9 +338,10 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 
 		time.Sleep(time.Second) //Wait a bit because a lot of computations are performed after the goroutine creation.
 
-		handlerCtx := core.NewContextWithEmptyState(core.ContextConfig{
-			ParentContext: rpcSession.Context(),
-		}, nil)
+		handlerCtx := rpcSession.Context().BoundChildWithOptions(core.BoundChildContextOptions{
+			Filesystem: lspFilesystem,
+		})
+
 		defer handlerCtx.CancelGracefully()
 
 		result, ok := prepareSourceFileInExtractionMode(handlerCtx, filePreparationParams{
