@@ -36,10 +36,10 @@ func getHTMLTagNamesWithPrefix(prefix string) (completions []Completion) {
 func findWholeHTMLTagCompletions(tagName string, ancestors []parse.Node, includeAngleBracket bool, inputData InputData) (completions []Completion) {
 	switch tagName {
 	case "fo", "for", "form":
-		if inputData.ServerAPI == nil {
+		if inputData.CodebaseAnalysis.ServerAPI == nil {
 			return
 		}
-		api := inputData.ServerAPI
+		api := inputData.CodebaseAnalysis.ServerAPI
 
 		prefix := ""
 		if includeAngleBracket {

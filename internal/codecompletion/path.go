@@ -61,7 +61,7 @@ func findCtxDataEntryNameCompletions(ctx *core.Context, rawPath string, pathLite
 		})
 
 		//Suggest parameter names based on existing endpoints.
-		api := search.inputData.ServerAPI
+		api := search.inputData.CodebaseAnalysis.ServerAPI
 		if api != nil {
 			api.ForEachHandlerModule(func(mod *core.PreparationCacheEntry, endpoint *spec.ApiEndpoint, operation spec.ApiOperation) error {
 				endpoint.ForEachPathSegment(func(segment spec.EndpointPathSegment) (_ error) {

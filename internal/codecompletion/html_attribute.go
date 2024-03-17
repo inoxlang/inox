@@ -132,10 +132,10 @@ func findHtmlAttributeValueCompletions(
 	}
 
 	//endpoint suggestions.
-	if inputData.ServerAPI != nil && strings.HasPrefix(attrValue, "/") && (strings.HasPrefix(attrName, "hx-") || attrName == "href") {
+	if inputData.CodebaseAnalysis.ServerAPI != nil && strings.HasPrefix(attrValue, "/") && (strings.HasPrefix(attrName, "hx-") || attrName == "href") {
 		//local server
 
-		api := inputData.ServerAPI
+		api := inputData.CodebaseAnalysis.ServerAPI
 
 		var endpointPaths []string
 		api.ForEachHandlerModule(func(mod *core.PreparationCacheEntry, endpoint *spec.ApiEndpoint, operation spec.ApiOperation) error {
