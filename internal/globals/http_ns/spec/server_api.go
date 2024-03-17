@@ -430,23 +430,23 @@ func addOperationFsRouting(params operationAdditionParams) error {
 		var dbProviderContext *core.Context
 
 		//If the databases are defined in another module we retrieve this module.
-		if path, ok := dbSection.(*parse.AbsolutePathLiteral); ok {
-			if cache, ok := constructionState.tempModuleCache[path.Value]; ok {
+		if dabaseDefiningModPath, ok := dbSection.(*parse.AbsolutePathLiteral); ok {
+			if cache, ok := constructionState.tempModuleCache[dabaseDefiningModPath.Value]; ok {
 				dbProviderContext = cache.Ctx
 
 				//If the construction initiator has no state or is not the module providing the database,
 				//we have to prepare the provider module.
-			} else if constructionState.initiatorHasNoState || initiatorState.Module.Name() != path.Value {
+			} else if constructionState.initiatorHasNoState || initiatorState.Module.Name() != dabaseDefiningModPath.Value {
 
 				var fallbackProject core.Project
 
-				if constructionState.initiatorHasNoState && path.Value == constructionState.fallbackMainProgramPath {
+				if constructionState.initiatorHasNoState && dabaseDefiningModPath.Value == constructionState.fallbackMainProgramPath {
 					//Project should only be set if the module is a main module.
 					fallbackProject = constructionState.fallbackProject
 				}
 
 				modState, _, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
-					Fpath:                     path.Value,
+					Fpath:                     dabaseDefiningModPath.Value,
 					ParsingCompilationContext: goroutineCtx,
 					SingleFileParsingTimeout:  SINGLE_FILE_PARSING_TIMEOUT,
 					InoxChunkCache:            constructionState.inoxChunkCache,
@@ -477,8 +477,22 @@ func addOperationFsRouting(params operationAdditionParams) error {
 					return
 				}
 
-				constructionState.tempModuleCache[path.Value] = modState
+				constructionState.tempModuleCache[dabaseDefiningModPath.Value] = modState
 				dbProviderContext = modState.Ctx
+			} else if !constructionState.initiatorHasNoState && initiatorState.Module.Name() == dabaseDefiningModPath.Value {
+				dbProviderContext = initiatorState.Ctx
+			} else {
+				err := fmt.Errorf("module %s accesses the databases defined by %s but it is impossible to obtain the state of the latter",
+					absEntryPath, dabaseDefiningModPath.Value)
+
+				pstate.lock.Lock()
+				defer pstate.lock.Unlock()
+
+				errorIndex = len(pstate.errors)
+				pstate.errors = append(pstate.errors, err)
+				pstate.operations = append(pstate.operations, operation)
+				pstate.endpoints = append(pstate.endpoints, endpt)
+				return
 			}
 		}
 

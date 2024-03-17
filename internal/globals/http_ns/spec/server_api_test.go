@@ -14,6 +14,7 @@ import (
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/testconfig"
+	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -83,7 +84,9 @@ func init() {
 func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 	testconfig.AllowParallelization(t)
 
-	//create a context and a filesystem with the passed file contents.
+	//Create a context and a filesystem with the passed file contents.
+	//if no content is defined for /main.ix the file containing `manifest {}` is created.
+	//A state for an in-memory module is created by default.
 	setup := func(files map[string]string, noState ...bool) *core.Context {
 		fls := fs_ns.NewMemFilesystem(10_000)
 
@@ -99,6 +102,14 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 				Permissions: perms,
 				Filesystem:  fls,
 			}, nil)
+
+			state := ctx.MustGetClosestState()
+
+			state.Module = utils.Must(core.ParseInMemoryModule("manifest {}", core.InMemoryModuleParsingConfig{
+				Name:    "in-mem-module",
+				Context: ctx,
+			}))
+
 		} else {
 			ctx = core.NewContext(core.ContextConfig{
 				Permissions: perms,
@@ -108,7 +119,9 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 
 		fls.MkdirAll("/routes/", 0o700)
 
-		util.WriteFile(fls, "/main.ix", []byte("manifest {}"), 0700)
+		if _, ok := files["/main.ix"]; !ok {
+			util.WriteFile(fls, "/main.ix", []byte("manifest {}"), 0700)
+		}
 
 		for file, content := range files {
 			fls.MkdirAll(filepath.Dir(file), 0700)
@@ -188,6 +201,87 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			assert.Same(t, api.endpoints["/users"], childNode.endpoint)
 			assert.Equal(t, "/users", childNode.path)
 			assert.Equal(t, "users", childNode.segment)
+		})
+
+		t.Run("root index.ix requires access to databases defined in main", func(t *testing.T) {
+			testconfig.AllowParallelization(t)
+
+			ctx := setup(map[string]string{
+				"/main.ix": `
+					manifest {
+						# No need to define a database, we just want GetFSRoutingServerAPI 
+						# to prepare the module.
+					}
+				`,
+				"/routes/index.ix": `
+					manifest {
+						databases: /main.ix
+						parameters: {}
+					}
+				`,
+			})
+			defer ctx.CancelGracefully()
+
+			api, err := GetFSRoutingServerAPI(ctx, ServerApiResolutionConfig{DynamicDir: "/routes/"})
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			if !assert.Contains(t, api.endpoints, "/") {
+				return
+			}
+			if !assert.NotNil(t, api.tree) {
+				return
+			}
+
+			assert.NotNil(t, api.tree.endpoint)
+			assert.Equal(t, "/", api.tree.path)
+			assert.Equal(t, "", api.tree.segment)
+			assert.Empty(t, api.tree.namedChildren)
+			assert.Nil(t, api.tree.parametrizedChild)
+		})
+
+		t.Run("root index.ix requires access to databases defined in main and the initiator of the retrieval is the /main.ix module ", func(t *testing.T) {
+			testconfig.AllowParallelization(t)
+
+			noState := true
+			ctx := setup(map[string]string{
+				"/main.ix": `
+					manifest {}
+				`,
+				"/routes/index.ix": `
+					manifest {
+						databases: /main.ix
+						parameters: {}
+					}
+				`,
+			}, noState)
+			defer ctx.CancelGracefully()
+
+			mainModState := core.NewGlobalState(ctx)
+			mainModState.OutputFieldsInitialized.Store(true)
+			mainModState.Module = utils.Must(core.ParseLocalModule("/main.ix", core.ModuleParsingConfig{
+				Context: ctx,
+			}))
+			mainModState.Manifest = core.NewEmptyManifest()
+
+			api, err := GetFSRoutingServerAPI(ctx, ServerApiResolutionConfig{DynamicDir: "/routes/"})
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			if !assert.Contains(t, api.endpoints, "/") {
+				return
+			}
+			if !assert.NotNil(t, api.tree) {
+				return
+			}
+
+			assert.NotNil(t, api.tree.endpoint)
+			assert.Equal(t, "/", api.tree.path)
+			assert.Equal(t, "", api.tree.segment)
+			assert.Empty(t, api.tree.namedChildren)
+			assert.Nil(t, api.tree.parametrizedChild)
 		})
 
 		t.Run("root GET.ix", func(t *testing.T) {
