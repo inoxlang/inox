@@ -305,7 +305,7 @@ func addOperationFsRouting(params operationAdditionParams) error {
 
 	constructionState := params.state
 	pstate := constructionState.pState
-	constructionInitiator, _ := constructionState.ctx.GetState()
+	initiatorState, _ := constructionState.ctx.GetState()
 
 	endpt := constructionState.endpoints[endpointPath]
 	if endpt == nil && endpointPath == "/" {
@@ -395,16 +395,16 @@ func addOperationFsRouting(params operationAdditionParams) error {
 		manifestObj := chunk.Node.Manifest.Object.(*parse.ObjectLiteral)
 		dbSection, _ := manifestObj.PropValue(core.MANIFEST_DATABASES_SECTION_NAME)
 
-		var dbProviderContext *core.Context = constructionState.ctx
+		var dbProviderContext *core.Context
 
 		//If the databases are defined in another module we retrieve this module.
 		if path, ok := dbSection.(*parse.AbsolutePathLiteral); ok {
 			if cache, ok := constructionState.tempModuleCache[path.Value]; ok {
 				dbProviderContext = cache.Ctx
 
-				//If the condition is false (the construction initiator is the module providing the database),
-				//there is nothing to do as the dbProviderContext is already set to its context.
-			} else if constructionInitiator.Module.Name() != path.Value {
+				//If the construction initiator has no state or is not the module providing the database,
+				//we have to prepare the provider module.
+			} else if initiatorState == nil || initiatorState.Module.Name() != path.Value {
 
 				modState, _, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 					Fpath:                     path.Value,
@@ -441,15 +441,16 @@ func addOperationFsRouting(params operationAdditionParams) error {
 		}
 
 		preparationStartTime := time.Now()
+		parentCtx := goroutineCtx
 
 		modState, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 			Fpath:                     absEntryPath,
-			ParsingCompilationContext: dbProviderContext,
+			ParsingCompilationContext: parentCtx,
 			SingleFileParsingTimeout:  SINGLE_FILE_PARSING_TIMEOUT,
 			InoxChunkCache:            constructionState.inoxChunkCache,
 
-			ParentContext:         dbProviderContext,
-			ParentContextRequired: true,
+			ParentContext:         dbProviderContext, //may be nil
+			ParentContextRequired: dbProviderContext != nil,
 			DefaultLimits: []core.Limit{
 				core.MustMakeNotAutoDepletingCountLimit(fs_ns.FS_READ_LIMIT_NAME, 10_000_000),
 			},

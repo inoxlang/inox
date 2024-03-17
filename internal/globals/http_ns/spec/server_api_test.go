@@ -83,17 +83,27 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 	testconfig.AllowParallelization(t)
 
 	//create a context and a filesystem with the passed file contents.
-	setup := func(files map[string]string) *core.Context {
+	setup := func(files map[string]string, noState ...bool) *core.Context {
 		fls := fs_ns.NewMemFilesystem(10_000)
 
-		ctx := core.NewContextWithEmptyState(core.ContextConfig{
-			Permissions: append(core.GetDefaultGlobalVarPermissions(),
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
-				core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")},
-				core.LThreadPermission{Kind_: permkind.Create},
-			),
-			Filesystem: fls,
-		}, nil)
+		var ctx *core.Context
+		perms := append(core.GetDefaultGlobalVarPermissions(),
+			core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
+			core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")},
+			core.LThreadPermission{Kind_: permkind.Create},
+		)
+
+		if len(noState) == 0 || !noState[0] {
+			ctx = core.NewContextWithEmptyState(core.ContextConfig{
+				Permissions: perms,
+				Filesystem:  fls,
+			}, nil)
+		} else {
+			ctx = core.NewContext(core.ContextConfig{
+				Permissions: perms,
+				Filesystem:  fls,
+			})
+		}
 
 		fls.MkdirAll("/routes/", 0o700)
 
@@ -543,6 +553,34 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 		}
 
 		assert.True(t, endpoint.handlerModule.MainChunkTopLevelNodeIs(cachedChunk.Node))
+	})
+
+	t.Run("caller is not a module (no state)", func(t *testing.T) {
+		testconfig.AllowParallelization(t)
+
+		noState := true
+		ctx := setup(map[string]string{
+			"/routes/index.ix": `
+			manifest {
+				parameters: {}
+			}
+		`,
+		}, noState)
+
+		defer ctx.CancelGracefully()
+
+		//Get the API
+
+		api, err := GetFSRoutingServerAPI(ctx, ServerApiResolutionConfig{
+			DynamicDir: "/routes/",
+		})
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		_, err = api.GetOperation("GET", "/")
+
+		assert.NoError(t, err)
 	})
 
 	t.Run("an error is expected if at least two modules handle the same API operation", func(t *testing.T) {
