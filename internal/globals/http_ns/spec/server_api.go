@@ -31,12 +31,18 @@ var (
 	ErrUnexpectedBodyParamsInGETHandler            = errors.New("unexpected request body parmameters in GET handler")
 	ErrUnexpectedBodyParamsInOPTIONSHandler        = errors.New("unexpected request body parmameters in OPTIONS handler")
 	ErrUnexpectedBodyParamsInMethodAgnosticHandler = errors.New("unexpected request body parmameters in method-agnostic handler")
+	ErrFallbackProjectNotSet                       = errors.New("fallback project should be set because the context has no associated state")
+	ErrFallbackMainProgramPathNotSet               = errors.New("fallback main program path should be set because the context has no associated state")
 )
 
 type ServerApiResolutionConfig struct {
 	DynamicDir              string
 	IgnoreModulesWithErrors bool
 	InoxChunkCache          *parse.ChunkCache
+
+	FallbackMainProgramPath string       //should be set if ctx has no associated state.
+	FallbackProject         core.Project //should be set if ctx has no associated state.
+	MemberAuthToken         string
 }
 
 func GetFSRoutingServerAPI(ctx *core.Context, config ServerApiResolutionConfig) (*API, error) {
@@ -50,6 +56,7 @@ func GetFSRoutingServerAPI(ctx *core.Context, config ServerApiResolutionConfig) 
 	endpoints := make(map[string]*ApiEndpoint)
 
 	if config.DynamicDir != "" {
+
 		state := &fsRoutingAPIConstructionState{
 			ctx:             ctx,
 			tempModuleCache: preparedModuleCache,
@@ -57,8 +64,27 @@ func GetFSRoutingServerAPI(ctx *core.Context, config ServerApiResolutionConfig) 
 			endpoints:       endpoints,
 			fls:             ctx.GetFileSystem(),
 
-			inoxChunkCache: config.InoxChunkCache,
+			fallbackMainProgramPath: config.FallbackMainProgramPath,
+
+			inoxChunkCache:  config.InoxChunkCache,
+			memberAuthToken: config.MemberAuthToken,
 		}
+
+		_, ok := ctx.GetState()
+		state.initiatorHasNoState = !ok
+
+		if state.initiatorHasNoState {
+			state.fallbackProject = config.FallbackProject
+			state.fallbackMainProgramPath = config.FallbackMainProgramPath
+
+			if state.fallbackProject == nil {
+				return nil, ErrFallbackProjectNotSet
+			}
+			if state.fallbackMainProgramPath == "" {
+				return nil, ErrFallbackMainProgramPathNotSet
+			}
+		}
+
 		err := addFsDirEndpoints(config.DynamicDir, "/", state)
 		if err != nil {
 			return nil, err
@@ -70,11 +96,17 @@ func GetFSRoutingServerAPI(ctx *core.Context, config ServerApiResolutionConfig) 
 
 type fsRoutingAPIConstructionState struct {
 	ctx             *core.Context
-	config          ServerApiResolutionConfig
 	endpoints       map[string]*ApiEndpoint
 	tempModuleCache map[string]*core.GlobalState
 	pState          *parallelState
 	fls             afs.Filesystem
+
+	initiatorHasNoState     bool
+	ignoreModulesWithErrors bool
+
+	fallbackProject         core.Project
+	fallbackMainProgramPath string
+	memberAuthToken         string
 
 	inoxChunkCache *parse.ChunkCache
 
@@ -110,7 +142,7 @@ func addFsDirEndpoints(dir string, urlDirPath string, state *fsRoutingAPIConstru
 
 	//Handle errors
 	for i, err := range pstate.errors {
-		if state.config.IgnoreModulesWithErrors {
+		if state.ignoreModulesWithErrors {
 			endpoint := pstate.endpoints[i]
 			operation := pstate.operations[i]
 
@@ -258,7 +290,7 @@ func addFsDirEndpointsOfEntries(dir, urlDirPath string, state *fsRoutingAPIConst
 		})
 
 		if err != nil {
-			if state.config.IgnoreModulesWithErrors {
+			if state.ignoreModulesWithErrors {
 				continue
 			}
 			return fmt.Errorf("failed to parse %q: %w", absEntryPath, err)
@@ -404,7 +436,14 @@ func addOperationFsRouting(params operationAdditionParams) error {
 
 				//If the construction initiator has no state or is not the module providing the database,
 				//we have to prepare the provider module.
-			} else if initiatorState == nil || initiatorState.Module.Name() != path.Value {
+			} else if constructionState.initiatorHasNoState || initiatorState.Module.Name() != path.Value {
+
+				var fallbackProject core.Project
+
+				if constructionState.initiatorHasNoState && path.Value == constructionState.fallbackMainProgramPath {
+					//Project should only be set if the module is a main module.
+					fallbackProject = constructionState.fallbackProject
+				}
 
 				modState, _, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
 					Fpath:                     path.Value,
@@ -414,6 +453,9 @@ func addOperationFsRouting(params operationAdditionParams) error {
 
 					ParentContext:         goroutineCtx,
 					ParentContextRequired: true,
+					Project:               fallbackProject,
+					MemberAuthToken:       constructionState.memberAuthToken,
+
 					DefaultLimits: []core.Limit{
 						core.MustMakeNotAutoDepletingCountLimit(fs_ns.FS_READ_LIMIT_NAME, 10_000_000),
 					},
@@ -451,6 +493,9 @@ func addOperationFsRouting(params operationAdditionParams) error {
 
 			ParentContext:         dbProviderContext, //may be nil
 			ParentContextRequired: dbProviderContext != nil,
+			MemberAuthToken:       constructionState.memberAuthToken,
+			//Project should only be set if the module is a main module, therefore it is not set here.
+
 			DefaultLimits: []core.Limit{
 				core.MustMakeNotAutoDepletingCountLimit(fs_ns.FS_READ_LIMIT_NAME, 10_000_000),
 			},

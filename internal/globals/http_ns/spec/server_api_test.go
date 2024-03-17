@@ -12,6 +12,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/html_ns"
 	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/stretchr/testify/assert"
 )
@@ -106,6 +107,8 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 		}
 
 		fls.MkdirAll("/routes/", 0o700)
+
+		util.WriteFile(fls, "/main.ix", []byte("manifest {}"), 0700)
 
 		for file, content := range files {
 			fls.MkdirAll(filepath.Dir(file), 0700)
@@ -556,31 +559,85 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 	})
 
 	t.Run("caller is not a module (no state)", func(t *testing.T) {
-		testconfig.AllowParallelization(t)
+		t.Run("base case", func(t *testing.T) {
+			testconfig.AllowParallelization(t)
 
-		noState := true
-		ctx := setup(map[string]string{
-			"/routes/index.ix": `
-			manifest {
-				parameters: {}
+			noState := true
+			ctx := setup(map[string]string{
+				"/routes/index.ix": `
+				manifest {
+					parameters: {}
+				}
+			`,
+			}, noState)
+
+			defer ctx.CancelGracefully()
+
+			//Get the API
+
+			api, err := GetFSRoutingServerAPI(ctx, ServerApiResolutionConfig{
+				DynamicDir:              "/routes/",
+				FallbackMainProgramPath: "/main.ix",
+				FallbackProject:         project.NewDummyProject("test", ctx.GetFileSystem().(core.SnapshotableFilesystem)),
+			})
+
+			if !assert.NoError(t, err) {
+				return
 			}
-		`,
-		}, noState)
 
-		defer ctx.CancelGracefully()
+			_, err = api.GetOperation("GET", "/")
 
-		//Get the API
-
-		api, err := GetFSRoutingServerAPI(ctx, ServerApiResolutionConfig{
-			DynamicDir: "/routes/",
+			assert.NoError(t, err)
 		})
-		if !assert.NoError(t, err) {
-			return
-		}
 
-		_, err = api.GetOperation("GET", "/")
+		t.Run("an error should be returned if the fallback project is not specified", func(t *testing.T) {
+			testconfig.AllowParallelization(t)
 
-		assert.NoError(t, err)
+			noState := true
+			ctx := setup(map[string]string{
+				"/routes/index.ix": `
+				manifest {
+					parameters: {}
+				}
+			`,
+			}, noState)
+
+			defer ctx.CancelGracefully()
+
+			//Get the API
+
+			_, err := GetFSRoutingServerAPI(ctx, ServerApiResolutionConfig{
+				DynamicDir:              "/routes/",
+				FallbackMainProgramPath: "/main.ix",
+			})
+
+			assert.ErrorIs(t, err, ErrFallbackProjectNotSet)
+		})
+
+		t.Run("an error should be returned if the fallback main program path is not specified", func(t *testing.T) {
+			testconfig.AllowParallelization(t)
+
+			noState := true
+			ctx := setup(map[string]string{
+				"/routes/index.ix": `
+				manifest {
+					parameters: {}
+				}
+			`,
+			}, noState)
+
+			defer ctx.CancelGracefully()
+
+			//Get the API
+
+			_, err := GetFSRoutingServerAPI(ctx, ServerApiResolutionConfig{
+				DynamicDir:      "/routes/",
+				FallbackProject: project.NewDummyProject("test", ctx.GetFileSystem().(core.SnapshotableFilesystem)),
+			})
+
+			assert.ErrorIs(t, err, ErrFallbackMainProgramPathNotSet)
+		})
+
 	})
 
 	t.Run("an error is expected if at least two modules handle the same API operation", func(t *testing.T) {
