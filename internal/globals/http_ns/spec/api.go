@@ -16,7 +16,7 @@ var (
 	ErrAPIBeingFinalized   = errors.New("API value is being finalized")
 )
 
-// API is a high level type that contains several endpoints, it is immutable.
+// API is a high level type contains endpoints, it is immutable.
 type API struct {
 	endpoints             map[string]*ApiEndpoint
 	patternToEndpointPath map[string]string //example: /users/* -> /users/{id}

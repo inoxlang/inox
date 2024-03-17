@@ -51,7 +51,7 @@ func GetFSRoutingServerAPI(ctx *core.Context, config ServerApiResolutionConfig) 
 	if config.DynamicDir != "" {
 		state := &fsRoutingAPIConstructionState{
 			ctx:             ctx,
-			tempModuleCache: map[string]*core.GlobalState{},
+			tempModuleCache: preparedModuleCache,
 			pState:          &parallelState{endpointLocks: map[*ApiEndpoint]*sync.Mutex{}},
 			endpoints:       endpoints,
 			fls:             ctx.GetFileSystem(),
