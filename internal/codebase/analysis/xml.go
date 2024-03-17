@@ -14,12 +14,14 @@ var (
 	PREACT_SIGNALS_DETECTION_PATTERN   = regexp.MustCompile(`(signal|computed|effect|batch|untracked)\(`)
 )
 
-func analyzeXmlAttribute(xmlAttr *parse.XMLAttribute, state *inoxFileAnalysisState, result *Result) {
+func (a *analyzer) preAnalyzeXmlAttribute(xmlAttr *parse.XMLAttribute) {
 
 	ident, ok := xmlAttr.Name.(*parse.IdentifierLiteral)
 	if !ok {
 		return
 	}
+
+	result := a.result
 
 	//Tailwind
 	if ident.Name == "class" {
@@ -36,11 +38,12 @@ func analyzeXmlAttribute(xmlAttr *parse.XMLAttribute, state *inoxFileAnalysisSta
 
 }
 
-func analyzeXmlElement(node *parse.XMLElement, state *inoxFileAnalysisState, result *Result) {
+func (a *analyzer) preAnalyzeXmlElement(node *parse.XMLElement) {
+	result := a.result
 
 	switch node.EstimatedRawElementType {
 	case parse.HyperscriptScript:
-		addUsedHyperscriptFeaturesAndCommands(node, result)
+		a.addUsedHyperscriptFeaturesAndCommands(node)
 	case parse.JsScript:
 		if SURREAL_DETECTION_PATTERN.MatchString(node.RawElementContent) && !result.IsSurrealUsed {
 			result.IsSurrealUsed = true

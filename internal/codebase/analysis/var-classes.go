@@ -8,15 +8,15 @@ import (
 	"github.com/inoxlang/inox/internal/parse"
 )
 
-func addCssVariables(stylesheet css.Node, result *Result) {
+func (a *analyzer) addCssVariables(stylesheet css.Node) {
 
 	css.WalkAST(stylesheet, func(node, parent css.Node, ancestorChain []css.Node, after bool) (css.AstTraversalAction, error) {
 		if node.Type == css.CustomProperty {
 			varname := css.VarName(node.Data)
 
-			if _, ok := result.CssVariables[varname]; !ok {
+			if _, ok := a.result.CssVariables[varname]; !ok {
 				cssVar := varclasses.GetByVarname(varname)
-				result.CssVariables[cssVar.Name] = cssVar
+				a.result.CssVariables[cssVar.Name] = cssVar
 			}
 		}
 

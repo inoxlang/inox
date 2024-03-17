@@ -15,16 +15,18 @@ import (
 
 func TestAnalyzeTailwind(t *testing.T) {
 
-	ctx := core.NewContextWithEmptyState(core.ContextConfig{
-		Permissions: []core.Permission{core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")}},
-	}, nil)
-	defer ctx.CancelGracefully()
-
 	newMemFS := func() *fs_ns.MemFilesystem {
 		return fs_ns.NewMemFilesystem(100_000)
 	}
 
 	fls := newMemFS()
+
+	ctx := core.NewContextWithEmptyState(core.ContextConfig{
+		Permissions: []core.Permission{core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")}},
+		Filesystem:  fls,
+	}, nil)
+
+	defer ctx.CancelGracefully()
 
 	util.WriteFile(fls, "/routes/index.ix", []byte("manifest{}; return html<div class=\"flex-col\"></div>"), 0600)
 	util.WriteFile(fls, "/routes/todos/index.ix", []byte("manifest{}; return html<div class=\"flex-row\"></div>"), 0600)
@@ -35,7 +37,7 @@ func TestAnalyzeTailwind(t *testing.T) {
 	//Write a file outside of the top directory (configuration).
 	util.WriteFile(fls, "/ignored/index.ix", []byte("manifest{}; return html<div class=\"flex-row-reverse\"></div>"), 0600)
 
-	result, err := AnalyzeCodebase(ctx, fls, Configuration{
+	result, err := AnalyzeCodebase(ctx, Configuration{
 		TopDirectories: []string{"/routes"},
 		MaxFileSize:    1_000,
 	})
@@ -44,17 +46,13 @@ func TestAnalyzeTailwind(t *testing.T) {
 		return
 	}
 
-	expectedResult := newEmptyResult()
+	flexColRule := utils.MustGet(tailwind.GetBaseRuleset(".flex-col"))
+	flexRowRule := utils.MustGet(tailwind.GetBaseRuleset(".flex-row"))
 
-	{
-		flexColRule := utils.MustGet(tailwind.GetBaseRuleset(".flex-col"))
-		flexRowRule := utils.MustGet(tailwind.GetBaseRuleset(".flex-row"))
-
-		expectedResult.UsedTailwindRules = map[string]tailwind.Ruleset{
-			"flex-col": flexColRule,
-			"flex-row": flexRowRule,
-		}
+	expectedTailwindRules := map[string]tailwind.Ruleset{
+		"flex-col": flexColRule,
+		"flex-row": flexRowRule,
 	}
 
-	assert.Equal(t, expectedResult, result)
+	assert.Equal(t, expectedTailwindRules, result.UsedTailwindRules)
 }

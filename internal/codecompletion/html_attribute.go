@@ -56,6 +56,7 @@ func findHtmlAttributeValueCompletions(
 	attrName := attrIdent.Name
 	attrValue := strLiteral.ValueString()
 	inputData := search.inputData
+	codebaseAnalysis := inputData.CodebaseAnalysis
 
 	set, ok := html_ns.GetAttributeValueSet(attrName, tagName)
 	if ok {
@@ -132,10 +133,11 @@ func findHtmlAttributeValueCompletions(
 	}
 
 	//endpoint suggestions.
-	if inputData.CodebaseAnalysis.ServerAPI != nil && strings.HasPrefix(attrValue, "/") && (strings.HasPrefix(attrName, "hx-") || attrName == "href") {
+	if codebaseAnalysis != nil && codebaseAnalysis.ServerAPI != nil &&
+		strings.HasPrefix(attrValue, "/") && (strings.HasPrefix(attrName, "hx-") || attrName == "href") {
 		//local server
 
-		api := inputData.CodebaseAnalysis.ServerAPI
+		api := codebaseAnalysis.ServerAPI
 
 		var endpointPaths []string
 		api.ForEachHandlerModule(func(mod *core.PreparationCacheEntry, endpoint *spec.ApiEndpoint, operation spec.ApiOperation) error {

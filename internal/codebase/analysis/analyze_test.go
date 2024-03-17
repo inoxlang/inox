@@ -10,18 +10,24 @@ import (
 )
 
 func TestAnalyze(t *testing.T) {
-	ctx := core.NewContextWithEmptyState(core.ContextConfig{
-		Permissions: []core.Permission{core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")}},
-	}, nil)
-	defer ctx.CancelGracefully()
 
-	newMemFS := func() *fs_ns.MemFilesystem {
-		return fs_ns.NewMemFilesystem(100_000)
+	setup := func() *core.Context {
+		newMemFS := func() *fs_ns.MemFilesystem {
+			return fs_ns.NewMemFilesystem(100_000)
+		}
+
+		return core.NewContextWithEmptyState(core.ContextConfig{
+			Permissions: []core.Permission{core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")}},
+			Filesystem:  newMemFS(),
+		}, nil)
+
 	}
 
 	t.Run("empty", func(t *testing.T) {
-		fls := newMemFS()
-		result, err := AnalyzeCodebase(ctx, fls, Configuration{
+		ctx := setup()
+		defer ctx.CancelGracefully()
+
+		result, err := AnalyzeCodebase(ctx, Configuration{
 			TopDirectories: []string{"/"},
 		})
 		if !assert.NoError(t, err) {

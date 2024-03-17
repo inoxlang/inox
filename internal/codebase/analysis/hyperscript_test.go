@@ -14,21 +14,25 @@ import (
 
 func TestAnalyzeHyperscript(t *testing.T) {
 
-	ctx := core.NewContextWithEmptyState(core.ContextConfig{
-		Permissions: []core.Permission{core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")}},
-	}, nil)
-	defer ctx.CancelGracefully()
+	setup := func() *core.Context {
+		newMemFS := func() *fs_ns.MemFilesystem {
+			return fs_ns.NewMemFilesystem(100_000)
+		}
 
-	newMemFS := func() *fs_ns.MemFilesystem {
-		return fs_ns.NewMemFilesystem(100_000)
+		return core.NewContextWithEmptyState(core.ContextConfig{
+			Permissions: []core.Permission{core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")}},
+			Filesystem:  newMemFS(),
+		}, nil)
+
 	}
 
 	t.Run("attribute shorthand", func(t *testing.T) {
-		fls := newMemFS()
+		ctx := setup()
+		defer ctx.CancelGracefully()
 
-		util.WriteFile(fls, "/routes/index.ix", []byte("manifest{}; return html<div {on click toggle .red}></div>"), 0600)
+		util.WriteFile(ctx.GetFileSystem(), "/routes/index.ix", []byte("manifest{}; return html<div {on click toggle .red}></div>"), 0600)
 
-		result, err := AnalyzeCodebase(ctx, fls, Configuration{
+		result, err := AnalyzeCodebase(ctx, Configuration{
 			TopDirectories: []string{"/"},
 		})
 
@@ -36,19 +40,25 @@ func TestAnalyzeHyperscript(t *testing.T) {
 			return
 		}
 
-		expectedResult := newEmptyResult()
-		expectedResult.UsedHyperscriptCommands["toggle"] = utils.MustGet(hsgen.GetBuiltinDefinition("toggle"))
-		expectedResult.UsedHyperscriptFeatures["on"] = utils.MustGet(hsgen.GetBuiltinDefinition("on"))
+		expectedUsedCommands := map[string]hsgen.Definition{
+			"toggle": utils.MustGet(hsgen.GetBuiltinDefinition("toggle")),
+		}
 
-		assert.Equal(t, expectedResult, result)
+		expectedUseFeatures := map[string]hsgen.Definition{
+			"on": utils.MustGet(hsgen.GetBuiltinDefinition("on")),
+		}
+
+		assert.Equal(t, expectedUsedCommands, result.UsedHyperscriptCommands)
+		assert.Equal(t, expectedUseFeatures, result.UsedHyperscriptFeatures)
 	})
 
 	t.Run("script", func(t *testing.T) {
-		fls := newMemFS()
+		ctx := setup()
+		defer ctx.CancelGracefully()
 
-		util.WriteFile(fls, "/routes/index.ix", []byte("manifest{}; return html<script h>on click toggle .red></script>"), 0600)
+		util.WriteFile(ctx.GetFileSystem(), "/routes/index.ix", []byte("manifest{}; return html<script h>on click toggle .red></script>"), 0600)
 
-		result, err := AnalyzeCodebase(ctx, fls, Configuration{
+		result, err := AnalyzeCodebase(ctx, Configuration{
 			TopDirectories: []string{"/"},
 		})
 
@@ -56,10 +66,15 @@ func TestAnalyzeHyperscript(t *testing.T) {
 			return
 		}
 
-		expectedResult := newEmptyResult()
-		expectedResult.UsedHyperscriptCommands["toggle"] = utils.MustGet(hsgen.GetBuiltinDefinition("toggle"))
-		expectedResult.UsedHyperscriptFeatures["on"] = utils.MustGet(hsgen.GetBuiltinDefinition("on"))
+		expectedUsedCommands := map[string]hsgen.Definition{
+			"toggle": utils.MustGet(hsgen.GetBuiltinDefinition("toggle")),
+		}
 
-		assert.Equal(t, expectedResult, result)
+		expectedUseFeatures := map[string]hsgen.Definition{
+			"on": utils.MustGet(hsgen.GetBuiltinDefinition("on")),
+		}
+
+		assert.Equal(t, expectedUsedCommands, result.UsedHyperscriptCommands)
+		assert.Equal(t, expectedUseFeatures, result.UsedHyperscriptFeatures)
 	})
 }

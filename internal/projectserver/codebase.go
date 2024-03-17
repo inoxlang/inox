@@ -3,7 +3,6 @@ package projectserver
 import (
 	"github.com/inoxlang/inox/internal/codebase/analysis"
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -13,25 +12,28 @@ func analyzeCodebaseAndRegen(initial bool, session *Session) {
 	session.lock.Lock()
 	project := session.project
 	lspFilesystem := session.filesystem
+	memberAuthToken := session.memberAuthToken
+	inoxChunkCache := session.inoxChunkCache
+	stylesheetCache := session.stylesheetCache
 	session.lock.Unlock()
 
 	if project == nil {
 		return
 	}
 
-	handlingCtx := core.NewContextWithEmptyState(core.ContextConfig{
-		Permissions:   []core.Permission{core.FilesystemPermission{Kind_: permkind.Read, Entity: core.ROOT_PREFIX_PATH_PATTERN}},
-		Filesystem:    lspFilesystem,
-		ParentContext: session.rpcSession.Context(),
-	}, nil)
+	rpcSessionCtx := session.rpcSession.Context()
+	handlingCtx := rpcSessionCtx.BoundChildWithOptions(core.BoundChildContextOptions{
+		Filesystem: lspFilesystem,
+	})
 
 	defer handlingCtx.CancelGracefully()
 
-	analysisResult, err := analysis.AnalyzeCodebase(handlingCtx, session.filesystem, analysis.Configuration{
+	analysisResult, err := analysis.AnalyzeCodebase(handlingCtx, analysis.Configuration{
 		TopDirectories:     []string{"/"},
-		InoxChunkCache:     session.inoxChunkCache,
-		CssStylesheetCache: session.stylesheetCache,
+		InoxChunkCache:     inoxChunkCache,
+		CssStylesheetCache: stylesheetCache,
 		Project:            project,
+		MemberAuthToken:    memberAuthToken,
 	})
 	if err != nil {
 		session.Logger().Println(session.rpcSession.Client(), err)

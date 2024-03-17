@@ -6,11 +6,11 @@ import (
 	"github.com/inoxlang/inox/internal/parse"
 )
 
-func analyzeHyperscriptAtributeShortand(node *parse.HyperscriptAttributeShorthand, state *inoxFileAnalysisState, result *Result) {
-	addUsedHyperscriptFeaturesAndCommands(node, result)
+func (a *analyzer) preAnalyzeHyperscriptAtributeShortand(node *parse.HyperscriptAttributeShorthand) {
+	a.addUsedHyperscriptFeaturesAndCommands(node)
 }
 
-func addUsedHyperscriptFeaturesAndCommands(node parse.Node, result *Result) {
+func (a *analyzer) addUsedHyperscriptFeaturesAndCommands(node parse.Node) {
 	var tokens []hscode.Token
 
 	switch node := node.(type) {
@@ -40,9 +40,9 @@ func addUsedHyperscriptFeaturesAndCommands(node parse.Node, result *Result) {
 			if ok {
 				switch def.Kind {
 				case hsgen.CommandDefinition:
-					result.UsedHyperscriptCommands[def.Name] = def
+					a.result.UsedHyperscriptCommands[def.Name] = def
 				case hsgen.FeatureDefinition:
-					result.UsedHyperscriptFeatures[def.Name] = def
+					a.result.UsedHyperscriptFeatures[def.Name] = def
 				}
 			}
 		}

@@ -4,12 +4,23 @@ import (
 	"github.com/inoxlang/inox/internal/css"
 	"github.com/inoxlang/inox/internal/css/tailwind"
 	"github.com/inoxlang/inox/internal/css/varclasses"
+	"github.com/inoxlang/inox/internal/globals/http_ns/spec"
 	"github.com/inoxlang/inox/internal/hyperscript/hsgen"
 	"github.com/inoxlang/inox/internal/memds"
 )
 
 type Result struct {
 	inner *memds.DirectedGraph[Node, Edge, additionalGraphData]
+
+	//Backend
+
+	InoxModules        map[ /*absolute path*/ string]InoxModule
+	ServerAPI          *spec.API //may be nil
+	ServerStaticDir    string    //may be empty
+	ServerDynamicDir   string    //may be empty
+	MajorBackendErrors []error
+
+	//Frontend
 
 	UsedHtmxExtensions map[string]struct{}
 
@@ -32,7 +43,14 @@ type additionalGraphData struct {
 
 func newEmptyResult() *Result {
 	result := &Result{
-		inner:                   memds.NewDirectedGraphWithAdditionalData[Node, Edge](memds.ThreadSafe, additionalGraphData{}),
+		inner: memds.NewDirectedGraphWithAdditionalData[Node, Edge](memds.ThreadSafe, additionalGraphData{}),
+
+		//Backend
+
+		InoxModules: make(map[string]InoxModule),
+
+		//Frontend
+
 		UsedHtmxExtensions:      make(map[string]struct{}),
 		UsedHyperscriptCommands: make(map[string]hsgen.Definition),
 		UsedHyperscriptFeatures: make(map[string]hsgen.Definition),
