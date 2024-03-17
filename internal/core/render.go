@@ -241,7 +241,7 @@ func (list *List) Render(ctx *Context, w io.Writer, config RenderingInput) (int,
 }
 
 func (obj *Object) IsRecursivelyRenderable(ctx *Context, input RenderingInput) bool {
-	closestState := ctx.GetClosestState()
+	closestState := ctx.MustGetClosestState()
 	obj._lock(closestState)
 	defer obj._unlock(closestState)
 	for _, v := range obj.values {
@@ -258,7 +258,7 @@ func (obj *Object) Render(ctx *Context, w io.Writer, config RenderingInput) (int
 		return 0, ErrNotRenderable
 	}
 
-	closestState := ctx.GetClosestState()
+	closestState := ctx.MustGetClosestState()
 	obj._lock(closestState)
 	defer obj._unlock(closestState)
 	switch config.Mime {

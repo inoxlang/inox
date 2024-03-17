@@ -170,7 +170,9 @@ func (s *Server) startWebsocketServer(addr string) error {
 		return err
 	}
 
-	wsServer.Logger().Info().Msgf("start HTTPS server on %s", addr)
+	logger := wsServer.Logger()
+	logger.Info().Msgf("start HTTPS server on %s", addr)
+
 	err = httpServer.ListenAndServeTLS("", "")
 	if err != nil {
 		return fmt.Errorf("failed to create HTTPS server: %w", err)

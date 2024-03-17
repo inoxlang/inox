@@ -224,7 +224,7 @@ func (s *TestSuite) Run(ctx *Context, options ...Option) (*LThread, error) {
 		}
 	}
 
-	spawnerState := ctx.GetClosestState()
+	spawnerState := ctx.MustGetClosestState()
 	var parentTestSuite *TestSuite
 	if spawnerState.TestingState.Item != nil {
 		parentTestSuite = spawnerState.TestingState.Item.(*TestSuite)
@@ -444,7 +444,7 @@ func (c *TestCase) Run(ctx *Context, options ...Option) (*LThread, error) {
 		}
 	}
 
-	spawnerState := ctx.GetClosestState()
+	spawnerState := ctx.MustGetClosestState()
 	if spawnerState.TestingState.Item == nil {
 		panic(ErrUnreachable)
 	}
@@ -786,9 +786,9 @@ func runTestItem(
 					defer utils.Recover()
 
 					if err == nil {
-						lthreadCtx.Logger().Warn().Msg("tested program finished")
+						lthreadCtx.WarnLogEvent().Msg("tested program finished")
 					} else {
-						lthreadCtx.Logger().Err(err).Msg("tested program stopped with an error")
+						lthreadCtx.ErrLogEvent(err).Msg("tested program stopped with an error")
 					}
 				}()
 			},

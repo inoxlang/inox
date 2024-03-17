@@ -51,7 +51,7 @@ func (s *LSPSession) SmartUnlock(state *core.GlobalState) {
 }
 
 func (s *LSPSession) Prop(ctx *core.Context, name string) core.Value {
-	state := ctx.GetClosestState()
+	state := ctx.MustGetClosestState()
 	s.lock.Lock(state, s)
 	defer s.lock.Unlock(state, s)
 
@@ -91,7 +91,7 @@ func (s *LSPSession) Equal(ctx *core.Context, other core.Value, alreadyCompared 
 }
 
 func (s *LSPSession) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
-	state := config.Context.GetClosestState()
+	state := config.Context.MustGetClosestState()
 	s.lock.Lock(state, s)
 	defer s.lock.Unlock(state, s)
 

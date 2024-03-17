@@ -81,7 +81,7 @@ func (c *ControlClient) connect() error {
 	defer c.lock.Unlock()
 
 	if c.conn != nil && !c.conn.IsClosedOrClosing() {
-		c.ctx.Logger().Print("close connection with control server")
+		c.ctx.LoggerPrint("close connection with control server")
 		c.conn.Close()
 	}
 
@@ -90,7 +90,7 @@ func (c *ControlClient) connect() error {
 		InsecureSkipVerify: true,
 	}
 
-	c.ctx.Logger().Print("(re)connect to control server")
+	c.ctx.LoggerPrint("(re)connect to control server")
 
 	insecure := true
 	conn, err := ws_ns.WebsocketConnect(ws_ns.WebsocketConnectParams{

@@ -11,7 +11,7 @@ func (set *Set) Watcher(ctx *core.Context, config core.WatcherConfiguration) cor
 		config.Depth = DEFAULT_WATCHING_DEPTH
 	}
 
-	closestState := ctx.GetClosestState()
+	closestState := ctx.MustGetClosestState()
 	watcher := core.NewGenericWatcher(config)
 
 	set._lock(closestState)

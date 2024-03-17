@@ -38,7 +38,7 @@ func Filter(ctx *Context, iterable Iterable, condition Value) *List {
 
 	switch fil := condition.(type) {
 	case AstNode:
-		state := ctx.GetClosestState()
+		state := ctx.MustGetClosestState()
 		treeWalkState := NewTreeWalkStateWithGlobal(state)
 
 		treeWalkState.PushScope()
@@ -97,7 +97,7 @@ func GetAtMost(ctx *Context, maxCount Int, iterable SerializableIterable) *List 
 // Some is the value  of the 'some' global.
 func Some(ctx *Context, iterable Iterable, condition Value) Bool {
 
-	state := ctx.GetClosestState()
+	state := ctx.MustGetClosestState()
 	treeWalkState := NewTreeWalkStateWithGlobal(state)
 
 	treeWalkState.PushScope()
@@ -133,7 +133,7 @@ func Some(ctx *Context, iterable Iterable, condition Value) Bool {
 // All is the value of the 'all' global.
 func All(ctx *Context, iterable Iterable, condition Value) Bool {
 
-	state := ctx.GetClosestState()
+	state := ctx.MustGetClosestState()
 	treeWalkState := NewTreeWalkStateWithGlobal(state)
 
 	treeWalkState.PushScope()
@@ -170,7 +170,7 @@ func All(ctx *Context, iterable Iterable, condition Value) Bool {
 // None is the value of the 'none' global.
 func None(ctx *Context, iterable Iterable, condition Value) Bool {
 
-	state := ctx.GetClosestState()
+	state := ctx.MustGetClosestState()
 	treeWalkState := NewTreeWalkStateWithGlobal(state)
 
 	treeWalkState.PushScope()

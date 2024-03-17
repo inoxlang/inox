@@ -669,7 +669,7 @@ func (c *MutationCallbacks) updateNextIndex() {
 }
 
 func (obj *Object) OnMutation(ctx *Context, microtask MutationCallbackMicrotask, config MutationWatchingConfiguration) (CallbackHandle, error) {
-	state := ctx.GetClosestState()
+	state := ctx.MustGetClosestState()
 	obj._lock(state)
 	defer obj._unlock(state)
 
@@ -729,7 +729,7 @@ func (obj *Object) addPropMutationCallbackNoLock(ctx *Context, index int, val Va
 		handle, err := watchable.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
 			registerAgain = true
 
-			state := ctx.GetClosestState()
+			state := ctx.MustGetClosestState()
 			obj._lock(state)
 			callbacks := obj.mutationCallbacks
 			objWatchingDepth := obj.watchingDepth
@@ -757,7 +757,7 @@ func (obj *Object) addPropMutationCallbackNoLock(ctx *Context, index int, val Va
 }
 
 func (obj *Object) RemoveMutationCallbackMicrotasks(ctx *Context) {
-	state := ctx.GetClosestState()
+	state := ctx.MustGetClosestState()
 	obj._lock(state)
 	defer obj._unlock(state)
 
@@ -769,7 +769,7 @@ func (obj *Object) RemoveMutationCallbackMicrotasks(ctx *Context) {
 }
 
 func (obj *Object) RemoveMutationCallback(ctx *Context, handle CallbackHandle) {
-	state := ctx.GetClosestState()
+	state := ctx.MustGetClosestState()
 	obj._lock(state)
 	defer obj._unlock(state)
 

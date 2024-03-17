@@ -10,7 +10,7 @@ type TempProjectTokens struct {
 }
 
 func (p *Project) TempProjectTokens(ctx *core.Context) (tokens TempProjectTokens, _ error) {
-	closestState := ctx.GetClosestState()
+	closestState := ctx.MustGetClosestState()
 	p.lock.Lock(closestState, p)
 	defer p.lock.Unlock(closestState, p)
 

@@ -1118,7 +1118,7 @@ func testDebugModeEval(
 			`)
 
 			global := WrapGoFunction(Sleep)
-			ctx.GetClosestState().Globals.Set("sleep", global)
+			ctx.MustGetClosestState().Globals.Set("sleep", global)
 
 			controlChan := debugger.ControlChan()
 			stoppedChan := debugger.StoppedChan()
@@ -2126,9 +2126,9 @@ func testDebugModeEval(
 			return 1
 		`)
 
-		ctx.GetClosestState().Globals.Set("sleep", WrapGoFunction(Sleep))
+		ctx.MustGetClosestState().Globals.Set("sleep", WrapGoFunction(Sleep))
 
-		ctx.GetClosestState().Globals.Set("send_secondary_debug_event", WrapGoFunction(func(ctx *Context) {
+		ctx.MustGetClosestState().Globals.Set("send_secondary_debug_event", WrapGoFunction(func(ctx *Context) {
 			debugger.ControlChan() <- DebugCommandInformAboutSecondaryEvent{
 				Event: IncomingMessageReceivedEvent{
 					MessageType: "x",

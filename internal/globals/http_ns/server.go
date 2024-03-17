@@ -149,7 +149,7 @@ type HttpsServer struct {
 // The server's maxLimits are constructed by merging the default max request handling limits with the max-limits in arguments.
 func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*HttpsServer, error) {
 	server := &HttpsServer{
-		state:          ctx.GetClosestState(),
+		state:          ctx.MustGetClosestState(),
 		defaultCSP:     DEFAULT_CSP,
 		fileCompressor: compressarch.NewFileCompressor(),
 	}

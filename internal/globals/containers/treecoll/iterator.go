@@ -69,7 +69,7 @@ func (it *TreeIterator) Equal(ctx *core.Context, other core.Value, alreadyCompar
 // -----------------------------
 
 func (t *Tree) Iterator(ctx *core.Context, config core.IteratorConfiguration) core.Iterator {
-	state := ctx.GetClosestState()
+	state := ctx.MustGetClosestState()
 	t._lock(state)
 	defer t._unlock(state)
 
@@ -77,7 +77,7 @@ func (t *Tree) Iterator(ctx *core.Context, config core.IteratorConfiguration) co
 }
 
 func (node *TreeNode) Iterator(ctx *core.Context, config core.IteratorConfiguration) core.Iterator {
-	state := ctx.GetClosestState()
+	state := ctx.MustGetClosestState()
 	node.tree._lock(state)
 	defer node.tree._unlock(state)
 

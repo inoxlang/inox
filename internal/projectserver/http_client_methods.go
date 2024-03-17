@@ -178,7 +178,7 @@ func handleHttpRequest(callCtx context.Context, req interface{}) (interface{}, e
 			if e != nil {
 				err := utils.ConvertPanicValueToError(e)
 				err = fmt.Errorf("%w: %s", err, debug.Stack())
-				rpcSession.Logger().Println("HTTP Request", "(id "+params.RequestID+")", err)
+				rpcSession.LoggerPrintln("HTTP Request", "(id "+params.RequestID+")", err)
 			}
 		}()
 

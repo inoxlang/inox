@@ -65,7 +65,7 @@ func getHoverContent(handlingCtx *core.Context, params hoverContentParams) (*def
 	}
 
 	if preparationResult.state == nil || state.SymbolicData == nil {
-		rpcSession.Logger().Println("no data")
+		rpcSession.LoggerPrintln("no data")
 		return &defines.Hover{}, nil
 	}
 
@@ -74,7 +74,7 @@ func getHoverContent(handlingCtx *core.Context, params hoverContentParams) (*def
 	cursorIndex := span.Start
 
 	if !ok || hoveredNode == nil {
-		rpcSession.Logger().Println("no data")
+		rpcSession.LoggerPrintln("no data")
 		return &defines.Hover{}, nil
 	}
 
@@ -135,7 +135,7 @@ func getHoverContent(handlingCtx *core.Context, params hoverContentParams) (*def
 			}, nil
 		}
 
-		rpcSession.Logger().Println("no data")
+		rpcSession.LoggerPrintln("no data")
 		return &defines.Hover{}, nil
 	}
 

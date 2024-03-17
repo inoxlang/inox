@@ -172,7 +172,7 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 	)
 
 	if parentContext != nil {
-		parentState = parentContext.GetClosestState()
+		parentState = parentContext.MustGetClosestState()
 	}
 
 	if (project == nil || reflect.ValueOf(project).IsZero()) && args.UseParentStateAsMainState && parentState != nil {

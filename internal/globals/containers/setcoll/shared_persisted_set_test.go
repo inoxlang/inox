@@ -46,7 +46,7 @@ func TestSharedPersistedSetAdd(t *testing.T) {
 		}
 
 		set := val.(*Set)
-		set.Share(ctx.GetClosestState())
+		set.Share(ctx.MustGetClosestState())
 
 		obj := core.NewObjectFromMap(core.ValMap{}, ctx)
 		set.Add(ctx, obj)
@@ -89,10 +89,10 @@ func TestSharedPersistedSetAdd(t *testing.T) {
 		}
 
 		set1 := val1.(*Set)
-		set1.Share(ctx.GetClosestState())
+		set1.Share(ctx.MustGetClosestState())
 
 		set2 := val2.(*Set)
-		set2.Share(ctx.GetClosestState())
+		set2.Share(ctx.MustGetClosestState())
 
 		obj := core.NewObjectFromMap(core.ValMap{}, ctx)
 		set1.Add(ctx, obj)
@@ -133,7 +133,7 @@ func TestSharedPersistedSetAdd(t *testing.T) {
 		}
 
 		set := val1.(*Set)
-		set.Share(ctx.GetClosestState())
+		set.Share(ctx.MustGetClosestState())
 
 		obj1 := core.NewObjectFromMap(core.ValMap{"name": core.String("a")}, ctx)
 		obj2 := core.NewObjectFromMap(core.ValMap{"name": core.String("a")}, ctx)
@@ -171,7 +171,7 @@ func TestSharedPersistedSetAdd(t *testing.T) {
 
 		set := val.(*Set)
 
-		set.Share(ctx.GetClosestState())
+		set.Share(ctx.MustGetClosestState())
 
 		if !assert.NoError(t, err) {
 			return
@@ -221,7 +221,7 @@ func TestSharedPersistedSetAdd(t *testing.T) {
 		})
 
 		set := val.(*Set)
-		set.Share(ctx.GetClosestState())
+		set.Share(ctx.MustGetClosestState())
 
 		if !assert.NoError(t, err) {
 			return
@@ -279,7 +279,7 @@ func TestSharedPersistedSetAdd(t *testing.T) {
 		})
 
 		set := val.(*Set)
-		set.Share(ctx1.GetClosestState())
+		set.Share(ctx1.MustGetClosestState())
 
 		//The tx1 is started after the KV write in order
 		//for the SetSerialized call to be already commited.
@@ -363,7 +363,7 @@ func TestSharedPersistedSetAdd(t *testing.T) {
 		}
 
 		set := val.(*Set)
-		set.Share(ctx1.GetClosestState())
+		set.Share(ctx1.MustGetClosestState())
 
 		set.Add(ctx1, INT_1)
 		assert.True(t, bool(set.Has(ctx1, INT_1)))
@@ -408,7 +408,7 @@ func TestSharedPersistedSetAdd(t *testing.T) {
 
 		//First transaction.
 
-		set.Share(ctx1.GetClosestState())
+		set.Share(ctx1.MustGetClosestState())
 
 		if !assert.NoError(t, err) {
 			return
@@ -519,7 +519,7 @@ func TestSharedPersistedSetRemove(t *testing.T) {
 		}
 
 		set := val1.(*Set)
-		set.Share(ctx.GetClosestState())
+		set.Share(ctx.MustGetClosestState())
 
 		obj1 := core.NewObjectFromMap(core.ValMap{"name": core.String("a")}, ctx)
 		obj2 := core.NewObjectFromMap(core.ValMap{"name": core.String("a")}, ctx)
@@ -551,7 +551,7 @@ func TestSharedPersistedSetRemove(t *testing.T) {
 		}
 
 		set := val.(*Set)
-		set.Share(ctx.GetClosestState())
+		set.Share(ctx.MustGetClosestState())
 
 		set.Remove(ctx, INT_1)
 
@@ -594,7 +594,7 @@ func TestSharedPersistedSetRemove(t *testing.T) {
 		}
 
 		set := val.(*Set)
-		set.Share(ctx.GetClosestState())
+		set.Share(ctx.MustGetClosestState())
 
 		set.Remove(ctx, INT_1)
 
@@ -651,7 +651,7 @@ func TestSharedPersistedSetRemove(t *testing.T) {
 		})
 
 		set := val.(*Set)
-		set.Share(ctx1.GetClosestState())
+		set.Share(ctx1.MustGetClosestState())
 
 		tx1 := core.StartNewTransaction(ctx1)
 
@@ -728,7 +728,7 @@ func TestSharedPersistedSetRemove(t *testing.T) {
 		}
 
 		set := val.(*Set)
-		set.Share(ctx1.GetClosestState())
+		set.Share(ctx1.MustGetClosestState())
 
 		set.Remove(ctx1, INT_1)
 		assert.False(t, bool(set.Has(ctx1, INT_1)))
@@ -775,7 +775,7 @@ func TestSharedPersistedSetHas(t *testing.T) {
 		}
 
 		set := val1.(*Set)
-		set.Share(ctx.GetClosestState())
+		set.Share(ctx.MustGetClosestState())
 
 		obj1 := core.NewObjectFromMap(core.ValMap{"name": core.String("a")}, ctx)
 		obj2 := core.NewObjectFromMap(core.ValMap{"name": core.String("a")}, ctx)
@@ -811,7 +811,7 @@ func TestSharedPersistedSetHas(t *testing.T) {
 		}
 
 		set := val.(*Set)
-		set.Share(ctx1.GetClosestState())
+		set.Share(ctx1.MustGetClosestState())
 
 		assert.True(t, bool(set.Has(ctx1, INT_1)))
 		assert.True(t, bool(set.Has(ctx2, INT_1)))

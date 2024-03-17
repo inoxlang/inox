@@ -6324,7 +6324,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state.OutputFieldsInitialized.Store(true)
 
 			state.Globals.Set("log", WrapGoFunction(func(ctx *Context, msg String) {
-				ctx.Logger().Debug().Msg(string(msg))
+				ctx.DebugLogEvent().Msg(string(msg))
 			}))
 
 			state.Module = mod
@@ -6405,10 +6405,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state.OutputFieldsInitialized.Store(true)
 
 			state.Globals.Set("log_debug", WrapGoFunction(func(ctx *Context, msg String) {
-				ctx.Logger().Debug().Msg(string(msg))
+				ctx.DebugLogEvent().Msg(string(msg))
 			}))
 			state.Globals.Set("log_info", WrapGoFunction(func(ctx *Context, msg String) {
-				ctx.Logger().Info().Msg(string(msg))
+				ctx.InfoLogEvent().Msg(string(msg))
 			}))
 
 			state.Module = mod

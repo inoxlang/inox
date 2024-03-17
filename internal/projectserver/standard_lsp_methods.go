@@ -345,7 +345,7 @@ func handleCodeActionWithSliceCodeAction(callCtx context.Context, req *defines.C
 	})
 
 	if err != nil {
-		rpcSession.Logger().Println("failed to get code actions", err)
+		rpcSession.LoggerPrintln("failed to get code actions", err)
 		return nil, nil
 	}
 	return actions, nil
@@ -408,7 +408,7 @@ func handleDefinition(callCtx context.Context, req *defines.DefinitionParams) (r
 	}
 
 	if !ok || state == nil || state.SymbolicData == nil {
-		rpcSession.Logger().Println("failed to prepare source file", err)
+		rpcSession.LoggerPrintln("failed to prepare source file", err)
 		return nil, nil
 	}
 
@@ -416,7 +416,7 @@ func handleDefinition(callCtx context.Context, req *defines.DefinitionParams) (r
 	foundNode, ancestors, ok := chunk.GetNodeAndChainAtSpan(span)
 
 	if !ok || foundNode == nil {
-		rpcSession.Logger().Println("no data: node not found")
+		rpcSession.LoggerPrintln("no data: node not found")
 		return nil, nil
 	}
 
@@ -483,7 +483,7 @@ func handleDefinition(callCtx context.Context, req *defines.DefinitionParams) (r
 	}
 
 	if !positionSet {
-		rpcSession.Logger().Println("no data")
+		rpcSession.LoggerPrintln("no data")
 		return nil, nil
 	}
 
@@ -565,7 +565,7 @@ func handleDidOpenDocument(callCtx context.Context, req *defines.DidOpenTextDocu
 
 	fsErr := fsutil.WriteFile(fls.unsavedDocumentsFS(), fpath, []byte(fullDocumentText), 0700)
 	if fsErr != nil {
-		rpcSession.Logger().Println("failed to update state of document", fpath+":", fsErr)
+		rpcSession.LoggerPrintln("failed to update state of document", fpath+":", fsErr)
 	}
 
 	registrationId := uuid.New()
@@ -657,7 +657,7 @@ func handleDidSaveDocument(callCtx context.Context, req *defines.DidSaveTextDocu
 	if req.Text != nil {
 		fsErr := fsutil.WriteFile(fls.unsavedDocumentsFS(), fpath, []byte(*req.Text), 0700)
 		if fsErr != nil {
-			rpcSession.Logger().Println("failed to update state of document", fpath+":", fsErr)
+			rpcSession.LoggerPrintln("failed to update state of document", fpath+":", fsErr)
 		}
 
 		session := getCreateLockedProjectSession(rpcSession)

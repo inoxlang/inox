@@ -279,7 +279,7 @@ func (h TopicHelp) String(config HelpMessageConfig) string {
 }
 
 func Help(ctx *core.Context, args ...core.Value) {
-	out := ctx.GetClosestState().Out
+	out := ctx.MustGetClosestState().Out
 	if len(args) == 0 {
 		out.Write([]byte(helpUsage))
 		return

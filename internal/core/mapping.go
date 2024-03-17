@@ -134,7 +134,7 @@ func (m *Mapping) Compute(ctx *Context, key Serializable) Value {
 	shared := m.shared.Load()
 
 	computeStaticKeyEntryValue := func(entry *parse.StaticMappingEntry) Value {
-		callingState := ctx.GetClosestState()
+		callingState := ctx.MustGetClosestState()
 
 		//TODO: optimize
 		var globalConstants map[string]Value
@@ -181,7 +181,7 @@ func (m *Mapping) Compute(ctx *Context, key Serializable) Value {
 	}
 
 	computeDynKeyEntryValue := func(patt Pattern, entry *parse.DynamicMappingEntry) Value {
-		callingState := ctx.GetClosestState()
+		callingState := ctx.MustGetClosestState()
 		varName := entry.KeyVar.(*parse.IdentifierLiteral).Name
 
 		var globalConstants map[string]Value

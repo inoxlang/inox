@@ -222,7 +222,7 @@ func TestSetIteration(t *testing.T) {
 			},
 		})
 
-		set.Share(ctx1.GetClosestState())
+		set.Share(ctx1.MustGetClosestState())
 
 		const ADD_COUNT = 10_000
 

@@ -59,7 +59,7 @@ func TestSharedUnpersistedMapSet(t *testing.T) {
 			Value: core.SERIALIZABLE_PATTERN,
 		})
 
-		m.Share(ctx1.GetClosestState())
+		m.Share(ctx1.MustGetClosestState())
 
 		m.Set(ctx1, INT_1, STRING_A)
 		assert.True(t, bool(m.Has(ctx1, INT_1)))
@@ -97,7 +97,7 @@ func TestSharedUnpersistedMapSet(t *testing.T) {
 			Key:   core.SERIALIZABLE_PATTERN,
 			Value: core.SERIALIZABLE_PATTERN,
 		})
-		m.Share(ctx1.GetClosestState())
+		m.Share(ctx1.MustGetClosestState())
 
 		//First transaction.
 
@@ -140,7 +140,7 @@ func TestSharedUnpersistedMapHas(t *testing.T) {
 			Key:   core.SERIALIZABLE_PATTERN,
 			Value: core.SERIALIZABLE_PATTERN,
 		})
-		m.Share(ctx1.GetClosestState())
+		m.Share(ctx1.MustGetClosestState())
 
 		assert.True(t, bool(m.Has(ctx1, INT_1)))
 		assert.True(t, bool(m.Has(ctx2, INT_1)))
@@ -166,7 +166,7 @@ func TestSharedUnpersistedMapHas(t *testing.T) {
 			Key:   core.SERIALIZABLE_PATTERN,
 			Value: core.SERIALIZABLE_PATTERN,
 		})
-		m.Share(ctx1.GetClosestState())
+		m.Share(ctx1.MustGetClosestState())
 
 		const ADD_COUNT = 10_000
 
@@ -213,7 +213,7 @@ func TestSharedUnpersistedMapContains(t *testing.T) {
 			Key:   core.SERIALIZABLE_PATTERN,
 			Value: core.SERIALIZABLE_PATTERN,
 		})
-		m.Share(ctx1.GetClosestState())
+		m.Share(ctx1.MustGetClosestState())
 
 		assert.True(t, bool(m.Contains(ctx1, STRING_A)))
 		assert.True(t, bool(m.Contains(ctx2, STRING_A)))
@@ -239,7 +239,7 @@ func TestSharedUnpersistedMapContains(t *testing.T) {
 			Key:   core.SERIALIZABLE_PATTERN,
 			Value: core.SERIALIZABLE_PATTERN,
 		})
-		m.Share(ctx1.GetClosestState())
+		m.Share(ctx1.MustGetClosestState())
 
 		const ADD_COUNT = 10_000
 
@@ -286,7 +286,7 @@ func TestSharedUnpersistedMapGet(t *testing.T) {
 			Key:   core.SERIALIZABLE_PATTERN,
 			Value: core.SERIALIZABLE_PATTERN,
 		})
-		m.Share(ctx1.GetClosestState())
+		m.Share(ctx1.MustGetClosestState())
 
 		//check first entry.
 
@@ -343,7 +343,7 @@ func TestSharedUnpersistedMapGet(t *testing.T) {
 			Key:   core.SERIALIZABLE_PATTERN,
 			Value: core.SERIALIZABLE_PATTERN,
 		})
-		m.Share(ctx1.GetClosestState())
+		m.Share(ctx1.MustGetClosestState())
 
 		const ADD_COUNT = 10_000
 
@@ -390,7 +390,7 @@ func TestSharedUnpersistedMapGetElementByKey(t *testing.T) {
 			Key:   core.SERIALIZABLE_PATTERN,
 			Value: core.SERIALIZABLE_PATTERN,
 		})
-		m.Share(ctx1.GetClosestState())
+		m.Share(ctx1.MustGetClosestState())
 
 		int1ElemKey := m.getElementPathKeyFromKey(INT_1_TYPED_REPR)
 		int2ElemKey := m.getElementPathKeyFromKey(INT_2_TYPED_REPR)
@@ -421,7 +421,7 @@ func TestSharedUnpersistedMapGetElementByKey(t *testing.T) {
 			Key:   core.SERIALIZABLE_PATTERN,
 			Value: core.SERIALIZABLE_PATTERN,
 		})
-		m.Share(ctx1.GetClosestState())
+		m.Share(ctx1.MustGetClosestState())
 
 		const ADD_COUNT = 10_000
 

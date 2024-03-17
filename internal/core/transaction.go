@@ -164,7 +164,7 @@ func (tx *Transaction) Start(ctx *Context) error {
 			tx.Rollback(ctx)
 		case <-time.After(time.Duration(tx.timeout)):
 			if !tx.IsFinished() {
-				ctx.Logger().Print(tx.ulid.String(), " transaction timed out")
+				ctx.LoggerPrint(tx.ulid.String(), " transaction timed out")
 				tx.Rollback(ctx)
 			}
 		}

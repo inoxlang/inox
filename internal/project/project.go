@@ -142,7 +142,7 @@ func (p *Project) GetS3CredentialsForBucket(
 	bucketName string,
 	provider string,
 ) (accessKey, secretKey string, s3Endpoint core.Host, _ error) {
-	closestState := ctx.GetClosestState()
+	closestState := ctx.MustGetClosestState()
 	p.lock.Lock(closestState, p)
 	defer p.lock.Unlock(closestState, p)
 
@@ -173,7 +173,7 @@ func (p *Project) Configuration() core.ProjectConfiguration {
 }
 
 func (p *Project) GetMemberByID(ctx *core.Context, id access.MemberID) (*access.Member, bool) {
-	closestState := ctx.GetClosestState()
+	closestState := ctx.MustGetClosestState()
 	p.lock.Lock(closestState, p)
 	defer p.lock.Unlock(closestState, p)
 
@@ -187,7 +187,7 @@ func (p *Project) GetMemberByID(ctx *core.Context, id access.MemberID) (*access.
 }
 
 func (p *Project) GetMemberByName(ctx *core.Context, name string) (*access.Member, bool) {
-	closestState := ctx.GetClosestState()
+	closestState := ctx.MustGetClosestState()
 	p.lock.Lock(closestState, p)
 	defer p.lock.Unlock(closestState, p)
 

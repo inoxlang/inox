@@ -38,7 +38,7 @@ func (set *Set) informAboutMutation(ctx *core.Context, mutation core.Mutation) {
 }
 
 func (set *Set) OnMutation(ctx *core.Context, microtask core.MutationCallbackMicrotask, config core.MutationWatchingConfiguration) (core.CallbackHandle, error) {
-	state := ctx.GetClosestState()
+	state := ctx.MustGetClosestState()
 	set._lock(state)
 	defer set._unlock(state)
 
@@ -73,7 +73,7 @@ func (set *Set) OnMutation(ctx *core.Context, microtask core.MutationCallbackMic
 }
 
 func (set *Set) RemoveMutationCallbackMicrotasks(ctx *core.Context) {
-	state := ctx.GetClosestState()
+	state := ctx.MustGetClosestState()
 	set._lock(state)
 	defer set._unlock(state)
 
@@ -85,7 +85,7 @@ func (set *Set) RemoveMutationCallbackMicrotasks(ctx *core.Context) {
 }
 
 func (set *Set) RemoveMutationCallback(ctx *core.Context, handle core.CallbackHandle) {
-	state := ctx.GetClosestState()
+	state := ctx.MustGetClosestState()
 	set._lock(state)
 	defer set._unlock(state)
 

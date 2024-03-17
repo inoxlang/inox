@@ -124,7 +124,7 @@ func (s *Session) Scheme() string {
 }
 
 // Logger returns the logger of the RPC session.
-func (d *Session) Logger() *zerolog.Logger {
+func (d *Session) Logger() zerolog.Logger {
 	return d.rpcSession.Logger()
 }
 
@@ -132,7 +132,9 @@ func (s *Session) remove(_ *jsonrpc.Session) {
 	if !s.removed.CompareAndSwap(false, true) {
 		return
 	}
-	s.Logger().Println("remove one session that has just finished: " + s.rpcSession.Client())
+	logger := s.Logger()
+
+	logger.Println("remove one session that has just finished: " + s.rpcSession.Client())
 	sessionsLock.Lock()
 	session, ok := sessions[s.rpcSession]
 	delete(sessions, s.rpcSession)

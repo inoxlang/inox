@@ -754,7 +754,7 @@ func TestDatabaseIL(t *testing.T) {
 				Name:  "main",
 			}))
 
-			dbIL.SetOwnerStateOnceAndLoadIfNecessary(ctx, ctx.GetClosestState())
+			dbIL.SetOwnerStateOnceAndLoadIfNecessary(ctx, ctx.MustGetClosestState())
 
 			assert.False(t, db.closed.Load())
 			ctx.CancelGracefully()

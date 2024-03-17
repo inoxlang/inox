@@ -86,7 +86,7 @@ func TestMapIteration(t *testing.T) {
 
 		m := NewMapWithConfig(ctx1, core.NewWrappedValueList(INT_1, STRING_A, INT_2, STRING_B), MapConfig{})
 
-		m.Share(ctx1.GetClosestState())
+		m.Share(ctx1.MustGetClosestState())
 
 		const ADD_COUNT = 10_000
 

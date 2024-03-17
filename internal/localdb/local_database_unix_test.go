@@ -62,7 +62,7 @@ func TestOpenDatabase(t *testing.T) {
 		}
 
 		ctx1 := core.NewContextWithEmptyState(ctxConfig, nil)
-		state1 := ctx1.GetClosestState()
+		state1 := ctx1.MustGetClosestState()
 		state1.Project = project
 		state1.MemberAuthToken = memberAuthToken
 
@@ -75,7 +75,7 @@ func TestOpenDatabase(t *testing.T) {
 		//Open the same database without closing.
 
 		ctx2 := core.NewContextWithEmptyState(ctxConfig, nil)
-		state2 := ctx2.GetClosestState()
+		state2 := ctx2.MustGetClosestState()
 		state2.Project = project
 		state2.MemberAuthToken = memberAuthToken
 
@@ -98,7 +98,7 @@ func TestOpenDatabase(t *testing.T) {
 		}
 
 		ctx1 := core.NewContextWithEmptyState(ctxConfig, nil)
-		state1 := ctx1.GetClosestState()
+		state1 := ctx1.MustGetClosestState()
 		state1.Project = project
 		state1.MemberAuthToken = memberAuthToken
 
@@ -112,7 +112,7 @@ func TestOpenDatabase(t *testing.T) {
 		_db.Close(ctx1)
 
 		ctx2 := core.NewContextWithEmptyState(ctxConfig, nil)
-		state2 := ctx2.GetClosestState()
+		state2 := ctx2.MustGetClosestState()
 		state2.Project = project
 		state2.MemberAuthToken = memberAuthToken
 
@@ -157,7 +157,7 @@ func TestOpenDatabase(t *testing.T) {
 
 			//open database in first context
 			ctx1 = core.NewContextWithEmptyState(ctxConfig, nil)
-			state1 := ctx1.GetClosestState()
+			state1 := ctx1.MustGetClosestState()
 			state1.Project = project
 			state1.MemberAuthToken = memberAuthToken
 
@@ -177,7 +177,7 @@ func TestOpenDatabase(t *testing.T) {
 
 		//open same database in second context
 		ctx2 = core.NewContextWithEmptyState(ctxConfig, nil)
-		state2 := ctx2.GetClosestState()
+		state2 := ctx2.MustGetClosestState()
 		state2.Project = project
 		state2.MemberAuthToken = memberAuthToken
 
@@ -225,7 +225,7 @@ func TestOpenDatabase(t *testing.T) {
 
 			//open database in first context
 			ctx1 = core.NewContextWithEmptyState(ctxConfig, nil)
-			state1 := ctx1.GetClosestState()
+			state1 := ctx1.MustGetClosestState()
 			state1.Project = project
 			state1.MemberAuthToken = memberAuthToken
 
@@ -251,7 +251,7 @@ func TestOpenDatabase(t *testing.T) {
 
 		//open same database in second context but in restricted mode
 		ctx2 = core.NewContextWithEmptyState(ctxConfig, nil)
-		state2 := ctx2.GetClosestState()
+		state2 := ctx2.MustGetClosestState()
 		state2.Project = project
 		state2.MemberAuthToken = memberAuthToken
 
@@ -284,7 +284,7 @@ func TestOpenDatabase(t *testing.T) {
 			ctx := core.NewContextWithEmptyState(ctxConfig, nil)
 			ctx.AddNamedPattern("Set", setcoll.SET_PATTERN)
 			ctx.AddNamedPattern("str", setcoll.SET_PATTERN)
-			state1 := ctx.GetClosestState()
+			state1 := ctx.MustGetClosestState()
 			state1.Project = project
 			state1.MemberAuthToken = memberAuthToken
 
@@ -358,7 +358,7 @@ func TestLocalDatabase(t *testing.T) {
 		config.OsFsDir = core.DirPathFrom(osDir)
 
 		ctx := core.NewContextWithEmptyState(ctxConfig, nil)
-		ctx.GetClosestState().Project = project
+		ctx.MustGetClosestState().Project = project
 
 		var tx *core.Transaction
 		if ctxHasTransaction {
@@ -560,7 +560,7 @@ func TestUpdateSchema(t *testing.T) {
 		ctx.AddNamedPattern("int", core.INT_PATTERN)
 		ctx.AddNamedPattern("str", core.STR_PATTERN)
 		ctx.AddNamedPattern("Set", setcoll.SET_PATTERN)
-		ctx.GetClosestState().Project = project
+		ctx.MustGetClosestState().Project = project
 
 		ldb, err := openLocalDatabaseWithConfig(ctx, config)
 		if !assert.NoError(t, err) {

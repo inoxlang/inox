@@ -19,7 +19,7 @@ type TreeNode struct {
 }
 
 func (n *TreeNode) AddChild(ctx *core.Context, childData core.Value) {
-	state := ctx.GetClosestState()
+	state := ctx.MustGetClosestState()
 
 	n.tree._lock(state)
 	defer n.tree._unlock(state)
@@ -45,7 +45,7 @@ func (n *TreeNode) GetGoMethod(name string) (*core.GoFunction, bool) {
 }
 
 func (n *TreeNode) Prop(ctx *core.Context, name string) core.Value {
-	state := ctx.GetClosestState()
+	state := ctx.MustGetClosestState()
 	n.tree._lock(state)
 	defer n.tree._unlock(state)
 

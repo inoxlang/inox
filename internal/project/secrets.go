@@ -27,7 +27,7 @@ type localSecret struct {
 //TODO: encrypt secrets
 
 func (p *Project) ListSecrets(ctx *core.Context) (info []core.ProjectSecretInfo, _ error) {
-	state := ctx.GetClosestState()
+	state := ctx.MustGetClosestState()
 	p.SmartLock(state)
 	defer p.SmartUnlock(state)
 
@@ -49,7 +49,7 @@ func (p *Project) ListSecrets(ctx *core.Context) (info []core.ProjectSecretInfo,
 }
 
 func (p *Project) GetSecrets(ctx *core.Context) (secrets []core.ProjectSecret, _ error) {
-	state := ctx.GetClosestState()
+	state := ctx.MustGetClosestState()
 	p.SmartLock(state)
 	defer p.SmartUnlock(state)
 
@@ -77,7 +77,7 @@ func (p *Project) UpsertSecret(ctx *core.Context, name, value string) error {
 		return err
 	}
 
-	state := ctx.GetClosestState()
+	state := ctx.MustGetClosestState()
 	p.SmartLock(state)
 	defer p.SmartUnlock(state)
 
@@ -99,7 +99,7 @@ func (p *Project) DeleteSecret(ctx *core.Context, name string) error {
 		return err
 	}
 
-	state := ctx.GetClosestState()
+	state := ctx.MustGetClosestState()
 	p.SmartLock(state)
 	defer p.SmartUnlock(state)
 
@@ -123,7 +123,7 @@ func (p *Project) getSecretsBucketName() string {
 // getCreateSecretsBucket returns the bucket storing project secrets, if it does not exists and
 // createIfDoesNotExist is true the bucket is created, otherwise a nil bucket is returned (no error).
 func (p *Project) getCreateSecretsBucket(ctx *core.Context, createIfDoesNotExist bool) (*s3_ns.Bucket, error) {
-	closestState := ctx.GetClosestState()
+	closestState := ctx.MustGetClosestState()
 	p.lock.Lock(closestState, p)
 	defer p.lock.Unlock(closestState, p)
 

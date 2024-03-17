@@ -91,7 +91,7 @@ func BenchmarkAddElemToSharedSet(b *testing.B) {
 		},
 	})
 
-	set.Share(ctx.GetClosestState())
+	set.Share(ctx.MustGetClosestState())
 
 	b.ResetTimer()
 

@@ -38,7 +38,7 @@ func TestExecutionTimeLimitIntegration(t *testing.T) {
 		}, nil)
 		defer ctx.CancelGracefully()
 
-		state := ctx.GetClosestState()
+		state := ctx.MustGetClosestState()
 
 		_, err = eval(`
 			lthread1 = go do {
@@ -94,7 +94,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 				a += 1
 			}
 			return a
-		`, ctx.GetClosestState(), false)
+		`, ctx.MustGetClosestState(), false)
 
 		if !assert.WithinDuration(t, start.Add(50*time.Millisecond), time.Now(), 5*time.Millisecond) {
 			return
@@ -117,7 +117,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 		}, nil)
 		defer ctx.CancelGracefully()
 
-		state := ctx.GetClosestState()
+		state := ctx.MustGetClosestState()
 		obj := NewObjectFromMap(ValMap{"a": Int(1)}, ctx)
 
 		obj.Share(state)
@@ -316,7 +316,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 		}, nil)
 		defer ctx.CancelGracefully()
 
-		state := ctx.GetClosestState()
+		state := ctx.MustGetClosestState()
 
 		res, err := eval(`
 			return go do {
@@ -376,7 +376,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 		}, nil)
 		defer ctx.CancelGracefully()
 
-		state := ctx.GetClosestState()
+		state := ctx.MustGetClosestState()
 
 		_, err = eval(`
 			lthread = go do {
@@ -415,7 +415,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 		}, nil)
 		defer ctx.CancelGracefully()
 
-		state := ctx.GetClosestState()
+		state := ctx.MustGetClosestState()
 
 		_, err = eval(`
 			lthread = go do {
@@ -458,7 +458,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 		}, nil)
 		defer ctx.CancelGracefully()
 
-		state := ctx.GetClosestState()
+		state := ctx.MustGetClosestState()
 
 		_, err = eval(`
 			lthread = go do {}
@@ -495,7 +495,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 		}, nil)
 		defer ctx.CancelGracefully()
 
-		state := ctx.GetClosestState()
+		state := ctx.MustGetClosestState()
 
 		_, err = eval(`
 			lthread = go do {
@@ -540,7 +540,7 @@ func TestThreadSimultaneousInstancesLimitIntegration(t *testing.T) {
 		}, nil)
 		defer ctx.CancelGracefully()
 
-		state := ctx.GetClosestState()
+		state := ctx.MustGetClosestState()
 
 		firstLthreadSpawned := atomic.Bool{}
 		secondLthreadSpawned := atomic.Bool{}
@@ -600,7 +600,7 @@ func TestThreadSimultaneousInstancesLimitIntegration(t *testing.T) {
 		}, nil)
 		defer ctx.CancelGracefully()
 
-		state := ctx.GetClosestState()
+		state := ctx.MustGetClosestState()
 
 		firstLthreadSpawned := atomic.Bool{}
 		secondLthreadSpawned := atomic.Bool{}
@@ -691,7 +691,7 @@ func TestThreadSimultaneousInstancesLimitIntegration(t *testing.T) {
 			return
 		}
 
-		state := ctx.GetClosestState()
+		state := ctx.MustGetClosestState()
 
 		firstLthreadSpawned := atomic.Bool{}
 		secondLthreadSpawned := atomic.Bool{}

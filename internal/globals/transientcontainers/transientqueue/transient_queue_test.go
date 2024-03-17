@@ -26,7 +26,7 @@ func TestTransientQueue(t *testing.T) {
 	}
 
 	//Sharing the queue should cause the elements to be shared or cloned.
-	q.Share(ctx.GetClosestState())
+	q.Share(ctx.MustGetClosestState())
 
 	if !assert.True(t, sharable1.IsShared()) {
 		return

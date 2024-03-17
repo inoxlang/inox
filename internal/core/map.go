@@ -73,7 +73,7 @@ func MapIterable(ctx *Context, iterable Iterable, mapper Value) *List {
 
 	switch m := mapper.(type) {
 	case parse.Node:
-		state := ctx.GetClosestState()
+		state := ctx.MustGetClosestState()
 		treeWalkState := NewTreeWalkStateWithGlobal(state)
 
 		//should ctx allow to do that instead ?
@@ -108,7 +108,7 @@ func MapIterable(ctx *Context, iterable Iterable, mapper Value) *List {
 			result.elements = append(result.elements, element.Prop(ctx, string(m)).(Serializable))
 		}
 	case *GoFunction:
-		state := ctx.GetClosestState()
+		state := ctx.MustGetClosestState()
 
 		it := iterable.Iterator(ctx, IteratorConfiguration{})
 		for it.Next(ctx) {
@@ -120,7 +120,7 @@ func MapIterable(ctx *Context, iterable Iterable, mapper Value) *List {
 			result.elements = append(result.elements, callResult.(Serializable))
 		}
 	case *InoxFunction:
-		state := ctx.GetClosestState()
+		state := ctx.MustGetClosestState()
 
 		if ok, expl := m.IsSharable(m.originState); !ok {
 			panic(fmt.Errorf("map iterable: only sharable functions are allowed: %s", expl))
@@ -142,7 +142,7 @@ func MapIterable(ctx *Context, iterable Iterable, mapper Value) *List {
 			result.elements = append(result.elements, res.(Serializable))
 		}
 	case AstNode:
-		state := ctx.GetClosestState()
+		state := ctx.MustGetClosestState()
 		treeWalkState := NewTreeWalkStateWithGlobal(state)
 
 		treeWalkState.PushScope()

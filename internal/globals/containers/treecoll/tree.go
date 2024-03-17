@@ -133,7 +133,7 @@ func NewTree(ctx *core.Context, treedata *core.Treedata, args ...core.Value) *Tr
 
 	// instantiate lifetime jobs
 
-	state := ctx.GetClosestState()
+	state := ctx.MustGetClosestState()
 
 	if hasLifetimeJobs {
 		if ok, expl := tree.IsSharable(state); !ok {
@@ -217,7 +217,7 @@ func (t *Tree) GetGoMethod(name string) (*core.GoFunction, bool) {
 }
 
 func (t *Tree) Prop(ctx *core.Context, name string) core.Value {
-	state := ctx.GetClosestState()
+	state := ctx.MustGetClosestState()
 	t._lock(state)
 	defer t._unlock(state)
 

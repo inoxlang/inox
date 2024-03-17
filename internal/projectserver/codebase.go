@@ -36,7 +36,8 @@ func analyzeCodebaseAndRegen(initial bool, session *Session) {
 		MemberAuthToken:    memberAuthToken,
 	})
 	if err != nil {
-		session.Logger().Println(session.rpcSession.Client(), err)
+		logger := session.Logger()
+		logger.Println(session.rpcSession.Client(), err)
 		return
 	}
 

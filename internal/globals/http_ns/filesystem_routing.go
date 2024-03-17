@@ -80,7 +80,7 @@ func addFilesystemRoutingHandler(server *HttpsServer, staticDir, dynamicDir core
 				})
 
 				if err != nil {
-					serverCtx.Logger().Debug().Err(err).Send()
+					serverCtx.DebugLogEvent().Err(err).Send()
 					return
 				}
 

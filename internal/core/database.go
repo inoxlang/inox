@@ -320,7 +320,7 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, nextSchema *ObjectPattern, migr
 		panic(ErrNoDatabaseSchemaUpdateExpected)
 	}
 
-	if ctx.GetClosestState() != db.ownerState {
+	if ctx.MustGetClosestState() != db.ownerState {
 		panic(ErrDatabaseSchemaOnlyUpdatableByOwnerState)
 	}
 

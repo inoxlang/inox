@@ -121,7 +121,7 @@ func NewFileServer(ctx *core.Context, args ...core.Value) (*HttpsServer, error) 
 
 		err := server.ListenAndServeTLS("", "")
 		if err != nil {
-			ctx.Logger().Err(err).Send()
+			ctx.ErrLogEvent(err).Send()
 		}
 	}()
 

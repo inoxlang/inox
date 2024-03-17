@@ -24,7 +24,7 @@ func TestSharedUnpersistedSetAdd(t *testing.T) {
 		})
 
 		set := NewSetWithConfig(ctx, nil, pattern.config)
-		set.Share(ctx.GetClosestState())
+		set.Share(ctx.MustGetClosestState())
 
 		set.Add(ctx, INT_1)
 		assert.True(t, bool(set.Has(ctx, INT_1)))
@@ -46,7 +46,7 @@ func TestSharedUnpersistedSetAdd(t *testing.T) {
 		})
 
 		set := NewSetWithConfig(ctx, nil, pattern.config)
-		set.Share(ctx.GetClosestState())
+		set.Share(ctx.MustGetClosestState())
 
 		obj := core.NewObjectFromMap(core.ValMap{}, ctx)
 
@@ -72,7 +72,7 @@ func TestSharedUnpersistedSetAdd(t *testing.T) {
 				Type: common.UniqueRepr,
 			},
 		})
-		set.Share(ctx1.GetClosestState())
+		set.Share(ctx1.MustGetClosestState())
 
 		set.Add(ctx1, INT_1)
 
@@ -123,7 +123,7 @@ func TestSharedUnpersistedSetAdd(t *testing.T) {
 				Type: common.UniqueRepr,
 			},
 		})
-		set.Share(ctx1.GetClosestState())
+		set.Share(ctx1.MustGetClosestState())
 
 		//First transaction.
 
@@ -159,7 +159,7 @@ func TestSharedUnpersistedSetAdd(t *testing.T) {
 		})
 
 		set := NewSetWithConfig(ctx, nil, pattern.config)
-		set.Share(ctx.GetClosestState())
+		set.Share(ctx.MustGetClosestState())
 
 		obj1 := core.NewObjectFromMap(core.ValMap{"name": core.String("a")}, ctx)
 		obj2 := core.NewObjectFromMap(core.ValMap{"name": core.String("a")}, ctx)
@@ -191,7 +191,7 @@ func TestSharedUnpersistedSetHas(t *testing.T) {
 		})
 
 		set := NewSetWithConfig(ctx, nil, pattern.config)
-		set.Share(ctx.GetClosestState())
+		set.Share(ctx.MustGetClosestState())
 
 		obj := core.NewObjectFromMap(core.ValMap{}, ctx)
 
@@ -213,7 +213,7 @@ func TestSharedUnpersistedSetHas(t *testing.T) {
 		})
 
 		set := NewSetWithConfig(ctx, nil, pattern.config)
-		set.Share(ctx.GetClosestState())
+		set.Share(ctx.MustGetClosestState())
 
 		obj1 := core.NewObjectFromMap(core.ValMap{"name": core.String("a")}, ctx)
 		obj2 := core.NewObjectFromMap(core.ValMap{"name": core.String("a")}, ctx)
@@ -239,7 +239,7 @@ func TestSharedUnpersistedSetHas(t *testing.T) {
 			},
 		})
 
-		set.Share(ctx1.GetClosestState())
+		set.Share(ctx1.MustGetClosestState())
 
 		const ADD_COUNT = 10_000
 
@@ -284,7 +284,7 @@ func TestSharedUnpersistedSetHas(t *testing.T) {
 		})
 
 		set := NewSetWithConfig(ctx1, core.NewWrappedValueList(INT_1, INT_2), pattern.config)
-		set.Share(ctx1.GetClosestState())
+		set.Share(ctx1.MustGetClosestState())
 
 		assert.True(t, bool(set.Has(ctx1, INT_1)))
 		assert.True(t, bool(set.Has(ctx2, INT_1)))
@@ -308,7 +308,7 @@ func TestSharedUnpersistedSetContains(t *testing.T) {
 		})
 
 		set := NewSetWithConfig(ctx, nil, pattern.config)
-		set.Share(ctx.GetClosestState())
+		set.Share(ctx.MustGetClosestState())
 
 		obj := core.NewObjectFromMap(core.ValMap{}, ctx)
 
@@ -330,7 +330,7 @@ func TestSharedUnpersistedSetContains(t *testing.T) {
 		})
 
 		set := NewSetWithConfig(ctx, nil, pattern.config)
-		set.Share(ctx.GetClosestState())
+		set.Share(ctx.MustGetClosestState())
 
 		obj1 := core.NewObjectFromMap(core.ValMap{"name": core.String("a")}, ctx)
 		obj2 := core.NewObjectFromMap(core.ValMap{"name": core.String("a")}, ctx)
@@ -356,7 +356,7 @@ func TestSharedUnpersistedSetContains(t *testing.T) {
 			},
 		})
 
-		set.Share(ctx1.GetClosestState())
+		set.Share(ctx1.MustGetClosestState())
 
 		done := make(chan struct{})
 		go func() {
@@ -390,7 +390,7 @@ func TestSharedUnpersistedSetContains(t *testing.T) {
 		})
 
 		set := NewSetWithConfig(ctx1, core.NewWrappedValueList(INT_1, INT_2), pattern.config)
-		set.Share(ctx1.GetClosestState())
+		set.Share(ctx1.MustGetClosestState())
 
 		assert.True(t, bool(set.Contains(ctx1, INT_1)))
 		assert.True(t, bool(set.Contains(ctx2, INT_1)))
@@ -421,7 +421,7 @@ func TestSharedUnpersistedSetGetElementByKey(t *testing.T) {
 			},
 		})
 
-		set.Share(ctx1.GetClosestState())
+		set.Share(ctx1.MustGetClosestState())
 
 		const ADD_COUNT = 10_000
 
@@ -466,7 +466,7 @@ func TestSharedUnpersistedSetGetElementByKey(t *testing.T) {
 		})
 
 		set := NewSetWithConfig(ctx1, core.NewWrappedValueList(INT_1, INT_2), pattern.config)
-		set.Share(ctx1.GetClosestState())
+		set.Share(ctx1.MustGetClosestState())
 
 		//Check that INT_1 is in the Set.
 
@@ -528,7 +528,7 @@ func TestSharedUnpersistedSetGet(t *testing.T) {
 			},
 		})
 
-		set.Share(ctx1.GetClosestState())
+		set.Share(ctx1.MustGetClosestState())
 
 		const ADD_COUNT = 10_000
 
@@ -573,7 +573,7 @@ func TestSharedUnpersistedSetGet(t *testing.T) {
 		})
 
 		set := NewSetWithConfig(ctx1, core.NewWrappedValueList(INT_1, INT_2), pattern.config)
-		set.Share(ctx1.GetClosestState())
+		set.Share(ctx1.MustGetClosestState())
 
 		//Check that INT_1 is in the Set.
 
@@ -625,7 +625,7 @@ func TestSharedUnpersistedSetRemove(t *testing.T) {
 		})
 
 		set := NewSetWithConfig(ctx, nil, pattern.config)
-		set.Share(ctx.GetClosestState())
+		set.Share(ctx.MustGetClosestState())
 
 		obj := core.NewObjectFromMap(core.ValMap{}, ctx)
 
@@ -647,7 +647,7 @@ func TestSharedUnpersistedSetRemove(t *testing.T) {
 		})
 
 		set := NewSetWithConfig(ctx, nil, pattern.config)
-		set.Share(ctx.GetClosestState())
+		set.Share(ctx.MustGetClosestState())
 
 		obj1 := core.NewObjectFromMap(core.ValMap{"name": core.String("a")}, ctx)
 		obj2 := core.NewObjectFromMap(core.ValMap{"name": core.String("a")}, ctx)

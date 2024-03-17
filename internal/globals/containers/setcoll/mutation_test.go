@@ -92,7 +92,7 @@ func TestMutationSharedNoTx(t *testing.T) {
 		})
 
 		set := NewSetWithConfig(ctx, nil, pattern.config)
-		set.Share(ctx.GetClosestState())
+		set.Share(ctx.MustGetClosestState())
 
 		callCount := 0
 		var mutation atomic.Value
@@ -125,7 +125,7 @@ func TestMutationSharedNoTx(t *testing.T) {
 		})
 
 		set := NewSetWithConfig(ctx, nil, pattern.config)
-		set.Share(ctx.GetClosestState())
+		set.Share(ctx.MustGetClosestState())
 
 		callCount := 0
 		var mutation atomic.Value
@@ -165,7 +165,7 @@ func TestMutationSharedAndTx(t *testing.T) {
 		})
 
 		set := NewSetWithConfig(ctx, nil, pattern.config)
-		set.Share(ctx.GetClosestState())
+		set.Share(ctx.MustGetClosestState())
 
 		callCount := 0
 		var mutation atomic.Value
@@ -203,7 +203,7 @@ func TestMutationSharedAndTx(t *testing.T) {
 		})
 
 		set := NewSetWithConfig(ctx, core.NewWrappedValueList(INT_1), pattern.config)
-		set.Share(ctx.GetClosestState())
+		set.Share(ctx.MustGetClosestState())
 
 		callCount := 0
 		var mutation atomic.Value

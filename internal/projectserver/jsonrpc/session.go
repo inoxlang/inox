@@ -43,7 +43,7 @@ type Session struct {
 	id     int
 	server *Server
 	ctx    *core.Context
-	logger *zerolog.Logger //initialized with zerolog.Nop() then set to the context's logger
+	logger zerolog.Logger //initialized with zerolog.Nop() then set to the context's logger
 
 	// Only one connection is non-nil
 	conn      ReaderWriter
@@ -90,8 +90,7 @@ func newSession(id int, server *Server) *Session {
 		executors: make(map[interface{}]*executor),
 	}
 
-	logger := zerolog.Nop()
-	s.logger = &logger
+	s.logger = zerolog.Nop()
 	return s
 }
 
@@ -517,8 +516,12 @@ func (s *Session) Context() *core.Context {
 	return s.ctx
 }
 
-func (s *Session) Logger() *zerolog.Logger {
+func (s *Session) Logger() zerolog.Logger {
 	return s.logger
+}
+
+func (s *Session) LoggerPrintln(args ...any) {
+	s.logger.Println(args...)
 }
 
 func (s *Session) Client() string {

@@ -528,7 +528,7 @@ func (n *SystemGraphNode) SmartUnlock() {
 }
 
 func (obj *Object) ProposeSystemGraph(ctx *Context, g *SystemGraph, proposedName string, optionalParent SystemGraphNodeValue) {
-	state := ctx.GetClosestState()
+	state := ctx.MustGetClosestState()
 
 	obj._lock(state)
 	defer obj._unlock(state)

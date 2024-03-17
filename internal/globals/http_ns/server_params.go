@@ -74,8 +74,9 @@ func determineHttpServerParams(ctx *core.Context, server *HttpsServer, providedH
 				params.effectiveAddr = "localhost"
 				params.effectiveAddr += ":" + params.port
 				params.effectiveListeningAddrHost = core.Host("https://" + params.effectiveAddr)
-				server.state.Ctx.Logger().
-					Warn().Msgf("exposing web servers is not allowed, change listening address from %s to %s", originalAddress, params.effectiveAddr)
+
+				server.state.Ctx.WarnLogEvent().
+					Msgf("exposing web servers is not allowed, change listening address from %s to %s", originalAddress, params.effectiveAddr)
 			} else {
 				params.effectiveListeningAddrHost = providedHost
 				params.exposingAllowed = true

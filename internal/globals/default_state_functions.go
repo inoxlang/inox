@@ -52,7 +52,7 @@ func __fprint(ctx *core.Context, out io.Writer, args ...core.Value) {
 }
 
 func _print(ctx *core.Context, args ...core.Value) {
-	out := ctx.GetClosestState().Out
+	out := ctx.MustGetClosestState().Out
 	__fprint(ctx, out, args...)
 }
 
@@ -306,7 +306,7 @@ func _dynimport(ctx *core.Context, src core.Value, argObj *core.Object, manifest
 	insecure := false
 	var timeout time.Duration
 
-	state := ctx.GetClosestState()
+	state := ctx.MustGetClosestState()
 
 	for _, arg := range options {
 		if opt, ok := arg.(core.Option); ok {
@@ -335,7 +335,7 @@ func _dynimport(ctx *core.Context, src core.Value, argObj *core.Object, manifest
 }
 
 func _run(ctx *core.Context, src core.Path, args ...core.Value) error {
-	closestState := ctx.GetClosestState()
+	closestState := ctx.MustGetClosestState()
 
 	_, _, _, _, err := mod.RunLocalModule(mod.RunLocalModuleArgs{
 		Fpath:                     string(src),
@@ -442,7 +442,7 @@ func _get_system_graph(ctx *core.Context) (*core.SystemGraph, core.Bool) {
 		panic(err)
 	}
 
-	g := ctx.GetClosestState().SystemGraph
+	g := ctx.MustGetClosestState().SystemGraph
 	return g, g != nil
 }
 

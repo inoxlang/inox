@@ -70,7 +70,7 @@ func newEmptyThread(ctx *core.Context, url core.URL, pattern *ThreadPattern) *Me
 		urlAsDir: url.ToDirURL(),
 	}
 
-	thread.Share(ctx.GetClosestState())
+	thread.Share(ctx.MustGetClosestState())
 
 	return thread
 }
@@ -84,7 +84,7 @@ func (t *MessageThread) SetURLOnce(ctx *core.Context, url core.URL) error {
 }
 
 func (t *MessageThread) GetElementByKey(ctx *core.Context, elemKey core.ElementKey) (core.Serializable, error) {
-	closestState := ctx.GetClosestState()
+	closestState := ctx.MustGetClosestState()
 	t._lock(closestState)
 	defer t._unlock(closestState)
 
@@ -103,7 +103,7 @@ func (t *MessageThread) GetElementByKey(ctx *core.Context, elemKey core.ElementK
 }
 
 func (t *MessageThread) Contains(ctx *core.Context, value core.Serializable) bool {
-	closestState := ctx.GetClosestState()
+	closestState := ctx.MustGetClosestState()
 	t._lock(closestState)
 	defer t._unlock(closestState)
 
@@ -124,7 +124,7 @@ func (t *MessageThread) Contains(ctx *core.Context, value core.Serializable) boo
 }
 
 func (t *MessageThread) IsEmpty(ctx *core.Context) bool {
-	closestState := ctx.GetClosestState()
+	closestState := ctx.MustGetClosestState()
 	t._lock(closestState)
 	defer t._unlock(closestState)
 
@@ -140,7 +140,7 @@ func (t *MessageThread) IsEmpty(ctx *core.Context) bool {
 }
 
 func (t *MessageThread) Add(ctx *core.Context, elem *core.Object) {
-	closestState := ctx.GetClosestState()
+	closestState := ctx.MustGetClosestState()
 	t._lock(closestState)
 	defer t._unlock(closestState)
 
@@ -209,7 +209,7 @@ func (t *MessageThread) addNoLock(ctx *core.Context, tx *core.Transaction, e *co
 	}
 
 	if isFirstElemAddedByTx {
-		err := tx.OnEnd(t, t.makeTransactionEndCallback(ctx, ctx.GetClosestState()))
+		err := tx.OnEnd(t, t.makeTransactionEndCallback(ctx, ctx.MustGetClosestState()))
 		if err != nil {
 			panic(err)
 		}
@@ -319,7 +319,7 @@ func (t *MessageThread) getElementsBefore(
 		}
 	}
 
-	closestState := ctx.GetClosestState()
+	closestState := ctx.MustGetClosestState()
 	t._lock(closestState)
 	defer t._unlock(closestState)
 
@@ -368,7 +368,7 @@ func (t *MessageThread) getElementsBefore(
 }
 
 func (t *MessageThread) GetElementsInTimeRange(ctx *core.Context, start, end core.DateTime) []core.Value {
-	closestState := ctx.GetClosestState()
+	closestState := ctx.MustGetClosestState()
 	t._lock(closestState)
 	defer t._unlock(closestState)
 

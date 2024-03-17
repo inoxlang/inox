@@ -135,7 +135,7 @@ func _prepare_local_script(ctx *core.Context, src core.Path) (*core.Module, *cor
 
 		DefaultLimits: core.GetDefaultScriptLimits(),
 
-		Out: ctx.GetClosestState().Out,
+		Out: ctx.MustGetClosestState().Out,
 	})
 
 	errorRecord := core.ValMap{
@@ -190,7 +190,7 @@ func _run_local_script(ctx *core.Context, src core.Path, config *core.Object) (c
 		ParentContext:             ctx,
 		ParentContextRequired:     true,
 
-		UseBytecode:      ctx.GetClosestState().Bytecode != nil,
+		UseBytecode:      ctx.MustGetClosestState().Bytecode != nil,
 		OptimizeBytecode: true,
 
 		Out: out,

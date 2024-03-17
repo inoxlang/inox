@@ -282,7 +282,7 @@ func NewDynamicCall(ctx *Context, callee Value, args ...Value) *DynamicValue {
 	actualArgs := make([]Value, len(args))
 
 	call := func(ctx *Context) (Value, error) {
-		state := ctx.GetClosestState()
+		state := ctx.MustGetClosestState()
 		for i, arg := range args {
 			actualArgs[i] = Unwrap(ctx, arg)
 		}
@@ -325,7 +325,7 @@ func NewDynamicCall(ctx *Context, callee Value, args ...Value) *DynamicValue {
 
 				callResult, err := call(ctx)
 				if err != nil {
-					ctx.Logger().Print("error during dynamic call: ", err)
+					ctx.LoggerPrint("error during dynamic call: ", err)
 					return
 				}
 				dyn.value = callResult

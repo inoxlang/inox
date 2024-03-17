@@ -169,7 +169,7 @@ func (m *Map) GetElementByKey(ctx *core.Context, pathKey core.ElementKey) (core.
 		if _, err := m.txIsolator.WaitForOtherTxsToTerminate(ctx, false); err != nil {
 			panic(err)
 		}
-		closestState := ctx.GetClosestState()
+		closestState := ctx.MustGetClosestState()
 		m._lock(closestState)
 		defer m._unlock(closestState)
 	}
@@ -192,7 +192,7 @@ func (m *Map) Contains(ctx *core.Context, value core.Serializable) bool {
 		if _, err := m.txIsolator.WaitForOtherTxsToTerminate(ctx, false); err != nil {
 			panic(err)
 		}
-		closestState := ctx.GetClosestState()
+		closestState := ctx.MustGetClosestState()
 		m._lock(closestState)
 		defer m._unlock(closestState)
 	}
@@ -229,7 +229,7 @@ func (m *Map) IsEmpty(ctx *core.Context) bool {
 		}
 	}
 
-	closestState := ctx.GetClosestState()
+	closestState := ctx.MustGetClosestState()
 	m._lock(closestState)
 	defer m._unlock(closestState)
 
@@ -269,7 +269,7 @@ func (m *Map) Has(ctx *core.Context, keyVal core.Serializable) core.Bool {
 		}
 	}
 
-	closestState := ctx.GetClosestState()
+	closestState := ctx.MustGetClosestState()
 	m._lock(closestState)
 	defer m._unlock(closestState)
 
@@ -316,7 +316,7 @@ func (m *Map) Get(ctx *core.Context, keyVal core.Serializable) (core.Value, core
 		if _, err := m.txIsolator.WaitForOtherTxsToTerminate(ctx, false); err != nil {
 			panic(err)
 		}
-		closestState := ctx.GetClosestState()
+		closestState := ctx.MustGetClosestState()
 		m._lock(closestState)
 		defer m._unlock(closestState)
 	}
@@ -398,7 +398,7 @@ func (m *Map) set(ctx *core.Context, entry entry, insert bool) error {
 			utils.PanicIfErr(persistMap(ctx, m, m.path, m.storage))
 		}
 	} else if _, ok := m.transactionsWithSetEndCallback[tx]; !ok {
-		closestState := ctx.GetClosestState()
+		closestState := ctx.MustGetClosestState()
 		m._lock(closestState)
 		defer m._unlock(closestState)
 
@@ -418,7 +418,7 @@ func (m *Map) putEntryInSharedMap(ctx *core.Context, entry entry, ignoreTx bool)
 		panic(ErrValueDoesMatchValuePattern)
 	}
 
-	closestState := ctx.GetClosestState()
+	closestState := ctx.MustGetClosestState()
 	entry.value = utils.Must(core.ShareOrClone(entry.value, closestState)).(core.Serializable)
 
 	m._lock(closestState)
@@ -488,7 +488,7 @@ func (m *Map) Remove(ctx *core.Context, key core.Serializable) {
 	}
 
 	serializedKey := m.getUniqueKey(ctx, key)
-	closestState := ctx.GetClosestState()
+	closestState := ctx.MustGetClosestState()
 
 	m._lock(closestState)
 	defer m._unlock(closestState)
@@ -583,7 +583,7 @@ func (m *Map) makePersistOnMutationCallback(elem core.Serializable) core.Mutatio
 			//What should be done if tx is readonly ?
 		}
 
-		closestState := ctx.GetClosestState()
+		closestState := ctx.MustGetClosestState()
 		m._lock(closestState)
 		defer m._unlock(closestState)
 

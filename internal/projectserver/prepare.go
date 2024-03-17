@@ -92,7 +92,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 	if session.lock.TryLock() {
 		//-------------------------------------------------------------
 		if session.preparedSourceFilesCache == nil {
-			session.preparedSourceFilesCache = newPreparedFileCache(*rpcSession.Logger())
+			session.preparedSourceFilesCache = newPreparedFileCache(rpcSession.Logger())
 		}
 		cache := session.preparedSourceFilesCache
 		session.lock.Unlock()
@@ -115,7 +115,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 	//Check the cache entry.
 	if !params.ignoreCache && fileCache != nil {
 		if fileCache.chunk != nil {
-			rpcSession.Logger().Println("cache hit for file", fpath)
+			rpcSession.LoggerPrintln("cache hit for file", fpath)
 
 			cachedChunk := fileCache.chunk
 			cachedModule := fileCache.module
@@ -144,7 +144,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 	})
 
 	if chunk == nil { //unrecoverable parsing error
-		rpcSession.Logger().Println("unrecoverable parsing error", err.Error())
+		rpcSession.LoggerPrintln("unrecoverable parsing error", err.Error())
 		if params._depth == 0 {
 			rpcSession.Notify(NewShowMessage(defines.MessageTypeError, err.Error()))
 		}
@@ -164,13 +164,13 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 		})
 
 		if includedChunk == nil {
-			rpcSession.Logger().Println("unrecoverable parsing error", err.Error())
+			rpcSession.LoggerPrintln("unrecoverable parsing error", err.Error())
 			rpcSession.Notify(NewShowMessage(defines.MessageTypeError, err.Error()))
 			return
 		}
 
 		if requiresState && (state == nil || state.SymbolicData == nil) {
-			rpcSession.Logger().Println("failed to prepare includable-file", err.Error())
+			rpcSession.LoggerPrintln("failed to prepare includable-file", err.Error())
 
 			if state != nil {
 				//teardown
@@ -258,13 +258,13 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 		state, mod, _, err := core.PrepareLocalModule(args)
 
 		if mod == nil {
-			rpcSession.Logger().Println("unrecoverable parsing error", err.Error())
+			rpcSession.LoggerPrintln("unrecoverable parsing error", err.Error())
 			rpcSession.Notify(NewShowMessage(defines.MessageTypeError, err.Error()))
 			return
 		}
 
 		if requiresState && (state == nil || state.SymbolicData == nil) {
-			rpcSession.Logger().Println("failed to prepare module", err.Error())
+			rpcSession.LoggerPrintln("failed to prepare module", err.Error())
 
 			if state != nil {
 				//teardown

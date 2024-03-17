@@ -72,7 +72,7 @@ func (db *dummyDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern, handl
 	db.schemaUpdated = true
 	db.currentSchema = schema
 
-	state := ctx.GetClosestState()
+	state := ctx.MustGetClosestState()
 
 	if len(handlers.Deletions)+len(handlers.Initializations)+len(handlers.Replacements) > 0 {
 		panic(errors.New("only inclusion handlers are supported"))

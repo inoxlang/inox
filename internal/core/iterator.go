@@ -582,7 +582,7 @@ func (it *IpropsIterator) Value(*Context) Value {
 }
 
 func (obj *Object) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
-	closestState := ctx.GetClosestState()
+	closestState := ctx.MustGetClosestState()
 	obj._lock(closestState)
 	defer obj._unlock(closestState)
 

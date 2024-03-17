@@ -371,7 +371,7 @@ func migrateObjectOrRecord(
 	key Path, migration *FreeEntityMigrationArgs) (Value, error) {
 	depth := len(pathutils.GetPathSegments(string(key)))
 	migrationHanders := migration.MigrationHandlers
-	state := ctx.GetClosestState()
+	state := ctx.MustGetClosestState()
 
 	//a record is immutable so it cannot be updated in-place
 	var nextRecordKeys []string
@@ -726,7 +726,7 @@ func migrateListOrTuple(
 	depth := len(pathutils.GetPathSegments(string(key)))
 
 	migrationHanders := migration.MigrationHandlers
-	state := ctx.GetClosestState()
+	state := ctx.MustGetClosestState()
 
 	//a tuple is immutable so it cannot be updated in-place
 	var nextTupleElements []Serializable

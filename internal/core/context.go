@@ -7,7 +7,6 @@ import (
 	"io"
 	"maps"
 	"os"
-	"reflect"
 	"runtime/debug"
 	"slices"
 	"strings"
@@ -49,6 +48,8 @@ var (
 
 	ErrLimitNotPresentInContext   = errors.New("limit not present in context")
 	ErrOnDoneMicrotasksNotAllowed = errors.New("'on done' microtasks are not allowed")
+
+	nopLogger = zerolog.Nop()
 )
 
 // A Context is analogous to contexts provided by the stdlib's `context` package.
@@ -451,23 +452,7 @@ func NewContext(config ContextConfig) *Context {
 		ctx.lock.Lock()
 		defer ctx.lock.Unlock()
 
-		var logger zerolog.Logger
-		{
-			if ctx.state != nil {
-				if ctx.state.OutputFieldsInitialized.Load() {
-					logger = ctx.state.Logger
-				} else if ctx.parentCtx != nil {
-					logger = ctx.parentCtx.getClosestStateNoDoneCheck().Logger
-				}
-				//see explanation in the gracefullyTearDown method.
-			} else if ctx.parentCtx != nil {
-				logger = ctx.parentCtx.getClosestStateNoDoneCheck().Logger
-			}
-
-			if reflect.ValueOf(logger).IsZero() {
-				logger = zerolog.Nop()
-			}
-		}
+		logger := ctx.loggerNoLock()
 
 		//ctx.finished = true
 
@@ -581,13 +566,13 @@ func (ctx *Context) InefficientlyWaitUntilTearedDown(timeout time.Duration) bool
 	return ctx.IsTearedDown()
 }
 
-func (ctx *Context) GetClosestState() *GlobalState {
+func (ctx *Context) MustGetClosestState() *GlobalState {
 	ctx.lock.RLock()
 	defer ctx.lock.RUnlock()
 
 	ctx.assertNotDone()
 
-	return ctx.getClosestStateNoLock()
+	return ctx.mustGetClosestStateNoLock()
 }
 
 // GetState returns the state associated with the context, the boolean is false if the state is not set.
@@ -605,40 +590,35 @@ func (ctx *Context) GetState() (*GlobalState, bool) {
 	return ctx.state, true
 }
 
-func (ctx *Context) getClosestStateNoLock() *GlobalState {
+func (ctx *Context) mustGetClosestStateNoLock() *GlobalState {
 	if ctx.state != nil {
 		return ctx.state
 	}
 
 	if ctx.parentCtx != nil {
-		return ctx.parentCtx.GetClosestState()
+		return ctx.parentCtx.MustGetClosestState()
 	}
 
 	panic(ErrNoAssociatedState)
 }
 
-func (ctx *Context) getClosestStateNoDoneCheck() *GlobalState {
+func (ctx *Context) getClosestState() (*GlobalState, bool) {
 	ctx.lock.RLock()
 	defer ctx.lock.RUnlock()
 
+	return ctx.getClosestStateNoLock()
+}
+
+func (ctx *Context) getClosestStateNoLock() (*GlobalState, bool) {
 	if ctx.state != nil {
-		return ctx.state
+		return ctx.state, true
 	}
 
 	if ctx.parentCtx != nil {
-		return ctx.parentCtx.getClosestStateNoDoneCheck()
+		return ctx.parentCtx.getClosestState()
 	}
 
-	panic(ErrNoAssociatedState)
-}
-
-func (ctx *Context) Logger() *zerolog.Logger {
-	return &ctx.getClosestStateNoDoneCheck().Logger
-}
-
-func (ctx *Context) NewChildLoggerForInternalSource(src string) zerolog.Logger {
-	logLevels := ctx.GetClosestState().LogLevels
-	return childLoggerForInternalSource(*ctx.Logger(), src, logLevels)
+	return nil, false
 }
 
 func (ctx *Context) SetClosestState(state *GlobalState) {
@@ -654,6 +634,76 @@ func (ctx *Context) SetClosestState(state *GlobalState) {
 	for _, limiter := range ctx.limiters {
 		limiter.SetStateOnce(state.id)
 	}
+}
+
+func (ctx *Context) Logger() zerolog.Logger {
+	ctx.lock.RLock()
+	defer ctx.lock.RUnlock()
+
+	return ctx.loggerNoLock()
+}
+
+func (ctx *Context) loggerNoLock() zerolog.Logger {
+	if ctx.state != nil {
+		if ctx.state.OutputFieldsInitialized.Load() {
+			return ctx.state.Logger
+
+		} //ELSE:
+		//originally we waited up to 10 ms for the output fields to be initialized,
+		//but that was causing 10ms pauses in Module.Preinit. The Preinit method has been updated
+		//but since it could happen in other places, the waiting code has been removed preventively.
+	}
+
+	if ctx.parentCtx != nil {
+		closestState, ok := ctx.parentCtx.getClosestState()
+		if ok {
+			return closestState.Logger
+		}
+	}
+
+	return nopLogger
+}
+
+func (ctx *Context) NewChildLoggerForInternalSource(src string) zerolog.Logger {
+	ctx.lock.RLock()
+	defer ctx.lock.RUnlock()
+
+	state, ok := ctx.getClosestStateNoLock()
+	if !ok || !state.OutputFieldsInitialized.Load() {
+		return nopLogger
+	}
+
+	return childLoggerForInternalSource(state.Logger, src, state.LogLevels)
+}
+
+func (ctx *Context) LoggerPrint(args ...any) {
+	logger := ctx.Logger()
+	logger.Print(args...)
+}
+
+func (ctx *Context) LoggerPrintln(args ...any) {
+	logger := ctx.Logger()
+	logger.Println(args...)
+}
+
+func (ctx *Context) DebugLogEvent() *zerolog.Event {
+	logger := ctx.Logger()
+	return logger.Debug()
+}
+
+func (ctx *Context) InfoLogEvent() *zerolog.Event {
+	logger := ctx.Logger()
+	return logger.Info()
+}
+
+func (ctx *Context) WarnLogEvent() *zerolog.Event {
+	logger := ctx.Logger()
+	return logger.Warn()
+}
+
+func (ctx *Context) ErrLogEvent(err error) *zerolog.Event {
+	logger := ctx.Logger()
+	return logger.Err(err)
 }
 
 func (ctx *Context) HasCurrentTx() bool {
@@ -1312,7 +1362,7 @@ func (ctx *Context) PutUserData(path Path, value Value) {
 		panic(fmt.Errorf("%w: %s", ErrDoubleUserDataDefinition, path))
 	}
 
-	shared, err := ShareOrClone(value, ctx.getClosestStateNoLock())
+	shared, err := ShareOrClone(value, ctx.mustGetClosestStateNoLock())
 	if err != nil {
 		if errors.Is(err, ErrValueNotSharableNorClonable) {
 			panic(ErrNotSharableNorClonableUserDataValue)
@@ -1429,26 +1479,7 @@ func (ctx *Context) gracefullyTearDown() (ignore bool) {
 		defer ctx.gracefulTearDownStatus.Store(int64(status))
 	}()
 
-	var logger zerolog.Logger = zerolog.Nop()
-	{
-		ctx.lock.RLock()
-		state := ctx.state
-		ctx.lock.RUnlock()
-
-		if state != nil && state.OutputFieldsInitialized.Load() {
-			logger = ctx.state.Logger
-
-			//originally we waited up to 10 ms for the output fields to be initialized,
-			//but that was causing 10ms pauses in Module.Preinit. The Preinit method has been updated
-			//but since it could happen in other places, the waiting code has been removed preventively.
-		} else if ctx.parentCtx != nil {
-			logger = ctx.parentCtx.getClosestStateNoDoneCheck().Logger
-		}
-
-		if reflect.ValueOf(logger).IsZero() {
-			logger = zerolog.Nop()
-		}
-	}
+	logger := ctx.Logger()
 
 	defer func() {
 		ctx.onGracefulTearDownTasks = nil

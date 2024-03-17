@@ -10,7 +10,7 @@ import (
 
 func (s *Set) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
 	ctx := config.Context
-	closestState := ctx.GetClosestState()
+	closestState := ctx.MustGetClosestState()
 	s._lock(closestState)
 	defer s._unlock(closestState)
 

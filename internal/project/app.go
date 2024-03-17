@@ -25,7 +25,7 @@ type applicationData struct {
 func (p *Project) RegisterApplication(ctx *core.Context, name string, modulePath string) error {
 	//we assume this functions is never called by inox code
 
-	state := ctx.GetClosestState()
+	state := ctx.MustGetClosestState()
 	p.SmartLock(state)
 	defer p.SmartUnlock(state)
 
@@ -58,7 +58,7 @@ func (p *Project) IsApplicationRegistered(ctx *core.Context, name string) bool {
 		return false
 	}
 
-	state := ctx.GetClosestState()
+	state := ctx.MustGetClosestState()
 	p.SmartLock(state)
 	defer p.SmartUnlock(state)
 
@@ -75,7 +75,7 @@ func (p *Project) ApplicationModulePath(ctx *core.Context, name string) (core.Pa
 		return "", err
 	}
 
-	state := ctx.GetClosestState()
+	state := ctx.MustGetClosestState()
 	p.SmartLock(state)
 	defer p.SmartUnlock(state)
 
@@ -91,7 +91,7 @@ func (p *Project) ApplicationModulePath(ctx *core.Context, name string) (core.Pa
 func (p *Project) ApplicationNames(ctx *core.Context) []node.ApplicationName {
 	//we assume this functions is never called by inox code
 
-	state := ctx.GetClosestState()
+	state := ctx.MustGetClosestState()
 	p.SmartLock(state)
 	defer p.SmartUnlock(state)
 

@@ -218,7 +218,7 @@ func (lock *SmartLock) Unlock(state *GlobalState, embedder PotentiallySharable, 
 
 	if lock.holderState != state {
 		lock.lockLock.Unlock()
-		state.Ctx.Logger().Warn().Msg("holder state is not the state provided for unlocking a smart lock")
+		state.Ctx.WarnLogEvent().Msg("holder state is not the state provided for unlocking a smart lock")
 		return
 	}
 

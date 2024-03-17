@@ -32,7 +32,7 @@ func (q *TransientQueue) Enqueue(ctx *core.Context, elem core.Value) {
 		return
 	}
 	//thread safe
-	elem, err := core.ShareOrClone(elem, ctx.GetClosestState())
+	elem, err := core.ShareOrClone(elem, ctx.MustGetClosestState())
 	if err != nil {
 		panic(err)
 	}

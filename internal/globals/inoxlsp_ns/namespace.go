@@ -46,7 +46,7 @@ func NewInoxLspNamespace() *core.Namespace {
 }
 
 func StartLspServer(ctx *core.Context, config *core.Object) error {
-	state := ctx.GetClosestState()
+	state := ctx.MustGetClosestState()
 	childCtx := ctx.BoundChild()
 
 	var host core.Host

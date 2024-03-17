@@ -10,7 +10,7 @@ import (
 func (s *Set) Iterator(ctx *core.Context, config core.IteratorConfiguration) core.Iterator {
 	i := -1
 
-	closestState := ctx.GetClosestState()
+	closestState := ctx.MustGetClosestState()
 	s._lock(closestState)
 	defer s._unlock(closestState)
 

@@ -685,7 +685,7 @@ func (obj *Object) ToSymbolicValue(ctx *Context, encountered map[uintptr]symboli
 		if ctx == nil {
 			panic(errors.New("nil context"))
 		}
-		state := ctx.GetClosestState()
+		state := ctx.MustGetClosestState()
 		obj._lock(state)
 		defer obj._unlock(state)
 	}

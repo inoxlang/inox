@@ -508,13 +508,13 @@ func (patt *ObjectPattern) Test(ctx *Context, v Value) bool {
 		res, err := TreeWalkEval(constraint.Expr, state)
 		if err != nil {
 			if ctx != nil {
-				ctx.Logger().Print("error when checking a complex property pattern: " + err.Error())
+				ctx.LoggerPrint("error when checking a complex property pattern: " + err.Error())
 			}
 			//TODO: log error some where
 			return false
 		}
 		if b, ok := res.(Bool); !ok {
-			ctx.Logger().Print("error when checking a multiproperty pattern")
+			ctx.LoggerPrint("error when checking a multiproperty pattern")
 		} else if !b {
 			return false
 		}

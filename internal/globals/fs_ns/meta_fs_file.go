@@ -125,7 +125,7 @@ func (f *metaFsFile) Close() error {
 			f.closed.Store(true)
 		}
 
-		f.fs.ctx.Logger().Err(err).Msg("failed to close metafs file " + string(f.metadata.path))
+		f.fs.ctx.ErrLogEvent(err).Msg("failed to close metafs file " + string(f.metadata.path))
 		return fmt.Errorf("failed to close %s", f.metadata.path)
 	} else {
 		f.closed.Store(true)
@@ -177,7 +177,7 @@ func (f *metaFsFile) Truncate(size int64) error {
 
 	err := f.underlying.Truncate(size)
 	if err != nil {
-		f.fs.ctx.Logger().Err(err).Msg("failed to close metafs file " + string(f.metadata.path))
+		f.fs.ctx.ErrLogEvent(err).Msg("failed to close metafs file " + string(f.metadata.path))
 		return fmt.Errorf("failed to truncate %s", f.metadata.path)
 	}
 

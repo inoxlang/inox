@@ -91,7 +91,7 @@ func NewResult(ctx *core.Context, init *core.Object) *Result {
 				}
 			}
 
-			session.Share(ctx.GetClosestState())
+			session.Share(ctx.MustGetClosestState())
 
 			//TODO: panic if the object is watched or has cycles.
 		}

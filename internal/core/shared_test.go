@@ -21,7 +21,7 @@ func TestSharable(t *testing.T) {
 	t.Run("object", func(t *testing.T) {
 		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
-		state := ctx.GetClosestState()
+		state := ctx.MustGetClosestState()
 
 		assert.True(t, utils.Ret0(NewObjectFromMap(ValMap{}, ctx).IsSharable(state)))
 		assert.True(t, utils.Ret0(NewObjectFromMap(ValMap{"a": Int(1)}, ctx).IsSharable(state)))

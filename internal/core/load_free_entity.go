@@ -191,7 +191,7 @@ func loadFreeObject(ctx *Context, args FreeEntityLoadingParams) (UrlHolder, erro
 		storage.SetSerialized(ctx, path, updatedRepr)
 	}
 
-	object.Share(ctx.GetClosestState())
+	object.Share(ctx.MustGetClosestState())
 
 	//add mutation handlers
 	object.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {

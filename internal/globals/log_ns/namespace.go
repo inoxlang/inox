@@ -77,7 +77,7 @@ func NewLogNamespace() *core.Namespace {
 }
 
 func _add(ctx *core.Context, record *core.Record) {
-	logger := ctx.GetClosestState().Logger
+	logger := ctx.MustGetClosestState().Logger
 
 	var level zerolog.Level = zerolog.DebugLevel
 	var msg string

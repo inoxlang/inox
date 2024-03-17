@@ -61,7 +61,7 @@ func getSignatureHelp(handlingCtx *core.Context, params signatureHelpParams) (*d
 
 	signatureHelp, ok := getSignatureHelpAt(line, column, chunk, state)
 	if !ok {
-		rpcSession.Logger().Println(NO_DATA_MSG)
+		rpcSession.LoggerPrintln(NO_DATA_MSG)
 		return &defines.SignatureHelp{}, nil
 	}
 

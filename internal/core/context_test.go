@@ -1000,6 +1000,7 @@ func TestContextDone(t *testing.T) {
 
 		buf := bytes.NewBuffer(nil)
 		state.Logger = zerolog.New(buf)
+		state.OutputFieldsInitialized.Store(true)
 
 		ctx.CancelGracefully()
 

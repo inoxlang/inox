@@ -159,7 +159,7 @@ func loadMap(ctx *core.Context, args core.FreeEntityLoadingParams) (core.UrlHold
 		}
 	}
 
-	m.Share(ctx.GetClosestState())
+	m.Share(ctx.MustGetClosestState())
 
 	return m, nil
 }

@@ -302,7 +302,7 @@ type unsavedDocumentSyncData struct {
 
 // reactToDidChange updates the unsavedDocumentSyncData & reverse the last synchronization
 // if it happened too recently (likely during a sequence of LSP changes).
-func (d *unsavedDocumentSyncData) reactToDidChange(fls *Filesystem, logger *zerolog.Logger) {
+func (d *unsavedDocumentSyncData) reactToDidChange(fls *Filesystem, logger zerolog.Logger) {
 	d.lock.Lock()
 	defer d.lock.Unlock()
 	defer func() {
@@ -349,7 +349,8 @@ func updateFile(fpath string, parts [][]byte, create, overwrite bool, fls *Files
 			defer func() {
 				if updated {
 					//we log after to reduce the time spent locked
-					session.Logger().Printf("'unsaved' document %q was updated with the content of the persisted file\n", fpath)
+					logger := session.Logger()
+					logger.Printf("'unsaved' document %q was updated with the content of the persisted file\n", fpath)
 				}
 			}()
 
@@ -479,7 +480,7 @@ func startNotifyingFilesystemStructureEvents(session *jsonrpc.Session, fls afs.F
 			if e != nil {
 				err := utils.ConvertPanicValueToError(err)
 				err = fmt.Errorf("%w: %s", err, debug.Stack())
-				session.Logger().Println(err)
+				session.LoggerPrintln(err)
 			}
 		}()
 
@@ -513,7 +514,7 @@ func startNotifyingFilesystemStructureEvents(session *jsonrpc.Session, fls afs.F
 					if e != nil {
 						err := utils.ConvertPanicValueToError(e)
 						err = fmt.Errorf("%w: %s", err, debug.Stack())
-						session.Logger().Println(err)
+						session.LoggerPrintln(err)
 					}
 				}()
 				listener(fsEvent)

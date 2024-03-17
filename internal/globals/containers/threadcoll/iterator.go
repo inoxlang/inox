@@ -12,7 +12,7 @@ const (
 // Iterator returns a thread-unsafe iterator that starts at the current most recently added (last) element, the type of keys is core.ULID.
 // The iterators iterates over the MessageThread, not over a snapshot
 func (t *MessageThread) Iterator(ctx *core.Context, config core.IteratorConfiguration) core.Iterator {
-	closestState := ctx.GetClosestState()
+	closestState := ctx.MustGetClosestState()
 	t._lock(closestState)
 	defer t._unlock(closestState)
 

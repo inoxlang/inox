@@ -135,7 +135,7 @@ func loadSet(ctx *core.Context, args core.FreeEntityLoadingParams) (core.UrlHold
 		}
 	}
 
-	set.Share(ctx.GetClosestState())
+	set.Share(ctx.MustGetClosestState())
 
 	return set, nil
 }
@@ -190,7 +190,7 @@ func (s *Set) Migrate(ctx *core.Context, key core.Path, migration *core.FreeEnti
 
 	depth := len(pathutils.GetPathSegments(string(key)))
 	migrationHanders := migration.MigrationHandlers
-	state := ctx.GetClosestState()
+	state := ctx.MustGetClosestState()
 
 	s.initPathKeyMap()
 

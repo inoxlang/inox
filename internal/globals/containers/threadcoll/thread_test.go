@@ -322,7 +322,7 @@ func TestThreadAdd(t *testing.T) {
 		})
 
 		thread := val.(*MessageThread)
-		thread.Share(ctx.GetClosestState())
+		thread.Share(ctx.MustGetClosestState())
 
 		if !assert.NoError(t, err) {
 			return

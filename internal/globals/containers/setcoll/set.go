@@ -195,7 +195,7 @@ func (set *Set) GetElementByKey(ctx *core.Context, pathKey core.ElementKey) (cor
 		if _, err := set.txIsolator.WaitForOtherTxsToTerminate(ctx, false); err != nil {
 			panic(err)
 		}
-		closestState := ctx.GetClosestState()
+		closestState := ctx.MustGetClosestState()
 		set._lock(closestState)
 		defer set._unlock(closestState)
 	}
@@ -222,7 +222,7 @@ func (set *Set) Has(ctx *core.Context, elem core.Serializable) core.Bool {
 		}
 	}
 
-	closestState := ctx.GetClosestState()
+	closestState := ctx.MustGetClosestState()
 	set._lock(closestState)
 	defer set._unlock(closestState)
 
@@ -277,7 +277,7 @@ func (set *Set) IsEmpty(ctx *core.Context) bool {
 		}
 	}
 
-	closestState := ctx.GetClosestState()
+	closestState := ctx.MustGetClosestState()
 	set._lock(closestState)
 	defer set._unlock(closestState)
 
@@ -317,7 +317,7 @@ func (set *Set) Get(ctx *core.Context, keyVal core.StringLike) (core.Value, core
 		if _, err := set.txIsolator.WaitForOtherTxsToTerminate(ctx, false); err != nil {
 			panic(err)
 		}
-		closestState := ctx.GetClosestState()
+		closestState := ctx.MustGetClosestState()
 		set._lock(closestState)
 		defer set._unlock(closestState)
 	}
@@ -394,7 +394,7 @@ func (set *Set) Add(ctx *core.Context, elem core.Serializable) {
 		set.informAboutMutation(ctx, mutation)
 
 		if _, ok := set.transactionsWithSetEndCallback[tx]; !ok {
-			closestState := ctx.GetClosestState()
+			closestState := ctx.MustGetClosestState()
 			set._lock(closestState)
 			defer set._unlock(closestState)
 
@@ -409,7 +409,7 @@ func (set *Set) addToSharedSetNoPersist(ctx *core.Context, elem core.Serializabl
 		panic(ErrValueDoesMatchElementPattern)
 	}
 
-	closestState := ctx.GetClosestState()
+	closestState := ctx.MustGetClosestState()
 	elem = utils.Must(core.ShareOrClone(elem, closestState)).(core.Serializable)
 
 	set.config.Uniqueness.AddUrlIfNecessary(ctx, set, elem)
@@ -503,7 +503,7 @@ func (set *Set) Remove(ctx *core.Context, elem core.Serializable) {
 	//set.hasPendingRemovals.Store(true)
 
 	key := set.getUniqueKey(ctx, elem)
-	closestState := ctx.GetClosestState()
+	closestState := ctx.MustGetClosestState()
 
 	set._lock(closestState)
 	defer set._unlock(closestState)
@@ -614,7 +614,7 @@ func (set *Set) makePersistOnMutationCallback(elem core.Serializable) core.Mutat
 			//What should be done if tx is readonly ?
 		}
 
-		closestState := ctx.GetClosestState()
+		closestState := ctx.MustGetClosestState()
 		set._lock(closestState)
 		defer set._unlock(closestState)
 

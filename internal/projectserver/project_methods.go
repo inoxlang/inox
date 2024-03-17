@@ -332,7 +332,7 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 			if e != nil {
 				err := utils.ConvertPanicValueToError(e)
 				err = fmt.Errorf("%w: %s", err, debug.Stack())
-				rpcSession.Logger().Println(rpcSession.Client(), err)
+				rpcSession.LoggerPrintln(rpcSession.Client(), err)
 			}
 		}()
 
@@ -360,9 +360,9 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 
 		err := devtoolsInstance.StartWebApp()
 		if err != nil {
-			rpcSession.Logger().Println(rpcSession.Client(), "failed to start dev tools server:", err)
+			rpcSession.LoggerPrintln(rpcSession.Client(), "failed to start dev tools server:", err)
 		} else {
-			rpcSession.Logger().Println(rpcSession.Client(), "dev tools server started")
+			rpcSession.LoggerPrintln(rpcSession.Client(), "dev tools server started")
 		}
 	}()
 

@@ -248,7 +248,7 @@ func (obj *Object) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, con
 		w.WriteObjectStart()
 		var err error
 
-		closestState := ctx.GetClosestState()
+		closestState := ctx.MustGetClosestState()
 		obj._lock(closestState)
 		defer obj._unlock(closestState)
 		keys := obj.keys

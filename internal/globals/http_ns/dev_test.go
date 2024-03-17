@@ -35,7 +35,7 @@ func TestTargetServerCreationAndDevServerForwarding(t *testing.T) {
 			Permissions: []core.Permission{core.HttpPermission{Kind_: permkind.Provide, Entity: host}},
 		}, nil)
 
-		rootCtx.GetClosestState().Project = project
+		rootCtx.MustGetClosestState().Project = project
 
 		defer rootCtx.CancelGracefully()
 
@@ -160,7 +160,7 @@ func TestTargetServerCreationAndDevServerForwarding(t *testing.T) {
 			Permissions: []core.Permission{core.HttpPermission{Kind_: permkind.Provide, Entity: host}},
 		}, nil)
 
-		rootCtx.GetClosestState().Project = project
+		rootCtx.MustGetClosestState().Project = project
 
 		defer rootCtx.CancelGracefully()
 

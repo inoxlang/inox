@@ -55,7 +55,7 @@ func StartPeriodicPerfProfilesCollection(ctx *core.Context, conf PerfDataCollect
 			{Name: s3_ns.OBJECT_STORAGE_REQUEST_RATE_LIMIT_NAME, Kind: core.FrequencyLimit, Value: 50 * core.FREQ_LIMIT_SCALE},
 		},
 	}, nil)
-	state := ctx.GetClosestState()
+	state := ctx.MustGetClosestState()
 	logger := state.Logger
 
 	//create the main profiling goroutine, it manages the CPU profiles and:

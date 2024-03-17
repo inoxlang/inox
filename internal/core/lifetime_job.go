@@ -83,7 +83,7 @@ func NewLifetimeJob(meta Value, subjectPattern Pattern, mod *Module, bytecode *B
 
 // Instantiate creates a instance of the job with a paused goroutine.
 func (j *LifetimeJob) Instantiate(ctx *Context, self Value) (*LifetimeJobInstance, error) {
-	spawnerState := ctx.GetClosestState()
+	spawnerState := ctx.MustGetClosestState()
 
 	createLThreadPerm := LThreadPermission{Kind_: permkind.Create}
 

@@ -265,7 +265,7 @@ func RunPreparedModule(args RunPreparedModuleArgs) (
 	treeWalkState := core.NewTreeWalkStateWithGlobal(state)
 	debugger := args.Debugger
 	if debugger == nil && args.ParentContext != nil {
-		closestState := args.ParentContext.GetClosestState()
+		closestState := args.ParentContext.MustGetClosestState()
 		parentDebugger, _ := closestState.Debugger.Load().(*core.Debugger)
 		if parentDebugger != nil {
 			debugger = parentDebugger.NewChild()

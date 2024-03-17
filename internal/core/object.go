@@ -155,7 +155,7 @@ func (obj *Object) indexOfKey(k string) int {
 // this function is called during object creation
 func (obj *Object) instantiateLifetimeJobs(ctx *Context) error {
 	var jobs []*LifetimeJob
-	state := ctx.GetClosestState()
+	state := ctx.MustGetClosestState()
 
 	for keyIndex, key := range obj.keys {
 		if key != inoxconsts.IMPLICIT_PROP_NAME {
@@ -306,7 +306,7 @@ func (obj *Object) PropNotStored(ctx *Context, name string) Value {
 func (obj *Object) prop(ctx *Context, name string, stored bool) (returnedValue Value) {
 	obj.waitForOtherTxsToTerminate(ctx, !stored)
 
-	closestState := ctx.GetClosestState()
+	closestState := ctx.MustGetClosestState()
 	obj._lock(closestState)
 	defer obj._unlock(closestState)
 
@@ -369,7 +369,7 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 
 	tx := obj.waitForOtherTxsToTerminate(ctx, false)
 
-	closestState := ctx.GetClosestState()
+	closestState := ctx.MustGetClosestState()
 
 	if obj.IsShared() {
 		newVal, err := ShareOrClone(value, closestState)
@@ -542,7 +542,7 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 func (obj *Object) PropertyNames(ctx *Context) []string {
 	obj.waitForOtherTxsToTerminate(ctx, false)
 
-	closestState := ctx.GetClosestState()
+	closestState := ctx.MustGetClosestState()
 	obj._lock(closestState)
 	defer obj._unlock(closestState)
 	return obj.keys
@@ -551,7 +551,7 @@ func (obj *Object) PropertyNames(ctx *Context) []string {
 func (obj *Object) HasProp(ctx *Context, name string) bool {
 	obj.waitForOtherTxsToTerminate(ctx, false)
 
-	closestState := ctx.GetClosestState()
+	closestState := ctx.MustGetClosestState()
 	obj._lock(closestState)
 	defer obj._unlock(closestState)
 	for _, k := range obj.keys {
@@ -565,7 +565,7 @@ func (obj *Object) HasProp(ctx *Context, name string) bool {
 func (obj *Object) HasPropValue(ctx *Context, value Value) bool {
 	obj.waitForOtherTxsToTerminate(ctx, false)
 
-	closestState := ctx.GetClosestState()
+	closestState := ctx.MustGetClosestState()
 	obj._lock(closestState)
 	defer obj._unlock(closestState)
 	for _, v := range obj.values {
@@ -584,7 +584,7 @@ func (obj *Object) EntryMap(ctx *Context) map[string]Serializable {
 	if ctx != nil {
 		obj.waitForOtherTxsToTerminate(ctx, false)
 
-		closestState := ctx.GetClosestState()
+		closestState := ctx.MustGetClosestState()
 		obj._lock(closestState)
 		defer obj._unlock(closestState)
 	} else if obj.IsShared() {
@@ -611,7 +611,7 @@ func (obj *Object) ValueEntryMap(ctx *Context) map[string]Value {
 	if ctx != nil {
 		obj.waitForOtherTxsToTerminate(ctx, false)
 
-		closestState := ctx.GetClosestState()
+		closestState := ctx.MustGetClosestState()
 		obj._lock(closestState)
 		defer obj._unlock(closestState)
 	} else if obj.IsShared() {
@@ -686,7 +686,7 @@ func (obj *Object) hasURL() bool {
 }
 
 func (obj *Object) SetURLOnce(ctx *Context, u URL) error {
-	closestState := ctx.GetClosestState()
+	closestState := ctx.MustGetClosestState()
 	obj._lock(closestState)
 	defer obj._unlock(closestState)
 
@@ -703,7 +703,7 @@ func (obj *Object) SetURLOnce(ctx *Context, u URL) error {
 func (obj *Object) Keys(ctx *Context) []string {
 	obj.waitForOtherTxsToTerminate(ctx, false)
 
-	closestState := ctx.GetClosestState()
+	closestState := ctx.MustGetClosestState()
 	obj._lock(closestState)
 	defer obj._unlock(closestState)
 

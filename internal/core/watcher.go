@@ -362,7 +362,7 @@ func (obj *Object) Watcher(ctx *Context, config WatcherConfiguration) Watcher {
 		config.Depth = ShallowWatching
 	}
 
-	closestState := ctx.GetClosestState()
+	closestState := ctx.MustGetClosestState()
 	watcher := NewGenericWatcher(config)
 
 	obj._lock(closestState)

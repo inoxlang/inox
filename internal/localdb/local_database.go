@@ -88,7 +88,7 @@ func OpenDatabase(ctx *core.Context, r core.ResourceName, restrictedAccess bool)
 		return nil, err
 	}
 
-	state := ctx.GetClosestState()
+	state := ctx.MustGetClosestState()
 	project := state.Project
 	if project == nil || reflect.ValueOf(project).IsZero() {
 		return nil, errors.New("local databases are only supported in project mode")
@@ -116,7 +116,7 @@ func OpenTempDatabase(ctx *core.Context, r core.ResourceName, restrictedAccess b
 		return nil, err
 	}
 
-	project := ctx.GetClosestState().Project
+	project := ctx.MustGetClosestState().Project
 	if project == nil || reflect.ValueOf(project).IsZero() {
 		return nil, errors.New("local databases are only supported in project mode")
 	}
@@ -356,7 +356,7 @@ func (ldb *LocalDatabase) UpdateSchema(ctx *core.Context, schema *core.ObjectPat
 
 func (ldb *LocalDatabase) load(ctx *core.Context, migrationNextPattern *core.ObjectPattern, handlers core.MigrationOpHandlers) error {
 	ldb.topLevelValues = make(map[string]core.Serializable, ldb.schema.EntryCount())
-	state := ctx.GetClosestState()
+	state := ctx.MustGetClosestState()
 
 	err := ldb.schema.ForEachEntry(func(schemaEntry core.ObjectPatternEntry) error {
 		path := core.PathFrom("/" + schemaEntry.Name)

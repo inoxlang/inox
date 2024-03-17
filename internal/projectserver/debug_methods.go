@@ -332,7 +332,7 @@ func startDebugEventSenders(debugSession *DebugSession, rpcSession *jsonrpc.Sess
 		defer func() {
 			if e := recover(); e != nil {
 				err := utils.ConvertPanicValueToError(e)
-				rpcSession.Logger().Println(fmt.Errorf("%w: %s", err, string(debug.Stack())))
+				rpcSession.LoggerPrintln(fmt.Errorf("%w: %s", err, string(debug.Stack())))
 			}
 		}()
 
@@ -387,7 +387,7 @@ func startDebugEventSenders(debugSession *DebugSession, rpcSession *jsonrpc.Sess
 		defer func() {
 			if e := recover(); e != nil {
 				err := utils.ConvertPanicValueToError(e)
-				rpcSession.Logger().Println(fmt.Errorf("%w: %s", err, string(debug.Stack())))
+				rpcSession.LoggerPrintln(fmt.Errorf("%w: %s", err, string(debug.Stack())))
 			}
 		}()
 
@@ -633,7 +633,9 @@ func handleDebugLaunch(callCtx context.Context, req interface{}) (interface{}, e
 
 	// update the debug session
 
-	session.Logger().Println("program: ", launchArgs.Program)
+	logger := session.Logger()
+
+	logger.Println("program: ", launchArgs.Program)
 	programPath := filepath.Clean(launchArgs.Program)
 
 	debugSession.programPath = programPath
@@ -651,7 +653,7 @@ func handleDebugLaunch(callCtx context.Context, req interface{}) (interface{}, e
 		defer func() {
 			if e := recover(); e != nil {
 				err := utils.ConvertPanicValueToError(e)
-				session.Logger().Println(fmt.Errorf("%w: %s", err, string(debug.Stack())))
+				logger.Println(fmt.Errorf("%w: %s", err, string(debug.Stack())))
 			}
 		}()
 

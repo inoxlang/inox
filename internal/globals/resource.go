@@ -269,6 +269,6 @@ func _deleteResource(ctx *core.Context, resource core.ResourceName, args ...core
 }
 
 func _get(ctx *core.Context, u core.URL) (core.Serializable, error) {
-	state := ctx.GetClosestState()
+	state := ctx.MustGetClosestState()
 	return core.GetOrLoadValueAtURL(ctx, u, state)
 }

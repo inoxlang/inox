@@ -26,7 +26,7 @@ func TestSharedPersistedMapSet(t *testing.T) {
 
 		m := val.(*Map)
 
-		m.Share(ctx.GetClosestState())
+		m.Share(ctx.MustGetClosestState())
 
 		if !assert.NoError(t, err) {
 			return
@@ -76,7 +76,7 @@ func TestSharedPersistedMapSet(t *testing.T) {
 		})
 
 		m := val.(*Map)
-		m.Share(ctx.GetClosestState())
+		m.Share(ctx.MustGetClosestState())
 
 		if !assert.NoError(t, err) {
 			return
@@ -139,7 +139,7 @@ func TestSharedPersistedMapSet(t *testing.T) {
 
 		m := val.(*Map)
 
-		m.Share(ctx1.GetClosestState())
+		m.Share(ctx1.MustGetClosestState())
 
 		//The tx is started after the KV write in order
 		//for the write to be already commited.
@@ -223,7 +223,7 @@ func TestSharedPersistedMapSet(t *testing.T) {
 		}
 
 		m := val.(*Map)
-		m.Share(ctx1.GetClosestState())
+		m.Share(ctx1.MustGetClosestState())
 
 		m.Set(ctx1, INT_1, STRING_A)
 
@@ -289,7 +289,7 @@ func TestSharedPersistedMapSet(t *testing.T) {
 
 		//First transaction.
 
-		m.Share(ctx1.GetClosestState())
+		m.Share(ctx1.MustGetClosestState())
 
 		if !assert.NoError(t, err) {
 			return
@@ -395,7 +395,7 @@ func TestSharedPersistedMapRemove(t *testing.T) {
 		}
 
 		m := val.(*Map)
-		m.Share(ctx.GetClosestState())
+		m.Share(ctx.MustGetClosestState())
 		assert.True(t, bool(m.Has(ctx, INT_1)))
 
 		m.Remove(ctx, INT_1)
@@ -444,7 +444,7 @@ func TestSharedPersistedMapRemove(t *testing.T) {
 		}
 
 		m := val.(*Map)
-		m.Share(ctx.GetClosestState())
+		m.Share(ctx.MustGetClosestState())
 
 		m.Remove(ctx, INT_1)
 
@@ -507,7 +507,7 @@ func TestSharedPersistedMapRemove(t *testing.T) {
 		})
 
 		m := val.(*Map)
-		m.Share(ctx1.GetClosestState())
+		m.Share(ctx1.MustGetClosestState())
 
 		//The tx is started after the KV write in order
 		//for the write to be already commited.
@@ -594,7 +594,7 @@ func TestSharedPersistedMapRemove(t *testing.T) {
 		}
 
 		m := val.(*Map)
-		m.Share(ctx1.GetClosestState())
+		m.Share(ctx1.MustGetClosestState())
 
 		m.Remove(ctx1, INT_1)
 
@@ -659,7 +659,7 @@ func TestSharedPersistedMapHas(t *testing.T) {
 		}
 
 		m := val.(*Map)
-		m.Share(ctx1.GetClosestState())
+		m.Share(ctx1.MustGetClosestState())
 
 		assert.True(t, bool(m.Has(ctx1, INT_1)))
 		assert.True(t, bool(m.Has(ctx2, INT_1)))

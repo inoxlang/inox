@@ -121,7 +121,7 @@ func loadThread(ctx *core.Context, args core.FreeEntityLoadingParams) (core.UrlH
 		}
 	}
 
-	thread.Share(ctx.GetClosestState())
+	thread.Share(ctx.MustGetClosestState())
 
 	return thread, nil
 }
@@ -138,7 +138,7 @@ func (t *MessageThread) makePersistOnMutationCallback(elem *core.Object) core.Mu
 			//What should be done if tx is readonly ?
 		}
 
-		closestState := ctx.GetClosestState()
+		closestState := ctx.MustGetClosestState()
 		t._lock(closestState)
 		defer t._unlock(closestState)
 

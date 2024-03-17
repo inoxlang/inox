@@ -80,7 +80,7 @@ func NewSynchronousMessageHandler(ctx *Context, fn *InoxFunction, pattern Patter
 	if ok, expl := fn.IsSharable(fn.originState); !ok {
 		panic(fmt.Errorf("only sharable functions are allowed: %s", expl))
 	}
-	fn.Share(ctx.GetClosestState())
+	fn.Share(ctx.MustGetClosestState())
 
 	return &SynchronousMessageHandler{
 		handler: fn,
@@ -120,7 +120,7 @@ func (handlers *SynchronousMessageHandlers) CallHandlers(ctx *Context, msg Messa
 	}
 	for _, h := range handlers.list {
 		if h.Pattern().Test(ctx, msg.Data()) {
-			_, err := h.handler.Call(ctx.GetClosestState(), self, []Value{msg.Data()}, nil)
+			_, err := h.handler.Call(ctx.MustGetClosestState(), self, []Value{msg.Data()}, nil)
 			if err != nil {
 				return fmt.Errorf("one of the message handler returned an error: %w", err)
 			}
@@ -132,7 +132,7 @@ func (handlers *SynchronousMessageHandlers) CallHandlers(ctx *Context, msg Messa
 // receivers
 
 func (obj *Object) ReceiveMessage(ctx *Context, msg Message) error {
-	state := ctx.GetClosestState()
+	state := ctx.MustGetClosestState()
 	obj._lock(state)
 	defer obj._unlock(state)
 

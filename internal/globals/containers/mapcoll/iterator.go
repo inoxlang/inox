@@ -9,7 +9,7 @@ func (s *Map) Iterator(ctx *core.Context, config core.IteratorConfiguration) cor
 	i := -1
 	var entries []entry
 
-	closestState := ctx.GetClosestState()
+	closestState := ctx.MustGetClosestState()
 	s._lock(closestState)
 	defer s._unlock(closestState)
 

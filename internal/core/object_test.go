@@ -69,7 +69,7 @@ func TestObject(t *testing.T) {
 			defer ctx2.CancelGracefully()
 
 			obj := NewObjectFromMap(ValMap{}, ctx1)
-			obj.Share(ctx1.GetClosestState())
+			obj.Share(ctx1.MustGetClosestState())
 
 			signal := make(chan struct{}, 1)
 
@@ -118,7 +118,7 @@ func TestObject(t *testing.T) {
 			defer ctx1.CancelGracefully()
 
 			obj := NewObjectFromMap(ValMap{"a": Int(1)}, ctx1)
-			obj.Share(ctx1.GetClosestState())
+			obj.Share(ctx1.MustGetClosestState())
 
 			// since context has no associated transaction a panic is expected
 			if !assert.Panics(t, func() {
@@ -143,14 +143,14 @@ func TestObject(t *testing.T) {
 			defer ctx1.CancelGracefully()
 
 			obj := NewObjectFromMap(ValMap{"list": NewWrappedValueList()}, ctx1)
-			obj.Share(ctx1.GetClosestState())
+			obj.Share(ctx1.MustGetClosestState())
 
 			StartNewTransaction(ctx1)
 
 			list := obj.PropNotStored(ctx1, "list").(*List)
 			nonSharedObject := NewObject()
 			sharedObject := NewObject()
-			sharedObject.Share(ctx1.GetClosestState())
+			sharedObject.Share(ctx1.MustGetClosestState())
 
 			list.append(ctx1, nonSharedObject)
 
