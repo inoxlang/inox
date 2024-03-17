@@ -54,7 +54,10 @@ func addFilesystemRoutingHandler(server *HttpsServer, staticDir, dynamicDir core
 		dynamicDirString = dynamicDir.UnderlyingString()
 	}
 
-	api, err := spec.GetFSRoutingServerAPI(server.state.Ctx, dynamicDirString, spec.ServerApiResolutionConfig{})
+	api, err := spec.GetFSRoutingServerAPI(server.state.Ctx, spec.ServerApiResolutionConfig{
+		DynamicDir: dynamicDirString,
+	})
+
 	if err != nil {
 		return err
 	}
@@ -72,7 +75,9 @@ func addFilesystemRoutingHandler(server *HttpsServer, staticDir, dynamicDir core
 				default:
 				}
 
-				updatedAPI, err := spec.GetFSRoutingServerAPI(serverCtx, dynamicDirString, spec.ServerApiResolutionConfig{})
+				updatedAPI, err := spec.GetFSRoutingServerAPI(serverCtx, spec.ServerApiResolutionConfig{
+					DynamicDir: dynamicDirString,
+				})
 
 				if err != nil {
 					serverCtx.Logger().Debug().Err(err).Send()

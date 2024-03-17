@@ -123,7 +123,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
+			api, err := GetFSRoutingServerAPI(ctx, ServerApiResolutionConfig{DynamicDir: "/routes/"})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -154,7 +154,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
+			api, err := GetFSRoutingServerAPI(ctx, ServerApiResolutionConfig{DynamicDir: "/routes/"})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -188,7 +188,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
+			api, err := GetFSRoutingServerAPI(ctx, ServerApiResolutionConfig{DynamicDir: "/routes/"})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -217,7 +217,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
+			api, err := GetFSRoutingServerAPI(ctx, ServerApiResolutionConfig{DynamicDir: "/routes/"})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -246,7 +246,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
+			api, err := GetFSRoutingServerAPI(ctx, ServerApiResolutionConfig{DynamicDir: "/routes/"})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -275,7 +275,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
+			api, err := GetFSRoutingServerAPI(ctx, ServerApiResolutionConfig{DynamicDir: "/routes/"})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -304,7 +304,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
+			api, err := GetFSRoutingServerAPI(ctx, ServerApiResolutionConfig{DynamicDir: "/routes/"})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -335,7 +335,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
+			api, err := GetFSRoutingServerAPI(ctx, ServerApiResolutionConfig{DynamicDir: "/routes/"})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -366,7 +366,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
+			api, err := GetFSRoutingServerAPI(ctx, ServerApiResolutionConfig{DynamicDir: "/routes/"})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -436,7 +436,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
+			api, err := GetFSRoutingServerAPI(ctx, ServerApiResolutionConfig{DynamicDir: "/routes/"})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -476,7 +476,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
+			api, err := GetFSRoutingServerAPI(ctx, ServerApiResolutionConfig{DynamicDir: "/routes/"})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -514,7 +514,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			_, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
+			_, err := GetFSRoutingServerAPI(ctx, ServerApiResolutionConfig{DynamicDir: "/routes/"})
 			assert.ErrorContains(t, err, "already implemented")
 		})
 
@@ -535,7 +535,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			_, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
+			_, err := GetFSRoutingServerAPI(ctx, ServerApiResolutionConfig{DynamicDir: "/routes/"})
 			assert.ErrorContains(t, err, "already implemented")
 		})
 
@@ -556,7 +556,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			_, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
+			_, err := GetFSRoutingServerAPI(ctx, ServerApiResolutionConfig{DynamicDir: "/routes/"})
 			assert.ErrorContains(t, err, "already implemented")
 		})
 
@@ -577,7 +577,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			_, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
+			_, err := GetFSRoutingServerAPI(ctx, ServerApiResolutionConfig{DynamicDir: "/routes/"})
 			assert.ErrorContains(t, err, "already implemented")
 		})
 
@@ -600,7 +600,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			_, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
+			_, err := GetFSRoutingServerAPI(ctx, ServerApiResolutionConfig{DynamicDir: "/routes/"})
 
 			assert.ErrorIs(t, err, ErrUnexpectedBodyParamsInGETHandler)
 		})
@@ -619,7 +619,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			_, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
+			_, err := GetFSRoutingServerAPI(ctx, ServerApiResolutionConfig{DynamicDir: "/routes/"})
 
 			assert.ErrorIs(t, err, ErrUnexpectedBodyParamsInGETHandler)
 		})
@@ -638,7 +638,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			_, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
+			_, err := GetFSRoutingServerAPI(ctx, ServerApiResolutionConfig{DynamicDir: "/routes/"})
 
 			assert.ErrorIs(t, err, ErrUnexpectedBodyParamsInOPTIONSHandler)
 		})
@@ -657,7 +657,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			_, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
+			_, err := GetFSRoutingServerAPI(ctx, ServerApiResolutionConfig{DynamicDir: "/routes/"})
 
 			assert.ErrorIs(t, err, ErrUnexpectedBodyParamsInOPTIONSHandler)
 		})
@@ -680,7 +680,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
+			api, err := GetFSRoutingServerAPI(ctx, ServerApiResolutionConfig{DynamicDir: "/routes/"})
 
 			if !assert.NoError(t, err, ErrUnexpectedBodyParamsInGETHandler) {
 				return
@@ -728,7 +728,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
+			api, err := GetFSRoutingServerAPI(ctx, ServerApiResolutionConfig{DynamicDir: "/routes/"})
 
 			if !assert.NoError(t, err, ErrUnexpectedBodyParamsInGETHandler) {
 				return
@@ -762,7 +762,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
+			api, err := GetFSRoutingServerAPI(ctx, ServerApiResolutionConfig{DynamicDir: "/routes/"})
 
 			if !assert.NoError(t, err, ErrUnexpectedBodyParamsInGETHandler) {
 				return
@@ -811,7 +811,7 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 			})
 			defer ctx.CancelGracefully()
 
-			api, err := GetFSRoutingServerAPI(ctx, "/routes/", ServerApiResolutionConfig{})
+			api, err := GetFSRoutingServerAPI(ctx, ServerApiResolutionConfig{DynamicDir: "/routes/"})
 
 			if !assert.NoError(t, err, ErrUnexpectedBodyParamsInGETHandler) {
 				return
