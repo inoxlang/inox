@@ -2,18 +2,36 @@ package projectserver
 
 import (
 	"github.com/inoxlang/inox/internal/codebase/analysis"
+	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
 func analyzeCodebaseAndRegen(initial bool, session *Session) {
 	defer utils.Recover()
 
-	rpcSessionCtx := session.rpcSession.Context()
+	session.lock.Lock()
+	project := session.project
+	lspFilesystem := session.filesystem
+	session.lock.Unlock()
 
-	analysisResult, err := analysis.AnalyzeCodebase(rpcSessionCtx, session.filesystem, analysis.Configuration{
+	if project == nil {
+		return
+	}
+
+	handlingCtx := core.NewContextWithEmptyState(core.ContextConfig{
+		Permissions:   []core.Permission{core.FilesystemPermission{Kind_: permkind.Read, Entity: core.ROOT_PREFIX_PATH_PATTERN}},
+		Filesystem:    lspFilesystem,
+		ParentContext: session.rpcSession.Context(),
+	}, nil)
+
+	defer handlingCtx.CancelGracefully()
+
+	analysisResult, err := analysis.AnalyzeCodebase(handlingCtx, session.filesystem, analysis.Configuration{
 		TopDirectories:     []string{"/"},
 		InoxChunkCache:     session.inoxChunkCache,
 		CssStylesheetCache: session.stylesheetCache,
+		Project:            project,
 	})
 	if err != nil {
 		session.Logger().Println(session.rpcSession.Client(), err)
@@ -25,11 +43,11 @@ func analyzeCodebaseAndRegen(initial bool, session *Session) {
 	session.lock.Unlock()
 
 	if initial {
-		session.cssGenerator.InitialGenAndSetup(rpcSessionCtx, analysisResult)
-		session.jsGenerator.InitialGenAndSetup(rpcSessionCtx, analysisResult)
+		session.cssGenerator.InitialGenAndSetup(handlingCtx, analysisResult)
+		session.jsGenerator.InitialGenAndSetup(handlingCtx, analysisResult)
 	} else {
-		session.cssGenerator.RegenAll(rpcSessionCtx, analysisResult)
-		session.jsGenerator.RegenAll(rpcSessionCtx, analysisResult)
+		session.cssGenerator.RegenAll(handlingCtx, analysisResult)
+		session.jsGenerator.RegenAll(handlingCtx, analysisResult)
 	}
 
 	publishWorkspaceDiagnostics(session, analysisResult)

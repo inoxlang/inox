@@ -199,6 +199,8 @@ func ProjectServer(mainSubCommand string, mainSubCommandArgs []string, outW, err
 				Limits:               core.GetDefaultScriptLimits(),
 
 				ParentContext: rpcCtx,
+				//Set a filesystem that is not the OS FS. This FS will not be used.
+				Filesystem: fs_ns.NewMemFilesystem(1_000),
 			})
 			tempState := core.NewGlobalState(sessionCtx)
 			tempState.Out = out

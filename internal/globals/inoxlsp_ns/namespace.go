@@ -8,6 +8,7 @@ import (
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	symbolic_inoxlsp "github.com/inoxlang/inox/internal/globals/inoxlsp_ns/symbolic"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 
@@ -103,6 +104,8 @@ func StartLspServer(ctx *core.Context, config *core.Object) error {
 				ForbiddenPermissions: rpcCtx.GetForbiddenPermissions(),
 
 				ParentContext: rpcCtx,
+				//Set a filesystem that is not the OS FS. This FS will not be used.
+				Filesystem: fs_ns.NewMemFilesystem(1_000),
 			})
 			tempState := core.NewGlobalState(sessionCtx)
 			tempState.Logger = state.Logger
