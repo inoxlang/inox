@@ -294,7 +294,9 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 		preinitStart := time.Now()
 		additionalGlobals := map[string]Value{}
 		maps.Copy(additionalGlobals, args.AdditionalGlobalsTestOnly)
-		additionalGlobals[globalnames.APP_LISTENING_ADDR] = applicationListeningAddr
+		if applicationListeningAddr != "" {
+			additionalGlobals[globalnames.APP_LISTENING_ADDR] = applicationListeningAddr
+		}
 
 		manifest, preinitState, preinitStaticCheckErrors, preinitErr = mod.PreInit(PreinitArgs{
 			GlobalConsts:          mod.MainChunk.Node.GlobalConstantDeclarations,
@@ -384,7 +386,7 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 
 	globalState, err := NewDefaultGlobalState(ctx, DefaultGlobalStateConfig{
 		AbsoluteModulePath:       absPath,
-		ApplicationListeningAddr: applicationListeningAddr,
+		ApplicationListeningAddr: applicationListeningAddr, //not an issue if empty
 
 		EnvPattern:          manifest.EnvPattern,
 		PreinitFiles:        manifest.PreinitFiles,

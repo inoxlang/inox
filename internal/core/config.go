@@ -25,7 +25,7 @@ type DefaultGlobalStateConfig struct {
 	//if set MODULE_DIRPATH_GLOBAL_NAME & MODULE_FILEPATH_GLOBAL_NAME should be defined.
 	AbsoluteModulePath string
 
-	//if set APP_LISTENING_ADDR
+	//if set it is used to initialize the global variable APP_LISTENING_ADDR
 	ApplicationListeningAddr Host
 
 	EnvPattern          *ObjectPattern
