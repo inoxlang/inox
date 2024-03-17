@@ -11,6 +11,7 @@ import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/html_ns"
+	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/stretchr/testify/assert"
 )
@@ -492,6 +493,56 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 
 			assert.NotNil(t, endpt.operations[0].handlerModule)
 		})
+	})
+
+	t.Run("cache", func(t *testing.T) {
+		testconfig.AllowParallelization(t)
+		code := `
+			manifest {
+				parameters: {}
+			}
+		`
+
+		ctx := setup(map[string]string{
+			"/routes/index.ix": code,
+		})
+		defer ctx.CancelGracefully()
+
+		//Create the cache and parse the module.
+
+		cache := parse.NewChunkCache()
+
+		cachedChunk, err := parse.ParseChunkSource(parse.SourceFile{
+			NameString:             "/routes/index.ix",
+			UserFriendlyNameString: "/routes/index.ix",
+			Resource:               "/routes/index.ix",
+			ResourceDir:            "/",
+			CodeString:             code,
+		}, parse.ParserOptions{
+			ParsedFileCache: cache,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		//Get the API
+
+		api, err := GetFSRoutingServerAPI(ctx, ServerApiResolutionConfig{
+			DynamicDir:     "/routes/",
+			InoxChunkCache: cache,
+		})
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		endpoint, err := api.GetOperation("GET", "/")
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.True(t, endpoint.handlerModule.MainChunkTopLevelNodeIs(cachedChunk.Node))
 	})
 
 	t.Run("an error is expected if at least two modules handle the same API operation", func(t *testing.T) {

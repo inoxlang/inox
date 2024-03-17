@@ -113,6 +113,13 @@ func (p *Path) IsConcretizable() bool {
 	return p.hasValue
 }
 
+func (p *Path) StringValue() (string, bool) {
+	if p.hasValue {
+		return p.value, true
+	}
+	return "", false
+}
+
 func (p *Path) Concretize(ctx ConcreteContext) any {
 	if !p.IsConcretizable() {
 		panic(ErrNotConcretizable)

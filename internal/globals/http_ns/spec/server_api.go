@@ -36,6 +36,7 @@ var (
 type ServerApiResolutionConfig struct {
 	DynamicDir              string
 	IgnoreModulesWithErrors bool
+	InoxChunkCache          *parse.ChunkCache
 }
 
 func GetFSRoutingServerAPI(ctx *core.Context, config ServerApiResolutionConfig) (*API, error) {
@@ -55,6 +56,8 @@ func GetFSRoutingServerAPI(ctx *core.Context, config ServerApiResolutionConfig) 
 			pState:          &parallelState{endpointLocks: map[*ApiEndpoint]*sync.Mutex{}},
 			endpoints:       endpoints,
 			fls:             ctx.GetFileSystem(),
+
+			inoxChunkCache: config.InoxChunkCache,
 		}
 		err := addFsDirEndpoints(config.DynamicDir, "/", state)
 		if err != nil {
@@ -72,6 +75,10 @@ type fsRoutingAPIConstructionState struct {
 	tempModuleCache map[string]*core.GlobalState
 	pState          *parallelState
 	fls             afs.Filesystem
+
+	inoxChunkCache *parse.ChunkCache
+
+	//For now the preparation cache should not be supported: using it may result in unintended consequences.
 }
 
 type parallelState struct {
@@ -403,6 +410,7 @@ func addOperationFsRouting(params operationAdditionParams) error {
 					Fpath:                     path.Value,
 					ParsingCompilationContext: goroutineCtx,
 					SingleFileParsingTimeout:  SINGLE_FILE_PARSING_TIMEOUT,
+					InoxChunkCache:            constructionState.inoxChunkCache,
 
 					ParentContext:         goroutineCtx,
 					ParentContextRequired: true,
@@ -438,6 +446,7 @@ func addOperationFsRouting(params operationAdditionParams) error {
 			Fpath:                     absEntryPath,
 			ParsingCompilationContext: dbProviderContext,
 			SingleFileParsingTimeout:  SINGLE_FILE_PARSING_TIMEOUT,
+			InoxChunkCache:            constructionState.inoxChunkCache,
 
 			ParentContext:         dbProviderContext,
 			ParentContextRequired: true,

@@ -141,6 +141,13 @@ func (c *PreparationCacheEntry) ModuleAbsoluteSource() (ResourceName, bool) {
 	return c.module.AbsoluteSource()
 }
 
+func (c *PreparationCacheEntry) MainChunkTopLevelNodeIs(chunk *parse.Chunk) bool {
+	if c.module == nil {
+		return false
+	}
+	return c.module.TopLevelNode == chunk
+}
+
 func (c *PreparationCacheEntry) CheckValidity(fls afs.Filesystem) bool {
 	c.lock.Lock()
 	defer c.lock.Unlock()

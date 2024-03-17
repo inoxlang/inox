@@ -11,6 +11,7 @@ import (
 
 var (
 	ErrEndpointNotFound    = errors.New("endpoint not found")
+	ErrOperationNotFound   = errors.New("operation not found")
 	ErrAPINotFinalized     = errors.New("API value is not finalized")
 	ErrAPIAlreadyFinalized = errors.New("API value is already finalized")
 	ErrAPIBeingFinalized   = errors.New("API value is being finalized")
@@ -128,6 +129,45 @@ type EndpointTreeNode struct {
 	namedChildren     map[string]*EndpointTreeNode // examples if EndpointTree is /data: /data/name, /data/group
 	parametrizedChild *EndpointTreeNode            // example if EndpointTree is /users: /users/{id}
 	endpoint          *ApiEndpoint                 //can be nil
+}
+
+func (api *API) GetOperation(method string, path string) (_ ApiOperation, finalErr error) {
+
+	//Check arguments
+
+	if !isSupportedHttpMethod(method) {
+		finalErr = fmt.Errorf("%w: %s", ErrInexistingUnsupportedMethod, method)
+		return
+	}
+
+	if path == "" {
+		finalErr = errors.New("empty path")
+		return
+	}
+
+	if path[0] != '/' {
+		finalErr = errors.New("path should be absolute")
+		return
+	}
+
+	//Try to get the endpoint
+
+	endpt, err := api.GetEndpoint(path)
+	if err != nil {
+		finalErr = err
+		return
+	}
+
+	//Search for the operation with $method as method
+
+	for _, op := range endpt.operations {
+		if op.httpMethod == method {
+			return op, nil
+		}
+	}
+
+	finalErr = ErrOperationNotFound
+	return
 }
 
 func (api *API) GetEndpoint(path string) (*ApiEndpoint, error) {
