@@ -21,12 +21,11 @@ func TestWriteTemplate(t *testing.T) {
 		return
 	}
 
-	content, err := util.ReadFile(fls, "/static/main.css")
+	content, err := util.ReadFile(fls, "/static/styles/main.css")
 
 	if !assert.NoError(t, err) {
 		return
 	}
 
-	assert.ElementsMatch(t, MAIN_CSS, content)
-
+	assert.Equal(t, MAIN_CSS, string(content))
 }
