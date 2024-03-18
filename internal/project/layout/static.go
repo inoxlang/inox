@@ -3,14 +3,14 @@ package layout
 const (
 	//static js/
 	STATIC_JS_DIRNAME             = "js"
-	INOX_JS_FILENAME              = "inox.js"
-	HYPERSCRIPTJS_FILENAME        = "hyperscript.js"
-	HTMX_JS_FILENAME              = "htmx.js"
+	INOX_JS_FILENAME              = "inox.gen.js"
+	HYPERSCRIPTJS_FILENAME        = "hyperscript.gen.js"
+	HTMX_JS_FILENAME              = "htmx.gen.js"
 	GLOBAL_BUNDLE_MIN_JS_FILENAME = "global-bundle.min.js"
 
 	//static css/
 	STATIC_STYLES_DIRNAME        = "styles"
-	UTILITY_CLASSES_FILENAME     = "utility-classes.css"
+	UTILITY_CLASSES_FILENAME     = "utility-classes.gen.css"
 	MAIN_CSS_FILENAME            = "main.css"
 	MAIN_BUNDLE_MIN_CSS_FILENAME = "main-bundle.min.css"
 

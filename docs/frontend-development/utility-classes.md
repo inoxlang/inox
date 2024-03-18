@@ -4,7 +4,7 @@ Inox comes with a subset of [Tailwind](https://tailwindcss.com/) and a small uti
 
 - The provided Tailwind's subset does not require reading the official documentation and it can be used without any configuration. An optional configuration system will likely be supported in the future.
 - Theming is implemented using CSS variables, not Tailwind.
-- Used utility classes are automatically added to the file `/static/css/utility-classes.css`.
+- Used utility classes are automatically added to the file `/static/css/utility-classes.gen.css`.
 
 **Documentation sections**:
 
@@ -65,7 +65,7 @@ Let's assume an Inox codebase contains the following piece of markup:
 ```
 
 Inox detects that `--primary-bg` is a variable-based class and sees that it contains the substring `bg` for **background**.
-So it adds a rule to `/static/css/utility-classes.css`:
+So it adds a rule to `/static/css/utility-classes.gen.css`:
 
 ```css
 .--primary-bg {

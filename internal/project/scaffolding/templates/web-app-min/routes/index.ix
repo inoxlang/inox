@@ -18,9 +18,9 @@ return html<html>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     {
         if ctx_data(/dev)? [
-            (<script src="/js/htmx.js"></script>)
-            (<script src="/js/hyperscript.js"></script>)
-            (<script src="/js/inox.js"></script>)
+            (<script src="/js/htmx.gen.js"></script>)
+            (<script src="/js/hyperscript.gen.js"></script>)
+            (<script src="/js/inox.gen.js"></script>)
             (<link rel="stylesheet" href="/styles/main.css"/>)
         ] else [
             (<script src="/js/global-bundle.min.js"></script>)

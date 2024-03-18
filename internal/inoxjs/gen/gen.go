@@ -10,7 +10,7 @@ type Config struct {
 	Libraries []string
 }
 
-// Generate generates a inox.js file containing only the libraries listed in $config.
+// Generate generates a inox.gen.js file containing only the libraries listed in $config.
 func Generate(config Config) (string, error) {
 
 	w := strings.Builder{}

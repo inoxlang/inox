@@ -55,7 +55,7 @@ func init() {
 	FEATURE_NAMES = append(FEATURE_NAMES, BUILTIN_FEATURE_NAMES...)
 }
 
-// Generate generates a subset of hyperscript.js that only contains the command and feature definitions listed in the configuration.
+// Generate generates a subset of hyperscript.gen.js that only contains the command and feature definitions listed in the configuration.
 func Generate(config Config) (string, error) {
 
 	base := HYPERSCRIPT_0_9_12_JS

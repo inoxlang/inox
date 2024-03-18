@@ -10,7 +10,7 @@ type Config struct {
 	Extensions []string
 }
 
-// Generate generates a hyperscript.js file containing only the extensions listed in $config.
+// Generate generates a hyperscript.gen.js file containing only the extensions listed in $config.
 func Generate(config Config) (string, error) {
 
 	w := strings.Builder{}

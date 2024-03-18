@@ -1,6 +1,6 @@
 @import "reset.css";
 @import "variables.css";
-@import "utility-classes.css";
+@import "utility-classes.gen.css";
 
 /* HTMX */
 
