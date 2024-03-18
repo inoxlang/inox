@@ -6,6 +6,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
@@ -100,7 +101,7 @@ func getPermissionsObject(chunk *parse.ParsedChunkSource) (*parse.ObjectLiteral,
 	}
 
 	for _, prop := range obj.Properties {
-		if prop.HasImplicitKey() || prop.Name() != core.MANIFEST_PERMS_SECTION_NAME {
+		if prop.HasImplicitKey() || prop.Name() != inoxconsts.MANIFEST_PERMS_SECTION_NAME {
 			continue
 		}
 		permsObject, ok := prop.Value.(*parse.ObjectLiteral)

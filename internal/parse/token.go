@@ -474,7 +474,7 @@ var tokenTypenames = [...]string{
 	IF_KEYWORD:                     "IF_KEYWORD",
 	ELSE_KEYWORD:                   "ELSE_KEYWORD",
 	PREINIT_KEYWORD:                "PREINIT_KEYWORD",
-	MANIFEST_KEYWORD:               "MANIFEST_KEYWORD",
+	MANIFEST_KEYWORD:               "inoxconsts.MANIFEST_KEYWORD",
 	INCLUDABLE_CHUNK_KEYWORD:       "INCLUDABLE_CHUNK_KEYWORD",
 	DROP_PERMS_KEYWORD:             "DROP_PERMS_KEYWORD",
 	ASSIGN_KEYWORD:                 "ASSIGN_KEYWORD",

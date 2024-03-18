@@ -10,6 +10,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/help"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
@@ -259,7 +260,7 @@ func getSectionHelp(n parse.Node, ancestors []parse.Node) (string, bool) {
 		if ancestorCount >= 7 && utils.Implements[*parse.Manifest](ancestors[ancestorCount-7]) &&
 			utils.Implements[*parse.ObjectLiteral](ancestors[ancestorCount-6]) &&
 			utils.Implements[*parse.ObjectProperty](ancestors[ancestorCount-5]) &&
-			ancestors[ancestorCount-5].(*parse.ObjectProperty).HasNameEqualTo(core.MANIFEST_DATABASES_SECTION_NAME) &&
+			ancestors[ancestorCount-5].(*parse.ObjectProperty).HasNameEqualTo(inoxconsts.MANIFEST_DATABASES_SECTION_NAME) &&
 			utils.Implements[*parse.ObjectLiteral](ancestors[ancestorCount-4]) &&
 			utils.Implements[*parse.ObjectProperty](ancestors[ancestorCount-3]) &&
 			utils.Implements[*parse.ObjectLiteral](ancestors[ancestorCount-2]) {

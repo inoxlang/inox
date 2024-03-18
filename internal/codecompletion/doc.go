@@ -4,6 +4,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/help"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -14,34 +15,34 @@ const (
 
 var (
 	MANIFEST_SECTION_DEFAULT_VALUE_COMPLETIONS = map[string]string{
-		core.MANIFEST_ENV_SECTION_NAME:              "%{}",
-		core.MANIFEST_DATABASES_SECTION_NAME:        "{}",
-		core.MANIFEST_PARAMS_SECTION_NAME:           "{}",
-		core.MANIFEST_PERMS_SECTION_NAME:            "{}",
-		core.MANIFEST_LIMITS_SECTION_NAME:           "{}",
-		core.MANIFEST_HOST_DEFINITIONS_SECTION_NAME: ":{}",
-		core.MANIFEST_PREINIT_FILES_SECTION_NAME:    "{}",
+		inoxconsts.MANIFEST_ENV_SECTION_NAME:              "%{}",
+		inoxconsts.MANIFEST_DATABASES_SECTION_NAME:        "{}",
+		inoxconsts.MANIFEST_PARAMS_SECTION_NAME:           "{}",
+		inoxconsts.MANIFEST_PERMS_SECTION_NAME:            "{}",
+		inoxconsts.MANIFEST_LIMITS_SECTION_NAME:           "{}",
+		inoxconsts.MANIFEST_HOST_DEFINITIONS_SECTION_NAME: ":{}",
+		inoxconsts.MANIFEST_PREINIT_FILES_SECTION_NAME:    "{}",
 	}
 
 	MANIFEST_SECTION_DOC = map[string]string{
-		core.MANIFEST_PARAMS_SECTION_NAME:    utils.MustGet(help.HelpFor("manifest/parameters-section", helpMessageConfig)),
-		core.MANIFEST_ENV_SECTION_NAME:       utils.MustGet(help.HelpFor("manifest/env-section", helpMessageConfig)),
-		core.MANIFEST_PERMS_SECTION_NAME:     utils.MustGet(help.HelpFor("manifest/permissions-section", helpMessageConfig)),
-		core.MANIFEST_DATABASES_SECTION_NAME: utils.MustGet(help.HelpFor("manifest/databases-section", helpMessageConfig)),
+		inoxconsts.MANIFEST_PARAMS_SECTION_NAME:    utils.MustGet(help.HelpFor("manifest/parameters-section", helpMessageConfig)),
+		inoxconsts.MANIFEST_ENV_SECTION_NAME:       utils.MustGet(help.HelpFor("manifest/env-section", helpMessageConfig)),
+		inoxconsts.MANIFEST_PERMS_SECTION_NAME:     utils.MustGet(help.HelpFor("manifest/permissions-section", helpMessageConfig)),
+		inoxconsts.MANIFEST_DATABASES_SECTION_NAME: utils.MustGet(help.HelpFor("manifest/databases-section", helpMessageConfig)),
 	}
 
 	MANIFEST_DB_DESC_DEFAULT_VALUE_COMPLETIONS = map[string]string{
-		core.MANIFEST_DATABASE__RESOURCE_PROP_NAME:               "ldb://main  # (example) local database named 'main'",
-		core.MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME:        "nil",
-		core.MANIFEST_DATABASE__EXPECTED_SCHEMA_UPDATE_PROP_NAME: "false  # should be set to true if the module performs a schema update (update_schema call)",
-		core.MANIFEST_DATABASE__ASSERT_SCHEMA_UPDATE_PROP_NAME:   "# object pattern to check the actual schema against",
+		inoxconsts.MANIFEST_DATABASE__RESOURCE_PROP_NAME:               "ldb://main  # (example) local database named 'main'",
+		inoxconsts.MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME:        "nil",
+		inoxconsts.MANIFEST_DATABASE__EXPECTED_SCHEMA_UPDATE_PROP_NAME: "false  # should be set to true if the module performs a schema update (update_schema call)",
+		inoxconsts.MANIFEST_DATABASE__ASSERT_SCHEMA_UPDATE_PROP_NAME:   "# object pattern to check the actual schema against",
 	}
 
 	MANIFEST_DB_DESC_DOC = map[string]string{
-		core.MANIFEST_DATABASE__RESOURCE_PROP_NAME:               utils.MustGet(help.HelpFor("manifest/databases-section/resource", helpMessageConfig)),
-		core.MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME:        utils.MustGet(help.HelpFor("manifest/databases-section/resolution-data", helpMessageConfig)),
-		core.MANIFEST_DATABASE__EXPECTED_SCHEMA_UPDATE_PROP_NAME: utils.MustGet(help.HelpFor("manifest/databases-section/expected-schema-update", helpMessageConfig)),
-		core.MANIFEST_DATABASE__ASSERT_SCHEMA_UPDATE_PROP_NAME:   utils.MustGet(help.HelpFor("manifest/databases-section/assert-schema", helpMessageConfig)),
+		inoxconsts.MANIFEST_DATABASE__RESOURCE_PROP_NAME:               utils.MustGet(help.HelpFor("manifest/databases-section/resource", helpMessageConfig)),
+		inoxconsts.MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME:        utils.MustGet(help.HelpFor("manifest/databases-section/resolution-data", helpMessageConfig)),
+		inoxconsts.MANIFEST_DATABASE__EXPECTED_SCHEMA_UPDATE_PROP_NAME: utils.MustGet(help.HelpFor("manifest/databases-section/expected-schema-update", helpMessageConfig)),
+		inoxconsts.MANIFEST_DATABASE__ASSERT_SCHEMA_UPDATE_PROP_NAME:   utils.MustGet(help.HelpFor("manifest/databases-section/assert-schema", helpMessageConfig)),
 	}
 
 	MODULE_IMPORT_SECTION_DEFAULT_VALUE_COMPLETIONS = map[string]string{

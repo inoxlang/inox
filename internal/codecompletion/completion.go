@@ -9,6 +9,7 @@ import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/help"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
 	"github.com/inoxlang/inox/internal/utils"
@@ -1264,7 +1265,7 @@ func findObjectInteriorCompletions(n *parse.ObjectLiteral, search completionSear
 	switch parent := search.parent.(type) {
 	case *parse.Manifest: //suggest sections of the manifest that are not present
 	manifest_sections_loop:
-		for _, sectionName := range core.MANIFEST_SECTION_NAMES {
+		for _, sectionName := range inoxconsts.MANIFEST_SECTION_NAMES {
 			for _, prop := range n.Properties {
 				if !prop.HasImplicitKey() && prop.Name() == sectionName {
 					continue manifest_sections_loop
@@ -1371,7 +1372,7 @@ func findObjectInteriorCompletions(n *parse.ObjectLiteral, search completionSear
 		switch greatGrandParent := ancestors[len(ancestors)-3].(type) {
 		case *parse.Manifest:
 			switch parent.Name() {
-			case core.MANIFEST_PERMS_SECTION_NAME: //permissions section
+			case inoxconsts.MANIFEST_PERMS_SECTION_NAME: //permissions section
 				for _, info := range permkind.PERMISSION_KINDS {
 					//ignore kinds that are already present.
 					if n.HasNamedProp(info.Name) {
@@ -1421,7 +1422,7 @@ func findObjectInteriorCompletions(n *parse.ObjectLiteral, search completionSear
 		//the cursor is located in the span of an object inside a manifest section.
 
 		switch manifestSectionName {
-		case core.MANIFEST_DATABASES_SECTION_NAME:
+		case inoxconsts.MANIFEST_DATABASES_SECTION_NAME:
 			//suggest database description's properties
 
 			_, ok := sectionProperty.Value.(*parse.ObjectLiteral)
@@ -1430,7 +1431,7 @@ func findObjectInteriorCompletions(n *parse.ObjectLiteral, search completionSear
 			}
 			dbDescription := n
 
-			for _, descPropName := range core.MANIFEST_DATABASE_PROPNAMES {
+			for _, descPropName := range inoxconsts.MANIFEST_DATABASE_PROPNAMES {
 				//ignore properties that are already present.
 				if dbDescription.HasNamedProp(descPropName) {
 					continue

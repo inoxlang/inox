@@ -6,6 +6,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
 	"github.com/inoxlang/inox/internal/utils"
@@ -24,7 +25,7 @@ func findObjectPropertyNameCompletions(
 	if utils.Implements[*parse.Manifest](ancestors[ancestorCount-3]) {
 		manifestObject := objectLiteral
 
-		for _, sectionName := range core.MANIFEST_SECTION_NAMES {
+		for _, sectionName := range inoxconsts.MANIFEST_SECTION_NAMES {
 			if manifestObject.HasNamedProp(sectionName) {
 				//ignore properties that are already present.
 				continue
@@ -59,14 +60,14 @@ func findObjectPropertyNameCompletions(
 	if ancestorCount >= 7 && utils.Implements[*parse.Manifest](ancestors[ancestorCount-7]) &&
 		utils.Implements[*parse.ObjectLiteral](ancestors[ancestorCount-6]) &&
 		utils.Implements[*parse.ObjectProperty](ancestors[ancestorCount-5]) &&
-		ancestors[ancestorCount-5].(*parse.ObjectProperty).HasNameEqualTo(core.MANIFEST_DATABASES_SECTION_NAME) &&
+		ancestors[ancestorCount-5].(*parse.ObjectProperty).HasNameEqualTo(inoxconsts.MANIFEST_DATABASES_SECTION_NAME) &&
 		utils.Implements[*parse.ObjectLiteral](ancestors[ancestorCount-4]) &&
 		utils.Implements[*parse.ObjectProperty](ancestors[ancestorCount-3]) &&
 		utils.Implements[*parse.ObjectLiteral](ancestors[ancestorCount-2]) {
 
 		dbDesc := objectLiteral
 
-		for _, descPropName := range core.MANIFEST_DATABASE_PROPNAMES {
+		for _, descPropName := range inoxconsts.MANIFEST_DATABASE_PROPNAMES {
 			if dbDesc.HasNamedProp(descPropName) {
 				//ignore properties that are already present.
 				continue
@@ -164,7 +165,7 @@ func findObjectPropertyNameCompletions(
 	//case: the current property is a property of the permissions section of the manifest.
 	if ancestorCount >= 6 && utils.Implements[*parse.ObjectLiteral](ancestors[ancestorCount-2]) &&
 		utils.Implements[*parse.ObjectProperty](ancestors[ancestorCount-3]) &&
-		ancestors[ancestorCount-3].(*parse.ObjectProperty).HasNameEqualTo(core.MANIFEST_PERMS_SECTION_NAME) &&
+		ancestors[ancestorCount-3].(*parse.ObjectProperty).HasNameEqualTo(inoxconsts.MANIFEST_PERMS_SECTION_NAME) &&
 		utils.Implements[*parse.Manifest](ancestors[ancestorCount-5]) {
 
 		for _, info := range permkind.PERMISSION_KINDS {

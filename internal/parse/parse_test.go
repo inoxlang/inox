@@ -551,7 +551,7 @@ func testParse(
 						Span:            NodeSpan{0, 11},
 						IsParenthesized: false,
 						/*[]Token{
-							{Type: MANIFEST_KEYWORD, Span: NodeSpan{0, 8}},
+							{Type: inoxconsts.MANIFEST_KEYWORD, Span: NodeSpan{0, 8}},
 						},*/
 					},
 					Object: &ObjectLiteral{
@@ -587,7 +587,7 @@ func testParse(
 						Span:            NodeSpan{1, 12},
 						IsParenthesized: false,
 						/*[]Token{
-							{Type: MANIFEST_KEYWORD, Span: NodeSpan{1, 9}},
+							{Type: inoxconsts.MANIFEST_KEYWORD, Span: NodeSpan{1, 9}},
 						},*/
 					},
 					Object: &ObjectLiteral{
@@ -643,7 +643,7 @@ func testParse(
 						Span:            NodeSpan{11, 22},
 						IsParenthesized: false,
 						/*[]Token{
-							{Type: MANIFEST_KEYWORD, Span: NodeSpan{11, 19}},
+							{Type: inoxconsts.MANIFEST_KEYWORD, Span: NodeSpan{11, 19}},
 						},*/
 					},
 					Object: &ObjectLiteral{
@@ -672,7 +672,7 @@ func testParse(
 						Span:            NodeSpan{0, 18},
 						IsParenthesized: false,
 						/*[]Token{
-							{Type: MANIFEST_KEYWORD, Span: NodeSpan{0, 8}},
+							{Type: inoxconsts.MANIFEST_KEYWORD, Span: NodeSpan{0, 8}},
 						},*/
 					},
 					Object: &ObjectLiteral{
@@ -991,7 +991,7 @@ func testParse(
 						Span:            NodeSpan{6, 17},
 						IsParenthesized: false,
 						/*[]Token{
-							{Type: MANIFEST_KEYWORD, Span: NodeSpan{6, 14}},
+							{Type: inoxconsts.MANIFEST_KEYWORD, Span: NodeSpan{6, 14}},
 						},*/
 					},
 					Object: &ObjectLiteral{
@@ -21094,7 +21094,7 @@ func testParse(
 									Span:            NodeSpan{12, 23},
 									IsParenthesized: false,
 									/*[]Token{
-										{Type: MANIFEST_KEYWORD, Span: NodeSpan{12, 20}},
+										{Type: inoxconsts.MANIFEST_KEYWORD, Span: NodeSpan{12, 20}},
 									},*/
 								},
 								Object: &ObjectLiteral{
@@ -22129,7 +22129,7 @@ func testParse(
 									Span:            NodeSpan{12, 23},
 									IsParenthesized: false,
 									/*[]Token{
-										{Type: MANIFEST_KEYWORD, Span: NodeSpan{12, 20}},
+										{Type: inoxconsts.MANIFEST_KEYWORD, Span: NodeSpan{12, 20}},
 									},*/
 								},
 								Object: &ObjectLiteral{

@@ -425,7 +425,7 @@ func addOperationFsRouting(params operationAdditionParams) error {
 		defer goroutineCtx.CancelGracefully()
 
 		manifestObj := chunk.Node.Manifest.Object.(*parse.ObjectLiteral)
-		dbSection, _ := manifestObj.PropValue(core.MANIFEST_DATABASES_SECTION_NAME)
+		dbSection, _ := manifestObj.PropValue(inoxconsts.MANIFEST_DATABASES_SECTION_NAME)
 
 		var dbProviderContext *core.Context
 

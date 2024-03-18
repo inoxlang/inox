@@ -204,7 +204,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 		if chunk.Node.Manifest != nil {
 			//Additional logic if the manifest refers to databases in another module.
 			if obj, ok := chunk.Node.Manifest.Object.(*parse.ObjectLiteral); ok {
-				node, _ := obj.PropValue(core.MANIFEST_DATABASES_SECTION_NAME)
+				node, _ := obj.PropValue(inoxconsts.MANIFEST_DATABASES_SECTION_NAME)
 
 				if pathLiteral, ok := node.(*parse.AbsolutePathLiteral); ok {
 					preparationResult, ok := prepareSourceFileInExtractionMode(ctx, filePreparationParams{
