@@ -128,7 +128,7 @@ func (p *parser) parseExpression(config ...exprParsingConfig) (expr Node, isMiss
 		return p.parseListOrTupleLiteral(false), false
 	case '|':
 		if p.inPattern {
-			return p.parsePatternUnion(p.i, false, true), false
+			return p.parsePatternUnion(p.i, false, precededByOpeningParen), false
 		}
 	case '\'':
 		return p.parseRuneRuneRange(), false
