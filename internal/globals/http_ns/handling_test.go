@@ -2,7 +2,6 @@ package http_ns
 
 import (
 	"net/http"
-	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -439,7 +438,6 @@ func TestHandling(t *testing.T) {
 	t.Run("each path parameter should have a corresponding entry in the context's data", func(t *testing.T) {
 		runServerTest(t,
 			serverTestCase{
-				outWriter: os.Stdout,
 				input: `return {
 						routing: {dynamic: /routes/}
 					}`,
