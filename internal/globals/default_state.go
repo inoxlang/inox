@@ -257,6 +257,7 @@ func NewDefaultGlobalState(ctx *core.Context, conf core.DefaultGlobalStateConfig
 		globalnames.TOJSON_FN:    core.ValOf(core.ToJSON),
 		globalnames.TOPJSON_FN:   core.ValOf(core.ToPrettyJSON),
 		globalnames.ASJSON_FN:    core.ValOf(core.AsJSON),
+		globalnames.ASJSONL_FN:    core.ValOf(core.AsJSONL),
 		globalnames.PARSE_FN:     core.ValOf(_parse),
 		globalnames.SPLIT_FN:     core.ValOf(_split),
 

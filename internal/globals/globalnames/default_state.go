@@ -74,6 +74,7 @@ const (
 	TOJSON_FN    = "tojson"
 	TOPJSON_FN   = "topjson"
 	ASJSON_FN    = "asjson"
+	ASJSONL_FN   = "asjsonl"
 	PARSE_FN     = "parse"
 	SPLIT_FN     = "split"
 

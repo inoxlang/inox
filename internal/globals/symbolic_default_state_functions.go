@@ -193,6 +193,14 @@ func init() {
 			//TODO: recursively check that $v contains supported values.
 			return symbolic.ANY_STRING
 		},
+		core.AsJSONL, func(ctx *symbolic.Context, iterable symbolic.Iterable) *symbolic.String {
+			_, ok := symbolic.AsSerializable(iterable.IteratorElementValue()).(symbolic.Serializable)
+			if !ok {
+				ctx.AddSymbolicGoFunctionError("only iterables with serializable elements are supported")
+			}
+			//TODO: recursively check that $v contains supported values.
+			return symbolic.ANY_STRING
+		},
 
 		_parse, func(ctx *symbolic.Context, arg symbolic.Readable, p symbolic.Pattern) (symbolic.Value, *symbolic.Error) {
 			return p.SymbolicValue(), nil

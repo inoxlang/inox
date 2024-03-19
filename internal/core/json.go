@@ -142,6 +142,27 @@ func AsJSON(ctx *Context, v Serializable) String {
 	return String(stream.Buffer())
 }
 
+func AsJSONL(ctx *Context, iterable Iterable) String {
+	stream := jsoniter.NewStream(jsoniter.ConfigDefault, nil, 0)
+
+	it := iterable.Iterator(ctx, IteratorConfiguration{KeysNeverRead: true})
+	for it.Next(ctx) {
+		if ctx.IsDoneSlowCheck() {
+			panic(ctx.Err())
+		}
+
+		e := it.Value(ctx)
+		serializable, ok := e.(Serializable)
+		if !ok {
+			panic(errors.New("non-serializable element encountered"))
+		}
+		asJSON(ctx, serializable, stream)
+		stream.WriteRaw("\n")
+	}
+
+	return String(stream.Buffer())
+}
+
 func asJSON(ctx *Context, v Serializable, w *jsoniter.Stream) {
 	switch v := v.(type) {
 	case *Object:
