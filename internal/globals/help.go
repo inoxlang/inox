@@ -45,6 +45,7 @@ func registerHelp() {
 		globalnames.TOJSON_FN:    core.ToJSON,
 		globalnames.TOPJSON_FN:   core.ToPrettyJSON,
 		globalnames.ASJSON_FN:    core.AsJSON,
+		globalnames.ASJSONL_FN:   core.AsJSONL,
 		globalnames.PARSE_FN:     _parse,
 		globalnames.SPLIT_FN:     _split,
 

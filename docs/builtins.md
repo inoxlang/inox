@@ -402,6 +402,15 @@ The `asjson` function returns a JSON string created by stringifying the provided
 ```inox
 asjson({a: {b: 1}}) # {a: {b: 1}}
 ```
+### asjsonl
+
+The `asjsonl` function returns a JSONL string (https://jsonlines.org/) created by stringifying the elements of the provided iterables as if they were JSON values. Only objects, lists, string-like values, integers, floats, boolean, and `nil` are supported.
+
+**examples**
+
+```inox
+asjsonl([ "first line", "second line", 3 ])
+```
 ### parse
 
 The `parse` function parses a string based on the specified pattern.
@@ -809,7 +818,7 @@ The html.find function finds all elements matching the specified CSS selector in
 **examples**
 
 ```inox
-h1_elems = html.find("h1", (<div> <h1>title</h1> </div>))
+h1_elems = html.find("h1", html<div> <h1>title</h1> </div>)
 ```
 ### html.escape
 

@@ -283,7 +283,7 @@ conversion:
       a byte stream is returned. If the value is indexable a stream containing the elements is returned.
       
   - topic: tojson
-    related-topics: [topjson, asjson]
+    related-topics: [topjson, asjson, asjonl]
     text: >
       The `tojson` function returns the JSON representation of an Inox value. 
       The representation depends on the provided pattern (optional second parameter).
@@ -297,17 +297,26 @@ conversion:
       standalone: true
   
   - topic: topjson
-    related-topics: [tojson, asjson]
+    related-topics: [tojson, asjson, asjsonl]
     text: The `topjson` function is equivalent to `tojson` but the JSON output is pretty (formatted).
 
   - topic: asjson
-    related-topics: [tojson, topjson]
+    related-topics: [tojson, topjson, asjsonl]
     text: >
       The `asjson` function returns a JSON string created by stringifying the provided Inox value
       as if it was a JSON value. Only objects, lists, string-like values, integers, floats, boolean, and `nil` are supported.
       If you want to get the JSON representation of an Inox value see the `tojson` function instead.
     examples:
     - code: 'asjson({a: {b: 1}}) # {a: {b: 1}}'
+      standalone: true
+
+  - topic: asjsonl
+    related-topics: [tojson, topjson, asjsonl]
+    text: >
+      The `asjsonl` function returns a JSONL string (https://jsonlines.org/) created by stringifying the elements of the provided
+      iterables as if they were JSON values. Only objects, lists, string-like values, integers, floats, boolean, and `nil` are supported.
+    examples:
+    - code: 'asjsonl([ "first line", "second line", 3 ])'
       standalone: true
 
   - topic: parse
