@@ -90,7 +90,7 @@ var (
 					"allow-browser-automation": predict.Nothing,
 					"t":                        predict.Nothing,
 				},
-				Args: predict.Files("*.ix"),
+				Args: predict.Files("*"),
 			},
 			ADD_SERVICE_SUBCMD: {
 				Flags: map[string]complete.Predictor{
