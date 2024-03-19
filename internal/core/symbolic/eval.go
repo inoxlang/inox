@@ -4089,7 +4089,7 @@ func evalObjectLiteral(n *parse.ObjectLiteral, state *State, options evalOptions
 				panic(fmt.Errorf("missing property %s", name))
 			}
 
-			serializable, ok := v.(Serializable)
+			serializable, ok := AsSerializable(v).(Serializable)
 			if !ok {
 				state.addError(makeSymbolicEvalError(el, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE))
 				serializable = ANY_SERIALIZABLE
@@ -4192,7 +4192,7 @@ func evalObjectLiteral(n *parse.ObjectLiteral, state *State, options evalOptions
 				state.addErrorIf(!hasShallowError, makeSymbolicEvalError(p.Value, state, fmtNotAssignableToPropOfType(propVal, expectedPropVal)))
 			}
 
-			serializable, ok = propVal.(Serializable)
+			serializable, ok = AsSerializable(propVal).(Serializable)
 			if !ok {
 				state.addErrorIf(!hasShallowError, makeSymbolicEvalError(p, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE))
 				serializable = ANY_SERIALIZABLE

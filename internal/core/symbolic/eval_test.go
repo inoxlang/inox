@@ -1883,6 +1883,28 @@ func TestSymbolicEval(t *testing.T) {
 			}, res)
 		})
 
+		t.Run("property with serializable multivalue value", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`{a: mv}`)
+
+			mv := NewMultivalue(INT_1, INT_2)
+			state.setGlobal("mv", mv, GlobalVar)
+
+			serializableMv := AsSerializable(mv).(Serializable)
+
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, &Object{
+				entries: map[string]Serializable{
+					"a": serializableMv,
+				},
+				static: map[string]Pattern{
+					"a": &TypePattern{val: serializableMv},
+				},
+			}, res)
+		})
+
 		t.Run("missing value of property", func(t *testing.T) {
 			n, state, err := _makeStateAndChunk(`{v:}`, nil)
 
@@ -2113,6 +2135,25 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, &Record{
 				entries: map[string]Serializable{
 					"": NewTuple(INT_1, INT_2),
+				},
+			}, res)
+		})
+
+		t.Run("property with serializable multivalue value", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`#{a: mv}`)
+
+			mv := NewMultivalue(INT_1, INT_2)
+			state.setGlobal("mv", mv, GlobalVar)
+
+			serializableMv := AsSerializable(mv).(Serializable)
+
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, &Record{
+				entries: map[string]Serializable{
+					"a": serializableMv,
 				},
 			}, res)
 		})
