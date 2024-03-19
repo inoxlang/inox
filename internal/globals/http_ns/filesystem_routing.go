@@ -329,6 +329,8 @@ func (router *filesystemRouter) handleDynamic(req *Request, rw *ResponseWriter, 
 
 	handlerCtx.PauseCPUTimeDepletion()
 
+	handlerExecStart := time.Now()
+
 	result, _, _, _, err := mod.RunPreparedModule(mod.RunPreparedModuleArgs{
 		State: state,
 
@@ -341,6 +343,8 @@ func (router *filesystemRouter) handleDynamic(req *Request, rw *ResponseWriter, 
 	})
 
 	handlerCtx.ResumeCPUTimeDepletion()
+
+	fsRoutingLogger.Debug().Dur("exec-dur", time.Since(handlerExecStart)).Send()
 
 	if err != nil {
 		handlerGlobalState.Logger.Err(err).Send()
