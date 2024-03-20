@@ -1216,22 +1216,22 @@ func (f *InoxFunction) OnMutation(ctx *Context, microtask MutationCallbackMicrot
 		if config.Depth > f.watchingDepth {
 			f.watchingDepth = config.Depth
 
-			if f.compiledFunction != nil {
-				for index, localValue := range f.capturedLocals {
-					if watchable, ok := localValue.(Watchable); ok {
-						//TODO: use variable name instead (if possible)
-						path := Path("/" + strconv.Itoa(index))
-						f.addCapturedValueMutationCallback(ctx, watchable, path, config)
-					}
-				}
-			} else {
-				for varName, localValue := range f.treeWalkCapturedLocals {
-					if watchable, ok := localValue.(Watchable); ok {
-						path := Path("/" + varName)
-						f.addCapturedValueMutationCallback(ctx, watchable, path, config)
-					}
+			// if f.compiledFunction != nil {
+			// 	for index, localValue := range f.capturedLocals {
+			// 		if watchable, ok := localValue.(Watchable); ok {
+			// 			//TODO: use variable name instead (if possible)
+			// 			path := Path("/" + strconv.Itoa(index))
+			// 			f.addCapturedValueMutationCallback(ctx, watchable, path, config)
+			// 		}
+			// 	}
+			// } else {
+			for varName, localValue := range f.treeWalkCapturedLocals {
+				if watchable, ok := localValue.(Watchable); ok {
+					path := Path("/" + varName)
+					f.addCapturedValueMutationCallback(ctx, watchable, path, config)
 				}
 			}
+			//}
 
 			for _, capturedGlobal := range f.capturedGlobals {
 				if watchable, ok := capturedGlobal.value.(Watchable); ok {

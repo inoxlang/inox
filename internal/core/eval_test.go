@@ -58,14 +58,7 @@ func TestTreeWalkEval(t *testing.T) {
 }
 
 func TestOptimizedBytecodeEval(t *testing.T) {
-	bytecodeTest(t, true)
-}
-
-func TestBytecodeEval(t *testing.T) {
-	if testing.Short() {
-		t.Skip()
-	}
-	bytecodeTest(t, false)
+	//bytecodeTest(t, true)
 }
 
 func TestEvalWithRecycledTreeWalkEvalState(t *testing.T) {
@@ -116,7 +109,7 @@ func bytecodeTest(t *testing.T, optimize bool) {
 			t.Fatalf("%#v is not a valid code argument", c)
 		}
 
-		tracer := bytes.Buffer{}
+		//tracer := bytes.Buffer{}
 
 		if doCheck { // TODO: enable checks by default ?
 			staticCheckData, err := StaticCheck(StaticCheckInput{
@@ -163,18 +156,20 @@ func bytecodeTest(t *testing.T, optimize bool) {
 
 		NewGlobalState(compilationCtx)
 
-		res, err := EvalVM(mod, s, BytecodeEvaluationConfig{
-			Tracer:             &tracer,
-			OptimizeBytecode:   optimize,
-			CompilationContext: compilationCtx,
-		})
+		panic(errors.New("evaluating using transpiled Inox code is not supported yet"))
 
-		if err != nil {
-			//t.Log(tracer.String())
-			return nil, err
-		}
+		// res, err := EvalVM(mod, s, BytecodeEvaluationConfig{
+		// 	Tracer:             &tracer,
+		// 	OptimizeBytecode:   optimize,
+		// 	CompilationContext: compilationCtx,
+		// })
 
-		return res, nil
+		// if err != nil {
+		// 	//t.Log(tracer.String())
+		// 	return nil, err
+		// }
+
+		// return res, nil
 	})
 }
 
@@ -4659,7 +4654,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				input: strings.ReplaceAll(`
 					fn f(){}
 					many_calls
-				`, "many_calls", strings.Repeat("f()\n", 10+VM_STACK_SIZE)),
+				`, "many_calls", strings.Repeat("f()\n", 100)),
 				result: Nil,
 			},
 			{
@@ -4726,7 +4721,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 					f = lthread.wait_result!()
 					many_calls			
-				`, "many_calls", strings.Repeat("f()\n", 10+VM_STACK_SIZE)),
+				`, "many_calls", strings.Repeat("f()\n", 100)),
 				result: Nil,
 			},
 			// TODO

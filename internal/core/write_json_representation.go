@@ -1730,10 +1730,6 @@ func (i FileInfo) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, conf
 	return ErrNoRepresentation
 }
 
-func (b *Bytecode) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
-	return ErrNoRepresentation
-}
-
 func (port Port) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	return ErrNotImplementedYet
 }

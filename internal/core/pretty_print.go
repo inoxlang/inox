@@ -1846,9 +1846,7 @@ func (g *InoxFunction) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, d
 	InspectPrint(w, g)
 }
 
-func (b *Bytecode) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
-	InspectPrint(w, b)
-}
+
 
 func (it *KeyFilteredIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, it)

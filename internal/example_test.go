@@ -137,28 +137,15 @@ func TestExamples(t *testing.T) {
 		})
 	})
 
-	if !testing.Short() {
-
-		t.Run("bytecode", func(t *testing.T) {
-			testExamples(testExamplesArgs{
-				t:                t,
-				memFS:            memFS,
-				exampleFilePaths: exampleFilePaths,
-				useBytecode:      true,
-				optimizeBytecode: true,
-			})
-		})
-	}
-
-	t.Run("optimized bytecode", func(t *testing.T) {
-		testExamples(testExamplesArgs{
-			t:                t,
-			memFS:            memFS,
-			exampleFilePaths: exampleFilePaths,
-			useBytecode:      true,
-			optimizeBytecode: false,
-		})
-	})
+	// t.Run("optimized bytecode", func(t *testing.T) {
+	// 	testExamples(testExamplesArgs{
+	// 		t:                t,
+	// 		memFS:            memFS,
+	// 		exampleFilePaths: exampleFilePaths,
+	// 		useBytecode:      true,
+	// 		optimizeBytecode: false,
+	// 	})
+	// })
 }
 
 type testExamplesArgs struct {
@@ -232,8 +219,7 @@ type exampleTestConfig struct {
 func testExample(t *testing.T, config exampleTestConfig) {
 
 	fpath := config.fpath
-	useBytecode := config.useBytecode
-	optimizeBytecode := config.optimizeBytecode
+	transpile := config.useBytecode
 	testTimeout := config.testTimeout
 	filename := filepath.Base(fpath)
 
@@ -297,8 +283,7 @@ func testExample(t *testing.T, config exampleTestConfig) {
 		_, _, _, _, err := mod.RunLocalModule(mod.RunLocalModuleArgs{
 			Fpath:                     actualFpath,
 			PassedArgs:                core.NewEmptyModuleArgs(),
-			UseBytecode:               useBytecode,
-			OptimizeBytecode:          optimizeBytecode,
+			Transpile:                 transpile,
 			ParsingCompilationContext: parsingCompilationContext,
 
 			ScriptContextFileSystem: scriptContextFileSystem,

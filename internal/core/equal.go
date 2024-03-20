@@ -1491,15 +1491,6 @@ func (fn *InoxFunction) Equal(ctx *Context, other Value, alreadyCompared map[uin
 	return fn == otherFn
 }
 
-func (b *Bytecode) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherBytecode, ok := other.(*Bytecode)
-	if !ok {
-		return false
-	}
-
-	return b == otherBytecode
-}
-
 func (it *KeyFilteredIterator) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
 	otherIterator, ok := other.(*KeyFilteredIterator)
 	if !ok {

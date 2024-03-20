@@ -364,10 +364,6 @@ func (fn *InoxFunction) IsMutable() bool {
 	return true
 }
 
-func (b *Bytecode) IsMutable() bool {
-	return false
-}
-
 func (it *KeyFilteredIterator) IsMutable() bool {
 	return true
 }

@@ -53,9 +53,7 @@ type RunLocalModuleArgs struct {
 	ListeningPort                  uint16 //optional, defaults to inoxconsts.DEV_PORT_0
 	ForceLocalhostListeningAddress bool   //if true the application listening host is localhost
 
-	UseBytecode      bool
-	OptimizeBytecode bool
-	ShowBytecode     bool
+	Transpile bool
 
 	AllowMissingEnvVars bool
 	IgnoreHighRiskScore bool
@@ -148,9 +146,7 @@ func RunLocalModule(args RunLocalModuleArgs) (
 		ParentContext:             args.ParentContext,
 		IgnoreHighRiskScore:       args.IgnoreHighRiskScore,
 
-		UseBytecode:      args.UseBytecode,
-		OptimizeBytecode: args.OptimizeBytecode,
-		ShowBytecode:     args.ShowBytecode,
+		Transpile: args.Transpile,
 
 		Debugger: args.Debugger,
 	})
@@ -164,9 +160,7 @@ type RunPreparedModuleArgs struct {
 	//do not show the confirmation prompt to the user if the risk score is high.
 	IgnoreHighRiskScore bool
 
-	UseBytecode             bool
-	OptimizeBytecode        bool
-	ShowBytecode            bool
+	Transpile               bool
 	DoNotCancelWhenFinished bool
 
 	Debugger *core.Debugger
@@ -247,19 +241,9 @@ func RunPreparedModule(args RunPreparedModuleArgs) (
 
 	//execute the script
 
-	if args.UseBytecode {
-		tracer := io.Discard
-		if args.ShowBytecode {
-			tracer = out
-		}
-		res, err := core.EvalVM(state.Module, state, core.BytecodeEvaluationConfig{
-			Tracer:               tracer,
-			ShowCompilationTrace: args.ShowBytecode,
-			OptimizeBytecode:     args.OptimizeBytecode,
-			CompilationContext:   args.ParsingCompilationContext,
-		})
-
-		return res, state, mod, true, err
+	if args.Transpile {
+		_err = errors.New("transpilation is not supported yet")
+		return
 	}
 
 	treeWalkState := core.NewTreeWalkStateWithGlobal(state)

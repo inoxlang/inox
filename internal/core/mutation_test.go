@@ -1850,9 +1850,9 @@ func TestInoxFunctionOnMutation(t *testing.T) {
 		obj := NewObjectFromMap(ValMap{}, ctx)
 
 		fn := &InoxFunction{
-			Node:             parse.MustParseExpression("fn[a](){}"),
-			capturedLocals:   []Value{obj},
-			compiledFunction: &CompiledFunction{}, //set to non-nil so that the function is considered compiled.
+			Node:           parse.MustParseExpression("fn[a](){}"),
+			capturedLocals: []Value{obj},
+			//compiledFunction: &CompiledFunction{}, //set to non-nil so that the function is considered compiled.
 		}
 		called := atomic.Bool{}
 

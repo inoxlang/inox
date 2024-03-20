@@ -39,20 +39,20 @@ func TestTutorials(t *testing.T) {
 		return
 	}
 
-	t.Run("BytecodeEval", func(t *testing.T) {
-		for _, series := range learn.TUTORIAL_SERIES {
-			for _, tut := range series.Tutorials {
-				testTutorial(t, tutorialTestParams{
-					series:          series,
-					tut:             tut,
-					fpath:           fpath,
-					useBytecode:     true,
-					registry:        projectRegistry,
-					registryContext: registryCtx,
-				})
-			}
-		}
-	})
+	// t.Run("BytecodeEval", func(t *testing.T) {
+	// 	for _, series := range learn.TUTORIAL_SERIES {
+	// 		for _, tut := range series.Tutorials {
+	// 			testTutorial(t, tutorialTestParams{
+	// 				series:          series,
+	// 				tut:             tut,
+	// 				fpath:           fpath,
+	// 				useBytecode:     true,
+	// 				registry:        projectRegistry,
+	// 				registryContext: registryCtx,
+	// 			})
+	// 		}
+	// 	}
+	// })
 
 	t.Run("TreeWalkEval", func(t *testing.T) {
 		for _, series := range learn.TUTORIAL_SERIES {
@@ -184,8 +184,7 @@ func testTutorial(t *testing.T, params tutorialTestParams) {
 				PreinitFilesystem:         fls,
 				ScriptContextFileSystem:   fls,
 
-				UseBytecode:         useBytecode,
-				OptimizeBytecode:    useBytecode,
+				Transpile:           useBytecode,
 				Out:                 utils.NewLockedWriter(outputBuff),
 				LogOut:              utils.NewLockedWriter(logOutputBuff),
 				AllowMissingEnvVars: true,

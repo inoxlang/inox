@@ -328,9 +328,9 @@ func TestHttpServerUserHandler(t *testing.T) {
 	//TODO: rework test & add case where handler access a global
 
 	code := "fn(rw, r){ rw.write_json(1) }"
-	nodeFn, compiledFn, module := createHandlers(t, code)
+	nodeFn, _ /*compiledFn*/, module := createHandlers(t, code)
 
-	for i, handler := range []*core.InoxFunction{nodeFn, compiledFn} {
+	for i, handler := range []*core.InoxFunction{nodeFn /*compiledFn*/} {
 		name := "node handler"
 		if i == 1 {
 			name = "compiled function handler"
@@ -1193,7 +1193,7 @@ type serverTestCase struct {
 	avoidTestParallelization              bool
 }
 
-func createHandlers(t *testing.T, code string) (*core.InoxFunction, *core.InoxFunction, *core.Module) {
+func createHandlers(t *testing.T, code string) (*core.InoxFunction, any, *core.Module) {
 	chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
 		NameString: "server-test",
 		CodeString: code,
@@ -1203,29 +1203,29 @@ func createHandlers(t *testing.T, code string) (*core.InoxFunction, *core.InoxFu
 		TopLevelNode: chunk.Node,
 	}
 
-	staticCheckData, err := core.StaticCheck(core.StaticCheckInput{
-		State:  core.NewGlobalState(core.NewContext(core.ContextConfig{})),
-		Node:   chunk.Node,
-		Module: module,
-		Chunk:  module.MainChunk,
-	})
+	// staticCheckData, err := core.StaticCheck(core.StaticCheckInput{
+	// 	State:  core.NewGlobalState(core.NewContext(core.ContextConfig{})),
+	// 	Node:   chunk.Node,
+	// 	Module: module,
+	// 	Chunk:  module.MainChunk,
+	// })
 
-	if !assert.NoError(t, err) {
-		panic(err)
-	}
+	// if !assert.NoError(t, err) {
+	// 	panic(err)
+	// }
 
 	nodeFunction := &core.InoxFunction{Node: parse.FindNode(chunk.Node, (*parse.FunctionExpression)(nil), nil)}
 
-	bytecode, _ := core.Compile(core.CompilationInput{
-		Mod: module,
-		Context: core.NewContext(core.ContextConfig{
-			Filesystem: fs_ns.GetOsFilesystem(),
-		}),
-		StaticCheckData: staticCheckData,
-	})
-	consts := bytecode.Constants()
-	compiledFunction := consts[len(consts)-1].(*core.InoxFunction)
-	return nodeFunction, compiledFunction, module
+	// bytecode, _ := core.Compile(core.CompilationInput{
+	// 	Mod: module,
+	// 	Context: core.NewContext(core.ContextConfig{
+	// 		Filesystem: fs_ns.GetOsFilesystem(),
+	// 	}),
+	// 	StaticCheckData: staticCheckData,
+	// })
+	// consts := bytecode.Constants()
+	// compiledFunction := consts[len(consts)-1].(*core.InoxFunction)
+	return nodeFunction, nil, module
 }
 
 func createClient() *http.Client {

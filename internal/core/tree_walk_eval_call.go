@@ -7,6 +7,10 @@ import (
 	"github.com/inoxlang/inox/internal/parse"
 )
 
+const (
+	MAX_FRAMES = 20
+)
+
 type TreeWalkCall struct {
 	callee             Value
 	callNode           *parse.CallExpression //nil if the function is called in isolation.
@@ -28,12 +32,12 @@ func TreeWalkCallFunc(call TreeWalkCall) (Value, error) {
 	must := call.must
 	cmdLineSyntax := call.cmdLineSyntax
 
-	switch f := callee.(type) {
-	case *InoxFunction:
-		if f.compiledFunction != nil {
-			return nil, ErrCannotEvaluateCompiledFunctionInTreeWalkEval
-		}
-	}
+	// switch f := callee.(type) {
+	// case *InoxFunction:
+	// 	if f.compiledFunction != nil {
+	// 		return nil, ErrCannotEvaluateCompiledFunctionInTreeWalkEval
+	// 	}
+	// }
 
 	var err error
 

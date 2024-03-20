@@ -71,11 +71,11 @@ type LthreadSpawnArgs struct {
 	TestedProgram    *Module
 
 	//AbsScriptDir string
-	Bytecode    *Bytecode
-	UseBytecode bool
-	StartPaused bool
-	Self        Value
-	Timeout     time.Duration
+	//Bytecode    *Bytecode
+	UseTranspiled bool
+	StartPaused   bool
+	Self          Value
+	Timeout       time.Duration
 
 	// Even if true a token is taken for the threads/simul-instances limit
 	IgnoreCreateLThreadPermCheck bool
@@ -148,7 +148,7 @@ func SpawnLThread(args LthreadSpawnArgs) (*LThread, error) {
 	modState.Module = args.Module
 	modState.Manifest = args.Manifest
 	modState.MainState = args.SpawnerState.MainState
-	modState.Bytecode = args.Bytecode
+	//modState.Bytecode = args.Bytecode
 	modState.Logger = logger
 	modState.LogLevels = args.SpawnerState.LogLevels
 	modState.Out = args.SpawnerState.Out
@@ -172,7 +172,7 @@ func SpawnLThread(args LthreadSpawnArgs) (*LThread, error) {
 		Timeout:         args.Timeout,
 		SpawnerState:    args.SpawnerState,
 		State:           modState,
-		UseBytecode:     args.UseBytecode,
+		UseTranspiled:   args.UseTranspiled,
 		PauseAfterYield: args.PauseAfterYield,
 		StartPaused:     args.StartPaused,
 		Self:            args.Self,
@@ -183,7 +183,7 @@ type LthreadWithStateSpawnArgs struct {
 	Timeout         time.Duration
 	SpawnerState    *GlobalState
 	State           *GlobalState
-	UseBytecode     bool
+	UseTranspiled   bool
 	PauseAfterYield bool
 	StartPaused     bool
 
@@ -203,7 +203,7 @@ func SpawnLthreadWithState(args LthreadWithStateSpawnArgs) (*LThread, error) {
 		state:            modState,
 		wait_result:      make(chan struct{}, 1),
 		continueExecChan: make(chan struct{}, 1),
-		useBytecode:      args.UseBytecode,
+		useBytecode:      args.UseTranspiled,
 		executedStepCallbackFn: func(step ExecutedStep, lthread *LThread) (continueExec bool) {
 			return !args.PauseAfterYield
 		},
@@ -288,8 +288,9 @@ func SpawnLthreadWithState(args LthreadWithStateSpawnArgs) (*LThread, error) {
 		defer modState.Ctx.CancelGracefully()
 		defer modState.Ctx.DefinitelyStopCPUTimeDepletion()
 
-		if args.UseBytecode {
-			res, err = EvalBytecode(lthread.state.Bytecode, modState, args.Self)
+		if args.UseTranspiled {
+			panic(errors.New("using transpiled not supported yet"))
+			//res, err = EvalBytecode(lthread.state.Bytecode, modState, args.Self)
 		} else {
 			state := NewTreeWalkStateWithGlobal(modState)
 			state.self = args.Self

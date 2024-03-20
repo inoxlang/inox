@@ -328,8 +328,7 @@ func (app *Application) AutorestartLoop( /*temporary solution*/ project core.Pro
 			ParsingCompilationContext: app.ctx,
 			ParentContext:             app.ctx,
 			IgnoreHighRiskScore:       true, //TODO: show confirmation dialog to user in VSCode
-			UseBytecode:               true,
-			OptimizeBytecode:          true,
+			Transpile:                 true,
 
 			DoNotCancelWhenFinished: true,
 		})

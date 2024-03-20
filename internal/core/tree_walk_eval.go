@@ -2911,7 +2911,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			ManifestTemplate: parsedChunk.Node.Manifest,
 		}
 
-		job, err := NewLifetimeJob(meta, subjectPattern, jobMod, nil, state.Global)
+		job, err := NewLifetimeJob(meta, subjectPattern, jobMod, state.Global)
 		if err != nil {
 			return nil, err
 		}

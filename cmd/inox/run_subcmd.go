@@ -25,7 +25,6 @@ func RunProgram(mainSubCommand string, mainSubCommandArgs []string, outW, errW i
 	var useTreeWalking bool
 	var enableTestingMode bool
 	var enableTestingModeAndTrust bool
-	var showBytecode bool
 	var disableOptimization bool
 	var fullyTrusted bool
 	var allowBrowserAutomation bool
@@ -33,7 +32,6 @@ func RunProgram(mainSubCommand string, mainSubCommandArgs []string, outW, errW i
 	flags.BoolVar(&enableTestingMode, "test", false, "enable testing mode")
 	flags.BoolVar(&enableTestingModeAndTrust, "test-trusted", false, "enable testing mode and do not show confirmation prompt if the risk score is high")
 	flags.BoolVar(&useTreeWalking, "t", false, "use tree walking interpreter")
-	flags.BoolVar(&showBytecode, "show-bytecode", false, "show emitted bytecode before evaluating the script")
 	flags.BoolVar(&disableOptimization, "no-optimization", false, "disable bytecode optimization")
 	flags.BoolVar(&fullyTrusted, "fully-trusted", false, "do not show confirmation prompt if the risk score is high")
 	flags.BoolVar(&allowBrowserAutomation, "allow-browser-automation", false, "allow creating and controlling a browser")
@@ -136,10 +134,8 @@ func RunProgram(mainSubCommand string, mainSubCommandArgs []string, outW, errW i
 		ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
 		AdditionalPermissions:     processTempDirPerms,
 
-		UseBytecode:      !useTreeWalking,
-		ShowBytecode:     showBytecode,
-		OptimizeBytecode: !useTreeWalking && !disableOptimization,
-		Out:              outW,
+		Transpile: !useTreeWalking,
+		Out:       outW,
 
 		FullAccessToDatabases: true,
 		EnableTesting:         enableTestingMode,

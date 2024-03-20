@@ -19,7 +19,7 @@ func createTestLifetimeJob(t *testing.T, state *GlobalState, code string) *Lifet
 		MainChunk:    chunk,
 	}
 
-	job, err := NewLifetimeJob(Identifier("job"), nil, jobMod, nil, state)
+	job, err := NewLifetimeJob(Identifier("job"), nil, jobMod, state)
 	if !assert.NoError(t, err) {
 		return nil
 	}

@@ -1401,10 +1401,6 @@ func (fn *InoxFunction) ToSymbolicValue(ctx *Context, encountered map[uintptr]sy
 	return fn.symbolicValue, nil
 }
 
-func (b *Bytecode) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return &symbolic.Bytecode{Bytecode: b}, nil
-}
-
 func (t Type) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.Type{Type: t}, nil
 }
