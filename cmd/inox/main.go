@@ -46,7 +46,7 @@ const (
 
 func main() {
 	//handle completions
-	cmd.Complete(COMMAND_NAME)
+	completer.Complete(COMMAND_NAME)
 
 	debug.SetMaxStack(MAX_STACK_SIZE)
 

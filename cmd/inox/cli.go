@@ -10,8 +10,6 @@ import (
 	"github.com/inoxlang/inox/internal/inoxd/cloud/cloudproxy"
 	"github.com/inoxlang/inox/internal/inoxprocess"
 	"github.com/inoxlang/inox/internal/inoxprocess/binary"
-	"github.com/posener/complete/v2"
-	"github.com/posener/complete/v2/predict"
 )
 
 const (
@@ -60,67 +58,6 @@ var (
 	CLI_SUBCOMMAND_DESCRIPTION_MAP = map[string]string{}
 
 	INOX_CMD_HELP = "commands:\n"
-
-	cmd = &complete.Command{
-		Sub: map[string]*complete.Command{
-			SHELL_SUBCMD: {
-				Flags: map[string]complete.Predictor{
-					"c": predict.Files("*.ix"),
-				},
-			},
-			EVAL_SUBCMD: {
-				Flags: map[string]complete.Predictor{
-					"c": predict.Files("*.ix"),
-				},
-			},
-			EVAL_ALIAS_SUBCMD: {
-				Flags: map[string]complete.Predictor{
-					"c": predict.Files("*.ix"),
-				},
-			},
-			CHECK_SUBCMD: {},
-			HELP_SUBCMD:  {},
-			RUN_SUBCMD: {
-				Flags: map[string]complete.Predictor{
-					"test":                     predict.Nothing,
-					"test-trusted":             predict.Nothing,
-					"fully-trusted":            predict.Nothing,
-					"show-bytecode":            predict.Nothing,
-					"no-optimization":          predict.Nothing,
-					"allow-browser-automation": predict.Nothing,
-					"t":                        predict.Nothing,
-				},
-				Args: predict.Files("*"),
-			},
-			ADD_SERVICE_SUBCMD: {
-				Flags: map[string]complete.Predictor{
-					"inox-cloud":               predict.Nothing,
-					"tunnel-provider":          predict.Set{"cloudflare"},
-					"expose-project-servers":   predict.Nothing,
-					"expose-wev-servers":       predict.Nothing,
-					"allow-browser-automation": predict.Nothing,
-				},
-			},
-			REMOVE_SERVICE_SUBCMD: {
-				Flags: map[string]complete.Predictor{
-					"remove-tunnel-configs":  predict.Nothing,
-					"remove-inoxd-user":      predict.Nothing,
-					"remove-inoxd-homedir":   predict.Nothing,
-					"remove-env-file":        predict.Nothing,
-					"remove-data-dir":        predict.Nothing,
-					"dangerously-remove-all": predict.Nothing,
-				},
-			},
-			UPGRADE_INOX_SUBCMD: {},
-			PROJECT_SERVER_SUBCMD: {
-				Flags: map[string]complete.Predictor{
-					"config": predict.Set{`'{"port":8305}'`},
-				},
-			},
-			INSTALL_COMPLETIONS_SUBCMD:   {},
-			UNINSTALL_COMPLETIONS_SUBCMD: {},
-		},
-	}
 
 	ROOT_ALLOWED_SUBCMDS = []string{ADD_SERVICE_SUBCMD, REMOVE_SERVICE_SUBCMD, UPGRADE_INOX_SUBCMD, HELP_SUBCMD}
 )
