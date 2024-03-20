@@ -9110,7 +9110,7 @@ func TestSymbolicEval(t *testing.T) {
 	})
 
 	t.Run("match statement", func(t *testing.T) {
-		t.Run("join", func(t *testing.T) {
+		t.Run("the forked states should be joined after the statement", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				var v %object = {}
 				match 1 {
@@ -9230,7 +9230,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Nil(t, res)
 		})
 
-		t.Run("narrowing of variable's value (no default case)", func(t *testing.T) {
+		t.Run("narrowing of a variable's value (no default case)", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				fn f(v){
 					match v {
@@ -9250,7 +9250,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Nil(t, res)
 		})
 
-		t.Run("narrowing of variable's value (with default case)", func(t *testing.T) {
+		t.Run("narrowing of a variable's value (with default case)", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				fn f(v %| int | str | bool){
 					match v {
@@ -9262,6 +9262,26 @@ func TestSymbolicEval(t *testing.T) {
 						}
 						defaultcase {
 							var bool %bool = v
+						}
+					}
+				}
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Nil(t, res)
+		})
+
+		t.Run("narrowing of a variable's value (multivalue)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(v (| int | str)){
+					match v {
+						%int {
+							var int %int = v
+						}
+						%str {
+							var string %str = v
 						}
 					}
 				}
