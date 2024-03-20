@@ -277,10 +277,6 @@ func _UUIDV4(ctx *core.Context, s core.StringLike) core.UUIDv4 {
 	return utils.Must(core.ParseUUIDv4(s.GetOrBuildString()))
 }
 
-func _UUIDv4(ctx *core.Context, s core.StringLike) core.UUIDv4 {
-	return utils.Must(core.ParseUUIDv4(s.GetOrBuildString()))
-}
-
 func _Bytes(ctx *core.Context, v core.Readable) *core.ByteSlice {
 	r := v.Reader()
 	var b []byte
