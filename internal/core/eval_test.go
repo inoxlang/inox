@@ -3531,6 +3531,27 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`,
 				result: newList(&ValueList{elements: []Serializable{Int(0), Int(1)}}),
 			},
+			{
+				name: "stack check: 2 cases",
+				input: `
+					switch 1 { 
+						1 {}
+						2 {}
+					}; 
+				`,
+				result: Nil,
+			},
+			{
+				name: "stack check: 2 cases + default case",
+				input: `
+				switch 1 { 
+						1 {}
+						2 {}
+						defaultcase {}
+					}; 
+				`,
+				result: Nil,
+			},
 		}
 
 		for _, testCase := range testCases {
@@ -3552,6 +3573,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			input  string
 			result Value
 		}{
+			{
+				name:   "no cases",
+				input:  `return switch 1 { }`,
+				result: Nil,
+			},
 			{
 				name: "single case (that matches)",
 				input: `
@@ -3633,6 +3659,27 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}; 
 				`,
 				result: Int(1),
+			},
+			{
+				name: "stack check: 2 cases",
+				input: `
+					if (switch 1 { 
+						1 => true
+						2 => true
+					}) {}
+				`,
+				result: Nil,
+			},
+			{
+				name: "stack check: 2 cases + default case",
+				input: `
+					if (switch 1 { 
+						1 => true
+						2 => true
+						defaultcase => true
+					}) {}
+				`,
+				result: Nil,
 			},
 		}
 
@@ -3720,6 +3767,27 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				`,
 				result: newList(&ValueList{elements: []Serializable{Int(0), Int(1)}}),
 			},
+			{
+				name: "stack check: 2 cases",
+				input: `
+					match 1 { 
+						1 {}
+						2 {}
+					}; 
+				`,
+				result: Nil,
+			},
+			{
+				name: "stack check: 2 cases + default case",
+				input: `
+					match 1 { 
+						1 {}
+						2 {}
+						defaultcase {}
+					}; 
+				`,
+				result: Nil,
+			},
 		}
 
 		for _, testCase := range testCases {
@@ -3741,6 +3809,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			input  string
 			result Value
 		}{
+			{
+				name:   "no cases",
+				input:  `return match 1 { }`,
+				result: Nil,
+			},
 			{
 				name: "patterns : two cases (first matches)",
 				input: `
@@ -3790,6 +3863,27 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}; 
 				`,
 				result: Int(2),
+			},
+			{
+				name: "stack check: 2 cases",
+				input: `
+					if (match 1 { 
+						1 => true
+						2 => true
+					}) {}
+				`,
+				result: Nil,
+			},
+			{
+				name: "stack check: 2 cases + default case",
+				input: `
+					if (match 1 { 
+						1 => true
+						2 => true
+						defaultcase => true
+					}) {}
+				`,
+				result: Nil,
 			},
 		}
 
