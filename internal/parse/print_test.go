@@ -128,6 +128,7 @@ func TestPrint(t *testing.T) {
 		"const (\na = 1)",
 		"const (\na = 1\n)",
 		"const (\na = 1\nb= 2\n)",
+		"includable-file\nconst ()",
 		// member expression
 		"a.b",
 		"a.b.",

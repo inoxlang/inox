@@ -784,6 +784,22 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("empty const declarations in includable file", func(t *testing.T) {
+			n := mustparseChunk(t, "includable-file\nconst ()")
+			assert.EqualValues(t, &Chunk{
+				NodeBase:   NodeBase{NodeSpan{0, 24}, nil, false},
+				Statements: nil,
+				Manifest:   nil,
+				IncludableChunkDesc: &IncludableChunkDescription{
+					NodeBase: NodeBase{Span: NodeSpan{0, 15}},
+				},
+				GlobalConstantDeclarations: &GlobalConstantDeclarations{
+					NodeBase:     NodeBase{Span: NodeSpan{16, 24}},
+					Declarations: nil,
+				},
+			}, n)
+		})
+
 		t.Run("single declaration with parenthesis", func(t *testing.T) {
 			n := mustparseChunk(t, "const ( a = 1 )")
 			assert.EqualValues(t, &Chunk{
