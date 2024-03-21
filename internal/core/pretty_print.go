@@ -1846,8 +1846,6 @@ func (g *InoxFunction) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, d
 	InspectPrint(w, g)
 }
 
-
-
 func (it *KeyFilteredIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, it)
 }
@@ -1998,14 +1996,14 @@ func (u *Treedata) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth
 	}
 
 	if depth > config.MaxDepth {
-		utils.Must(w.WriteString("treedata(...)"))
+		utils.Must(w.WriteString("(...)"))
 		return
 	}
 
 	indentCount := parentIndentCount + 1
 	indent := bytes.Repeat(config.Indent, indentCount)
 
-	w.WriteString("treedata ")
+	w.WriteByte(' ')
 
 	if u.Root != nil {
 		u.Root.PrettyPrint(w, config, depth+1, indentCount)
