@@ -4,10 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"path/filepath"
 
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/core/golang/gen"
 	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 )
 
 // A TranspiledApp represents an Inox application transpiled to Golang, it does not hold any state and should NOT be modified.
@@ -18,7 +20,14 @@ type TranspiledApp struct {
 	transpilationConfig AppTranspilationConfig
 }
 
-func (a *TranspiledApp) WriteTo(ctx *Context, rootDir string) error {
+func (a *TranspiledApp) GetModule(resourceName ResourceName) (*TranspiledModule, bool) {
+	mod, ok := a.inoxModules[resourceName]
+	return mod, ok
+}
+
+// WriteToFilesystem writes the source code of the transpiled application to $ctx's filesystem at $srcDir.
+// This also includes source code from Inox's codebase.
+func (a *TranspiledApp) WriteToFilesystem(ctx *Context, srcDir string) error {
 
 	fls := ctx.GetFileSystem()
 
@@ -26,11 +35,11 @@ func (a *TranspiledApp) WriteTo(ctx *Context, rootDir string) error {
 		return errors.New("context has no filesystem")
 	}
 
-	//Check we are allowed to write to the filesystem.
+	//Check that we are allowed to write to the filesystem.
 
 	err := ctx.CheckHasPermission(FilesystemPermission{
 		Kind_:  permkind.Write,
-		Entity: DirPathFrom(rootDir).ToPrefixPattern(),
+		Entity: DirPathFrom(srcDir).ToPrefixPattern(),
 	})
 
 	if err != nil {
@@ -45,7 +54,7 @@ func (a *TranspiledApp) WriteTo(ctx *Context, rootDir string) error {
 			return err
 		}
 
-		path := fls.Join(rootDir, embeddedEntryPath)
+		path := fls.Join(srcDir, embeddedEntryPath)
 
 		info, err := d.Info()
 		if err != nil {
@@ -72,19 +81,27 @@ func (a *TranspiledApp) WriteTo(ctx *Context, rootDir string) error {
 		return util.WriteFile(fls, path, content, 0600)
 	}
 
-	fs.WalkDir(InoxCodebaseFS, ".", visitEmbeddedEntry)
+	for _, rootEntryName := range []string{"internal", inoxconsts.RELATIVE_MAIN_INOX_MOD_PKG_PATH, "go.mod", "go.sum"} {
+		err = fs.WalkDir(InoxCodebaseFS, rootEntryName, visitEmbeddedEntry)
+		if err != nil {
+			return err
+		}
+	}
 
-	// //Write the transpiled modules (packages).
+	//Write the transpiled modules (packages).
 
-	// for _, mod := range a.inoxModules {
-	// 	dir := ""
+	for _, mod := range a.inoxModules {
+		dir := filepath.Join(srcDir, mod.relativePkgPath)
+		err := fls.MkdirAll(dir, 0700)
 
-	// 	if mod.name == a.mainModuleName {
+		if err == nil {
+			err = mod.pkg.WriteTo(fls, dir)
+		}
 
-	// 	}
-
-	// 	mod.pkg.WriteTo(fls, dir)
-	// }
+		if err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
@@ -96,4 +113,22 @@ type TranspiledModule struct {
 	pkg             *gen.Pkg
 	pkgID           string //example: github.com/inoxlang/inox/app/routes/index_ix
 	relativePkgPath string //example: app/routes/index_ix
+}
+
+func (m *TranspiledModule) ModuleName() ResourceName {
+	return m.name
+}
+
+// TranspiledModule returns the Go package that contains the transpiled module,
+// the result should not be modified.
+func (m *TranspiledModule) Pkg() *gen.Pkg {
+	return m.pkg
+}
+
+func (m *TranspiledModule) PkgID() string {
+	return m.pkgID
+}
+
+func (m *TranspiledModule) RelativePkgPath() string {
+	return m.relativePkgPath
 }

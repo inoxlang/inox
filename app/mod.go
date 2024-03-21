@@ -1,5 +1,5 @@
 // base file
-package app
+package main
 
 import "github.com/inoxlang/inox/internal/core"
 

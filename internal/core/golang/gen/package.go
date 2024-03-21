@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/printer"
+	"go/token"
 	"path/filepath"
 	"strings"
 
@@ -59,6 +60,8 @@ func (p *Pkg) WriteTo(fs afs.Filesystem, dir string) error {
 	pathSegments := pathutils.GetPathSegments(dir)
 	pkgStack := []*ast.Package{p.Pkg}
 
+	unusedFset := token.NewFileSet()
+
 	var visit visitFn
 	var finalErr error
 
@@ -81,7 +84,7 @@ func (p *Pkg) WriteTo(fs afs.Filesystem, dir string) error {
 
 				if err == nil {
 					defer f.Close()
-					printer.Fprint(f, nil, goFile)
+					printer.Fprint(f, unusedFset, goFile)
 				}
 
 				if err != nil {

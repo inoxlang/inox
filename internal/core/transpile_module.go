@@ -113,10 +113,11 @@ func (t *Transpiler) transpileModule(state *moduleTranspilationState) {
 	}
 
 	result := &TranspiledModule{
-		name:         state.moduleName,
-		sourceModule: state.module,
-		pkg:          state.pkg,
-		pkgID:        state.pkgID,
+		name:            state.moduleName,
+		sourceModule:    state.module,
+		pkg:             state.pkg,
+		pkgID:           state.pkgID,
+		relativePkgPath: state.relativePkgPath,
 	}
 
 	state.transpiledModule = result

@@ -1,4 +1,4 @@
-package app
+package main
 
 import (
 	_ "github.com/inoxlang/inox/internal/config"

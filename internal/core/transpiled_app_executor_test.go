@@ -1,7 +1,10 @@
-package core
+package core_test
 
 import (
+	"bytes"
 	"context"
+	"fmt"
+	"io"
 	"os/exec"
 	"path/filepath"
 	"sync"
@@ -9,89 +12,183 @@ import (
 	"testing"
 	"time"
 
+	"github.com/inoxlang/inox"
+	"github.com/inoxlang/inox/internal/core"
+	permkind "github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/utils/processutils"
+	"github.com/rs/zerolog"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
 	TEMP_DIR_PREFIX = "inox-mod-executor-"
 )
 
+func init() {
+	core.InoxCodebaseFS = inox.CodebaseFS
+}
+
+func TestTestingAppExecutor(t *testing.T) {
+
+	createExecCtx := func() *core.Context {
+		return core.NewContextWithEmptyState(core.ContextConfig{
+			Filesystem: fs_ns.GetOsFilesystem(),
+			Permissions: []core.Permission{
+				core.FilesystemPermission{
+					Kind_:  permkind.Read,
+					Entity: core.ROOT_PREFIX_PATH_PATTERN,
+				},
+				core.FilesystemPermission{
+					Kind_:  permkind.Write,
+					Entity: core.ROOT_PREFIX_PATH_PATTERN,
+				},
+			},
+		}, nil)
+	}
+
+	t.Run("empty main module", func(t *testing.T) {
+		ctx, preparedModules := writeAndPrepareInoxFiles(t, map[string]string{
+			"/main.ix": `manifest {}`,
+		})
+
+		defer ctx.CancelGracefully()
+
+		app, err := core.TranspileApp(core.AppTranspilationParams{
+			ParentContext:    ctx,
+			MainModule:       core.Path("/main.ix"),
+			ThreadSafeLogger: zerolog.Nop(),
+			Config:           core.AppTranspilationConfig{},
+			PreparedModules:  preparedModules,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		execCtx := createExecCtx()
+		defer execCtx.CancelGracefully()
+
+		srcDir := t.TempDir()
+
+		err = app.WriteToFilesystem(execCtx, srcDir)
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		//Create the executor and an instance of the application.
+
+		executor, err := NewTestingAppExecutor(t, execCtx, app)
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		appCtx := execCtx.BoundChild()
+		output := bytes.NewBuffer(nil)
+
+		transpiledInstance, err := executor.CreateInstance(t, appCtx, output)
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.Same(t, appCtx, transpiledInstance.Context())
+	})
+}
+
 // TestingAppExecutor is a TranspiledAppExecutor tailored for testing in the core package, it is not used by
 // Inox's testing engine.
 type TestingAppExecutor struct {
 	lock       sync.Mutex
-	app        *TranspiledApp
+	app        *core.TranspiledApp
 	instances  map[*TestingAppInstance]struct{}
 	tempDir    string
 	binaryPath string
 	ctx        context.Context
 }
 
-// NewTestingGoExecutor creates a TestingGoExecutor that compiles the Go code of a transpiled mode
-// inside a temporary directory, and creates a process.
-func NewTestingGoExecutor(t *testing.T, ctx *Context, app *TranspiledApp) (*TestingAppExecutor, error) {
+// NewTestingAppExecutor creates compiles the Go code of a transpiled mode inside a temporary directory,
+// and returns a TestingGoExecutor able to create instances of the transpiled+compiled application.
+func NewTestingAppExecutor(t *testing.T, ctx *core.Context, app *core.TranspiledApp) (*TestingAppExecutor, error) {
 
 	//Create a temporary directory.
 
-	tempDir := t.TempDir()
-	mainPkgPath := filepath.Join(tempDir, inoxconsts.RELATIVE_MAIN_INOX_MOD_PKG_PATH)
-	binaryPath := filepath.Join(tempDir, "mod")
+	srcDir := t.TempDir()
 
 	//Write the soure code inside the temporary directory.
 
-	err := app.WriteTo(ctx, tempDir)
+	err := app.WriteToFilesystem(ctx, srcDir)
 
 	if err != nil {
 		return nil, err
 	}
 
-	//Compile
+	//Prepare the compilation command
 
-	compilationCtx, cancelCompilation := context.WithTimeout(ctx, 5*time.Second)
+	compilationCtx, cancelCompilation := context.WithTimeout(ctx, 30*time.Second)
 	defer cancelCompilation()
 
-	cmd := exec.CommandContext(compilationCtx, "go", "build", mainPkgPath, "-o="+binaryPath)
+	output := bytes.NewBuffer(nil)
+
+	cmd := exec.CommandContext(compilationCtx,
+		"go", "build",
+		"-C="+srcDir, //Change working dir to $srcDir.
+		"-o=./"+inoxconsts.TRANSPILED_APP_BINARY_NAME,
+		"./"+inoxconsts.RELATIVE_MAIN_INOX_MOD_PKG_PATH,
+	)
+
+	cmd.Stderr = output
+	cmd.Stdout = io.Discard
+
+	//Compile
 
 	err = cmd.Run()
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w, ouput: %s", err, output.String())
 	}
+
+	binaryPath := filepath.Join(srcDir, inoxconsts.TRANSPILED_APP_BINARY_NAME)
 
 	return &TestingAppExecutor{
 		app:        app,
 		instances:  make(map[*TestingAppInstance]struct{}),
-		tempDir:    tempDir,
+		tempDir:    srcDir,
 		binaryPath: binaryPath,
 		ctx:        ctx,
 	}, nil
 }
 
-func (e *TestingAppExecutor) App() *TranspiledApp {
+func (e *TestingAppExecutor) App() *core.TranspiledApp {
 	return e.app
 }
 
-func (e *TestingAppExecutor) CreateInstance(t *testing.T, ctx *Context) (TranspiledAppInstance, error) {
+func (e *TestingAppExecutor) CreateInstance(t *testing.T, appCtx *core.Context, output io.Writer) (core.TranspiledAppInstance, error) {
 	//Create a process
 
 	t.Cleanup(func() {
-		ctx.CancelGracefully()
+		appCtx.CancelGracefully()
 	})
 
 	appInstance := &TestingAppInstance{
 		startEvents: make(chan int32, 1),
 		exitEvents:  make(chan struct{}, 1),
-		ctx:         ctx,
+		ctx:         appCtx,
 	}
 
 	earlyErrChan := make(chan error, 1)
 
 	go func() {
 		earlyErrChan <- processutils.AutoRestart(processutils.AutoRestartArgs{
-			GoCtx: ctx,
+			GoCtx: appCtx,
 			MakeCommand: func(goCtx context.Context) (*exec.Cmd, error) {
-				return exec.CommandContext(goCtx, e.binaryPath), nil
+				cmd := exec.CommandContext(goCtx, e.binaryPath)
+
+				cmd.Stdout = output
+				cmd.Stderr = output
+
+				return cmd, nil
 			},
 			MaxTryCount:    2,
 			StartEventChan: appInstance.startEvents,
@@ -104,11 +201,22 @@ func (e *TestingAppExecutor) CreateInstance(t *testing.T, ctx *Context) (Transpi
 		if err != nil {
 			return nil, err
 		}
-	case <-ctx.Done():
-		return nil, ctx.Err()
+	case <-appCtx.Done():
+		return nil, appCtx.Err()
 	}
 
+	e.lock.Lock()
+	e.instances[appInstance] = struct{}{}
+	e.lock.Unlock()
+
 	go func() {
+		defer func() {
+			//Remove instance.
+			e.lock.Lock()
+			delete(e.instances, appInstance)
+			e.lock.Unlock()
+		}()
+
 		//Loop that updates $appInstance.currentPID
 		for {
 			select {
@@ -116,7 +224,7 @@ func (e *TestingAppExecutor) CreateInstance(t *testing.T, ctx *Context) (Transpi
 				appInstance.currentPID.Store(pid)
 			case <-appInstance.exitEvents:
 				appInstance.currentPID.Store(-1)
-			case <-ctx.Done():
+			case <-appCtx.Done():
 				return
 			}
 		}
@@ -129,13 +237,13 @@ type TestingAppInstance struct {
 	currentPID  atomic.Int32 //0 if not running
 	startEvents chan int32
 	exitEvents  chan struct{}
-	ctx         *Context
+	ctx         *core.Context
 }
 
 func (i *TestingAppInstance) IsRunning() bool {
 	return i.currentPID.Load() != 0
 }
 
-func (i *TestingAppInstance) Context() *Context {
+func (i *TestingAppInstance) Context() *core.Context {
 	return i.ctx
 }
