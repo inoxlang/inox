@@ -8,7 +8,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
 
-	symbolic_inox_ns "github.com/inoxlang/inox/internal/globals/inoxlsp_ns/symbolic"
+	symbolic_inoxlsp_ns "github.com/inoxlang/inox/internal/globals/inoxlsp_ns/symbolic"
 )
 
 var (
@@ -75,7 +75,7 @@ func (s *LSPSession) GetGoMethod(name string) (*core.GoFunction, bool) {
 }
 
 func (evs *LSPSession) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return symbolic_inox_ns.ANY_LSP_SESSION, nil
+	return symbolic_inoxlsp_ns.ANY_LSP_SESSION, nil
 }
 
 func (s *LSPSession) IsMutable() bool {

@@ -22,7 +22,6 @@ import (
 	"github.com/inoxlang/inox/internal/globals/html_ns"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/globals/inox_ns"
-	"github.com/inoxlang/inox/internal/globals/inoxlsp_ns"
 	"github.com/inoxlang/inox/internal/globals/log_ns"
 	"github.com/inoxlang/inox/internal/globals/strmanip_ns"
 	"github.com/inoxlang/inox/internal/help"
@@ -193,7 +192,6 @@ func NewDefaultGlobalState(ctx *core.Context, conf core.DefaultGlobalStateConfig
 		globalnames.HTML_NS:     html_ns.NewHTMLNamespace(),
 		globalnames.INOX_NS:     inox_ns.NewInoxNamespace(),
 		globalnames.INOXSH_NS:   inoxsh_ns.NewInoxshNamespace(),
-		globalnames.INOXLSP_NS:  inoxlsp_ns.NewInoxLspNamespace(),
 		globalnames.STRMANIP_NS: strmanip_ns.NewStrManipNnamespace(),
 		globalnames.RSA_NS:      newRSANamespace(),
 		globalnames.INSECURE_NS: newInsecure(),
@@ -257,7 +255,7 @@ func NewDefaultGlobalState(ctx *core.Context, conf core.DefaultGlobalStateConfig
 		globalnames.TOJSON_FN:    core.ValOf(core.ToJSON),
 		globalnames.TOPJSON_FN:   core.ValOf(core.ToPrettyJSON),
 		globalnames.ASJSON_FN:    core.ValOf(core.AsJSON),
-		globalnames.ASJSONL_FN:    core.ValOf(core.AsJSONL),
+		globalnames.ASJSONL_FN:   core.ValOf(core.AsJSONL),
 		globalnames.PARSE_FN:     core.ValOf(_parse),
 		globalnames.SPLIT_FN:     core.ValOf(_split),
 
