@@ -4176,13 +4176,13 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				manifest {}
 				import ./dep.ix
 
-				return [g, fn_in_included_file]
+				return [g, f]
 				fn g(){}
 			`, map[string]string{
 				"./dep.ix": `
 					includable-file
 
-					fn_in_included_file = f
+					pattern _true = %(f == 0)
 					fn f(){}
 				`,
 			})
@@ -6000,8 +6000,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				import ./dep2.ix
 				return (a + b)
 			`, map[string]string{
-				"./dep1.ix": "includable-file\n a = 1",
-				"./dep2.ix": "includable-file\n b = 2",
+				"./dep1.ix": "includable-file\n const (a = 1)",
+				"./dep2.ix": "includable-file\n const (b = 2)",
 			})
 
 			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
@@ -12419,7 +12419,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			modpath := writeModuleAndIncludedFiles(t, moduleName, "manifest {}\nimport ./dep.ix", map[string]string{
 				"./dep.ix": joinLines(
 					"includable-file",
-					"a = (1 / 0)",
+					"const( a = (1 / 0) )",
 				),
 			})
 
@@ -12455,9 +12455,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				{
 					SourceName:  includedChunk.Name(),
 					StartLine:   2,
-					StartColumn: 5,
+					StartColumn: 12,
 					EndLine:     2,
-					EndColumn:   12,
+					EndColumn:   19,
 					Span:        binExpr.Span,
 				},
 			}, locatedError.Location)
@@ -12472,7 +12472,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				),
 				"./dep2.ix": joinLines(
 					"includable-file",
-					"a = (1 / 0)",
+					"const (a = (1 / 0))",
 				),
 			})
 
@@ -12522,81 +12522,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					//binary expression
 					SourceName:  includedChunk2.Name(),
 					StartLine:   2,
-					StartColumn: 5,
+					StartColumn: 12,
 					EndLine:     2,
-					EndColumn:   12,
-					Span:        binExpr.Span,
-				},
-			}, locatedError.Location)
-		})
-
-		t.Run("in a function defined and called by an included file", func(t *testing.T) {
-			moduleName := "mymod.ix"
-			modpath := writeModuleAndIncludedFiles(t, moduleName, "manifest {}\nimport ./dep.ix", map[string]string{
-				"./dep.ix": joinLines(
-					"includable-file",
-					"fn f(){ return (1 / 0) }",
-					"return f()",
-				),
-			})
-
-			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
-			if !assert.NoError(t, err) {
-				return
-			}
-
-			includedChunk := mod.IncludedChunkForest[0]
-			importStmt := parse.FindNode(mod.MainChunk.Node, (*parse.InclusionImportStatement)(nil), nil)
-			callExpr := parse.FindNode(includedChunk.Node, (*parse.CallExpression)(nil), nil)
-			fnDecl := parse.FindNode(includedChunk.Node, (*parse.FunctionDeclaration)(nil), nil)
-			binExpr := parse.FindNode(includedChunk.Node, (*parse.BinaryExpression)(nil), nil)
-
-			state := NewGlobalState(NewDefaultTestContext())
-			defer state.Ctx.CancelGracefully()
-			state.Module = mod
-
-			_, err = Eval(mod, state, true)
-
-			var locatedError LocatedEvalError
-			if !assert.ErrorAs(t, err, &locatedError) {
-				return
-			}
-
-			assert.Equal(t, parse.SourcePositionStack{
-				{
-					//import
-					SourceName:  mod.MainChunk.Source.Name(),
-					StartLine:   2,
-					StartColumn: 1,
-					EndLine:     2,
-					EndColumn:   16,
-					Span:        importStmt.Span,
-				},
-				{
-					//call
-					SourceName:  includedChunk.Name(),
-					StartLine:   3,
-					StartColumn: 8,
-					EndLine:     3,
-					EndColumn:   11,
-					Span:        callExpr.Span,
-				},
-				{
-					//function declaration
-					SourceName:  includedChunk.Name(),
-					StartLine:   2,
-					StartColumn: 1,
-					EndLine:     2,
-					EndColumn:   25,
-					Span:        fnDecl.Span,
-				},
-				{
-					//binary expression
-					SourceName:  includedChunk.Name(),
-					StartLine:   2,
-					StartColumn: 16,
-					EndLine:     2,
-					EndColumn:   23,
+					EndColumn:   19,
 					Span:        binExpr.Span,
 				},
 			}, locatedError.Location)
@@ -12659,174 +12587,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				{
 					//binary expression
 					SourceName:  includedChunk.Name(),
-					StartLine:   2,
-					StartColumn: 16,
-					EndLine:     2,
-					EndColumn:   23,
-					Span:        binExpr.Span,
-				},
-			}, locatedError.Location)
-		})
-
-		t.Run("in a function defined and called by an included file (deep)", func(t *testing.T) {
-			moduleName := "mymod.ix"
-			modpath := writeModuleAndIncludedFiles(t, moduleName, "manifest {}\nimport ./dep1.ix", map[string]string{
-				"./dep1.ix": joinLines(
-					"includable-file",
-					"import ./dep2.ix",
-				),
-				"./dep2.ix": joinLines(
-					"includable-file",
-					"fn f(){ return (1 / 0) }",
-					"return f()",
-				),
-			})
-
-			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
-			if !assert.NoError(t, err) {
-				return
-			}
-
-			includedChunk1 := mod.IncludedChunkForest[0]
-			includedChunk2 := includedChunk1.IncludedChunkForest[0]
-
-			importStmt1 := parse.FindNode(mod.MainChunk.Node, (*parse.InclusionImportStatement)(nil), nil)
-			importStmt2 := parse.FindNode(includedChunk1.Node, (*parse.InclusionImportStatement)(nil), nil)
-
-			callExpr := parse.FindNode(includedChunk2.Node, (*parse.CallExpression)(nil), nil)
-			fnDecl := parse.FindNode(includedChunk2.Node, (*parse.FunctionDeclaration)(nil), nil)
-			binExpr := parse.FindNode(includedChunk2.Node, (*parse.BinaryExpression)(nil), nil)
-
-			state := NewGlobalState(NewDefaultTestContext())
-			defer state.Ctx.CancelGracefully()
-			state.Module = mod
-
-			_, err = Eval(mod, state, true)
-
-			var locatedError LocatedEvalError
-			if !assert.ErrorAs(t, err, &locatedError) {
-				return
-			}
-
-			assert.Equal(t, parse.SourcePositionStack{
-				{
-					//import
-					SourceName:  mod.MainChunk.Source.Name(),
-					StartLine:   2,
-					StartColumn: 1,
-					EndLine:     2,
-					EndColumn:   17,
-					Span:        importStmt1.Span,
-				},
-				{
-					//import
-					SourceName:  includedChunk1.Source.Name(),
-					StartLine:   2,
-					StartColumn: 1,
-					EndLine:     2,
-					EndColumn:   17,
-					Span:        importStmt2.Span,
-				},
-				{
-					//call
-					SourceName:  includedChunk2.Name(),
-					StartLine:   3,
-					StartColumn: 8,
-					EndLine:     3,
-					EndColumn:   11,
-					Span:        callExpr.Span,
-				},
-				{
-					//function declaration
-					SourceName:  includedChunk2.Name(),
-					StartLine:   2,
-					StartColumn: 1,
-					EndLine:     2,
-					EndColumn:   25,
-					Span:        fnDecl.Span,
-				},
-				{
-					//binary expression
-					SourceName:  includedChunk2.Name(),
-					StartLine:   2,
-					StartColumn: 16,
-					EndLine:     2,
-					EndColumn:   23,
-					Span:        binExpr.Span,
-				},
-			}, locatedError.Location)
-		})
-
-		t.Run("in a function defined by an included file (deep) but called by an included file", func(t *testing.T) {
-			moduleName := "mymod.ix"
-			modpath := writeModuleAndIncludedFiles(t, moduleName, "manifest {}\nimport ./dep1.ix", map[string]string{
-				"./dep1.ix": joinLines(
-					"includable-file",
-					"import ./dep2.ix",
-					"return f()",
-				),
-				"./dep2.ix": joinLines(
-					"includable-file",
-					"fn f(){ return (1 / 0) }",
-				),
-			})
-
-			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
-			if !assert.NoError(t, err) {
-				return
-			}
-
-			includedChunk1 := mod.IncludedChunkForest[0]
-			includedChunk2 := includedChunk1.IncludedChunkForest[0]
-
-			importStmt1 := parse.FindNode(mod.MainChunk.Node, (*parse.InclusionImportStatement)(nil), nil)
-
-			callExpr := parse.FindNode(includedChunk1.Node, (*parse.CallExpression)(nil), nil)
-			fnDecl := parse.FindNode(includedChunk2.Node, (*parse.FunctionDeclaration)(nil), nil)
-			binExpr := parse.FindNode(includedChunk2.Node, (*parse.BinaryExpression)(nil), nil)
-
-			state := NewGlobalState(NewDefaultTestContext())
-			defer state.Ctx.CancelGracefully()
-			state.Module = mod
-
-			_, err = Eval(mod, state, true)
-
-			var locatedError LocatedEvalError
-			if !assert.ErrorAs(t, err, &locatedError) {
-				return
-			}
-
-			assert.Equal(t, parse.SourcePositionStack{
-				{
-					//import
-					SourceName:  mod.MainChunk.Source.Name(),
-					StartLine:   2,
-					StartColumn: 1,
-					EndLine:     2,
-					EndColumn:   17,
-					Span:        importStmt1.Span,
-				},
-				{
-					//call
-					SourceName:  includedChunk1.Name(),
-					StartLine:   3,
-					StartColumn: 8,
-					EndLine:     3,
-					EndColumn:   11,
-					Span:        callExpr.Span,
-				},
-				{
-					//function declaration
-					SourceName:  includedChunk2.Name(),
-					StartLine:   2,
-					StartColumn: 1,
-					EndLine:     2,
-					EndColumn:   25,
-					Span:        fnDecl.Span,
-				},
-				{
-					//binary expression
-					SourceName:  includedChunk2.Name(),
 					StartLine:   2,
 					StartColumn: 16,
 					EndLine:     2,

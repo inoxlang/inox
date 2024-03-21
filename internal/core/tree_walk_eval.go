@@ -858,7 +858,13 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		//CONSTANTS
 		if n.GlobalConstantDeclarations != nil {
 			for _, decl := range n.GlobalConstantDeclarations.Declarations {
-				if !state.SetGlobal(decl.Ident().Name, utils.Must(TreeWalkEval(decl.Right, state)), GlobalConst) {
+
+				value, err := TreeWalkEval(decl.Right, state)
+				if err != nil {
+					return nil, err
+				}
+
+				if !state.SetGlobal(decl.Ident().Name, value, GlobalConst) {
 					return nil, fmt.Errorf("failed to set global '%s'", decl.Ident().Name)
 				}
 			}
