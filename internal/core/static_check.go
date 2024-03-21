@@ -713,10 +713,12 @@ func (c *checker) precheckTopLevelStatements(module parse.Node) {
 			c.precheckTopLevelFuncDecl(stmt, module)
 		//simple literals
 		case parse.SimpleValueLiteral:
+		//inclusion imports
+		case *parse.InclusionImportStatement:
 		//
 		default:
 			if isIncludedChunk {
-				c.addWarning(stmt, AN_INCLUDED_CHUNK_SHOULD_ONLY_CONTAIN_DEFINITIONS)
+				c.addError(stmt, AN_INCLUDABLE_FILE_CAN_ONLY_CONTAIN_DEFINITIONS)
 			}
 		}
 	}
@@ -1297,7 +1299,7 @@ func (c *checker) checkInclusionImportStmt(node *parse.InclusionImportStatement,
 
 func (c *checker) checkImportStmt(node *parse.ImportStatement, parent, closestModule parse.Node) parse.TraversalAction {
 	if c.inclusionImportStatement != nil {
-		c.addError(node, MODULE_IMPORTS_NOT_ALLOWED_IN_INCLUDED_CHUNK)
+		c.addError(node, MODULE_IMPORTS_NOT_ALLOWED_IN_INCLUDABLE_FILES)
 		return parse.Prune
 	}
 
@@ -1413,6 +1415,8 @@ func (c *checker) checkImportStmt(node *parse.ImportStatement, parent, closestMo
 func (c *checker) checkGlobalConstDecls(node *parse.GlobalConstantDeclarations, parent, closestModule parse.Node) parse.TraversalAction {
 	globalVars := c.getModGlobalVars(closestModule)
 
+	inIncludedChunk := c.chunk.Node.IncludableChunkDesc != nil
+
 	for _, decl := range node.Declarations {
 		ident, ok := decl.Left.(*parse.IdentifierLiteral)
 		if !ok {
@@ -1438,8 +1442,9 @@ func (c *checker) checkGlobalConstDecls(node *parse.GlobalConstantDeclarations, 
 				*parse.BinaryExpression, *parse.UnaryExpression, *parse.URLExpression,
 				parse.SimpleValueLiteral, *parse.IntegerRangeLiteral, *parse.FloatRangeLiteral,
 
-				//data structure literals
-				*parse.ObjectLiteral, *parse.ObjectProperty, *parse.ListLiteral, *parse.RecordLiteral,
+				//immutable data structure literals
+				*parse.RecordLiteral, *parse.ObjectProperty, *parse.TupleLiteral, *parse.TreedataLiteral,
+				*parse.TreedataEntry, *parse.TreedataPair,
 
 				//member-like expressions
 				*parse.MemberExpression, *parse.IdentifierMemberExpression, *parse.DoubleColonExpression,
@@ -1457,6 +1462,11 @@ func (c *checker) checkGlobalConstDecls(node *parse.GlobalConstantDeclarations, 
 				*parse.PatternCallExpression:
 				//ok
 			case *parse.CallExpression:
+				if inIncludedChunk {
+					c.addError(n.Callee, CALL_EXPRS_NOT_ALLOWED_INSIDE_GLOBAL_CONST_DECLS_OF_INCLUDABLE_FILES)
+					return parse.Prune, nil
+				}
+
 				switch callee := n.Callee.(type) {
 				case *parse.IdentifierLiteral:
 					if !slices.Contains(USABLE_GLOBALS_IN_PREINIT, callee.Name) {

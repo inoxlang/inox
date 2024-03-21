@@ -89,6 +89,49 @@ func TestCheck(t *testing.T) {
 		})
 	})
 
+	t.Run("global constant declarations in includable files", func(t *testing.T) {
+		t.Run("methods are not allowed to be called", func(t *testing.T) {
+			n, src := mustParseCode(`
+				includable-file
+
+				const (
+					PATH_A = /a/
+					PATH_B = PATH_A.join(./b)
+				)
+			`)
+			callExpr := parse.FindNode(n, (*parse.CallExpression)(nil), nil)
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(callExpr, src, CALL_EXPRS_NOT_ALLOWED_INSIDE_GLOBAL_CONST_DECLS_OF_INCLUDABLE_FILES),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("functions are not allowed to be called", func(t *testing.T) {
+			n, src := mustParseCode(`
+				includable-file
+
+				const (
+					A = f()
+				)
+			`)
+			callExpr := parse.FindNode(n, (*parse.CallExpression)(nil), nil)
+
+			err := staticCheckNoData(StaticCheckInput{
+				Node:  n,
+				Chunk: src,
+				Globals: GlobalVariablesFromMap(map[string]Value{
+					"f": WrapGoFunction(func(*Context) {}),
+				}, []string{"f"}),
+			})
+			expectedErr := utils.CombineErrors(
+				makeError(callExpr, src, CALL_EXPRS_NOT_ALLOWED_INSIDE_GLOBAL_CONST_DECLS_OF_INCLUDABLE_FILES),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+	})
+
 	t.Run("object literal", func(t *testing.T) {
 		t.Run("two elements", func(t *testing.T) {
 			n, src := mustParseCode(`{1, 2}`)
@@ -3232,7 +3275,7 @@ func TestCheck(t *testing.T) {
 				manifest {}
 				import ./dep.ix
 				return a
-			`, map[string]string{"./dep.ix": "includable-file\n a = 1"})
+			`, map[string]string{"./dep.ix": "includable-file\n const( a = 1 )"})
 
 			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
 			assert.NoError(t, err)
@@ -3254,11 +3297,15 @@ func TestCheck(t *testing.T) {
 			`, map[string]string{
 				"./dep1.ix": `
 					includable-file
-					a = 1
+					const (
+						a = 1
+					)
 				`,
 				"./dep2.ix": `
 					includable-file
-					b = 2
+					const (
+						b = 2
+					)
 				`,
 			})
 
@@ -3277,7 +3324,7 @@ func TestCheck(t *testing.T) {
 				manifest {}
 				import ./dep.ix
 				return a
-			`, map[string]string{"./dep.ix": "includable-file\n a = b"})
+			`, map[string]string{"./dep.ix": "includable-file\n const(a = b)"})
 
 			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
 			assert.NoError(t, err)
@@ -3297,7 +3344,7 @@ func TestCheck(t *testing.T) {
 					parse.SourcePositionRange{
 						SourceName:  mod.FlattenedIncludedChunkList[0].ParsedChunkSource.Name(),
 						StartLine:   2,
-						StartColumn: 6,
+						StartColumn: 12,
 					},
 				}),
 			)
@@ -3346,7 +3393,9 @@ func TestCheck(t *testing.T) {
 				`,
 				"./dep1.ix": `
 					includable-file
-					a = 1
+					const (
+						a = 1
+					)
 				`,
 			})
 
@@ -3379,7 +3428,19 @@ func TestCheck(t *testing.T) {
 				Chunk:  mod.MainChunk,
 			})
 			expectedErr := utils.CombineErrors(
-				NewStaticCheckError(MODULE_IMPORTS_NOT_ALLOWED_IN_INCLUDED_CHUNK, parse.SourcePositionStack{
+				NewStaticCheckError(AN_INCLUDABLE_FILE_CAN_ONLY_CONTAIN_DEFINITIONS, parse.SourcePositionStack{
+					parse.SourcePositionRange{
+						SourceName:  mod.MainChunk.Name(),
+						StartLine:   3,
+						StartColumn: 5,
+					},
+					parse.SourcePositionRange{
+						SourceName:  mod.IncludedChunkForest[0].Name(),
+						StartLine:   3,
+						StartColumn: 6,
+					},
+				}),
+				NewStaticCheckError(MODULE_IMPORTS_NOT_ALLOWED_IN_INCLUDABLE_FILES, parse.SourcePositionStack{
 					parse.SourcePositionRange{
 						SourceName:  mod.MainChunk.Name(),
 						StartLine:   3,
@@ -3685,7 +3746,7 @@ func TestCheck(t *testing.T) {
 				`,
 				"./dep1.ix": `
 					includable-file
-					a = 1
+					const (a = 1)
 				`,
 			})
 
@@ -3717,7 +3778,7 @@ func TestCheck(t *testing.T) {
 				`,
 				"./dep1.ix": `
 					includable-file
-					a = b
+					const(a = b)
 				`,
 			})
 			importedModulePath := filepath.Join(filepath.Dir(modpath), "dep2.ix")
@@ -3751,7 +3812,7 @@ func TestCheck(t *testing.T) {
 					parse.SourcePositionRange{
 						SourceName:  includedFilePath,
 						StartLine:   3,
-						StartColumn: 10,
+						StartColumn: 16,
 					},
 				}),
 			)
@@ -4912,7 +4973,7 @@ func TestCheck(t *testing.T) {
 			`)
 
 			def := parse.FindNode(n, (*parse.StructDefinition)(nil), nil)
-			variable := parse.FindLocalVarWithName(def,  "a")
+			variable := parse.FindLocalVarWithName(def, "a")
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
