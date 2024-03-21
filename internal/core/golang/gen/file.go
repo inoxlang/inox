@@ -3,25 +3,25 @@ package gen
 import "go/ast"
 
 type File struct {
-	f *ast.File
+	F *ast.File
 }
 
-func NewFileHelper(pkgName string) *File {
+func NewFile(pkgName string) *File {
 	helper := &File{
-		f: &ast.File{
+		F: &ast.File{
 			Scope: ast.NewScope(nil),
 		},
 	}
 
 	if pkgName == "main" {
-		helper.f.Name = MainPackageIdent
+		helper.F.Name = MainIdent
 	} else {
-		helper.f.Name = ast.NewIdent(pkgName)
+		helper.F.Name = ast.NewIdent(pkgName)
 	}
 
 	return helper
 }
 
 func (f *File) AddDecl(decl ast.Decl) {
-	f.f.Decls = append(f.f.Decls, decl)
+	f.F.Decls = append(f.F.Decls, decl)
 }

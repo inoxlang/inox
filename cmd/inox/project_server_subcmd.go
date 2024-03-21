@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	inox "github.com/inoxlang/inox"
+
 	"github.com/inoxlang/inox/internal/config"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/permkind"
@@ -141,6 +143,7 @@ func ProjectServer(mainSubCommand string, mainSubCommandArgs []string, outW, err
 
 	utils.PanicIfErr(tailwind.InitSubset())
 	htmx.Load()
+	core.InoxCodebaseFS = inox.CodebaseFS
 
 	//Create the root context.
 

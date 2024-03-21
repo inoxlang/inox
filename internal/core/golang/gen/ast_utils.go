@@ -3,8 +3,8 @@ package gen
 import "go/ast"
 
 var (
-	Nil              = ast.NewIdent("nil")
-	MainPackageIdent = ast.NewIdent("package")
+	Nil       = ast.NewIdent("nil")
+	MainIdent = ast.NewIdent("main")
 )
 
 func Ret(expr ast.Expr) *ast.ReturnStmt {

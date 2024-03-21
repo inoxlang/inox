@@ -127,6 +127,13 @@ func (c *PreparationCacheEntry) update(args PreparationCacheEntryUpdate) {
 	//TODO: check that all included files and child modules have been analyzed.
 }
 
+func (c *PreparationCacheEntry) content() (_ *Module, _ *StaticCheckData, _ *symbolic.Data, finalSymbolicCheckErr error) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	return c.module, c.staticCheckData, c.symbolicData, c.finalSymbolicCheckErr
+}
+
 func (c *PreparationCacheEntry) ModuleName() string {
 	c.lock.Lock()
 	defer c.lock.Unlock()

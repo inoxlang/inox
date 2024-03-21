@@ -1,153 +1,145 @@
 package core
 
 import (
+	"embed"
 	"fmt"
 	"io"
-	"strings"
+	"time"
 
-	goast "go/ast"
-
-	"github.com/inoxlang/inox/internal/core/golang/gen"
-	"github.com/inoxlang/inox/internal/inoxconsts"
-	"github.com/inoxlang/inox/internal/parse"
+	"github.com/rs/zerolog"
 )
 
-type ModuleTranspilationParams struct {
-	Module          *Module
-	SymbolicData    *SymbolicData
-	StaticCheckData *StaticCheckData
-	Config          ModuleTranspilationConfig
+const (
+	SINGLE_MOD_TRANSPILATION_TIMEOUT = 2 * time.Second
+)
+
+var (
+	InoxCodebaseFS embed.FS
+)
+
+type AppTranspilationParams struct {
+	MainModule       ResourceName
+	PreparedModules  map[ResourceName]*PreparationCacheEntry
+	Config           AppTranspilationConfig
+	ParentContext    *Context
+	ThreadSafeLogger zerolog.Logger
 }
 
-type ModuleTranspilationConfig struct {
+type AppTranspilationConfig struct {
 }
 
 type Transpiler struct {
 	//input
-	module          *Module
-	symbolicData    *SymbolicData
-	staticCheckData *StaticCheckData
-	config          ModuleTranspilationConfig
+	mainModule      ResourceName
+	preparedModules map[ResourceName]*PreparationCacheEntry
+	config          AppTranspilationConfig
+	ctx             *Context
+	logger          zerolog.Logger
 
 	//state
-	chunkStack []*parse.ParsedChunkSource //main chunk + included chunks
-	pkg        *gen.Pkg
-	file       *gen.File     //current file
-	fnDecl     *gen.FuncDecl //current function
-
-	//output
-	result *TranspiledModule
+	nonMainModuleTranspilations map[ResourceName]*moduleTranspilationState
 
 	//trace
 	trace  io.Writer
 	indent int
 }
 
-func TranspileModule(args ModuleTranspilationParams) (*TranspiledModule, error) {
+func TranspileApp(args AppTranspilationParams) (*TranspiledApp, error) {
 	transpiler := &Transpiler{
 		//input
-		module:          args.Module,
-		symbolicData:    args.SymbolicData,
-		staticCheckData: args.StaticCheckData,
-		config:          args.Config,
+		mainModule:      args.MainModule,
+		preparedModules: args.PreparedModules,
+		ctx:             args.ParentContext.BoundChildWithOptions(BoundChildContextOptions{}),
+		logger:          args.ThreadSafeLogger,
+
+		config: args.Config,
 
 		//state
-		pkg: gen.NewPkg("main"),
+		nonMainModuleTranspilations: make(map[ResourceName]*moduleTranspilationState),
 	}
 
-	return transpiler.transpileModule()
+	//	pkg: gen.NewPkg("main"),
+
+	//transpiler.pkg.AddFile("main.go", gen.NewMainFile())
+
+	defer transpiler.ctx.CancelGracefully()
+	return transpiler.transpileApp()
 }
 
-func (t *Transpiler) transpileModule() (*TranspiledModule, error) {
+func (t *Transpiler) transpileApp() (*TranspiledApp, error) {
 
-	err := t.transpileMainChunk()
-	if err != nil {
-		return nil, err
-	}
+	var mainModuleTranspilation *moduleTranspilationState
+	packageIDs := map[string]ResourceName{}
 
-	return nil, nil
-}
+	for resourceName, prepared := range t.preparedModules {
 
-func (t *Transpiler) transpileMainChunk() error {
-
-	if t.trace != nil {
-		t.printTrace("ENTER MAIN CHUNK")
-		defer t.printTrace("LEAVE MAIN CHUNK")
-	}
-
-	mainChunk := t.module.MainChunk
-
-	t.chunkStack = append(t.chunkStack, mainChunk)
-	defer func() {
-		t.chunkStack = t.chunkStack[:len(t.chunkStack)-1]
-	}()
-
-	t.file = gen.NewFileHelper(t.pkg.Name())
-	t.fnDecl = gen.NewFuncDeclHelper(inoxconsts.MODULE_EXECUTION_GO_FN)
-
-	rootNode := mainChunk.Node
-
-	//compile constants
-	if rootNode.GlobalConstantDeclarations != nil {
-		decl, err := t.transpileNode(rootNode.GlobalConstantDeclarations)
+		state, err := t.newModuleTranspilationState(resourceName, prepared)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		t.file.AddDecl(decl.(goast.Decl))
+
+		if resourceName == t.mainModule {
+			mainModuleTranspilation = state
+		} else {
+			t.nonMainModuleTranspilations[resourceName] = state
+		}
+
+		if otherModName, ok := packageIDs[state.pkgID]; ok {
+			return nil, fmt.Errorf("unexpected: modules %s and %s have the same Go package ID (%s)", resourceName, otherModName, state.pkgID)
+		}
+		packageIDs[state.pkgID] = resourceName
 	}
 
-	//Transpile statements
-	switch len(rootNode.Statements) {
-	case 0:
-		t.fnDecl.AddStmt(gen.Ret(gen.Nil))
-	case 1:
-		stmt, err := t.transpileNode(rootNode.Statements[0])
-		if err != nil {
-			return err
+	if mainModuleTranspilation == nil {
+		return nil, fmt.Errorf("the main module %s was not found in prepared modules", t.mainModule)
+	}
+
+	//Check that no modules share the same package ID.
+
+	//Transpile all modules apart from the main one.
+
+	for _, state := range t.nonMainModuleTranspilations {
+		if t.mainModule == state.moduleName {
+			continue
 		}
-		t.fnDecl.AddStmt(stmt.(goast.Stmt))
-	default:
-		for _, stmt := range rootNode.Statements {
-			stmt, err := t.transpileNode(stmt)
+		go t.transpileModule(state)
+	}
+
+	transpiledModules := map[ResourceName]*TranspiledModule{}
+
+	for resourceName, state := range t.nonMainModuleTranspilations {
+		select {
+		case err := <-state.endChan:
 			if err != nil {
-				return err
+				return nil, err
 			}
-			t.fnDecl.AddStmt(stmt.(goast.Stmt))
+		case <-time.After(SINGLE_MOD_TRANSPILATION_TIMEOUT):
+			return nil, fmt.Errorf("transpiling %s takes too much time: abort application transpilation", resourceName)
 		}
+		transpiledModules[resourceName] = state.transpiledModule
 	}
 
-	t.file.AddDecl(t.fnDecl.Node())
+	//Transpile the main module.
 
-	return nil
-}
+	go t.transpileModule(mainModuleTranspilation)
 
-func (t *Transpiler) transpileIncludedChunk(chunk *IncludedChunk) (*TranspiledModule, error) {
-
-	return nil, nil
-}
-
-func (t *Transpiler) transpileNode(n parse.Node) (goast.Node, error) {
-
-	switch n.(type) {
-	case *parse.IntLiteral:
-		return nil, nil
+	select {
+	case err := <-mainModuleTranspilation.endChan:
+		if err != nil {
+			return nil, err
+		}
+	case <-time.After(SINGLE_MOD_TRANSPILATION_TIMEOUT):
+		return nil, fmt.Errorf("transpiling %s takes too much time: abort application transpilation", t.mainModule)
 	}
 
-	return nil, fmt.Errorf("cannot compile %T", n)
-}
+	transpiledModules[t.mainModule] = mainModuleTranspilation.transpiledModule
 
-func (t *Transpiler) printTrace(a ...any) {
-	var (
-		dots = strings.Repeat(". ", 31)
-		n    = len(dots)
-	)
-
-	i := 2 * t.indent
-	for i > n {
-		fmt.Fprint(t.trace, dots)
-		i -= n
+	app := &TranspiledApp{
+		mainModuleName:      t.mainModule,
+		mainPkg:             mainModuleTranspilation.pkg,
+		inoxModules:         transpiledModules,
+		transpilationConfig: t.config,
 	}
 
-	fmt.Fprint(t.trace, dots[0:i])
-	fmt.Fprintln(t.trace, a...)
+	return app, nil
 }
