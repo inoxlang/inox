@@ -175,7 +175,7 @@ func RunProgram(mainSubCommand string, mainSubCommandArgs []string, outW, errW i
 		}
 
 	} else {
-		if list, ok := res.(*core.List); (!ok && res != nil) || list.Len() != 0 {
+		if list, ok := res.(*core.List); (!ok && res != nil) || (ok && list.Len() != 0) {
 			core.PrettyPrint(res, outW, prettyPrintConfig, 0, 0)
 			outW.Write([]byte("\r\n"))
 		}
