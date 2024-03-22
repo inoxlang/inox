@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
@@ -87,7 +86,8 @@ func handleDocumentDiagnostic(ctx context.Context, req *defines.DocumentDiagnost
 	// }
 
 	report := &defines.FullDocumentDiagnosticReport{
-		Kind:  defines.DocumentDiagnosticReportKindFull,
+		Kind: defines.DocumentDiagnosticReportKindFull,
+		//Returning nil instead of []defines.Diagnostic{} causes VSCode to ignore the report.
 		Items: []defines.Diagnostic{},
 	}
 
@@ -111,6 +111,14 @@ func computeNotifyDocumentDiagnostics(params diagnosticNotificationParams) error
 	if err != nil {
 		return err
 	}
+
+	go func() {
+		defer utils.Recover()
+		for otherDocURI, otherDocDiagnostics := range diagnostics.otherDocumentDiagnostics {
+			sendDocumentDiagnostics(params.rpcSession, otherDocURI, otherDocDiagnostics)
+		}
+	}()
+
 	return sendDocumentDiagnostics(params.rpcSession, params.docURI, diagnostics.items)
 }
 
@@ -181,16 +189,20 @@ func computeDocumentDiagnostics(params diagnosticNotificationParams) (result *do
 
 	//we need the diagnostics list to be present in the notification so diagnostics should not be nil
 	diagnostics := make([]defines.Diagnostic, 0)
+	otherDocumentDiagnostics := map[defines.DocumentUri][]defines.Diagnostic{}
 
 	if !ok {
 		return &documentDiagnostics{items: diagnostics}, nil
 	}
 
 	i := -1
-	parsingDiagnostics := utils.MapSlice(mod.ParsingErrors, func(err core.Error) defines.Diagnostic {
+
+	//Parsing diagnostics
+	for _, err := range mod.ParsingErrors {
 		i++
 
 		pos := mod.ParsingErrorPositions[i]
+		docURI, uriErr := getFileURI(pos.SourceName, usingInoxFS)
 		text := err.Text()
 
 		//If the error is about the missing closing brace of a block we only show the rightmost
@@ -202,51 +214,82 @@ func computeDocumentDiagnostics(params diagnosticNotificationParams) (result *do
 			pos.Span.Start = pos.Span.End - 1
 		}
 
-		return defines.Diagnostic{
+		diagnostic := defines.Diagnostic{
 			Message:  err.Text(),
 			Severity: &errSeverity,
 			Range:    rangeToLspRange(pos),
 		}
-	})
 
-	diagnostics = append(diagnostics, parsingDiagnostics...)
+		if pos.SourceName == fpath {
+			diagnostics = append(diagnostics, diagnostic)
+		} else if uriErr == nil {
+			otherDocumentDiagnostics[docURI] = append(otherDocumentDiagnostics[docURI], diagnostic)
+		}
+	}
 
 	if state == nil {
 		return &documentDiagnostics{items: diagnostics}, nil
 	}
 
-	if state.PrenitStaticCheckErrors != nil {
-		i := -1
-		staticCheckDiagnostics := utils.MapSlice(state.PrenitStaticCheckErrors, func(err *core.StaticCheckError) defines.Diagnostic {
-			i++
+	//Add preinit static check errors.
 
-			return defines.Diagnostic{
+	if state.PrenitStaticCheckErrors != nil {
+		for _, err := range state.PrenitStaticCheckErrors {
+
+			pos := getPositionInPositionStackOrFirst(err.Location, fpath)
+			docURI, uriErr := getFileURI(pos.SourceName, usingInoxFS)
+
+			diagnostic := defines.Diagnostic{
 				Message:  err.Message,
 				Severity: &errSeverity,
-				Range:    rangeToLspRange(getPositionInPositionStackOrFirst(err.Location, fpath)),
+				Range:    rangeToLspRange(pos),
 			}
-		})
 
-		diagnostics = append(diagnostics, staticCheckDiagnostics...)
+			if pos.SourceName == fpath {
+				diagnostics = append(diagnostics, diagnostic)
+			} else if uriErr == nil {
+				otherDocumentDiagnostics[docURI] = append(otherDocumentDiagnostics[docURI], diagnostic)
+			}
+		}
+
 	} else if state.MainPreinitError != nil {
 		var _range defines.Range
 		var msg string
 
-		var locatedEvalError core.LocatedEvalError
+		var (
+			locatedEvalError core.LocatedEvalError
+			pos              parse.SourcePositionRange
+		)
 
 		if errors.As(state.MainPreinitError, &locatedEvalError) {
 			msg = locatedEvalError.Message
-			_range = rangeToLspRange(getPositionInPositionStackOrFirst(locatedEvalError.Location, fpath))
+			pos = getPositionInPositionStackOrFirst(locatedEvalError.Location, fpath)
+			_range = rangeToLspRange(pos)
 		} else {
 			_range = firstCharsLspRange(5)
 			msg = state.MainPreinitError.Error()
+			pos = parse.SourcePositionRange{
+				SourceName:  fpath,
+				StartLine:   1,
+				StartColumn: 1,
+				EndLine:     1,
+				EndColumn:   1,
+			}
 		}
 
-		diagnostics = append(diagnostics, defines.Diagnostic{
+		docURI, uriErr := getFileURI(pos.SourceName, usingInoxFS)
+
+		diagnostic := defines.Diagnostic{
 			Message:  msg,
 			Severity: &errSeverity,
 			Range:    _range,
-		})
+		}
+
+		if pos.SourceName == fpath {
+			diagnostics = append(diagnostics, diagnostic)
+		} else if uriErr == nil {
+			otherDocumentDiagnostics[docURI] = append(otherDocumentDiagnostics[docURI], diagnostic)
+		}
 	}
 
 	if state.FirstDatabaseOpeningError != nil {
@@ -256,60 +299,80 @@ func computeDocumentDiagnostics(params diagnosticNotificationParams) (result *do
 
 	if state.StaticCheckData != nil {
 		//Add static check errors.
-		i := -1
-		staticCheckErrorDiagnostics := utils.MapSlice(state.StaticCheckData.Errors(), func(err *core.StaticCheckError) defines.Diagnostic {
-			i++
 
-			return defines.Diagnostic{
+		for _, err := range state.SymbolicData.Errors() {
+			pos := getPositionInPositionStackOrFirst(err.Location, fpath)
+			docURI, uriErr := getFileURI(pos.SourceName, usingInoxFS)
+
+			diagnostic := defines.Diagnostic{
 				Message:  err.Message,
 				Severity: &errSeverity,
-				Range:    rangeToLspRange(getPositionInPositionStackOrFirst(err.Location, fpath)),
+				Range:    rangeToLspRange(pos),
 			}
-		})
-		diagnostics = append(diagnostics, staticCheckErrorDiagnostics...)
+
+			if pos.SourceName == fpath {
+				diagnostics = append(diagnostics, diagnostic)
+			} else if uriErr == nil {
+				otherDocumentDiagnostics[docURI] = append(otherDocumentDiagnostics[docURI], diagnostic)
+			}
+		}
 
 		//Add static check warnings.
-		i = -1
-		staticCheckWarningDiagnostics := utils.MapSlice(state.StaticCheckData.Warnings(), func(warning *core.StaticCheckWarning) defines.Diagnostic {
-			i++
+		for _, warning := range state.SymbolicData.Warnings() {
+			pos := getPositionInPositionStackOrFirst(warning.Location, fpath)
+			docURI, uriErr := getFileURI(pos.SourceName, usingInoxFS)
 
-			return defines.Diagnostic{
+			diagnostic := defines.Diagnostic{
 				Message:  warning.Message,
 				Severity: &warningSeverity,
-				Range:    rangeToLspRange(getPositionInPositionStackOrFirst(warning.Location, fpath)),
+				Range:    rangeToLspRange(pos),
 			}
-		})
 
-		diagnostics = append(diagnostics, staticCheckWarningDiagnostics...)
+			if pos.SourceName == fpath {
+				diagnostics = append(diagnostics, diagnostic)
+			} else if uriErr == nil {
+				otherDocumentDiagnostics[docURI] = append(otherDocumentDiagnostics[docURI], diagnostic)
+			}
+		}
 
 		//Add symbolic check errors.
-		i = -1
-		symbolicCheckErrorDiagnostics := utils.MapSlice(state.SymbolicData.Errors(), func(err symbolic.SymbolicEvaluationError) defines.Diagnostic {
-			i++
+		for _, err := range state.SymbolicData.Errors() {
+			pos := getPositionInPositionStackOrFirst(err.Location, fpath)
+			docURI, uriErr := getFileURI(pos.SourceName, usingInoxFS)
 
-			return defines.Diagnostic{
+			diagnostic := defines.Diagnostic{
 				Message:  err.Message,
 				Severity: &errSeverity,
-				Range:    rangeToLspRange(getPositionInPositionStackOrFirst(err.Location, fpath)),
+				Range:    rangeToLspRange(pos),
 			}
-		})
-		diagnostics = append(diagnostics, symbolicCheckErrorDiagnostics...)
+
+			if pos.SourceName == fpath {
+				diagnostics = append(diagnostics, diagnostic)
+			} else if uriErr == nil {
+				otherDocumentDiagnostics[docURI] = append(otherDocumentDiagnostics[docURI], diagnostic)
+			}
+		}
 
 		//Add symbolic check warnings.
-		symbolicCheckWarningDiagnostics := utils.MapSlice(state.SymbolicData.Warnings(), func(err symbolic.SymbolicEvaluationWarning) defines.Diagnostic {
-			i++
+		for _, warning := range state.SymbolicData.Warnings() {
+			pos := getPositionInPositionStackOrFirst(warning.Location, fpath)
+			docURI, uriErr := getFileURI(pos.SourceName, usingInoxFS)
 
-			return defines.Diagnostic{
-				Message:  err.Message,
-				Severity: &warningSeverity,
-				Range:    rangeToLspRange(getPositionInPositionStackOrFirst(err.Location, fpath)),
+			diagnostic := defines.Diagnostic{
+				Message:  warning.Message,
+				Severity: &errSeverity,
+				Range:    rangeToLspRange(pos),
 			}
-		})
 
-		diagnostics = append(diagnostics, symbolicCheckWarningDiagnostics...)
+			if pos.SourceName == fpath {
+				diagnostics = append(diagnostics, diagnostic)
+			} else if uriErr == nil {
+				otherDocumentDiagnostics[docURI] = append(otherDocumentDiagnostics[docURI], diagnostic)
+			}
+		}
 	}
 
-	return &documentDiagnostics{items: diagnostics}, nil
+	return &documentDiagnostics{items: diagnostics, otherDocumentDiagnostics: otherDocumentDiagnostics}, nil
 }
 
 func sendDocumentDiagnostics(rpcSession *jsonrpc.Session, docURI defines.DocumentUri, diagnostics []defines.Diagnostic) error {
@@ -343,6 +406,7 @@ func MakeDocDiagnosticId(absPath string) DocDiagnosticId {
 type documentDiagnostics struct {
 	id                           DocDiagnosticId
 	items                        []defines.Diagnostic
+	otherDocumentDiagnostics     map[defines.DocumentUri][]defines.Diagnostic
 	containsWorkspaceDiagnostics bool
 	lock                         sync.Mutex
 }
