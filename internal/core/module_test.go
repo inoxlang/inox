@@ -606,6 +606,102 @@ func TestParseLocalModule(t *testing.T) {
 			assert.Empty(t, mod.IncludedChunkMap)
 			assert.Empty(t, mod.InclusionStatementMap)
 		})
+
+		t.Run("duplicate inclusion in the module", func(t *testing.T) {
+			modpath := writeModuleAndIncludedFiles(t, moduleName, `
+				manifest {}
+				import ./dep.ix
+				import ./dep.ix
+			`, map[string]string{
+				"./dep.ix": "includable-file",
+			})
+
+			modDir := filepath.Dir(modpath)
+			depPath := filepath.Join(modDir, "dep.ix")
+
+			parsingCtx := NewContextWithEmptyState(ContextConfig{
+				Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
+				Filesystem:  newOsFilesystem(),
+			}, nil)
+			defer parsingCtx.CancelGracefully()
+
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: parsingCtx})
+
+			if !assert.ErrorContains(t, err, ErrFileAlreadyIncluded.Error()) {
+				return
+			}
+
+			assert.ErrorContains(t, err, "/mymod.ix:4:5")
+
+			assert.NotNil(t, mod.MainChunk)
+			assert.NotNil(t, mod.ManifestTemplate)
+
+			if !assert.Len(t, mod.IncludedChunkForest, 1) {
+				return
+			}
+			if !assert.Len(t, mod.FlattenedIncludedChunkList, 1) {
+				return
+			}
+			assert.Contains(t, mod.IncludedChunkMap, depPath)
+
+			includedChunk := mod.IncludedChunkForest[0]
+			assert.NotNil(t, includedChunk.Node)
+			assert.Empty(t, includedChunk.IncludedChunkForest)
+
+			assert.Equal(t, []*IncludedChunk{includedChunk}, mod.FlattenedIncludedChunkList)
+		})
+
+		t.Run("duplicate inclusion in an included file", func(t *testing.T) {
+			modpath := writeModuleAndIncludedFiles(t, moduleName, `
+				manifest {}
+				import ./dep1.ix
+			`, map[string]string{
+				"./dep1.ix": "includable-file; import ./dep2.ix; import ./dep2.ix",
+				"./dep2.ix": "includable-file",
+			})
+
+			modDir := filepath.Dir(modpath)
+			dep1Path := filepath.Join(modDir, "dep1.ix")
+			dep2Path := filepath.Join(modDir, "dep2.ix")
+
+			parsingCtx := NewContextWithEmptyState(ContextConfig{
+				Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
+				Filesystem:  newOsFilesystem(),
+			}, nil)
+			defer parsingCtx.CancelGracefully()
+
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: parsingCtx})
+
+			if !assert.ErrorContains(t, err, ErrFileAlreadyIncluded.Error()) {
+				return
+			}
+
+			//The error should be both in the module and the included file.
+			assert.ErrorContains(t, err, "/mymod.ix:3:5")
+			assert.ErrorContains(t, err, "/dep1.ix:1:36")
+
+			assert.NotNil(t, mod.MainChunk)
+			assert.NotNil(t, mod.ManifestTemplate)
+
+			if !assert.Len(t, mod.IncludedChunkForest, 1) {
+				return
+			}
+			if !assert.Len(t, mod.FlattenedIncludedChunkList, 2) {
+				return
+			}
+			assert.Contains(t, mod.IncludedChunkMap, dep1Path)
+			assert.Contains(t, mod.IncludedChunkMap, dep2Path)
+
+			includedChunk1 := mod.IncludedChunkForest[0]
+			assert.NotNil(t, includedChunk1.Node)
+			assert.Len(t, includedChunk1.IncludedChunkForest, 1)
+
+			includedChunk2 := includedChunk1.IncludedChunkForest[0]
+			assert.NotNil(t, includedChunk2.Node)
+			assert.Empty(t, includedChunk2.IncludedChunkForest)
+
+			assert.ElementsMatch(t, []*IncludedChunk{includedChunk1, includedChunk2}, mod.FlattenedIncludedChunkList)
+		})
 	})
 
 	t.Run("module import", func(t *testing.T) {

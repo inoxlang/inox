@@ -8,6 +8,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -51,6 +52,7 @@ var (
 	ErrParsingErrorInManifestOrPreinit = errors.New("parsing error in manifest or preinit")
 	ErrInvalidModuleKind               = errors.New("invalid module kind")
 	ErrNotAnIncludableFile             = errors.New("not an includable file")
+	ErrFileAlreadyIncluded             = errors.New("file already included")
 )
 
 // A Module represents an Inox module, it does not hold any state and should NOT be modified. Module implements Value.
@@ -67,7 +69,7 @@ type Module struct {
 
 	IncludedChunkForest        []*IncludedChunk
 	FlattenedIncludedChunkList []*IncludedChunk
-	InclusionStatementMap      map[*parse.InclusionImportStatement]*IncludedChunk
+	InclusionStatementMap      map[*parse.InclusionImportStatement]*IncludedChunk //may include several inclusions of the same file
 	IncludedChunkMap           map[string]*IncludedChunk
 
 	//module imports
@@ -583,11 +585,22 @@ func ParseLocalIncludedFiles(ctx *Context, config IncludedFilesParsingConfig) (u
 
 			Module:                              mod,
 			ImportPosition:                      stmtPos,
+			TopLevelImportPosition:              stmtPos,
 			RecoverFromNonExistingIncludedFiles: recoverFromNonExistingIncludedFiles,
 		})
 
 		if err != nil && includedChunk == nil { //critical error
 			return err
+		}
+
+		if errors.Is(err, ErrFileAlreadyIncluded) {
+			//mod.InclusionStatementMap[stmt] = includedChunk
+
+			//Add the error at the import in the module.
+
+			mod.ParsingErrors = append(mod.ParsingErrors, NewError(err, createRecordFromSourcePosition(stmtPos)))
+			mod.ParsingErrorPositions = append(mod.ParsingErrorPositions, stmtPos)
+			continue
 		}
 
 		mod.OriginalErrors = append(mod.OriginalErrors, includedChunk.OriginalErrors...)
@@ -623,6 +636,7 @@ type LocalSecondaryChunkParsingConfig struct {
 	ChunkFilepath            string
 
 	Module                              *Module
+	TopLevelImportPosition              parse.SourcePositionRange
 	ImportPosition                      parse.SourcePositionRange
 	RecoverFromNonExistingIncludedFiles bool
 }
@@ -642,8 +656,8 @@ func ParseIncludedChunk(config LocalSecondaryChunkParsingConfig) (_ *IncludedChu
 		return nil, "", err
 	}
 
-	if _, ok := mod.IncludedChunkMap[absPath]; ok {
-		return nil, "", fmt.Errorf("%s already included", absPath)
+	if alreadyIncludedChunk, ok := mod.IncludedChunkMap[absPath]; ok {
+		return alreadyIncludedChunk, absPath, fmt.Errorf("%w: %s", ErrFileAlreadyIncluded, absPath)
 	}
 
 	//read the file
@@ -774,7 +788,7 @@ func ParseIncludedChunk(config LocalSecondaryChunkParsingConfig) (_ *IncludedChu
 
 		stmtPos := chunk.GetSourcePosition(stmt.Span)
 
-		chunk, absoluteChunkPath, err := ParseIncludedChunk(LocalSecondaryChunkParsingConfig{
+		childChunk, absoluteChunkPath, err := ParseIncludedChunk(LocalSecondaryChunkParsingConfig{
 			Context:                  config.Context,
 			ChunkFilepath:            chunkFilepath,
 			SingleFileParsingTimeout: config.SingleFileParsingTimeout,
@@ -782,21 +796,43 @@ func ParseIncludedChunk(config LocalSecondaryChunkParsingConfig) (_ *IncludedChu
 
 			Module:                              mod,
 			ImportPosition:                      stmtPos,
+			TopLevelImportPosition:              config.TopLevelImportPosition,
 			RecoverFromNonExistingIncludedFiles: config.RecoverFromNonExistingIncludedFiles,
 		})
 
-		if err != nil && chunk == nil {
+		if err != nil && childChunk == nil {
 			return nil, "", err
 		}
 
-		includedChunk.OriginalErrors = append(mod.OriginalErrors, chunk.OriginalErrors...)
-		includedChunk.ParsingErrors = append(includedChunk.ParsingErrors, chunk.ParsingErrors...)
+		if errors.Is(err, ErrFileAlreadyIncluded) {
+			//mod.InclusionStatementMap[stmt] = includedChunk
+
+			//Add the error at the import in the module.
+
+			err := NewError(err, createRecordFromSourcePosition(config.TopLevelImportPosition))
+
+			mod.ParsingErrors = append(mod.ParsingErrors, err)
+			mod.ParsingErrorPositions = append(mod.ParsingErrorPositions, config.TopLevelImportPosition)
+
+			if slices.Contains(includedChunk.IncludedChunkForest, childChunk) {
+				//TODO: also add the error at the import in the included file (importer) if the inclusion is duplicated
+				//in its subtree but in a different way.
+
+				includedChunk.ParsingErrors = append(includedChunk.ParsingErrors, err)
+				includedChunk.ParsingErrorPositions = append(includedChunk.ParsingErrorPositions, stmtPos)
+			}
+
+			continue
+		}
+
+		includedChunk.OriginalErrors = append(mod.OriginalErrors, childChunk.OriginalErrors...)
+		includedChunk.ParsingErrors = append(includedChunk.ParsingErrors, childChunk.ParsingErrors...)
 
 		if !errors.Is(err, ErrNotAnIncludableFile) {
-			mod.InclusionStatementMap[stmt] = chunk
-			mod.IncludedChunkMap[absoluteChunkPath] = chunk
-			includedChunk.IncludedChunkForest = append(includedChunk.IncludedChunkForest, chunk)
-			mod.FlattenedIncludedChunkList = append(mod.FlattenedIncludedChunkList, chunk)
+			mod.InclusionStatementMap[stmt] = childChunk
+			mod.IncludedChunkMap[absoluteChunkPath] = childChunk
+			includedChunk.IncludedChunkForest = append(includedChunk.IncludedChunkForest, childChunk)
+			mod.FlattenedIncludedChunkList = append(mod.FlattenedIncludedChunkList, childChunk)
 		}
 	}
 
