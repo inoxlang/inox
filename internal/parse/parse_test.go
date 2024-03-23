@@ -10404,7 +10404,7 @@ func testParse(
 								{
 									NodeBase: NodeBase{
 										NodeSpan{1, 4},
-										&ParsingError{UnspecifiedParsingError, INVALID_OBJ_REC_LIT_ENTRY_SEPARATION},
+										&ParsingError{UnspecifiedParsingError, INVALID_OBJ_REC_ENTRY_ENTRY_SEPARATION},
 										false,
 									},
 									Key: &IdentifierLiteral{
@@ -11104,7 +11104,7 @@ func testParse(
 								{
 									NodeBase: NodeBase{
 										NodeSpan{2, 4},
-										&ParsingError{UnspecifiedParsingError, INVALID_OBJ_REC_LIT_ENTRY_SEPARATION},
+										&ParsingError{UnspecifiedParsingError, INVALID_OBJ_REC_ENTRY_ENTRY_SEPARATION},
 										false,
 									},
 									Key: nil,
@@ -11148,7 +11148,7 @@ func testParse(
 								{
 									NodeBase: NodeBase{
 										NodeSpan{2, 7},
-										&ParsingError{UnspecifiedParsingError, INVALID_OBJ_REC_LIT_ENTRY_SEPARATION},
+										&ParsingError{UnspecifiedParsingError, INVALID_OBJ_REC_ENTRY_ENTRY_SEPARATION},
 										false,
 									},
 									Key: &IdentifierLiteral{
@@ -11725,7 +11725,7 @@ func testParse(
 								{
 									NodeBase: NodeBase{
 										NodeSpan{2, 15},
-										&ParsingError{UnspecifiedParsingError, INVALID_OBJ_REC_LIT_ENTRY_SEPARATION},
+										&ParsingError{UnspecifiedParsingError, INVALID_OBJ_REC_ENTRY_ENTRY_SEPARATION},
 										false,
 									},
 									Expr: &ExtractionExpression{
@@ -12424,7 +12424,7 @@ func testParse(
 								{
 									NodeBase: NodeBase{
 										NodeSpan{3, 5},
-										&ParsingError{UnspecifiedParsingError, INVALID_OBJ_REC_LIT_ENTRY_SEPARATION},
+										&ParsingError{UnspecifiedParsingError, INVALID_OBJ_REC_ENTRY_ENTRY_SEPARATION},
 										false,
 									},
 									Key: nil,
@@ -12459,16 +12459,12 @@ func testParse(
 								NodeSpan{0, 17},
 								nil,
 								false,
-								/*[]Token{
-									{Type: OPENING_RECORD_BRACKET, Span: NodeSpan{0, 2}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{16, 17}},
-								},*/
 							},
 							Properties: []*ObjectProperty{
 								{
 									NodeBase: NodeBase{
 										NodeSpan{3, 8},
-										&ParsingError{UnspecifiedParsingError, INVALID_OBJ_REC_LIT_ENTRY_SEPARATION},
+										&ParsingError{UnspecifiedParsingError, INVALID_OBJ_REC_ENTRY_ENTRY_SEPARATION},
 										false,
 									},
 									Key: &IdentifierLiteral{
@@ -12836,7 +12832,7 @@ func testParse(
 								{
 									NodeBase: NodeBase{
 										NodeSpan{3, 16},
-										&ParsingError{UnspecifiedParsingError, INVALID_OBJ_REC_LIT_ENTRY_SEPARATION},
+										&ParsingError{UnspecifiedParsingError, INVALID_OBJ_REC_ENTRY_ENTRY_SEPARATION},
 										false,
 									},
 									Expr: &ExtractionExpression{
@@ -15831,7 +15827,7 @@ func testParse(
 
 	})
 
-	t.Run("binary expression", func(t *testing.T) {
+	t.Run("binary expressions", func(t *testing.T) {
 
 		t.Run("OR(bin ex 1, bin ex 2)", func(t *testing.T) {
 			n := mustparseChunk(t, "(a > b or c > d)")
@@ -16970,7 +16966,7 @@ func testParse(
 
 		t.Run("+ chain", func(t *testing.T) {
 			_, err := parseChunk(t, "(1 + 2 + 3)", "")
-			assert.ErrorContains(t, err, MOST_BINARY_EXPRS_MUST_BE_PARENTHESIZED)
+			assert.ErrorContains(t, err, COMPLEX_OPERANDS_OF_BINARY_EXPRS_MUST_BE_PARENTHESIZED)
 		})
 
 		t.Run("only opening parenthesis", func(t *testing.T) {
@@ -17053,6 +17049,392 @@ func testParse(
 			}, n)
 		})
 
+	})
+
+	t.Run("binary expressions", func(t *testing.T) {
+
+		t.Run("addition", func(t *testing.T) {
+			n := mustparseChunk(t, "a = $a + $b")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 11}, nil, false},
+				Statements: []Node{
+					&Assignment{
+						NodeBase: NodeBase{Span: NodeSpan{0, 11}},
+						Left: &IdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{0, 1}},
+							Name:     "a",
+						},
+						Right: &BinaryExpression{
+							NodeBase: NodeBase{Span: NodeSpan{4, 11}},
+							Operator: Add,
+							Left: &Variable{
+								NodeBase: NodeBase{NodeSpan{4, 6}, nil, false},
+								Name:     "a",
+							},
+							Right: &Variable{
+								NodeBase: NodeBase{NodeSpan{9, 11}, nil, false},
+								Name:     "b",
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("addition with first operand being an unparenthesized number negation", func(t *testing.T) {
+			n := mustparseChunk(t, "a = -$a + $b")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
+				Statements: []Node{
+					&Assignment{
+						NodeBase: NodeBase{Span: NodeSpan{0, 12}},
+						Left: &IdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{0, 1}},
+							Name:     "a",
+						},
+						Right: &BinaryExpression{
+							NodeBase: NodeBase{Span: NodeSpan{4, 12}},
+							Operator: Add,
+							Left: &UnaryExpression{
+								NodeBase: NodeBase{Span: NodeSpan{4, 7}},
+								Operator: NumberNegate,
+								Operand: &Variable{
+									NodeBase: NodeBase{NodeSpan{5, 7}, nil, false},
+									Name:     "a",
+								},
+							},
+							Right: &Variable{
+								NodeBase: NodeBase{NodeSpan{10, 12}, nil, false},
+								Name:     "b",
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("addition with second operand being an unparenthesized number negation", func(t *testing.T) {
+			n := mustparseChunk(t, "a = $a + -$b")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
+				Statements: []Node{
+					&Assignment{
+						NodeBase: NodeBase{Span: NodeSpan{0, 12}},
+						Left: &IdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{0, 1}},
+							Name:     "a",
+						},
+						Right: &BinaryExpression{
+							NodeBase: NodeBase{Span: NodeSpan{4, 12}},
+							Operator: Add,
+							Left: &Variable{
+								NodeBase: NodeBase{NodeSpan{4, 6}, nil, false},
+								Name:     "a",
+							},
+							Right: &UnaryExpression{
+								NodeBase: NodeBase{Span: NodeSpan{9, 12}},
+								Operator: NumberNegate,
+								Operand: &Variable{
+									NodeBase: NodeBase{NodeSpan{10, 12}, nil, false},
+									Name:     "b",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("match with unprefixed pattern", func(t *testing.T) {
+			n := mustparseChunk(t, "a = o match {}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
+				Statements: []Node{
+					&Assignment{
+						NodeBase: NodeBase{Span: NodeSpan{0, 14}},
+						Left: &IdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{0, 1}},
+							Name:     "a",
+						},
+						Right: &BinaryExpression{
+							NodeBase: NodeBase{Span: NodeSpan{4, 14}},
+							Operator: Match,
+							Left: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{4, 5}, nil, false},
+								Name:     "o",
+							},
+							Right: &ObjectPatternLiteral{
+								NodeBase: NodeBase{Span: NodeSpan{12, 14}},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("range", func(t *testing.T) {
+			n := mustparseChunk(t, "a = $a .. $b")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
+				Statements: []Node{
+					&Assignment{
+						NodeBase: NodeBase{Span: NodeSpan{0, 12}},
+						Left: &IdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{0, 1}},
+							Name:     "a",
+						},
+						Right: &BinaryExpression{
+							NodeBase: NodeBase{Span: NodeSpan{4, 12}},
+							Operator: Range,
+							Left: &Variable{
+								NodeBase: NodeBase{NodeSpan{4, 6}, nil, false},
+								Name:     "a",
+							},
+							Right: &Variable{
+								NodeBase: NodeBase{NodeSpan{10, 12}, nil, false},
+								Name:     "b",
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("exclusive end range", func(t *testing.T) {
+			n := mustparseChunk(t, "a = $a ..< $b")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
+				Statements: []Node{
+					&Assignment{
+						NodeBase: NodeBase{Span: NodeSpan{0, 13}},
+						Left: &IdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{0, 1}},
+							Name:     "a",
+						},
+						Right: &BinaryExpression{
+							NodeBase: NodeBase{Span: NodeSpan{4, 13}},
+							Operator: ExclEndRange,
+							Left: &Variable{
+								NodeBase: NodeBase{NodeSpan{4, 6}, nil, false},
+								Name:     "a",
+							},
+							Right: &Variable{
+								NodeBase: NodeBase{NodeSpan{11, 13}, nil, false},
+								Name:     "b",
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("missing right operand", func(t *testing.T) {
+			n, err := parseChunk(t, "a = $a +", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
+				Statements: []Node{
+					&Assignment{
+						NodeBase: NodeBase{Span: NodeSpan{0, 8}},
+						Left: &IdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{0, 1}},
+							Name:     "a",
+						},
+						Right: &BinaryExpression{
+							NodeBase: NodeBase{
+								NodeSpan{4, 8},
+								&ParsingError{UnspecifiedParsingError, UNTERMINATED_BIN_EXPR_MISSING_OPERAND},
+								false,
+							},
+							Operator: Add,
+							Left: &Variable{
+								NodeBase: NodeBase{NodeSpan{4, 6}, nil, false},
+								Name:     "a",
+							},
+							Right: &MissingExpression{
+								NodeBase: NodeBase{
+									NodeSpan{7, 8},
+									&ParsingError{UnspecifiedParsingError, "an expression was expected: ... $a +<<here>>..."},
+									false,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+		t.Run("unexpected operator", func(t *testing.T) {
+			n, err := parseChunk(t, "a = $a ? $b", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 11}, nil, false},
+				Statements: []Node{
+					&Assignment{
+						NodeBase: NodeBase{Span: NodeSpan{0, 11}},
+						Left: &IdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{0, 1}},
+							Name:     "a",
+						},
+						Right: &BinaryExpression{
+							NodeBase: NodeBase{
+								NodeSpan{4, 11},
+								&ParsingError{UnspecifiedParsingError, INVALID_BIN_EXPR_NON_EXISTING_OPERATOR},
+								false,
+							},
+							Operator: -1,
+							Left: &Variable{
+								NodeBase: NodeBase{NodeSpan{4, 6}, nil, false},
+								Name:     "a",
+							},
+							Right: &Variable{
+								NodeBase: NodeBase{NodeSpan{9, 11}, nil, false},
+								Name:     "b",
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("unexpected operator starting like an existing one", func(t *testing.T) {
+			n, err := parseChunk(t, "a = $a ! $b", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 11}, nil, false},
+				Statements: []Node{
+					&Assignment{
+						NodeBase: NodeBase{Span: NodeSpan{0, 11}},
+						Left: &IdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{0, 1}},
+							Name:     "a",
+						},
+						Right: &BinaryExpression{
+							NodeBase: NodeBase{
+								NodeSpan{4, 11},
+								&ParsingError{UnspecifiedParsingError, INVALID_BIN_EXPR_NON_EXISTING_OPERATOR},
+								false,
+							},
+							Operator: -1,
+							Left: &Variable{
+								NodeBase: NodeBase{NodeSpan{4, 6}, nil, false},
+								Name:     "a",
+							},
+							Right: &Variable{
+								NodeBase: NodeBase{NodeSpan{9, 11}, nil, false},
+								Name:     "b",
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("unexpected operator starting like an existing one (no spaces)", func(t *testing.T) {
+			n, err := parseChunk(t, "a = $a!$b", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 9}, nil, false},
+				Statements: []Node{
+					&Assignment{
+						NodeBase: NodeBase{Span: NodeSpan{0, 9}},
+						Left: &IdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{0, 1}},
+							Name:     "a",
+						},
+						Right: &BinaryExpression{
+							NodeBase: NodeBase{
+								NodeSpan{4, 9},
+								&ParsingError{UnspecifiedParsingError, INVALID_BIN_EXPR_NON_EXISTING_OPERATOR},
+								false,
+							},
+							Operator: -1,
+							Left: &Variable{
+								NodeBase: NodeBase{NodeSpan{4, 6}, nil, false},
+								Name:     "a",
+							},
+							Right: &Variable{
+								NodeBase: NodeBase{NodeSpan{7, 9}, nil, false},
+								Name:     "b",
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("unexpected word operator : <and>e", func(t *testing.T) {
+			n, err := parseChunk(t, "a = $a ande $b", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
+				Statements: []Node{
+					&Assignment{
+						NodeBase: NodeBase{
+							NodeSpan{0, 6},
+							&ParsingError{InvalidNext, UNTERMINATED_ASSIGNMENT_MISSING_TERMINATOR},
+							false,
+						},
+						Left: &IdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{0, 1}},
+							Name:     "a",
+						},
+						Right: &Variable{
+							NodeBase: NodeBase{NodeSpan{4, 6}, nil, false},
+							Name:     "a",
+						},
+					},
+					&CallExpression{
+						NodeBase: NodeBase{NodeSpan{7, 14}, nil, false},
+						Callee: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{7, 11}, nil, false},
+							Name:     "ande",
+						},
+						Must:              true,
+						CommandLikeSyntax: true,
+						Arguments: []Node{
+							&Variable{
+								NodeBase: NodeBase{NodeSpan{12, 14}, nil, false},
+								Name:     "b",
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("missing operator", func(t *testing.T) {
+			n, err := parseChunk(t, "a = $a$b", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
+				Statements: []Node{
+					&Assignment{
+						NodeBase: NodeBase{
+							NodeSpan{0, 6},
+							&ParsingError{InvalidNext, UNTERMINATED_ASSIGNMENT_MISSING_TERMINATOR},
+							false,
+						},
+						Left: &IdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{0, 1}},
+							Name:     "a",
+						},
+						Right: &Variable{
+							NodeBase: NodeBase{NodeSpan{4, 6}, nil, false},
+							Name:     "a",
+						},
+					},
+					&Variable{
+						NodeBase: NodeBase{NodeSpan{6, 8}, nil, false},
+						Name:     "b",
+					},
+				},
+			}, n)
+		})
+
+		t.Run("+ chain", func(t *testing.T) {
+			_, err := parseChunk(t, "a = 1 + 2 + 3", "")
+			assert.ErrorContains(t, err, COMPLEX_OPERANDS_OF_BINARY_EXPRS_MUST_BE_PARENTHESIZED)
+		})
 	})
 
 	t.Run("runtime typecheck expression", func(t *testing.T) {

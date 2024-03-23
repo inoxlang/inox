@@ -57,7 +57,7 @@ func isValidEntryEnd(s []rune, i int32) bool {
 
 func isNonIdentBinaryOperatorChar(r rune) bool {
 	switch r {
-	case '+', '-', '*', '/', '\\', '>', '<', '?', '.', '!', '=':
+	case '+', '-', '*', '/', '\\', '>', '<', '?', '.', '!', '=' /* `,` ? */ :
 		return true
 	default:
 		return false

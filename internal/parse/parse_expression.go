@@ -1,8 +1,9 @@
 package parse
 
 type exprParsingConfig struct {
-	precededByOpeningParen bool
-	statement              bool
+	precededByOpeningParen         bool
+	statement                      bool
+	disallowUnparenthesizedBinExpr bool
 }
 
 // parseExpression parses any expression, if $expr is a *MissingExpression $isMissingExpr will be true.
@@ -11,7 +12,19 @@ func (p *parser) parseExpression(config ...exprParsingConfig) (expr Node, isMiss
 	p.panicIfContextDone()
 
 	precededByOpeningParen := len(config) > 0 && config[0].precededByOpeningParen
-	stmt := len(config) > 0 && config[0].statement
+	isStmt := len(config) > 0 && config[0].statement
+
+	defer func() {
+		allowUnparenthesizedBinExpr := !p.inPattern && !isStmt && (len(config) == 0 || !config[0].disallowUnparenthesizedBinExpr)
+
+		if expr != nil && !isMissingExpr && allowUnparenthesizedBinExpr {
+			binExpr, ok := p.tryParseUnparenthesizedBinaryExpr(expr)
+			if ok {
+				expr = binExpr
+				return
+			}
+		}
+	}()
 
 	exprStartIndex := p.i
 	// these variables are only used for expressions that can be on the left side of a member/slice/index/call expression,
@@ -104,7 +117,7 @@ func (p *parser) parseExpression(config ...exprParsingConfig) (expr Node, isMiss
 	//TODO: refactor ?
 	case '_', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
 		'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
-		e, returnNow := p.parseUnderscoreAlphaStartingExpression(precededByOpeningParen, stmt)
+		e, returnNow := p.parseUnderscoreAlphaStartingExpression(precededByOpeningParen, isStmt)
 		if returnNow {
 			return e, false
 		}

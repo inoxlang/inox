@@ -221,10 +221,10 @@ func (p *parser) parseComplexStringPatternElement() Node {
 
 		return p.parseComplexStringPatternPiece(elemStart, parenthesizedSequencePatternPiece, nil)
 	case p.s[p.i] == '"' || p.s[p.i] == '`' || p.s[p.i] == '\'': //string and rune literals
-		e, _ := p.parseExpression()
+		e, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
 		return e
 	case p.s[p.i] == '-' || isDecDigit(p.s[p.i]):
-		e, _ := p.parseExpression()
+		e, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
 		switch e.(type) {
 		case *IntegerRangeLiteral:
 		default:

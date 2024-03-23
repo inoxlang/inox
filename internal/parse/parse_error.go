@@ -197,7 +197,10 @@ const (
 	UNTERMINATED_BIN_EXPR_MISSING_OPERAND                     = "unterminated binary expression: missing right operand"
 	UNTERMINATED_BIN_EXPR_MISSING_PAREN                       = "unterminated binary expression: missing closing parenthesis"
 	BIN_EXPR_CHAIN_OPERATORS_SHOULD_BE_THE_SAME               = "the operators of a binary expression chain should be all the same: either 'or' or 'and'"
-	MOST_BINARY_EXPRS_MUST_BE_PARENTHESIZED                   = "most binary expressions must be parenthesized, (e.g. '(1 + 2 + 3)' is not valid)"
+	COMPLEX_OPERANDS_OF_BINARY_EXPRS_MUST_BE_PARENTHESIZED    = "complex operands of binary expressions must be parenthesized, " +
+		"for example `(1 + 2 + 3)` is not valid: it should be written `(1 + (2 + 3))` or `((1 + 2) + 3)`; " +
+		"parenthesis can be omitted arround operands of and/or chains: `(a < b or c < d)`. " +
+		"https://github.com/inoxlang/inox/blob/main/docs/language-reference/binary-operations.md"
 
 	UNTERMINATED_MEMB_OR_INDEX_EXPR                          = "unterminated member/index expression"
 	UNTERMINATED_IDENT_MEMB_EXPR                             = "unterminated identifier member expression"
@@ -392,7 +395,7 @@ const (
 	ASSIGN_KEYWORD_SHOULD_BE_FOLLOWED_BY_IDENTS            = "assign keyword should be followed by identifiers (assign a b = <value>)"
 	UNTERMINATED_ASSIGNMENT_MISSING_VALUE_AFTER_EQL_SIGN   = "unterminated assignment, missing value after the '=' sign"
 	INVALID_ASSIGN_A_PIPELINE_EXPR_WAS_EXPECTED_AFTER_PIPE = "invalid assignment: a pipeline expression was expected after the '|' symbol"
-	UNTERMINATED_ASSIGNMENT_MISSING_TERMINATOR             = "unterminated assignment: missing terminator (';' or end of line), if you are trying to write a binary expression note that binary expressions are always parenthesized, example: myvar = (1 + 2)"
+	UNTERMINATED_ASSIGNMENT_MISSING_TERMINATOR             = "unterminated assignment: missing terminator (';' or end of line), if you are trying to write a binary expression try to put parenthesis around it"
 
 	UNTERMINATED_PIPE_STMT_LAST_STAGE_EMPTY                                       = "unterminated pipeline statement: last stage is empty"
 	INVALID_PIPE_STATE_ALL_STAGES_SHOULD_BE_CALLS                                 = "invalid pipeline stage, all pipeline stages should be calls"
@@ -447,8 +450,8 @@ const (
 	UNTERMINATED_SYNCHRONIZED_MISSING_BLOCK                = "unterminated synchronized block: missing block"
 
 	//object literals
-	INVALID_OBJ_REC_LIT_ENTRY_SEPARATION    = "invalid object/record literal, each entry should be followed by '}', newline, or ','."
-	INVALID_OBJ_REC_LIT_SPREAD_SEPARATION   = "invalid object/record literal, a spread should be followed by '}', newline or ','."
+	INVALID_OBJ_REC_ENTRY_ENTRY_SEPARATION  = "invalid object or record entry, each entry should be followed by '}', newline, or ','."
+	INVALID_OBJ_REC_LIT_SPREAD_SEPARATION   = "invalid object or record literal, a spread should be followed by '}', newline or ','."
 	MISSING_PROPERTY_VALUE                  = "missing property value"
 	MISSING_PROPERTY_PATTERN                = "missing property pattern"
 	UNEXPECTED_NEWLINE_AFTER_COLON          = "unexpected newline after colon"

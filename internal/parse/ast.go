@@ -1621,7 +1621,6 @@ const (
 	MulDot
 	Div
 	DivDot
-	Concat
 	LessThan
 	LessThanDot
 	LessOrEqual
@@ -1660,7 +1659,6 @@ var BINARY_OPERATOR_STRINGS = [...]string{
 	MulDot:            "*.",
 	Div:               "/",
 	DivDot:            "/.",
-	Concat:            "++",
 	LessThan:          "<",
 	LessThanDot:       "<.",
 	LessOrEqual:       "<=",
