@@ -1663,6 +1663,30 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			},
 			{
 				input: `
+					a = 1
+					a -= 1
+					return a
+				`,
+				result: Int(0),
+			},
+			{
+				input: `
+					a = 2
+					a *= 3
+					return a
+				`,
+				result: Int(6),
+			},
+			{
+				input: `
+					a = 6
+					a /= 2
+					return a
+				`,
+				result: Int(3),
+			},
+			{
+				input: `
 					const (
 						A = 1
 					)

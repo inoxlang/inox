@@ -516,7 +516,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			case parse.MulAssign:
 				return intMul(left().(Int), right.(Int))
 			case parse.DivAssign:
-				return intMul(left().(Int), right.(Int))
+				return intDiv(left().(Int), right.(Int))
 			}
 
 			return right, nil
