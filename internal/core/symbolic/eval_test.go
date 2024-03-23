@@ -666,6 +666,19 @@ func TestSymbolicEval(t *testing.T) {
 			}), res)
 		})
 
+		t.Run("multivalue key", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`:{v: "b"}`)
+			state.setGlobal("v", NewMultivalue(ANY_INT, ANY_BOOL), GlobalConst)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewDictionary(map[string]Serializable{
+				"v": NewString("b"),
+			}, map[string]Serializable{
+				"v": AsSerializableChecked(NewMultivalue(ANY_INT, ANY_BOOL)),
+			}), res)
+		})
 	})
 
 	t.Run("constant declarations", func(t *testing.T) {
@@ -7181,6 +7194,21 @@ func TestSymbolicEval(t *testing.T) {
 				assert.NotEmpty(t, state.errors())
 				assert.Equal(t, ANY, res)
 			})
+		})
+
+		t.Run("the expected value constraint should be passed to the consequent and the alternate", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				var b ({a: int}) = (if true {a: true} else {a: false})
+			`, nil)
+
+			boolLiterals := parse.FindNodes(n, (*parse.BooleanLiteral)(nil), nil)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(boolLiterals[1], state, fmtNotAssignableToPropOfType(TRUE, ANY_INT)),
+				makeSymbolicEvalError(boolLiterals[2], state, fmtNotAssignableToPropOfType(FALSE, ANY_INT)),
+			}, state.errors())
 		})
 	})
 

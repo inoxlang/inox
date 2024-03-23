@@ -57,6 +57,38 @@ type State struct {
 	projectFilesystem billy.Filesystem
 }
 
+type IterationChange int
+
+const (
+	NoIterationChange IterationChange = iota
+	BreakIteration
+	ContinueIteration
+	PruneWalk
+)
+
+type GlobalConstness = int
+
+const (
+	GlobalVar GlobalConstness = iota
+	GlobalConst
+)
+
+const (
+	MAX_STRING_SUGGESTION_DIFF = 3
+)
+
+type ConcreteGlobalValue struct {
+	Value      any
+	IsConstant bool
+}
+
+func (v ConcreteGlobalValue) Constness() GlobalConstness {
+	if v.IsConstant {
+		return GlobalConst
+	}
+	return GlobalVar
+}
+
 type symbolicGoFunctionError struct {
 	message  string
 	location parse.Node //optional

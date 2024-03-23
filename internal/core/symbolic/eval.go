@@ -19,83 +19,6 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-type IterationChange int
-
-const (
-	NoIterationChange IterationChange = iota
-	BreakIteration
-	ContinueIteration
-	PruneWalk
-)
-
-type GlobalConstness = int
-
-const (
-	GlobalVar GlobalConstness = iota
-	GlobalConst
-)
-
-const (
-	MAX_STRING_SUGGESTION_DIFF = 3
-)
-
-var (
-	CTX_PTR_TYPE                         = reflect.TypeOf((*Context)(nil))
-	ERROR_TYPE                           = reflect.TypeOf((*Error)(nil))
-	SYMBOLIC_VALUE_INTERFACE_TYPE        = reflect.TypeOf((*Value)(nil)).Elem()
-	SERIALIZABLE_INTERFACE_TYPE          = reflect.TypeOf((*Serializable)(nil)).Elem()
-	ITERABLE_INTERFACE_TYPE              = reflect.TypeOf((*Iterable)(nil)).Elem()
-	SERIALIZABLE_ITERABLE_INTERFACE_TYPE = reflect.TypeOf((*SerializableIterable)(nil)).Elem()
-	INDEXABLE_INTERFACE_TYPE             = reflect.TypeOf((*Indexable)(nil)).Elem()
-	SEQUENCE_INTERFACE_TYPE              = reflect.TypeOf((*Sequence)(nil)).Elem()
-	MUTABLE_SEQUENCE_INTERFACE_TYPE      = reflect.TypeOf((*MutableSequence)(nil)).Elem()
-	INTEGRAL_INTERFACE_TYPE              = reflect.TypeOf((*Integral)(nil)).Elem()
-	WRITABLE_INTERFACE_TYPE              = reflect.TypeOf((*Writable)(nil)).Elem()
-	STRLIKE_INTERFACE_TYPE               = reflect.TypeOf((*StringLike)(nil)).Elem()
-	BYTESLIKE_INTERFACE_TYPE             = reflect.TypeOf((*BytesLike)(nil)).Elem()
-
-	IPROPS_INTERFACE_TYPE              = reflect.TypeOf((*IProps)(nil)).Elem()
-	PROTOCOL_CLIENT_INTERFACE_TYPE     = reflect.TypeOf((*ProtocolClient)(nil)).Elem()
-	READABLE_INTERFACE_TYPE            = reflect.TypeOf((*Readable)(nil)).Elem()
-	PATTERN_INTERFACE_TYPE             = reflect.TypeOf((*Pattern)(nil)).Elem()
-	RESOURCE_NAME_INTERFACE_TYPE       = reflect.TypeOf((*ResourceName)(nil)).Elem()
-	VALUE_RECEIVER_INTERFACE_TYPE      = reflect.TypeOf((*MessageReceiver)(nil)).Elem()
-	STREAMABLE_INTERFACE_TYPE          = reflect.TypeOf((*StreamSource)(nil)).Elem()
-	WATCHABLE_INTERFACE_TYPE           = reflect.TypeOf((*Watchable)(nil)).Elem()
-	STR_PATTERN_ELEMENT_INTERFACE_TYPE = reflect.TypeOf((*StringPattern)(nil)).Elem()
-	FORMAT_INTERFACE_TYPE              = reflect.TypeOf((*Format)(nil)).Elem()
-	IN_MEM_SNAPSHOTABLE                = reflect.TypeOf((*InMemorySnapshotable)(nil)).Elem()
-	VALUEPATH_INTERFACE_TYPE           = reflect.TypeOf((*ValuePath)(nil)).Elem()
-
-	OPTIONAL_PARAM_TYPE = reflect.TypeOf((*optionalParam)(nil)).Elem()
-
-	ANY_READABLE = &AnyReadable{}
-	ANY_READER   = &Reader{}
-
-	SUPPORTED_PARSING_ERRORS = []parse.ParsingErrorKind{
-		parse.UnterminatedMemberExpr, parse.UnterminatedDoubleColonExpr,
-		parse.UnterminatedExtendStmt,
-		parse.UnterminatedStructDefinition,
-		parse.MissingBlock, parse.MissingFnBody,
-		parse.MissingEqualsSignInDeclaration,
-		parse.MissingObjectPropertyValue,
-		parse.MissingObjectPatternProperty,
-		parse.ExtractionExpressionExpected,
-	}
-)
-
-type ConcreteGlobalValue struct {
-	Value      any
-	IsConstant bool
-}
-
-func (v ConcreteGlobalValue) Constness() GlobalConstness {
-	if v.IsConstant {
-		return GlobalConst
-	}
-	return GlobalVar
-}
-
 type EvalCheckInput struct {
 	Node   *parse.Chunk
 	Module *Module
@@ -560,7 +483,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 	case *parse.IfStatement:
 		return evalIfStatement(n, state)
 	case *parse.IfExpression:
-		return evalIfExpression(n, state)
+		return evalIfExpression(n, state, options)
 	case *parse.ForStatement, *parse.ForExpression:
 		return evalForStatementAndExpr(n, state)
 	case *parse.WalkStatement:
@@ -1390,7 +1313,10 @@ func evalLocalVariableDeclarations(n *parse.LocalVariableDeclarations, state *St
 
 		if decl.Right != nil {
 			deeperMismatch := false
-			right, err = _symbolicEval(decl.Right, state, evalOptions{expectedValue: staticMatching, actualValueMismatch: &deeperMismatch})
+			right, err = _symbolicEval(decl.Right, state, evalOptions{
+				expectedValue:       staticMatching,
+				actualValueMismatch: &deeperMismatch,
+			})
 			if err != nil {
 				return err
 			}
@@ -2386,7 +2312,7 @@ func evalIfStatement(n *parse.IfStatement, state *State) (_ Value, finalErr erro
 	return nil, nil
 }
 
-func evalIfExpression(n *parse.IfExpression, state *State) (_ Value, finalErr error) {
+func evalIfExpression(n *parse.IfExpression, state *State, options evalOptions) (_ Value, finalErr error) {
 
 	test, err := symbolicEval(n.Test, state)
 	if err != nil {
@@ -2397,41 +2323,53 @@ func evalIfExpression(n *parse.IfExpression, state *State) (_ Value, finalErr er
 	var atlernateValue Value
 
 	if _, ok := test.(*Bool); ok {
-		if n.Consequent != nil {
-			consequentStateFork := state.fork()
-			narrow(true, n.Test, state, consequentStateFork)
-			state.SetLocalScopeData(n.Consequent, consequentStateFork.currentLocalScopeData())
-			state.SetGlobalScopeData(n.Consequent, consequentStateFork.currentGlobalScopeData())
+		if n.Consequent == nil {
+			return ANY, nil
+		}
 
-			consequentValue, err = symbolicEval(n.Consequent, consequentStateFork)
+		consequentStateFork := state.fork()
+		narrow(true, n.Test, state, consequentStateFork)
+		state.SetLocalScopeData(n.Consequent, consequentStateFork.currentLocalScopeData())
+		state.SetGlobalScopeData(n.Consequent, consequentStateFork.currentGlobalScopeData())
+
+		consequentValue, err = _symbolicEval(n.Consequent, consequentStateFork, evalOptions{
+			actualValueMismatch: options.actualValueMismatch,
+			expectedValue:       options.expectedValue,
+		})
+
+		if err != nil {
+			return nil, err
+		}
+
+		var alternateStateFork *State
+		if n.Alternate != nil {
+			alternateStateFork := state.fork()
+			narrow(false, n.Test, state, alternateStateFork)
+			state.SetLocalScopeData(n.Alternate, alternateStateFork.currentLocalScopeData())
+			state.SetGlobalScopeData(n.Alternate, alternateStateFork.currentGlobalScopeData())
+
+			atlernateValue, err = _symbolicEval(n.Alternate, alternateStateFork, evalOptions{
+				actualValueMismatch: options.actualValueMismatch,
+				expectedValue:       options.expectedValue,
+			})
+
 			if err != nil {
 				return nil, err
 			}
-
-			var alternateStateFork *State
-			if n.Alternate != nil {
-				alternateStateFork := state.fork()
-				narrow(false, n.Test, state, alternateStateFork)
-				state.SetLocalScopeData(n.Alternate, alternateStateFork.currentLocalScopeData())
-				state.SetGlobalScopeData(n.Alternate, alternateStateFork.currentGlobalScopeData())
-
-				atlernateValue, err = symbolicEval(n.Alternate, alternateStateFork)
-				if err != nil {
-					return nil, err
-				}
-				return joinValues([]Value{consequentValue, atlernateValue}), nil
-			}
-
-			if alternateStateFork != nil {
-				state.join(consequentStateFork, alternateStateFork)
-			} else {
-				state.join(consequentStateFork)
-			}
-
-			return consequentValue, nil
+			return joinValues([]Value{consequentValue, atlernateValue}), nil
 		}
-		return ANY, nil
+
+		if alternateStateFork != nil {
+			state.join(consequentStateFork, alternateStateFork)
+		} else {
+			state.join(consequentStateFork)
+		}
+
+		return consequentValue, nil
 	}
+	//else: the condition's result is not a boolean
+
+	options.setHasShallowErrors()
 
 	state.addError(makeSymbolicEvalError(n, state, fmtIfExprTestNotBoolBut(test)))
 	return ANY, nil
@@ -4725,39 +4663,56 @@ func evalDictionaryLiteral(n *parse.DictionaryLiteral, state *State, options eva
 		expectedEntryValue, _ := expectedDictionary.get(keyRepr)
 		deeperMismatch := false
 
-		v, err := _symbolicEval(entry.Value, state, evalOptions{expectedValue: expectedEntryValue, actualValueMismatch: &deeperMismatch})
+		//Evaluate the value
+
+		entryValue, err := _symbolicEval(entry.Value, state, evalOptions{expectedValue: expectedEntryValue, actualValueMismatch: &deeperMismatch})
 		if err != nil {
 			return nil, err
 		}
+
+		//Check the value
+
 		if deeperMismatch {
 			options.setActualValueMismatchIfNotNil()
-		} else if expectedEntryValue != nil && !deeperMismatch && !expectedEntryValue.Test(v, RecTestCallState{}) {
+		} else if expectedEntryValue != nil && !deeperMismatch && !expectedEntryValue.Test(entryValue, RecTestCallState{}) {
 			options.setActualValueMismatchIfNotNil()
-			state.addError(makeSymbolicEvalError(entry.Value, state, fmtNotAssignableToEntryOfExpectedValue(v, expectedEntryValue)))
+			state.addError(makeSymbolicEvalError(entry.Value, state, fmtNotAssignableToEntryOfExpectedValue(entryValue, expectedEntryValue)))
 		}
-		_, ok := v.(Serializable)
+
+		serializable, ok := AsSerializable(entryValue).(Serializable)
 		if !ok {
 			state.addError(makeSymbolicEvalError(entry.Value, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
-			v = ANY_SERIALIZABLE
-		} else if _, ok := asWatchable(v).(Watchable); !ok && v.IsMutable() {
-			state.addError(makeSymbolicEvalError(entry.Value, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE))
+			entryValue = ANY_SERIALIZABLE
+		} else {
+			entryValue = serializable
+			if _, ok := asWatchable(entryValue).(Watchable); !ok && entryValue.IsMutable() {
+				state.addError(makeSymbolicEvalError(entry.Value, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE))
+			}
 		}
 
-		//TODO: refactor
-		key, err := symbolicEval(entry.Key, state)
-		_ = err
+		//Evaluate the key
 
-		_, ok = key.(Serializable)
+		entryKey, err := symbolicEval(entry.Key, state)
+		if err != nil {
+			return nil, err
+		}
+
+		//Check the key
+
+		serializable, ok = AsSerializable(entryKey).(Serializable)
 		if !ok {
-			state.addError(makeSymbolicEvalError(entry.Value, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
-			key = ANY_SERIALIZABLE
-		} else if _, ok := asWatchable(key).(Watchable); !ok && key.IsMutable() {
-			state.addError(makeSymbolicEvalError(entry.Value, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE))
+			state.addError(makeSymbolicEvalError(entry.Key, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
+			entryKey = ANY_SERIALIZABLE
+		} else {
+			entryKey = serializable
+			if _, ok := asWatchable(entryKey).(Watchable); !ok && entryKey.IsMutable() {
+				state.addError(makeSymbolicEvalError(entry.Key, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE))
+			}
 		}
 
-		entries[keyRepr] = v.(Serializable)
-		keys[keyRepr] = key.(Serializable)
-		state.SetMostSpecificNodeValue(entry.Key, key)
+		entries[keyRepr] = entryValue.(Serializable)
+		keys[keyRepr] = entryKey.(Serializable)
+		state.SetMostSpecificNodeValue(entry.Key, entryKey)
 	}
 
 	return NewDictionary(entries, keys), nil
