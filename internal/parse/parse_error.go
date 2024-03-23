@@ -395,7 +395,7 @@ const (
 	ASSIGN_KEYWORD_SHOULD_BE_FOLLOWED_BY_IDENTS            = "assign keyword should be followed by identifiers (assign a b = <value>)"
 	UNTERMINATED_ASSIGNMENT_MISSING_VALUE_AFTER_EQL_SIGN   = "unterminated assignment, missing value after the '=' sign"
 	INVALID_ASSIGN_A_PIPELINE_EXPR_WAS_EXPECTED_AFTER_PIPE = "invalid assignment: a pipeline expression was expected after the '|' symbol"
-	UNTERMINATED_ASSIGNMENT_MISSING_TERMINATOR             = "unterminated assignment: missing terminator (';' or end of line), if you are trying to write a binary expression try to put parenthesis around it"
+	UNTERMINATED_ASSIGNMENT_MISSING_TERMINATOR             = "unterminated assignment: missing terminator (';' or end of line), if the right hande side is a binary expression try to put parenthesis around it"
 
 	UNTERMINATED_PIPE_STMT_LAST_STAGE_EMPTY                                       = "unterminated pipeline statement: last stage is empty"
 	INVALID_PIPE_STATE_ALL_STAGES_SHOULD_BE_CALLS                                 = "invalid pipeline stage, all pipeline stages should be calls"
@@ -468,10 +468,16 @@ const (
 	UNTERMINATED_REC_PATTERN_MISSING_CLOSING_BRACE       = "unterminated record pattern literal, missing closing brace '}'"
 	SPREAD_SHOULD_BE_LOCATED_AT_THE_START                = "spread should be located at the start"
 
-	INVALID_DICT_LIT_ENTRY_SEPARATION                     = "invalid dictionary literal, each entry should be followed by '}', newline, or ','."
-	UNTERMINATED_IF_STMT_MISSING_BLOCK_AFTER_ELSE         = "unterminated if statement, missing block after 'else'"
-	UNTERMINATED_IF_EXPR_MISSING_VALUE_AFTER_ELSE         = "unterminated if expression, missing value after 'else'"
-	UNTERMINATED_IF_EXPR_MISSING_CLOSING_PAREN            = "unterminated if expression: missing closing parenthesis'"
+	INVALID_DICT_LIT_ENTRY_SEPARATION             = "invalid dictionary literal, each entry should be followed by '}', newline, or ','."
+	UNTERMINATED_IF_STMT_MISSING_BLOCK_AFTER_ELSE = "unterminated if statement, missing block after 'else'"
+
+	//if expressions
+	UNTERMINATED_IF_EXPR_MISSING_COND_AFTER_IF                                   = "unterminated if expression, missing condition after 'if'"
+	UNTERMINATED_IF_EXPR_MISSING_VALUE_AFTER_ELSE                                = "unterminated if expression, missing value after 'else'"
+	INVALID_IF_EXPR_IF_CLAUSE_SHOULD_BE_FOLLOWED_BY_CLOSING_PAREN_OR_ELSE_CLAUSE = //
+	"invalid if expression: `if <condition> <value>` should be followed by a closing parenthesis or an 'else ...' clause"
+	INVALID_IF_EXPR_MISSING_COND_BETWEEN_IF_ELSE = "invalid if expression: missing condition between 'if' and 'else'"
+
 	SPREAD_ARGUMENT_CANNOT_BE_FOLLOWED_BY_ADDITIONAL_ARGS = "a spread argument cannot be followed by additional arguments"
 	CAPTURE_LIST_SHOULD_ONLY_CONTAIN_IDENTIFIERS          = "capture list should only contain identifiers"
 	VARIADIC_PARAM_IS_UNIQUE_AND_SHOULD_BE_LAST_PARAM     = "the variadic parameter should be unique and should be the last parameter"
@@ -719,11 +725,15 @@ func fmtUnexpectedCharInParameters(r rune) string {
 }
 
 func fmtUnexpectedCharInCaptureList(r rune) string {
-	return fmt.Sprintf("unexpected char %s in capture lisr", fmtRuneInfo(r))
+	return fmt.Sprintf("unexpected char %s in capture list", fmtRuneInfo(r))
 }
 
 func fmtUnexpectedCharInKeyList(r rune) string {
 	return fmt.Sprintf("unexpected char %s in key list", fmtRuneInfo(r))
+}
+
+func fmtUnexpectedCharInConcatenationExpression(r rune) string {
+	return fmt.Sprintf("unexpected char %s in concatenation expression", fmtRuneInfo(r))
 }
 
 func fmtUnexpectedCharInDictionary(r rune) string {

@@ -4184,7 +4184,7 @@ func (p *parser) getStrTemplateInterTypeAndExpr(interpolation []rune, interpolat
 	}
 }
 
-func (p *parser) parseIfExpression(openingParenIndex int32 /* -1 if unparenthesized */, ifKeywordStart int32) *IfExpression {
+func (p *parser) parseIfExpression(openingParenIndex int32 /* -1 if unparenthesized (in XML interpolation) */, ifKeywordStart int32) *IfExpression {
 	p.panicIfContextDone()
 
 	var alternate Node
@@ -4192,55 +4192,108 @@ func (p *parser) parseIfExpression(openingParenIndex int32 /* -1 if unparenthesi
 	var parsingErr *ParsingError
 	shouldHaveClosingParen := openingParenIndex >= 0
 
+	ifExprStart := openingParenIndex
+	if openingParenIndex < 0 {
+		ifExprStart = ifKeywordStart
+	}
+
 	p.tokens = append(p.tokens, Token{Type: IF_KEYWORD, Span: NodeSpan{ifKeywordStart, ifKeywordStart + 2}})
 
-	p.eatSpace()
+	p.eatSpaceNewlineComment()
+
 	test, _ := p.parseExpression()
-	p.eatSpace()
+	p.eatSpaceNewlineComment()
 
 	consequent, isMissingExpr := p.parseExpression()
-	end = consequent.Base().Span.End
-	p.eatSpace()
+	p.eatSpaceNewlineComment()
 
 	if isMissingExpr {
-		if p.i < p.len && p.s[p.i] == ')' {
-			//missing expression
-			p.i++
+		if p.i >= p.len || isUnpairedOrIsClosingDelim(p.s[p.i]) {
+
+			if p.i < p.len && p.s[p.i] == ')' {
+				p.tokens = append(p.tokens, Token{
+					Type: CLOSING_PARENTHESIS,
+					Span: NodeSpan{p.i, p.i + 1},
+				})
+				p.i++
+			}
+
+			end = p.i
+
+			return &IfExpression{
+				NodeBase: NodeBase{
+					Span:            NodeSpan{ifExprStart, end},
+					Err:             parsingErr,
+					IsParenthesized: shouldHaveClosingParen,
+				},
+				Test:       test,
+				Consequent: consequent,
+				Alternate:  alternate,
+			}
 		}
 	}
 
-	if p.i < p.len-3 && p.s[p.i] == 'e' && p.s[p.i+1] == 'l' && p.s[p.i+2] == 's' && p.s[p.i+3] == 'e' {
-		p.tokens = append(p.tokens, Token{
-			Type: ELSE_KEYWORD,
-			Span: NodeSpan{p.i, p.i + 4},
-		})
-		p.i += 4
-		p.eatSpace()
+	hasElse := false
 
-		alternate, _ = p.parseExpression()
-		end = alternate.Base().Span.End
-		p.eatSpace()
+	if ident, ok := consequent.(*IdentifierLiteral); ok && ident.Name == "else" {
+		hasElse = true
+		parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_IF_EXPR_MISSING_COND_BETWEEN_IF_ELSE}
+	} else if p.i < p.len-3 && p.s[p.i] == 'e' && p.s[p.i+1] == 'l' && p.s[p.i+2] == 's' && p.s[p.i+3] == 'e' {
+		if p.i == p.len-4 /*else<EOF>*/ || !IsIdentChar(p.s[p.i+4]) {
+			p.tokens = append(p.tokens, Token{
+				Type: ELSE_KEYWORD,
+				Span: NodeSpan{p.i, p.i + 4},
+			})
+			p.i += 4
+			hasElse = true
+		}
 	}
+
+	p.eatSpaceNewlineComment()
+
+	if hasElse {
+		alternate, _ = p.parseExpression()
+		p.eatSpaceNewlineComment()
+	}
+
+	p.eatSpaceNewlineComment()
 
 	if shouldHaveClosingParen {
 		if p.i >= p.len {
 			end = p.i
-			if !isMissingExpr {
-				parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_IF_EXPR_MISSING_CLOSING_PAREN}
+			if consequent != nil {
+				parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_IF_EXPR_IF_CLAUSE_SHOULD_BE_FOLLOWED_BY_CLOSING_PAREN_OR_ELSE_CLAUSE}
 			}
 		} else if p.s[p.i] == ')' {
+			p.tokens = append(p.tokens, Token{
+				Type: CLOSING_PARENTHESIS,
+				Span: NodeSpan{p.i, p.i + 1},
+			})
 			p.i++
 			end = p.i
-		} else if !isMissingExpr {
-			parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_IF_EXPR_MISSING_CLOSING_PAREN}
-		}
-	} else {
-		end = p.i
-	}
+		} else {
+			parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_IF_EXPR_IF_CLAUSE_SHOULD_BE_FOLLOWED_BY_CLOSING_PAREN_OR_ELSE_CLAUSE}
 
-	ifExprStart := openingParenIndex
-	if openingParenIndex < 0 {
-		ifExprStart = ifKeywordStart
+			if !isUnpairedOrIsClosingDelim(p.s[p.i]) {
+				alternate, _ = p.parseExpression()
+
+				p.eatSpaceNewlineComment()
+
+				if p.i < p.len && p.s[p.i] == ')' {
+					p.tokens = append(p.tokens, Token{
+						Type: CLOSING_PARENTHESIS,
+						Span: NodeSpan{p.i, p.i + 1},
+					})
+					p.i++
+				}
+			}
+
+			end = p.i
+		}
+	} else { //in XML interpolation
+		//No need to report an error if there is something after the expression
+		//because this is handled by the caller.
+		end = p.i
 	}
 
 	return &IfExpression{
@@ -6378,7 +6431,7 @@ func (p *parser) parseConcatenationExpression(concatIdent Node, precededByOpenin
 			threeDotsSpan := NodeSpan{p.i, p.i + 3}
 			p.i += 3
 
-			e, _ := p.parseExpression()
+			e, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
 			p.tokens = append(p.tokens, Token{Type: THREE_DOTS, Span: threeDotsSpan})
 
 			elem = &ElementSpreadElement{
@@ -6389,7 +6442,21 @@ func (p *parser) parseConcatenationExpression(concatIdent Node, precededByOpenin
 			}
 
 		} else {
-			elem, _ = p.parseExpression()
+			e, isMissingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+
+			if isMissingExpr {
+				p.tokens = append(p.tokens, Token{Type: UNEXPECTED_CHAR, Span: NodeSpan{p.i, p.i + 1}, Raw: string(p.s[p.i])})
+				elem = &UnknownNode{
+					NodeBase: NodeBase{
+						e.Base().Span,
+						&ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInConcatenationExpression(p.s[p.i])},
+						false,
+					},
+				}
+				p.i++
+			} else {
+				elem = e
+			}
 		}
 
 		elements = append(elements, elem)

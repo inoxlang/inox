@@ -375,6 +375,10 @@ func (p *parser) tryParseUnparenthesizedBinaryExpr(left Node) (Node, bool) {
 			// path ../
 			return nil, false
 		}
+		if tempIndex < p.len-3 && p.s[tempIndex+1] == '.' && p.s[tempIndex+2] == '.' {
+			// spread ...
+			return nil, false
+		}
 	case ':':
 		return nil, false
 	case '*', '<', '>', '!':

@@ -14824,7 +14824,7 @@ func testParse(
 					&IfExpression{
 						NodeBase: NodeBase{
 							NodeSpan{0, 10},
-							&ParsingError{UnspecifiedParsingError, UNTERMINATED_IF_EXPR_MISSING_CLOSING_PAREN},
+							&ParsingError{UnspecifiedParsingError, INVALID_IF_EXPR_IF_CLAUSE_SHOULD_BE_FOLLOWED_BY_CLOSING_PAREN_OR_ELSE_CLAUSE},
 							true,
 						}, Test: &BooleanLiteral{
 							NodeBase: NodeBase{NodeSpan{4, 8}, nil, false},
@@ -14834,6 +14834,36 @@ func testParse(
 							NodeBase: NodeBase{NodeSpan{9, 10}, nil, false},
 							Raw:      "1",
 							Value:    1,
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("in list literal: (if <test> <consequent> (missing parenthesis)", func(t *testing.T) {
+			n, err := parseChunk(t, "[(if true 1]", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
+				Statements: []Node{
+					&ListLiteral{
+						NodeBase: NodeBase{Span: NodeSpan{0, 12}},
+						Elements: []Node{
+							&IfExpression{
+								NodeBase: NodeBase{
+									NodeSpan{1, 11},
+									&ParsingError{UnspecifiedParsingError, INVALID_IF_EXPR_IF_CLAUSE_SHOULD_BE_FOLLOWED_BY_CLOSING_PAREN_OR_ELSE_CLAUSE},
+									true,
+								}, Test: &BooleanLiteral{
+									NodeBase: NodeBase{NodeSpan{5, 9}, nil, false},
+									Value:    true,
+								},
+								Consequent: &IntLiteral{
+									NodeBase: NodeBase{NodeSpan{10, 11}, nil, false},
+									Raw:      "1",
+									Value:    1,
+								},
+							},
 						},
 					},
 				},
@@ -14878,7 +14908,7 @@ func testParse(
 					&IfExpression{
 						NodeBase: NodeBase{
 							NodeSpan{0, 17},
-							&ParsingError{UnspecifiedParsingError, UNTERMINATED_IF_EXPR_MISSING_CLOSING_PAREN},
+							&ParsingError{UnspecifiedParsingError, INVALID_IF_EXPR_IF_CLAUSE_SHOULD_BE_FOLLOWED_BY_CLOSING_PAREN_OR_ELSE_CLAUSE},
 							true,
 						}, Test: &BooleanLiteral{
 							NodeBase: NodeBase{NodeSpan{4, 8}, nil, false},
@@ -14899,7 +14929,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("(if <test> <consequent> else (missing vallue)", func(t *testing.T) {
+		t.Run("(if <test> <consequent> else (missing value)", func(t *testing.T) {
 			code := "(if true 1 else"
 			n, err := parseChunk(t, code, "")
 			assert.Error(t, err)
@@ -14909,7 +14939,7 @@ func testParse(
 					&IfExpression{
 						NodeBase: NodeBase{
 							NodeSpan{0, 15},
-							&ParsingError{UnspecifiedParsingError, UNTERMINATED_IF_EXPR_MISSING_CLOSING_PAREN},
+							&ParsingError{UnspecifiedParsingError, INVALID_IF_EXPR_IF_CLAUSE_SHOULD_BE_FOLLOWED_BY_CLOSING_PAREN_OR_ELSE_CLAUSE},
 							true,
 						}, Test: &BooleanLiteral{
 							NodeBase: NodeBase{NodeSpan{4, 8}, nil, false},
@@ -14931,6 +14961,138 @@ func testParse(
 				},
 			}, n)
 		})
+
+		t.Run("in list literal: (if <test> <consequent> else (missing value)", func(t *testing.T) {
+			code := "[(if true 1 else]"
+			n, err := parseChunk(t, code, "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
+				Statements: []Node{
+					&ListLiteral{
+						NodeBase: NodeBase{Span: NodeSpan{0, 17}},
+						Elements: []Node{
+							&IfExpression{
+								NodeBase: NodeBase{
+									NodeSpan{1, 16},
+									&ParsingError{UnspecifiedParsingError, INVALID_IF_EXPR_IF_CLAUSE_SHOULD_BE_FOLLOWED_BY_CLOSING_PAREN_OR_ELSE_CLAUSE},
+									true,
+								}, Test: &BooleanLiteral{
+									NodeBase: NodeBase{NodeSpan{5, 9}, nil, false},
+									Value:    true,
+								},
+								Consequent: &IntLiteral{
+									NodeBase: NodeBase{NodeSpan{10, 11}, nil, false},
+									Raw:      "1",
+									Value:    1,
+								},
+								Alternate: &MissingExpression{
+									NodeBase: NodeBase{
+										NodeSpan{16, 17},
+										&ParsingError{UnspecifiedParsingError, fmtExprExpectedHere([]rune(code), 16, true)},
+										false,
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("(if <test> <consequent> <incomplete else> (missing parenthesis)", func(t *testing.T) {
+			n, err := parseChunk(t, "(if true 1 el", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
+				Statements: []Node{
+					&IfExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 13},
+							&ParsingError{UnspecifiedParsingError, INVALID_IF_EXPR_IF_CLAUSE_SHOULD_BE_FOLLOWED_BY_CLOSING_PAREN_OR_ELSE_CLAUSE},
+							true,
+						}, Test: &BooleanLiteral{
+							NodeBase: NodeBase{NodeSpan{4, 8}, nil, false},
+							Value:    true,
+						},
+						Consequent: &IntLiteral{
+							NodeBase: NodeBase{NodeSpan{9, 10}, nil, false},
+							Raw:      "1",
+							Value:    1,
+						},
+						Alternate: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{11, 13}, nil, false},
+							Name:     "el",
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("in list literal: (if <test> <consequent> <incomplete else> (missing parenthesis)", func(t *testing.T) {
+			code := "[(if true 1 el]"
+			n, err := parseChunk(t, code, "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
+				Statements: []Node{
+					&ListLiteral{
+						NodeBase: NodeBase{Span: NodeSpan{0, 15}},
+						Elements: []Node{
+							&IfExpression{
+								NodeBase: NodeBase{
+									NodeSpan{1, 14},
+									&ParsingError{UnspecifiedParsingError, INVALID_IF_EXPR_IF_CLAUSE_SHOULD_BE_FOLLOWED_BY_CLOSING_PAREN_OR_ELSE_CLAUSE},
+									true,
+								}, Test: &BooleanLiteral{
+									NodeBase: NodeBase{NodeSpan{5, 9}, nil, false},
+									Value:    true,
+								},
+								Consequent: &IntLiteral{
+									NodeBase: NodeBase{NodeSpan{10, 11}, nil, false},
+									Raw:      "1",
+									Value:    1,
+								},
+								Alternate: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{12, 14}, nil, false},
+									Name:     "el",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("(if <test> <consequent> <incomplete else>", func(t *testing.T) {
+			n, err := parseChunk(t, "(if true 1 el)", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
+				Statements: []Node{
+					&IfExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 14},
+							&ParsingError{UnspecifiedParsingError, INVALID_IF_EXPR_IF_CLAUSE_SHOULD_BE_FOLLOWED_BY_CLOSING_PAREN_OR_ELSE_CLAUSE},
+							true,
+						}, Test: &BooleanLiteral{
+							NodeBase: NodeBase{NodeSpan{4, 8}, nil, false},
+							Value:    true,
+						},
+						Consequent: &IntLiteral{
+							NodeBase: NodeBase{NodeSpan{9, 10}, nil, false},
+							Raw:      "1",
+							Value:    1,
+						},
+						Alternate: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{11, 13}, nil, false},
+							Name:     "el",
+						},
+					},
+				},
+			}, n)
+		})
+
 	})
 
 	t.Run("for statement", func(t *testing.T) {
@@ -17331,6 +17493,7 @@ func testParse(
 				},
 			}, n)
 		})
+
 		t.Run("unexpected operator", func(t *testing.T) {
 			n, err := parseChunk(t, "a = $a ? $b", "")
 			assert.Error(t, err)
@@ -17430,7 +17593,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("unexpected word operator : <and>e", func(t *testing.T) {
+		t.Run("unexpected keyword operator : <and>e", func(t *testing.T) {
 			n, err := parseChunk(t, "a = $a ande $b", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
@@ -17522,6 +17685,14 @@ func testParse(
 			assert.NotNil(t, chunk)
 
 			chunk, err = parseChunk(t, "(switch 1 { 1 =})", "")
+			assert.Error(t, err)
+			assert.NotNil(t, chunk)
+
+			chunk, err = parseChunk(t, "concat a b ?? c", "")
+			assert.Error(t, err)
+			assert.NotNil(t, chunk)
+
+			chunk, err = parseChunk(t, "concat a ?? b c", "")
 			assert.Error(t, err)
 			assert.NotNil(t, chunk)
 		})
@@ -23433,6 +23604,7 @@ func testParse(
 				},
 			}, n)
 		})
+
 		t.Run("two elements", func(t *testing.T) {
 			n := mustparseChunk(t, `concat "a" "b"`)
 			assert.EqualValues(t, &Chunk{
@@ -23572,6 +23744,34 @@ func testParse(
 								Expr: &IdentifierLiteral{
 									NodeBase: NodeBase{Span: NodeSpan{10, 11}},
 									Name:     "a",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("spread element after another element", func(t *testing.T) {
+			n := mustparseChunk(t, `concat a ...b`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
+				Statements: []Node{
+					&ConcatenationExpression{
+						NodeBase: NodeBase{Span: NodeSpan{0, 13}},
+						Elements: []Node{
+							&IdentifierLiteral{
+								NodeBase: NodeBase{Span: NodeSpan{7, 8}},
+								Name:     "a",
+							},
+							&ElementSpreadElement{
+								NodeBase: NodeBase{
+									Span:            NodeSpan{9, 13},
+									IsParenthesized: false,
+								},
+								Expr: &IdentifierLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{12, 13}},
+									Name:     "b",
 								},
 							},
 						},
@@ -31167,7 +31367,7 @@ func testParse(
 								&XMLInterpolation{
 									NodeBase: NodeBase{Span: NodeSpan{7, 24}},
 									Expr: &IfExpression{
-										NodeBase: NodeBase{Span: NodeSpan{7, 23}},
+										NodeBase: NodeBase{Span: NodeSpan{7, 24}},
 										Test: &BooleanLiteral{
 											NodeBase: NodeBase{Span: NodeSpan{10, 14}},
 											Value:    true,

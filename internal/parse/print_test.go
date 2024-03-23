@@ -295,6 +295,7 @@ func TestPrint(t *testing.T) {
 		//concatenations
 		"concat",
 		"concat \"a\"",
+		"concat a ?? b",
 		"(concat)",
 		"(concat \"a\")",
 		"(concat \"a\"",
@@ -625,6 +626,22 @@ func TestPrint(t *testing.T) {
 		//dereference expressions
 		"*x",
 		"*xy",
+		//if expressions
+		"(if true",
+		"(if true)",
+		"(if true 1",
+		"(if true 1",
+		"(if true 1)",
+		"(if true 1 el",
+		"(if true 1 else",
+		"(if true 1 else 2",
+		"(if true 1 else 2)",
+		"(if true or false 1 else 2)",
+		//if expressions in another expression
+		"[(if true]",
+		"[(if true 1 else]",
+		"[(if true 1 else 2]",
+		"[(if true 1 el]",
 		//others
 		"@(1)",
 	}
