@@ -300,7 +300,7 @@ func computeDocumentDiagnostics(params diagnosticNotificationParams) (result *do
 	if state.StaticCheckData != nil {
 		//Add static check errors.
 
-		for _, err := range state.SymbolicData.Errors() {
+		for _, err := range state.StaticCheckData.Errors() {
 			pos := getPositionInPositionStackOrFirst(err.Location, fpath)
 			docURI, uriErr := getFileURI(pos.SourceName, usingInoxFS)
 
@@ -318,7 +318,7 @@ func computeDocumentDiagnostics(params diagnosticNotificationParams) (result *do
 		}
 
 		//Add static check warnings.
-		for _, warning := range state.SymbolicData.Warnings() {
+		for _, warning := range state.StaticCheckData.Warnings() {
 			pos := getPositionInPositionStackOrFirst(warning.Location, fpath)
 			docURI, uriErr := getFileURI(pos.SourceName, usingInoxFS)
 
@@ -360,7 +360,7 @@ func computeDocumentDiagnostics(params diagnosticNotificationParams) (result *do
 
 			diagnostic := defines.Diagnostic{
 				Message:  warning.Message,
-				Severity: &errSeverity,
+				Severity: &warningSeverity,
 				Range:    rangeToLspRange(pos),
 			}
 
