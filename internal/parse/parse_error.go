@@ -194,7 +194,7 @@ const (
 	INVALID_BIN_EXPR_NON_EXISTING_OPERATOR                    = "invalid binary expression, non existing operator"
 	UNTERMINATED_BIN_EXPR_MISSING_OPERATOR                    = "unterminated binary expression: missing operator"
 	UNTERMINATED_BIN_EXPR_MISSING_OPERAND_OR_INVALID_OPERATOR = "unterminated binary expression: missing right operand and/or invalid operator"
-	UNTERMINATED_BIN_EXPR_MISSING_OPERAND                     = "unterminated binary expression: missing right operand"
+	UNTERMINATED_BIN_EXPR_MISSING_RIGHT_OPERAND               = "unterminated binary expression: missing right operand"
 	UNTERMINATED_BIN_EXPR_MISSING_PAREN                       = "unterminated binary expression: missing closing parenthesis"
 	BIN_EXPR_CHAIN_OPERATORS_SHOULD_BE_THE_SAME               = "the operators of a binary expression chain should be all the same: either 'or' or 'and'"
 	COMPLEX_OPERANDS_OF_BINARY_EXPRS_MUST_BE_PARENTHESIZED    = "complex operands of binary expressions must be parenthesized, " +

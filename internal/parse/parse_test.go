@@ -15578,6 +15578,79 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("for <elem> ... in: unparenthesized binary expression", func(t *testing.T) {
+			n := mustparseChunk(t, "(for u in $users: i + 1)")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 24}, nil, false},
+				Statements: []Node{
+					&ForExpression{
+						NodeBase:      NodeBase{Span: NodeSpan{0, 24}, IsParenthesized: true},
+						KeyIndexIdent: nil,
+						ValueElemIdent: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{5, 6}, nil, false},
+							Name:     "u",
+						},
+						IteratedValue: &Variable{
+							NodeBase: NodeBase{NodeSpan{10, 16}, nil, false},
+							Name:     "users",
+						},
+						Body: &BinaryExpression{
+							NodeBase: NodeBase{NodeSpan{18, 23}, nil, false},
+							Left: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{18, 19}, nil, false},
+								Name:     "i",
+							},
+							Right: &IntLiteral{
+								NodeBase: NodeBase{NodeSpan{22, 23}, nil, false},
+								Raw:      "1",
+								Value:    1,
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("for <elem> ... in: unterminated unparenthesized binary expression", func(t *testing.T) {
+			n, err := parseChunk(t, "(for u in $users: i + )", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
+				Statements: []Node{
+					&ForExpression{
+						NodeBase:      NodeBase{Span: NodeSpan{0, 23}, IsParenthesized: true},
+						KeyIndexIdent: nil,
+						ValueElemIdent: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{5, 6}, nil, false},
+							Name:     "u",
+						},
+						IteratedValue: &Variable{
+							NodeBase: NodeBase{NodeSpan{10, 16}, nil, false},
+							Name:     "users",
+						},
+						Body: &BinaryExpression{
+							NodeBase: NodeBase{
+								NodeSpan{18, 22},
+								&ParsingError{UnspecifiedParsingError, UNTERMINATED_BIN_EXPR_MISSING_RIGHT_OPERAND},
+								false,
+							},
+							Left: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{18, 19}, nil, false},
+								Name:     "i",
+							},
+							Right: &MissingExpression{
+								NodeBase: NodeBase{
+									NodeSpan{22, 23},
+									&ParsingError{UnspecifiedParsingError, "an expression was expected: ... i + <<here>>)..."},
+									false,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("missing body", func(t *testing.T) {
 			n, err := parseChunk(t, "(for i, u in $users:)", "")
 			assert.Error(t, err)
@@ -16786,13 +16859,8 @@ func testParse(
 					&BinaryExpression{
 						NodeBase: NodeBase{
 							NodeSpan{0, 6},
-							&ParsingError{UnspecifiedParsingError, UNTERMINATED_BIN_EXPR_MISSING_OPERAND},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_BIN_EXPR_MISSING_RIGHT_OPERAND},
 							true,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
-								{Type: PLUS, Span: NodeSpan{4, 5}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{5, 6}},
-							},*/
 						},
 						Operator: Add,
 						Left: &Variable{
@@ -17051,7 +17119,7 @@ func testParse(
 
 	})
 
-	t.Run("binary expressions", func(t *testing.T) {
+	t.Run("unparenthesized binary expressions", func(t *testing.T) {
 
 		t.Run("addition", func(t *testing.T) {
 			n := mustparseChunk(t, "a = $a + $b")
@@ -17243,7 +17311,7 @@ func testParse(
 						Right: &BinaryExpression{
 							NodeBase: NodeBase{
 								NodeSpan{4, 8},
-								&ParsingError{UnspecifiedParsingError, UNTERMINATED_BIN_EXPR_MISSING_OPERAND},
+								&ParsingError{UnspecifiedParsingError, UNTERMINATED_BIN_EXPR_MISSING_RIGHT_OPERAND},
 								false,
 							},
 							Operator: Add,
@@ -17434,6 +17502,28 @@ func testParse(
 		t.Run("+ chain", func(t *testing.T) {
 			_, err := parseChunk(t, "a = 1 + 2 + 3", "")
 			assert.ErrorContains(t, err, COMPLEX_OPERANDS_OF_BINARY_EXPRS_MUST_BE_PARENTHESIZED)
+		})
+
+		t.Run("bad and special cases", func(t *testing.T) {
+			chunk, err := parseChunk(t, "a + b", "") //ok (call)
+			assert.NoError(t, err)
+			assert.NotNil(t, chunk)
+
+			chunk, err = parseChunk(t, "a +", "") //ok (call)
+			assert.NoError(t, err)
+			assert.NotNil(t, chunk)
+
+			chunk, err = parseChunk(t, "{a: 1 + 2 + 3}", "")
+			assert.Error(t, err)
+			assert.NotNil(t, chunk)
+
+			chunk, err = parseChunk(t, "{a: 1 +}", "")
+			assert.Error(t, err)
+			assert.NotNil(t, chunk)
+
+			chunk, err = parseChunk(t, "(switch 1 { 1 =})", "")
+			assert.Error(t, err)
+			assert.NotNil(t, chunk)
 		})
 	})
 

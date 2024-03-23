@@ -158,7 +158,7 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(openingParenIndex in
 	p.eatSpace()
 
 	if p.i >= p.len {
-		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_BIN_EXPR_MISSING_OPERAND}
+		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_BIN_EXPR_MISSING_RIGHT_OPERAND}
 	}
 
 	inPatternSave := p.inPattern
@@ -174,7 +174,7 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(openingParenIndex in
 
 	p.eatSpace()
 	if isMissingExpr {
-		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_BIN_EXPR_MISSING_OPERAND}
+		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_BIN_EXPR_MISSING_RIGHT_OPERAND}
 	} else if p.i >= p.len {
 		if !hasPreviousOperator {
 			parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_BIN_EXPR_MISSING_PAREN}
@@ -449,7 +449,7 @@ func (p *parser) tryParseUnparenthesizedBinaryExpr(left Node) (Node, bool) {
 	p.eatSpace()
 
 	if p.i >= p.len || isUnpairedOrIsClosingDelim(p.s[p.i]) {
-		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_BIN_EXPR_MISSING_OPERAND}
+		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_BIN_EXPR_MISSING_RIGHT_OPERAND}
 	}
 
 	inPatternSave := p.inPattern
@@ -464,7 +464,7 @@ func (p *parser) tryParseUnparenthesizedBinaryExpr(left Node) (Node, bool) {
 	p.inPattern = inPatternSave
 
 	if isMissingExpr {
-		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_BIN_EXPR_MISSING_OPERAND}
+		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_BIN_EXPR_MISSING_RIGHT_OPERAND}
 	} else {
 		index := p.i
 		for index < p.len && isSpaceNotLF(p.s[index]) {
