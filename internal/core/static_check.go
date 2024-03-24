@@ -708,6 +708,7 @@ func (c *checker) precheckTopLevelStatements(module parse.Node) {
 		//definitions
 		case *parse.PatternDefinition:
 		case *parse.PatternNamespaceDefinition:
+		case *parse.ExtendStatement:
 		case *parse.StructDefinition:
 		case *parse.FunctionDeclaration:
 			c.precheckTopLevelFuncDecl(stmt, module)
@@ -715,7 +716,7 @@ func (c *checker) precheckTopLevelStatements(module parse.Node) {
 		case parse.SimpleValueLiteral:
 		//inclusion imports
 		case *parse.InclusionImportStatement:
-		//
+		//otter nodes
 		default:
 			if isIncludedChunk {
 				c.addError(stmt, AN_INCLUDABLE_FILE_CAN_ONLY_CONTAIN_DEFINITIONS)
