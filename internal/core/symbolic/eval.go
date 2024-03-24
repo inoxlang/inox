@@ -491,11 +491,11 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 	case *parse.SwitchStatement:
 		return evalSwitchStatement(n, state)
 	case *parse.SwitchExpression:
-		return evalSwitchExpression(n, state)
+		return evalSwitchExpression(n, state, options)
 	case *parse.MatchStatement:
 		return evalMatchStatement(n, state)
 	case *parse.MatchExpression:
-		return evalMatchExpression(n, state)
+		return evalMatchExpression(n, state, options)
 	case *parse.UnaryExpression:
 		return evalUnaryExpression(n, state, options)
 	case *parse.BinaryExpression:
@@ -2320,12 +2320,14 @@ func evalIfExpression(n *parse.IfExpression, state *State, options evalOptions) 
 	}
 
 	var consequentValue Value
-	var atlernateValue Value
+	var alternateValue Value
 
 	if _, ok := test.(*Bool); ok {
 		if n.Consequent == nil {
 			return ANY, nil
 		}
+
+		deeperValueMismatch := false
 
 		consequentStateFork := state.fork()
 		narrow(true, n.Test, state, consequentStateFork)
@@ -2333,12 +2335,20 @@ func evalIfExpression(n *parse.IfExpression, state *State, options evalOptions) 
 		state.SetGlobalScopeData(n.Consequent, consequentStateFork.currentGlobalScopeData())
 
 		consequentValue, err = _symbolicEval(n.Consequent, consequentStateFork, evalOptions{
-			actualValueMismatch: options.actualValueMismatch,
+			actualValueMismatch: &deeperValueMismatch,
 			expectedValue:       options.expectedValue,
 		})
 
 		if err != nil {
 			return nil, err
+		}
+
+		if options.expectedValue != nil && !deeperValueMismatch && !options.expectedValue.Test(consequentValue, RecTestCallState{}) {
+			options.setActualValueMismatchIfNotNil()
+			state.addError(makeSymbolicEvalError(n.Consequent, state, fmtValueIsAnXButYWasExpected(consequentValue, options.expectedValue)))
+		} else if deeperValueMismatch {
+			options.setActualValueMismatchIfNotNil()
+			deeperValueMismatch = false //reset so that we can use the variable for the alternate value.
 		}
 
 		var alternateStateFork *State
@@ -2348,15 +2358,23 @@ func evalIfExpression(n *parse.IfExpression, state *State, options evalOptions) 
 			state.SetLocalScopeData(n.Alternate, alternateStateFork.currentLocalScopeData())
 			state.SetGlobalScopeData(n.Alternate, alternateStateFork.currentGlobalScopeData())
 
-			atlernateValue, err = _symbolicEval(n.Alternate, alternateStateFork, evalOptions{
-				actualValueMismatch: options.actualValueMismatch,
+			alternateValue, err = _symbolicEval(n.Alternate, alternateStateFork, evalOptions{
+				actualValueMismatch: &deeperValueMismatch,
 				expectedValue:       options.expectedValue,
 			})
 
 			if err != nil {
 				return nil, err
 			}
-			return joinValues([]Value{consequentValue, atlernateValue}), nil
+
+			if options.expectedValue != nil && !deeperValueMismatch && !options.expectedValue.Test(alternateValue, RecTestCallState{}) {
+				options.setActualValueMismatchIfNotNil()
+				state.addError(makeSymbolicEvalError(n.Alternate, state, fmtValueIsAnXButYWasExpected(alternateValue, options.expectedValue)))
+			} else if deeperValueMismatch {
+				options.setActualValueMismatchIfNotNil()
+			}
+
+			return joinValues([]Value{consequentValue, alternateValue}), nil
 		}
 
 		if alternateStateFork != nil {
@@ -2590,7 +2608,7 @@ func evalSwitchStatement(n *parse.SwitchStatement, state *State) (_ Value, final
 	return nil, nil
 }
 
-func evalSwitchExpression(n *parse.SwitchExpression, state *State) (_ Value, finalErr error) {
+func evalSwitchExpression(n *parse.SwitchExpression, state *State, options evalOptions) (_ Value, finalErr error) {
 	_, err := symbolicEval(n.Discriminant, state)
 	if err != nil {
 		return nil, err
@@ -2599,6 +2617,7 @@ func evalSwitchExpression(n *parse.SwitchExpression, state *State) (_ Value, fin
 	var forks []*State
 
 	var results []Value
+	deeperValueMismatch := false
 
 	for _, switchCase := range n.Cases {
 		for _, valNode := range switchCase.Values {
@@ -2615,11 +2634,25 @@ func evalSwitchExpression(n *parse.SwitchExpression, state *State) (_ Value, fin
 			forks = append(forks, blockStateFork)
 			narrowChain(n.Discriminant, setExactValue, caseValue, blockStateFork, 0)
 
-			result, err := symbolicEval(switchCase.Result, blockStateFork)
+			result, err := _symbolicEval(switchCase.Result, blockStateFork, evalOptions{
+				actualValueMismatch: &deeperValueMismatch,
+				expectedValue:       options.expectedValue,
+			})
+
 			if err != nil {
 				return nil, err
 			}
+
 			results = append(results, result)
+
+			if options.expectedValue != nil && !deeperValueMismatch && !options.expectedValue.Test(result, RecTestCallState{}) {
+				options.setActualValueMismatchIfNotNil()
+				state.addError(makeSymbolicEvalError(switchCase.Result, state, fmtValueIsAnXButYWasExpected(result, options.expectedValue)))
+			} else if deeperValueMismatch {
+				options.setActualValueMismatchIfNotNil()
+				deeperValueMismatch = false //reset so that we can use the variable for other results.
+			}
+
 		}
 	}
 
@@ -2630,11 +2663,24 @@ func evalSwitchExpression(n *parse.SwitchExpression, state *State) (_ Value, fin
 
 		blockStateFork := state.fork()
 		forks = append(forks, blockStateFork)
-		result, err := symbolicEval(defaultCase.Result, blockStateFork)
+		result, err := _symbolicEval(defaultCase.Result, blockStateFork, evalOptions{
+			actualValueMismatch: &deeperValueMismatch,
+			expectedValue:       options.expectedValue,
+		})
+
 		if err != nil {
 			return nil, err
 		}
+
 		results = append(results, result)
+
+		if options.expectedValue != nil && !deeperValueMismatch && !options.expectedValue.Test(result, RecTestCallState{}) {
+			options.setActualValueMismatchIfNotNil()
+			state.addError(makeSymbolicEvalError(defaultCase.Result, state, fmtValueIsAnXButYWasExpected(result, options.expectedValue)))
+		} else if deeperValueMismatch {
+			options.setActualValueMismatchIfNotNil()
+			deeperValueMismatch = false //reset so that we can use the variable for other results.
+		}
 	}
 
 	state.join(forks...)
@@ -2748,7 +2794,7 @@ func evalMatchStatement(n *parse.MatchStatement, state *State) (_ Value, finalEr
 	return nil, nil
 }
 
-func evalMatchExpression(n *parse.MatchExpression, state *State) (_ Value, finalErr error) {
+func evalMatchExpression(n *parse.MatchExpression, state *State, options evalOptions) (_ Value, finalErr error) {
 	discriminant, err := symbolicEval(n.Discriminant, state)
 	if err != nil {
 		return nil, err
@@ -2757,6 +2803,8 @@ func evalMatchExpression(n *parse.MatchExpression, state *State) (_ Value, final
 	var forks []*State
 	var possibleValues []Value
 	var results []Value
+
+	deeperValueMismatch := false
 
 	for _, matchCase := range n.Cases {
 		for _, valNode := range matchCase.Values { //TODO: fix handling of multi cases
@@ -2804,6 +2852,8 @@ func evalMatchExpression(n *parse.MatchExpression, state *State) (_ Value, final
 
 			narrowChain(n.Discriminant, setExactValue, patternMatchingValue, blockStateFork, 0)
 
+			evaluateResult := false
+
 			if matchCase.GroupMatchingVariable != nil {
 				variable := matchCase.GroupMatchingVariable.(*parse.IdentifierLiteral)
 				groupPattern, ok := pattern.(GroupPattern)
@@ -2817,19 +2867,34 @@ func evalMatchExpression(n *parse.MatchExpression, state *State) (_ Value, final
 						blockStateFork.setLocal(variable.Name, groupsObj, nil, matchCase.GroupMatchingVariable)
 						state.SetMostSpecificNodeValue(variable, groupsObj)
 
-						result, err := symbolicEval(matchCase.Result, blockStateFork)
-						if err != nil {
-							return nil, err
-						}
-						results = append(results, result)
+						evaluateResult = true
 					}
 				}
 			} else {
-				result, err := symbolicEval(matchCase.Result, blockStateFork)
-				if err != nil {
-					return nil, err
-				}
-				results = append(results, result)
+				evaluateResult = true
+			}
+
+			if !evaluateResult {
+				continue
+			}
+
+			result, err := _symbolicEval(matchCase.Result, blockStateFork, evalOptions{
+				actualValueMismatch: &deeperValueMismatch,
+				expectedValue:       options.expectedValue,
+			})
+
+			if err != nil {
+				return nil, err
+			}
+
+			results = append(results, result)
+
+			if options.expectedValue != nil && !deeperValueMismatch && !options.expectedValue.Test(result, RecTestCallState{}) {
+				options.setActualValueMismatchIfNotNil()
+				state.addError(makeSymbolicEvalError(matchCase.Result, state, fmtValueIsAnXButYWasExpected(result, options.expectedValue)))
+			} else if deeperValueMismatch {
+				options.setActualValueMismatchIfNotNil()
+				deeperValueMismatch = false //reset so that we can use the variable for other results.
 			}
 		}
 	}
@@ -2842,11 +2907,24 @@ func evalMatchExpression(n *parse.MatchExpression, state *State) (_ Value, final
 			narrowChain(n.Discriminant, removePossibleValue, val, blockStateFork, 0)
 		}
 
-		result, err := symbolicEval(defaultCase.Result, blockStateFork)
+		result, err := _symbolicEval(defaultCase.Result, blockStateFork, evalOptions{
+			actualValueMismatch: &deeperValueMismatch,
+			expectedValue:       options.expectedValue,
+		})
+
 		if err != nil {
 			return nil, err
 		}
+
 		results = append(results, result)
+
+		if options.expectedValue != nil && !deeperValueMismatch && !options.expectedValue.Test(result, RecTestCallState{}) {
+			options.setActualValueMismatchIfNotNil()
+			state.addError(makeSymbolicEvalError(defaultCase.Result, state, fmtValueIsAnXButYWasExpected(result, options.expectedValue)))
+		} else if deeperValueMismatch {
+			options.setActualValueMismatchIfNotNil()
+			deeperValueMismatch = false //reset so that we can use the variable for other results.
+		}
 	}
 
 	if len(n.DefaultCases) == 0 {

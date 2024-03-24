@@ -7210,6 +7210,21 @@ func TestSymbolicEval(t *testing.T) {
 				makeSymbolicEvalError(boolLiterals[2], state, fmtNotAssignableToPropOfType(FALSE, ANY_INT)),
 			}, state.errors())
 		})
+
+		t.Run("mismatches should be reported at the positions of the consequent and alternate", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				var b bool = (if true 1 else 2)
+			`, nil)
+
+			intLiterals := parse.FindNodes(n, (*parse.IntLiteral)(nil), nil)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(intLiterals[0], state, fmtValueIsAnXButYWasExpected(INT_1, ANY_BOOL)),
+				makeSymbolicEvalError(intLiterals[1], state, fmtValueIsAnXButYWasExpected(INT_2, ANY_BOOL)),
+			}, state.errors())
+		})
 	})
 
 	t.Run("assignment", func(t *testing.T) {
@@ -9135,6 +9150,42 @@ func TestSymbolicEval(t *testing.T) {
 			}, state.errors())
 			assert.Equal(t, ANY_BOOL, res)
 		})
+
+		t.Run("the expected value constraint should be passed to the cases", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				var b ({a: int}) = switch 1 { 
+					1 => {a: true} 
+					defaultcase => {a: false}
+				)
+			`, nil)
+
+			boolLiterals := parse.FindNodes(n, (*parse.BooleanLiteral)(nil), nil)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(boolLiterals[0], state, fmtNotAssignableToPropOfType(TRUE, ANY_INT)),
+				makeSymbolicEvalError(boolLiterals[1], state, fmtNotAssignableToPropOfType(FALSE, ANY_INT)),
+			}, state.errors())
+		})
+
+		t.Run("mismatches should be reported at the cases's results", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				var b bool = switch "a" { 
+					"a" => 1
+					defaultcase => 2
+				)
+			`, nil)
+
+			intLiterals := parse.FindNodes(n, (*parse.IntLiteral)(nil), nil)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(intLiterals[0], state, fmtValueIsAnXButYWasExpected(INT_1, ANY_BOOL)),
+				makeSymbolicEvalError(intLiterals[1], state, fmtValueIsAnXButYWasExpected(INT_2, ANY_BOOL)),
+			}, state.errors())
+		})
 	})
 
 	t.Run("match statement", func(t *testing.T) {
@@ -9580,6 +9631,42 @@ func TestSymbolicEval(t *testing.T) {
 				makeSymbolicEvalError(unaryExpr, state, fmtOperandOfBoolNegateShouldBeBool(NewString("s"))),
 			}, state.errors())
 			assert.Equal(t, NewMultivalue(ANY_BOOL, Nil), res)
+		})
+
+		t.Run("the expected value constraint should be passed to the cases", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				var b ({a: int}) = match 1 { 
+					1 => {a: true} 
+					defaultcase => {a: false}
+				)
+			`, nil)
+
+			boolLiterals := parse.FindNodes(n, (*parse.BooleanLiteral)(nil), nil)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(boolLiterals[0], state, fmtNotAssignableToPropOfType(TRUE, ANY_INT)),
+				makeSymbolicEvalError(boolLiterals[1], state, fmtNotAssignableToPropOfType(FALSE, ANY_INT)),
+			}, state.errors())
+		})
+
+		t.Run("mismatches should be reported at the cases's results", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				var b bool = match "a" { 
+					"a" => 1
+					defaultcase => 2
+				)
+			`, nil)
+
+			intLiterals := parse.FindNodes(n, (*parse.IntLiteral)(nil), nil)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(intLiterals[0], state, fmtValueIsAnXButYWasExpected(INT_1, ANY_BOOL)),
+				makeSymbolicEvalError(intLiterals[1], state, fmtValueIsAnXButYWasExpected(INT_2, ANY_BOOL)),
+			}, state.errors())
 		})
 	})
 
