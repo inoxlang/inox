@@ -2164,8 +2164,24 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		}, nil
 	case *parse.FunctionDeclaration:
 		funcName := n.Name.Name
-		if state.HasGlobal(funcName) { //Declared before the statement.
-			return nil, nil
+		if val, ok := state.GetGlobal(funcName); ok { //Function pre-eclared before this statement or re-declaration in shell.
+
+			if !state.currentChunk().Node.IsShellChunk {
+				//Function pre-declared before this statement
+				return nil, nil
+			}
+
+			fn, ok := val.(*InoxFunction)
+			if !ok {
+				panic(ErrUnreachable)
+			}
+
+			if fn.Chunk == state.currentChunk() {
+				//Function pre-declared before this statement
+				return nil, nil
+			}
+
+			//Re-declaration in shell.
 		}
 
 		localScope := state.CurrentLocalScope()
