@@ -14,15 +14,15 @@ import (
 const (
 	MIN_TOKEN_CACHING_COUNT = 2
 
-	OTHERPROPS_KEYWORD_STRING       = "otherprops"
-	ASSERT_KEYWORD_STRING           = "assert"
-	IF_KEYWORD_STRING               = "if"
-	FOR_KEYWORD_STRING              = "for"
-	SWITCH_KEYWORD_STRING           = "switch"
-	MATCH_KEYWORD_STRING            = "match"
-	STRUCT_KEYWORD_STRING           = "struct"
-	NEW_KEYWORD_STRING              = "new"
-	INCLUDABLE_CHUNK_KEYWORD_STRING = "includable-file"
+	OTHERPROPS_KEYWORD_STRING      = "otherprops"
+	ASSERT_KEYWORD_STRING          = "assert"
+	IF_KEYWORD_STRING              = "if"
+	FOR_KEYWORD_STRING             = "for"
+	SWITCH_KEYWORD_STRING          = "switch"
+	MATCH_KEYWORD_STRING           = "match"
+	STRUCT_KEYWORD_STRING          = "struct"
+	NEW_KEYWORD_STRING             = "new"
+	INCLUDABLE_FILE_KEYWORD_STRING = "includable-file"
 )
 
 var (
@@ -60,7 +60,7 @@ const (
 	ELSE_KEYWORD
 	PREINIT_KEYWORD
 	MANIFEST_KEYWORD
-	INCLUDABLE_CHUNK_KEYWORD
+	INCLUDABLE_FILE_KEYWORD
 	DROP_PERMS_KEYWORD
 	ASSIGN_KEYWORD
 	READONLY_KEYWORD
@@ -312,7 +312,7 @@ var tokenStrings = [...]string{
 	ELSE_KEYWORD:                   "else",
 	PREINIT_KEYWORD:                "preinit",
 	MANIFEST_KEYWORD:               "manifest",
-	INCLUDABLE_CHUNK_KEYWORD:       INCLUDABLE_CHUNK_KEYWORD_STRING,
+	INCLUDABLE_FILE_KEYWORD:        INCLUDABLE_FILE_KEYWORD_STRING,
 	DROP_PERMS_KEYWORD:             "drop-perms",
 	ASSIGN_KEYWORD:                 "assign",
 	READONLY_KEYWORD:               "readonly",
@@ -475,7 +475,7 @@ var tokenTypenames = [...]string{
 	ELSE_KEYWORD:                   "ELSE_KEYWORD",
 	PREINIT_KEYWORD:                "PREINIT_KEYWORD",
 	MANIFEST_KEYWORD:               "inoxconsts.MANIFEST_KEYWORD",
-	INCLUDABLE_CHUNK_KEYWORD:       "INCLUDABLE_CHUNK_KEYWORD",
+	INCLUDABLE_FILE_KEYWORD:        "INCLUDABLE_CHUNK_KEYWORD",
 	DROP_PERMS_KEYWORD:             "DROP_PERMS_KEYWORD",
 	ASSIGN_KEYWORD:                 "ASSIGN_KEYWORD",
 	READONLY_KEYWORD:               "READONLY_KEYWORD",

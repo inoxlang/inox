@@ -56,7 +56,7 @@ var (
 	KEYWORDS                     = tokenStrings[IF_KEYWORD : OR_KEYWORD+1]
 	PREINIT_KEYWORD_STR          = tokenStrings[PREINIT_KEYWORD]
 	MANIFEST_KEYWORD_STR         = tokenStrings[MANIFEST_KEYWORD]
-	INCLUDABLE_CHUNK_KEYWORD_STR = tokenStrings[INCLUDABLE_CHUNK_KEYWORD]
+	INCLUDABLE_CHUNK_KEYWORD_STR = tokenStrings[INCLUDABLE_FILE_KEYWORD]
 	CONST_KEYWORD_STR            = tokenStrings[CONST_KEYWORD]
 	READONLY_KEYWORD_STR         = tokenStrings[READONLY_KEYWORD]
 	SCHEMES                      = []string{"http", "https", "ws", "wss", inoxconsts.LDB_SCHEME_NAME, inoxconsts.ODB_SCHEME_NAME, "file", "mem", "s3"}
@@ -5421,7 +5421,7 @@ func (p *parser) parseIncludaleChunkDescIfPresent() *IncludableChunkDescription 
 	if p.i < p.len && strings.HasPrefix(string(p.s[p.i:]), INCLUDABLE_CHUNK_KEYWORD_STR) {
 		start := p.i
 
-		token := Token{Type: INCLUDABLE_CHUNK_KEYWORD, Span: NodeSpan{p.i, p.i + int32(len(INCLUDABLE_CHUNK_KEYWORD_STR))}}
+		token := Token{Type: INCLUDABLE_FILE_KEYWORD, Span: NodeSpan{p.i, p.i + int32(len(INCLUDABLE_CHUNK_KEYWORD_STR))}}
 		p.tokens = append(p.tokens, token)
 		p.i += int32(len(INCLUDABLE_CHUNK_KEYWORD_STR))
 
