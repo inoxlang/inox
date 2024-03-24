@@ -10,7 +10,6 @@
 
 ## Number Negation
 
-
 ```
 - int     # integer negation: -1
 - float   # float negation: -1.0
@@ -18,7 +17,8 @@
 - 1       # integer negation
 ```
 
-`-1` and `-1.0` are literals because there is no space between the minus sign and the first digit.
+`-1` and `-1.0` are literals because there is no space between the minus sign
+and the first digit.
 
 ## Boolean Negation
 
@@ -75,21 +75,21 @@ value? # true
 
 ### Coercion table
 
-| value                   | result  |
-| ----------------------- | ------- |
-| `nil`                   | `false` |
-| `non-empty indexable`   | `true`  |
-| `empty indexable`       | `false` |
-| `non-empty container`   | `false` |
-| `empty container`       | `true`  |
-| `non-zero integral`     | `true`  |
-| `0 (any integral type)` | `false` |
-| `non-zero float`        | `true`  |
-| `0.0`                   | `false` |
-| `non-zero quantity`     | `true`  |
-| `0 (any quantity type)` | `false` |
-| `non-zero rate`         | `true`  |
-| `0 (any rate type)`     | `false` |
-| `true`                  | `true`  |
-| `false`                 | `false` |
-| **other types**         | `true`  |
+| value                                 | result  |
+| ------------------------------------- | ------- |
+| `nil`                                 | `false` |
+| `indexable with at least one element` | `true`  |
+| `empty indexable`                     | `false` |
+| `container with at least one element` | `true`  |
+| `empty container`                     | `false` |
+| `non-zero integral`                   | `true`  |
+| `0 (any integral type)`               | `false` |
+| `non-zero float`                      | `true`  |
+| `0.0 and -0.0`                        | `false` |
+| `non-zero quantity`                   | `true`  |
+| `0 (any quantity type)`               | `false` |
+| `non-zero rate`                       | `true`  |
+| `0 (any rate type)`                   | `false` |
+| `true`                                | `true`  |
+| `false`                               | `false` |
+| **other types**                       | `true`  |
