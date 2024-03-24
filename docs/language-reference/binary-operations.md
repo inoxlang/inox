@@ -4,8 +4,17 @@
 
 # Binary Operations
 
-Binary operations are always parenthesized: `(1 + 2)`, `(1 < 2)`, `(a or b)`.\
-Parentheses can be omitted around operands of **or**/**and** chains:
+Operands of binary operations need to be parenthesized, unless they are 'simple':
+
+```
+n = 1 + 2         # ok
+
+n = 1 + 2 + 3     # error
+n = (1 + 2) + 3   # ok
+n = 1 + (2 + 3)   # ok
+```
+
+Parentheses can be omitted around operands of parenthesized **or**/**and** chains:
 
 ```
 (a or b or c)       # ok
@@ -14,6 +23,21 @@ Parentheses can be omitted around operands of **or**/**and** chains:
 (a or b and c)      # error: 'or' and 'and' cannot be mixed in the same chain
 (a or (b and c))    # ok
 ((a or b) and c)    # ok
+```
+
+⚠️ In some places binary operations need to be parenthesized:
+
+```
+1 + 2           # (statement) error
+(1 + 2)         # (statement) ok
+
+print 1 + 2     # (function call) valid but not equivalent to `print (1 + 2)`
+print (1 + 2)   # ok
+
+
+name_or_nil = ...
+concat "Hello " name_or_nil ?? b    # error
+concat "Hello " (name_or_nil ?? b)  # ok
 ```
 
 - [Arithmetic](#arithmetic)

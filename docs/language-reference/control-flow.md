@@ -5,6 +5,7 @@
 # Control Flow
 
 - [If statement](#if-statement--expression)
+- [If expression](#if-expression)
 - [Switch statement](#switch-statement)
 - [Switch expression](#switch-expression)
 - [Match statement](#match-statement)
@@ -14,20 +15,16 @@
 - [Walk statement](#walk-statement)
 - [Pipe statement](#pipe-statement)
 
-## If Statement & Expression
+## If Statement
 
 ```
 a = 1
 
-if (a > 0){
+if a > 0 {
     # ...
 } else {
     # ...
 }
-
-string = (if (a > 0) "positive" else "negative or zero")
-
-val = (if false 1) # val is nil because the condition is false
 ```
 
 When the condition is a [boolean conversion expression](./unary-operations.md#boolean-conversion) the type of the converted
@@ -41,6 +38,39 @@ if intOrNil? {
 } else {
     # intOrNil is nil
 }
+```
+
+⚠️ `if a < b and b < c {}` is not a valid **if** statement, it should be written `if (a < b and b < c)` instead.\
+This is because complex [binary operations](./binary-operations.md) need to be parenthesized.
+
+## If Expression
+
+**If** expressions are always surrounded by parentheses.
+
+```
+string = (if a > 0 "positive" else "negative or zero")
+```
+
+The `else` clause is optional, and `nil` is returned when the condition is false:
+
+```
+(if false 1)  # nil
+```
+
+**If** expressions can span several lines:
+
+```
+string = (
+    if a > 0 "positive" 
+    else "negative or zero"
+)
+
+string = (
+    if a > 0 
+        "positive" 
+    else 
+        "negative or zero"
+)
 ```
 
 ## Switch Statement

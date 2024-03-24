@@ -99,7 +99,7 @@ functions.
 
 ## Inclusion Imports
 
-Inclusion imports include the content of a file in the current file. They are
+Inclusion imports include the content of a file in the current file. Includable files are
 useful to decompose a module or regroup pattern definitions/functions shared
 between modules.
 
@@ -118,7 +118,7 @@ pattern user = {
 }
 ```
 
-⚠️ It is not recommended to perform computations or make I/O operations at the top level of included chunks.
+⚠️ Includable files can only contain definitions (functions, patterns, ...).
 
 ## Module Imports
 
