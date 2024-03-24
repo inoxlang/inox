@@ -564,13 +564,17 @@ func TestPrint(t *testing.T) {
 		"fn() int => 0",
 		"fn() int =",
 		"fn() int =\n",
-		//xml
-		"h<div></div>",
+		//XML expressions with an implicit namespace
+		"(<div>",
 		"(<div></div>)",
+		"(<div><ul>",
 		"(<div><ul></div>)",
 		"(<div><ul></ol></div>)",
 		"(<div><ul></ol><a></a></div>)",
+		"(<div><ul></ol><a></span>",
 		"(<div><ul></ol><a></span></div>)",
+		//XML expressions with an explicit namespace
+		"h<div></div>",
 		"h<div",
 		"h<div/>",
 		"h<div/",
@@ -612,6 +616,8 @@ func TestPrint(t *testing.T) {
 		"h<script type=\"text/hyperscript\">on click</script>",
 		"h<script type=\"text/hyperscript\" n>on click</script>",
 		"h<script>f()</script>",
+		"(html<div><ul></ol></div>)",
+		"(html<div><ul></ol><a></span></div>)",
 		//imports
 		"import",
 		"import res",
