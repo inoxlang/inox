@@ -376,6 +376,7 @@ func TestPrint(t *testing.T) {
 		"%/{name}",
 		"%/{name",
 		"%/{name\n",
+		//prefixed pattern unions
 		"%|",
 		"%| 1",
 		"%| 1\n",
@@ -384,6 +385,7 @@ func TestPrint(t *testing.T) {
 		"%| a | b",
 		"%| 1\n| 2",
 		"(%| 1\n| 2)",
+		//function patterns
 		"%fn()",
 		"%fn() %int",
 		"%fn() %int {",
@@ -399,6 +401,7 @@ func TestPrint(t *testing.T) {
 		"%fn() int => 0",
 		"%fn() int =",
 		"%fn() int =\n",
+		//pattern declarations
 		"pattern p =",
 		"pattern p = 1",
 		"pattern p = #{}",
@@ -411,6 +414,7 @@ func TestPrint(t *testing.T) {
 		"pattern p = #[1",
 		"pattern p = |",
 		"pattern p = | 1 | 2",
+		"pattern p = 1 | 2",
 		"pattern p = |\n",
 		"pattern p = |\n1",
 		"pattern p = |\n1 | 2",

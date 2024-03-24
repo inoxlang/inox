@@ -27240,6 +27240,301 @@ func testParse(
 				},
 			}, n)
 		})
+
+		t.Run("unparenthesized and no leading pipe", func(t *testing.T) {
+			n := mustparseChunk(t, "pattern p = 1 | 2")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
+				Statements: []Node{
+					&PatternDefinition{
+						NodeBase: NodeBase{
+							Span:            NodeSpan{0, 17},
+							IsParenthesized: false,
+						},
+						Left: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{Span: NodeSpan{8, 9}},
+							Name:       "p",
+							Unprefixed: true,
+						},
+						Right: &PatternUnion{
+							NodeBase: NodeBase{
+								NodeSpan{12, 17},
+								nil,
+								false,
+							},
+							Cases: []Node{
+								&IntLiteral{
+									NodeBase: NodeBase{NodeSpan{12, 13}, nil, false},
+									Raw:      `1`,
+									Value:    1,
+								},
+								&IntLiteral{
+									NodeBase: NodeBase{NodeSpan{16, 17}, nil, false},
+									Raw:      `2`,
+									Value:    2,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("unparenthesized and no leading pipe: 3 cases", func(t *testing.T) {
+			n := mustparseChunk(t, "pattern p = 1 | 2 | 3")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
+				Statements: []Node{
+					&PatternDefinition{
+						NodeBase: NodeBase{
+							Span:            NodeSpan{0, 21},
+							IsParenthesized: false,
+						},
+						Left: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{Span: NodeSpan{8, 9}},
+							Name:       "p",
+							Unprefixed: true,
+						},
+						Right: &PatternUnion{
+							NodeBase: NodeBase{
+								NodeSpan{12, 21},
+								nil,
+								false,
+							},
+							Cases: []Node{
+								&IntLiteral{
+									NodeBase: NodeBase{NodeSpan{12, 13}, nil, false},
+									Raw:      `1`,
+									Value:    1,
+								},
+								&IntLiteral{
+									NodeBase: NodeBase{NodeSpan{16, 17}, nil, false},
+									Raw:      `2`,
+									Value:    2,
+								},
+								&IntLiteral{
+									NodeBase: NodeBase{NodeSpan{20, 21}, nil, false},
+									Raw:      `3`,
+									Value:    3,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("unparenthesized and no leading pipe: followed by a linefeed", func(t *testing.T) {
+			n := mustparseChunk(t, "pattern p = 1 | 2\n")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 18}, nil, false},
+				Statements: []Node{
+					&PatternDefinition{
+						NodeBase: NodeBase{
+							Span:            NodeSpan{0, 17},
+							IsParenthesized: false,
+						},
+						Left: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{Span: NodeSpan{8, 9}},
+							Name:       "p",
+							Unprefixed: true,
+						},
+						Right: &PatternUnion{
+							NodeBase: NodeBase{
+								NodeSpan{12, 17},
+								nil,
+								false,
+							},
+							Cases: []Node{
+								&IntLiteral{
+									NodeBase: NodeBase{NodeSpan{12, 13}, nil, false},
+									Raw:      `1`,
+									Value:    1,
+								},
+								&IntLiteral{
+									NodeBase: NodeBase{NodeSpan{16, 17}, nil, false},
+									Raw:      `2`,
+									Value:    2,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("unparenthesized and no leading pipe: followed by a linefeed and a statement", func(t *testing.T) {
+			n := mustparseChunk(t, "pattern p = 1 | 2\na")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
+				Statements: []Node{
+					&PatternDefinition{
+						NodeBase: NodeBase{
+							Span:            NodeSpan{0, 17},
+							IsParenthesized: false,
+						},
+						Left: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{Span: NodeSpan{8, 9}},
+							Name:       "p",
+							Unprefixed: true,
+						},
+						Right: &PatternUnion{
+							NodeBase: NodeBase{
+								NodeSpan{12, 17},
+								nil,
+								false,
+							},
+							Cases: []Node{
+								&IntLiteral{
+									NodeBase: NodeBase{NodeSpan{12, 13}, nil, false},
+									Raw:      `1`,
+									Value:    1,
+								},
+								&IntLiteral{
+									NodeBase: NodeBase{NodeSpan{16, 17}, nil, false},
+									Raw:      `2`,
+									Value:    2,
+								},
+							},
+						},
+					},
+					&IdentifierLiteral{
+						NodeBase: NodeBase{NodeSpan{18, 19}, nil, false},
+						Name:     "a",
+					},
+				},
+			}, n)
+		})
+
+		t.Run("unparenthesized, no leading pipe, at the end of an object pattern", func(t *testing.T) {
+			n := mustparseChunk(t, "%{a: 1 | 2}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 11}, nil, false},
+				Statements: []Node{
+					&ObjectPatternLiteral{
+						NodeBase: NodeBase{
+							Span:            NodeSpan{0, 11},
+							IsParenthesized: false,
+						},
+						Properties: []*ObjectPatternProperty{
+							{
+								NodeBase: NodeBase{Span: NodeSpan{2, 10}},
+								Key: &IdentifierLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{2, 3}},
+									Name:     "a",
+								},
+								Value: &PatternUnion{
+									NodeBase: NodeBase{Span: NodeSpan{5, 10}},
+									Cases: []Node{
+										&IntLiteral{
+											NodeBase: NodeBase{NodeSpan{5, 6}, nil, false},
+											Raw:      `1`,
+											Value:    1,
+										},
+										&IntLiteral{
+											NodeBase: NodeBase{NodeSpan{9, 10}, nil, false},
+											Raw:      `2`,
+											Value:    2,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("unparenthesized, no leading pipe, at the end of an object pattern, followed by a linefeed", func(t *testing.T) {
+			n := mustparseChunk(t, "%{a: 1 | 2\n}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
+				Statements: []Node{
+					&ObjectPatternLiteral{
+						NodeBase: NodeBase{
+							Span:            NodeSpan{0, 12},
+							IsParenthesized: false,
+						},
+						Properties: []*ObjectPatternProperty{
+							{
+								NodeBase: NodeBase{Span: NodeSpan{2, 10}},
+								Key: &IdentifierLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{2, 3}},
+									Name:     "a",
+								},
+								Value: &PatternUnion{
+									NodeBase: NodeBase{Span: NodeSpan{5, 10}},
+									Cases: []Node{
+										&IntLiteral{
+											NodeBase: NodeBase{NodeSpan{5, 6}, nil, false},
+											Raw:      `1`,
+											Value:    1,
+										},
+										&IntLiteral{
+											NodeBase: NodeBase{NodeSpan{9, 10}, nil, false},
+											Raw:      `2`,
+											Value:    2,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("unparenthesized and no leading pipe: followed by a linefeed and a property", func(t *testing.T) {
+			n := mustparseChunk(t, "%{a: 1 | 2\nb: 1}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
+				Statements: []Node{
+					&ObjectPatternLiteral{
+						NodeBase: NodeBase{
+							Span:            NodeSpan{0, 16},
+							IsParenthesized: false,
+						},
+						Properties: []*ObjectPatternProperty{
+							{
+								NodeBase: NodeBase{Span: NodeSpan{2, 10}},
+								Key: &IdentifierLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{2, 3}},
+									Name:     "a",
+								},
+								Value: &PatternUnion{
+									NodeBase: NodeBase{Span: NodeSpan{5, 10}},
+									Cases: []Node{
+										&IntLiteral{
+											NodeBase: NodeBase{NodeSpan{5, 6}, nil, false},
+											Raw:      `1`,
+											Value:    1,
+										},
+										&IntLiteral{
+											NodeBase: NodeBase{NodeSpan{9, 10}, nil, false},
+											Raw:      `2`,
+											Value:    2,
+										},
+									},
+								},
+							},
+							{
+								NodeBase: NodeBase{Span: NodeSpan{11, 15}},
+								Key: &IdentifierLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{11, 12}},
+									Name:     "b",
+								},
+								Value: &IntLiteral{
+									NodeBase: NodeBase{NodeSpan{14, 15}, nil, false},
+									Raw:      `1`,
+									Value:    1,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
 	})
 
 	t.Run("assert statement", func(t *testing.T) {

@@ -5,7 +5,7 @@ func (p *parser) eatComment() bool {
 
 	start := p.i
 
-	if p.i < p.len-1 && isSpaceNotLF(p.s[p.i+1]) {
+	if p.i < p.len-1 && IsCommentFirstSpace(p.s[p.i+1]) {
 		p.i += 2
 		for p.i < p.len && p.s[p.i] != '\n' {
 			p.i++
@@ -82,6 +82,34 @@ loop:
 		p.i++
 	}
 
+}
+
+func (p *parser) areNextSpacesNewlinesCommentsFollowedBy(r rune) bool {
+	p.panicIfContextDone()
+
+	index := p.i
+loop:
+	for index < p.len {
+		switch p.s[index] {
+		case ' ', '\t', '\r', '\n':
+		case '#':
+			if index == p.len-1 || !IsCommentFirstSpace(p.s[index]) {
+				//Not a comment
+				return false
+			}
+
+			for index < p.len && p.s[index] != '\n' {
+				index++
+			}
+
+			continue
+		default:
+			break loop
+		}
+		index++
+	}
+
+	return index < p.len && p.s[index] == r
 }
 
 func (p *parser) eatSpaceNewlineCommaComment() {

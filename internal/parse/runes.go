@@ -131,6 +131,10 @@ func isSpaceNotLF(r rune) bool {
 	return r == ' ' || r == '\t' || r == '\r'
 }
 
+func isSpace(r rune) bool {
+	return r == ' ' || r == '\t' || r == '\r' || r == '\n'
+}
+
 func isEndOfLine(runes []rune, i int32) bool {
 	if runes[i] == '\n' {
 		return true

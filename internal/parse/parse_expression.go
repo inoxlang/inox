@@ -1,9 +1,10 @@
 package parse
 
 type exprParsingConfig struct {
-	precededByOpeningParen         bool
-	statement                      bool
-	disallowUnparenthesizedBinExpr bool
+	precededByOpeningParen                  bool
+	statement                               bool
+	disallowUnparenthesizedBinExpr          bool
+	disallowParsingSeveralPatternUnionCases bool
 }
 
 // parseExpression parses any expression, if $expr is a *MissingExpression $isMissingExpr will be true.
@@ -21,6 +22,15 @@ func (p *parser) parseExpression(config ...exprParsingConfig) (expr Node, isMiss
 			binExpr, ok := p.tryParseUnparenthesizedBinaryExpr(expr)
 			if ok {
 				expr = binExpr
+				return
+			}
+		}
+
+		//union pattern without leading pipe
+		if p.inPattern && !isStmt && expr != nil && !isMissingExpr && (len(config) == 0 || !config[0].disallowParsingSeveralPatternUnionCases) {
+			patternUnion, ok := p.tryParsePatternUnionWithoutLeadingPipe(expr, precededByOpeningParen)
+			if ok {
+				expr = patternUnion
 				return
 			}
 		}
@@ -141,7 +151,8 @@ func (p *parser) parseExpression(config ...exprParsingConfig) (expr Node, isMiss
 		return p.parseListOrTupleLiteral(false), false
 	case '|':
 		if p.inPattern {
-			return p.parsePatternUnion(p.i, false, precededByOpeningParen), false
+			caseBeforeFirstPipe := Node(nil)
+			return p.parsePatternUnion(p.i, false, caseBeforeFirstPipe, precededByOpeningParen), false
 		}
 	case '\'':
 		return p.parseRuneRuneRange(), false

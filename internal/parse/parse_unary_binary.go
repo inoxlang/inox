@@ -125,16 +125,6 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(openingParenIndex in
 		left = unaryExpr
 	}
 
-	if p.i < p.len && p.s[p.i] == ')' { //parenthesized
-		if !hasPreviousOperator {
-			p.i++
-
-			p.tokens = append(p.tokens, Token{Type: CLOSING_PARENTHESIS, Span: NodeSpan{p.i - 1, p.i}})
-			left.BasePtr().IsParenthesized = true
-		}
-		return left
-	}
-
 	if p.i >= p.len {
 		left.BasePtr().IsParenthesized = !hasPreviousOperator
 
@@ -144,6 +134,21 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(openingParenIndex in
 			}
 		}
 		return left
+	}
+
+	if p.s[p.i] == ')' { //parenthesized expression or pattern union with a leading pipe
+		if !hasPreviousOperator {
+			p.i++
+
+			p.tokens = append(p.tokens, Token{Type: CLOSING_PARENTHESIS, Span: NodeSpan{p.i - 1, p.i}})
+			left.BasePtr().IsParenthesized = true
+		}
+		return left
+	}
+
+	if p.s[p.i] == '|' { //pattern union without a leading pipe
+		precededByOpeningParen := true
+		p.tryParsePatternUnionWithoutLeadingPipe(left, precededByOpeningParen)
 	}
 
 	endOnLinefeed := false

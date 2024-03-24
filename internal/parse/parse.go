@@ -2278,12 +2278,24 @@ func (p *parser) parsePercentAlphaStartingExpr() Node {
 	return left
 }
 
-func (p *parser) parsePatternUnion(start int32, isPercentPrefixed bool, precededByOpeningParen bool) *PatternUnion {
+// parsePatternUnion parses a pattern union until the next linefeed if $precededByOpeningParen is false, until the next
+// unpaired or closing delimiter otherwise. Even if $precededByOpeningParen is true parsePatternUnion stops at the closing
+// parenthesis, the parenthesis should be handled by the caller.
+func (p *parser) parsePatternUnion(
+	start int32,
+	isPercentPrefixed bool,
+	caseBeforeFirstPipe Node, /*set if no leading pipe*/
+	precededByOpeningParen bool,
+) *PatternUnion {
 	p.panicIfContextDone()
 
 	var (
 		cases []Node
 	)
+
+	if caseBeforeFirstPipe != nil {
+		cases = append(cases, caseBeforeFirstPipe)
+	}
 
 	if isPercentPrefixed {
 		p.tokens = append(p.tokens, Token{Type: PATTERN_UNION_OPENING_PIPE, Span: NodeSpan{p.i - 1, p.i + 1}})
@@ -2292,30 +2304,30 @@ func (p *parser) parsePatternUnion(start int32, isPercentPrefixed bool, preceded
 	}
 
 	p.i++
-	if precededByOpeningParen {
-		p.eatSpaceNewlineCommaComment()
-	} else {
-		p.eatSpace()
-	}
 
-	case_, _ := p.parseExpression()
-	cases = append(cases, case_)
-
-	if precededByOpeningParen {
-		p.eatSpaceNewlineCommaComment()
-	} else {
-		p.eatSpace()
-	}
-
-	for p.i < p.len && (p.s[p.i] == '|' ||
-		(precededByOpeningParen && p.s[p.i] == '\n') ||
-		!isUnpairedOrIsClosingDelim(p.s[p.i])) {
-
+	eatNonSignificant := func() {
 		if precededByOpeningParen {
 			p.eatSpaceNewlineCommaComment()
 		} else {
 			p.eatSpace()
 		}
+	}
+
+	eatNonSignificant()
+
+	case_, _ := p.parseExpression(exprParsingConfig{
+		disallowParsingSeveralPatternUnionCases: true,
+	})
+
+	cases = append(cases, case_)
+
+	eatNonSignificant()
+
+	for p.i < p.len && (p.s[p.i] == '|' ||
+		(precededByOpeningParen && p.s[p.i] == '\n') ||
+		!isUnpairedOrIsClosingDelim(p.s[p.i])) {
+
+		eatNonSignificant()
 
 		if p.s[p.i] != '|' {
 			return &PatternUnion{
@@ -2330,20 +2342,14 @@ func (p *parser) parsePatternUnion(start int32, isPercentPrefixed bool, preceded
 		p.tokens = append(p.tokens, Token{Type: PIPE, SubType: UNPREFIXED_PATTERN_UNION_PIPE, Span: NodeSpan{p.i, p.i + 1}})
 		p.i++
 
-		if precededByOpeningParen {
-			p.eatSpaceNewlineCommaComment()
-		} else {
-			p.eatSpace()
-		}
+		eatNonSignificant()
 
-		case_, _ := p.parseExpression()
+		case_, _ := p.parseExpression(exprParsingConfig{
+			disallowParsingSeveralPatternUnionCases: true,
+		})
 		cases = append(cases, case_)
 
-		if precededByOpeningParen {
-			p.eatSpaceNewlineCommaComment()
-		} else {
-			p.eatSpace()
-		}
+		eatNonSignificant()
 	}
 
 	return &PatternUnion{
@@ -2354,6 +2360,34 @@ func (p *parser) parsePatternUnion(start int32, isPercentPrefixed bool, preceded
 		},
 		Cases: cases,
 	}
+}
+
+func (p *parser) tryParsePatternUnionWithoutLeadingPipe(firstCase Node, precededByOpeningParen bool) (*PatternUnion, bool) {
+	startIndex := firstCase.Base().Span.Start
+
+	tempIndex := p.i
+
+	if precededByOpeningParen {
+		if !p.areNextSpacesNewlinesCommentsFollowedBy('|') {
+			return nil, false
+		}
+		//Eat the spaces and comments because we know we are in a pattern union.
+		p.eatSpaceNewlineComment()
+	} else {
+		//We can only eat regular space because the expression is not parenthesized.
+		for tempIndex < p.len && isSpaceNotLF(p.s[tempIndex]) {
+			tempIndex++
+		}
+		if tempIndex >= p.len || p.s[tempIndex] != '|' {
+			return nil, false
+		}
+		//Eat the spaces because we know we are in a pattern union.
+		p.eatSpaceNewline()
+	}
+
+	//The '|' token will be eaten by parsePatternUnion.
+	isPercentPrefixed := false
+	return p.parsePatternUnion(startIndex, isPercentPrefixed, firstCase, precededByOpeningParen), true
 }
 
 func (p *parser) parsePatternCall(callee Node) *PatternCallExpression {
@@ -3724,7 +3758,9 @@ func (p *parser) parsePercentPrefixedPattern(precededByOpeningParen bool) Node {
 		}()
 		p.inPattern = true
 
-		union := p.parsePatternUnion(start, true, precededByOpeningParen)
+		caseBeforeFirstPipe := Node(nil)
+
+		union := p.parsePatternUnion(start, true, caseBeforeFirstPipe, precededByOpeningParen)
 		p.eatSpace()
 
 		return union
@@ -7721,7 +7757,10 @@ func (p *parser) parseFunction(start int32) Node {
 			prev := p.inPattern
 			p.inPattern = true
 
-			returnType, _ = p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+			returnType, _ = p.parseExpression(exprParsingConfig{
+				disallowUnparenthesizedBinExpr:          true,
+				disallowParsingSeveralPatternUnionCases: true,
+			})
 
 			p.inPattern = prev
 		}
@@ -7988,7 +8027,10 @@ func (p *parser) parseFunctionPattern(start int32, percentPrefixed bool) Node {
 			inPatternSave := p.inPattern
 			p.inPattern = true
 
-			returnType, _ = p.parseExpression()
+			returnType, _ = p.parseExpression(exprParsingConfig{
+				disallowUnparenthesizedBinExpr:          true,
+				disallowParsingSeveralPatternUnionCases: true,
+			})
 
 			p.inPattern = inPatternSave
 		}
