@@ -232,6 +232,9 @@ pattern atomic-json-val = "1"
 ## Union Patterns
 
 ```
+pattern int_or_str = int | str
+
+# alternative syntax
 pattern int_or_str = | int | str
 
 # true
@@ -249,6 +252,14 @@ pattern int_or_str = (
 
 ℹ️ A value is matched by an union pattern if it matches **at least one** of the
 union's cases.
+
+Union patterns used as return types need to be parenthesized:
+
+```
+fn f() (int | str) {
+  return 1
+}
+```
 
 ## Pattern Namespaces
 

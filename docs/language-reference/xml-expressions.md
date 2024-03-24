@@ -4,19 +4,20 @@
 
 # XML Expressions
 
-An XML expression produces a value by passing a XML-like structure to a
+An XML expression produces a value by passing an XML-like structure to a
 namespace that interprets it:
 
 ```
+# The XML structure is passed to the html namespace.
+html<div></div> 
+
+# The namespace can be omitted if the expression is parenthesized.
+# The implicit namespace is always html.
 string = "world"
 element = (<div> Hello {string} ! </div>)
 
 # Self closing tag
 (<img src="..."/>)
-
-
-# Parentheses can be omitted by prefixing the expression with `html`
-html<div></div>
 ```
 
 In the `<script>` and `<style>` tags, anything inside single brackets is not
@@ -25,7 +26,7 @@ treated as an interpolation:
 ```
 html<html>
     <style>
-        html, body {
+        html, body { # not an interpolation
             margin: 0;
         }
     </style>
