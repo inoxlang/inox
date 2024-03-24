@@ -6815,6 +6815,7 @@ func (p *parser) parseXMLExpression(namespaceIdent *IdentifierLiteral /* can be 
 	}
 
 	topElem, _ := p.parseXMLElement(p.i)
+
 	return &XMLExpression{
 		NodeBase:  NodeBase{Span: NodeSpan{start, p.i}},
 		Namespace: namespace,
@@ -7428,7 +7429,7 @@ children_parsing_loop:
 
 			if !noOrExpectedClosingTag {
 				allChildrenHaveMatchingClosingTag = false
-				break children_parsing_loop
+				continue children_parsing_loop
 			}
 		default:
 			p.i++

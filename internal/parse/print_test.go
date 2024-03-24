@@ -567,6 +567,10 @@ func TestPrint(t *testing.T) {
 		//xml
 		"h<div></div>",
 		"(<div></div>)",
+		"(<div><ul></div>)",
+		"(<div><ul></ol></div>)",
+		"(<div><ul></ol><a></a></div>)",
+		"(<div><ul></ol><a></span></div>)",
 		"h<div",
 		"h<div/>",
 		"h<div/",

@@ -3,6 +3,8 @@ package parse
 import (
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 func (p *parser) parseUnaryBinaryAndParenthesizedExpression(openingParenIndex int32, previousOperatorEnd int32) Node {
@@ -29,6 +31,11 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(openingParenIndex in
 	if !hasPreviousOperator && p.i < p.len && p.s[p.i] == '<' {
 		//XML expression without namespace.
 		left = p.parseXMLExpression(nil, p.i)
+
+		if p.areNextSpacesNewlinesCommentsFollowedBy('<') {
+			//Potentially malformed XML expressions.
+			return left
+		}
 	} else {
 		left, isMissingExpr = p.parseExpression(exprParsingConfig{precededByOpeningParen: true, disallowUnparenthesizedBinExpr: true})
 	}
@@ -386,7 +393,12 @@ func (p *parser) tryParseUnparenthesizedBinaryExpr(left Node) (Node, bool) {
 		}
 	case ':':
 		return nil, false
-	case '*', '<', '>', '!':
+	case '*', '>', '!':
+	case '<':
+		if utils.Implements[*XMLExpression](left) {
+			//$left is potentially malformed
+			return nil, false
+		}
 	case '=':
 		if tempIndex < p.len-1 && p.s[tempIndex+1] != '=' {
 			//=>

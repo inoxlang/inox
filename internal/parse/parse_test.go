@@ -32213,6 +32213,245 @@ func testParse(
 				},
 			}, n)
 		})
+
+		t.Run("parenthesized with unexpected closing tag followed by the closing tag of the outer element", func(t *testing.T) {
+			n, err := parseChunk(t, "(<div><ul></ol></div>)", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 22}, nil, false},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{1, 21}, nil, true},
+						Element: &XMLElement{
+							NodeBase: NodeBase{NodeSpan{1, 21}, nil, false},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:     "div",
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+								&XMLElement{
+									NodeBase: NodeBase{NodeSpan{6, 15}, nil, false},
+									Opening: &XMLOpeningElement{
+										NodeBase: NodeBase{Span: NodeSpan{6, 10}},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{7, 9}, nil, false},
+											Name:     "ul",
+										},
+									},
+									Children: []Node{
+										&XMLText{
+											NodeBase: NodeBase{NodeSpan{10, 10}, nil, false},
+											Raw:      "",
+											Value:    "",
+										},
+									},
+									Closing: &XMLClosingElement{
+										NodeBase: NodeBase{
+											NodeSpan{10, 15},
+											&ParsingError{UnspecifiedParsingError, fmtExpectedClosingTag("ul")},
+											false,
+										},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{12, 14}, nil, false},
+											Name:     "ol",
+										},
+									},
+								},
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{15, 15}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &XMLClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{15, 21}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{17, 20}, nil, false},
+									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("parenthesized with unexpected closing tag followed by a space followed by the valid closing tag of the outer element", func(t *testing.T) {
+			n, err := parseChunk(t, "(<div><ul></ol> </div>)", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{1, 22}, nil, true},
+						Element: &XMLElement{
+							NodeBase: NodeBase{NodeSpan{1, 22}, nil, false},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:     "div",
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+								&XMLElement{
+									NodeBase: NodeBase{NodeSpan{6, 15}, nil, false},
+									Opening: &XMLOpeningElement{
+										NodeBase: NodeBase{Span: NodeSpan{6, 10}},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{7, 9}, nil, false},
+											Name:     "ul",
+										},
+									},
+									Children: []Node{
+										&XMLText{
+											NodeBase: NodeBase{NodeSpan{10, 10}, nil, false},
+											Raw:      "",
+											Value:    "",
+										},
+									},
+									Closing: &XMLClosingElement{
+										NodeBase: NodeBase{
+											NodeSpan{10, 15},
+											&ParsingError{UnspecifiedParsingError, fmtExpectedClosingTag("ul")},
+											false,
+										},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{12, 14}, nil, false},
+											Name:     "ol",
+										},
+									},
+								},
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{15, 16}, nil, false},
+									Raw:      " ",
+									Value:    " ",
+								},
+							},
+							Closing: &XMLClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{16, 22}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{18, 21}, nil, false},
+									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("parenthesized with unexpected closing tag followed by a sibling element", func(t *testing.T) {
+			n, err := parseChunk(t, "(<div><ul></ol><a></a></div>)", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 29}, nil, false},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{1, 28}, nil, true},
+						Element: &XMLElement{
+							NodeBase: NodeBase{NodeSpan{1, 28}, nil, false},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:     "div",
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+								&XMLElement{
+									NodeBase: NodeBase{NodeSpan{6, 15}, nil, false},
+									Opening: &XMLOpeningElement{
+										NodeBase: NodeBase{Span: NodeSpan{6, 10}},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{7, 9}, nil, false},
+											Name:     "ul",
+										},
+									},
+									Children: []Node{
+										&XMLText{
+											NodeBase: NodeBase{NodeSpan{10, 10}, nil, false},
+											Raw:      "",
+											Value:    "",
+										},
+									},
+									Closing: &XMLClosingElement{
+										NodeBase: NodeBase{
+											NodeSpan{10, 15},
+											&ParsingError{UnspecifiedParsingError, fmtExpectedClosingTag("ul")},
+											false,
+										},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{12, 14}, nil, false},
+											Name:     "ol",
+										},
+									},
+								},
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{15, 15}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+								&XMLElement{
+									NodeBase: NodeBase{NodeSpan{15, 22}, nil, false},
+									Opening: &XMLOpeningElement{
+										NodeBase: NodeBase{Span: NodeSpan{15, 18}},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{16, 17}, nil, false},
+											Name:     "a",
+										},
+									},
+									Children: []Node{
+										&XMLText{
+											NodeBase: NodeBase{NodeSpan{18, 18}, nil, false},
+											Raw:      "",
+											Value:    "",
+										},
+									},
+									Closing: &XMLClosingElement{
+										NodeBase: NodeBase{Span: NodeSpan{18, 22}},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{20, 21}, nil, false},
+											Name:     "a",
+										},
+									},
+								},
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{22, 22}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &XMLClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{22, 28}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{24, 27}, nil, false},
+									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
 	})
 
 	t.Run("extend statement", func(t *testing.T) {
