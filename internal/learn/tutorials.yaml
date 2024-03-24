@@ -157,26 +157,28 @@
       # 'or' and 'and' cannot be mixed in the same chain
       # (a or b and c)     
     output: []
-  - name: If, Switch, Match
-    id: if-switch-match-basics
+  - name: If, Switch and Match Statements
+    id: if-switch-match-stmt-basics
     program: |
       manifest {}
 
+      # ----- if statement -----
+
       a = 0
 
-      # if statement
-      if (a == 0) {
+      if a == 0 {
           print("a == 0")
       } else {
           print("a != 0")
       }
 
-      # if expression
-      zero = (if (a == 0) 0 else 1)
+      # Complex test conditions need to be parenthesized.
+      # https://github.com/inoxlang/inox/blob/main/docs/language-reference/binary-operations.md
+
+      # ----- switch statement -----
 
       b = 1
 
-      # switch statement
       switch b {
           0 {
               print("b == 0")
@@ -189,7 +191,9 @@
           }
       }
 
-      # The match statement is similar to the switch statement but uses patterns as case values. 
+      # ----- match statement -----
+
+      # The match statement is similar to the switch statement but uses patterns as case values instead. 
       # It executes the block following the first pattern matching the value.
 
       c = 2
@@ -205,10 +209,41 @@
               print "c is not an integer"
           }
       }
+
+      # change the value of c to see what happens !
+
     output:
     - "a == 0"
     - "b == 1"
     - "c is in the range 0..2"
+  - name: If, Switch and Match Expressions
+    id: if-switch-match-expr-basics
+    program: |
+      manifest {}
+
+      # ----- if expression -----
+
+      zero = (if (0 == 0) 0 else 1)
+
+      _nil = (if false 1) # nil is returned when the condition is false
+
+      # Complex test conditions need to be parenthesized.
+      # https://github.com/inoxlang/inox/blob/main/docs/language-reference/binary-operations.md
+
+      # ----- switch expression -----
+
+      var stringified string = switch 1 {
+        1 => "1"
+        defaultcase => "number"
+      }
+
+      # ----- match expression -----
+
+      stringified = match 1 {
+        %int => "integer"
+        defaultcase => "not an integer"
+      }
+
   - name: For statement
     id: for-stmt-basics
     program: |

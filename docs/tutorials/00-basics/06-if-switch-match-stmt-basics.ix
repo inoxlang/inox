@@ -1,22 +1,24 @@
-# [If, Switch, Match] 
+# [If, Switch and Match Statements] 
 
 manifest {}
 
+# ----- if statement -----
+
 a = 0
 
-# if statement
-if (a == 0) {
+if a == 0 {
     print("a == 0")
 } else {
     print("a != 0")
 }
 
-# if expression
-zero = (if (a == 0) 0 else 1)
+# Complex test conditions need to be parenthesized.
+# https://github.com/inoxlang/inox/blob/main/docs/language-reference/binary-operations.md
+
+# ----- switch statement -----
 
 b = 1
 
-# switch statement
 switch b {
     0 {
         print("b == 0")
@@ -29,7 +31,9 @@ switch b {
     }
 }
 
-# The match statement is similar to the switch statement but uses patterns as case values. 
+# ----- match statement -----
+
+# The match statement is similar to the switch statement but uses patterns as case values instead. 
 # It executes the block following the first pattern matching the value.
 
 c = 2
@@ -45,3 +49,5 @@ match c {
         print "c is not an integer"
     }
 }
+
+# change the value of c to see what happens !
