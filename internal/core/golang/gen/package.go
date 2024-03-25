@@ -59,8 +59,7 @@ func (p *Pkg) WriteTo(fs afs.Filesystem, dir string) error {
 
 	pathSegments := pathutils.GetPathSegments(dir)
 	pkgStack := []*ast.Package{p.Pkg}
-
-	unusedFset := token.NewFileSet()
+	unusedFset := token.NewFileSet() //we nedd this for printing Go code.
 
 	var visit visitFn
 	var finalErr error

@@ -48,8 +48,54 @@ func TestTranspileApp(t *testing.T) {
 
 		assert.Equal(t, modName, mod.ModuleName())
 		assert.Equal(t, inoxconsts.MAIN_INOX_MOD_PKG_ID, mod.PkgID())
-		assert.Equal(t, "main", mod.Pkg().Name())
 		assert.Equal(t, inoxconsts.RELATIVE_MAIN_INOX_MOD_PKG_PATH, mod.RelativePkgPath())
+
+		pkg := mod.Pkg().Pkg
+		assert.Equal(t, "main", pkg.Name)
+		assert.Contains(t, pkg.Files, inoxconsts.TRANSPILED_MOD_PRIMARY_FILENAME)
+	})
+
+	t.Run("main module including an empty file", func(t *testing.T) {
+
+		//--------------------------------------------------
+		t.SkipNow()
+		//--------------------------------------------------
+
+		ctx, preparedModules := writeAndPrepareInoxFiles(t, map[string]string{
+			"/main.ix": `manifest {}; import ./lib.ix`,
+			"/lib.ix":  "includable-file",
+		})
+
+		defer ctx.CancelGracefully()
+
+		modName := core.Path("/main.ix")
+
+		app, err := core.TranspileApp(core.AppTranspilationParams{
+			ParentContext:    ctx,
+			MainModule:       modName,
+			ThreadSafeLogger: zerolog.Nop(),
+			Config:           core.AppTranspilationConfig{},
+			PreparedModules:  preparedModules,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		mod, ok := app.GetModule(modName)
+
+		if !assert.True(t, ok) {
+			return
+		}
+
+		assert.Equal(t, modName, mod.ModuleName())
+		assert.Equal(t, inoxconsts.MAIN_INOX_MOD_PKG_ID, mod.PkgID())
+		assert.Equal(t, inoxconsts.RELATIVE_MAIN_INOX_MOD_PKG_PATH, mod.RelativePkgPath())
+
+		pkg := mod.Pkg().Pkg
+		assert.Equal(t, "main", pkg.Name)
+		assert.Contains(t, pkg.Files, inoxconsts.TRANSPILED_MOD_PRIMARY_FILENAME)
+		assert.Contains(t, pkg.Files, "lib_ix.go")
 	})
 }
 

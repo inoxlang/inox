@@ -145,7 +145,7 @@ func (t *Transpiler) transpileMainChunk(state *moduleTranspilationState) error {
 
 	//compile constants
 	if rootNode.GlobalConstantDeclarations != nil {
-		decl, err := t.transpileNode(rootNode.GlobalConstantDeclarations)
+		decl, err := t.transpileNode(rootNode.GlobalConstantDeclarations, state)
 		if err != nil {
 			return err
 		}
@@ -159,14 +159,14 @@ func (t *Transpiler) transpileMainChunk(state *moduleTranspilationState) error {
 	case 0:
 		state.fnDecl.AddStmt(gen.Ret(gen.Nil))
 	case 1:
-		stmt, err := t.transpileNode(rootNode.Statements[0])
+		stmt, err := t.transpileNode(rootNode.Statements[0], state)
 		if err != nil {
 			return err
 		}
 		state.fnDecl.AddStmt(stmt.(goast.Stmt))
 	default:
 		for _, stmt := range rootNode.Statements {
-			stmt, err := t.transpileNode(stmt)
+			stmt, err := t.transpileNode(stmt, state)
 			if err != nil {
 				return err
 			}
@@ -175,24 +175,27 @@ func (t *Transpiler) transpileMainChunk(state *moduleTranspilationState) error {
 	}
 
 	state.file.AddDecl(state.fnDecl.Node())
-	state.pkg.AddFile(inoxconsts.PRIMARY_TRANSPILED_MOD_FILENAME, state.file.F)
+	state.pkg.AddFile(inoxconsts.TRANSPILED_MOD_PRIMARY_FILENAME, state.file.F)
 
 	return nil
 }
 
-func (t *Transpiler) transpileIncludedChunk(chunk *IncludedChunk) (*TranspiledModule, error) {
+func (t *Transpiler) transpileNode(n parse.Node, state *moduleTranspilationState) (goast.Node, error) {
 
-	return nil, nil
-}
-
-func (t *Transpiler) transpileNode(n parse.Node) (goast.Node, error) {
-
-	switch n.(type) {
+	switch n := n.(type) {
 	case *parse.IntLiteral:
-		return nil, nil
+		return gen.IntLit(n.Value), nil
+	case *parse.InclusionImportStatement:
+		includedChunk := state.module.InclusionStatementMap[n]
+		t.transpileIncludedChunk(includedChunk, state)
 	}
 
 	return nil, fmt.Errorf("cannot compile %T", n)
+}
+
+func (t *Transpiler) transpileIncludedChunk(chunk *IncludedChunk, state *moduleTranspilationState) (*TranspiledModule, error) {
+
+	return nil, nil
 }
 
 func (t *Transpiler) printTrace(a ...any) {

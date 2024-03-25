@@ -7,5 +7,5 @@ const (
 
 	MAIN_INOX_MOD_PKG_ID            = GO_MOD_ID + "/app"
 	TRANSPILED_MOD_EXECUTION_FN     = "Execute"
-	PRIMARY_TRANSPILED_MOD_FILENAME = "mod.go" //file present in each Go package corresponding to an Inox module
+	TRANSPILED_MOD_PRIMARY_FILENAME = "_mod_.go" //file present in each Go package corresponding to an Inox module
 )
