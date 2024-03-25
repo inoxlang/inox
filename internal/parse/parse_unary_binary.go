@@ -379,6 +379,11 @@ func (p *parser) tryParseUnparenthesizedBinaryExpr(left Node) (Node, bool) {
 			//member expression
 			return nil, false
 		}
+		if tempIndex < p.len-1 && !isSpace(p.s[tempIndex+1]) {
+			//Prevent parsing property name literals.
+			return nil, false
+		}
+
 		if tempIndex < p.len-1 && p.s[tempIndex+1] == '/' {
 			// path ./
 			return nil, false
