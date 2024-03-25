@@ -674,6 +674,10 @@ func (patt *SequenceStringPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
+func (patt *SequenceStringPattern) Elements() []StringPattern {
+	return slices.Clone(patt.elements)
+}
+
 type UnionStringPattern struct {
 	NotCallablePatternMixin
 	regexp             *regexp.Regexp
@@ -1360,6 +1364,13 @@ func (patt *FloatRangeStringPattern) StringFrom(ctx *Context, v Value) (string, 
 type DynamicStringPatternElement struct {
 	name string
 	ctx  *Context
+}
+
+func NewDynamicStringPatternElement(name string, ctx *Context) *DynamicStringPatternElement {
+	return &DynamicStringPatternElement{
+		name: name,
+		ctx:  ctx,
+	}
 }
 
 func (patt *DynamicStringPatternElement) IsResolved() bool {

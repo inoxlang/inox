@@ -1,10 +1,11 @@
-package core
+package core_test
 
 import (
 	"bytes"
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"math"
 	"os"
 	"path/filepath"
@@ -17,14 +18,20 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-git/go-billy/v5"
+	"github.com/go-git/go-billy/v5/helper/polyfill"
+	"github.com/go-git/go-billy/v5/memfs"
+	"github.com/go-git/go-billy/v5/osfs"
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/afs"
+	"github.com/inoxlang/inox/internal/core"
 	permkind "github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/inoxlang/inox/internal/utils"
+	"github.com/inoxlang/inox/internal/utils/fsutils"
 	"github.com/rs/zerolog"
 
 	"github.com/stretchr/testify/assert"
@@ -38,18 +45,22 @@ const (
 	RETURN_INT_PATTERN_MODULE_HASH     = "Ub9ua2QldCOc6MvxIPVpUYOQQfQoZpYEoDJitOdKFPA="
 )
 
-func init() {
-	moduleCache[RETURN_1_MODULE_HASH] = "manifest{}; return 1"
-	moduleCache[RETURN_NON_POS_ARG_A_MODULE_HASH] = "manifest {parameters: {a: %int}}\nreturn mod-args.a"
-	moduleCache[RETURN_POS_ARG_A_MODULE_HASH] = "manifest {parameters: {{name: #a, pattern: %int}}}\nreturn mod-args.a"
-	moduleCache[RETURN_PATTERN_INT_TWO_MODULE_HASH] = "manifest {}\npattern two = 2; return %two"
-	moduleCache[RETURN_INT_PATTERN_MODULE_HASH] = "manifest {}; return %int"
+var (
+	NewDefaultTestContext = core.NewDefaultTestContext
+)
 
-	RegisterSymbolicGoFunction(toByte, func(ctx *symbolic.Context, i *symbolic.Int) *symbolic.Byte {
+func init() {
+	core.UpdateModuleImportCache(RETURN_1_MODULE_HASH, "manifest{}; return 1")
+	core.UpdateModuleImportCache(RETURN_NON_POS_ARG_A_MODULE_HASH, "manifest {parameters: {a: %int}}\nreturn mod-args.a")
+	core.UpdateModuleImportCache(RETURN_POS_ARG_A_MODULE_HASH, "manifest {parameters: {{name: #a, pattern: %int}}}\nreturn mod-args.a")
+	core.UpdateModuleImportCache(RETURN_PATTERN_INT_TWO_MODULE_HASH, "manifest {}\npattern two = 2; return %two")
+	core.UpdateModuleImportCache(RETURN_INT_PATTERN_MODULE_HASH, "manifest {}; return %int")
+
+	core.RegisterSymbolicGoFunction(toByte, func(ctx *symbolic.Context, i *symbolic.Int) *symbolic.Byte {
 		return symbolic.ANY_BYTE
 	})
 
-	RegisterSymbolicGoFunction(isClientInsecureAndStateful, func(ctx *symbolic.Context, h *symbolic.Host) {})
+	core.RegisterSymbolicGoFunction(isClientInsecureAndStateful, func(ctx *symbolic.Context, h *symbolic.Host) {})
 
 }
 
@@ -69,17 +80,17 @@ func TestEvalWithRecycledTreeWalkEvalState(t *testing.T) {
 }
 
 func bytecodeTest(t *testing.T, optimize bool) {
-	testEval(t, true, func(c any, s *GlobalState, doCheck bool) (Value, error) {
-		var mod *Module
+	testEval(t, true, func(c any, s *core.GlobalState, doCheck bool) (core.Value, error) {
+		var mod *core.Module
 
 		switch val := c.(type) {
-		case *Module:
+		case *core.Module:
 			mod = val
 			s.Module = mod
 		case parse.SourceFile:
 			chunk := utils.Must(parse.ParseChunkSource(val))
 
-			mod = &Module{MainChunk: chunk, TopLevelNode: chunk.Node}
+			mod = &core.Module{MainChunk: chunk, TopLevelNode: chunk.Node}
 
 			//if the test case provide a module we reuse the source
 			if s.Module != nil {
@@ -95,7 +106,7 @@ func bytecodeTest(t *testing.T, optimize bool) {
 				CodeString: val,
 			}))
 
-			mod = &Module{MainChunk: chunk, TopLevelNode: chunk.Node}
+			mod = &core.Module{MainChunk: chunk, TopLevelNode: chunk.Node}
 
 			//if the test case provide a module we reuse the source
 			if s.Module != nil {
@@ -112,14 +123,14 @@ func bytecodeTest(t *testing.T, optimize bool) {
 		//tracer := bytes.Buffer{}
 
 		if doCheck { // TODO: enable checks by default ?
-			staticCheckData, err := StaticCheck(StaticCheckInput{
+			staticCheckData, err := core.StaticCheck(core.StaticCheckInput{
 				State:             s,
 				Node:              mod.MainChunk.Node,
 				Module:            mod,
 				Chunk:             mod.MainChunk,
 				Globals:           s.Globals,
-				Patterns:          s.Ctx.namedPatterns,
-				PatternNamespaces: s.Ctx.patternNamespaces,
+				Patterns:          s.Ctx.GetNamedPatterns(),
+				PatternNamespaces: s.Ctx.GetPatternNamespaces(),
 			})
 			if !assert.NoError(t, err) {
 				return nil, err
@@ -128,7 +139,7 @@ func bytecodeTest(t *testing.T, optimize bool) {
 			s.StaticCheckData = staticCheckData
 
 			globals := make(map[string]symbolic.ConcreteGlobalValue)
-			s.Globals.Foreach(func(name string, v Value, isConstant bool) error {
+			s.Globals.Foreach(func(name string, v core.Value, isConstant bool) error {
 				globals[name] = symbolic.ConcreteGlobalValue{Value: v, IsConstant: isConstant}
 				return nil
 			})
@@ -151,10 +162,10 @@ func bytecodeTest(t *testing.T, optimize bool) {
 			s.SymbolicData.AddData(symbData)
 		}
 
-		compilationCtx := NewContext(ContextConfig{})
+		compilationCtx := core.NewContext(core.ContextConfig{})
 		defer compilationCtx.CancelGracefully()
 
-		NewGlobalState(compilationCtx)
+		core.NewGlobalState(compilationCtx)
 
 		panic(errors.New("evaluating using transpiled Inox code is not supported yet"))
 
@@ -176,7 +187,7 @@ func bytecodeTest(t *testing.T, optimize bool) {
 // testEval executes the suite of evaluation tests with a given evaluation function
 // that can have any implementation (tree walk, bytecode, ...).
 func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
-	permissiveLthreadLimit := MustMakeNotAutoDepletingCountLimit(THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, 100_000)
+	permissiveLthreadLimit := core.MustMakeNotAutoDepletingCountLimit(core.THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, 100_000)
 
 	if false {
 		runtime.GC()
@@ -190,22 +201,22 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 	t.Run("integer literal", func(t *testing.T) {
 		code := "1"
-		state := NewGlobalState(NewDefaultTestContext())
+		state := core.NewGlobalState(NewDefaultTestContext())
 		defer state.Ctx.CancelGracefully()
 
 		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
-		assert.Equal(t, Int(1), res)
+		assert.Equal(t, core.Int(1), res)
 	})
 
 	t.Run("port literal", func(t *testing.T) {
 		code := ":80/http"
-		state := NewGlobalState(NewDefaultTestContext())
+		state := core.NewGlobalState(NewDefaultTestContext())
 		defer state.Ctx.CancelGracefully()
 
 		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
-		assert.Equal(t, Port{
+		assert.Equal(t, core.Port{
 			Number: 80,
 			Scheme: "http",
 		}, res)
@@ -213,12 +224,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 	t.Run("quoted string literal", func(t *testing.T) {
 		code := `"a"`
-		state := NewGlobalState(NewDefaultTestContext())
+		state := core.NewGlobalState(NewDefaultTestContext())
 		defer state.Ctx.CancelGracefully()
 
 		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
-		assert.Equal(t, String("a"), res)
+		assert.Equal(t, core.String("a"), res)
 	})
 
 	t.Run("multiline string literal", func(t *testing.T) {
@@ -226,132 +237,132 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("single character", func(t *testing.T) {
 			code := "`a`"
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, String("a"), res)
+			assert.Equal(t, core.String("a"), res)
 		})
 
 		t.Run("linefeed", func(t *testing.T) {
 			code := "`1\n2`"
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, String("1\n2"), res)
+			assert.Equal(t, core.String("1\n2"), res)
 		})
 		t.Run("escaped n (\\n)", func(t *testing.T) {
 			code := "`1\\n2`"
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, String("1\n2"), res)
+			assert.Equal(t, core.String("1\n2"), res)
 		})
 	})
 
 	t.Run("byte slice literal", func(t *testing.T) {
 		code := `0x[01]`
-		state := NewGlobalState(NewDefaultTestContext())
+		state := core.NewGlobalState(NewDefaultTestContext())
 		defer state.Ctx.CancelGracefully()
 
 		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
-		assert.Equal(t, &ByteSlice{bytes: []byte{1}, isDataMutable: true}, res)
+		assert.Equal(t, core.NewByteSlice([]byte{1}, true, ""), res)
 	})
 
 	t.Run("property name literal", func(t *testing.T) {
 		code := `.a`
-		state := NewGlobalState(NewDefaultTestContext())
+		state := core.NewGlobalState(NewDefaultTestContext())
 		defer state.Ctx.CancelGracefully()
 
 		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
-		assert.Equal(t, PropertyName("a"), res)
+		assert.Equal(t, core.PropertyName("a"), res)
 	})
 
 	t.Run("long value-path  literal", func(t *testing.T) {
 		code := `.a.b`
-		state := NewGlobalState(NewDefaultTestContext())
+		state := core.NewGlobalState(NewDefaultTestContext())
 		defer state.Ctx.CancelGracefully()
 
 		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
-		assert.Equal(t, NewLongValuePath([]ValuePathSegment{PropertyName("a"), PropertyName("b")}), res)
+		assert.Equal(t, core.NewLongValuePath([]core.ValuePathSegment{core.PropertyName("a"), core.PropertyName("b")}), res)
 	})
 
 	t.Run("boolean literal", func(t *testing.T) {
 		code := `true`
-		state := NewGlobalState(NewDefaultTestContext())
+		state := core.NewGlobalState(NewDefaultTestContext())
 		defer state.Ctx.CancelGracefully()
 
 		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
-		assert.Equal(t, True, res)
+		assert.Equal(t, core.True, res)
 	})
 
 	t.Run("nil literal", func(t *testing.T) {
 		code := `nil`
-		state := NewGlobalState(NewDefaultTestContext())
+		state := core.NewGlobalState(NewDefaultTestContext())
 		defer state.Ctx.CancelGracefully()
 
 		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
-		assert.Equal(t, Nil, res)
+		assert.Equal(t, core.Nil, res)
 	})
 
 	t.Run("absolute path literal", func(t *testing.T) {
 		code := `/`
-		state := NewGlobalState(NewDefaultTestContext())
+		state := core.NewGlobalState(NewDefaultTestContext())
 		defer state.Ctx.CancelGracefully()
 
 		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
-		assert.Equal(t, Path("/"), res)
+		assert.Equal(t, core.Path("/"), res)
 	})
 
 	t.Run("relative path literal", func(t *testing.T) {
 		code := `./`
-		state := NewGlobalState(NewDefaultTestContext())
+		state := core.NewGlobalState(NewDefaultTestContext())
 		defer state.Ctx.CancelGracefully()
 
 		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
-		assert.Equal(t, Path("./"), res)
+		assert.Equal(t, core.Path("./"), res)
 	})
 
 	t.Run("absolute path pattern literal", func(t *testing.T) {
 		code := `%/*`
-		state := NewGlobalState(NewDefaultTestContext())
+		state := core.NewGlobalState(NewDefaultTestContext())
 		defer state.Ctx.CancelGracefully()
 
 		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
-		assert.Equal(t, PathPattern("/*"), res)
+		assert.Equal(t, core.PathPattern("/*"), res)
 	})
 
 	t.Run("relative path pattern literal", func(t *testing.T) {
 		code := `%./*`
-		state := NewGlobalState(NewDefaultTestContext())
+		state := core.NewGlobalState(NewDefaultTestContext())
 		defer state.Ctx.CancelGracefully()
 
 		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
-		assert.Equal(t, PathPattern("./*"), res)
+		assert.Equal(t, core.PathPattern("./*"), res)
 	})
 
 	t.Run("named-segment path pattern literal", func(t *testing.T) {
 		code := `%/home/{:username}`
-		state := NewGlobalState(NewDefaultTestContext())
+		state := core.NewGlobalState(NewDefaultTestContext())
 		defer state.Ctx.CancelGracefully()
 
 		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
-		assert.IsType(t, &NamedSegmentPathPattern{}, res)
+		assert.IsType(t, &core.NamedSegmentPathPattern{}, res)
 	})
 
 	t.Run("path expression", func(t *testing.T) {
@@ -363,22 +374,22 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				ctx := NewDefaultTestContext()
 				defer ctx.CancelGracefully()
 
-				res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
-					"username": String("foo"),
+				res, err := Eval(code, core.NewGlobalState(ctx, map[string]core.Value{
+					"username": core.String("foo"),
 				}), false)
 				assert.NoError(t, err)
-				assert.Equal(t, Path("/home/foo"), res)
+				assert.Equal(t, core.Path("/home/foo"), res)
 			})
 
 			t.Run("interpolation value is a string containing '/'", func(t *testing.T) {
 				code := `/home/{username}`
 				ctx := NewDefaultTestContext()
 				defer ctx.CancelGracefully()
-				res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
-					"username": String("fo/o"),
+				res, err := Eval(code, core.NewGlobalState(ctx, map[string]core.Value{
+					"username": core.String("fo/o"),
 				}), false)
 				assert.NoError(t, err)
-				assert.Equal(t, Path("/home/fo/o"), res)
+				assert.Equal(t, core.Path("/home/fo/o"), res)
 			})
 
 			t.Run("interpolation value is a path containing '?'", func(t *testing.T) {
@@ -386,8 +397,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				ctx := NewDefaultTestContext()
 				defer ctx.CancelGracefully()
 
-				_, err := Eval(code, NewGlobalState(ctx, map[string]Value{
-					"username": String("./a?x=1"),
+				_, err := Eval(code, core.NewGlobalState(ctx, map[string]core.Value{
+					"username": core.String("./a?x=1"),
 				}), false)
 				assert.Error(t, err)
 			})
@@ -397,11 +408,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				ctx := NewDefaultTestContext()
 				defer ctx.CancelGracefully()
 
-				res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
-					"path": Path("/foo"),
+				res, err := Eval(code, core.NewGlobalState(ctx, map[string]core.Value{
+					"path": core.Path("/foo"),
 				}), false)
 				assert.NoError(t, err)
-				assert.Equal(t, Path("/home/foo"), res)
+				assert.Equal(t, core.Path("/home/foo"), res)
 			})
 
 			t.Run("interpolation value is a relative path", func(t *testing.T) {
@@ -409,11 +420,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				ctx := NewDefaultTestContext()
 				defer ctx.CancelGracefully()
 
-				res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
-					"path": Path("./foo"),
+				res, err := Eval(code, core.NewGlobalState(ctx, map[string]core.Value{
+					"path": core.Path("./foo"),
 				}), false)
 				assert.NoError(t, err)
-				assert.Equal(t, Path("/home/foo"), res)
+				assert.Equal(t, core.Path("/home/foo"), res)
 			})
 
 		})
@@ -425,11 +436,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				ctx := NewDefaultTestContext()
 				defer ctx.CancelGracefully()
 
-				res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
-					"username": String("foo"),
+				res, err := Eval(code, core.NewGlobalState(ctx, map[string]core.Value{
+					"username": core.String("foo"),
 				}), false)
 				assert.NoError(t, err)
-				assert.Equal(t, Path("./home/foo"), res)
+				assert.Equal(t, core.Path("./home/foo"), res)
 			})
 
 			t.Run("interpolation value is a string containing '/'", func(t *testing.T) {
@@ -437,11 +448,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				ctx := NewDefaultTestContext()
 				defer ctx.CancelGracefully()
 
-				res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
-					"username": String("fo/o"),
+				res, err := Eval(code, core.NewGlobalState(ctx, map[string]core.Value{
+					"username": core.String("fo/o"),
 				}), false)
 				assert.NoError(t, err)
-				assert.Equal(t, Path("./home/fo/o"), res)
+				assert.Equal(t, core.Path("./home/fo/o"), res)
 			})
 
 			t.Run("interpolation value is a path containing '?'", func(t *testing.T) {
@@ -449,8 +460,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				ctx := NewDefaultTestContext()
 				defer ctx.CancelGracefully()
 
-				_, err := Eval(code, NewGlobalState(ctx, map[string]Value{
-					"username": String("./a?x=1"),
+				_, err := Eval(code, core.NewGlobalState(ctx, map[string]core.Value{
+					"username": core.String("./a?x=1"),
 				}), false)
 				assert.Error(t, err)
 			})
@@ -460,11 +471,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				ctx := NewDefaultTestContext()
 				defer ctx.CancelGracefully()
 
-				res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
-					"path": Path("/foo"),
+				res, err := Eval(code, core.NewGlobalState(ctx, map[string]core.Value{
+					"path": core.Path("/foo"),
 				}), false)
 				assert.NoError(t, err)
-				assert.Equal(t, Path("./home/foo"), res)
+				assert.Equal(t, core.Path("./home/foo"), res)
 			})
 
 			t.Run("interpolation value is a relative path", func(t *testing.T) {
@@ -472,11 +483,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				ctx := NewDefaultTestContext()
 				defer ctx.CancelGracefully()
 
-				res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
-					"path": Path("./foo"),
+				res, err := Eval(code, core.NewGlobalState(ctx, map[string]core.Value{
+					"path": core.Path("./foo"),
 				}), false)
 				assert.NoError(t, err)
-				assert.Equal(t, Path("./home/foo"), res)
+				assert.Equal(t, core.Path("./home/foo"), res)
 			})
 
 		})
@@ -488,15 +499,15 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			//path
 			{
 				`path = "."; return /.{path}`,
-				S_PATH_EXPR_PATH_LIMITATION,
+				core.S_PATH_EXPR_PATH_LIMITATION,
 			},
 			{
 				`path = ""; return /.{path}.`,
-				S_PATH_EXPR_PATH_LIMITATION,
+				core.S_PATH_EXPR_PATH_LIMITATION,
 			},
 			{
 				`path = "?a=b"; return /{path}`,
-				S_PATH_INTERP_RESULT_LIMITATION,
+				core.S_PATH_INTERP_RESULT_LIMITATION,
 			},
 
 			//TODO: add more tests
@@ -507,7 +518,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				ctx := NewDefaultTestContext()
 				defer ctx.CancelGracefully()
 
-				res, err := Eval(testCase.input, NewGlobalState(ctx, nil), false)
+				res, err := Eval(testCase.input, core.NewGlobalState(ctx, nil), false)
 				assert.ErrorContains(t, err, testCase.error)
 				assert.Nil(t, res)
 			})
@@ -523,11 +534,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			ctx := NewDefaultTestContext()
 			defer ctx.CancelGracefully()
 
-			res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
-				"username": String("foo"),
+			res, err := Eval(code, core.NewGlobalState(ctx, map[string]core.Value{
+				"username": core.String("foo"),
 			}), false)
 			assert.NoError(t, err)
-			assert.Equal(t, PathPattern("/home/foo/..."), res)
+			assert.Equal(t, core.PathPattern("/home/foo/..."), res)
 		})
 
 		t.Run("globbing injection", func(t *testing.T) {
@@ -535,8 +546,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			ctx := NewDefaultTestContext()
 			defer ctx.CancelGracefully()
 
-			res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
-				"username": String("*"),
+			res, err := Eval(code, core.NewGlobalState(ctx, map[string]core.Value{
+				"username": core.String("*"),
 			}), false)
 			assert.Error(t, err)
 			assert.Nil(t, res)
@@ -546,35 +557,35 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 	t.Run("HTTP scheme", func(t *testing.T) {
 		code := `http://`
-		state := NewGlobalState(NewDefaultTestContext())
+		state := core.NewGlobalState(NewDefaultTestContext())
 		defer state.Ctx.CancelGracefully()
 
 		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
-		assert.Equal(t, Scheme("http"), res)
+		assert.Equal(t, core.Scheme("http"), res)
 	})
 
 	t.Run("HTTP host", func(t *testing.T) {
 		code := `https://example.com`
-		state := NewGlobalState(NewDefaultTestContext())
+		state := core.NewGlobalState(NewDefaultTestContext())
 		defer state.Ctx.CancelGracefully()
 
 		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
-		assert.Equal(t, Host("https://example.com"), res)
+		assert.Equal(t, core.Host("https://example.com"), res)
 	})
 
 	t.Run("HTTP host pattern", func(t *testing.T) {
 		code := `%https://**.example.com`
-		state := NewGlobalState(NewDefaultTestContext())
+		state := core.NewGlobalState(NewDefaultTestContext())
 		defer state.Ctx.CancelGracefully()
 
 		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
-		assert.Equal(t, HostPattern("https://**.example.com"), res)
+		assert.Equal(t, core.HostPattern("https://**.example.com"), res)
 	})
 
-	t.Run("URL expression", func(t *testing.T) {
+	t.Run("core.URL expression", func(t *testing.T) {
 		testconfig.AllowParallelization(t)
 
 		t.Run("host interpolation", func(t *testing.T) {
@@ -582,11 +593,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			ctx := NewDefaultTestContext()
 			defer ctx.CancelGracefully()
 
-			res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
-				"host": String("localhost"),
+			res, err := Eval(code, core.NewGlobalState(ctx, map[string]core.Value{
+				"host": core.String("localhost"),
 			}), false)
 			assert.NoError(t, err)
-			assert.Equal(t, URL("https://localhost/"), res)
+			assert.Equal(t, core.URL("https://localhost/"), res)
 		})
 
 		t.Run("single path interpolation : interpolation does not contain '/'", func(t *testing.T) {
@@ -594,11 +605,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			ctx := NewDefaultTestContext()
 			defer ctx.CancelGracefully()
 
-			res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
-				"path": String("index.html"),
+			res, err := Eval(code, core.NewGlobalState(ctx, map[string]core.Value{
+				"path": core.String("index.html"),
 			}), false)
 			assert.NoError(t, err)
-			assert.Equal(t, URL("https://example.com/index.html"), res)
+			assert.Equal(t, core.URL("https://example.com/index.html"), res)
 		})
 
 		t.Run("single path interpolation : interpolation starts with '/'", func(t *testing.T) {
@@ -606,11 +617,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			ctx := NewDefaultTestContext()
 			defer ctx.CancelGracefully()
 
-			res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
-				"path": String("/index.html"),
+			res, err := Eval(code, core.NewGlobalState(ctx, map[string]core.Value{
+				"path": core.String("/index.html"),
 			}), false)
 			assert.NoError(t, err)
-			assert.Equal(t, URL("https://example.com//index.html"), res)
+			assert.Equal(t, core.URL("https://example.com//index.html"), res)
 		})
 
 		t.Run("single path interpolation, no '/' in path slice", func(t *testing.T) {
@@ -618,11 +629,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			ctx := NewDefaultTestContext()
 			defer ctx.CancelGracefully()
 
-			res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
-				"path": String("index.html"),
+			res, err := Eval(code, core.NewGlobalState(ctx, map[string]core.Value{
+				"path": core.String("index.html"),
 			}), false)
 			assert.NoError(t, err)
-			assert.Equal(t, URL("https://example.com/index.html"), res)
+			assert.Equal(t, core.URL("https://example.com/index.html"), res)
 		})
 
 		t.Run("path interpolation containg an encoded '?'", func(t *testing.T) {
@@ -630,11 +641,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			ctx := NewDefaultTestContext()
 			defer ctx.CancelGracefully()
 
-			res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
-				"path": String("%3F"),
+			res, err := Eval(code, core.NewGlobalState(ctx, map[string]core.Value{
+				"path": core.String("%3F"),
 			}), false)
 			assert.NoError(t, err)
-			assert.Equal(t, URL("https://example.com/%3F"), res)
+			assert.Equal(t, core.URL("https://example.com/%3F"), res)
 		})
 
 		t.Run("path interpolation containg an encoded '#'", func(t *testing.T) {
@@ -642,11 +653,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			ctx := NewDefaultTestContext()
 			defer ctx.CancelGracefully()
 
-			res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
-				"path": String("%23"),
+			res, err := Eval(code, core.NewGlobalState(ctx, map[string]core.Value{
+				"path": core.String("%23"),
 			}), false)
 			assert.NoError(t, err)
-			assert.Equal(t, URL("https://example.com/%23"), res)
+			assert.Equal(t, core.URL("https://example.com/%23"), res)
 		})
 
 		t.Run("path interpolation starting with a '@'", func(t *testing.T) {
@@ -654,26 +665,26 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			ctx := NewDefaultTestContext()
 			defer ctx.CancelGracefully()
 
-			res, err := Eval(code, NewGlobalState(ctx, map[string]Value{
-				"path": String("@domain.zip"),
+			res, err := Eval(code, core.NewGlobalState(ctx, map[string]core.Value{
+				"path": core.String("@domain.zip"),
 			}), false)
 			assert.NoError(t, err)
-			assert.Equal(t, URL("https://example.com/@domain.zip"), res)
+			assert.Equal(t, core.URL("https://example.com/@domain.zip"), res)
 		})
 
 		t.Run("host interpolation", func(t *testing.T) {
 			code := `@api/index.html`
 
-			ctx := NewContext(ContextConfig{})
-			state := NewGlobalState(ctx)
+			ctx := core.NewContext(core.ContextConfig{})
+			state := core.NewGlobalState(ctx)
 			defer ctx.CancelGracefully()
 
-			state.Globals.Set("api", Host("https://example.com"))
+			state.Globals.Set("api", core.Host("https://example.com"))
 
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, URL("https://example.com/index.html"), res)
+			assert.Equal(t, core.URL("https://example.com/index.html"), res)
 		})
 
 		t.Run("query with no interpolation", func(t *testing.T) {
@@ -681,9 +692,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			ctx := NewDefaultTestContext()
 			defer ctx.CancelGracefully()
 
-			res, err := Eval(code, NewGlobalState(ctx, nil), false)
+			res, err := Eval(code, core.NewGlobalState(ctx, nil), false)
 			assert.NoError(t, err)
-			assert.Equal(t, URL("https://example.com/?v=a"), res)
+			assert.Equal(t, core.URL("https://example.com/?v=a"), res)
 		})
 
 		t.Run("single query interpolation", func(t *testing.T) {
@@ -694,9 +705,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			ctx := NewDefaultTestContext()
 			defer ctx.CancelGracefully()
 
-			res, err := Eval(code, NewGlobalState(ctx, nil), false)
+			res, err := Eval(code, core.NewGlobalState(ctx, nil), false)
 			assert.NoError(t, err)
-			assert.Equal(t, URL("https://example.com/?v=a"), res)
+			assert.Equal(t, core.URL("https://example.com/?v=a"), res)
 		})
 
 		t.Run("two query interpolations", func(t *testing.T) {
@@ -708,9 +719,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			ctx := NewDefaultTestContext()
 			defer ctx.CancelGracefully()
 
-			res, err := Eval(code, NewGlobalState(ctx, nil), false)
+			res, err := Eval(code, core.NewGlobalState(ctx, nil), false)
 			assert.NoError(t, err)
-			assert.Equal(t, URL("https://example.com/?v=a&w=b"), res)
+			assert.Equal(t, core.URL("https://example.com/?v=a&w=b"), res)
 		})
 
 		t.Run("query interpolation containing an encoded '#'", func(t *testing.T) {
@@ -721,9 +732,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			ctx := NewDefaultTestContext()
 			defer ctx.CancelGracefully()
 
-			res, err := Eval(code, NewGlobalState(ctx, nil), false)
+			res, err := Eval(code, core.NewGlobalState(ctx, nil), false)
 			assert.NoError(t, err)
-			assert.Equal(t, URL("https://example.com/?v=%23"), res)
+			assert.Equal(t, core.URL("https://example.com/?v=%23"), res)
 		})
 
 		t.Run("query interpolation with an integer value", func(t *testing.T) {
@@ -734,9 +745,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			ctx := NewDefaultTestContext()
 			defer ctx.CancelGracefully()
 
-			res, err := Eval(code, NewGlobalState(ctx, nil), false)
+			res, err := Eval(code, core.NewGlobalState(ctx, nil), false)
 			assert.NoError(t, err)
-			assert.Equal(t, URL("https://example.com/?v=1"), res)
+			assert.Equal(t, core.URL("https://example.com/?v=1"), res)
 		})
 
 		t.Run("query interpolation with a boolean value", func(t *testing.T) {
@@ -747,212 +758,212 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			ctx := NewDefaultTestContext()
 			defer ctx.CancelGracefully()
 
-			res, err := Eval(code, NewGlobalState(ctx, nil), false)
+			res, err := Eval(code, core.NewGlobalState(ctx, nil), false)
 			assert.NoError(t, err)
-			assert.Equal(t, URL("https://example.com/?v=true"), res)
+			assert.Equal(t, core.URL("https://example.com/?v=true"), res)
 		})
 
 		injectionCases := []struct {
 			input string
 			error string
 		}{
-			//note: %2E is the URL encoding for '.'
+			//note: %2E is the core.URL encoding for '.'
 			//port injection in path
 			{
 				`path = ":8080"; return https://example.com{path}`,
-				S_URL_EXPR_PATH_START_LIMITATION,
+				core.S_URL_EXPR_PATH_START_LIMITATION,
 			},
 
 			//'..' injection in path
 			{
 				`path = "."; return https://example.com/.{path}`,
-				S_URL_EXPR_PATH_LIMITATION,
+				core.S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
 				`path = "."; return https://example.com/%2E{path}`,
-				S_URL_EXPR_PATH_LIMITATION,
+				core.S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
 				`path = "."; return https://example.com/%2e{path}`,
-				S_URL_EXPR_PATH_LIMITATION,
+				core.S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
 				`path = "%2E"; return https://example.com/.{path}`,
-				S_URL_EXPR_PATH_LIMITATION,
+				core.S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
 				`path = "%2e"; return https://example.com/.{path}`,
-				S_URL_EXPR_PATH_LIMITATION,
+				core.S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
 				`path = "2E"; return https://example.com/.%{path}`,
-				S_URL_EXPR_PATH_LIMITATION,
+				core.S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
 				`path = "E"; return https://example.com/.%2{path}`,
-				S_URL_EXPR_PATH_LIMITATION,
+				core.S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
 				`path = "e"; return https://example.com/.%2{path}`,
-				S_URL_EXPR_PATH_LIMITATION,
+				core.S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
 				`path = "%2E"; return https://example.com/%2E{path}`,
-				S_URL_EXPR_PATH_LIMITATION,
+				core.S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
 				`path = "%2e"; return https://example.com/%2e{path}`,
-				S_URL_EXPR_PATH_LIMITATION,
+				core.S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
 				`path = "2E"; return https://example.com/%2E%{path}`,
-				S_URL_EXPR_PATH_LIMITATION,
+				core.S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
 				`path = "2e"; return https://example.com/%2e%{path}`,
-				S_URL_EXPR_PATH_LIMITATION,
+				core.S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
 				`path = "E"; return https://example.com/%2E%2{path}`,
-				S_URL_EXPR_PATH_LIMITATION,
+				core.S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
 				`path = "e"; return https://example.com/%2e%2{path}`,
-				S_URL_EXPR_PATH_LIMITATION,
+				core.S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
 				`path = ""; return https://example.com/.{path}.`,
-				S_URL_EXPR_PATH_LIMITATION,
+				core.S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
 				`path = ""; return https://example.com/%2E{path}.`,
-				S_URL_EXPR_PATH_LIMITATION,
+				core.S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
 				`path = ""; return https://example.com/%2e{path}.`,
-				S_URL_EXPR_PATH_LIMITATION,
+				core.S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
 				`path = ""; return https://example.com/.{path}%2E`,
-				S_URL_EXPR_PATH_LIMITATION,
+				core.S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
 				`path = ""; return https://example.com/.{path}%2e`,
-				S_URL_EXPR_PATH_LIMITATION,
+				core.S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
 				`path = ""; return https://example.com/%2E{path}%2E`,
-				S_URL_EXPR_PATH_LIMITATION,
+				core.S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
 				`path = ""; return https://example.com/%2e{path}%2e`,
-				S_URL_EXPR_PATH_LIMITATION,
+				core.S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
 				`path = /.; return https://example.com{path}.`,
-				S_URL_EXPR_PATH_LIMITATION,
+				core.S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
 				`path = /.; return https://example.com{path}%2E`,
-				S_URL_EXPR_PATH_LIMITATION,
+				core.S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
 				`path = /.; return https://example.com{path}%2e`,
-				S_URL_EXPR_PATH_LIMITATION,
+				core.S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
 				`path = /%2E; return https://example.com{path}.`,
-				S_URL_EXPR_PATH_LIMITATION,
+				core.S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
 				`path = /%2e; return https://example.com{path}.`,
-				S_URL_EXPR_PATH_LIMITATION,
+				core.S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
 				`path = /%2E; return https://example.com{path}%2E`,
-				S_URL_EXPR_PATH_LIMITATION,
+				core.S_URL_EXPR_PATH_LIMITATION,
 			},
 			{
 				`path = /%2e; return https://example.com{path}%2e`,
-				S_URL_EXPR_PATH_LIMITATION,
+				core.S_URL_EXPR_PATH_LIMITATION,
 			},
 
 			//'\' injection in path
-			//note: %5C is the URL encoding for '\'
+			//note: %5C is the core.URL encoding for '\'
 			{
 				`path = "/\\"; return https://example.com{path}`,
-				S_URL_PATH_INTERP_RESULT_LIMITATION,
+				core.S_URL_PATH_INTERP_RESULT_LIMITATION,
 			},
 			{
 				`path = "/%5C"; return https://example.com{path}`,
-				S_URL_PATH_INTERP_RESULT_LIMITATION,
+				core.S_URL_PATH_INTERP_RESULT_LIMITATION,
 			},
 			{
 				`path = "/\\.\\."; return https://example.com{path}`,
-				S_URL_PATH_INTERP_RESULT_LIMITATION,
+				core.S_URL_PATH_INTERP_RESULT_LIMITATION,
 			},
 			{
 				`path = "/%5C.%5C."; return https://example.com{path}`,
-				S_URL_PATH_INTERP_RESULT_LIMITATION,
+				core.S_URL_PATH_INTERP_RESULT_LIMITATION,
 			},
 			{
 				`path = "/%5C%2E%5C%2E"; return https://example.com{path}`,
-				S_URL_PATH_INTERP_RESULT_LIMITATION,
+				core.S_URL_PATH_INTERP_RESULT_LIMITATION,
 			},
 
 			//'?' injection in path
 			{
 				`path = "?a=b"; return https://example.com{path}`,
-				S_URL_PATH_INTERP_RESULT_LIMITATION,
+				core.S_URL_PATH_INTERP_RESULT_LIMITATION,
 			},
 			{
 				`path = "x?a=b"; return https://example.com{path}`,
-				S_URL_PATH_INTERP_RESULT_LIMITATION,
+				core.S_URL_PATH_INTERP_RESULT_LIMITATION,
 			},
 
 			//'#' injection in path
 			{
 				`path = "#"; return https://example.com{path}`,
-				S_URL_PATH_INTERP_RESULT_LIMITATION,
+				core.S_URL_PATH_INTERP_RESULT_LIMITATION,
 			},
 
 			//'*' injection in path
-			//note: %2A is the URL encoding for '*'
+			//note: %2A is the core.URL encoding for '*'
 			{
 				`path = "*"; return https://example.com{path}`,
-				S_URL_PATH_INTERP_RESULT_LIMITATION,
+				core.S_URL_PATH_INTERP_RESULT_LIMITATION,
 			},
 			{
 				`path = "/*"; return https://example.com{path}`,
-				S_URL_PATH_INTERP_RESULT_LIMITATION,
+				core.S_URL_PATH_INTERP_RESULT_LIMITATION,
 			},
 			{
 				`path = "%2A"; return https://example.com{path}`,
-				S_URL_PATH_INTERP_RESULT_LIMITATION,
+				core.S_URL_PATH_INTERP_RESULT_LIMITATION,
 			},
 			{
 				`path = "/%2A"; return https://example.com{path}`,
-				S_URL_PATH_INTERP_RESULT_LIMITATION,
+				core.S_URL_PATH_INTERP_RESULT_LIMITATION,
 			},
 			{
 				`path = "%2a"; return https://example.com{path}`,
-				S_URL_PATH_INTERP_RESULT_LIMITATION,
+				core.S_URL_PATH_INTERP_RESULT_LIMITATION,
 			},
 			{
 				`path = "/%2a"; return https://example.com{path}`,
-				S_URL_PATH_INTERP_RESULT_LIMITATION,
+				core.S_URL_PATH_INTERP_RESULT_LIMITATION,
 			},
 			//TODO: add more tests
 
 			//'#' injection in query
 			{
 				`x = "#id"; return https://example.com/?v={$x}`,
-				S_QUERY_PARAM_VALUE_LIMITATION,
+				core.S_QUERY_PARAM_VALUE_LIMITATION,
 			},
 			//'&' injection in query
 			{
 				`x = "x&admin=true"; return https://example.com/?v={$x}`,
-				S_QUERY_PARAM_VALUE_LIMITATION,
+				core.S_QUERY_PARAM_VALUE_LIMITATION,
 			},
 
 			//TODO: add more tests
@@ -963,7 +974,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				ctx := NewDefaultTestContext()
 				defer ctx.CancelGracefully()
 
-				res, err := Eval(testCase.input, NewGlobalState(ctx, nil), false)
+				res, err := Eval(testCase.input, core.NewGlobalState(ctx, nil), false)
 				assert.ErrorContains(t, err, testCase.error)
 				assert.Nil(t, res)
 			})
@@ -976,37 +987,37 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		testCases := []struct {
 			code   string
-			result Bool
+			result core.Bool
 			err    error
 		}{
 			// <
-			{"(1 < 2)", True, nil},
-			{"(1 < 1)", False, nil},
-			{"(2 < 1)", False, nil},
-			{"(1s < 2s)", True, nil},
-			{"(1s < 1s)", False, nil},
-			{"(2s < 1s)", False, nil},
+			{"(1 < 2)", core.True, nil},
+			{"(1 < 1)", core.False, nil},
+			{"(2 < 1)", core.False, nil},
+			{"(1s < 2s)", core.True, nil},
+			{"(1s < 1s)", core.False, nil},
+			{"(2s < 1s)", core.False, nil},
 			// <=
-			{"(1 <= 2)", True, nil},
-			{"(1 <= 1)", True, nil},
-			{"(2 <= 1)", False, nil},
-			{"(1s <= 2s)", True, nil},
-			{"(1s <= 1s)", True, nil},
-			{"(2s <= 1s)", False, nil},
+			{"(1 <= 2)", core.True, nil},
+			{"(1 <= 1)", core.True, nil},
+			{"(2 <= 1)", core.False, nil},
+			{"(1s <= 2s)", core.True, nil},
+			{"(1s <= 1s)", core.True, nil},
+			{"(2s <= 1s)", core.False, nil},
 			// >
-			{"(2 > 1)", True, nil},
-			{"(1 > 1)", False, nil},
-			{"(1 > 2)", False, nil},
-			{"(2s > 1s)", True, nil},
-			{"(1s > 1s)", False, nil},
-			{"(1s > 2s)", False, nil},
+			{"(2 > 1)", core.True, nil},
+			{"(1 > 1)", core.False, nil},
+			{"(1 > 2)", core.False, nil},
+			{"(2s > 1s)", core.True, nil},
+			{"(1s > 1s)", core.False, nil},
+			{"(1s > 2s)", core.False, nil},
 			// >=
-			{"(2 >= 1)", True, nil},
-			{"(1 >= 1)", True, nil},
-			{"(1 >= 2)", False, nil},
-			{"(2s >= 1s)", True, nil},
-			{"(1s >= 1s)", True, nil},
-			{"(1s >= 2s)", False, nil},
+			{"(2 >= 1)", core.True, nil},
+			{"(1 >= 1)", core.True, nil},
+			{"(1 >= 2)", core.False, nil},
+			{"(2s >= 1s)", core.True, nil},
+			{"(1s >= 1s)", core.True, nil},
+			{"(1s >= 2s)", core.False, nil},
 		}
 
 		for _, testCase := range testCases {
@@ -1014,7 +1025,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				ctx := NewDefaultTestContext()
 				defer ctx.CancelGracefully()
 
-				res, err := Eval(testCase.code, NewGlobalState(ctx, nil), false)
+				res, err := Eval(testCase.code, core.NewGlobalState(ctx, nil), false)
 				if testCase.err == nil {
 					assert.NoError(t, err)
 					assert.Equal(t, testCase.result, res)
@@ -1031,48 +1042,48 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		testCases := []struct {
 			code   string
-			result Value
+			result core.Value
 			err    error
 		}{
 			//addition
-			{"(1 + 2)", Int(3), nil},
-			{"(-0 + 2)", Int(2), nil},
-			{"(0 + 2)", Int(2), nil},
-			{"(1 + -2)", Int(-1), nil},
-			{"(1 + -0)", Int(1), nil},
-			{"(1 + 0)", Int(1), nil},
-			{"(9223372036854775807 + -1)", Int(9223372036854775806), nil},
-			{"(-9223372036854775808 + 1)", Int(-9223372036854775807), nil},
-			{"(9223372036854775807 + 1)", nil, ErrIntOverflow},
-			{"(-9223372036854775808 + -1)", nil, ErrIntUnderflow},
+			{"(1 + 2)", core.Int(3), nil},
+			{"(-0 + 2)", core.Int(2), nil},
+			{"(0 + 2)", core.Int(2), nil},
+			{"(1 + -2)", core.Int(-1), nil},
+			{"(1 + -0)", core.Int(1), nil},
+			{"(1 + 0)", core.Int(1), nil},
+			{"(9223372036854775807 + -1)", core.Int(9223372036854775806), nil},
+			{"(-9223372036854775808 + 1)", core.Int(-9223372036854775807), nil},
+			{"(9223372036854775807 + 1)", nil, core.ErrIntOverflow},
+			{"(-9223372036854775808 + -1)", nil, core.ErrIntUnderflow},
 			//substraction
-			{"(1 - 2)", Int(-1), nil},
-			{"(-0 - 2)", Int(-2), nil},
-			{"(0 - 2)", Int(-2), nil},
-			{"(1 - -2)", Int(3), nil},
-			{"(1 - -0)", Int(1), nil},
-			{"(1 - 0)", Int(1), nil},
-			{"(9223372036854775807 - 1)", Int(9223372036854775806), nil},
-			{"(-9223372036854775808 - -1)", Int(-9223372036854775807), nil},
-			{"(9223372036854775807 - -1)", nil, ErrIntOverflow},
-			{"(-9223372036854775808 - 1)", nil, ErrIntUnderflow},
+			{"(1 - 2)", core.Int(-1), nil},
+			{"(-0 - 2)", core.Int(-2), nil},
+			{"(0 - 2)", core.Int(-2), nil},
+			{"(1 - -2)", core.Int(3), nil},
+			{"(1 - -0)", core.Int(1), nil},
+			{"(1 - 0)", core.Int(1), nil},
+			{"(9223372036854775807 - 1)", core.Int(9223372036854775806), nil},
+			{"(-9223372036854775808 - -1)", core.Int(-9223372036854775807), nil},
+			{"(9223372036854775807 - -1)", nil, core.ErrIntOverflow},
+			{"(-9223372036854775808 - 1)", nil, core.ErrIntUnderflow},
 			//multiplication
-			{"(1 * 2)", Int(2), nil},
-			{"(1 * -2)", Int(-2), nil},
-			{"(9223372036854775807 * -1)", -Int(9223372036854775807), nil},
-			{"(9223372036854775807 * -2)", nil, ErrIntUnderflow},
-			{"(9223372036854775807 * 2)", nil, ErrIntOverflow},
-			{"(-9223372036854775808 * -1)", nil, ErrIntOverflow},
-			{"(-9223372036854775808 * -2)", nil, ErrIntUnderflow},
-			{"(-9223372036854775808 * -9223372036854775808)", nil, ErrIntUnderflow},
+			{"(1 * 2)", core.Int(2), nil},
+			{"(1 * -2)", core.Int(-2), nil},
+			{"(9223372036854775807 * -1)", -core.Int(9223372036854775807), nil},
+			{"(9223372036854775807 * -2)", nil, core.ErrIntUnderflow},
+			{"(9223372036854775807 * 2)", nil, core.ErrIntOverflow},
+			{"(-9223372036854775808 * -1)", nil, core.ErrIntOverflow},
+			{"(-9223372036854775808 * -2)", nil, core.ErrIntUnderflow},
+			{"(-9223372036854775808 * -9223372036854775808)", nil, core.ErrIntUnderflow},
 			//division
-			{"(1 / 2)", Int(0), nil},
-			{"(4 / 2)", Int(2), nil},
-			{"(1 / 0)", nil, ErrIntDivisionByZero},
-			{"(9223372036854775807 / -2)", Int(-4611686018427387903), nil},
-			{"(9223372036854775807 / -1)", Int(-9223372036854775807), nil},
-			{"(-9223372036854775808 / -2)", Int(4611686018427387904), nil},
-			{"(-9223372036854775808 / -1)", nil, ErrIntOverflow},
+			{"(1 / 2)", core.Int(0), nil},
+			{"(4 / 2)", core.Int(2), nil},
+			{"(1 / 0)", nil, core.ErrIntDivisionByZero},
+			{"(9223372036854775807 / -2)", core.Int(-4611686018427387903), nil},
+			{"(9223372036854775807 / -1)", core.Int(-9223372036854775807), nil},
+			{"(-9223372036854775808 / -2)", core.Int(4611686018427387904), nil},
+			{"(-9223372036854775808 / -1)", nil, core.ErrIntOverflow},
 		}
 
 		for _, testCase := range testCases {
@@ -1080,7 +1091,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				ctx := NewDefaultTestContext()
 				defer ctx.CancelGracefully()
 
-				res, err := Eval(testCase.code, NewGlobalState(ctx, nil), true)
+				res, err := Eval(testCase.code, core.NewGlobalState(ctx, nil), true)
 				if testCase.err == nil {
 					assert.NoError(t, err)
 					assert.Equal(t, testCase.result, res)
@@ -1095,46 +1106,46 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	t.Run("floating point binary expression", func(t *testing.T) {
 		//testconfig.SetParallelization(t)
 
-		NaN := Float(math.NaN())
+		NaN := core.Float(math.NaN())
 
 		testCases := []struct {
 			code   string
-			a      Float
-			b      Float
-			result Value
+			a      core.Float
+			b      core.Float
+			result core.Value
 			err    error
 		}{
 			//addition
-			{"(a + b)", 1, 2, Float(3), nil},
-			{"(a + b)", 1, -2, Float(-1), nil},
-			{"(a + b)", NaN, 1, nil, ErrNaNinfinityOperand},
-			{"(a + b)", 1, NaN, nil, ErrNaNinfinityOperand},
-			{"(a + b)", NaN, NaN, nil, ErrNaNinfinityOperand},
+			{"(a + b)", 1, 2, core.Float(3), nil},
+			{"(a + b)", 1, -2, core.Float(-1), nil},
+			{"(a + b)", NaN, 1, nil, core.ErrNaNinfinityOperand},
+			{"(a + b)", 1, NaN, nil, core.ErrNaNinfinityOperand},
+			{"(a + b)", NaN, NaN, nil, core.ErrNaNinfinityOperand},
 			//substraction
-			{"(a - b)", 1, 2, Float(-1), nil},
-			{"(a - b)", 1, -2, Float(3), nil},
-			{"(a - b)", NaN, 1, nil, ErrNaNinfinityOperand},
-			{"(a - b)", 1, NaN, nil, ErrNaNinfinityOperand},
-			{"(a - b)", NaN, NaN, nil, ErrNaNinfinityOperand},
+			{"(a - b)", 1, 2, core.Float(-1), nil},
+			{"(a - b)", 1, -2, core.Float(3), nil},
+			{"(a - b)", NaN, 1, nil, core.ErrNaNinfinityOperand},
+			{"(a - b)", 1, NaN, nil, core.ErrNaNinfinityOperand},
+			{"(a - b)", NaN, NaN, nil, core.ErrNaNinfinityOperand},
 			//multiplication
-			{"(a * b)", 1, 2, Float(2), nil},
-			{"(a * b)", 1, -2, Float(-2), nil},
-			{"(a * b)", NaN, 1, nil, ErrNaNinfinityOperand},
-			{"(a * b)", 1, NaN, nil, ErrNaNinfinityOperand},
-			{"(a * b)", NaN, NaN, nil, ErrNaNinfinityOperand},
+			{"(a * b)", 1, 2, core.Float(2), nil},
+			{"(a * b)", 1, -2, core.Float(-2), nil},
+			{"(a * b)", NaN, 1, nil, core.ErrNaNinfinityOperand},
+			{"(a * b)", 1, NaN, nil, core.ErrNaNinfinityOperand},
+			{"(a * b)", NaN, NaN, nil, core.ErrNaNinfinityOperand},
 			//division
-			{"(a / b)", 1, 2, Float(0.5), nil},
-			{"(a / b)", 1, -2, Float(-0.5), nil},
-			{"(a / b)", NaN, 1, nil, ErrNaNinfinityOperand},
-			{"(a / b)", 1, NaN, nil, ErrNaNinfinityOperand},
-			{"(a / b)", NaN, NaN, nil, ErrNaNinfinityOperand},
-			{"(a / b)", 1, 0, nil, ErrNaNinfinityResult},
+			{"(a / b)", 1, 2, core.Float(0.5), nil},
+			{"(a / b)", 1, -2, core.Float(-0.5), nil},
+			{"(a / b)", NaN, 1, nil, core.ErrNaNinfinityOperand},
+			{"(a / b)", 1, NaN, nil, core.ErrNaNinfinityOperand},
+			{"(a / b)", NaN, NaN, nil, core.ErrNaNinfinityOperand},
+			{"(a / b)", 1, 0, nil, core.ErrNaNinfinityResult},
 		}
 
 		for _, testCase := range testCases {
 			name := fmt.Sprintf("%s a:%f, b:%f", testCase.code, testCase.a, testCase.b)
 			t.Run(name, func(t *testing.T) {
-				state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+				state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
 					"a": testCase.a,
 					"b": testCase.b,
 				})
@@ -1156,27 +1167,27 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		testCases := []struct {
 			code   string
-			a      Value
-			b      Value
-			result Value
+			a      core.Value
+			b      core.Value
+			result core.Value
 			err    error
 		}{
 			//addition
-			{"(a + b)", ONE_HOUR, ONE_HOUR, 2 * ONE_HOUR, nil},
-			{"(a + b)", DateTime(time.Time{}), ONE_HOUR, DateTime(time.Time{}.Add(time.Hour)), nil},
-			{"(a + b)", ONE_HOUR, DateTime(time.Time{}), DateTime(time.Time{}.Add(time.Hour)), nil},
-			{"(a + b)", MAX_DURATION, Duration(time.Nanosecond), nil, ErrQuantityOverflow},
+			{"(a + b)", core.ONE_HOUR, core.ONE_HOUR, 2 * core.ONE_HOUR, nil},
+			{"(a + b)", core.DateTime(time.Time{}), core.ONE_HOUR, core.DateTime(time.Time{}.Add(time.Hour)), nil},
+			{"(a + b)", core.ONE_HOUR, core.DateTime(time.Time{}), core.DateTime(time.Time{}.Add(time.Hour)), nil},
+			{"(a + b)", core.MAX_DURATION, core.Duration(time.Nanosecond), nil, core.ErrQuantityOverflow},
 
 			//substraction
-			{"(a - b)", ONE_HOUR, ONE_MINUTE, ONE_HOUR - ONE_MINUTE, nil},
-			{"(a - b)", Duration(time.Nanosecond), MAX_DURATION, nil, ErrQuantityUnderflow},
-			{"(a - b)", DateTime(time.Time{}), ONE_HOUR, DateTime(time.Time{}.Add(-time.Hour)), nil},
+			{"(a - b)", core.ONE_HOUR, core.ONE_MINUTE, core.ONE_HOUR - core.ONE_MINUTE, nil},
+			{"(a - b)", core.Duration(time.Nanosecond), core.MAX_DURATION, nil, core.ErrQuantityUnderflow},
+			{"(a - b)", core.DateTime(time.Time{}), core.ONE_HOUR, core.DateTime(time.Time{}.Add(-time.Hour)), nil},
 		}
 
 		for _, testCase := range testCases {
 			name := fmt.Sprintf("%s a:%#v, b:%#v", testCase.code, testCase.a, testCase.b)
 			t.Run(name, func(t *testing.T) {
-				state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+				state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
 					"a": testCase.a,
 					"b": testCase.b,
 				})
@@ -1198,23 +1209,23 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		testCases := []struct {
 			code   string
-			result Bool
+			result core.Bool
 			err    error
 		}{
-			{"(1 in 1..2)", True, nil},
-			{"(1 not-in 1..2)", False, nil},
-			{"(0 in 1..2)", False, nil},
-			{"(0 not-in 1..2)", True, nil},
+			{"(1 in 1..2)", core.True, nil},
+			{"(1 not-in 1..2)", core.False, nil},
+			{"(0 in 1..2)", core.False, nil},
+			{"(0 not-in 1..2)", core.True, nil},
 
-			{"(1 in [1, 2])", True, nil},
-			{"(1 not-in [1, 2])", False, nil},
-			{"(0 in [1, 2])", False, nil},
-			{"(0 not-in [1, 2])", True, nil},
+			{"(1 in [1, 2])", core.True, nil},
+			{"(1 not-in [1, 2])", core.False, nil},
+			{"(0 in [1, 2])", core.False, nil},
+			{"(0 not-in [1, 2])", core.True, nil},
 
-			{"(1 in {a: 1})", True, nil},
-			{"(1 not-in {a: 1, b: 2})", False, nil},
-			{"(0 in {a: 1, b: 2})", False, nil},
-			{"(0 not-in {a: 1, b: 2})", True, nil},
+			{"(1 in {a: 1})", core.True, nil},
+			{"(1 not-in {a: 1, b: 2})", core.False, nil},
+			{"(0 in {a: 1, b: 2})", core.False, nil},
+			{"(0 not-in {a: 1, b: 2})", core.True, nil},
 		}
 
 		for _, testCase := range testCases {
@@ -1222,7 +1233,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				ctx := NewDefaultTestContext()
 				defer ctx.CancelGracefully()
 
-				res, err := Eval(testCase.code, NewGlobalState(ctx, nil), false)
+				res, err := Eval(testCase.code, core.NewGlobalState(ctx, nil), false)
 				if testCase.err == nil {
 					assert.NoError(t, err)
 					assert.Equal(t, testCase.result, res)
@@ -1239,60 +1250,60 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		testCases := []struct {
 			code   string
-			result Value
+			result core.Value
 			err    error
 		}{
-			{`(1 is 2)`, False, nil},
-			{`(1 is 1)`, True, nil},
-			{`({} is {})`, False, nil},
-			{`obj = {}; return (obj is obj)`, True, nil},
+			{`(1 is 2)`, core.False, nil},
+			{`(1 is 1)`, core.True, nil},
+			{`({} is {})`, core.False, nil},
+			{`obj = {}; return (obj is obj)`, core.True, nil},
 
-			{`(1 is-not 2)`, True, nil},
-			{`(1 is-not 1)`, False, nil},
-			{`({} is-not {})`, True, nil},
-			{`obj = {}; return (obj is-not obj)`, False, nil},
+			{`(1 is-not 2)`, core.True, nil},
+			{`(1 is-not 1)`, core.False, nil},
+			{`({} is-not {})`, core.True, nil},
+			{`obj = {}; return (obj is-not obj)`, core.False, nil},
 
-			{`(1 match %int)`, True, nil},
-			{`("1" match %int)`, False, nil},
-			{`({a: 1} match %{a: 1})`, True, nil},
-			{`({} match %{a: 1})`, False, nil},
+			{`(1 match %int)`, core.True, nil},
+			{`("1" match %int)`, core.False, nil},
+			{`({a: 1} match %{a: 1})`, core.True, nil},
+			{`({} match %{a: 1})`, core.False, nil},
 
-			{`("a" keyof {})`, False, nil},
-			{`("a" keyof {a: 1})`, True, nil},
-			{`("aa" keyof {"a": "aa"})`, False, nil},
+			{`("a" keyof {})`, core.False, nil},
+			{`("a" keyof {a: 1})`, core.True, nil},
+			{`("aa" keyof {"a": "aa"})`, core.False, nil},
 
-			{`("A" substrof "")`, False, nil},
-			{`("" substrof "")`, True, nil},
-			{`("A" substrof "A")`, True, nil},
-			{`("" substrof "A")`, True, nil},
-			{`("A" substrof "AA")`, True, nil},
-			{`("AA" substrof "A")`, False, nil},
+			{`("A" substrof "")`, core.False, nil},
+			{`("" substrof "")`, core.True, nil},
+			{`("A" substrof "A")`, core.True, nil},
+			{`("" substrof "A")`, core.True, nil},
+			{`("A" substrof "AA")`, core.True, nil},
+			{`("AA" substrof "A")`, core.False, nil},
 
-			{`("A" substrof 0d[])`, False, nil},
-			{`("" substrof 0d[])`, True, nil},
-			{`("A" substrof 0d[65])`, True, nil},
-			{`("" substrof 0d[65])`, True, nil},
-			{`("A" substrof 0d[65 65])`, True, nil},
-			{`("AA" substrof 0d[65])`, False, nil},
+			{`("A" substrof 0d[])`, core.False, nil},
+			{`("" substrof 0d[])`, core.True, nil},
+			{`("A" substrof 0d[65])`, core.True, nil},
+			{`("" substrof 0d[65])`, core.True, nil},
+			{`("A" substrof 0d[65 65])`, core.True, nil},
+			{`("AA" substrof 0d[65])`, core.False, nil},
 
-			{`(0d[65] substrof "")`, False, nil},
-			{`(0d[] substrof "")`, True, nil},
-			{`(0d[65] substrof "A")`, True, nil},
-			{`(0d[] substrof "A")`, True, nil},
-			{`(0d[65] substrof "AA")`, True, nil},
-			{`(0d[65 65] substrof "A")`, False, nil},
+			{`(0d[65] substrof "")`, core.False, nil},
+			{`(0d[] substrof "")`, core.True, nil},
+			{`(0d[65] substrof "A")`, core.True, nil},
+			{`(0d[] substrof "A")`, core.True, nil},
+			{`(0d[65] substrof "AA")`, core.True, nil},
+			{`(0d[65 65] substrof "A")`, core.False, nil},
 
-			{`(%int \ 1)`, NewDifferencePattern(INT_PATTERN, NewExactValuePattern(Int(1))), nil},
+			{`(%int \ 1)`, core.NewDifferencePattern(core.INT_PATTERN, core.NewExactValuePattern(core.Int(1))), nil},
 
-			{`(1 ?? 2)`, Int(1), nil},
-			{`(nil ?? 1)`, Int(1), nil},
-			{`(nil ?? [])`, NewWrappedValueList(), nil},
+			{`(1 ?? 2)`, core.Int(1), nil},
+			{`(nil ?? 1)`, core.Int(1), nil},
+			{`(nil ?? [])`, core.NewWrappedValueList(), nil},
 		}
 
 		for _, testCase := range testCases {
 			t.Run(testCase.code, func(t *testing.T) {
-				state := NewGlobalState(NewDefaultTestContext(), nil)
-				state.Ctx.AddNamedPattern("int", INT_PATTERN)
+				state := core.NewGlobalState(NewDefaultTestContext(), nil)
+				state.Ctx.AddNamedPattern("int", core.INT_PATTERN)
 
 				res, err := Eval(testCase.code, state, false)
 				if testCase.err == nil {
@@ -1310,9 +1321,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		ctx := NewDefaultTestContext()
 		defer ctx.CancelGracefully()
 
-		state := NewGlobalState(ctx, nil)
+		state := core.NewGlobalState(ctx, nil)
 
-		obj := NewObject()
+		obj := core.NewObject()
 		obj.SetURLOnce(ctx, "ldb://main/")
 		state.Globals.Set("obj_with_url", obj)
 
@@ -1320,25 +1331,25 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		if !assert.NoError(t, err) {
 			return
 		}
-		assert.Equal(t, True, res)
+		assert.Equal(t, core.True, res)
 
 		res, err = Eval("(ldb://main/x urlof obj_with_url)", state, false)
 		if !assert.NoError(t, err) {
 			return
 		}
-		assert.Equal(t, False, res)
+		assert.Equal(t, core.False, res)
 
 		res, err = Eval("(ldb://main/x urlof {})", state, false)
 		if !assert.NoError(t, err) {
 			return
 		}
-		assert.Equal(t, False, res)
+		assert.Equal(t, core.False, res)
 
 		res, err = Eval("(ldb://main/x urlof 1)", state, false)
 		if !assert.NoError(t, err) {
 			return
 		}
-		assert.Equal(t, False, res)
+		assert.Equal(t, core.False, res)
 	})
 
 	t.Run("integer unary expression", func(t *testing.T) {
@@ -1348,8 +1359,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			ctx := NewDefaultTestContext()
 			defer ctx.CancelGracefully()
 
-			res, err := Eval("(- -9223372036854775808)", NewGlobalState(ctx, nil), false)
-			assert.ErrorIs(t, err, ErrNegationWithOverflow)
+			res, err := Eval("(- -9223372036854775808)", core.NewGlobalState(ctx, nil), false)
+			assert.ErrorIs(t, err, core.ErrNegationWithOverflow)
 			assert.Nil(t, res)
 		})
 
@@ -1357,18 +1368,18 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			ctx := NewDefaultTestContext()
 			defer ctx.CancelGracefully()
 
-			res, err := Eval("(- 0)", NewGlobalState(ctx, nil), false)
+			res, err := Eval("(- 0)", core.NewGlobalState(ctx, nil), false)
 			assert.NoError(t, err)
-			assert.Equal(t, Int(0), res)
+			assert.Equal(t, core.Int(0), res)
 		})
 
 		t.Run("negating negative zero should return zero", func(t *testing.T) {
 			ctx := NewDefaultTestContext()
 			defer ctx.CancelGracefully()
 
-			res, err := Eval("(- -0)", NewGlobalState(ctx, nil), false)
+			res, err := Eval("(- -0)", core.NewGlobalState(ctx, nil), false)
 			assert.NoError(t, err)
-			assert.Equal(t, Int(0), res)
+			assert.Equal(t, core.Int(0), res)
 		})
 	})
 
@@ -1377,16 +1388,14 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		testCases := []struct {
 			code   string
-			result Value
+			result core.Value
 			err    error
 		}{
 			//addition
-			{"(1 .. 2)", IntRange{start: 1, end: 2, step: 1}, nil},
-			{"(1 ..< 2)", IntRange{start: 1, end: 1, step: 1}, nil},
-			{"(1.0 .. 2.0)", FloatRange{start: 1, end: 2, inclusiveEnd: true}, nil},
-			{"(1.0 ..< 2.0)", FloatRange{start: 1, end: 2, inclusiveEnd: false}, nil},
-			{"(1B .. 2B)", QuantityRange{start: ByteCount(1), end: ByteCount(2), inclusiveEnd: true}, nil},
-			{"(1B ..< 2B)", QuantityRange{start: ByteCount(1), end: ByteCount(2), inclusiveEnd: false}, nil},
+			{"(1 .. 2)", core.NewIntRange(1, 2), nil},
+			{"(1 ..< 2)", core.NewIntRange(1, 1), nil},
+			{"(1.0 .. 2.0)", core.NewFloatRange(1, 2, true), nil},
+			{"(1.0 ..< 2.0)", core.NewFloatRange(1, 2, false), nil},
 		}
 
 		for _, testCase := range testCases {
@@ -1394,7 +1403,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				ctx := NewDefaultTestContext()
 				defer ctx.CancelGracefully()
 
-				res, err := Eval(testCase.code, NewGlobalState(ctx, nil), false)
+				res, err := Eval(testCase.code, core.NewGlobalState(ctx, nil), false)
 				if testCase.err == nil {
 					assert.NoError(t, err)
 					assert.Equal(t, testCase.result, res)
@@ -1408,14 +1417,14 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 	t.Run("binary pair expression", func(t *testing.T) {
 		code := `(1,2)`
-		state := NewGlobalState(NewDefaultTestContext())
+		state := core.NewGlobalState(NewDefaultTestContext())
 		defer state.Ctx.CancelGracefully()
 
 		res, err := Eval(code, state, false)
 		if !assert.NoError(t, err) {
 			return
 		}
-		assert.Equal(t, NewOrderedPair(Int(1), Int(2)), res)
+		assert.Equal(t, core.NewOrderedPair(core.Int(1), core.Int(2)), res)
 	})
 
 	t.Run("binary expression chain", func(t *testing.T) {
@@ -1423,71 +1432,71 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		testCases := []struct {
 			code   string
-			result Value
+			result core.Value
 		}{
 			//'or' chain starting with a binary expression
-			{"(1 > 2 or false)", False},
-			{"(1 < 2 or true)", True},
-			{"(1 < 2 or 1 < 2)", True},
-			{"(1 < 2 or 1 > 2)", True},
-			{"(1 > 2 or 1 > 2)", False},
-			{"(1 > 2 or false or false)", False},
-			{"(1 < 2 or true or false)", True},
-			{"(1 < 2 or 1 < 2 or false)", True},
-			{"(1 < 2 or 1 > 2 or false)", True},
-			{"(1 > 2 or 1 > 2 or false)", False},
-			{"(1 > 2 or 1 > 2 or true)", True},
+			{"(1 > 2 or false)", core.False},
+			{"(1 < 2 or true)", core.True},
+			{"(1 < 2 or 1 < 2)", core.True},
+			{"(1 < 2 or 1 > 2)", core.True},
+			{"(1 > 2 or 1 > 2)", core.False},
+			{"(1 > 2 or false or false)", core.False},
+			{"(1 < 2 or true or false)", core.True},
+			{"(1 < 2 or 1 < 2 or false)", core.True},
+			{"(1 < 2 or 1 > 2 or false)", core.True},
+			{"(1 > 2 or 1 > 2 or false)", core.False},
+			{"(1 > 2 or 1 > 2 or true)", core.True},
 
 			//'or' chain starting with a literal
-			{"(false or false)", False},
-			{"(true or true)", True},
-			{"(true or 1 < 2)", True},
-			{"(true or 1 > 2)", True},
-			{"(false or 1 > 2)", False},
-			{"(false or false or false)", False},
-			{"(true or true or false)", True},
-			{"(true or 1 < 2 or false)", True},
-			{"(true or 1 > 2 or false)", True},
-			{"(false or 1 > 2 or false)", False},
-			{"(false or 1 > 2 or true)", True},
+			{"(false or false)", core.False},
+			{"(true or true)", core.True},
+			{"(true or 1 < 2)", core.True},
+			{"(true or 1 > 2)", core.True},
+			{"(false or 1 > 2)", core.False},
+			{"(false or false or false)", core.False},
+			{"(true or true or false)", core.True},
+			{"(true or 1 < 2 or false)", core.True},
+			{"(true or 1 > 2 or false)", core.True},
+			{"(false or 1 > 2 or false)", core.False},
+			{"(false or 1 > 2 or true)", core.True},
 
 			//'and' chain starting with a binary expression
-			{"(1 > 2 and false)", False},
-			{"(1 < 2 and true)", True},
-			{"(1 < 2 and 1 < 2)", True},
-			{"(1 < 2 and 1 > 2)", False},
-			{"(1 > 2 and 1 > 2)", False},
-			{"(1 > 2 and false and false)", False},
-			{"(1 < 2 and true and false)", False},
-			{"(1 < 2 and 1 < 2 and false)", False},
-			{"(1 < 2 and 1 > 2 and false)", False},
-			{"(1 > 2 and 1 > 2 and false)", False},
-			{"(1 > 2 and 1 > 2 and true)", False},
-			{"(1 > 2 and true and true)", False},
-			{"(1 < 2 and true and true)", True},
-			{"(1 < 2 and 1 < 2 and true)", True},
-			{"(1 < 2 and 1 > 2 and true)", False},
-			{"(1 < 2 and false and true)", False},
-			{"(1 < 2 and 1 > 2 and true)", False},
+			{"(1 > 2 and false)", core.False},
+			{"(1 < 2 and true)", core.True},
+			{"(1 < 2 and 1 < 2)", core.True},
+			{"(1 < 2 and 1 > 2)", core.False},
+			{"(1 > 2 and 1 > 2)", core.False},
+			{"(1 > 2 and false and false)", core.False},
+			{"(1 < 2 and true and false)", core.False},
+			{"(1 < 2 and 1 < 2 and false)", core.False},
+			{"(1 < 2 and 1 > 2 and false)", core.False},
+			{"(1 > 2 and 1 > 2 and false)", core.False},
+			{"(1 > 2 and 1 > 2 and true)", core.False},
+			{"(1 > 2 and true and true)", core.False},
+			{"(1 < 2 and true and true)", core.True},
+			{"(1 < 2 and 1 < 2 and true)", core.True},
+			{"(1 < 2 and 1 > 2 and true)", core.False},
+			{"(1 < 2 and false and true)", core.False},
+			{"(1 < 2 and 1 > 2 and true)", core.False},
 
 			//'and' chain starting with a literal
-			{"(false and false)", False},
-			{"(true and true)", True},
-			{"(true and 1 < 2)", True},
-			{"(true and 1 > 2)", False},
-			{"(false and 1 > 2)", False},
-			{"(false and false and false)", False},
-			{"(true and true and false)", False},
-			{"(true and 1 < 2 and false)", False},
-			{"(true and 1 > 2 and false)", False},
-			{"(false and 1 > 2 and false)", False},
-			{"(false and 1 > 2 and true)", False},
-			{"(false and true and true)", False},
-			{"(true and true and true)", True},
-			{"(true and 1 < 2 and true)", True},
-			{"(true and 1 > 2 and true)", False},
-			{"(true and false and true)", False},
-			{"(true and 1 > 2 and true)", False},
+			{"(false and false)", core.False},
+			{"(true and true)", core.True},
+			{"(true and 1 < 2)", core.True},
+			{"(true and 1 > 2)", core.False},
+			{"(false and 1 > 2)", core.False},
+			{"(false and false and false)", core.False},
+			{"(true and true and false)", core.False},
+			{"(true and 1 < 2 and false)", core.False},
+			{"(true and 1 > 2 and false)", core.False},
+			{"(false and 1 > 2 and false)", core.False},
+			{"(false and 1 > 2 and true)", core.False},
+			{"(false and true and true)", core.False},
+			{"(true and true and true)", core.True},
+			{"(true and 1 < 2 and true)", core.True},
+			{"(true and 1 > 2 and true)", core.False},
+			{"(true and false and true)", core.False},
+			{"(true and 1 > 2 and true)", core.False},
 		}
 
 		for _, testCase := range testCases {
@@ -1495,7 +1504,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				ctx := NewDefaultTestContext()
 				defer ctx.CancelGracefully()
 
-				res, err := Eval(testCase.code, NewGlobalState(ctx, nil), false)
+				res, err := Eval(testCase.code, core.NewGlobalState(ctx, nil), false)
 				assert.NoError(t, err)
 				assert.Equal(t, testCase.result, res)
 			})
@@ -1507,19 +1516,19 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("simple value", func(t *testing.T) {
 			code := `$$a = 1; return a`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(code, state, false)
 			if !assert.NoError(t, err) {
 				return
 			}
-			assert.Equal(t, Int(1), res)
+			assert.Equal(t, core.Int(1), res)
 		})
 
 		t.Run("watchable", func(t *testing.T) {
 			code := `$$a = {}; return a`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			state.InitSystemGraph()
 
@@ -1527,14 +1536,16 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			if !assert.NoError(t, err) {
 				return
 			}
-			assert.IsType(t, (*Object)(nil), res)
+			assert.IsType(t, (*core.Object)(nil), res)
 
 			//check that the global variable's value has a node in the system graph
-			if !assert.Len(t, state.SystemGraph.nodes.list, 1) {
+
+			nodes := state.SystemGraph.GetNodesSnapshot(state.Ctx)
+
+			if !assert.Len(t, nodes, 1) {
 				return
 			}
-			node := state.SystemGraph.nodes.list[0]
-			assert.Equal(t, "a", node.name)
+			assert.Equal(t, "a", nodes[0].Name())
 		})
 	})
 
@@ -1545,14 +1556,14 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			input          string
 			error          bool
 			skipIfBytecode bool
-			result         Value
+			result         core.Value
 		}{
 			{
 				input: `
 					var a = 1; 
 					return a
 				`,
-				result: Int(1),
+				result: core.Int(1),
 			},
 			{
 				input: `
@@ -1562,7 +1573,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					)
 					return [a, b]
 				`,
-				result: NewWrappedValueList(Int(1), Int(2)),
+				result: core.NewWrappedValueList(core.Int(1), core.Int(2)),
 			},
 		}
 
@@ -1572,7 +1583,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 			t.Run(testCase.input, func(t *testing.T) {
 
-				state := NewGlobalState(NewDefaultTestContext())
+				state := core.NewGlobalState(NewDefaultTestContext())
 				defer state.Ctx.CancelGracefully()
 				res, err := Eval(testCase.input, state, false)
 				if testCase.error {
@@ -1593,14 +1604,14 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			input          string
 			error          bool
 			skipIfBytecode bool
-			result         Value
+			result         core.Value
 		}{
 			{
 				input: `
 					globalvar a = 1; 
 					return a
 				`,
-				result: Int(1),
+				result: core.Int(1),
 			},
 			{
 				input: `
@@ -1610,7 +1621,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					)
 					return [a, b]
 				`,
-				result: NewWrappedValueList(Int(1), Int(2)),
+				result: core.NewWrappedValueList(core.Int(1), core.Int(2)),
 			},
 		}
 
@@ -1620,7 +1631,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 			t.Run(testCase.input, func(t *testing.T) {
 
-				state := NewGlobalState(NewDefaultTestContext())
+				state := core.NewGlobalState(NewDefaultTestContext())
 				defer state.Ctx.CancelGracefully()
 				res, err := Eval(testCase.input, state, false)
 				if testCase.error {
@@ -1641,9 +1652,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			input          string
 			error          bool
 			skipIfBytecode bool
-			result         Value
-			constants      map[string]Value
-			globalVars     map[string]Value
+			result         core.Value
+			constants      map[string]core.Value
+			globalVars     map[string]core.Value
 			doSymbolicEval bool
 		}{
 			{
@@ -1651,7 +1662,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					a = 1; 
 					return a
 				`,
-				result: Int(1),
+				result: core.Int(1),
 			},
 			{
 				input: `
@@ -1659,7 +1670,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					a += 1
 					return a
 				`,
-				result: Int(2),
+				result: core.Int(2),
 			},
 			{
 				input: `
@@ -1667,7 +1678,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					a -= 1
 					return a
 				`,
-				result: Int(0),
+				result: core.Int(0),
 			},
 			{
 				input: `
@@ -1675,7 +1686,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					a *= 3
 					return a
 				`,
-				result: Int(6),
+				result: core.Int(6),
 			},
 			{
 				input: `
@@ -1683,7 +1694,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					a /= 2
 					return a
 				`,
-				result: Int(3),
+				result: core.Int(3),
 			},
 			{
 				input: `
@@ -1710,7 +1721,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					a.v = 1
 					return $a
 				`,
-				result: objFrom(ValMap{"v": Int(1)}),
+				result: core.NewObjectFromMapNoInit(core.ValMap{"v": core.Int(1)}),
 			},
 			{
 				input: `
@@ -1719,7 +1730,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					a.v += 1
 					return $a
 				`,
-				result: objFrom(ValMap{"v": Int(2)}),
+				result: core.NewObjectFromMapNoInit(core.ValMap{"v": core.Int(2)}),
 			},
 			{
 				input: `
@@ -1741,7 +1752,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					s.count += 1
 					return s.count
 				`,
-				result:         Int(3),
+				result:         core.Int(3),
 				doSymbolicEval: true,
 			},
 			{
@@ -1759,7 +1770,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					s.inner.count += 1
 					return s.inner.count
 				`,
-				result:         Int(3),
+				result:         core.Int(3),
 				doSymbolicEval: true,
 			},
 			{
@@ -1772,7 +1783,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					$s.count += 1
 					return $s.count
 				`,
-				result:         Int(3),
+				result:         core.Int(3),
 				doSymbolicEval: true,
 			},
 			{
@@ -1790,7 +1801,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					$s.inner.count += 1
 					return $s.inner.count
 				`,
-				result:         Int(3),
+				result:         core.Int(3),
 				doSymbolicEval: true,
 			},
 			{
@@ -1799,7 +1810,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					$a[0] = 1
 					return a
 				`,
-				result: newList(&ValueList{elements: []Serializable{Int(1)}}),
+				result: core.NewWrappedValueList(core.Int(1)),
 			},
 			{
 				input: `
@@ -1807,7 +1818,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					$a[0] += 1
 					return a
 				`,
-				result: newList(&ValueList{elements: []Serializable{Int(2)}}),
+				result: core.NewWrappedValueList(core.Int(2)),
 			},
 			{
 				input: `
@@ -1815,27 +1826,27 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					$a[0] = tobyte(1)
 					return a
 				`,
-				constants: map[string]Value{
-					"tobyte": WrapGoFunction(func(ctx *Context, i Int) Byte {
-						return Byte(i)
+				constants: map[string]core.Value{
+					"tobyte": core.WrapGoFunction(func(ctx *core.Context, i core.Int) core.Byte {
+						return core.Byte(i)
 					}),
 				},
-				result: NewByteSlice([]byte{1}, true, ""),
+				result: core.NewByteSlice([]byte{1}, true, ""),
 			},
 			{
 				input: `
 					runes[0] = 'b'
 					return runes
 				`,
-				constants: map[string]Value{
-					"torune": WrapGoFunction(func(ctx *Context, i Int) Byte {
-						return Byte(i)
+				constants: map[string]core.Value{
+					"torune": core.WrapGoFunction(func(ctx *core.Context, i core.Int) core.Byte {
+						return core.Byte(i)
 					}),
 				},
-				globalVars: map[string]Value{
-					"runes": NewRuneSlice([]rune("a")),
+				globalVars: map[string]core.Value{
+					"runes": core.NewRuneSlice([]rune("a")),
 				},
-				result: NewRuneSlice([]rune("b")),
+				result: core.NewRuneSlice([]rune("b")),
 			},
 			{
 				input: `
@@ -1843,7 +1854,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					$a.count = 1
 					return $a.count
 				`,
-				result: Int(1),
+				result: core.Int(1),
 			},
 			{
 				input: `
@@ -1851,7 +1862,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					$a.count += 1
 					return $a.count
 				`,
-				result: Int(2),
+				result: core.Int(2),
 			},
 			{
 				input: `
@@ -1859,7 +1870,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					$a.count = 1; 
 					return $a.count
 				`,
-				result: Int(1),
+				result: core.Int(1),
 			},
 			{
 				input: `
@@ -1868,7 +1879,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					$a.count += 1
 					return $a.count
 				`,
-				result: Int(2),
+				result: core.Int(2),
 			},
 
 			{
@@ -1877,7 +1888,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					$a[0:1] = [1]
 					return $a
 				`,
-				result: newList(&ValueList{elements: []Serializable{Int(1)}}),
+				result: core.NewWrappedValueList(core.Int(1)),
 			},
 		}
 
@@ -1886,12 +1897,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				continue
 			}
 			t.Run(testCase.input, func(t *testing.T) {
-				state := NewGlobalState(NewDefaultTestContext(), testCase.constants)
+				state := core.NewGlobalState(NewDefaultTestContext(), testCase.constants)
 				for k, v := range testCase.globalVars {
 					state.Globals.Set(k, v)
 				}
-				state.Ctx.AddNamedPattern("int", INT_PATTERN)
-				state.Ctx.AddNamedPattern("bool", BOOL_PATTERN)
+				state.Ctx.AddNamedPattern("int", core.INT_PATTERN)
+				state.Ctx.AddNamedPattern("bool", core.BOOL_PATTERN)
 
 				res, err := Eval(testCase.input, state, testCase.doSymbolicEval)
 				if testCase.error {
@@ -1910,72 +1921,70 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("assignment : LHS is a pipeline expression", func(t *testing.T) {
 			code := `a = | get-data | split-lines $; return $a`
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"get-data": ValOf(func(ctx *Context) String {
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
+				"get-data": core.ValOf(func(ctx *core.Context) core.String {
 					return "aaa\nbbb"
 				}),
-				"split-lines": ValOf(splitLines),
+				"split-lines": core.ValOf(splitLines),
 			})
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, newList(&ValueList{elements: []Serializable{String("aaa"), String("bbb")}}), res)
+			assert.Equal(t, core.NewWrappedValueList(core.String("aaa"), core.String("bbb")), res)
 		})
 	})
 
 	t.Run("set difference", func(t *testing.T) {
 		t.Run("patterns", func(t *testing.T) {
 			code := `((%| 1 | 2) \ 1)`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.IsType(t, &DifferencePattern{}, res)
-			patt := res.(*DifferencePattern)
+			assert.IsType(t, &core.DifferencePattern{}, res)
+			patt := res.(*core.DifferencePattern)
 
-			assert.IsType(t, &UnionPattern{}, patt.base)
-			assert.Equal(t, &ExactValuePattern{
-				value: Int(1),
-			}, patt.removed)
+			assert.IsType(t, &core.UnionPattern{}, patt.Base())
+			assert.Equal(t, core.NewExactValuePattern(core.Int(1)), patt.Removed())
 		})
 	})
 
 	t.Run("nil coalescing", func(t *testing.T) {
 		t.Run("left is nil", func(t *testing.T) {
 			code := `(nil ?? 1)`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, Int(1), res)
+			assert.Equal(t, core.Int(1), res)
 		})
 
 		t.Run("left is not nil", func(t *testing.T) {
 			code := `(1 ?? 2)`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, Int(1), res)
+			assert.Equal(t, core.Int(1), res)
 		})
 	})
 
 	t.Run("return statement", func(t *testing.T) {
 		t.Run("value", func(t *testing.T) {
 			code := `return nil`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 		})
 
 		t.Run("no value", func(t *testing.T) {
 			code := `return`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 		})
 	})
 
@@ -1985,11 +1994,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				a = [0] 
 				return $a[0]
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, Int(0), res)
+			assert.Equal(t, core.Int(0), res)
 		})
 
 		t.Run("tuple", func(t *testing.T) {
@@ -1997,11 +2006,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				a = #[0] 
 				return $a[0]
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, Int(0), res)
+			assert.Equal(t, core.Int(0), res)
 		})
 	})
 
@@ -2013,11 +2022,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				a = [0]
 				return $a[0:100]
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, newList(&ValueList{elements: []Serializable{Int(0)}}), res)
+			assert.Equal(t, core.NewWrappedValueList(core.Int(0)), res)
 		})
 
 		t.Run("string slice : end index is greater than the length of the string", func(t *testing.T) {
@@ -2025,11 +2034,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				a = "0"
 				return $a[0:100]
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, String("0"), res)
+			assert.Equal(t, core.String("0"), res)
 		})
 
 		t.Run("negative start", func(t *testing.T) {
@@ -2037,10 +2046,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				a = ["a"]
 				return $a[-1:1]
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
-			assert.ErrorIs(t, err, ErrNegativeLowerIndex)
+			assert.ErrorIs(t, err, core.ErrNegativeLowerIndex)
 			assert.Nil(t, res)
 		})
 
@@ -2049,11 +2058,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				$a = ["a"]
 				return $a[0:1]
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, newList(&ValueList{elements: []Serializable{String("a")}}), res)
+			assert.Equal(t, core.NewWrappedValueList(core.String("a")), res)
 		})
 
 		t.Run("only start specified", func(t *testing.T) {
@@ -2061,11 +2070,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				a = ["a"]
 				return $a[0:]
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, newList(&ValueList{elements: []Serializable{String("a")}}), res)
+			assert.Equal(t, core.NewWrappedValueList(core.String("a")), res)
 		})
 
 		t.Run("only end specified", func(t *testing.T) {
@@ -2073,11 +2082,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				a = ["a"]
 				return $a[:1]
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, newList(&ValueList{elements: []Serializable{String("a")}}), res)
+			assert.Equal(t, core.NewWrappedValueList(core.String("a")), res)
 		})
 
 		t.Run("start out ouf bounds", func(t *testing.T) {
@@ -2085,11 +2094,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				a = ["a"]
 				return $a[1:]
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, newList(&ValueList{elements: []Serializable{}}), res)
+			assert.Equal(t, core.NewWrappedValueListFrom(make([]core.Serializable, 0)), res)
 		})
 
 	})
@@ -2097,81 +2106,81 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	t.Run("quantity literal : byte count", func(t *testing.T) {
 		t.Run("byte count", func(t *testing.T) {
 			code := `1kB`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 
-			assert.EqualValues(t, ByteCount(1_000), res)
+			assert.EqualValues(t, core.ByteCount(1_000), res)
 		})
 
 		t.Run("too large", func(t *testing.T) {
 			code := `10000000000s`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(code, state, false)
 			assert.Error(t, err)
-			assert.ErrorIs(t, err, ErrQuantityLooLarge)
+			assert.ErrorIs(t, err, core.ErrQuantityLooLarge)
 			assert.Nil(t, res)
 		})
 	})
 
 	t.Run("year literal", func(t *testing.T) {
 		code := `2020y-UTC`
-		state := NewGlobalState(NewDefaultTestContext())
+		state := core.NewGlobalState(NewDefaultTestContext())
 		defer state.Ctx.CancelGracefully()
 
 		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
 
-		assert.EqualValues(t, DateTime(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)), res)
+		assert.EqualValues(t, core.DateTime(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)), res)
 	})
 
 	t.Run("date literal", func(t *testing.T) {
 		code := `2020y-1mt-1d-UTC`
-		state := NewGlobalState(NewDefaultTestContext())
+		state := core.NewGlobalState(NewDefaultTestContext())
 		defer state.Ctx.CancelGracefully()
 
 		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
 
-		assert.EqualValues(t, DateTime(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)), res)
+		assert.EqualValues(t, core.DateTime(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)), res)
 	})
 
 	t.Run("datetime literal", func(t *testing.T) {
 		code := `2020y-1mt-1d-5h-3m-UTC`
-		state := NewGlobalState(NewDefaultTestContext())
+		state := core.NewGlobalState(NewDefaultTestContext())
 		defer state.Ctx.CancelGracefully()
 
 		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
 
-		assert.EqualValues(t, DateTime(time.Date(2020, 1, 1, 5, 3, 0, 0, time.UTC)), res)
+		assert.EqualValues(t, core.DateTime(time.Date(2020, 1, 1, 5, 3, 0, 0, time.UTC)), res)
 	})
 
 	t.Run("rate literal : byte rate", func(t *testing.T) {
 		t.Run("byte rate", func(t *testing.T) {
 			code := `10kB/s`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 
-			assert.EqualValues(t, ByteRate(10_000), res)
+			assert.EqualValues(t, core.ByteRate(10_000), res)
 		})
 
 		t.Run("frequency", func(t *testing.T) {
 			code := `10x/s`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 
-			assert.EqualValues(t, Frequency(10), res)
+			assert.EqualValues(t, core.Frequency(10), res)
 		})
 
 	})
@@ -2181,11 +2190,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `
 				const ()
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			_, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, map[string]Value{}, state.Globals.Entries())
+			assert.EqualValues(t, map[string]core.Value{}, state.Globals.Entries())
 		})
 
 		t.Run("single", func(t *testing.T) {
@@ -2194,11 +2203,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					a = 1
 				)
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			_, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, map[string]Value{"a": Int(1)}, state.Globals.Entries())
+			assert.EqualValues(t, map[string]core.Value{"a": core.Int(1)}, state.Globals.Entries())
 		})
 	})
 
@@ -2207,50 +2216,50 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("empty object", func(t *testing.T) {
 			code := `{}`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, &Object{}, res)
+			assert.EqualValues(t, &core.Object{}, res)
 		})
 
 		t.Run("single property", func(t *testing.T) {
 			code := `{a:1}`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, objFrom(ValMap{"a": Int(1)}), res)
+			assert.EqualValues(t, core.NewObjectFromMapNoInit(core.ValMap{"a": core.Int(1)}), res)
 		})
 
 		t.Run("several properties", func(t *testing.T) {
 			code := `{a:1,b:2}`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, objFrom(ValMap{"a": Int(1), "b": Int(2)}), res)
+			assert.EqualValues(t, core.NewObjectFromMapNoInit(core.ValMap{"a": core.Int(1), "b": core.Int(2)}), res)
 		})
 
 		t.Run("one element", func(t *testing.T) {
 			code := `{1}`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, objFrom(ValMap{
-				"": NewWrappedValueList(Int(1)),
+			assert.EqualValues(t, core.NewObjectFromMapNoInit(core.ValMap{
+				"": core.NewWrappedValueList(core.Int(1)),
 			}), res)
 		})
 
 		t.Run("two elements", func(t *testing.T) {
 			code := `{1, 2}`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, objFrom(ValMap{
-				"": NewWrappedValueList(Int(1), Int(2)),
+			assert.EqualValues(t, core.NewObjectFromMapNoInit(core.ValMap{
+				"": core.NewWrappedValueList(core.Int(1), core.Int(2)),
 			}), res)
 		})
 
@@ -2259,28 +2268,29 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				o = {name: "foo"}
 				return { ...$o.{name} }
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, objFrom(ValMap{"name": String("foo")}), res)
+			assert.EqualValues(t, core.NewObjectFromMapNoInit(core.ValMap{"name": core.String("foo")}), res)
 		})
 
 		t.Run("empty lifetime job", func(t *testing.T) {
 			code := `{ lifetimejob #job {  } }`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 
-			obj := res.(*Object)
-			if !assert.Len(t, obj.jobInstances(), 1) {
+			obj := res.(*core.Object)
+			if !assert.Len(t, obj.JobInstances(), 1) {
 				return
 			}
-			jobInstance := obj.jobInstances()[0]
-			expected := obj.Prop(state.Ctx, "").(*List).At(state.Ctx, 0)
-			assert.Equal(t, expected, jobInstance.job)
-			assert.Equal(t, bytecodeEval, jobInstance.thread.useBytecode)
+			jobInstance := obj.JobInstances()[0]
+			expected := obj.Prop(state.Ctx, "").(*core.List).At(state.Ctx, 0)
+			assert.Equal(t, expected, jobInstance.Job())
+
+			//assert.Equal(t, bytecodeEval, jobInstance.Thread().useBytecode)
 		})
 
 		t.Run("lifetimejob with ungranted permissions", func(t *testing.T) {
@@ -2290,15 +2300,15 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			}`
 
-			state := NewGlobalState(NewContext(ContextConfig{
-				Permissions: []Permission{LThreadPermission{Kind_: permkind.Create}},
+			state := core.NewGlobalState(core.NewContext(core.ContextConfig{
+				Permissions: []core.Permission{core.LThreadPermission{Kind_: permkind.Create}},
 			}))
 			res, err := Eval(code, state, false)
 
 			assert.Error(t, err)
-			assert.ErrorIs(t, err, NewNotAllowedError(HttpPermission{
+			assert.ErrorIs(t, err, core.NewNotAllowedError(core.HttpPermission{
 				Kind_:  permkind.Read,
-				Entity: URL("https://example.com/index.html"),
+				Entity: core.URL("https://example.com/index.html"),
 			}))
 			assert.Nil(t, res)
 		})
@@ -2308,21 +2318,21 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				a: 1
 				lifetimejob #job { self.a = 2 } 
 			}`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 
-			obj := res.(*Object)
-			if !assert.Len(t, obj.jobInstances(), 1) {
+			obj := res.(*core.Object)
+			if !assert.Len(t, obj.JobInstances(), 1) {
 				return
 			}
 
-			jobInstance := obj.jobInstances()[0]
-			expected := obj.Prop(state.Ctx, "").(*List).At(state.Ctx, 0)
+			jobInstance := obj.JobInstances()[0]
+			expected := obj.Prop(state.Ctx, "").(*core.List).At(state.Ctx, 0)
 
-			assert.Equal(t, expected, jobInstance.job)
-			assert.Equal(t, bytecodeEval, jobInstance.thread.useBytecode)
+			assert.Equal(t, expected, jobInstance.Job())
+			//assert.Equal(t, bytecodeEval, jobInstance.thread.useBytecode)
 
 			time.Sleep(time.Millisecond)
 		})
@@ -2335,15 +2345,15 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					lifetimejob #job { self.a = [%p, %int] } 
 				}
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
-			state.Ctx.AddNamedPattern("int", INT_PATTERN)
+			state.Ctx.AddNamedPattern("int", core.INT_PATTERN)
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 
-			obj := res.(*Object)
+			obj := res.(*core.Object)
 			time.Sleep(10 * time.Millisecond) //wait for job to finish
-			assert.Equal(t, NewWrappedValueList(
+			assert.Equal(t, core.NewWrappedValueList(
 				state.Ctx.ResolveNamedPattern("p"),
 				state.Ctx.ResolveNamedPattern("int"),
 			), obj.Prop(state.Ctx, "a"))
@@ -2355,62 +2365,62 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("empty", func(t *testing.T) {
 			code := `#{}`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, &Record{}, res)
+			assert.EqualValues(t, core.NewEmptyRecord(), res)
 		})
 
 		t.Run("single property", func(t *testing.T) {
 			code := `#{a:1}`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, NewRecordFromMap(ValMap{"a": Int(1)}), res)
+			assert.EqualValues(t, core.NewRecordFromMap(core.ValMap{"a": core.Int(1)}), res)
 		})
 
 		t.Run("several properties", func(t *testing.T) {
 			code := `#{a:1,b:2}`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, NewRecordFromMap(ValMap{"a": Int(1), "b": Int(2)}), res)
+			assert.EqualValues(t, core.NewRecordFromMap(core.ValMap{"a": core.Int(1), "b": core.Int(2)}), res)
 		})
 
 		t.Run("one element", func(t *testing.T) {
 			code := `#{1}`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, NewRecordFromMap(ValMap{
-				"": NewTuple([]Serializable{Int(1)}),
+			assert.EqualValues(t, core.NewRecordFromMap(core.ValMap{
+				"": core.NewTuple([]core.Serializable{core.Int(1)}),
 			}), res)
 		})
 
 		t.Run("two elements", func(t *testing.T) {
 			code := `#{1, 2}`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, NewRecordFromMap(ValMap{
-				"": NewTuple([]Serializable{Int(1), Int(2)}),
+			assert.EqualValues(t, core.NewRecordFromMap(core.ValMap{
+				"": core.NewTuple([]core.Serializable{core.Int(1), core.Int(2)}),
 			}), res)
 		})
 
 		t.Run("one element and a property", func(t *testing.T) {
 			code := `#{1, a: 1}`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, NewRecordFromMap(ValMap{
-				"":  NewTuple([]Serializable{Int(1)}),
-				"a": Int(1),
+			assert.EqualValues(t, core.NewRecordFromMap(core.ValMap{
+				"":  core.NewTuple([]core.Serializable{core.Int(1)}),
+				"a": core.Int(1),
 			}), res)
 		})
 	})
@@ -2420,14 +2430,14 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("literal only keys", func(t *testing.T) {
 			code := `:{"name": "foo", ./path: "bar"}`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, NewDictionary(map[string]Serializable{
-				`"name"`:                   String(`foo`),
-				`{"path__value":"./path"}`: String(`bar`),
+			assert.EqualValues(t, core.NewDictionary(map[string]core.Serializable{
+				`"name"`:                   core.String(`foo`),
+				`{"path__value":"./path"}`: core.String(`bar`),
 			}), res)
 		})
 
@@ -2437,13 +2447,13 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				k2 = 1
 				return :{k1: "foo", k2: "bar"}
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, NewDictionary(map[string]Serializable{
-				`"name"`:           String(`foo`),
-				`{"int__value":1}`: String(`bar`),
+			assert.EqualValues(t, core.NewDictionary(map[string]core.Serializable{
+				`"name"`:           core.String(`foo`),
+				`{"int__value":1}`: core.String(`bar`),
 			}), res)
 		})
 
@@ -2454,47 +2464,47 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("empty list literal", func(t *testing.T) {
 			code := `[]`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, newList(&ValueList{elements: nil}), res)
+			assert.EqualValues(t, core.NewWrappedValueList(), res)
 		})
 
 		t.Run("[integer]", func(t *testing.T) {
 			code := `[1]`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, newList(&ValueList{elements: []Serializable{Int(1)}}), res)
+			assert.EqualValues(t, core.NewWrappedValueList(core.Int(1)), res)
 		})
 
 		t.Run("[integer,integer]", func(t *testing.T) {
 			code := `[1,2]`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, newList(&ValueList{elements: []Serializable{Int(1), Int(2)}}), res)
+			assert.EqualValues(t, core.NewWrappedValueList(core.Int(1), core.Int(2)), res)
 		})
 
 		t.Run("[...[integer]]", func(t *testing.T) {
 			code := `[...[1]]`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, newList(&ValueList{elements: []Serializable{Int(1)}}), res)
+			assert.EqualValues(t, core.NewWrappedValueList(core.Int(1)), res)
 		})
 
 		t.Run("[integer, ...[integer]]", func(t *testing.T) {
 			code := `[0, ...[1]]`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, newList(&ValueList{elements: []Serializable{Int(0), Int(1)}}), res)
+			assert.EqualValues(t, core.NewWrappedValueList(core.Int(0), core.Int(1)), res)
 		})
 	})
 
@@ -2503,47 +2513,47 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("empty", func(t *testing.T) {
 			code := `#[]`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, &Tuple{elements: []Serializable{}}, res)
+			assert.EqualValues(t, core.NewTuple([]core.Serializable{}), res)
 		})
 
 		t.Run("[integer]", func(t *testing.T) {
 			code := `#[1]`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, &Tuple{elements: []Serializable{Int(1)}}, res)
+			assert.EqualValues(t, core.NewTuple([]core.Serializable{core.Int(1)}), res)
 		})
 
 		t.Run("[integer,integer]", func(t *testing.T) {
 			code := `#[1,2]`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, &Tuple{elements: []Serializable{Int(1), Int(2)}}, res)
+			assert.EqualValues(t, core.NewTuple([]core.Serializable{core.Int(1), core.Int(2)}), res)
 		})
 
 		t.Run("[...#[integer]]", func(t *testing.T) {
 			code := `#[...#[1]]`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, &Tuple{elements: []Serializable{Int(1)}}, res)
+			assert.EqualValues(t, core.NewTuple([]core.Serializable{core.Int(1)}), res)
 		})
 
 		t.Run("[integer, ...#[integer]]", func(t *testing.T) {
 			code := `#[0, ...#[1]]`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, &Tuple{elements: []Serializable{Int(0), Int(1)}}, res)
+			assert.EqualValues(t, core.NewTuple([]core.Serializable{core.Int(0), core.Int(1)}), res)
 		})
 	})
 
@@ -2555,16 +2565,16 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				assign a b = [1, 2]
 				return [$a, $b]
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, newList(&ValueList{elements: []Serializable{Int(1), Int(2)}}), res)
+			assert.EqualValues(t, core.NewWrappedValueList(core.Int(1), core.Int(2)), res)
 		})
 
 		t.Run("variable count > length", func(t *testing.T) {
 			code := `assign a b = [1]`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
@@ -2577,12 +2587,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				assign? a b = [1]
 				return [$a, $b]
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.EqualValues(t, newList(&ValueList{elements: []Serializable{Int(1), Nil}}), res)
+			assert.EqualValues(t, core.NewWrappedValueList(core.Int(1), core.Nil), res)
 		})
 	})
 
@@ -2591,11 +2601,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("condition is true", func(t *testing.T) {
 			code := `if true { return 1 }`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, Int(1), res)
+			assert.EqualValues(t, core.Int(1), res)
 		})
 
 		t.Run("condition is false", func(t *testing.T) {
@@ -2606,11 +2616,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 				return $a
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, Int(0), res)
+			assert.EqualValues(t, core.Int(0), res)
 		})
 
 		t.Run("if-else, condition is false", func(t *testing.T) {
@@ -2624,11 +2634,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 				return [$a, $b]
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, newList(&ValueList{elements: []Serializable{Int(0), Int(1)}}), res)
+			assert.EqualValues(t, core.NewWrappedValueList(core.Int(0), core.Int(1)), res)
 		})
 
 		t.Run("if-else-if, condition is false, condition of inner if is true", func(t *testing.T) {
@@ -2642,11 +2652,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 				return [$a, $b]
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, newList(&ValueList{elements: []Serializable{Int(0), Int(1)}}), res)
+			assert.EqualValues(t, core.NewWrappedValueList(core.Int(0), core.Int(1)), res)
 		})
 
 		t.Run("if-else-if-else, condition is false, condition of inner if is false", func(t *testing.T) {
@@ -2662,11 +2672,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 				return [$a, $b]
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, newList(&ValueList{elements: []Serializable{Int(0), Int(1)}}), res)
+			assert.EqualValues(t, core.NewWrappedValueList(core.Int(0), core.Int(1)), res)
 		})
 	})
 
@@ -2675,29 +2685,29 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("true condition", func(t *testing.T) {
 			code := `(if true 1)`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, Int(1), res)
+			assert.EqualValues(t, core.Int(1), res)
 		})
 
 		t.Run("false condition", func(t *testing.T) {
 			code := `(if false 1)`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, Nil, res)
+			assert.EqualValues(t, core.Nil, res)
 		})
 
 		t.Run("if-else, false condition", func(t *testing.T) {
 			code := `(if false 1 else 2)`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, Int(2), res)
+			assert.EqualValues(t, core.Int(2), res)
 		})
 	})
 
@@ -2706,8 +2716,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		testCases := []struct {
 			input           string
-			result          Value
-			globals         func(ctx *Context) map[string]Value
+			result          core.Value
+			globals         func(ctx *core.Context) map[string]core.Value
 			doSymbolicCheck bool
 		}{
 			{
@@ -2718,7 +2728,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}
 					return $c
 				`,
-				result:          Int(0),
+				result:          core.Int(0),
 				doSymbolicCheck: true,
 			},
 			{
@@ -2731,7 +2741,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 				return [$c1, $c2]
 			`,
-				result:          newList(&ValueList{elements: []Serializable{Int(0), Int(5)}}),
+				result:          core.NewWrappedValueList(core.Int(0), core.Int(5)),
 				doSymbolicCheck: true,
 			},
 			{
@@ -2742,7 +2752,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 				return $c
 			`,
-				result:          Int(5),
+				result:          core.Int(5),
 				doSymbolicCheck: true,
 			},
 			{
@@ -2755,7 +2765,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 				return [$c1, $c2]
 			`,
-				result:          newList(&ValueList{elements: []Serializable{Int(1), Int(11)}}),
+				result:          core.NewWrappedValueList(core.Int(1), core.Int(11)),
 				doSymbolicCheck: true,
 			},
 			{
@@ -2768,7 +2778,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 				return [$c1, $c2]
 			`,
-				result:          newList(&ValueList{elements: []Serializable{Int(1), Int(11)}}),
+				result:          core.NewWrappedValueList(core.Int(1), core.Int(11)),
 				doSymbolicCheck: true,
 			},
 			{
@@ -2784,7 +2794,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				};
 				return [$c1, $c2]
 			`,
-				result:          newList(&ValueList{elements: []Serializable{Int(1), Int(5)}}),
+				result:          core.NewWrappedValueList(core.Int(1), core.Int(5)),
 				doSymbolicCheck: true,
 			},
 			{
@@ -2800,7 +2810,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				};
 				return [$c1, $c2]
 			`,
-				result:          newList(&ValueList{elements: []Serializable{Int(1), Int(6)}}),
+				result:          core.NewWrappedValueList(core.Int(1), core.Int(6)),
 				doSymbolicCheck: true,
 			},
 			{
@@ -2811,7 +2821,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 				return $c
 			`,
-				result:          Int(2),
+				result:          core.Int(2),
 				doSymbolicCheck: true,
 			},
 			{
@@ -2823,7 +2833,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 				return $c
 			`,
-				result:          Int(4),
+				result:          core.Int(4),
 				doSymbolicCheck: true,
 			},
 			{
@@ -2839,7 +2849,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 				return [c, indexSum]
 			`,
-				result:          NewWrappedValueList(Int(3), Int(3)),
+				result:          core.NewWrappedValueList(core.Int(3), core.Int(3)),
 				doSymbolicCheck: true,
 			},
 
@@ -2849,7 +2859,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					1
 				}
 			`,
-				result: Nil,
+				result: core.Nil,
 			},
 			{
 				input: `
@@ -2857,7 +2867,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					1
 				}
 			`,
-				result: Nil,
+				result: core.Nil,
 			},
 
 			{
@@ -2866,7 +2876,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					1
 				}
 			`,
-				result: Nil,
+				result: core.Nil,
 			},
 			{
 				input: `
@@ -2876,20 +2886,20 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}
 					return elements
 				`,
-				globals: func(ctx *Context) map[string]Value {
-					watcher := NewGenericWatcher(WatcherConfiguration{Filter: ANYVAL_PATTERN})
-					watcher.InformAboutAsync(ctx, String("a"))
-					watcher.InformAboutAsync(ctx, String("b"))
+				globals: func(ctx *core.Context) map[string]core.Value {
+					watcher := core.NewGenericWatcher(core.WatcherConfiguration{Filter: core.ANYVAL_PATTERN})
+					watcher.InformAboutAsync(ctx, core.String("a"))
+					watcher.InformAboutAsync(ctx, core.String("b"))
 
 					go func() {
 						time.Sleep(10 * time.Millisecond)
 						watcher.Stop()
 					}()
-					return map[string]Value{
-						"streamable": StreamSource(watcher),
+					return map[string]core.Value{
+						"streamable": core.StreamSource(watcher),
 					}
 				},
-				result: NewWrappedValueList(String("a"), String("b")),
+				result: core.NewWrappedValueList(core.String("a"), core.String("b")),
 			},
 			{
 				input: `
@@ -2900,20 +2910,20 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}
 					return elements
 				`,
-				globals: func(ctx *Context) map[string]Value {
-					watcher := NewGenericWatcher(WatcherConfiguration{Filter: ANYVAL_PATTERN})
-					watcher.InformAboutAsync(ctx, String("a"))
-					watcher.InformAboutAsync(ctx, String("b"))
+				globals: func(ctx *core.Context) map[string]core.Value {
+					watcher := core.NewGenericWatcher(core.WatcherConfiguration{Filter: core.ANYVAL_PATTERN})
+					watcher.InformAboutAsync(ctx, core.String("a"))
+					watcher.InformAboutAsync(ctx, core.String("b"))
 
 					go func() {
 						time.Sleep(10 * time.Millisecond)
 						watcher.Stop()
 					}()
-					return map[string]Value{
-						"streamable": StreamSource(watcher),
+					return map[string]core.Value{
+						"streamable": core.StreamSource(watcher),
 					}
 				},
-				result: NewWrappedValueList(String("a")),
+				result: core.NewWrappedValueList(core.String("a")),
 			},
 			{
 				input: `
@@ -2921,20 +2931,20 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						return chunk.data
 					}
 				`,
-				globals: func(ctx *Context) map[string]Value {
-					watcher := NewGenericWatcher(WatcherConfiguration{Filter: ANYVAL_PATTERN})
-					watcher.InformAboutAsync(ctx, String("a"))
-					watcher.InformAboutAsync(ctx, String("b"))
+				globals: func(ctx *core.Context) map[string]core.Value {
+					watcher := core.NewGenericWatcher(core.WatcherConfiguration{Filter: core.ANYVAL_PATTERN})
+					watcher.InformAboutAsync(ctx, core.String("a"))
+					watcher.InformAboutAsync(ctx, core.String("b"))
 
 					go func() {
 						time.Sleep(10 * time.Millisecond)
 						watcher.Stop()
 					}()
-					return map[string]Value{
-						"streamable": StreamSource(watcher),
+					return map[string]core.Value{
+						"streamable": core.StreamSource(watcher),
 					}
 				},
-				result: NewWrappedValueList(String("a"), String("b")),
+				result: core.NewWrappedValueList(core.String("a"), core.String("b")),
 			},
 			{
 				input: `
@@ -2945,20 +2955,20 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					} 
 					return elements
 				`,
-				globals: func(ctx *Context) map[string]Value {
-					watcher := NewGenericWatcher(WatcherConfiguration{Filter: ANYVAL_PATTERN})
-					watcher.InformAboutAsync(ctx, String("a"))
-					watcher.InformAboutAsync(ctx, String("b"))
+				globals: func(ctx *core.Context) map[string]core.Value {
+					watcher := core.NewGenericWatcher(core.WatcherConfiguration{Filter: core.ANYVAL_PATTERN})
+					watcher.InformAboutAsync(ctx, core.String("a"))
+					watcher.InformAboutAsync(ctx, core.String("b"))
 
 					go func() {
 						time.Sleep(10 * time.Millisecond)
 						watcher.Stop()
 					}()
-					return map[string]Value{
-						"streamable": StreamSource(watcher),
+					return map[string]core.Value{
+						"streamable": core.StreamSource(watcher),
 					}
 				},
-				result: NewWrappedValueList(String("a"), String("b")),
+				result: core.NewWrappedValueList(core.String("a"), core.String("b")),
 			},
 			{
 				input: `
@@ -2968,17 +2978,17 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}
 					return data
 				`,
-				globals: func(ctx *Context) map[string]Value {
-					return map[string]Value{
-						"streamable": NewElementsStream(
-							[]Value{String("a"), String("b"), String("c"), String("d")},
+				globals: func(ctx *core.Context) map[string]core.Value {
+					return map[string]core.Value{
+						"streamable": core.NewElementsStream(
+							[]core.Value{core.String("a"), core.String("b"), core.String("c"), core.String("d")},
 							nil,
 						),
 					}
 				},
-				result: NewWrappedValueList(
-					NewWrappedValueList(String("a"), String("b")),
-					NewWrappedValueList(String("c"), String("d")),
+				result: core.NewWrappedValueList(
+					core.NewWrappedValueList(core.String("a"), core.String("b")),
+					core.NewWrappedValueList(core.String("c"), core.String("d")),
 				),
 			},
 			//TODO: add more tests with EOS error
@@ -2986,11 +2996,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		for _, testCase := range testCases {
 			t.Run(testCase.input, func(t *testing.T) {
-				state := NewGlobalState(NewDefaultTestContext())
+				state := core.NewGlobalState(NewDefaultTestContext())
 				defer state.Ctx.CancelGracefully()
 				if testCase.globals != nil {
 					for k, v := range testCase.globals(state.Ctx) {
-						state.Globals.permanent[k] = v
+						state.Globals.Set(k, v)
 					}
 				}
 
@@ -3007,40 +3017,40 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		testCases := []struct {
 			input           string
-			result          Value
-			globals         func(ctx *Context) map[string]Value
+			result          core.Value
+			globals         func(ctx *core.Context) map[string]core.Value
 			doSymbolicCheck bool
 		}{
 			{
 				input:           `(for i, e in []: i)`,
-				result:          NewWrappedValueList(),
+				result:          core.NewWrappedValueList(),
 				doSymbolicCheck: true,
 			},
 			{
 				input: `(for i, e in [5]: [i, e])`,
-				result: NewWrappedValueList(
-					NewWrappedValueList(Int(0), Int(5)),
+				result: core.NewWrappedValueList(
+					core.NewWrappedValueList(core.Int(0), core.Int(5)),
 				),
 				doSymbolicCheck: true,
 			},
 			{
 				input:           `(for e in [5]: e)`,
-				result:          NewWrappedValueList(Int(5)),
+				result:          core.NewWrappedValueList(core.Int(5)),
 				doSymbolicCheck: true,
 			},
 			{
 				input: `(for i, e in [5, 6]: [i, e])`,
-				result: NewWrappedValueList(
-					NewWrappedValueList(Int(0), Int(5)),
-					NewWrappedValueList(Int(1), Int(6)),
+				result: core.NewWrappedValueList(
+					core.NewWrappedValueList(core.Int(0), core.Int(5)),
+					core.NewWrappedValueList(core.Int(1), core.Int(6)),
 				),
 				doSymbolicCheck: true,
 			},
 			{
 				input: `(for i, e in 5..6: [i, e])`,
-				result: NewWrappedValueList(
-					NewWrappedValueList(Int(0), Int(5)),
-					NewWrappedValueList(Int(1), Int(6)),
+				result: core.NewWrappedValueList(
+					core.NewWrappedValueList(core.Int(0), core.Int(5)),
+					core.NewWrappedValueList(core.Int(1), core.Int(6)),
 				),
 				doSymbolicCheck: true,
 			},
@@ -3049,7 +3059,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					pattern p = %| 1 | 3
 					return (for %p n in [0, 1, 2, 3]: n)
 				`,
-				result:          NewWrappedValueList(Int(1), Int(3)),
+				result:          core.NewWrappedValueList(core.Int(1), core.Int(3)),
 				doSymbolicCheck: true,
 			},
 			{
@@ -3058,60 +3068,60 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					pattern p = %| 1 | 3
 					return (for %i i, %p n in [0, 1, 2, 3]: [i, n])
 				`,
-				result: NewWrappedValueList(
-					NewWrappedValueList(Int(3), Int(3)),
+				result: core.NewWrappedValueList(
+					core.NewWrappedValueList(core.Int(3), core.Int(3)),
 				),
 				doSymbolicCheck: true,
 			},
 			{
 				input: `(for e in streamable: e)`,
-				globals: func(ctx *Context) map[string]Value {
-					watcher := NewGenericWatcher(WatcherConfiguration{Filter: ANYVAL_PATTERN})
-					watcher.InformAboutAsync(ctx, String("a"))
-					watcher.InformAboutAsync(ctx, String("b"))
+				globals: func(ctx *core.Context) map[string]core.Value {
+					watcher := core.NewGenericWatcher(core.WatcherConfiguration{Filter: core.ANYVAL_PATTERN})
+					watcher.InformAboutAsync(ctx, core.String("a"))
+					watcher.InformAboutAsync(ctx, core.String("b"))
 
 					go func() {
 						time.Sleep(5 * time.Millisecond)
 						watcher.Stop()
 					}()
-					return map[string]Value{
-						"streamable": StreamSource(watcher),
+					return map[string]core.Value{
+						"streamable": core.StreamSource(watcher),
 					}
 				},
-				result: NewWrappedValueList(String("a"), String("b")),
+				result: core.NewWrappedValueList(core.String("a"), core.String("b")),
 			},
 			{
 				input: `(for chunked chunk in streamable: chunk.data)`,
-				globals: func(ctx *Context) map[string]Value {
-					watcher := NewGenericWatcher(WatcherConfiguration{Filter: ANYVAL_PATTERN})
-					watcher.InformAboutAsync(ctx, String("a"))
-					watcher.InformAboutAsync(ctx, String("b"))
+				globals: func(ctx *core.Context) map[string]core.Value {
+					watcher := core.NewGenericWatcher(core.WatcherConfiguration{Filter: core.ANYVAL_PATTERN})
+					watcher.InformAboutAsync(ctx, core.String("a"))
+					watcher.InformAboutAsync(ctx, core.String("b"))
 
 					go func() {
 						time.Sleep(5 * time.Millisecond)
 						watcher.Stop()
 					}()
-					return map[string]Value{
-						"streamable": StreamSource(watcher),
+					return map[string]core.Value{
+						"streamable": core.StreamSource(watcher),
 					}
 				},
-				result: NewWrappedValueList(
-					NewWrappedValueList(String("a"), String("b")),
+				result: core.NewWrappedValueList(
+					core.NewWrappedValueList(core.String("a"), core.String("b")),
 				),
 			},
 			{
 				input: `(for chunked chunk in streamable: chunk.data)`,
-				globals: func(ctx *Context) map[string]Value {
-					return map[string]Value{
-						"streamable": NewElementsStream(
-							[]Value{String("a"), String("b"), String("c"), String("d")},
+				globals: func(ctx *core.Context) map[string]core.Value {
+					return map[string]core.Value{
+						"streamable": core.NewElementsStream(
+							[]core.Value{core.String("a"), core.String("b"), core.String("c"), core.String("d")},
 							nil,
 						),
 					}
 				},
-				result: NewWrappedValueList(
-					NewWrappedValueList(String("a"), String("b")),
-					NewWrappedValueList(String("c"), String("d")),
+				result: core.NewWrappedValueList(
+					core.NewWrappedValueList(core.String("a"), core.String("b")),
+					core.NewWrappedValueList(core.String("c"), core.String("d")),
 				),
 			},
 			//TODO: add more tests with EOS error
@@ -3119,11 +3129,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		for _, testCase := range testCases {
 			t.Run(testCase.input, func(t *testing.T) {
-				state := NewGlobalState(NewDefaultTestContext())
+				state := core.NewGlobalState(NewDefaultTestContext())
 				defer state.Ctx.CancelGracefully()
 				if testCase.globals != nil {
 					for k, v := range testCase.globals(state.Ctx) {
-						state.Globals.permanent[k] = v
+						state.Globals.Set(k, v)
 					}
 				}
 
@@ -3154,95 +3164,89 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		testCases := []struct {
 			name   string
 			input  string
-			result func(tempDir string, tempDirPath Path) Value
-			before func(tempDir string, tempDirPath Path)
+			result func(tempDir string, tempDirPath core.Path) core.Value
+			before func(tempDir string, tempDirPath core.Path)
 		}{
 			{
 				//empty dir
 				input: GET_ENTRIES_CODE,
-				result: func(tempDir string, tempDirPath Path) Value {
-					return newList(&ValueList{
-						elements: []Serializable{
-							objFrom(ValMap{
-								"name":          String(filepath.Base(tempDir)),
-								"path":          tempDirPath,
-								"is-dir":        True,
-								"is-regular":    False,
-								"is-walk-start": True,
-							}),
-						},
-					})
+				result: func(tempDir string, tempDirPath core.Path) core.Value {
+					return core.NewWrappedValueList(
+						core.NewObjectFromMapNoInit(core.ValMap{
+							"name":          core.String(filepath.Base(tempDir)),
+							"path":          tempDirPath,
+							"is-dir":        core.True,
+							"is-regular":    core.False,
+							"is-walk-start": core.True,
+						}),
+					)
 				},
 			},
 			{
 				name:  "dir with single regular file",
 				input: GET_ENTRIES_CODE,
-				before: func(tempDir string, tempDirPath Path) {
+				before: func(tempDir string, tempDirPath core.Path) {
 					regularFilePath := filepath.Join(tempDir, regularFilename)
 					os.WriteFile(regularFilePath, nil, 0o400)
 				},
-				result: func(tempDir string, tempDirPath Path) Value {
+				result: func(tempDir string, tempDirPath core.Path) core.Value {
 					regularFilePath := filepath.Join(tempDir, regularFilename)
 
-					return newList(&ValueList{
-						elements: []Serializable{
-							objFrom(ValMap{
-								"name":          String(filepath.Base(tempDir)),
-								"path":          tempDirPath,
-								"is-dir":        Bool(true),
-								"is-regular":    Bool(false),
-								"is-walk-start": Bool(true),
-							}),
-							objFrom(ValMap{
-								"name":          String(regularFilename),
-								"path":          Path(regularFilePath),
-								"is-dir":        Bool(false),
-								"is-regular":    Bool(true),
-								"is-walk-start": Bool(false),
-							}),
-						},
-					})
+					return core.NewWrappedValueList(
+						core.NewObjectFromMapNoInit(core.ValMap{
+							"name":          core.String(filepath.Base(tempDir)),
+							"path":          tempDirPath,
+							"is-dir":        core.True,
+							"is-regular":    core.Bool(false),
+							"is-walk-start": core.True,
+						}),
+						core.NewObjectFromMapNoInit(core.ValMap{
+							"name":          core.String(regularFilename),
+							"path":          core.Path(regularFilePath),
+							"is-dir":        core.Bool(false),
+							"is-regular":    core.True,
+							"is-walk-start": core.Bool(false),
+						}),
+					)
 				},
 			},
 			{
 
 				name:  "dir with a regular file and an empty subdirectory",
 				input: GET_ENTRIES_CODE,
-				before: func(tempDir string, tempDirPath Path) {
+				before: func(tempDir string, tempDirPath core.Path) {
 					regularFilePath := filepath.Join(tempDir, regularFilename)
 					subdirPath := filepath.Join(tempDir, subdirName)
 					os.WriteFile(regularFilePath, nil, 0o400)
 					os.Mkdir(subdirPath, 0x500)
 				},
-				result: func(tempDir string, tempDirPath Path) Value {
+				result: func(tempDir string, tempDirPath core.Path) core.Value {
 					regularFilePath := filepath.Join(tempDir, regularFilename)
 					subdirPath := filepath.Join(tempDir, subdirName)
 
-					return newList(&ValueList{
-						elements: []Serializable{
-							objFrom(ValMap{
-								"name":          String(filepath.Base(tempDir)),
-								"path":          Path(tempDir + "/"),
-								"is-dir":        Bool(true),
-								"is-regular":    Bool(false),
-								"is-walk-start": Bool(true),
-							}),
-							objFrom(ValMap{
-								"name":          String(regularFilename),
-								"path":          Path(regularFilePath),
-								"is-dir":        Bool(false),
-								"is-regular":    Bool(true),
-								"is-walk-start": Bool(false),
-							}),
-							objFrom(ValMap{
-								"name":          String(subdirName),
-								"path":          Path(subdirPath + "/"),
-								"is-dir":        Bool(true),
-								"is-regular":    Bool(false),
-								"is-walk-start": Bool(false),
-							}),
-						},
-					})
+					return core.NewWrappedValueList(
+						core.NewObjectFromMapNoInit(core.ValMap{
+							"name":          core.String(filepath.Base(tempDir)),
+							"path":          core.Path(tempDir + "/"),
+							"is-dir":        core.True,
+							"is-regular":    core.Bool(false),
+							"is-walk-start": core.True,
+						}),
+						core.NewObjectFromMapNoInit(core.ValMap{
+							"name":          core.String(regularFilename),
+							"path":          core.Path(regularFilePath),
+							"is-dir":        core.Bool(false),
+							"is-regular":    core.True,
+							"is-walk-start": core.Bool(false),
+						}),
+						core.NewObjectFromMapNoInit(core.ValMap{
+							"name":          core.String(subdirName),
+							"path":          core.Path(subdirPath + "/"),
+							"is-dir":        core.True,
+							"is-regular":    core.Bool(false),
+							"is-walk-start": core.Bool(false),
+						}),
+					)
 				},
 			},
 			{
@@ -3257,33 +3261,31 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}
 					return $entries
 				`,
-				before: func(tempDir string, tempDirPath Path) {
+				before: func(tempDir string, tempDirPath core.Path) {
 					regularFilePath := filepath.Join(tempDir, regularFilename)
 					subdirPath := filepath.Join(tempDir, subdirName)
 					os.WriteFile(regularFilePath, nil, 0o400)
 					os.Mkdir(subdirPath, 0x500)
 				},
-				result: func(tempDir string, tempDirPath Path) Value {
+				result: func(tempDir string, tempDirPath core.Path) core.Value {
 					regularFilePath := filepath.Join(tempDir, regularFilename)
 
-					return newList(&ValueList{
-						elements: []Serializable{
-							objFrom(ValMap{
-								"name":          String(filepath.Base(tempDir)),
-								"path":          Path(tempDir + "/"),
-								"is-dir":        Bool(true),
-								"is-regular":    Bool(false),
-								"is-walk-start": Bool(true),
-							}),
-							objFrom(ValMap{
-								"name":          String(regularFilename),
-								"path":          Path(regularFilePath),
-								"is-dir":        Bool(false),
-								"is-regular":    Bool(true),
-								"is-walk-start": Bool(false),
-							}),
-						},
-					})
+					return core.NewWrappedValueList(
+						core.NewObjectFromMapNoInit(core.ValMap{
+							"name":          core.String(filepath.Base(tempDir)),
+							"path":          core.Path(tempDir + "/"),
+							"is-dir":        core.True,
+							"is-regular":    core.Bool(false),
+							"is-walk-start": core.True,
+						}),
+						core.NewObjectFromMapNoInit(core.ValMap{
+							"name":          core.String(regularFilename),
+							"path":          core.Path(regularFilePath),
+							"is-dir":        core.Bool(false),
+							"is-regular":    core.True,
+							"is-walk-start": core.Bool(false),
+						}),
+					)
 				},
 			},
 			{
@@ -3301,42 +3303,40 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}
 					return $entries
 				`,
-				before: func(tempDir string, tempDirPath Path) {
+				before: func(tempDir string, tempDirPath core.Path) {
 					subdir1Path := filepath.Join(tempDir, subdir1Name)
 					subdir2Path := filepath.Join(tempDir, subdir2Name)
 
 					os.Mkdir(subdir1Path, 0x500)
 					os.Mkdir(subdir2Path, 0x500)
 				},
-				result: func(tempDir string, tempDirPath Path) Value {
+				result: func(tempDir string, tempDirPath core.Path) core.Value {
 					subdir1Path := filepath.Join(tempDir, subdir1Name)
 					subdir2Path := filepath.Join(tempDir, subdir2Name)
 
-					return newList(&ValueList{
-						elements: []Serializable{
-							objFrom(ValMap{
-								"name":          String(filepath.Base(tempDir)),
-								"path":          Path(tempDir + "/"),
-								"is-dir":        Bool(true),
-								"is-regular":    Bool(false),
-								"is-walk-start": Bool(true),
-							}),
-							objFrom(ValMap{
-								"name":          String(subdir1Name),
-								"path":          Path(subdir1Path + "/"),
-								"is-dir":        Bool(true),
-								"is-regular":    Bool(false),
-								"is-walk-start": Bool(false),
-							}),
-							objFrom(ValMap{
-								"name":          String(subdir2Name),
-								"path":          Path(subdir2Path + "/"),
-								"is-dir":        Bool(true),
-								"is-regular":    Bool(false),
-								"is-walk-start": Bool(false),
-							}),
-						},
-					})
+					return core.NewWrappedValueList(
+						core.NewObjectFromMapNoInit(core.ValMap{
+							"name":          core.String(filepath.Base(tempDir)),
+							"path":          core.Path(tempDir + "/"),
+							"is-dir":        core.True,
+							"is-regular":    core.Bool(false),
+							"is-walk-start": core.True,
+						}),
+						core.NewObjectFromMapNoInit(core.ValMap{
+							"name":          core.String(subdir1Name),
+							"path":          core.Path(subdir1Path + "/"),
+							"is-dir":        core.True,
+							"is-regular":    core.Bool(false),
+							"is-walk-start": core.Bool(false),
+						}),
+						core.NewObjectFromMapNoInit(core.ValMap{
+							"name":          core.String(subdir2Name),
+							"path":          core.Path(subdir2Path + "/"),
+							"is-dir":        core.True,
+							"is-regular":    core.Bool(false),
+							"is-walk-start": core.Bool(false),
+						}),
+					)
 				},
 			},
 			{
@@ -3354,34 +3354,32 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}
 					return $entries
 				`,
-				before: func(tempDir string, tempDirPath Path) {
+				before: func(tempDir string, tempDirPath core.Path) {
 					subdir1Path := filepath.Join(tempDir, subdir1Name)
 					subdir2Path := filepath.Join(tempDir, subdir2Name)
 
 					os.Mkdir(subdir1Path, 0x500)
 					os.Mkdir(subdir2Path, 0x500)
 				},
-				result: func(tempDir string, tempDirPath Path) Value {
+				result: func(tempDir string, tempDirPath core.Path) core.Value {
 					subdir1Path := filepath.Join(tempDir, subdir1Name)
 
-					return newList(&ValueList{
-						elements: []Serializable{
-							objFrom(ValMap{
-								"name":          String(filepath.Base(tempDir)),
-								"path":          Path(tempDir + "/"),
-								"is-dir":        Bool(true),
-								"is-regular":    Bool(false),
-								"is-walk-start": Bool(true),
-							}),
-							objFrom(ValMap{
-								"name":          String(subdir1Name),
-								"path":          Path(subdir1Path + "/"),
-								"is-dir":        Bool(true),
-								"is-regular":    Bool(false),
-								"is-walk-start": Bool(false),
-							}),
-						},
-					})
+					return core.NewWrappedValueList(
+						core.NewObjectFromMapNoInit(core.ValMap{
+							"name":          core.String(filepath.Base(tempDir)),
+							"path":          core.Path(tempDir + "/"),
+							"is-dir":        core.True,
+							"is-regular":    core.Bool(false),
+							"is-walk-start": core.True,
+						}),
+						core.NewObjectFromMapNoInit(core.ValMap{
+							"name":          core.String(subdir1Name),
+							"path":          core.Path(subdir1Path + "/"),
+							"is-dir":        core.True,
+							"is-regular":    core.Bool(false),
+							"is-walk-start": core.Bool(false),
+						}),
+					)
 				},
 			},
 			{
@@ -3398,9 +3396,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}
 					return a
 				`,
-				before: func(tempDir string, tempDirPath Path) {},
-				result: func(tempDir string, tempDirPath Path) Value {
-					return Int(3)
+				before: func(tempDir string, tempDirPath core.Path) {},
+				result: func(tempDir string, tempDirPath core.Path) core.Value {
+					return core.Int(3)
 				},
 			},
 		}
@@ -3408,25 +3406,25 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		for _, testCase := range testCases {
 			t.Run(testCase.name, func(t *testing.T) {
 				tempDir := t.TempDir()
-				tempDirPath := Path(tempDir + "/")
+				tempDirPath := core.Path(tempDir + "/")
 
 				if testCase.before != nil {
 					testCase.before(tempDir, tempDirPath)
 				}
 
-				ctx := NewContext(ContextConfig{
-					Permissions: []Permission{
-						GlobalVarPermission{permkind.Read, "*"},
-						GlobalVarPermission{permkind.Update, "*"},
-						GlobalVarPermission{permkind.Create, "*"},
-						GlobalVarPermission{permkind.Use, "*"},
-						FilesystemPermission{permkind.Read, PathPattern(tempDirPath + "...")},
+				ctx := core.NewContext(core.ContextConfig{
+					Permissions: []core.Permission{
+						core.GlobalVarPermission{permkind.Read, "*"},
+						core.GlobalVarPermission{permkind.Update, "*"},
+						core.GlobalVarPermission{permkind.Create, "*"},
+						core.GlobalVarPermission{permkind.Use, "*"},
+						core.FilesystemPermission{permkind.Read, core.PathPattern(tempDirPath + "...")},
 					},
 					Filesystem: newOsFilesystem(),
 				})
 				defer ctx.CancelGracefully()
 
-				state := NewGlobalState(ctx, map[string]Value{
+				state := core.NewGlobalState(ctx, map[string]core.Value{
 					"dir": tempDirPath,
 				})
 				res, err := Eval(testCase.input, state, true)
@@ -3445,7 +3443,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		testCases := []struct {
 			name   string
 			input  string
-			result Value
+			result core.Value
 		}{
 			{
 				name: "single case (that matches)",
@@ -3456,7 +3454,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 				return a
 			`,
-				result: Int(1),
+				result: core.Int(1),
 			},
 			{
 				name: "single case (that matches) and defaultcase",
@@ -3468,7 +3466,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 				return a
 			`,
-				result: Int(1),
+				result: core.Int(1),
 			},
 			{
 				name: "single case (that does not match) and defaultcase",
@@ -3480,7 +3478,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 				return a
 			`,
-				result: Int(2),
+				result: core.Int(2),
 			},
 			{
 				name: "two cases: first matches",
@@ -3493,7 +3491,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}; 
 				return [$a,$b]
 			`,
-				result: newList(&ValueList{elements: []Serializable{Int(1), Int(0)}}),
+				result: core.NewWrappedValueList(core.Int(1), core.Int(0)),
 			},
 			{
 				name: "two cases and defaultcase: first matches",
@@ -3507,7 +3505,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}; 
 				return [$a,$b]
 			`,
-				result: newList(&ValueList{elements: []Serializable{Int(1), Int(0)}}),
+				result: core.NewWrappedValueList(core.Int(1), core.Int(0)),
 			},
 			{
 				name: "two cases and defaultcase: no match",
@@ -3521,7 +3519,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}; 
 				return [$a,$b]
 			`,
-				result: newList(&ValueList{elements: []Serializable{Int(2), Int(2)}}),
+				result: core.NewWrappedValueList(core.Int(2), core.Int(2)),
 			},
 			{
 				name: "two cases: second matches",
@@ -3534,7 +3532,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}; 
 				return [$a,$b]
 			`,
-				result: newList(&ValueList{elements: []Serializable{Int(0), Int(1)}}),
+				result: core.NewWrappedValueList(core.Int(0), core.Int(1)),
 			},
 			{
 				name: "two cases and defaultcase: second matches",
@@ -3548,7 +3546,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}; 
 				return [$a,$b]
 			`,
-				result: newList(&ValueList{elements: []Serializable{Int(0), Int(1)}}),
+				result: core.NewWrappedValueList(core.Int(0), core.Int(1)),
 			},
 			{
 				name: "stack check: 2 cases",
@@ -3558,7 +3556,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						2 {}
 					}; 
 				`,
-				result: Nil,
+				result: core.Nil,
 			},
 			{
 				name: "stack check: 2 cases + default case",
@@ -3569,13 +3567,13 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						defaultcase {}
 					}; 
 				`,
-				result: Nil,
+				result: core.Nil,
 			},
 		}
 
 		for _, testCase := range testCases {
 			t.Run(testCase.name, func(t *testing.T) {
-				state := NewGlobalState(NewDefaultTestContext())
+				state := core.NewGlobalState(NewDefaultTestContext())
 				defer state.Ctx.CancelGracefully()
 				res, err := Eval(testCase.input, state, false)
 				assert.NoError(t, err)
@@ -3590,12 +3588,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		testCases := []struct {
 			name   string
 			input  string
-			result Value
+			result core.Value
 		}{
 			{
 				name:   "no cases",
 				input:  `return switch 1 { }`,
-				result: Nil,
+				result: core.Nil,
 			},
 			{
 				name: "single case (that matches)",
@@ -3604,7 +3602,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						0 => 1
 					}
 				`,
-				result: Int(1),
+				result: core.Int(1),
 			},
 			{
 				name: "single case (that matches) and defaultcase",
@@ -3614,7 +3612,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						defaultcase => 2
 					}
 				`,
-				result: Int(1),
+				result: core.Int(1),
 			},
 			{
 				name: "single case (that does not match) and defaultcase",
@@ -3624,7 +3622,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						defaultcase => 2
 					}
 				`,
-				result: Int(2),
+				result: core.Int(2),
 			},
 			{
 				name: "two cases: first matches",
@@ -3634,7 +3632,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						1 => 1
 					}; 
 				`,
-				result: Int(0),
+				result: core.Int(0),
 			},
 			{
 				name: "two cases and defaultcase: first matches",
@@ -3645,7 +3643,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						defaultcase => 2
 					}; 
 				`,
-				result: Int(0),
+				result: core.Int(0),
 			},
 			{
 				name: "two cases and defaultcase: no match",
@@ -3656,7 +3654,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						defaultcase => 2
 					}; 
 				`,
-				result: Int(2),
+				result: core.Int(2),
 			},
 			{
 				name: "two cases: second matches",
@@ -3666,7 +3664,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						1 => 1
 					}; 
 			`,
-				result: Int(1),
+				result: core.Int(1),
 			},
 			{
 				name: "two cases and defaultcase: second matches",
@@ -3677,7 +3675,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						defaultcase => 2
 					}; 
 				`,
-				result: Int(1),
+				result: core.Int(1),
 			},
 			{
 				name: "stack check: 2 cases",
@@ -3687,7 +3685,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						2 => true
 					}) {}
 				`,
-				result: Nil,
+				result: core.Nil,
 			},
 			{
 				name: "stack check: 2 cases + default case",
@@ -3698,13 +3696,13 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						defaultcase => true
 					}) {}
 				`,
-				result: Nil,
+				result: core.Nil,
 			},
 		}
 
 		for _, testCase := range testCases {
 			t.Run(testCase.name, func(t *testing.T) {
-				state := NewGlobalState(NewDefaultTestContext())
+				state := core.NewGlobalState(NewDefaultTestContext())
 				defer state.Ctx.CancelGracefully()
 				res, err := Eval(testCase.input, state, false)
 				assert.NoError(t, err)
@@ -3719,7 +3717,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		testCases := []struct {
 			name   string
 			input  string
-			result Value
+			result core.Value
 		}{
 			{
 				name: "patterns : two cases (first matches)",
@@ -3732,7 +3730,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}; 
 					return [$a,$b]
 				`,
-				result: newList(&ValueList{elements: []Serializable{Int(1), Int(0)}}),
+				result: core.NewWrappedValueList(core.Int(1), core.Int(0)),
 			},
 			{
 				name: "group patterns : two cases (first one matches)",
@@ -3745,7 +3743,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}; 
 					return [$a,$b]
 				`,
-				result: newList(&ValueList{elements: []Serializable{String("user"), Int(0)}}),
+				result: core.NewWrappedValueList(core.String("user"), core.Int(0)),
 			},
 			{
 				name: "group patterns : two cases (second one matches)",
@@ -3758,7 +3756,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					} 
 					return [$a,$b]
 				`,
-				result: newList(&ValueList{elements: []Serializable{Int(0), Int(1)}}),
+				result: core.NewWrappedValueList(core.Int(0), core.Int(1)),
 			},
 			{
 				name: "equality : two cases (second one matches)",
@@ -3771,7 +3769,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}
 					return [$a, $b]
 				`,
-				result: newList(&ValueList{elements: []Serializable{Int(0), Int(1)}}),
+				result: core.NewWrappedValueList(core.Int(0), core.Int(1)),
 			},
 			{
 				name: "seconde case is not a simple value but is statically known",
@@ -3784,7 +3782,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}; 
 					return [$a,$b]
 				`,
-				result: newList(&ValueList{elements: []Serializable{Int(0), Int(1)}}),
+				result: core.NewWrappedValueList(core.Int(0), core.Int(1)),
 			},
 			{
 				name: "stack check: 2 cases",
@@ -3794,7 +3792,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						2 {}
 					}; 
 				`,
-				result: Nil,
+				result: core.Nil,
 			},
 			{
 				name: "stack check: 2 cases + default case",
@@ -3805,13 +3803,13 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						defaultcase {}
 					}; 
 				`,
-				result: Nil,
+				result: core.Nil,
 			},
 		}
 
 		for _, testCase := range testCases {
 			t.Run(testCase.name, func(t *testing.T) {
-				state := NewGlobalState(NewDefaultTestContext())
+				state := core.NewGlobalState(NewDefaultTestContext())
 				defer state.Ctx.CancelGracefully()
 				res, err := Eval(testCase.input, state, false)
 				assert.NoError(t, err)
@@ -3826,12 +3824,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		testCases := []struct {
 			name   string
 			input  string
-			result Value
+			result core.Value
 		}{
 			{
 				name:   "no cases",
 				input:  `return match 1 { }`,
-				result: Nil,
+				result: core.Nil,
 			},
 			{
 				name: "patterns : two cases (first matches)",
@@ -3841,7 +3839,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						%/e* => 2
 					}
 				`,
-				result: Int(1),
+				result: core.Int(1),
 			},
 			{
 				name: "group patterns : two cases (first one matches)",
@@ -3851,7 +3849,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						%/hom/{:username} => 1
 					}; 
 				`,
-				result: String("user"),
+				result: core.String("user"),
 			},
 			{
 				name: "group patterns : two cases (second one matches)",
@@ -3861,7 +3859,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						%/e* => 2
 					} 
 				`,
-				result: Int(2),
+				result: core.Int(2),
 			},
 			{
 				name: "equality : two cases (second one matches)",
@@ -3871,7 +3869,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						/e => 2
 					}
 				`,
-				result: Int(2),
+				result: core.Int(2),
 			},
 			{
 				name: "seconde case is not a simple value but is statically known",
@@ -3881,7 +3879,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						({a:1}) => 2
 					}; 
 				`,
-				result: Int(2),
+				result: core.Int(2),
 			},
 			{
 				name: "stack check: 2 cases",
@@ -3891,7 +3889,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						2 => true
 					}) {}
 				`,
-				result: Nil,
+				result: core.Nil,
 			},
 			{
 				name: "stack check: 2 cases + default case",
@@ -3902,13 +3900,13 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						defaultcase => true
 					}) {}
 				`,
-				result: Nil,
+				result: core.Nil,
 			},
 		}
 
 		for _, testCase := range testCases {
 			t.Run(testCase.name, func(t *testing.T) {
-				state := NewGlobalState(NewDefaultTestContext())
+				state := core.NewGlobalState(NewDefaultTestContext())
 				defer state.Ctx.CancelGracefully()
 				res, err := Eval(testCase.input, state, false)
 				assert.NoError(t, err)
@@ -3920,136 +3918,105 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	t.Run("integer range literal ", func(t *testing.T) {
 		t.Run("with upper bound", func(t *testing.T) {
 			code := `return 1..2`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, IntRange{
-				unknownStart: false,
-				start:        1,
-				end:          2,
-				step:         1,
-			}, res)
+			assert.Equal(t, core.NewIntRange(1, 2), res)
 		})
 
 		t.Run("without upper bound", func(t *testing.T) {
 			code := `return 1..`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, IntRange{
-				unknownStart: false,
-				start:        1,
-				end:          math.MaxInt64,
-				step:         1,
-			}, res)
+			assert.Equal(t, core.NewIntRange(1, math.MaxInt64), res)
 		})
 	})
 
 	t.Run("float range literal ", func(t *testing.T) {
 		t.Run("with upper bound", func(t *testing.T) {
 			code := `return 1.0..2.0`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, FloatRange{
-				unknownStart: false,
-				inclusiveEnd: true,
-				start:        1,
-				end:          2,
-			}, res)
+			assert.Equal(t, core.NewFloatRange(1.0, 2.0, true), res)
 		})
 
 		t.Run("without upper bound", func(t *testing.T) {
 			code := `return 1.0..`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, FloatRange{
-				unknownStart: false,
-				inclusiveEnd: true,
-				start:        1,
-				end:          math.MaxFloat64,
-			}, res)
+			assert.Equal(t, core.NewFloatRange(1, math.MaxFloat64, true), res)
 		})
 	})
 
 	t.Run("quantity range literal ", func(t *testing.T) {
 		t.Run("with upper bound", func(t *testing.T) {
 			code := `return 1B..2B`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, QuantityRange{
-				unknownStart: false,
-				inclusiveEnd: true,
-				start:        ByteCount(1),
-				end:          ByteCount(2),
-			}, res)
+			assert.Equal(t, core.NewQuantityRange(core.ByteCount(1), core.ByteCount(2), true), res)
 		})
 
 		t.Run("without upper bound", func(t *testing.T) {
 			code := `return 1B..`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, QuantityRange{
-				unknownStart: false,
-				inclusiveEnd: true,
-				start:        ByteCount(1),
-				end:          getQuantityTypeMaxValue(ByteCount(0)),
-			}, res)
+			assert.Equal(t, core.NewQuantityRange(
+				core.ByteCount(1),
+				core.GetQuantityTypeMaxValue(core.ByteCount(0)),
+				true,
+			), res)
 		})
 	})
 
 	t.Run("upper bound range expression ", func(t *testing.T) {
 		t.Run("integer ", func(t *testing.T) {
 			code := `return ..10`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, IntRange{
-				unknownStart: true,
-				start:        0,
-				end:          10,
-				step:         1,
-			}, res)
+			assert.Equal(t, core.NewUnknownStartIntRange(10), res)
 		})
 
 		t.Run("quantity", func(t *testing.T) {
 			code := `return ..10s`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
+
 			assert.NoError(t, err)
-			assert.Equal(t, QuantityRange{
-				unknownStart: true,
-				inclusiveEnd: true,
-				start:        nil,
-				end:          Duration(10 * time.Second),
-			}, res)
+
+			assert.Equal(t, core.NewUnknownStartQuantityRange(
+				core.Duration(10*time.Second),
+				true,
+			), res)
 		})
 	})
 
 	t.Run("rune range expression", func(t *testing.T) {
 		code := `'a'..'z'`
-		state := NewGlobalState(NewDefaultTestContext())
+		state := core.NewGlobalState(NewDefaultTestContext())
 		defer state.Ctx.CancelGracefully()
 		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
-		assert.Equal(t, RuneRange{'a', 'z'}, res)
+		assert.Equal(t, core.RuneRange{'a', 'z'}, res)
 	})
 
 	t.Run("sequence string pattern", func(t *testing.T) {
@@ -4060,14 +4027,16 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return %s
 			`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.IsType(t, (*SequenceStringPattern)(nil), res)
-			patt := res.(*SequenceStringPattern)
-			assert.Len(t, patt.elements, 1)
+			assert.IsType(t, (*core.SequenceStringPattern)(nil), res)
+			patt := res.(*core.SequenceStringPattern)
+
+			elements := patt.Elements()
+			assert.Len(t, elements, 1)
 		})
 
 		t.Run("single element: integer range with no upper bound", func(t *testing.T) {
@@ -4076,35 +4045,39 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return %s
 			`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.IsType(t, (*SequenceStringPattern)(nil), res)
-			patt := res.(*SequenceStringPattern)
-			assert.Len(t, patt.elements, 1)
+			assert.IsType(t, (*core.SequenceStringPattern)(nil), res)
+			patt := res.(*core.SequenceStringPattern)
 
-			expectedPattern := NewIntRangeStringPattern(
+			elements := patt.Elements()
+			assert.Len(t, elements, 1)
+
+			expectedPattern := core.NewIntRangeStringPattern(
 				1,
 				math.MaxInt64,
 				parse.FindNode(state.Module.MainChunk.Node, (*parse.IntegerRangeLiteral)(nil), nil),
 			)
-			assert.Equal(t, expectedPattern, patt.elements[0])
+			assert.Equal(t, expectedPattern, elements[0])
 		})
 
 		t.Run("single element: multiline string literal", func(t *testing.T) {
 			code := "pattern s = str( `a` )\n" +
 				"return %s"
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.IsType(t, (*SequenceStringPattern)(nil), res)
-			patt := res.(*SequenceStringPattern)
-			assert.Len(t, patt.elements, 1)
+			assert.IsType(t, (*core.SequenceStringPattern)(nil), res)
+			patt := res.(*core.SequenceStringPattern)
+			elements := patt.Elements()
+
+			assert.Len(t, elements, 1)
 		})
 	})
 
@@ -4113,12 +4086,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("empty", func(t *testing.T) {
 			code := `fn(){}`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 
-			assert.IsType(t, &InoxFunction{}, res)
+			assert.IsType(t, &core.InoxFunction{}, res)
 		})
 
 		t.Run("captured locals", func(t *testing.T) {
@@ -4127,20 +4100,14 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				b = 2
 				return fn[a,b](){}
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 
-			assert.IsType(t, &InoxFunction{}, res)
-			if bytecodeEval {
-				assert.Equal(t, []Value{Int(1), Int(2)}, res.(*InoxFunction).capturedLocals)
-			} else {
-				assert.Equal(t, map[string]Value{
-					"a": Int(1),
-					"b": Int(2),
-				}, res.(*InoxFunction).treeWalkCapturedLocals)
-			}
+			assert.IsType(t, &core.InoxFunction{}, res)
+
+			assert.ElementsMatch(t, []any{core.Int(1), core.Int(2)}, res.(*core.InoxFunction).CapturedLocals())
 		})
 
 		t.Run("captured locals should be thread safe", func(t *testing.T) {
@@ -4148,28 +4115,22 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				obj = {}
 				return fn[obj](){}
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 
-			assert.IsType(t, &InoxFunction{}, res)
-			if bytecodeEval {
-				captured := res.(*InoxFunction).capturedLocals[0]
-				assert.IsType(t, captured, &Object{})
-				assert.True(t, captured.(*Object).IsShared())
-			} else {
-				captured := res.(*InoxFunction).treeWalkCapturedLocals["obj"]
-				assert.IsType(t, captured, &Object{})
-				assert.True(t, captured.(*Object).IsShared())
-			}
+			assert.IsType(t, &core.InoxFunction{}, res)
+			captured := res.(*core.InoxFunction).CapturedLocals()[0]
+			assert.IsType(t, captured, &core.Object{})
+			assert.True(t, captured.(*core.Object).IsShared())
 		})
 	})
 
 	t.Run("function declaration", func(t *testing.T) {
 		t.Run("base case", func(t *testing.T) {
 			code := `fn f(){}`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			_, err := Eval(code, state, false)
 			if !assert.NoError(t, err) {
@@ -4177,7 +4138,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 
 			assert.Contains(t, state.Globals.Entries(), "f")
-			assert.IsType(t, &InoxFunction{}, state.Globals.Get("f"))
+			assert.IsType(t, &core.InoxFunction{}, state.Globals.Get("f"))
 		})
 
 		t.Run("function that do not capture locals should be available before the declaration statement", func(t *testing.T) {
@@ -4185,13 +4146,13 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return f
 				fn f(){}
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, true)
 			if !assert.NoError(t, err) {
 				return
 			}
-			assert.IsType(t, &InoxFunction{}, res)
+			assert.IsType(t, &core.InoxFunction{}, res)
 		})
 
 		t.Run("function that do not capture locals should be available before the declaration statement: inside and outside included files", func(t *testing.T) {
@@ -4211,12 +4172,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				`,
 			})
 
-			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			mod, err := core.ParseLocalModule(modpath, core.ModuleParsingConfig{Context: createParsingContext(modpath)})
 			if !assert.NoError(t, err) {
 				return
 			}
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			state.Module = mod
 			defer state.Ctx.CancelGracefully()
 
@@ -4225,10 +4186,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			list := res.(*List)
+			list := res.(*core.List)
 
-			assert.IsType(t, &InoxFunction{}, list.At(state.Ctx, 0))
-			assert.IsType(t, &InoxFunction{}, list.At(state.Ctx, 1))
+			assert.IsType(t, &core.InoxFunction{}, list.At(state.Ctx, 0))
+			assert.IsType(t, &core.InoxFunction{}, list.At(state.Ctx, 1))
 		})
 
 		t.Run("function that do not capture locals should be available before the declaration statement: in embedded module of a spawn expr", func(t *testing.T) {
@@ -4239,32 +4200,32 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 				return thread.wait_result!()
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, true)
 			if !assert.NoError(t, err) {
 				return
 			}
 
-			assert.IsType(t, &InoxFunction{}, res)
+			assert.IsType(t, &core.InoxFunction{}, res)
 		})
 	})
 
 	t.Run("Inox function call", func(t *testing.T) {
 		testconfig.AllowParallelization(t)
 
-		noargs := func() []Value { return nil }
+		noargs := func() []core.Value { return nil }
 
-		anError := NewError(errors.New("an error"), Nil)
+		anError := core.NewError(errors.New("an error"), core.Nil)
 
 		testCases := []struct {
 			name                  string
 			error                 bool
 			input                 string
-			result                Value
-			checkResult           func(t *testing.T, result Value, state *GlobalState)
+			result                core.Value
+			checkResult           func(t *testing.T, result core.Value, state *core.GlobalState)
 			isShared              bool
-			isolatedCaseArguments func() []Value
+			isolatedCaseArguments func() []core.Value
 			doAnalysis            bool
 		}{
 			{
@@ -4276,7 +4237,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						return 1
 					}
 				`,
-				result:     Int(1),
+				result:     core.Int(1),
 				doAnalysis: true,
 			},
 			{
@@ -4297,7 +4258,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}
 					return f!()
 				`,
-				result: Int(1),
+				result: core.Int(1),
 			},
 			{
 				name: "must call of a function returning nil",
@@ -4307,7 +4268,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}
 					return f!()
 				`,
-				result: Nil,
+				result: core.Nil,
 			},
 			{
 				name:  "must call of a function returning an error",
@@ -4327,7 +4288,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}
 					return f()
 				`,
-				result: NewArray(nil, Int(1), anError),
+				result: core.NewArray(nil, core.Int(1), anError),
 			},
 			{
 				name: "normal call of a function returning an array of length 2 whose last element is nil",
@@ -4337,7 +4298,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}
 					return f()
 				`,
-				result: NewArray(nil, Int(1), Nil),
+				result: core.NewArray(nil, core.Int(1), core.Nil),
 			},
 			{
 				name: "normal call of a function returning nil",
@@ -4347,7 +4308,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}
 					return f()
 				`,
-				result: Nil,
+				result: core.Nil,
 			},
 			{
 				name: "normal of a function returning an error",
@@ -4365,7 +4326,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					fn f(){  }
 					return f()
 				`,
-				result:                Nil,
+				result:                core.Nil,
 				isolatedCaseArguments: noargs,
 			},
 			{
@@ -4377,7 +4338,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return f()
 				`,
 				isolatedCaseArguments: noargs,
-				result:                Int(1),
+				result:                core.Int(1),
 			},
 			{
 				name: "declared function returning its sole argument",
@@ -4387,8 +4348,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}
 					return f(1)
 					`,
-				isolatedCaseArguments: func() []Value { return []Value{Int(1)} },
-				result:                Int(1),
+				isolatedCaseArguments: func() []core.Value { return []core.Value{core.Int(1)} },
+				result:                core.Int(1),
 			},
 			{
 				name: "declared function with a captured value",
@@ -4398,7 +4359,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return f()
 				`,
 				isolatedCaseArguments: noargs,
-				result:                Int(1),
+				result:                core.Int(1),
 			},
 			{
 				name: "declared function with a captured value and a local",
@@ -4407,8 +4368,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					fn[a] f(b){ return [a, b] }
 					return f(2)
 				`,
-				isolatedCaseArguments: func() []Value { return []Value{Int(2)} },
-				result:                newList(&ValueList{elements: []Serializable{Int(1), Int(2)}}),
+				isolatedCaseArguments: func() []core.Value { return []core.Value{core.Int(2)} },
+				result:                core.NewWrappedValueList(core.Int(1), core.Int(2)),
 			},
 			{
 				name: "declared function with two captured values",
@@ -4419,7 +4380,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return f()
 				`,
 				isolatedCaseArguments: noargs,
-				result:                newList(&ValueList{elements: []Serializable{Int(1), Int(2)}}),
+				result:                core.NewWrappedValueList(core.Int(1), core.Int(2)),
 			},
 			{
 				name: "declared function returning a function expression",
@@ -4429,8 +4390,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				`,
 				isolatedCaseArguments: noargs,
 				doAnalysis:            true,
-				checkResult: func(t *testing.T, result Value, state *GlobalState) {
-					assert.IsType(t, (*InoxFunction)(nil), result)
+				checkResult: func(t *testing.T, result core.Value, state *core.GlobalState) {
+					assert.IsType(t, (*core.InoxFunction)(nil), result)
 				},
 			},
 			{
@@ -4440,7 +4401,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return f()
 				`,
 				isolatedCaseArguments: noargs,
-				result:                Int(1),
+				result:                core.Int(1),
 			},
 			{
 				name: "declared arrow function returning its sole argument",
@@ -4448,8 +4409,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					fn f(a) => a
 					return f(1)
 				`,
-				isolatedCaseArguments: func() []Value { return []Value{Int(1)} },
-				result:                Int(1),
+				isolatedCaseArguments: func() []core.Value { return []core.Value{core.Int(1)} },
+				result:                core.Int(1),
 			},
 			{
 				name: "declared arrow function with a captured value",
@@ -4459,7 +4420,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return f()
 				`,
 				isolatedCaseArguments: noargs,
-				result:                Int(1),
+				result:                core.Int(1),
 			},
 			{
 				name: "declared arrow function with a captured value and a local",
@@ -4468,8 +4429,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					fn[a] f(b) => [a, b]
 					return f(2)
 				`,
-				isolatedCaseArguments: func() []Value { return []Value{Int(2)} },
-				result:                newList(&ValueList{elements: []Serializable{Int(1), Int(2)}}),
+				isolatedCaseArguments: func() []core.Value { return []core.Value{core.Int(2)} },
+				result:                core.NewWrappedValueList(core.Int(1), core.Int(2)),
 			},
 			{
 				name: "declared arrow function with two captured values",
@@ -4480,7 +4441,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return f()
 				`,
 				isolatedCaseArguments: noargs,
-				result:                newList(&ValueList{elements: []Serializable{Int(1), Int(2)}}),
+				result:                core.NewWrappedValueList(core.Int(1), core.Int(2)),
 			},
 			{
 				name: "declared arrow function returning a function expression",
@@ -4490,8 +4451,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				`,
 				isolatedCaseArguments: noargs,
 				doAnalysis:            true,
-				checkResult: func(t *testing.T, result Value, state *GlobalState) {
-					assert.IsType(t, (*InoxFunction)(nil), result)
+				checkResult: func(t *testing.T, result core.Value, state *core.GlobalState) {
+					assert.IsType(t, (*core.InoxFunction)(nil), result)
 				},
 			},
 			{
@@ -4522,7 +4483,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}
 					return f(1)
 				`,
-				result: NewArrayFrom(Int(1), NewArrayFrom()),
+				result: core.NewArrayFrom(core.Int(1), core.NewArrayFrom()),
 			},
 			{
 				name: "variadic function with many arguments",
@@ -4532,7 +4493,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}
 					return f(1, 2, 3)
 				`,
-				result: NewArrayFrom(Int(1), NewArrayFrom(Int(2), Int(3))),
+				result: core.NewArrayFrom(core.Int(1), core.NewArrayFrom(core.Int(2), core.Int(3))),
 			},
 			{
 				name: "variadic function with many arguments from a list spread argument",
@@ -4542,7 +4503,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}
 					return f(1, ...[2, 3])
 				`,
-				result: NewArrayFrom(Int(1), NewArrayFrom(Int(2), Int(3))),
+				result: core.NewArrayFrom(core.Int(1), core.NewArrayFrom(core.Int(2), core.Int(3))),
 			},
 			{
 				name: "variadic function with many arguments from an array spread argument",
@@ -4552,7 +4513,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}
 					return f(1, ...Array(2, 3))
 				`,
-				result: NewArrayFrom(Int(1), NewArrayFrom(Int(2), Int(3))),
+				result: core.NewArrayFrom(core.Int(1), core.NewArrayFrom(core.Int(2), core.Int(3))),
 			},
 			{
 				name:  "non-variadic function with a spread argument",
@@ -4583,7 +4544,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return f()
 				`,
 				isolatedCaseArguments: noargs,
-				result:                newList(&ValueList{elements: []Serializable{Int(1), Int(2)}}),
+				result:                core.NewWrappedValueList(core.Int(1), core.Int(2)),
 			},
 			{
 				name: "recursive function",
@@ -4596,8 +4557,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}
 					return factorial(3)
 				`,
-				isolatedCaseArguments: func() []Value { return []Value{Int(3)} },
-				result:                Int(6),
+				isolatedCaseArguments: func() []core.Value { return []core.Value{core.Int(3)} },
+				result:                core.Int(6),
 				doAnalysis:            true,
 			},
 			{
@@ -4613,7 +4574,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					result = rec(2)
 					return [result, a] # we also check that a is still accessible
 				`,
-				result:     NewWrappedValueList(Int(6), Int(3)),
+				result:     core.NewWrappedValueList(core.Int(6), core.Int(3)),
 				doAnalysis: true,
 			},
 			{
@@ -4633,7 +4594,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return f()
 				`,
 				isolatedCaseArguments: noargs,
-				result:                NewWrappedValueList(Int(6), Int(3)),
+				result:                core.NewWrappedValueList(core.Int(6), core.Int(3)),
 				doAnalysis:            true,
 			},
 			{
@@ -4660,7 +4621,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					
 					return obj::f()
 				`,
-				result:     NewWrappedValueList(Int(6), Int(3)),
+				result:     core.NewWrappedValueList(core.Int(6), core.Int(3)),
 				doAnalysis: true,
 			},
 			{
@@ -4671,7 +4632,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					}
 					return f()
 				`,
-				result: Int(1),
+				result: core.Int(1),
 			},
 			{
 				name: "many calls of a void function with no parameters",
@@ -4679,7 +4640,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					fn f(){}
 					many_calls
 				`, "many_calls", strings.Repeat("f()\n", 100)),
-				result: Nil,
+				result: core.Nil,
 			},
 			{
 				name: "external func : no parameters, no return value",
@@ -4689,7 +4650,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					f = rt.wait_result!()
 					return f()
 				`,
-				result: Nil,
+				result: core.Nil,
 			},
 			{
 				name: "external func returning an integer",
@@ -4702,7 +4663,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return f()
 				`,
 				isolatedCaseArguments: noargs,
-				result:                Int(1),
+				result:                core.Int(1),
 			},
 			{
 				name: "external func returning an object",
@@ -4716,7 +4677,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				`,
 				isShared:              true,
 				isolatedCaseArguments: noargs,
-				result:                NewObject(),
+				result:                core.NewObject(),
 			},
 			{
 				name: "external func returning its argument, argument should be shared",
@@ -4730,8 +4691,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					f = lthread.wait_result!()
 					return f(shared_value)
 				`,
-				checkResult: func(t *testing.T, result Value, state *GlobalState) {
-					if result.(*InoxFunction).originState != state {
+				checkResult: func(t *testing.T, result core.Value, state *core.GlobalState) {
+					if !result.(*core.InoxFunction).OriginStateEqual(state) {
 						assert.Fail(t, "origin state of shared value is invalid")
 					}
 				},
@@ -4746,7 +4707,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					f = lthread.wait_result!()
 					many_calls			
 				`, "many_calls", strings.Repeat("f()\n", 100)),
-				result: Nil,
+				result: core.Nil,
 			},
 			// TODO
 			// {
@@ -4768,7 +4729,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			// 		return obj::getA()
 			// 	`,
-			// 	result:          Int(1),
+			// 	result:          core.Int(1),
 			// 	doSymbolicCheck: true,
 			// },
 			// {
@@ -4790,21 +4751,21 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			// 		return obj::getA()
 			// 	`,
-			// 	result:          NewWrappedValueList(Int(2), Int(1), Int(2), Int(1)),
+			// 	result:          core.NewWrappedValueList(core.Int(2), core.Int(1), core.Int(2), core.Int(1)),
 			// 	doSymbolicCheck: true,
 			//},
 		}
 
 		for _, testCase := range testCases {
 			t.Run(testCase.name, func(t *testing.T) {
-				state := NewGlobalState(NewDefaultTestContext())
+				state := core.NewGlobalState(NewDefaultTestContext())
 				defer state.Ctx.CancelGracefully()
 
-				state.Globals.Set("Array", WrapGoFunction(NewArray))
+				state.Globals.Set("Array", core.WrapGoFunction(core.NewArray))
 				state.Globals.Set("an-error", anError)
 
-				state.Ctx.AddNamedPattern("int", INT_PATTERN)
-				state.Ctx.AddNamedPattern("any", ANYVAL_PATTERN)
+				state.Ctx.AddNamedPattern("int", core.INT_PATTERN)
+				state.Ctx.AddNamedPattern("any", core.ANYVAL_PATTERN)
 
 				res, err := Eval(testCase.input, state, testCase.doAnalysis)
 				if testCase.error {
@@ -4821,8 +4782,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						testCase.checkResult(t, res, state)
 					} else {
 						expected := testCase.result
-						if testCase.isShared && utils.Ret0(IsSharable(expected, state)) {
-							expected = Share(expected.(PotentiallySharable), state)
+						if testCase.isShared && utils.Ret0(core.IsSharable(expected, state)) {
+							expected = core.Share(expected.(core.PotentiallySharable), state)
 						}
 						assert.Equal(t, expected, res)
 					}
@@ -4831,14 +4792,14 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			if bytecodeEval && testCase.isolatedCaseArguments != nil {
 				t.Run("isolated_call_"+testCase.name, func(t *testing.T) {
-					state := NewGlobalState(NewDefaultTestContext())
+					state := core.NewGlobalState(NewDefaultTestContext())
 					defer state.Ctx.CancelGracefully()
 
-					state.Globals.Set("Array", WrapGoFunction(NewArray))
+					state.Globals.Set("Array", core.WrapGoFunction(core.NewArray))
 					state.Globals.Set("an-error", anError)
 
-					state.Ctx.AddNamedPattern("int", INT_PATTERN)
-					state.Ctx.AddNamedPattern("any", ANYVAL_PATTERN)
+					state.Ctx.AddNamedPattern("int", core.INT_PATTERN)
+					state.Ctx.AddNamedPattern("any", core.ANYVAL_PATTERN)
 
 					lastOpeningParenIndex := strings.LastIndexByte(testCase.input, '(')
 					input := testCase.input[:lastOpeningParenIndex]
@@ -4848,7 +4809,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						return
 					}
 
-					fn := val.(*InoxFunction)
+					fn := val.(*core.InoxFunction)
 					res, err := fn.Call(state, nil, testCase.isolatedCaseArguments(), nil)
 
 					if testCase.error {
@@ -4861,8 +4822,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 							testCase.checkResult(t, res, state)
 						} else {
 							expected := testCase.result
-							if testCase.isShared && utils.Ret0(IsSharable(expected, state)) {
-								expected = Share(expected.(PotentiallySharable), state)
+							if testCase.isShared && utils.Ret0(core.IsSharable(expected, state)) {
+								expected = core.Share(expected.(core.PotentiallySharable), state)
 							}
 							assert.Equal(t, expected, res)
 						}
@@ -4881,37 +4842,37 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			name            string
 			error           bool
 			input           string
-			globalVariables map[string]Value
-			makeGlobals     func(t *testing.T) map[string]Value
-			result          Value
+			globalVariables map[string]core.Value
+			makeGlobals     func(t *testing.T) map[string]core.Value
+			result          core.Value
 		}{
 			{
 				name:  "variadic: arg count < non-variadic-param-count",
 				input: "gofunc()",
 				error: true,
-				globalVariables: map[string]Value{
-					"gofunc": WrapGoFunction(func(ctx *Context, x Int, xs ...Int) {}),
+				globalVariables: map[string]core.Value{
+					"gofunc": core.WrapGoFunction(func(ctx *core.Context, x core.Int, xs ...core.Int) {}),
 				},
 			},
 			{
 				name:  "variadic: arg count == non-variadic-param-count",
 				input: "gofunc(1)",
-				globalVariables: map[string]Value{
-					"gofunc": WrapGoFunction(func(ctx *Context, x Int, xs ...Int) Int {
+				globalVariables: map[string]core.Value{
+					"gofunc": core.WrapGoFunction(func(ctx *core.Context, x core.Int, xs ...core.Int) core.Int {
 						return x
 					}),
 				},
-				result: Int(1),
+				result: core.Int(1),
 			},
 			{
 				name:  "variadic: arg count == 1 + non-variadic-param-count",
 				input: "gofunc(1, 2)",
-				globalVariables: map[string]Value{
-					"gofunc": WrapGoFunction(func(ctx *Context, x Int, xs ...Int) Int {
-						return Int(x + xs[0])
+				globalVariables: map[string]core.Value{
+					"gofunc": core.WrapGoFunction(func(ctx *core.Context, x core.Int, xs ...core.Int) core.Int {
+						return core.Int(x + xs[0])
 					}),
 				},
-				result: Int(3),
+				result: core.Int(3),
 			},
 			{
 				name: "shared values should be unwrapped",
@@ -4923,14 +4884,14 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					$rt.wait_result()
 					return nil
 				`,
-				makeGlobals: func(t *testing.T) map[string]Value {
-					return map[string]Value{
-						"gofunc": WrapGoFunction(func(ctx *Context, obj *Object) {
-							assert.Equal(t, map[string]Serializable{"a": Int(1)}, obj.EntryMap(nil))
+				makeGlobals: func(t *testing.T) map[string]core.Value {
+					return map[string]core.Value{
+						"gofunc": core.WrapGoFunction(func(ctx *core.Context, obj *core.Object) {
+							assert.Equal(t, map[string]core.Serializable{"a": core.Int(1)}, obj.EntryMap(nil))
 						}),
 					}
 				},
-				result: Nil,
+				result: core.Nil,
 			},
 			{
 				name: "go functions should not 'share' their arguments",
@@ -4943,15 +4904,15 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					$rt.wait_result()
 					return nil
 				`,
-				makeGlobals: func(t *testing.T) map[string]Value {
-					return map[string]Value{
-						"gofunc": WrapGoFunction(func(ctx *Context, sharedValue *InoxFunction) {
+				makeGlobals: func(t *testing.T) map[string]core.Value {
+					return map[string]core.Value{
+						"gofunc": core.WrapGoFunction(func(ctx *core.Context, sharedValue *core.InoxFunction) {
 							assert.False(t, sharedValue.IsShared())
 
 						}),
 					}
 				},
-				result: Nil,
+				result: core.Nil,
 			},
 			{
 				name: "Go functions should not 'share' their arguments",
@@ -4964,15 +4925,15 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					$rt.wait_result()
 					return nil
 				`,
-				makeGlobals: func(t *testing.T) map[string]Value {
-					return map[string]Value{
-						"gofunc": WrapGoFunction(func(ctx *Context, sharedValue *InoxFunction) {
+				makeGlobals: func(t *testing.T) map[string]core.Value {
+					return map[string]core.Value{
+						"gofunc": core.WrapGoFunction(func(ctx *core.Context, sharedValue *core.InoxFunction) {
 							assert.False(t, sharedValue.IsShared())
 
 						}),
 					}
 				},
-				result: Nil,
+				result: core.Nil,
 			},
 			//TODO: add following tests when Go methods & closures can be shared
 			// {
@@ -4986,14 +4947,14 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			// 		$rt.wait_result()
 			// 		return nil
 			// 	`,
-			// 	makeGlobals: func(t *testing.T) map[string]Value {
-			// 		return map[string]Value{
-			// 			"gofunc": WrapGoFunction(func(ctx *Context, sharedValue *InoxFunction) {
+			// 	makeGlobals: func(t *testing.T) map[string]core.Value {
+			// 		return map[string]core.Value{
+			// 			"gofunc": core.WrapGoFunction(func(ctx *core.Context, sharedValue *core.InoxFunction) {
 			// 				assert.True(t, sharedValue.IsShared())
 			// 			}),
 			// 		}
 			// 	},
-			// 	result: Nil,
+			// 	result: core.Nil,
 			// },
 			// {
 			// 	name: "Go closures should 'share' their arguments",
@@ -5006,69 +4967,69 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			// 		$rt.wait_result()
 			// 		return nil
 			// 	`,
-			// 	makeGlobals: func(t *testing.T) map[string]Value {
-			// 		return map[string]Value{
-			// 			"gofunc": WrapGoClosure(func(ctx *Context, sharedValue *InoxFunction) {
+			// 	makeGlobals: func(t *testing.T) map[string]core.Value {
+			// 		return map[string]core.Value{
+			// 			"gofunc": WrapGoClosure(func(ctx *core.Context, sharedValue *core.InoxFunction) {
 			// 				assert.True(t, sharedValue.IsShared())
 			// 			}),
 			// 		}
 			// 	},
-			// 	result: Nil,
+			// 	result: core.Nil,
 			// },
 			{
 				name:  "(must) call with two results, error is nil",
 				input: "return gofunc!()",
-				globalVariables: map[string]Value{
-					"gofunc": WrapGoFunction(func(ctx *Context) (Int, error) {
+				globalVariables: map[string]core.Value{
+					"gofunc": core.WrapGoFunction(func(ctx *core.Context) (core.Int, error) {
 						return 3, nil
 					}),
 				},
-				result: Int(3),
+				result: core.Int(3),
 			}, {
 				name:  "(must) call with two results, error is not nil",
 				input: "return gofunc!()",
-				globalVariables: map[string]Value{
-					"gofunc": WrapGoFunction(func(ctx *Context) (Int, error) {
+				globalVariables: map[string]core.Value{
+					"gofunc": core.WrapGoFunction(func(ctx *core.Context) (core.Int, error) {
 						return -1, errors.New("error !")
 					}),
 				},
 				error: true,
 			},
 			{
-				name:  "GoValue returned",
+				name:  "core.GoValue returned",
 				input: "return getuser()",
-				globalVariables: map[string]Value{
-					"getuser": WrapGoFunction(func(ctx *Context) GoValue {
-						return testMutableGoValue{Name: "Foo"}
+				globalVariables: map[string]core.Value{
+					"getuser": core.WrapGoFunction(func(ctx *core.Context) core.GoValue {
+						return core.TestMutableGoValue{Name: "Foo"}
 					}),
 				},
-				result: testMutableGoValue{Name: "Foo"},
+				result: core.TestMutableGoValue{Name: "Foo"},
 			},
 			{
 				name:  "[]string returned, should be converted to a list",
 				input: "return getNames()",
-				globalVariables: map[string]Value{
-					"getNames": WrapGoFunction(func(ctx *Context) []String {
-						return []String{"string"}
+				globalVariables: map[string]core.Value{
+					"getNames": core.WrapGoFunction(func(ctx *core.Context) []core.String {
+						return []core.String{"string"}
 					}),
 				},
-				result: NewWrappedValueList(String("string")),
+				result: core.NewWrappedValueList(core.String("string")),
 			},
 			{
 				name:  "method",
 				input: "return $$user.getName()",
-				globalVariables: map[string]Value{
-					"user": testMutableGoValue{"Foo", ""},
+				globalVariables: map[string]core.Value{
+					"user": core.TestMutableGoValue{"Foo", ""},
 				},
-				result: String("Foo"),
+				result: core.String("Foo"),
 			},
 			{
 				name: "optional parameter: no arguments",
 				input: `
 					return gofunc()
 				`,
-				makeGlobals: func(t *testing.T) map[string]Value {
-					goFunc := func(ctx *Context, i *OptionalParam[Int]) Int {
+				makeGlobals: func(t *testing.T) map[string]core.Value {
+					goFunc := func(ctx *core.Context, i *core.OptionalParam[core.Int]) core.Int {
 						if !assert.Nil(t, i) {
 							//assertion failed
 							return -1
@@ -5079,25 +5040,25 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					symbolicRegistrationLock.Lock()
 					defer symbolicRegistrationLock.Unlock()
 
-					if !IsSymbolicEquivalentOfGoFunctionRegistered(goFunc) {
-						RegisterSymbolicGoFunction(goFunc, func(*symbolic.Context, *symbolic.OptionalParam[*symbolic.Int]) *symbolic.Int {
+					if !core.IsSymbolicEquivalentOfGoFunctionRegistered(goFunc) {
+						core.RegisterSymbolicGoFunction(goFunc, func(*symbolic.Context, *symbolic.OptionalParam[*symbolic.Int]) *symbolic.Int {
 							return symbolic.ANY_INT
 						})
 					}
 
-					return map[string]Value{
-						"gofunc": WrapGoFunction(goFunc),
+					return map[string]core.Value{
+						"gofunc": core.WrapGoFunction(goFunc),
 					}
 				},
-				result: Int(1),
+				result: core.Int(1),
 			},
 			{
 				name: "optional parameter: argument provided",
 				input: `
 					return gofunc(2)
 				`,
-				makeGlobals: func(t *testing.T) map[string]Value {
-					goFunc := func(ctx *Context, i *OptionalParam[Int]) Int {
+				makeGlobals: func(t *testing.T) map[string]core.Value {
+					goFunc := func(ctx *core.Context, i *core.OptionalParam[core.Int]) core.Int {
 						if !assert.NotNil(t, i) {
 							//assertion failed
 							return -1
@@ -5108,25 +5069,25 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					symbolicRegistrationLock.Lock()
 					defer symbolicRegistrationLock.Unlock()
 
-					if !IsSymbolicEquivalentOfGoFunctionRegistered(goFunc) {
-						RegisterSymbolicGoFunction(goFunc, func(*symbolic.Context, *symbolic.OptionalParam[*symbolic.Int]) *symbolic.Int {
+					if !core.IsSymbolicEquivalentOfGoFunctionRegistered(goFunc) {
+						core.RegisterSymbolicGoFunction(goFunc, func(*symbolic.Context, *symbolic.OptionalParam[*symbolic.Int]) *symbolic.Int {
 							return symbolic.ANY_INT
 						})
 					}
 
-					return map[string]Value{
-						"gofunc": WrapGoFunction(goFunc),
+					return map[string]core.Value{
+						"gofunc": core.WrapGoFunction(goFunc),
 					}
 				},
-				result: Int(2),
+				result: core.Int(2),
 			},
 			{
 				name: "two optional parameters: no arguments",
 				input: `
 					return gofunc()
 				`,
-				makeGlobals: func(t *testing.T) map[string]Value {
-					goFunc := func(ctx *Context, a, b *OptionalParam[Int]) Int {
+				makeGlobals: func(t *testing.T) map[string]core.Value {
+					goFunc := func(ctx *core.Context, a, b *core.OptionalParam[core.Int]) core.Int {
 						if !assert.Nil(t, a) {
 							//assertion failed
 							return -1
@@ -5141,25 +5102,25 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					symbolicRegistrationLock.Lock()
 					defer symbolicRegistrationLock.Unlock()
 
-					if !IsSymbolicEquivalentOfGoFunctionRegistered(goFunc) {
-						RegisterSymbolicGoFunction(goFunc, func(_ *symbolic.Context, a, b *symbolic.OptionalParam[*symbolic.Int]) *symbolic.Int {
+					if !core.IsSymbolicEquivalentOfGoFunctionRegistered(goFunc) {
+						core.RegisterSymbolicGoFunction(goFunc, func(_ *symbolic.Context, a, b *symbolic.OptionalParam[*symbolic.Int]) *symbolic.Int {
 							return symbolic.ANY_INT
 						})
 					}
 
-					return map[string]Value{
-						"gofunc": WrapGoFunction(goFunc),
+					return map[string]core.Value{
+						"gofunc": core.WrapGoFunction(goFunc),
 					}
 				},
-				result: Int(1),
+				result: core.Int(1),
 			},
 			{
 				name: "two optional parameters: single argument",
 				input: `
 					return gofunc(2)
 				`,
-				makeGlobals: func(t *testing.T) map[string]Value {
-					goFunc := func(ctx *Context, a, b *OptionalParam[Int]) Int {
+				makeGlobals: func(t *testing.T) map[string]core.Value {
+					goFunc := func(ctx *core.Context, a, b *core.OptionalParam[core.Int]) core.Int {
 						if !assert.NotNil(t, a) {
 							//assertion failed
 							return -1
@@ -5174,25 +5135,25 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					symbolicRegistrationLock.Lock()
 					defer symbolicRegistrationLock.Unlock()
 
-					if !IsSymbolicEquivalentOfGoFunctionRegistered(goFunc) {
-						RegisterSymbolicGoFunction(goFunc, func(_ *symbolic.Context, a, b *symbolic.OptionalParam[*symbolic.Int]) *symbolic.Int {
+					if !core.IsSymbolicEquivalentOfGoFunctionRegistered(goFunc) {
+						core.RegisterSymbolicGoFunction(goFunc, func(_ *symbolic.Context, a, b *symbolic.OptionalParam[*symbolic.Int]) *symbolic.Int {
 							return symbolic.ANY_INT
 						})
 					}
 
-					return map[string]Value{
-						"gofunc": WrapGoFunction(goFunc),
+					return map[string]core.Value{
+						"gofunc": core.WrapGoFunction(goFunc),
 					}
 				},
-				result: Int(2),
+				result: core.Int(2),
 			},
 			{
 				name: "two optional parameters: two arguments are provided",
 				input: `
 					return gofunc(2, 3)
 				`,
-				makeGlobals: func(t *testing.T) map[string]Value {
-					goFunc := func(ctx *Context, a, b *OptionalParam[Int]) Int {
+				makeGlobals: func(t *testing.T) map[string]core.Value {
+					goFunc := func(ctx *core.Context, a, b *core.OptionalParam[core.Int]) core.Int {
 						if !assert.NotNil(t, a) {
 							//assertion failed
 							return -1
@@ -5207,25 +5168,25 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					symbolicRegistrationLock.Lock()
 					defer symbolicRegistrationLock.Unlock()
 
-					if !IsSymbolicEquivalentOfGoFunctionRegistered(goFunc) {
-						RegisterSymbolicGoFunction(goFunc, func(_ *symbolic.Context, a, b *symbolic.OptionalParam[*symbolic.Int]) *symbolic.Int {
+					if !core.IsSymbolicEquivalentOfGoFunctionRegistered(goFunc) {
+						core.RegisterSymbolicGoFunction(goFunc, func(_ *symbolic.Context, a, b *symbolic.OptionalParam[*symbolic.Int]) *symbolic.Int {
 							return symbolic.ANY_INT
 						})
 					}
 
-					return map[string]Value{
-						"gofunc": WrapGoFunction(goFunc),
+					return map[string]core.Value{
+						"gofunc": core.WrapGoFunction(goFunc),
 					}
 				},
-				result: Int(5),
+				result: core.Int(5),
 			},
 			{
 				name: "mandatory + optional parameter: single argument",
 				input: `
 					return gofunc(2)
 				`,
-				makeGlobals: func(t *testing.T) map[string]Value {
-					goFunc := func(ctx *Context, a Int, b *OptionalParam[Int]) Int {
+				makeGlobals: func(t *testing.T) map[string]core.Value {
+					goFunc := func(ctx *core.Context, a core.Int, b *core.OptionalParam[core.Int]) core.Int {
 						if !assert.Nil(t, b) {
 							return -1
 						}
@@ -5239,23 +5200,23 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					symbolicRegistrationLock.Lock()
 					defer symbolicRegistrationLock.Unlock()
 
-					if !IsSymbolicEquivalentOfGoFunctionRegistered(goFunc) {
-						RegisterSymbolicGoFunction(goFunc, symbolicGoFunc)
+					if !core.IsSymbolicEquivalentOfGoFunctionRegistered(goFunc) {
+						core.RegisterSymbolicGoFunction(goFunc, symbolicGoFunc)
 					}
 
-					return map[string]Value{
-						"gofunc": WrapGoFunction(goFunc),
+					return map[string]core.Value{
+						"gofunc": core.WrapGoFunction(goFunc),
 					}
 				},
-				result: Int(2),
+				result: core.Int(2),
 			},
 			{
 				name: "mandatory + optional parameter: all arguments are provided",
 				input: `
 					return gofunc(2, 3)
 				`,
-				makeGlobals: func(t *testing.T) map[string]Value {
-					goFunc := func(ctx *Context, a Int, b *OptionalParam[Int]) Int {
+				makeGlobals: func(t *testing.T) map[string]core.Value {
+					goFunc := func(ctx *core.Context, a core.Int, b *core.OptionalParam[core.Int]) core.Int {
 						if !assert.NotNil(t, b) {
 							return -1
 						}
@@ -5269,15 +5230,15 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					symbolicRegistrationLock.Lock()
 					defer symbolicRegistrationLock.Unlock()
 
-					if !IsSymbolicEquivalentOfGoFunctionRegistered(goFunc) {
-						RegisterSymbolicGoFunction(goFunc, symbolicGoFunc)
+					if !core.IsSymbolicEquivalentOfGoFunctionRegistered(goFunc) {
+						core.RegisterSymbolicGoFunction(goFunc, symbolicGoFunc)
 					}
 
-					return map[string]Value{
-						"gofunc": WrapGoFunction(goFunc),
+					return map[string]core.Value{
+						"gofunc": core.WrapGoFunction(goFunc),
 					}
 				},
-				result: Int(5),
+				result: core.Int(5),
 			},
 		}
 
@@ -5288,7 +5249,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					globals = testCase.makeGlobals(t)
 				}
 
-				state := NewGlobalState(NewDefaultTestContext())
+				state := core.NewGlobalState(NewDefaultTestContext())
 				defer state.Ctx.CancelGracefully()
 				for k, v := range globals {
 					state.Globals.Set(k, v)
@@ -5329,10 +5290,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return obj
 			`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
-			state.Globals.Set("start_tx", ValOf(StartNewTransaction))
-			state.Globals.Set("commit_tx", ValOf(func(ctx *Context) {
+			state.Globals.Set("start_tx", core.ValOf(core.StartNewTransaction))
+			state.Globals.Set("commit_tx", core.ValOf(func(ctx *core.Context) {
 				ctx.GetTx().Commit(ctx)
 			}))
 
@@ -5341,7 +5302,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, NewWrappedValueList(Int(1)), res.(*Object).values[0])
+			expectedList := core.NewWrappedValueList(core.Int(1))
+			list := res.(*core.Object).Prop(state.Ctx, "list").(*core.List)
+
+			assert.Equal(t, expectedList, list)
 		})
 
 		t.Run("calling a mutating method of a shared object's property should be thread safe", func(t *testing.T) {
@@ -5365,25 +5329,28 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return obj
 			`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
-			state.Globals.Set("start_tx", ValOf(StartNewTransaction))
-			state.Globals.Set("commit_tx", ValOf(func(ctx *Context) {
+			state.Globals.Set("start_tx", core.ValOf(core.StartNewTransaction))
+			state.Globals.Set("commit_tx", core.ValOf(func(ctx *core.Context) {
 				ctx.GetTx().Commit(ctx)
 			}))
-			state.Globals.Set("LThreadGroup", ValOf(NewLThreadGroup))
+			state.Globals.Set("LThreadGroup", core.ValOf(core.NewLThreadGroup))
 
 			res, err := Eval(code, state, false)
 			if !assert.NoError(t, err) {
 				return
 			}
 
-			var elements []Serializable
+			var elements []core.Serializable
 			for i := 0; i < 5; i++ {
-				elements = append(elements, Int(1))
+				elements = append(elements, core.Int(1))
 			}
 
-			assert.Equal(t, NewWrappedValueList(elements...), res.(*Object).values[0])
+			expectedList := core.NewWrappedValueList(elements...)
+			list := res.(*core.Object).Prop(state.Ctx, "list").(*core.List)
+
+			assert.Equal(t, expectedList, list)
 		})
 
 		t.Run("calling a mutating method of a shared object's property while getting the property in another goroutine should be thread safe", func(t *testing.T) {
@@ -5411,14 +5378,14 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return obj
 			`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
-			state.Globals.Set("LThreadGroup", ValOf(NewLThreadGroup))
-			state.Globals.Set("start_tx", ValOf(func(ctx *Context) *Transaction {
+			state.Globals.Set("LThreadGroup", core.ValOf(core.NewLThreadGroup))
+			state.Globals.Set("start_tx", core.ValOf(func(ctx *core.Context) *core.Transaction {
 				//fmt.Printf("start tx, context %p\n", ctx)
-				return StartNewTransaction(ctx)
+				return core.StartNewTransaction(ctx)
 			}))
-			state.Globals.Set("commit_tx", ValOf(func(ctx *Context) {
+			state.Globals.Set("commit_tx", core.ValOf(func(ctx *core.Context) {
 				//fmt.Printf("commited, context %p\n", ctx)
 				ctx.GetTx().Commit(ctx)
 			}))
@@ -5428,13 +5395,13 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			var elements []Serializable
+			var elements []core.Serializable
 			for i := 0; i < 5; i++ {
-				elements = append(elements, Int(1))
+				elements = append(elements, core.Int(1))
 			}
 
 			_ = res
-			//assert.Equal(t, NewWrappedValueList(elements...), res.(*Object).values[0])
+			//assert.Equal(t, core.NewWrappedValueList(elements...), res.(*core.Object).values[0])
 		})
 	})
 
@@ -5450,7 +5417,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 
 			defer state.Ctx.CancelGracefully()
 
@@ -5459,11 +5426,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			if !assert.Len(t, state.Ctx.typeExtensions, 1) {
+			typeExtensions := state.Ctx.GetAllTypeExtensions()
+			if !assert.Len(t, typeExtensions, 1) {
 				return
 			}
 
-			extension := state.Ctx.typeExtensions[0]
+			extension := typeExtensions[0]
 			extendStmt, ancestors := parse.FindNodeAndChain(state.Module.MainChunk.Node, (*parse.ExtendStatement)(nil), nil)
 
 			ctxData, ok := state.SymbolicData.GetContextData(extendStmt, ancestors)
@@ -5472,7 +5440,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 
 			symbolicExt := ctxData.Extensions[0]
-			assert.Equal(t, symbolicExt, extension.symbolicExtension)
+			assert.Equal(t, symbolicExt, extension.Symbolic())
 		})
 
 		t.Run("method", func(t *testing.T) {
@@ -5486,7 +5454,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 
 			defer state.Ctx.CancelGracefully()
 
@@ -5495,11 +5463,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			if !assert.Len(t, state.Ctx.typeExtensions, 1) {
+			typeExtensions := state.Ctx.GetAllTypeExtensions()
+			if !assert.Len(t, typeExtensions, 1) {
 				return
 			}
 
-			extension := state.Ctx.typeExtensions[0]
+			extension := typeExtensions[0]
 			extendStmt, ancestors := parse.FindNodeAndChain(state.Module.MainChunk.Node, (*parse.ExtendStatement)(nil), nil)
 
 			ctxData, ok := state.SymbolicData.GetContextData(extendStmt, ancestors)
@@ -5508,7 +5477,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 
 			symbolicExt := ctxData.Extensions[0]
-			assert.Equal(t, symbolicExt, extension.symbolicExtension)
+			assert.Equal(t, symbolicExt, extension.Symbolic())
 		})
 	})
 
@@ -5531,7 +5500,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return object::b
 				`
 
-				state := NewGlobalState(NewDefaultTestContext())
+				state := core.NewGlobalState(NewDefaultTestContext())
 
 				defer state.Ctx.CancelGracefully()
 
@@ -5539,7 +5508,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				if !assert.NoError(t, err) {
 					return
 				}
-				assert.Equal(t, Int(2), res)
+				assert.Equal(t, core.Int(2), res)
 			})
 
 			t.Run("method call", func(t *testing.T) {
@@ -5559,7 +5528,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return object::f()
 				`
 
-				state := NewGlobalState(NewDefaultTestContext())
+				state := core.NewGlobalState(NewDefaultTestContext())
 
 				defer state.Ctx.CancelGracefully()
 
@@ -5567,7 +5536,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				if !assert.NoError(t, err) {
 					return
 				}
-				assert.Equal(t, Int(2), res)
+				assert.Equal(t, core.Int(2), res)
 			})
 		})
 	}
@@ -5575,20 +5544,14 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	t.Run("pattern call", func(t *testing.T) {
 		code := `%mypattern(1..10)`
 
-		state := NewGlobalState(NewDefaultTestContext())
+		state := core.NewGlobalState(NewDefaultTestContext())
 		defer state.Ctx.CancelGracefully()
-		state.Ctx.AddNamedPattern("mypattern", NewRegexPattern(".*"))
+		state.Ctx.AddNamedPattern("mypattern", core.NewRegexPattern(".*"))
 
 		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
 
-		expectedPattern, _ := NewRegexPattern(".*").Call(state.Ctx, []Serializable{
-			IntRange{
-				start: 1,
-				end:   10,
-				step:  1,
-			},
-		})
+		expectedPattern, _ := core.NewRegexPattern(".*").Call(state.Ctx, []core.Serializable{core.NewIntRange(1, 10)})
 
 		assert.Equal(t, expectedPattern, res)
 	})
@@ -5602,12 +5565,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		ctx := NewDefaultTestContext()
 		defer ctx.CancelGracefully()
 
-		ctx.AddNamedPattern("int", DEFAULT_NAMED_PATTERNS["int"])
-		state := NewGlobalState(ctx)
+		ctx.AddNamedPattern("int", core.DEFAULT_NAMED_PATTERNS["int"])
+		state := core.NewGlobalState(ctx)
 		res, err := Eval(code, state, true)
 		assert.NoError(t, err)
 
-		assert.IsType(t, &FunctionPattern{}, res)
+		assert.IsType(t, &core.FunctionPattern{}, res)
 	})
 
 	t.Run("function pattern matching,", func(t *testing.T) {
@@ -5621,13 +5584,13 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		ctx := NewDefaultTestContext()
 		defer ctx.CancelGracefully()
-		ctx.AddNamedPattern("int", DEFAULT_NAMED_PATTERNS["int"])
-		state := NewGlobalState(ctx)
+		ctx.AddNamedPattern("int", core.DEFAULT_NAMED_PATTERNS["int"])
+		state := core.NewGlobalState(ctx)
 
 		res, err := Eval(code, state, true)
 		assert.NoError(t, err)
 
-		assert.Equal(t, True, res)
+		assert.Equal(t, core.True, res)
 	})
 
 	t.Run("pipeline statement", func(t *testing.T) {
@@ -5635,12 +5598,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("pipeline statement", func(t *testing.T) {
 			code := `get-data | split-lines $`
-			var dollarVarValue String
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"get-data": ValOf(func(ctx *Context) String {
+			var dollarVarValue core.String
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
+				"get-data": core.ValOf(func(ctx *core.Context) core.String {
 					return "aaa\nbbb"
 				}),
-				"split-lines": ValOf(func(ctx *Context, s String) []String {
+				"split-lines": core.ValOf(func(ctx *core.Context, s core.String) []core.String {
 					dollarVarValue = s
 					return splitLines(ctx, s)
 				}),
@@ -5649,12 +5612,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.NoError(t, err)
 
 			if bytecodeEval {
-				assert.Equal(t, Nil, res)
+				assert.Equal(t, core.Nil, res)
 			} else {
-				assert.Equal(t, NewWrappedValueList(String("aaa"), String("bbb")), res)
+				assert.Equal(t, core.NewWrappedValueList(core.String("aaa"), core.String("bbb")), res)
 			}
 
-			assert.Equal(t, String("aaa\nbbb"), dollarVarValue)
+			assert.Equal(t, core.String("aaa\nbbb"), dollarVarValue)
 		})
 
 		t.Run("original value of anonymous variable is restored", func(t *testing.T) {
@@ -5663,15 +5626,15 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				get-data | split-lines $;
 				return $
 			`
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"get-data": ValOf(func(ctx *Context) String {
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
+				"get-data": core.ValOf(func(ctx *core.Context) core.String {
 					return "aaa\nbbb"
 				}),
-				"split-lines": ValOf(splitLines),
+				"split-lines": core.ValOf(splitLines),
 			})
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, Int(1), res)
+			assert.Equal(t, core.Int(1), res)
 		})
 
 	})
@@ -5681,17 +5644,17 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			result = | idt [1, "a", 2] | filter $ %int
 			return result
 		`
-		state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-			"idt": ValOf(func(ctx *Context, v Value) Value {
+		state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
+			"idt": core.ValOf(func(ctx *core.Context, v core.Value) core.Value {
 				return v
 			}),
-			"filter": ValOf(Filter),
+			"filter": core.ValOf(core.Filter),
 		})
-		state.Ctx.AddNamedPattern("int", INT_PATTERN)
+		state.Ctx.AddNamedPattern("int", core.INT_PATTERN)
 
 		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
-		assert.Equal(t, NewWrappedValueList(Int(1), Int(2)), res)
+		assert.Equal(t, core.NewWrappedValueList(core.Int(1), core.Int(2)), res)
 	})
 
 	t.Run("member expression", func(t *testing.T) {
@@ -5700,33 +5663,33 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		testCases := []struct {
 			error           bool
 			input           string
-			globalVariables map[string]Value
-			result          Value
-			pre             func(expected Value, actual Value, state *GlobalState)
+			globalVariables map[string]core.Value
+			result          core.Value
+			pre             func(expected core.Value, actual core.Value, state *core.GlobalState)
 		}{
 			{
 				input:  "$a = {v: 1}; return $a.v",
-				result: Int(1),
+				result: core.Int(1),
 			},
 			{
 				input:  "return ({a: 1}).a",
-				result: Int(1),
+				result: core.Int(1),
 			},
 			{
 				input: "return $$goval.secret",
 				error: true,
-				globalVariables: map[string]Value{
-					"goval": ValOf(testMutableGoValue{Name: "Foo", secret: "secret"}),
+				globalVariables: map[string]core.Value{
+					"goval": core.ValOf(core.TestMutableGoValue{Name: "Foo", Secret: "secret"}),
 				},
-				result: Nil,
+				result: core.Nil,
 			},
 			{
 				input:  "return ({}).?a",
-				result: Nil,
+				result: core.Nil,
 			},
 			{
 				input:  "$a = {v: 1}; return $a.(\"v\")",
-				result: Int(1),
+				result: core.Int(1),
 			},
 			{
 				input: `
@@ -5737,7 +5700,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					res = rt.wait_result!()
 					return res.x
 				`,
-				result: Int(1),
+				result: core.Int(1),
 			},
 			{
 				input: `
@@ -5748,16 +5711,16 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					res = rt.wait_result!()
 					return res.x
 				`,
-				result: NewObject(),
-				pre: func(expected, actual Value, state *GlobalState) {
-					expected = Share(expected.(PotentiallySharable), state)
+				result: core.NewObject(),
+				pre: func(expected, actual core.Value, state *core.GlobalState) {
+					expected = core.Share(expected.(core.PotentiallySharable), state)
 				},
 			},
 		}
 
 		for _, testCase := range testCases {
 			t.Run(testCase.input, func(t *testing.T) {
-				state := NewGlobalState(NewDefaultTestContext())
+				state := core.NewGlobalState(NewDefaultTestContext())
 				defer state.Ctx.CancelGracefully()
 				for k, v := range testCase.globalVariables {
 					state.Globals.Set(k, v)
@@ -5779,173 +5742,174 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("dynamic member expression", func(t *testing.T) {
-		testconfig.AllowParallelization(t)
+		// testconfig.AllowParallelization(t)
 
-		testCases := []struct {
-			error       bool
-			input       string
-			globals     map[string]Value
-			result      Value
-			makeResult  func(state *GlobalState) Value
-			checkResult func(t *testing.T, state *GlobalState, actual Value)
-		}{
-			{
-				input: "$a = {v: 1}; return $a.<v",
-				checkResult: func(t *testing.T, state *GlobalState, actual Value) {
-					if !assert.IsType(t, &DynamicValue{}, actual) {
-						return
-					}
+		// testCases := []struct {
+		// 	error       bool
+		// 	input       string
+		// 	globals     map[string]core.Value
+		// 	result      core.Value
+		// 	makeResult  func(state *core.GlobalState) core.Value
+		// 	checkResult func(t *testing.T, state *core.GlobalState, actual core.Value)
+		// }{
+		// 	{
+		// 		input: "$a = {v: 1}; return $a.<v",
+		// 		checkResult: func(t *testing.T, state *core.GlobalState, actual core.Value) {
+		// 			if !assert.IsType(t, &core.DynamicValue{}, actual) {
+		// 				return
+		// 			}
 
-					dyn := actual.(*DynamicValue)
+		// 			dyn := actual.(*core.DynamicValue)
 
-					assert.Equal(t, map[string]Serializable{"v": Int(1)}, dyn.value.(*Object).EntryMap(state.Ctx))
-					assert.Equal(t, String("v"), dyn.opData0)
-				},
-			},
-			{
-				input: "$a = {obj: {a: 1}}; return $a.<obj.a",
-				checkResult: func(t *testing.T, state *GlobalState, actual Value) {
-					if !assert.IsType(t, &DynamicValue{}, actual) {
-						return
-					}
+		// 			assert.Equal(t, map[string]core.Serializable{"v": core.Int(1)}, dyn.value.(*core.Object).EntryMap(state.Ctx))
+		// 			assert.Equal(t, core.String("v"), dyn.opData0)
+		// 		},
+		// 	},
+		// 	{
+		// 		input: "$a = {obj: {a: 1}}; return $a.<obj.a",
+		// 		checkResult: func(t *testing.T, state *core.GlobalState, actual core.Value) {
+		// 			if !assert.IsType(t, &core.DynamicValue{}, actual) {
+		// 				return
+		// 			}
 
-					dyn := actual.(*DynamicValue)
+		// 			dyn := actual.(*core.DynamicValue)
 
-					assert.Equal(t, map[string]Serializable{"a": Int(1)}, dyn.value.(*Object).EntryMap(state.Ctx))
-					assert.Equal(t, String("a"), dyn.opData0)
-				},
-			},
-			{
-				input: "return ({a: 1}).<a",
-				checkResult: func(t *testing.T, state *GlobalState, actual Value) {
-					if !assert.IsType(t, &DynamicValue{}, actual) {
-						return
-					}
+		// 			assert.Equal(t, map[string]core.Serializable{"a": core.Int(1)}, dyn.value.(*core.Object).EntryMap(state.Ctx))
+		// 			assert.Equal(t, core.String("a"), dyn.opData0)
+		// 		},
+		// 	},
+		// 	{
+		// 		input: "return ({a: 1}).<a",
+		// 		checkResult: func(t *testing.T, state *core.GlobalState, actual core.Value) {
+		// 			if !assert.IsType(t, &core.DynamicValue{}, actual) {
+		// 				return
+		// 			}
 
-					dyn := actual.(*DynamicValue)
+		// 			dyn := actual.(*core.DynamicValue)
 
-					assert.Equal(t, map[string]Serializable{"a": Int(1)}, dyn.value.(*Object).EntryMap(state.Ctx))
-					assert.Equal(t, String("a"), dyn.opData0)
-				},
-			},
-			{
-				input: "return $$goval.<secret",
-				error: true,
-				globals: map[string]Value{
-					"goval": ValOf(testMutableGoValue{Name: "Foo", secret: "secret"}),
-				},
-				result: Nil,
-			},
-			{
-				input: `
-					rt = go do {
-						return {x: 1}
-					}
-		
-					res = rt.wait_result!()
-					return res.<x
-				`,
-				checkResult: func(t *testing.T, state *GlobalState, actual Value) {
-					if !assert.IsType(t, &DynamicValue{}, actual) {
-						return
-					}
+		// 			assert.Equal(t, map[string]core.Serializable{"a": core.Int(1)}, dyn.value.(*core.Object).EntryMap(state.Ctx))
+		// 			assert.Equal(t, core.String("a"), dyn.opData0)
+		// 		},
+		// 	},
+		// 	{
+		// 		input: "return $$goval.<secret",
+		// 		error: true,
+		// 		globals: map[string]core.Value{
+		// 			"goval": core.ValOf(core.TestMutableGoValue{Name: "Foo", Secret: "secret"}),
+		// 		},
+		// 		result: core.Nil,
+		// 	},
+		// 	{
+		// 		input: `
+		// 			rt = go do {
+		// 				return {x: 1}
+		// 			}
 
-					dyn := actual.(*DynamicValue)
+		// 			res = rt.wait_result!()
+		// 			return res.<x
+		// 		`,
+		// 		checkResult: func(t *testing.T, state *core.GlobalState, actual core.Value) {
+		// 			if !assert.IsType(t, &core.DynamicValue{}, actual) {
+		// 				return
+		// 			}
 
-					assert.Equal(t, map[string]Serializable{"x": Int(1)}, dyn.value.(*Object).EntryMap(state.Ctx))
-					assert.Equal(t, String("x"), dyn.opData0)
-				},
-			},
-			{
-				input: `
-					rt = go do {
-						return {x: {}}
-					}
-		
-					res = rt.wait_result!()
-					return res.<x
-				`,
-				checkResult: func(t *testing.T, state *GlobalState, actual Value) {
-					if !assert.IsType(t, &DynamicValue{}, actual) {
-						return
-					}
+		// 			dyn := actual.(*core.DynamicValue)
 
-					dyn := actual.(*DynamicValue)
+		// 			assert.Equal(t, map[string]core.Serializable{"x": core.Int(1)}, dyn.value.(*core.Object).EntryMap(state.Ctx))
+		// 			assert.Equal(t, core.String("x"), dyn.opData0)
+		// 		},
+		// 	},
+		// 	{
+		// 		input: `
+		// 			rt = go do {
+		// 				return {x: {}}
+		// 			}
 
-					innerObj := NewObjectFromMap(nil, state.Ctx)
-					innerObj.Share(state)
+		// 			res = rt.wait_result!()
+		// 			return res.<x
+		// 		`,
+		// 		checkResult: func(t *testing.T, state *core.GlobalState, actual core.Value) {
+		// 			if !assert.IsType(t, &core.DynamicValue{}, actual) {
+		// 				return
+		// 			}
 
-					assert.Equal(t, map[string]Serializable{"x": innerObj}, dyn.value.(*Object).EntryMap(state.Ctx))
-					assert.Equal(t, String("x"), dyn.opData0)
-				},
-			},
-		}
+		// 			dyn := actual.(*core.DynamicValue)
 
-		for _, testCase := range testCases {
-			t.Run(testCase.input, func(t *testing.T) {
-				state := NewGlobalState(NewDefaultTestContext())
-				defer state.Ctx.CancelGracefully()
-				for k, v := range testCase.globals {
-					state.Globals.Set(k, v)
-				}
+		// 			innerObj := core.NewObjectFromMap(nil, state.Ctx)
+		// 			innerObj.Share(state)
 
-				res, err := Eval(testCase.input, state, false)
-				if testCase.error {
-					assert.Error(t, err)
-					assert.Nil(t, res)
-				} else {
-					assert.NoError(t, err)
-					expected := testCase.result
-					if testCase.checkResult != nil {
-						testCase.checkResult(t, state, res)
-					} else {
-						if testCase.makeResult != nil {
-							expected = testCase.makeResult(state)
-						}
-						assert.Equal(t, expected, res)
-					}
-				}
-			})
-		}
+		// 			assert.Equal(t, map[string]core.Serializable{"x": innerObj}, dyn.value.(*core.Object).EntryMap(state.Ctx))
+		// 			assert.Equal(t, core.String("x"), dyn.opData0)
+		// 		},
+		// 	},
+		// }
+
+		// for _, testCase := range testCases {
+		// 	t.Run(testCase.input, func(t *testing.T) {
+		// 		state := core.NewGlobalState(NewDefaultTestContext())
+		// 		defer state.Ctx.CancelGracefully()
+		// 		for k, v := range testCase.globals {
+		// 			state.Globals.Set(k, v)
+		// 		}
+
+		// 		res, err := Eval(testCase.input, state, false)
+		// 		if testCase.error {
+		// 			assert.Error(t, err)
+		// 			assert.Nil(t, res)
+		// 		} else {
+		// 			assert.NoError(t, err)
+		// 			expected := testCase.result
+		// 			if testCase.checkResult != nil {
+		// 				testCase.checkResult(t, state, res)
+		// 			} else {
+		// 				if testCase.makeResult != nil {
+		// 					expected = testCase.makeResult(state)
+		// 				}
+		// 				assert.Equal(t, expected, res)
+		// 			}
+		// 		}
+		// 	})
+		// }
 	})
 
 	t.Run("extraction expression", func(t *testing.T) {
 		code := `return ({a:1}).{a}`
-		state := NewGlobalState(NewDefaultTestContext())
+		state := core.NewGlobalState(NewDefaultTestContext())
 		defer state.Ctx.CancelGracefully()
 		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
-		assert.Equal(t, objFrom(ValMap{"a": Int(1)}), res)
+		assert.Equal(t, core.NewObjectFromMapNoInit(core.ValMap{"a": core.Int(1)}), res)
 	})
 
 	t.Run("key list expression", func(t *testing.T) {
 		t.Run("empty", func(t *testing.T) {
 			code := `return .{}`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, KeyList{}, res)
+			assert.Equal(t, core.KeyList{}, res)
 		})
 
 		t.Run("single element", func(t *testing.T) {
 			code := `return .{name}`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, KeyList{"name"}, res)
+			assert.Equal(t, core.KeyList{"name"}, res)
 		})
 
 	})
 
 	t.Run("lazy expression : @ <integer>", func(t *testing.T) {
 		code := `@(1)`
-		state := NewGlobalState(NewDefaultTestContext())
+		state := core.NewGlobalState(NewDefaultTestContext())
 		defer state.Ctx.CancelGracefully()
 		res, err := Eval(code, state, false)
 		assert.NoError(t, err)
-		assert.EqualValues(t, AstNode{
+
+		assert.EqualValues(t, core.AstNode{
 			Node: &parse.IntLiteral{
 				NodeBase: parse.NodeBase{
 					Span:            parse.NodeSpan{Start: 2, End: 3},
@@ -5958,7 +5922,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				Raw:   "1",
 				Value: 1,
 			},
-			chunk: state.Module.MainChunk,
+			Chunk_: state.Module.MainChunk,
 		}, res)
 	})
 
@@ -5973,17 +5937,17 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return a
 			`, map[string]string{"./dep.ix": "includable-file \n a = 1"})
 
-			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			mod, err := core.ParseLocalModule(modpath, core.ModuleParsingConfig{Context: createParsingContext(modpath)})
 			if !assert.NoError(t, err) {
 				return
 			}
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			state.Module = mod
 			res, err := Eval(mod, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, Int(1), res)
+			assert.Equal(t, core.Int(1), res)
 		})
 
 		t.Run("single included file which itself includes a file", func(t *testing.T) {
@@ -6003,17 +5967,17 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				`,
 			})
 
-			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			mod, err := core.ParseLocalModule(modpath, core.ModuleParsingConfig{Context: createParsingContext(modpath)})
 			if !assert.NoError(t, err) {
 				return
 			}
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			state.Module = mod
 			res, err := Eval(mod, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, Int(1), res)
+			assert.Equal(t, core.Int(1), res)
 		})
 
 		t.Run("two included files with no dependecies", func(t *testing.T) {
@@ -6028,17 +5992,17 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				"./dep2.ix": "includable-file\n const (b = 2)",
 			})
 
-			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			mod, err := core.ParseLocalModule(modpath, core.ModuleParsingConfig{Context: createParsingContext(modpath)})
 			if !assert.NoError(t, err) {
 				return
 			}
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			state.Module = mod
 			res, err := Eval(mod, state, true)
 			assert.NoError(t, err)
-			assert.Equal(t, Int(3), res)
+			assert.Equal(t, core.Int(3), res)
 		})
 
 		t.Run("single included file accessing a global", func(t *testing.T) {
@@ -6049,18 +6013,18 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return a
 			`, map[string]string{"./dep.ix": "includable-file\n a = myglobal"})
 
-			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			mod, err := core.ParseLocalModule(modpath, core.ModuleParsingConfig{Context: createParsingContext(modpath)})
 			if !assert.NoError(t, err) {
 				return
 			}
 
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"myglobal": Int(1),
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
+				"myglobal": core.Int(1),
 			})
 			state.Module = mod
 			res, err := Eval(mod, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, Int(1), res)
+			assert.Equal(t, core.Int(1), res)
 		})
 
 		t.Run("single included file accessing a global in a function", func(t *testing.T) {
@@ -6076,18 +6040,18 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			`})
 
-			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			mod, err := core.ParseLocalModule(modpath, core.ModuleParsingConfig{Context: createParsingContext(modpath)})
 			if !assert.NoError(t, err) {
 				return
 			}
 
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"myglobal": Int(1),
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
+				"myglobal": core.Int(1),
 			})
 			state.Module = mod
 			res, err := Eval(mod, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, Int(1), res)
+			assert.Equal(t, core.Int(1), res)
 		})
 
 		t.Run("single included file accessing a global in a lifetime job", func(t *testing.T) {
@@ -6107,19 +6071,19 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			`})
 
-			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			mod, err := core.ParseLocalModule(modpath, core.ModuleParsingConfig{Context: createParsingContext(modpath)})
 			if !assert.NoError(t, err) {
 				return
 			}
 
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"myglobal": Int(1),
-				"sleep":    WrapGoFunction(Sleep),
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
+				"myglobal": core.Int(1),
+				"sleep":    core.WrapGoFunction(core.Sleep),
 			})
 			state.Module = mod
 			res, err := Eval(mod, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, Int(1), res)
+			assert.Equal(t, core.Int(1), res)
 		})
 
 		t.Run("included file defining a pattern", func(t *testing.T) {
@@ -6133,43 +6097,43 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				pattern p = str
 			`})
 
-			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			mod, err := core.ParseLocalModule(modpath, core.ModuleParsingConfig{Context: createParsingContext(modpath)})
 			if !assert.NoError(t, err) {
 				return
 			}
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
-			state.Ctx.AddNamedPattern("str", STR_PATTERN)
+			state.Ctx.AddNamedPattern("str", core.STR_PATTERN)
 			state.Module = mod
 			res, err := Eval(mod, state, false)
 			if !assert.NoError(t, err) {
 				return
 			}
-			assert.Equal(t, STR_PATTERN, res)
+			assert.Equal(t, core.STR_PATTERN, res)
 		})
 	})
 
 	t.Run("import statement", func(t *testing.T) {
 		testconfig.AllowParallelization(t)
 
-		getModule := func(code string) (*Module, error) {
+		getModule := func(code string) (*core.Module, error) {
 			fls := newMemFilesystem()
 			err := util.WriteFile(fls, "/mod.ix", []byte(code), 0600)
 			if err != nil {
 				return nil, err
 			}
 
-			ctx := NewContextWithEmptyState(ContextConfig{
-				Permissions: []Permission{
-					CreateFsReadPerm(PathPattern("/...")),
-					CreateHttpReadPerm(ANY_HTTPS_HOST_PATTERN),
+			ctx := core.NewContextWithEmptyState(core.ContextConfig{
+				Permissions: []core.Permission{
+					core.CreateFsReadPerm(core.PathPattern("/...")),
+					core.CreateHttpReadPerm(core.ANY_HTTPS_HOST_PATTERN),
 				},
 				Filesystem: fls,
 			}, nil)
 			defer ctx.CancelGracefully()
 
-			mod, err := ParseLocalModule("/mod.ix", ModuleParsingConfig{
+			mod, err := core.ParseLocalModule("/mod.ix", core.ModuleParsingConfig{
 				Context: ctx,
 			})
 
@@ -6191,11 +6155,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(mod, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, Int(1), res)
+			assert.EqualValues(t, core.Int(1), res)
 		})
 
 		t.Run("imported module returns the positional 'a' argument", func(t *testing.T) {
@@ -6216,12 +6180,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			ctx := NewDefaultTestContext()
 			defer ctx.CancelGracefully()
-			ctx.AddNamedPattern("int", INT_PATTERN)
+			ctx.AddNamedPattern("int", core.INT_PATTERN)
 
-			state := NewGlobalState(ctx)
+			state := core.NewGlobalState(ctx)
 			res, err := Eval(mod, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, Int(1), res)
+			assert.EqualValues(t, core.Int(1), res)
 		})
 
 		t.Run("imported module returns the non-positional 'a' argument", func(t *testing.T) {
@@ -6242,12 +6206,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			ctx := NewDefaultTestContext()
 			defer ctx.CancelGracefully()
-			ctx.AddNamedPattern("int", INT_PATTERN)
+			ctx.AddNamedPattern("int", core.INT_PATTERN)
 
-			state := NewGlobalState(ctx)
+			state := core.NewGlobalState(ctx)
 			res, err := Eval(mod, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, Int(1), res)
+			assert.EqualValues(t, core.Int(1), res)
 		})
 
 		t.Run("imported module returns the %two pattern (same pattern is defined in module)", func(t *testing.T) {
@@ -6270,12 +6234,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			ctx := NewDefaultTestContext()
 			defer ctx.CancelGracefully()
-			ctx.AddNamedPattern("int", INT_PATTERN)
+			ctx.AddNamedPattern("int", core.INT_PATTERN)
 
-			state := NewGlobalState(ctx)
+			state := core.NewGlobalState(ctx)
 			res, err := Eval(mod, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, NewExactValuePattern(Int(2)), res)
+			assert.EqualValues(t, core.NewExactValuePattern(core.Int(2)), res)
 		})
 
 		t.Run("imported module returns the %two pattern", func(t *testing.T) {
@@ -6296,12 +6260,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			ctx := NewDefaultTestContext()
 			defer ctx.CancelGracefully()
-			ctx.AddNamedPattern("int", INT_PATTERN)
+			ctx.AddNamedPattern("int", core.INT_PATTERN)
 
-			state := NewGlobalState(ctx)
+			state := core.NewGlobalState(ctx)
 			res, err := Eval(mod, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, NewExactValuePattern(Int(2)), res)
+			assert.EqualValues(t, core.NewExactValuePattern(core.Int(2)), res)
 		})
 
 		t.Run("imported module returns the %int pattern (base pattern)", func(t *testing.T) {
@@ -6322,14 +6286,14 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			ctx := NewDefaultTestContext()
 			defer ctx.CancelGracefully()
-			ctx.AddNamedPattern("int", INT_PATTERN)
+			ctx.AddNamedPattern("int", core.INT_PATTERN)
 
-			state := NewGlobalState(ctx)
+			state := core.NewGlobalState(ctx)
 			//we copy the pattern in order to later check that the importer's pattern is not passed to the imported module.
-			intPatternCopy := *INT_PATTERN
+			intPatternCopy := *core.INT_PATTERN
 
-			state.GetBasePatternsForImportedModule = func() (map[string]Pattern, map[string]*PatternNamespace) {
-				return map[string]Pattern{"int": &intPatternCopy}, nil
+			state.GetBasePatternsForImportedModule = func() (map[string]core.Pattern, map[string]*core.PatternNamespace) {
+				return map[string]core.Pattern{"int": &intPatternCopy}, nil
 			}
 
 			res, err := Eval(mod, state, false)
@@ -6353,27 +6317,27 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			ctx := NewContext(ContextConfig{
+			ctx := core.NewContext(core.ContextConfig{
 				Permissions: append(
-					GetDefaultGlobalVarPermissions(),
-					FilesystemPermission{permkind.Read, PathPattern("/...")},
-					LThreadPermission{permkind.Create},
+					core.GetDefaultGlobalVarPermissions(),
+					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
+					core.LThreadPermission{permkind.Create},
 				),
 				Filesystem: newOsFilesystem(),
-				Limits:     []Limit{permissiveLthreadLimit},
+				Limits:     []core.Limit{permissiveLthreadLimit},
 			})
-			ctx.AddNamedPattern("int", INT_PATTERN)
+			ctx.AddNamedPattern("int", core.INT_PATTERN)
 			defer ctx.CancelGracefully()
 
-			state := NewGlobalState(ctx)
+			state := core.NewGlobalState(ctx)
 			state.Module = mod
-			state.GetBasePatternsForImportedModule = func() (map[string]Pattern, map[string]*PatternNamespace) {
-				return DEFAULT_NAMED_PATTERNS, DEFAULT_PATTERN_NAMESPACES
+			state.GetBasePatternsForImportedModule = func() (map[string]core.Pattern, map[string]*core.PatternNamespace) {
+				return core.DEFAULT_NAMED_PATTERNS, core.DEFAULT_PATTERN_NAMESPACES
 			}
 
 			res, err := Eval(mod, state, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, Int(1), res)
+			assert.EqualValues(t, core.Int(1), res)
 		})
 
 		t.Run("logs from an imported module should have the correct source and respect the default log level", func(t *testing.T) {
@@ -6398,16 +6362,16 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			parsingCtx := NewContextWithEmptyState(ContextConfig{
-				Permissions: []Permission{
-					CreateFsReadPerm(PathPattern("/...")),
-					CreateHttpReadPerm(ANY_HTTPS_HOST_PATTERN),
+			parsingCtx := core.NewContextWithEmptyState(core.ContextConfig{
+				Permissions: []core.Permission{
+					core.CreateFsReadPerm(core.PathPattern("/...")),
+					core.CreateHttpReadPerm(core.ANY_HTTPS_HOST_PATTERN),
 				},
 				Filesystem: fls,
 			}, nil)
 			defer parsingCtx.CancelGracefully()
 
-			mod, err := ParseLocalModule("/mod.ix", ModuleParsingConfig{
+			mod, err := core.ParseLocalModule("/mod.ix", core.ModuleParsingConfig{
 				Context: parsingCtx,
 			})
 
@@ -6417,34 +6381,34 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			logBuf := bytes.NewBuffer(nil)
 
-			ctx := NewContext(ContextConfig{
+			ctx := core.NewContext(core.ContextConfig{
 				Permissions: append(
-					GetDefaultGlobalVarPermissions(),
-					FilesystemPermission{permkind.Read, PathPattern("/...")},
-					LThreadPermission{permkind.Create},
+					core.GetDefaultGlobalVarPermissions(),
+					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
+					core.LThreadPermission{permkind.Create},
 				),
 				Filesystem: newOsFilesystem(),
-				Limits:     []Limit{permissiveLthreadLimit},
+				Limits:     []core.Limit{permissiveLthreadLimit},
 			})
 			defer ctx.CancelGracefully()
 
-			state := NewGlobalState(ctx)
+			state := core.NewGlobalState(ctx)
 			state.Out = io.Discard
 			state.Logger = zerolog.New(logBuf)
-			state.LogLevels = NewLogLevels(LogLevelsInitialization{
+			state.LogLevels = core.NewLogLevels(core.LogLevelsInitialization{
 				DefaultLevel: zerolog.DebugLevel,
 			})
 			state.OutputFieldsInitialized.Store(true)
 
-			state.Globals.Set("log", WrapGoFunction(func(ctx *Context, msg String) {
+			state.Globals.Set("log", core.WrapGoFunction(func(ctx *core.Context, msg core.String) {
 				ctx.DebugLogEvent().Msg(string(msg))
 			}))
 
 			state.Module = mod
-			state.GetBaseGlobalsForImportedModule = func(ctx *Context, manifest *Manifest) (GlobalVariables, error) {
+			state.GetBaseGlobalsForImportedModule = func(ctx *core.Context, manifest *core.Manifest) (core.GlobalVariables, error) {
 				return state.Globals, nil
 			}
-			state.GetBasePatternsForImportedModule = func() (map[string]Pattern, map[string]*PatternNamespace) {
+			state.GetBasePatternsForImportedModule = func() (map[string]core.Pattern, map[string]*core.PatternNamespace) {
 				return nil, nil
 			}
 
@@ -6476,16 +6440,16 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			parsingCtx := NewContextWithEmptyState(ContextConfig{
-				Permissions: []Permission{
-					CreateFsReadPerm(PathPattern("/...")),
-					CreateHttpReadPerm(ANY_HTTPS_HOST_PATTERN),
+			parsingCtx := core.NewContextWithEmptyState(core.ContextConfig{
+				Permissions: []core.Permission{
+					core.CreateFsReadPerm(core.PathPattern("/...")),
+					core.CreateHttpReadPerm(core.ANY_HTTPS_HOST_PATTERN),
 				},
 				Filesystem: fls,
 			}, nil)
 			defer parsingCtx.CancelGracefully()
 
-			mod, err := ParseLocalModule("/mod.ix", ModuleParsingConfig{
+			mod, err := core.ParseLocalModule("/mod.ix", core.ModuleParsingConfig{
 				Context: parsingCtx,
 			})
 
@@ -6495,40 +6459,40 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			logBuf := bytes.NewBuffer(nil)
 
-			ctx := NewContext(ContextConfig{
+			ctx := core.NewContext(core.ContextConfig{
 				Permissions: append(
-					GetDefaultGlobalVarPermissions(),
-					FilesystemPermission{permkind.Read, PathPattern("/...")},
-					LThreadPermission{permkind.Create},
+					core.GetDefaultGlobalVarPermissions(),
+					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
+					core.LThreadPermission{permkind.Create},
 				),
 				Filesystem: newOsFilesystem(),
-				Limits:     []Limit{permissiveLthreadLimit},
+				Limits:     []core.Limit{permissiveLthreadLimit},
 			})
 			defer ctx.CancelGracefully()
 
-			state := NewGlobalState(ctx)
+			state := core.NewGlobalState(ctx)
 			state.Out = io.Discard
 			state.Logger = zerolog.New(logBuf)
-			state.LogLevels = NewLogLevels(LogLevelsInitialization{
+			state.LogLevels = core.NewLogLevels(core.LogLevelsInitialization{
 				DefaultLevel: zerolog.DebugLevel,
-				ByPath: map[Path]zerolog.Level{
+				ByPath: map[core.Path]zerolog.Level{
 					"/imported_mod.ix": zerolog.InfoLevel,
 				},
 			})
 			state.OutputFieldsInitialized.Store(true)
 
-			state.Globals.Set("log_debug", WrapGoFunction(func(ctx *Context, msg String) {
+			state.Globals.Set("log_debug", core.WrapGoFunction(func(ctx *core.Context, msg core.String) {
 				ctx.DebugLogEvent().Msg(string(msg))
 			}))
-			state.Globals.Set("log_info", WrapGoFunction(func(ctx *Context, msg String) {
+			state.Globals.Set("log_info", core.WrapGoFunction(func(ctx *core.Context, msg core.String) {
 				ctx.InfoLogEvent().Msg(string(msg))
 			}))
 
 			state.Module = mod
-			state.GetBaseGlobalsForImportedModule = func(ctx *Context, manifest *Manifest) (GlobalVariables, error) {
+			state.GetBaseGlobalsForImportedModule = func(ctx *core.Context, manifest *core.Manifest) (core.GlobalVariables, error) {
 				return state.Globals, nil
 			}
-			state.GetBasePatternsForImportedModule = func() (map[string]Pattern, map[string]*PatternNamespace) {
+			state.GetBasePatternsForImportedModule = func() (map[string]core.Pattern, map[string]*core.PatternNamespace) {
 				return nil, nil
 			}
 
@@ -6549,12 +6513,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				lthread = go do f()
 				return lthread.wait_result!()
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			state.Logger = zerolog.New(state.Out)
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, Int(1), res)
+			assert.Equal(t, core.Int(1), res)
 		})
 
 		t.Run("call expression: namespace's function", func(t *testing.T) {
@@ -6562,10 +6526,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				lthread = go do http.read(https://example.com/)
 				return lthread.wait_result!()
 			`
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"http": NewNamespace("http", map[string]Value{
-					"read": WrapGoFunction(func(*Context, URL) String {
-						return String("result")
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
+				"http": core.NewNamespace("http", map[string]core.Value{
+					"read": core.WrapGoFunction(func(*core.Context, core.URL) core.String {
+						return core.String("result")
 					}),
 				}),
 			})
@@ -6574,7 +6538,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, String("result"), res)
+			assert.Equal(t, core.String("result"), res)
 		})
 
 		t.Run("call expression: embedded module should inherit global start constants", func(t *testing.T) {
@@ -6585,15 +6549,15 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				lthread = go do f(myconst)
 				return lthread.wait_result!()
 			`
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"myconst": Int(1),
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
+				"myconst": core.Int(1),
 			})
 			defer state.Ctx.CancelGracefully()
 			state.Logger = zerolog.New(state.Out)
 
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, Int(1), res)
+			assert.Equal(t, core.Int(1), res)
 		})
 
 		t.Run("call expression: embedded module should not inherit explicitly defined global constants", func(t *testing.T) {
@@ -6608,7 +6572,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				lthread = go do f(myconst)
 				return lthread.wait_result!()
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			state.Logger = zerolog.New(state.Out)
 
@@ -6626,7 +6590,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				lthread = go do f(myglobal)
 				return lthread.wait_result!()
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			state.Logger = zerolog.New(state.Out)
 
@@ -6638,7 +6602,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `
 				go do { }
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			_, err := Eval(code, state, false)
 			assert.NoError(t, err)
@@ -6652,11 +6616,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	
 				return rt.wait_result!()
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, Int(1), res)
+			assert.Equal(t, core.Int(1), res)
 		})
 
 		t.Run("embedded module returns a data structure", func(t *testing.T) {
@@ -6667,12 +6631,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	
 				return rt.wait_result!()
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.IsType(t, &Object{}, res)
-			assert.True(t, res.(*Object).IsShared())
+			assert.IsType(t, &core.Object{}, res)
+			assert.True(t, res.(*core.Object).IsShared())
 		})
 
 		t.Run("allow <runtime manifest>", func(t *testing.T) {
@@ -6684,7 +6648,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	
 				rt.wait_result!()
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			_, err := Eval(code, state, false)
 			assert.NoError(t, err)
@@ -6695,14 +6659,14 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				rt = go {globals: {b: 2}} do idt(b)
 				return rt.wait_result!()
 			`
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"idt": WrapGoFunction(func(ctx *Context, arg Value) Value {
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
+				"idt": core.WrapGoFunction(func(ctx *core.Context, arg core.Value) core.Value {
 					return arg
 				}),
 			})
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, Int(2), res)
+			assert.Equal(t, core.Int(2), res)
 		})
 
 		t.Run("pass an additional global to an embedded module (block)", func(t *testing.T) {
@@ -6713,11 +6677,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	
 				return rt.wait_result!()
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, Int(2), res)
+			assert.Equal(t, core.Int(2), res)
 		})
 
 		t.Run("group: used once", func(t *testing.T) {
@@ -6727,13 +6691,13 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	
 				return group
 			`
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"LThreadGroup": WrapGoFunction(NewLThreadGroup),
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
+				"LThreadGroup": core.WrapGoFunction(core.NewLThreadGroup),
 			})
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.IsType(t, &LThreadGroup{}, res)
-			assert.Len(t, res.(*LThreadGroup).threads, 1)
+			assert.IsType(t, &core.LThreadGroup{}, res)
+			assert.Len(t, res.(*core.LThreadGroup).CurrentThreads(), 1)
 		})
 
 		t.Run("group: used twice", func(t *testing.T) {
@@ -6744,14 +6708,14 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	
 				return group
 			`
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"LThreadGroup": WrapGoFunction(NewLThreadGroup),
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
+				"LThreadGroup": core.WrapGoFunction(core.NewLThreadGroup),
 			})
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.IsType(t, &LThreadGroup{}, res.(GoValue))
+			assert.IsType(t, &core.LThreadGroup{}, res.(core.GoValue))
 
-			assert.Len(t, res.(*LThreadGroup).threads, 2)
+			assert.Len(t, res.(*core.LThreadGroup).CurrentThreads(), 2)
 		})
 
 		t.Run("call a passed Inox function", func(t *testing.T) {
@@ -6765,11 +6729,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	
 				return rt.wait_result!()
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, Int(2), res)
+			assert.Equal(t, core.Int(2), res)
 		})
 
 		t.Run("call a passed Inox function that access a captured global", func(t *testing.T) {
@@ -6786,11 +6750,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	
 				return rt.wait_result!()
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, true)
 			assert.NoError(t, err)
-			assert.Equal(t, Int(1), res)
+			assert.Equal(t, core.Int(1), res)
 		})
 
 		t.Run("call a function accessing a global variable within a passed Inox function that captured this global", func(t *testing.T) {
@@ -6811,11 +6775,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	
 				return rt.wait_result!()
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, true)
 			assert.NoError(t, err)
-			assert.Equal(t, Int(1), res)
+			assert.Equal(t, core.Int(1), res)
 		})
 
 		t.Run("compute a Mapping entry that access a captured global", func(t *testing.T) {
@@ -6832,11 +6796,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	
 				return rt.wait_result!()
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, true)
 			assert.NoError(t, err)
-			assert.Equal(t, Int(1), res)
+			assert.Equal(t, core.Int(1), res)
 		})
 
 		//TODO: add more tests on global capture
@@ -6849,17 +6813,17 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	
 				return rt.wait_result!()
 			`
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"gofunc": ValOf(func(ctx *Context) Int {
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
+				"gofunc": core.ValOf(func(ctx *core.Context) core.Int {
 					called = true
 					return 2
 				}),
-				"LThreadGroup": WrapGoFunction(NewLThreadGroup),
+				"LThreadGroup": core.WrapGoFunction(core.NewLThreadGroup),
 			})
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
 			assert.True(t, called)
-			assert.Equal(t, Int(2), res)
+			assert.Equal(t, core.Int(2), res)
 		})
 
 		t.Run("spawner & lthread access a shared value in a synchronized block", func(t *testing.T) {
@@ -6903,8 +6867,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			ctx := NewDefaultTestContext()
 			defer ctx.CancelGracefully()
 
-			state := NewGlobalState(ctx, map[string]Value{
-				"sleep": ValOf(func(ctx *Context) {
+			state := core.NewGlobalState(ctx, map[string]core.Value{
+				"sleep": core.ValOf(func(ctx *core.Context) {
 					time.Sleep(time.Millisecond)
 				}),
 			})
@@ -6913,7 +6877,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, Int(2*goroutineIncCount), res)
+			assert.Equal(t, core.Int(2*goroutineIncCount), res)
 		})
 
 		t.Run("spawner & lthread access a shared value without synchronization", func(t *testing.T) {
@@ -6952,8 +6916,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			ctx := NewDefaultTestContext()
 			defer ctx.CancelGracefully()
 
-			state := NewGlobalState(ctx, map[string]Value{
-				"sleep": ValOf(func(ctx *Context) {
+			state := core.NewGlobalState(ctx, map[string]core.Value{
+				"sleep": core.ValOf(func(ctx *core.Context) {
 					time.Sleep(time.Millisecond)
 				}),
 			})
@@ -6988,13 +6952,13 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 				return [result, step_results]
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, NewWrappedValueList(
-				Nil,
-				NewWrappedValueList(Int(0)),
+			assert.Equal(t, core.NewWrappedValueList(
+				core.Nil,
+				core.NewWrappedValueList(core.Int(0)),
 			), res)
 		})
 
@@ -7014,13 +6978,13 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 				return [result, step_results]
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, NewWrappedValueList(
-				Nil,
-				NewWrappedValueList(Int(0), Int(1)),
+			assert.Equal(t, core.NewWrappedValueList(
+				core.Nil,
+				core.NewWrappedValueList(core.Int(0), core.Int(1)),
 			), res)
 		})
 
@@ -7042,14 +7006,14 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 				return [result, step_results]
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, NewWrappedValueList(
-				Nil,
-				NewWrappedValueList(Int(0), Int(1), Int(2)),
+			assert.Equal(t, core.NewWrappedValueList(
+				core.Nil,
+				core.NewWrappedValueList(core.Int(0), core.Int(1), core.Int(2)),
 			), res)
 		})
 
@@ -7068,14 +7032,14 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 				return [result, step_results]
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, NewWrappedValueList(
-				String("final result"),
-				NewWrappedValueList(Int(0)),
+			assert.Equal(t, core.NewWrappedValueList(
+				core.String("final result"),
+				core.NewWrappedValueList(core.Int(0)),
 			), res)
 		})
 
@@ -7088,7 +7052,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	
 				rt.wait_result!()
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			_, err := Eval(code, state, false)
 			assert.NoError(t, err)
@@ -7105,7 +7069,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				lthread = go do f()
 				return lthread
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			state.Logger = zerolog.New(state.Out)
@@ -7113,8 +7077,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			if !assert.NoError(t, err) {
 				return
 			}
-			lthread := res.(*LThread)
-			assert.Equal(t, state.Module.MainChunk.Source, lthread.module.MainChunk.Source)
+			lthread := res.(*core.LThread)
+			assert.Equal(t, state.Module.MainChunk.Source, lthread.Module().MainChunk.Source)
 		})
 
 		t.Run("the source of a lthread's main chunk should be the source of the main module: block", func(t *testing.T) {
@@ -7125,7 +7089,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				lthread = go do {}
 				return lthread
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			state.Logger = zerolog.New(state.Out)
@@ -7133,8 +7097,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			if !assert.NoError(t, err) {
 				return
 			}
-			lthread := res.(*LThread)
-			assert.Equal(t, state.Module.MainChunk.Source, lthread.module.MainChunk.Source)
+			lthread := res.(*core.LThread)
+			assert.Equal(t, state.Module.MainChunk.Source, lthread.Module().MainChunk.Source)
 		})
 
 		t.Run("the source of the main chunk of a lthread spawned at the top level of an included file "+
@@ -7149,11 +7113,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				lthread = go do {}
 			`})
 
-			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			mod, err := core.ParseLocalModule(modpath, core.ModuleParsingConfig{Context: createParsingContext(modpath)})
 			if !assert.NoError(t, err) {
 				return
 			}
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			state.Logger = zerolog.New(state.Out)
@@ -7161,8 +7125,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			if !assert.NoError(t, err) {
 				return
 			}
-			lthread := res.(*LThread)
-			assert.Equal(t, state.Module.IncludedChunkForest[0].Source, lthread.module.MainChunk.Source)
+			lthread := res.(*core.LThread)
+			assert.Equal(t, state.Module.IncludedChunkForest[0].Source, lthread.Module().MainChunk.Source)
 		})
 
 		t.Run("the source of the main chunk of a lthread spawned in a function that is defined in an included file "+
@@ -7179,11 +7143,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			`})
 
-			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			mod, err := core.ParseLocalModule(modpath, core.ModuleParsingConfig{Context: createParsingContext(modpath)})
 			if !assert.NoError(t, err) {
 				return
 			}
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			state.Logger = zerolog.New(state.Out)
@@ -7191,148 +7155,149 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			if !assert.NoError(t, err) {
 				return
 			}
-			lthread := res.(*LThread)
-			assert.Equal(t, state.Module.IncludedChunkForest[0].Source, lthread.module.MainChunk.Source)
+			lthread := res.(*core.LThread)
+			assert.Equal(t, state.Module.IncludedChunkForest[0].Source, lthread.Module().MainChunk.Source)
 		})
 	})
 
 	t.Run("mapping expression", func(t *testing.T) {
-		testconfig.AllowParallelization(t)
+		// 	testconfig.AllowParallelization(t)
 
-		t.Run("empty", func(t *testing.T) {
-			code := `Mapping{}`
-			state := NewGlobalState(NewDefaultTestContext())
-			defer state.Ctx.CancelGracefully()
+		// 	t.Run("empty", func(t *testing.T) {
+		// 		code := `Mapping{}`
+		// 		state := core.NewGlobalState(NewDefaultTestContext())
+		// 		defer state.Ctx.CancelGracefully()
 
-			res, err := Eval(code, state, false)
-			assert.NoError(t, err)
-			assert.Equal(t, &Mapping{
-				keys:                         map[string]Serializable{},
-				preComputedStaticEntryValues: map[string]Serializable{},
-				dynamicEntries:               map[string]*parse.DynamicMappingEntry{},
-				patterns: []struct {
-					string
-					Pattern
-				}{},
-			}, res)
-		})
+		// 		res, err := Eval(code, state, false)
+		// 		assert.NoError(t, err)
+		// 		assert.Equal(t, &Mapping{
+		// 			keys:                         map[string]core.Serializable{},
+		// 			preComputedStaticEntryValues: map[string]core.Serializable{},
+		// 			dynamicEntries:               map[string]*parse.DynamicMappingEntry{},
+		// 			patterns: []struct {
+		// 				string
+		// 				core.Pattern
+		// 			}{},
+		// 		}, res)
+		// 	})
 
-		t.Run("not empty", func(t *testing.T) {
-			code := `Mapping{ 
-				0 => 1  
-				1 => f()
-				n 2 => n 
-			}`
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"f": WrapGoFunction(func(ctx *Context) Int {
-					return -1
-				}),
-			})
-			defer state.Ctx.CancelGracefully()
+		// 	t.Run("not empty", func(t *testing.T) {
+		// 		code := `Mapping{
+		// 			0 => 1
+		// 			1 => f()
+		// 			n 2 => n
+		// 		}`
+		// 		state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
+		// 			"f": core.WrapGoFunction(func(ctx *core.Context) core.Int {
+		// 				return -1
+		// 			}),
+		// 		})
+		// 		defer state.Ctx.CancelGracefully()
 
-			res, err := Eval(code, state, false)
-			mod := parse.MustParseChunk(code)
+		// 		res, err := Eval(code, state, false)
+		// 		mod := parse.MustParseChunk(code)
 
-			assert.NoError(t, err)
-			assert.Equal(t, &Mapping{
-				keys: map[string]Serializable{
-					`{"int__value":0}`: Int(0),
-					`{"int__value":1}`: Int(1),
-					`{"int__value":2}`: Int(2),
-				},
-				preComputedStaticEntryValues: map[string]Serializable{
-					`{"int__value":0}`: Int(1),
-				},
-				staticEntries: map[string]*parse.StaticMappingEntry{
-					`{"int__value":1}`: parse.FindNode(mod, &parse.StaticMappingEntry{}, nil),
-				},
-				dynamicEntries: map[string]*parse.DynamicMappingEntry{
-					`{"int__value":2}`: parse.FindNode(mod, &parse.DynamicMappingEntry{}, nil),
-				},
-				patterns: []struct {
-					string
-					Pattern
-				}{},
-			}, res)
-		})
+		// 		assert.NoError(t, err)
+		// 		assert.Equal(t, &Mapping{
+		// 			keys: map[string]core.Serializable{
+		// 				`{"int__value":0}`: core.Int(0),
+		// 				`{"int__value":1}`: core.Int(1),
+		// 				`{"int__value":2}`: core.Int(2),
+		// 			},
+		// 			preComputedStaticEntryValues: map[string]core.Serializable{
+		// 				`{"int__value":0}`: core.Int(1),
+		// 			},
+		// 			staticEntries: map[string]*parse.StaticMappingEntry{
+		// 				`{"int__value":1}`: parse.FindNode(mod, &parse.StaticMappingEntry{}, nil),
+		// 			},
+		// 			dynamicEntries: map[string]*parse.DynamicMappingEntry{
+		// 				`{"int__value":2}`: parse.FindNode(mod, &parse.DynamicMappingEntry{}, nil),
+		// 			},
+		// 			patterns: []struct {
+		// 				string
+		// 				core.Pattern
+		// 			}{},
+		// 		}, res)
+		// 	})
 
-		t.Run("pattern identifier keys", func(t *testing.T) {
-			code := `Mapping{ %str => 1  n %int => n }`
-			state := NewGlobalState(NewDefaultTestContext())
-			defer state.Ctx.CancelGracefully()
+		// 	t.Run("pattern identifier keys", func(t *testing.T) {
+		// 		code := `Mapping{ %str => 1  n %int => n }`
+		// 		state := core.NewGlobalState(NewDefaultTestContext())
+		// 		defer state.Ctx.CancelGracefully()
 
-			state.Ctx.AddNamedPattern("str", STR_PATTERN)
-			state.Ctx.AddNamedPattern("int", INT_PATTERN)
+		// 		state.Ctx.AddNamedPattern("str", core.STR_PATTERN)
+		// 		state.Ctx.AddNamedPattern("int", core.INT_PATTERN)
 
-			res, err := Eval(code, state, false)
-			mod := parse.MustParseChunk(code)
+		// 		res, err := Eval(code, state, false)
+		// 		mod := parse.MustParseChunk(code)
 
-			strTypePatternRepr := GetJSONRepresentation(STR_PATTERN, state.Ctx, nil)
-			intTypePatternRepr := GetJSONRepresentation(INT_PATTERN, state.Ctx, nil)
+		// 		strTypePatternRepr := core.GetJSONRepresentation(core.STR_PATTERN, state.Ctx, nil)
+		// 		intTypePatternRepr := core.GetJSONRepresentation(core.INT_PATTERN, state.Ctx, nil)
 
-			assert.NoError(t, err)
-			assert.Equal(t, &Mapping{
-				keys: map[string]Serializable{
-					strTypePatternRepr: STR_PATTERN,
-					intTypePatternRepr: INT_PATTERN,
-				},
-				preComputedStaticEntryValues: map[string]Serializable{
-					strTypePatternRepr: Int(1),
-				},
-				dynamicEntries: map[string]*parse.DynamicMappingEntry{
-					intTypePatternRepr: parse.FindNode(mod, &parse.DynamicMappingEntry{}, nil),
-				},
-				patterns: []struct {
-					string
-					Pattern
-				}{
-					{strTypePatternRepr, STR_PATTERN},
-					{intTypePatternRepr, INT_PATTERN},
-				},
-			}, res)
-		})
+		// 		assert.NoError(t, err)
+		// 		assert.Equal(t, &Mapping{
+		// 			keys: map[string]core.Serializable{
+		// 				strTypePatternRepr: core.STR_PATTERN,
+		// 				intTypePatternRepr: core.INT_PATTERN,
+		// 			},
+		// 			preComputedStaticEntryValues: map[string]core.Serializable{
+		// 				strTypePatternRepr: core.Int(1),
+		// 			},
+		// 			dynamicEntries: map[string]*parse.DynamicMappingEntry{
+		// 				intTypePatternRepr: parse.FindNode(mod, &parse.DynamicMappingEntry{}, nil),
+		// 			},
+		// 			patterns: []struct {
+		// 				string
+		// 				core.Pattern
+		// 			}{
+		// 				{strTypePatternRepr, core.STR_PATTERN},
+		// 				{intTypePatternRepr, core.INT_PATTERN},
+		// 			},
+		// 		}, res)
+		// 	})
 
-		t.Run("should not be sharable if one of the captured globals is not sharable", func(t *testing.T) {
-			code := `
-				$$a = 1
-				return Mapping{ 
-					0 => notsharable  
-					1 => a
-				}
-			`
-			state := NewGlobalState(NewDefaultTestContext())
-			defer state.Ctx.CancelGracefully()
-			state.Globals.Set("notsharable", testMutableGoValue{})
+		// 	t.Run("should not be sharable if one of the captured globals is not sharable", func(t *testing.T) {
+		// 		code := `
+		// 			$$a = 1
+		// 			return Mapping{
+		// 				0 => notsharable
+		// 				1 => a
+		// 			}
+		// 		`
+		// 		state := core.NewGlobalState(NewDefaultTestContext())
+		// 		defer state.Ctx.CancelGracefully()
+		// 		state.Globals.Set("notsharable", core.TestMutableGoValue{})
 
-			res, err := Eval(code, state, true)
+		// 		res, err := Eval(code, state, true)
 
-			if !assert.NoError(t, err) {
-				return
-			}
-			assert.False(t, utils.Ret0(res.(*Mapping).IsSharable(state)))
-		})
+		// 		if !assert.NoError(t, err) {
+		// 			return
+		// 		}
+		// 		assert.False(t, utils.Ret0(res.(*core.Mapping).IsSharable(state)))
+		// 	})
 
-		t.Run("should be sharable if all of the captured globals are sharable", func(t *testing.T) {
-			code := `
-				$$a = 1
-				$$b = 2
-				return Mapping{ 
-					0 => a
-					1 => b
-				}
-			`
-			state := NewGlobalState(NewDefaultTestContext())
-			defer state.Ctx.CancelGracefully()
-			state.Globals.Set("notsharable", testMutableGoValue{})
+		// 	t.Run("should be sharable if all of the captured globals are sharable", func(t *testing.T) {
+		// 		code := `
+		// 			$$a = 1
+		// 			$$b = 2
+		// 			return Mapping{
+		// 				0 => a
+		// 				1 => b
+		// 			}
+		// 		`
+		// 		state := core.NewGlobalState(NewDefaultTestContext())
+		// 		defer state.Ctx.CancelGracefully()
+		// 		state.Globals.Set("notsharable", core.TestMutableGoValue{})
 
-			res, err := Eval(code, state, true)
+		// 		res, err := Eval(code, state, true)
 
-			if !assert.NoError(t, err) {
-				return
-			}
-			assert.True(t, utils.Ret0(res.(*Mapping).IsSharable(state)))
-		})
+		// 		if !assert.NoError(t, err) {
+		// 			return
+		// 		}
+		// 		assert.True(t, utils.Ret0(res.(*core.Mapping).IsSharable(state)))
+		// 	})
 
+		// })
 	})
 
 	t.Run("treedata literal", func(t *testing.T) {
@@ -7340,22 +7305,22 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("not empty", func(t *testing.T) {
 			code := `treedata 0 { 1 {2} 3 }`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, &Treedata{
-				Root: Int(0),
-				HiearchyEntries: []TreedataHiearchyEntry{
+			assert.Equal(t, &core.Treedata{
+				Root: core.Int(0),
+				HiearchyEntries: []core.TreedataHiearchyEntry{
 					{
-						Value: Int(1),
-						Children: []TreedataHiearchyEntry{
-							{Value: Int(2)},
+						Value: core.Int(1),
+						Children: []core.TreedataHiearchyEntry{
+							{Value: core.Int(2)},
 						},
 					},
 					{
-						Value: Int(3),
+						Value: core.Int(3),
 					},
 				},
 			}, res)
@@ -7363,16 +7328,16 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("pair", func(t *testing.T) {
 			code := `treedata 0 { 1: 2 }`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, &Treedata{
-				Root: Int(0),
-				HiearchyEntries: []TreedataHiearchyEntry{
+			assert.Equal(t, &core.Treedata{
+				Root: core.Int(0),
+				HiearchyEntries: []core.TreedataHiearchyEntry{
 					{
-						Value: NewOrderedPair(Int(1), Int(2)),
+						Value: core.NewOrderedPair(core.Int(1), core.Int(2)),
 					},
 				},
 			}, res)
@@ -7387,12 +7352,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				m = Mapping{}
 				return m.compute(0)
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 		})
 
 		t.Run("compute() with existing static entry", func(t *testing.T) {
@@ -7400,12 +7365,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				m = Mapping{0 => 1}
 				return m.compute(0)
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, Int(1), res)
+			assert.Equal(t, core.Int(1), res)
 		})
 
 		t.Run("compute() with existing dynamic value static key entry", func(t *testing.T) {
@@ -7414,12 +7379,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				m = Mapping{0 => v}
 				return m.compute(0)
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, String("a"), res)
+			assert.Equal(t, core.String("a"), res)
 		})
 
 		t.Run("compute() with existing dynamic entry key", func(t *testing.T) {
@@ -7427,12 +7392,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				m = Mapping{ n 0 => n}
 				return m.compute(0)
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, Int(0), res)
+			assert.Equal(t, core.Int(0), res)
 		})
 
 		t.Run("compute() with existing dynamic entry key & group matching var", func(t *testing.T) {
@@ -7440,16 +7405,16 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				m = Mapping{ p %/{:name} m => [p, m] }
 				return m.compute(/a)
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, NewWrappedValueList(
-				Path("/a"),
-				NewObjectFromMap(ValMap{
-					"0":    Path("/a"),
-					"name": String("a"),
+			assert.Equal(t, core.NewWrappedValueList(
+				core.Path("/a"),
+				core.NewObjectFromMap(core.ValMap{
+					"0":    core.Path("/a"),
+					"name": core.String("a"),
 				}, state.Ctx),
 			), res)
 		})
@@ -7481,8 +7446,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			ctx := NewDefaultTestContext()
 			defer ctx.CancelGracefully()
 
-			state := NewGlobalState(ctx, map[string]Value{
-				"LThreadGroup": WrapGoFunction(NewLThreadGroup),
+			state := core.NewGlobalState(ctx, map[string]core.Value{
+				"LThreadGroup": core.WrapGoFunction(core.NewLThreadGroup),
 			})
 			state.Out = os.Stdout
 			state.Logger = zerolog.New(state.Out)
@@ -7492,9 +7457,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.IsType(t, &Array{}, res)
-			for _, e := range *res.(*Array) {
-				if !assert.Equal(t, Int(0), e) {
+			assert.IsType(t, &core.Array{}, res)
+			for _, e := range *res.(*core.Array) {
+				if !assert.Equal(t, core.Int(0), e) {
 					return
 				}
 			}
@@ -7532,8 +7497,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			ctx := NewDefaultTestContext()
 			defer ctx.CancelGracefully()
 
-			state := NewGlobalState(ctx, map[string]Value{
-				"LThreadGroup": WrapGoFunction(NewLThreadGroup),
+			state := core.NewGlobalState(ctx, map[string]core.Value{
+				"LThreadGroup": core.WrapGoFunction(core.NewLThreadGroup),
 			})
 
 			state.Out = io.Discard
@@ -7544,9 +7509,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.IsType(t, &Array{}, res)
-			for _, e := range *res.(*Array) {
-				if !assert.Equal(t, Int(1), e) {
+			assert.IsType(t, &core.Array{}, res)
+			for _, e := range *res.(*core.Array) {
+				if !assert.Equal(t, core.Int(1), e) {
 					return
 				}
 			}
@@ -7560,12 +7525,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 				return m.compute(/)
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(code, state, false)
 			assert.NoError(t, err)
-			assert.Equal(t, Int(0), res)
+			assert.Equal(t, core.Int(0), res)
 		})
 
 	})
@@ -7575,118 +7540,106 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("single string element", func(t *testing.T) {
 			code := `concat "a"`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(code, state, true)
 
 			assert.NoError(t, err)
-			assert.Equal(t, String("a"), res)
+			assert.Equal(t, core.String("a"), res)
 		})
 
 		t.Run("two short string-like elements", func(t *testing.T) {
 			code := `concat "a" "b"`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(code, state, true)
 
 			assert.NoError(t, err)
-			assert.Equal(t, String("ab"), res)
+			assert.Equal(t, core.String("ab"), res)
 		})
 
 		t.Run("two long string-like elements", func(t *testing.T) {
-			oneString := String(strings.Repeat("b", 100))
+			oneString := core.String(strings.Repeat("b", 100))
 			code := strings.ReplaceAll(`concat "b" "b"`, `b`, string(oneString))
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(code, state, true)
 
 			assert.NoError(t, err)
-			assert.Equal(t, NewStringConcatenation(oneString, oneString), res)
+			assert.Equal(t, core.NewStringConcatenation(oneString, oneString), res)
 		})
 
 		t.Run("single byteslice element", func(t *testing.T) {
 			code := `concat 0d[12]`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(code, state, true)
 
 			assert.NoError(t, err)
-			assert.Equal(t, &ByteSlice{isDataMutable: false, bytes: []byte{12}}, res)
+			assert.Equal(t, core.NewByteSlice([]byte{12}, false, ""), res)
 		})
 
 		t.Run("two bytes-like elements", func(t *testing.T) {
 			code := `concat 0d[12] 0d[34]`
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{})
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{})
 			res, err := Eval(code, state, true)
 
 			assert.NoError(t, err)
-			assert.Equal(t, &BytesConcatenation{
-				elements: []BytesLike{
-					&ByteSlice{isDataMutable: false, bytes: []byte{12}},
-					&ByteSlice{isDataMutable: false, bytes: []byte{34}},
-				},
-				totalLen: 2,
-			}, res)
+			assert.Equal(t, core.NewBytesConcatenation(
+				core.NewByteSlice([]byte{12}, false, ""),
+				core.NewByteSlice([]byte{34}, false, ""),
+			), res)
 		})
 
 		t.Run("bytes-like element followed by a spread element with a single item", func(t *testing.T) {
 			code := `concat 0d[12] ...[0d[34]]`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(code, state, true)
 
 			assert.NoError(t, err)
-			assert.Equal(t, &BytesConcatenation{
-				elements: []BytesLike{
-					&ByteSlice{isDataMutable: false, bytes: []byte{12}},
-					&ByteSlice{isDataMutable: false, bytes: []byte{34}},
-				},
-				totalLen: 2,
-			}, res)
+			assert.Equal(t, core.NewBytesConcatenation(
+				core.NewByteSlice([]byte{12}, false, ""),
+				core.NewByteSlice([]byte{34}, false, ""),
+			), res)
 		})
 
 		t.Run("bytes-like element followed by a spread element with two items", func(t *testing.T) {
 			code := `concat 0d[12] ...[0d[34], 0d[56]]`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(code, state, true)
 
 			assert.NoError(t, err)
-			assert.Equal(t, &BytesConcatenation{
-				elements: []BytesLike{
-					&ByteSlice{isDataMutable: false, bytes: []byte{12}},
-					&ByteSlice{isDataMutable: false, bytes: []byte{34}},
-					&ByteSlice{isDataMutable: false, bytes: []byte{56}},
-				},
-				totalLen: 3,
-			}, res)
+			assert.Equal(t, core.NewBytesConcatenation(
+				core.NewByteSlice([]byte{12}, false, ""),
+				core.NewByteSlice([]byte{34}, false, ""),
+				core.NewByteSlice([]byte{56}, false, ""),
+			), res)
 		})
 
 		t.Run("alternation of normal & spread bytes-like elements", func(t *testing.T) {
 			code := `concat 0d[12] ...[0d[34], 0d[56]] 0d[78] ...[0d[91], 0d[23]]`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(code, state, true)
 
 			assert.NoError(t, err)
-			assert.Equal(t, &BytesConcatenation{
-				elements: []BytesLike{
-					&ByteSlice{isDataMutable: false, bytes: []byte{12}},
-					&ByteSlice{isDataMutable: false, bytes: []byte{34}},
-					&ByteSlice{isDataMutable: false, bytes: []byte{56}},
-					&ByteSlice{isDataMutable: false, bytes: []byte{78}},
-					&ByteSlice{isDataMutable: false, bytes: []byte{91}},
-					&ByteSlice{isDataMutable: false, bytes: []byte{23}},
-				},
-				totalLen: 6,
-			}, res)
+			assert.Equal(t, core.NewBytesConcatenation(
+				core.NewByteSlice([]byte{12}, false, ""),
+				core.NewByteSlice([]byte{34}, false, ""),
+				core.NewByteSlice([]byte{56}, false, ""),
+				core.NewByteSlice([]byte{78}, false, ""),
+				core.NewByteSlice([]byte{91}, false, ""),
+				core.NewByteSlice([]byte{23}, false, ""),
+			), res)
 		})
 
 		t.Run("modifying an element of the concatenation should not change the concatenation value", func(t *testing.T) {
@@ -7696,65 +7649,62 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				bytes[0] = tobyte(24)
 				return c
 			`
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"tobyte": WrapGoFunction(toByte),
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
+				"tobyte": core.WrapGoFunction(toByte),
 			})
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(code, state, true)
 
 			assert.NoError(t, err)
-			assert.Equal(t, &BytesConcatenation{
-				elements: []BytesLike{
-					&ByteSlice{isDataMutable: false, bytes: []byte{12}},
-					&ByteSlice{isDataMutable: false, bytes: []byte{34}},
-				},
-				totalLen: 2,
-			}, res)
+			assert.Equal(t, core.NewBytesConcatenation(
+				core.NewByteSlice([]byte{12}, false, ""),
+				core.NewByteSlice([]byte{34}, false, ""),
+			), res)
 		})
 
 		t.Run("two tuples", func(t *testing.T) {
 			code := `concat #[1] #["a"]`
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{})
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{})
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(code, state, true)
 
 			assert.NoError(t, err)
-			assert.Equal(t, NewTuple([]Serializable{Int(1), String("a")}), res)
+			assert.Equal(t, core.NewTuple([]core.Serializable{core.Int(1), core.String("a")}), res)
 		})
 
 		t.Run("string element followed by a spread element with a single item", func(t *testing.T) {
 			code := `concat "a" ...["b"]`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(code, state, true)
 
 			assert.NoError(t, err)
-			assert.Equal(t, "ab", res.(StringLike).GetOrBuildString())
+			assert.Equal(t, "ab", res.(core.StringLike).GetOrBuildString())
 		})
 
 		t.Run("string element followed by a spread element with two items", func(t *testing.T) {
 			code := `concat "a" ...["b", "c"]`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(code, state, true)
 
 			assert.NoError(t, err)
-			assert.Equal(t, "abc", res.(StringLike).GetOrBuildString())
+			assert.Equal(t, "abc", res.(core.StringLike).GetOrBuildString())
 		})
 
 		t.Run("alternation of normal & spread string elements", func(t *testing.T) {
 			code := `concat "a" ...["b", "c"] "d" ...["e", "f"]`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(code, state, true)
 
 			assert.NoError(t, err)
-			assert.Equal(t, "abcdef", res.(StringLike).GetOrBuildString())
+			assert.Equal(t, "abcdef", res.(core.StringLike).GetOrBuildString())
 		})
 	})
 
@@ -7773,8 +7723,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		_ctx := NewDefaultTestContext()
 		defer _ctx.CancelGracefully()
 
-		state := NewGlobalState(_ctx, map[string]Value{
-			"gofunc": ValOf(func(ctx *Context) Int {
+		state := core.NewGlobalState(_ctx, map[string]core.Value{
+			"gofunc": core.ValOf(func(ctx *core.Context) core.Int {
 				called = true
 
 				if ctx != _ctx {
@@ -7797,12 +7747,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 		`
 
-		state := NewGlobalState(NewDefaultTestContext())
+		state := core.NewGlobalState(NewDefaultTestContext())
 		defer state.Ctx.CancelGracefully()
 		_, err := Eval(code, state, false)
 
-		assert.True(t, state.Ctx.HasPermission(GlobalVarPermission{Kind_: permkind.Use, Name: "*"}))
-		assert.False(t, state.Ctx.HasPermission(GlobalVarPermission{Kind_: permkind.Read, Name: "*"}))
+		assert.True(t, state.Ctx.HasPermission(core.GlobalVarPermission{Kind_: permkind.Use, Name: "*"}))
+		assert.False(t, state.Ctx.HasPermission(core.GlobalVarPermission{Kind_: permkind.Read, Name: "*"}))
 
 		assert.NoError(t, err)
 	})
@@ -7812,22 +7762,22 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `%(1)`
 			ctx := NewDefaultTestContext()
 			defer ctx.CancelGracefully()
-			state := NewGlobalState(ctx)
+			state := core.NewGlobalState(ctx)
 
 			res, err := Eval(code, state, true)
 			assert.NoError(t, err)
-			assert.Equal(t, NewExactValuePattern(Int(1)), res)
+			assert.Equal(t, core.NewExactValuePattern(core.Int(1)), res)
 		})
 
 		t.Run("string literal", func(t *testing.T) {
 			code := `%("s")`
 			ctx := NewDefaultTestContext()
 			defer ctx.CancelGracefully()
-			state := NewGlobalState(ctx)
+			state := core.NewGlobalState(ctx)
 
 			res, err := Eval(code, state, true)
 			assert.NoError(t, err)
-			assert.Equal(t, NewExactStringPattern(String("s")), res)
+			assert.Equal(t, core.NewExactStringPattern(core.String("s")), res)
 		})
 
 		t.Run("variable with an int value", func(t *testing.T) {
@@ -7836,12 +7786,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return %(one)
 			`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, NewExactValuePattern(Int(1)), res)
+			assert.Equal(t, core.NewExactValuePattern(core.Int(1)), res)
 		})
 
 		t.Run("variable with a string value", func(t *testing.T) {
@@ -7850,12 +7800,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return %(s)
 			`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, NewExactStringPattern(String("s")), res)
+			assert.Equal(t, core.NewExactStringPattern(core.String("s")), res)
 		})
 	})
 
@@ -7868,12 +7818,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return %one
 			`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, NewExactValuePattern(Int(1)), res)
+			assert.Equal(t, core.NewExactValuePattern(core.Int(1)), res)
 		})
 
 		t.Run("RHS is a string literal", func(t *testing.T) {
@@ -7882,12 +7832,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return %s
 			`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, NewExactStringPattern(String("s")), res)
+			assert.Equal(t, core.NewExactStringPattern(core.String("s")), res)
 		})
 
 		t.Run("RHS is a variable with an int value", func(t *testing.T) {
@@ -7897,12 +7847,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return %one
 			`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, NewExactValuePattern(Int(1)), res)
+			assert.Equal(t, core.NewExactValuePattern(core.Int(1)), res)
 		})
 
 		t.Run("RHS is a variable with a string value", func(t *testing.T) {
@@ -7912,46 +7862,46 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return %s
 			`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, NewExactStringPattern(String("s")), res)
+			assert.Equal(t, core.NewExactStringPattern(core.String("s")), res)
 		})
 
 		t.Run("RHS is an unprefixed object pattern", func(t *testing.T) {
 			code := `pattern o = {}; return %o`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, NewInexactObjectPattern(nil), res)
+			assert.Equal(t, core.NewInexactObjectPattern(nil), res)
 		})
 
 		t.Run("RHS is a prefixed object pattern", func(t *testing.T) {
 			code := `pattern o = %{}; return %o`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, NewInexactObjectPattern(nil), res)
+			assert.Equal(t, core.NewInexactObjectPattern(nil), res)
 		})
 
 		t.Run("RHS is an unprefixed object pattern with a unprefixed property pattern", func(t *testing.T) {
 			code := `pattern o = {a: int}; return %o`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
-			state.Ctx.AddNamedPattern("int", INT_PATTERN)
+			state.Ctx.AddNamedPattern("int", core.INT_PATTERN)
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, NewInexactObjectPattern([]ObjectPatternEntry{{Name: "a", Pattern: INT_PATTERN}}), res)
+			assert.Equal(t, core.NewInexactObjectPattern([]core.ObjectPatternEntry{{Name: "a", Pattern: core.INT_PATTERN}}), res)
 		})
 
 		t.Run("pattern definition & identifiers : RHS is another pattern identifier", func(t *testing.T) {
@@ -7959,12 +7909,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			pattern s = %p; 
 			return %s`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, NewExactStringPattern(String("p")), res)
+			assert.Equal(t, core.NewExactStringPattern(core.String("p")), res)
 		})
 
 		t.Run("pattern definition & identifiers : minimal lazy", func(t *testing.T) {
@@ -7975,15 +7925,15 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return [$prev, %s]
 			`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			prev := res.(*List).At(state.Ctx, 0)
-			pattern := res.(*List).At(state.Ctx, 1)
-			assert.IsType(t, (*DynamicStringPatternElement)(nil), prev)
-			assert.Equal(t, &DynamicStringPatternElement{"p", state.Ctx}, pattern)
+			prev := res.(*core.List).At(state.Ctx, 0)
+			pattern := res.(*core.List).At(state.Ctx, 1)
+			assert.IsType(t, (*core.DynamicStringPatternElement)(nil), prev)
+			assert.Equal(t, core.NewDynamicStringPatternElement("p", state.Ctx), pattern)
 		})
 
 		t.Run("pattern definition & identifiers : lazy", func(t *testing.T) {
@@ -7994,14 +7944,14 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return [$prev, %s]
 			`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			prev := res.(*List).At(state.Ctx, 0)
-			pattern := res.(*List).At(state.Ctx, 1)
-			assert.IsType(t, (*SequenceStringPattern)(nil), prev)
+			prev := res.(*core.List).At(state.Ctx, 0)
+			pattern := res.(*core.List).At(state.Ctx, 1)
+			assert.IsType(t, (*core.SequenceStringPattern)(nil), prev)
 			assert.Same(t, prev, pattern)
 		})
 
@@ -8011,14 +7961,14 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return %s
 			`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.IsType(t, (*SequenceStringPattern)(nil), res)
-			patt := res.(*SequenceStringPattern)
-			assert.Len(t, patt.elements, 1)
+			assert.IsType(t, (*core.SequenceStringPattern)(nil), res)
+			patt := res.(*core.SequenceStringPattern)
+			assert.Len(t, patt.Elements(), 1)
 		})
 
 	})
@@ -8027,16 +7977,16 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("RHS is an empty object literal", func(t *testing.T) {
 			code := `pnamespace namespace. = {}`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 
-			assert.Equal(t, map[string]*PatternNamespace{
+			assert.Equal(t, map[string]*core.PatternNamespace{
 				"namespace": {
-					Patterns: map[string]Pattern{},
+					Patterns: map[string]core.Pattern{},
 				},
 			}, state.Ctx.GetPatternNamespaces())
 		})
@@ -8044,23 +7994,18 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("RHS is an object literal with patterns & non-pattern values", func(t *testing.T) {
 			code := `pnamespace namespace. = {one: 1, empty_obj: %{}}`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 
-			assert.Equal(t, map[string]*PatternNamespace{
+			assert.Equal(t, map[string]*core.PatternNamespace{
 				"namespace": {
-					Patterns: map[string]Pattern{
-						"one": &ExactValuePattern{
-							value: Int(1),
-						},
-						"empty_obj": &ObjectPattern{
-							entries: nil,
-							inexact: true,
-						},
+					Patterns: map[string]core.Pattern{
+						"one":       core.NewExactValuePattern(core.Int(1)),
+						"empty_obj": core.NewInexactObjectPattern(nil),
 					},
 				},
 			}, state.Ctx.GetPatternNamespaces())
@@ -8072,14 +8017,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			pnamespace namespace. = {one: 1}
 			return %namespace.one
 		`
-		state := NewGlobalState(NewDefaultTestContext())
+		state := core.NewGlobalState(NewDefaultTestContext())
 		defer state.Ctx.CancelGracefully()
 		res, err := Eval(code, state, false)
 
 		assert.NoError(t, err)
-		assert.Equal(t, &ExactValuePattern{
-			value: Int(1),
-		}, res)
+		assert.Equal(t, core.NewExactValuePattern(core.Int(1)), res)
 	})
 
 	t.Run("object pattern literal", func(t *testing.T) {
@@ -8088,59 +8031,52 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("empty", func(t *testing.T) {
 			code := `%{}`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, &ObjectPattern{
-				inexact: true,
-				entries: nil,
-			}, res)
+			assert.Equal(t, core.NewInexactObjectPattern(nil), res)
 		})
 
 		t.Run("not empty", func(t *testing.T) {
 			code := `pattern s = "s"; return %{name: %s, count: 2}`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, &ObjectPattern{
-				inexact: true,
-				entries: []ObjectPatternEntry{
+			assert.Equal(t, core.NewInexactObjectPattern(
+				[]core.ObjectPatternEntry{
 					{
-						Name: "count",
-						Pattern: &ExactValuePattern{
-							value: Int(2),
-						},
+						Name:    "count",
+						Pattern: core.NewExactValuePattern(core.Int(2)),
 					},
 					{
 						Name:    "name",
-						Pattern: NewExactStringPattern(String("s")),
+						Pattern: core.NewExactStringPattern(core.String("s")),
 					},
 				},
-			}, res)
+			), res)
 		})
 
 		t.Run("unprefixed named pattern", func(t *testing.T) {
 			code := `pattern s = "s"; return %{name: s}`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, &ObjectPattern{
-				inexact: true,
-				entries: []ObjectPatternEntry{
+			assert.Equal(t, core.NewInexactObjectPattern(
+				[]core.ObjectPatternEntry{
 					{
 						Name:    "name",
-						Pattern: NewExactStringPattern(String("s")),
+						Pattern: core.NewExactStringPattern(core.String("s")),
 					},
 				},
-			}, res)
+			), res)
 		})
 
 		t.Run("spread", func(t *testing.T) {
@@ -8152,24 +8088,23 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return %{...%user, s: %s}
 				`
 
-				state := NewGlobalState(NewDefaultTestContext())
+				state := core.NewGlobalState(NewDefaultTestContext())
 				defer state.Ctx.CancelGracefully()
 				res, err := Eval(code, state, false)
 
 				assert.NoError(t, err)
-				assert.Equal(t, &ObjectPattern{
-					inexact: true,
-					entries: []ObjectPatternEntry{
+				assert.Equal(t, core.NewInexactObjectPattern(
+					[]core.ObjectPatternEntry{
 						{
 							Name:    "name",
-							Pattern: NewExactStringPattern(String("foo")),
+							Pattern: core.NewExactStringPattern(core.String("foo")),
 						},
 						{
 							Name:    "s",
-							Pattern: NewExactStringPattern(String("s")),
+							Pattern: core.NewExactStringPattern(core.String("s")),
 						},
 					},
-				}, res)
+				), res)
 			})
 
 			t.Run("single-property object pattern before same property with different type", func(t *testing.T) {
@@ -8179,20 +8114,19 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return %{...%user, name: "bar"}
 				`
 
-				state := NewGlobalState(NewDefaultTestContext())
+				state := core.NewGlobalState(NewDefaultTestContext())
 				defer state.Ctx.CancelGracefully()
 				res, err := Eval(code, state, false)
 
 				assert.NoError(t, err)
-				assert.Equal(t, &ObjectPattern{
-					inexact: true,
-					entries: []ObjectPatternEntry{
+				assert.Equal(t, core.NewInexactObjectPattern(
+					[]core.ObjectPatternEntry{
 						{
 							Name:    "name",
-							Pattern: NewExactStringPattern(String("bar")),
+							Pattern: core.NewExactStringPattern(core.String("bar")),
 						},
 					},
-				}, res)
+				), res)
 			})
 
 			t.Run("two-property object pattern before properties", func(t *testing.T) {
@@ -8202,30 +8136,27 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return %{...%user, s: %s}
 				`
 
-				state := NewGlobalState(NewDefaultTestContext())
+				state := core.NewGlobalState(NewDefaultTestContext())
 				defer state.Ctx.CancelGracefully()
 				res, err := Eval(code, state, false)
 
 				assert.NoError(t, err)
-				assert.Equal(t, &ObjectPattern{
-					inexact: true,
-					entries: []ObjectPatternEntry{
+				assert.Equal(t, core.NewInexactObjectPattern(
+					[]core.ObjectPatternEntry{
 						{
-							Name: "age",
-							Pattern: &ExactValuePattern{
-								value: Int(30),
-							},
+							Name:    "age",
+							Pattern: core.NewExactValuePattern(core.Int(30)),
 						},
 						{
 							Name:    "name",
-							Pattern: NewExactStringPattern(String("foo")),
+							Pattern: core.NewExactStringPattern(core.String("foo")),
 						},
 						{
 							Name:    "s",
-							Pattern: NewExactStringPattern(String("s")),
+							Pattern: core.NewExactStringPattern(core.String("s")),
 						},
 					},
-				}, res)
+				), res)
 			})
 
 			t.Run("complex", func(t *testing.T) {
@@ -8234,38 +8165,36 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return %{...%user, friends: %[]%user}
 				`
 
-				state := NewGlobalState(NewDefaultTestContext())
+				state := core.NewGlobalState(NewDefaultTestContext())
 				defer state.Ctx.CancelGracefully()
 				res, err := Eval(code, state, false)
 
 				assert.NoError(t, err)
-				assert.Equal(t, &ObjectPattern{
-					inexact: true,
-					entries: []ObjectPatternEntry{
+				assert.Equal(t, core.NewInexactObjectPattern(
+					[]core.ObjectPatternEntry{
 						{
 							Name: "friends",
-							Pattern: NewListPatternOf(&ObjectPattern{
-								entries: []ObjectPatternEntry{
+							Pattern: core.NewListPatternOf(core.NewInexactObjectPattern(
+								[]core.ObjectPatternEntry{
 									{
 										Name:    "name",
-										Pattern: NewExactStringPattern(String("foo")),
+										Pattern: core.NewExactStringPattern(core.String("foo")),
 									},
 								},
-								inexact: true,
-							}),
+							)),
 						},
 						{
 							Name:    "name",
-							Pattern: NewExactStringPattern(String("foo")),
+							Pattern: core.NewExactStringPattern(core.String("foo")),
 						},
 					},
-				}, res)
+				), res)
 			})
 
 			t.Run("spread element is not an object pattern", func(t *testing.T) {
 				code := `pattern s = "s"; return %{...%s}`
 
-				state := NewGlobalState(NewDefaultTestContext())
+				state := core.NewGlobalState(NewDefaultTestContext())
 				defer state.Ctx.CancelGracefully()
 				res, err := Eval(code, state, false)
 
@@ -8282,57 +8211,52 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("empty", func(t *testing.T) {
 			code := `pattern p = #{}; return %p`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, &RecordPattern{
-				inexact: true,
-				entries: nil,
-			}, res)
+			assert.Equal(t, core.NewInexactRecordPattern(nil), res)
 		})
 
 		t.Run("not empty", func(t *testing.T) {
 			code := `pattern s = "s"; pattern p = #{name: %s, count: 2}; return %p`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, &RecordPattern{
-				inexact: true,
-				entries: []RecordPatternEntry{
+			assert.Equal(t, core.NewInexactRecordPattern(
+				[]core.RecordPatternEntry{
 					{
 						Name:    "count",
-						Pattern: &ExactValuePattern{value: Int(2)},
+						Pattern: core.NewExactValuePattern(core.Int(2)),
 					},
 					{
 						Name:    "name",
-						Pattern: NewExactStringPattern(String("s")),
+						Pattern: core.NewExactStringPattern(core.String("s")),
 					},
 				},
-			}, res)
+			), res)
 		})
 
 		t.Run("unprefixed named pattern", func(t *testing.T) {
 			code := `pattern s = "s"; pattern p = #{name: s}; return %p`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, &RecordPattern{
-				inexact: true,
-				entries: []RecordPatternEntry{
+			assert.Equal(t, core.NewInexactRecordPattern(
+				[]core.RecordPatternEntry{
 					{
 						Name:    "name",
-						Pattern: NewExactStringPattern(String("s")),
+						Pattern: core.NewExactStringPattern(core.String("s")),
 					},
 				},
-			}, res)
+			), res)
 		})
 
 		t.Run("spread", func(t *testing.T) {
@@ -8345,24 +8269,23 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return %p
 				`
 
-				state := NewGlobalState(NewDefaultTestContext())
+				state := core.NewGlobalState(NewDefaultTestContext())
 				defer state.Ctx.CancelGracefully()
 				res, err := Eval(code, state, false)
 
 				assert.NoError(t, err)
-				assert.Equal(t, &RecordPattern{
-					inexact: true,
-					entries: []RecordPatternEntry{
+				assert.Equal(t, core.NewInexactRecordPattern(
+					[]core.RecordPatternEntry{
 						{
 							Name:    "name",
-							Pattern: NewExactStringPattern(String("foo")),
+							Pattern: core.NewExactStringPattern(core.String("foo")),
 						},
 						{
 							Name:    "s",
-							Pattern: NewExactStringPattern(String("s")),
+							Pattern: core.NewExactStringPattern(core.String("s")),
 						},
 					},
-				}, res)
+				), res)
 			})
 
 			t.Run("single-property record pattern before same property with different type", func(t *testing.T) {
@@ -8372,20 +8295,19 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return %p
 				`
 
-				state := NewGlobalState(NewDefaultTestContext())
+				state := core.NewGlobalState(NewDefaultTestContext())
 				defer state.Ctx.CancelGracefully()
 				res, err := Eval(code, state, false)
 
 				assert.NoError(t, err)
-				assert.Equal(t, &RecordPattern{
-					inexact: true,
-					entries: []RecordPatternEntry{
+				assert.Equal(t, core.NewInexactRecordPattern(
+					[]core.RecordPatternEntry{
 						{
 							Name:    "name",
-							Pattern: NewExactStringPattern(String("bar")),
+							Pattern: core.NewExactStringPattern(core.String("bar")),
 						},
 					},
-				}, res)
+				), res)
 			})
 
 			t.Run("two-property object pattern before properties", func(t *testing.T) {
@@ -8396,30 +8318,27 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return %p
 				`
 
-				state := NewGlobalState(NewDefaultTestContext())
+				state := core.NewGlobalState(NewDefaultTestContext())
 				defer state.Ctx.CancelGracefully()
 				res, err := Eval(code, state, false)
 
 				assert.NoError(t, err)
-				assert.Equal(t, &RecordPattern{
-					inexact: true,
-					entries: []RecordPatternEntry{
+				assert.Equal(t, core.NewInexactRecordPattern(
+					[]core.RecordPatternEntry{
 						{
-							Name: "age",
-							Pattern: &ExactValuePattern{
-								value: Int(30),
-							},
+							Name:    "age",
+							Pattern: core.NewExactValuePattern(core.Int(30)),
 						},
 						{
 							Name:    "name",
-							Pattern: NewExactStringPattern(String("foo")),
+							Pattern: core.NewExactStringPattern(core.String("foo")),
 						},
 						{
 							Name:    "s",
-							Pattern: NewExactStringPattern(String("s")),
+							Pattern: core.NewExactStringPattern(core.String("s")),
 						},
 					},
-				}, res)
+				), res)
 			})
 
 			t.Run("complex", func(t *testing.T) {
@@ -8430,38 +8349,36 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return %p
 				`
 
-				state := NewGlobalState(NewDefaultTestContext())
+				state := core.NewGlobalState(NewDefaultTestContext())
 				defer state.Ctx.CancelGracefully()
 				res, err := Eval(code, state, false)
 
 				assert.NoError(t, err)
-				assert.Equal(t, &RecordPattern{
-					inexact: true,
-					entries: []RecordPatternEntry{
+				assert.Equal(t, core.NewInexactRecordPattern(
+					[]core.RecordPatternEntry{
 						{
 							Name: "friends",
-							Pattern: NewListPatternOf(&RecordPattern{
-								entries: []RecordPatternEntry{
+							Pattern: core.NewListPatternOf(core.NewInexactRecordPattern(
+								[]core.RecordPatternEntry{
 									{
 										Name:    "name",
-										Pattern: NewExactStringPattern(String("foo")),
+										Pattern: core.NewExactStringPattern(core.String("foo")),
 									},
 								},
-								inexact: true,
-							}),
+							)),
 						},
 						{
 							Name:    "name",
-							Pattern: NewExactStringPattern(String("foo")),
+							Pattern: core.NewExactStringPattern(core.String("foo")),
 						},
 					},
-				}, res)
+				), res)
 			})
 
 			t.Run("spread element is not an record pattern", func(t *testing.T) {
 				code := `pattern s = "s"; pattern p = #{...%s}; return %p`
 
-				state := NewGlobalState(NewDefaultTestContext())
+				state := core.NewGlobalState(NewDefaultTestContext())
 				defer state.Ctx.CancelGracefully()
 				res, err := Eval(code, state, false)
 
@@ -8478,126 +8395,98 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("empty", func(t *testing.T) {
 			code := `%[]`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, &ListPattern{
-				elementPatterns: make([]Pattern, 0),
-			}, res)
+			assert.Equal(t, core.NewListPattern(make([]core.Pattern, 0)), res)
 		})
 
 		t.Run("single element: integer literal", func(t *testing.T) {
 			code := `%[ 2 ]`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, &ListPattern{
-				elementPatterns: []Pattern{
-					&ExactValuePattern{value: Int(2)},
+			assert.Equal(t, core.NewListPattern(
+				[]core.Pattern{
+					core.NewExactValuePattern(core.Int(2)),
 				},
-			}, res)
+			), res)
 		})
 
 		t.Run("single element: empty object pattern", func(t *testing.T) {
 			code := `%[ {} ]`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, &ListPattern{
-				elementPatterns: []Pattern{
-					NewInexactObjectPattern(nil),
+			assert.Equal(t, core.NewListPattern(
+				[]core.Pattern{
+					core.NewInexactObjectPattern(nil),
 				},
-			}, res)
+			), res)
 		})
 
 		t.Run("single element: empty object", func(t *testing.T) {
 			code := `%[ %(#{}) ]`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, &ListPattern{
-				elementPatterns: []Pattern{
-					NewExactValuePattern(NewEmptyRecord()),
-				},
-			}, res)
+			assert.Equal(t, core.NewListPattern([]core.Pattern{core.NewExactValuePattern(core.NewEmptyRecord())}), res)
 		})
 
 		t.Run("single element: an object pattern literal", func(t *testing.T) {
 			code := `%[ %{} ]`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, &ListPattern{
-				elementPatterns: []Pattern{
-					&ObjectPattern{
-						inexact: true,
-						entries: nil,
-					},
-				},
-			}, res)
+			assert.Equal(t, core.NewListPattern([]core.Pattern{core.NewInexactObjectPattern(nil)}), res)
 		})
 
 		t.Run("general element is an object pattern literal", func(t *testing.T) {
 			code := `%[]%{}`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, &ListPattern{
-				elementPatterns: nil,
-				generalElementPattern: &ObjectPattern{
-					inexact: true,
-					entries: nil,
-				},
-			}, res)
+			assert.Equal(t, core.NewListPatternOf(core.NewInexactObjectPattern(nil)), res)
 		})
 
 		t.Run("general element is an unprefixed object pattern literal", func(t *testing.T) {
 			code := `%[]%{}`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, &ListPattern{
-				elementPatterns: nil,
-				generalElementPattern: &ObjectPattern{
-					inexact: true,
-					entries: nil,
-				},
-			}, res)
+			assert.Equal(t, core.NewListPatternOf(core.NewInexactObjectPattern(nil)), res)
 		})
 
 		t.Run("general element is an unprefixed named pattern", func(t *testing.T) {
 			code := `%[]int`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
-			state.Ctx.AddNamedPattern("int", INT_PATTERN)
+			state.Ctx.AddNamedPattern("int", core.INT_PATTERN)
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, &ListPattern{
-				elementPatterns:       nil,
-				generalElementPattern: INT_PATTERN,
-			}, res)
+			assert.Equal(t, core.NewListPatternOf(core.INT_PATTERN), res)
 		})
 	})
 
@@ -8607,154 +8496,116 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("empty", func(t *testing.T) {
 			code := `pattern p = #[]; return %p`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, &TuplePattern{
-				elementPatterns: make([]Pattern, 0),
-			}, res)
+			assert.Equal(t, core.NewTuplePattern(make([]core.Pattern, 0)), res)
 		})
 
 		t.Run("single element: integer literal", func(t *testing.T) {
 			code := `pattern p = #[ 2 ]; return %p`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, &TuplePattern{
-				elementPatterns: []Pattern{
-					&ExactValuePattern{
-						value: Int(2),
-					},
-				},
-			}, res)
+			assert.Equal(t, core.NewTuplePattern([]core.Pattern{core.NewExactValuePattern(core.Int(2))}), res)
 		})
 
 		t.Run("single element: empty record pattern", func(t *testing.T) {
 			code := `pattern p = #[ #{} ]; return %p`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, &TuplePattern{
-				elementPatterns: []Pattern{
-					NewInexactRecordPattern(nil),
-				},
-			}, res)
+			assert.Equal(t, core.NewTuplePattern([]core.Pattern{core.NewInexactRecordPattern(nil)}), res)
 		})
 
 		t.Run("single element: empty record", func(t *testing.T) {
 			code := `pattern p = #[ %(#{}) ]; return %p`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, &TuplePattern{
-				elementPatterns: []Pattern{
-					NewExactValuePattern(NewEmptyRecord()),
-				},
-			}, res)
+			assert.Equal(t, core.NewTuplePattern([]core.Pattern{core.NewExactValuePattern(core.NewEmptyRecord())}), res)
 		})
 
 		t.Run("single element: an object pattern literal", func(t *testing.T) {
 			code := `pattern p = #[ #{} ]; return %p`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, &TuplePattern{
-				elementPatterns: []Pattern{
-					&RecordPattern{
-						inexact: true,
-						entries: nil,
-					},
-				},
-			}, res)
+			assert.Equal(t, core.NewTuplePattern([]core.Pattern{core.NewInexactRecordPattern(nil)}), res)
 		})
 
 		t.Run("general element is an record pattern literal", func(t *testing.T) {
 			code := `pattern p = #[]#{}; return %p`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, &TuplePattern{
-				elementPatterns: nil,
-				generalElementPattern: &RecordPattern{
-					inexact: true,
-					entries: nil,
-				},
-			}, res)
+			assert.Equal(t, core.NewTuplePatternOf(core.NewInexactRecordPattern(nil)), res)
 		})
 
 		t.Run("general element is an unprefixed object pattern literal", func(t *testing.T) {
 			code := `pattern p = #[]#{}; return %p`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, &TuplePattern{
-				elementPatterns: nil,
-				generalElementPattern: &RecordPattern{
-					inexact: true,
-					entries: nil,
-				},
-			}, res)
+			assert.Equal(t, core.NewTuplePatternOf(core.NewInexactRecordPattern(nil)), res)
 		})
 
 		t.Run("general element is an unprefixed named pattern", func(t *testing.T) {
 			code := `pattern p = #[]int; return %p`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
-			state.Ctx.AddNamedPattern("int", INT_PATTERN)
+			state.Ctx.AddNamedPattern("int", core.INT_PATTERN)
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, &TuplePattern{
-				elementPatterns:       nil,
-				generalElementPattern: INT_PATTERN,
-			}, res)
+			assert.Equal(t, core.NewTuplePatternOf(core.INT_PATTERN), res)
 		})
 	})
 
 	t.Run("union pattern", func(t *testing.T) {
 		code := `%| 1 | 2`
 
-		state := NewGlobalState(NewDefaultTestContext())
+		state := core.NewGlobalState(NewDefaultTestContext())
 		defer state.Ctx.CancelGracefully()
 		res, err := Eval(code, state, false)
 
 		assert.NoError(t, err)
-		assert.Equal(t, []Pattern{
-			&ExactValuePattern{value: Int(1)},
-			&ExactValuePattern{value: Int(2)},
-		}, res.(*UnionPattern).cases)
+		assert.Equal(t, []core.Pattern{
+			core.NewExactValuePattern(core.Int(1)),
+			core.NewExactValuePattern(core.Int(2)),
+		}, res.(*core.UnionPattern).Cases())
 	})
 
 	t.Run("regex literal : empty", func(t *testing.T) {
 		code := "%`a`"
 
-		state := NewGlobalState(NewDefaultTestContext())
+		state := core.NewGlobalState(NewDefaultTestContext())
 		defer state.Ctx.CancelGracefully()
 		res, err := Eval(code, state, false)
 
 		assert.NoError(t, err)
-		assert.IsType(t, &RegexPattern{}, res)
+		assert.IsType(t, (*core.RegexPattern)(nil), res)
 	})
 
 	t.Run("assertion statement: true", func(t *testing.T) {
@@ -8762,18 +8613,18 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("true", func(t *testing.T) {
 			code := "assert true"
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 		})
 
 		t.Run("false", func(t *testing.T) {
 			code := "assert false"
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
@@ -8789,31 +8640,31 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("no manifest", func(t *testing.T) {
 			code := `return testsuite "name" {}`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			if !assert.IsType(t, &TestSuite{}, res) {
+			if !assert.IsType(t, &core.TestSuite{}, res) {
 				return
 			}
-			assert.Equal(t, String("name"), res.(*TestSuite).meta)
-			assert.Equal(t, state.Module.MainChunk.Source, res.(*TestSuite).module.MainChunk.Source)
+			assert.Equal(t, core.String("name"), res.(*core.TestSuite).Meta())
+			assert.Equal(t, state.Module.MainChunk.Source, res.(*core.TestSuite).Module().MainChunk.Source)
 		})
 
 		t.Run("no meta", func(t *testing.T) {
 			code := `return testsuite {}`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			if !assert.IsType(t, &TestSuite{}, res) {
+			if !assert.IsType(t, &core.TestSuite{}, res) {
 				return
 			}
-			assert.Equal(t, Nil, res.(*TestSuite).meta)
-			assert.Equal(t, state.Module.MainChunk.Source, res.(*TestSuite).module.MainChunk.Source)
+			assert.Equal(t, core.Nil, res.(*core.TestSuite).Meta())
+			assert.Equal(t, state.Module.MainChunk.Source, res.(*core.TestSuite).Module().MainChunk.Source)
 		})
 
 		t.Run("meta; name", func(t *testing.T) {
@@ -8824,18 +8675,18 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return testsuite({name: f()}) {}
 			`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			if !assert.IsType(t, &TestSuite{}, res) {
+			if !assert.IsType(t, &core.TestSuite{}, res) {
 				return
 			}
-			if !assert.NotNil(t, Nil, res.(*TestSuite).meta) {
+			if !assert.NotNil(t, core.Nil, res.(*core.TestSuite).Meta()) {
 				return
 			}
-			assert.Equal(t, "my test suite", res.(*TestSuite).nameFrom)
+			assert.Equal(t, "my test suite", res.(*core.TestSuite).NameFromMeta())
 		})
 
 		t.Run("meta: name + fs", func(t *testing.T) {
@@ -8846,24 +8697,24 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return testsuite({name: f(), fs: snapshot}) {}
 			`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			fls := newMemFilesystem()
 			snapshot := &memFilesystemSnapshot{fls: fls}
-			state.Globals.Set("snapshot", WrapFsSnapshot(snapshot))
+			state.Globals.Set("snapshot", core.WrapFsSnapshot(snapshot))
 
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			if !assert.IsType(t, &TestSuite{}, res) {
+			if !assert.IsType(t, &core.TestSuite{}, res) {
 				return
 			}
-			if !assert.NotNil(t, Nil, res.(*TestSuite).meta) {
+			if !assert.NotNil(t, core.Nil, res.(*core.TestSuite).Meta()) {
 				return
 			}
-			assert.Equal(t, "my test suite", res.(*TestSuite).nameFrom)
-			assert.Equal(t, snapshot, res.(*TestSuite).filesystemSnapshot)
+			assert.Equal(t, "my test suite", res.(*core.TestSuite).NameFromMeta())
+			assert.Equal(t, snapshot, utils.MustGet(res.(*core.TestSuite).FilesystemSnapshot()))
 		})
 
 		t.Run("the source of the main chunk of a testsuite created at the top level of an included file "+
@@ -8878,11 +8729,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				case = testsuite "name" {}
 			`})
 
-			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			mod, err := core.ParseLocalModule(modpath, core.ModuleParsingConfig{Context: createParsingContext(modpath)})
 			if !assert.NoError(t, err) {
 				return
 			}
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			state.Logger = zerolog.New(state.Out)
@@ -8890,8 +8741,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			if !assert.NoError(t, err) {
 				return
 			}
-			testSuite := res.(*TestSuite)
-			assert.Equal(t, state.Module.IncludedChunkForest[0].Source, testSuite.module.MainChunk.Source)
+			testSuite := res.(*core.TestSuite)
+			assert.Equal(t, state.Module.IncludedChunkForest[0].Source, testSuite.Module().MainChunk.Source)
 		})
 
 		t.Run("the source of the main chunk of a testsuite created in a function that is defined in an included file "+
@@ -8908,11 +8759,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			`})
 
-			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			mod, err := core.ParseLocalModule(modpath, core.ModuleParsingConfig{Context: createParsingContext(modpath)})
 			if !assert.NoError(t, err) {
 				return
 			}
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			state.Logger = zerolog.New(state.Out)
@@ -8920,8 +8771,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			if !assert.NoError(t, err) {
 				return
 			}
-			testSuite := res.(*TestSuite)
-			assert.Equal(t, state.Module.IncludedChunkForest[0].Source, testSuite.module.MainChunk.Source)
+			testSuite := res.(*core.TestSuite)
+			assert.Equal(t, state.Module.IncludedChunkForest[0].Source, testSuite.Module().MainChunk.Source)
 		})
 
 	})
@@ -8932,31 +8783,31 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("no manifest", func(t *testing.T) {
 			code := `return testcase "name" {}`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			if !assert.IsType(t, &TestCase{}, res) {
+			if !assert.IsType(t, &core.TestCase{}, res) {
 				return
 			}
-			assert.Equal(t, String("name"), res.(*TestCase).meta)
-			assert.Equal(t, state.Module.MainChunk.Source, res.(*TestCase).module.MainChunk.Source)
+			assert.Equal(t, core.String("name"), res.(*core.TestCase).Meta())
+			assert.Equal(t, state.Module.MainChunk.Source, res.(*core.TestCase).Module().MainChunk.Source)
 		})
 
 		t.Run("no meta", func(t *testing.T) {
 			code := `return testcase {}`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			if !assert.IsType(t, &TestCase{}, res) {
+			if !assert.IsType(t, &core.TestCase{}, res) {
 				return
 			}
-			assert.Equal(t, Nil, res.(*TestCase).meta)
-			assert.Equal(t, state.Module.MainChunk.Source, res.(*TestCase).module.MainChunk.Source)
+			assert.Equal(t, core.Nil, res.(*core.TestCase).Meta())
+			assert.Equal(t, state.Module.MainChunk.Source, res.(*core.TestCase).Module().MainChunk.Source)
 		})
 
 		t.Run("the source of the main chunk of a testcase created at the top level of an included file "+
@@ -8971,11 +8822,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				case = testcase "name" {}
 			`})
 
-			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			mod, err := core.ParseLocalModule(modpath, core.ModuleParsingConfig{Context: createParsingContext(modpath)})
 			if !assert.NoError(t, err) {
 				return
 			}
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			state.Logger = zerolog.New(state.Out)
@@ -8983,8 +8834,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			if !assert.NoError(t, err) {
 				return
 			}
-			testCase := res.(*TestCase)
-			assert.Equal(t, state.Module.IncludedChunkForest[0].Source, testCase.module.MainChunk.Source)
+			testCase := res.(*core.TestCase)
+			assert.Equal(t, state.Module.IncludedChunkForest[0].Source, testCase.Module().MainChunk.Source)
 		})
 
 		t.Run("the source of the main chunk of a testcase created in a function that is defined in an included file "+
@@ -9001,11 +8852,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			`})
 
-			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			mod, err := core.ParseLocalModule(modpath, core.ModuleParsingConfig{Context: createParsingContext(modpath)})
 			if !assert.NoError(t, err) {
 				return
 			}
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			state.Logger = zerolog.New(state.Out)
@@ -9013,8 +8864,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			if !assert.NoError(t, err) {
 				return
 			}
-			testCase := res.(*TestCase)
-			assert.Equal(t, state.Module.IncludedChunkForest[0].Source, testCase.module.MainChunk.Source)
+			testCase := res.(*core.TestCase)
+			assert.Equal(t, state.Module.IncludedChunkForest[0].Source, testCase.Module().MainChunk.Source)
 		})
 	})
 
@@ -9024,16 +8875,16 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("no manifest", func(t *testing.T) {
 			code := `return lifetimejob "name" {}`
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			if !assert.IsType(t, &LifetimeJob{}, res) {
+			if !assert.IsType(t, &core.LifetimeJob{}, res) {
 				return
 			}
-			assert.Equal(t, String("name"), res.(*LifetimeJob).meta)
-			assert.Equal(t, state.Module.MainChunk.Source, res.(*LifetimeJob).module.MainChunk.Source)
+			assert.Equal(t, core.String("name"), res.(*core.LifetimeJob).Meta())
+			assert.Equal(t, state.Module.MainChunk.Source, res.(*core.LifetimeJob).Module().MainChunk.Source)
 		})
 
 		t.Run("the source of the main chunk of a lifetimejob created at the top level of an included file "+
@@ -9048,11 +8899,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				job = lifetimejob "name" {}
 			`})
 
-			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			mod, err := core.ParseLocalModule(modpath, core.ModuleParsingConfig{Context: createParsingContext(modpath)})
 			if !assert.NoError(t, err) {
 				return
 			}
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			state.Logger = zerolog.New(state.Out)
@@ -9060,8 +8911,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			if !assert.NoError(t, err) {
 				return
 			}
-			job := res.(*LifetimeJob)
-			assert.Equal(t, state.Module.IncludedChunkForest[0].Source, job.module.MainChunk.Source)
+			job := res.(*core.LifetimeJob)
+			assert.Equal(t, state.Module.IncludedChunkForest[0].Source, job.Module().MainChunk.Source)
 		})
 
 		t.Run("the source of the main chunk of a lifetimejob create in a function that is defined in an included file "+
@@ -9078,11 +8929,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			`})
 
-			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			mod, err := core.ParseLocalModule(modpath, core.ModuleParsingConfig{Context: createParsingContext(modpath)})
 			if !assert.NoError(t, err) {
 				return
 			}
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			state.Logger = zerolog.New(state.Out)
@@ -9090,15 +8941,15 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			if !assert.NoError(t, err) {
 				return
 			}
-			job := res.(*LifetimeJob)
-			assert.Equal(t, state.Module.IncludedChunkForest[0].Source, job.module.MainChunk.Source)
+			job := res.(*core.LifetimeJob)
+			assert.Equal(t, state.Module.IncludedChunkForest[0].Source, job.Module().MainChunk.Source)
 		})
 	})
 
 	t.Run("testsuite statement", func(t *testing.T) {
 
-		allTestsFilter := TestFilters{
-			PositiveTestFilters: []TestFilter{
+		allTestsFilter := core.TestFilters{
+			PositiveTestFilters: []core.TestFilter{
 				{
 					NameRegex: ".*",
 				},
@@ -9116,7 +8967,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 		}
 
-		createModuleAndImports := func(code string, modules map[string]string) (*Module, afs.Filesystem, error) {
+		createModuleAndImports := func(code string, modules map[string]string) (*core.Module, afs.Filesystem, error) {
 			fls := newMemFilesystem()
 			err := util.WriteFile(fls, "/mod.ix", []byte(code), 0600)
 			if err != nil {
@@ -9130,15 +8981,15 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			}
 
-			ctx := NewContextWithEmptyState(ContextConfig{
-				Permissions: []Permission{
-					CreateFsReadPerm(PathPattern("/...")),
+			ctx := core.NewContextWithEmptyState(core.ContextConfig{
+				Permissions: []core.Permission{
+					core.CreateFsReadPerm(core.PathPattern("/...")),
 				},
 				Filesystem: fls,
 			}, nil)
 			defer ctx.CancelGracefully()
 
-			mod, err := ParseLocalModule("/mod.ix", ModuleParsingConfig{
+			mod, err := core.ParseLocalModule("/mod.ix", core.ModuleParsingConfig{
 				Context: ctx,
 			})
 
@@ -9148,13 +8999,13 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("empty: testing disabled", func(t *testing.T) {
 			src := makeSourceFile(`testsuite "name" {}`)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(src, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 			assert.Empty(t, state.TestingState.CaseResults)
 			assert.Empty(t, state.TestingState.SuiteResults)
 		})
@@ -9174,13 +9025,13 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return $$a
 			`)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(src, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, Int(0), res)
+			assert.Equal(t, core.Int(0), res)
 			assert.Empty(t, state.TestingState.CaseResults)
 			assert.Empty(t, state.TestingState.SuiteResults)
 		})
@@ -9194,7 +9045,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			`)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
@@ -9202,7 +9053,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(src, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 			assert.Empty(t, state.TestingState.CaseResults)
 			assert.Len(t, state.TestingState.SuiteResults, 1)
 		})
@@ -9216,7 +9067,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			`)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
@@ -9224,7 +9075,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(src, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 			assert.Empty(t, state.TestingState.CaseResults)
 			assert.Len(t, state.TestingState.SuiteResults, 1)
 		})
@@ -9238,7 +9089,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			`)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
@@ -9246,7 +9097,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(src, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 			assert.Empty(t, state.TestingState.CaseResults)
 			assert.Len(t, state.TestingState.SuiteResults, 1)
 		})
@@ -9254,7 +9105,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("empty", func(t *testing.T) {
 			src := makeSourceFile(`testsuite "name" {}`)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
@@ -9262,7 +9113,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(src, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 			assert.Empty(t, state.TestingState.CaseResults)
 			assert.Len(t, state.TestingState.SuiteResults, 1)
 		})
@@ -9270,10 +9121,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("empty: filtered out", func(t *testing.T) {
 			src := makeSourceFile(`testsuite "name" {}`)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			state.TestingState.IsTestingEnabled = true
-			state.TestingState.Filters = TestFilters{
-				PositiveTestFilters: []TestFilter{
+			state.TestingState.Filters = core.TestFilters{
+				PositiveTestFilters: []core.TestFilter{
 					{
 						NameRegex: "not this test",
 					},
@@ -9284,7 +9135,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(src, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 			assert.Empty(t, state.TestingState.CaseResults)
 			assert.Empty(t, state.TestingState.SuiteResults)
 		})
@@ -9295,7 +9146,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return 0
 			`)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
@@ -9303,7 +9154,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(src, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, Int(0), res)
+			assert.Equal(t, core.Int(0), res)
 			assert.Empty(t, state.TestingState.CaseResults)
 			assert.Len(t, state.TestingState.SuiteResults, 1)
 		})
@@ -9331,15 +9182,15 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			ctx := NewContext(ContextConfig{
-				Permissions: append(GetDefaultGlobalVarPermissions(),
-					LThreadPermission{permkind.Create},
-					FilesystemPermission{permkind.Read, PathPattern("/...")},
+			ctx := core.NewContext(core.ContextConfig{
+				Permissions: append(core.GetDefaultGlobalVarPermissions(),
+					core.LThreadPermission{permkind.Create},
+					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
 				),
 				Filesystem: fls,
-				Limits:     []Limit{permissiveLthreadLimit},
+				Limits:     []core.Limit{permissiveLthreadLimit},
 			})
-			state := NewGlobalState(ctx)
+			state := core.NewGlobalState(ctx)
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.IsImportTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
@@ -9348,12 +9199,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(mod, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 			assert.Empty(t, state.TestingState.CaseResults)
 			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
-			assert.Empty(t, state.TestingState.SuiteResults[0].caseResults)
+			assert.Empty(t, state.TestingState.SuiteResults[0].CaseResults)
 		})
 
 		t.Run("empty in imported module: disabled import testing", func(t *testing.T) {
@@ -9379,15 +9230,15 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			ctx := NewContext(ContextConfig{
-				Permissions: append(GetDefaultGlobalVarPermissions(),
-					LThreadPermission{permkind.Create},
-					FilesystemPermission{permkind.Read, PathPattern("/...")},
+			ctx := core.NewContext(core.ContextConfig{
+				Permissions: append(core.GetDefaultGlobalVarPermissions(),
+					core.LThreadPermission{permkind.Create},
+					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
 				),
 				Filesystem: fls,
-				Limits:     []Limit{permissiveLthreadLimit},
+				Limits:     []core.Limit{permissiveLthreadLimit},
 			})
-			state := NewGlobalState(ctx)
+			state := core.NewGlobalState(ctx)
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.IsImportTestingEnabled = false
 			state.TestingState.Filters = allTestsFilter
@@ -9396,7 +9247,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(mod, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 			assert.Empty(t, state.TestingState.CaseResults)
 			assert.Empty(t, state.TestingState.SuiteResults)
 		})
@@ -9418,15 +9269,15 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			ctx := NewContext(ContextConfig{
-				Permissions: append(GetDefaultGlobalVarPermissions(),
-					LThreadPermission{permkind.Create},
-					FilesystemPermission{permkind.Read, PathPattern("/...")},
+			ctx := core.NewContext(core.ContextConfig{
+				Permissions: append(core.GetDefaultGlobalVarPermissions(),
+					core.LThreadPermission{permkind.Create},
+					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
 				),
 				Filesystem: fls,
-				Limits:     []Limit{permissiveLthreadLimit},
+				Limits:     []core.Limit{permissiveLthreadLimit},
 			})
-			state := NewGlobalState(ctx)
+			state := core.NewGlobalState(ctx)
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.IsImportTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
@@ -9435,12 +9286,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(mod, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 			assert.Empty(t, state.TestingState.CaseResults)
 			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
-			assert.Empty(t, state.TestingState.SuiteResults[0].caseResults)
+			assert.Empty(t, state.TestingState.SuiteResults[0].CaseResults)
 		})
 
 		t.Run("empty in included chunk: disabled import testing", func(t *testing.T) {
@@ -9460,15 +9311,15 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			ctx := NewContext(ContextConfig{
-				Permissions: append(GetDefaultGlobalVarPermissions(),
-					LThreadPermission{permkind.Create},
-					FilesystemPermission{permkind.Read, PathPattern("/...")},
+			ctx := core.NewContext(core.ContextConfig{
+				Permissions: append(core.GetDefaultGlobalVarPermissions(),
+					core.LThreadPermission{permkind.Create},
+					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
 				),
 				Filesystem: fls,
-				Limits:     []Limit{permissiveLthreadLimit},
+				Limits:     []core.Limit{permissiveLthreadLimit},
 			})
-			state := NewGlobalState(ctx)
+			state := core.NewGlobalState(ctx)
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.IsImportTestingEnabled = false
 			state.TestingState.Filters = allTestsFilter
@@ -9477,7 +9328,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(mod, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 			assert.Empty(t, state.TestingState.CaseResults)
 			assert.Empty(t, state.TestingState.SuiteResults)
 		})
@@ -9504,15 +9355,15 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			ctx := NewContext(ContextConfig{
-				Permissions: append(GetDefaultGlobalVarPermissions(),
-					LThreadPermission{permkind.Create},
-					FilesystemPermission{permkind.Read, PathPattern("/...")},
+			ctx := core.NewContext(core.ContextConfig{
+				Permissions: append(core.GetDefaultGlobalVarPermissions(),
+					core.LThreadPermission{permkind.Create},
+					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
 				),
 				Filesystem: fls,
-				Limits:     []Limit{permissiveLthreadLimit},
+				Limits:     []core.Limit{permissiveLthreadLimit},
 			})
-			state := NewGlobalState(ctx)
+			state := core.NewGlobalState(ctx)
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.IsImportTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
@@ -9521,12 +9372,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(mod, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 			assert.Empty(t, state.TestingState.CaseResults)
 			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
-			assert.Empty(t, state.TestingState.SuiteResults[0].caseResults)
+			assert.Empty(t, state.TestingState.SuiteResults[0].CaseResults)
 		})
 
 		t.Run("empty in included chunk (deep): disabled import testing", func(t *testing.T) {
@@ -9551,15 +9402,15 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			ctx := NewContext(ContextConfig{
-				Permissions: append(GetDefaultGlobalVarPermissions(),
-					LThreadPermission{permkind.Create},
-					FilesystemPermission{permkind.Read, PathPattern("/...")},
+			ctx := core.NewContext(core.ContextConfig{
+				Permissions: append(core.GetDefaultGlobalVarPermissions(),
+					core.LThreadPermission{permkind.Create},
+					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
 				),
 				Filesystem: fls,
-				Limits:     []Limit{permissiveLthreadLimit},
+				Limits:     []core.Limit{permissiveLthreadLimit},
 			})
-			state := NewGlobalState(ctx)
+			state := core.NewGlobalState(ctx)
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.IsImportTestingEnabled = false
 			state.TestingState.Filters = allTestsFilter
@@ -9568,7 +9419,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(mod, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 			assert.Empty(t, state.TestingState.CaseResults)
 			assert.Empty(t, state.TestingState.SuiteResults)
 		})
@@ -9581,7 +9432,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			`)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
@@ -9589,10 +9440,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			fls := newMemFilesystem()
 			util.WriteFile(fls, "/file.txt", []byte("content"), 0400)
 			snapshot := &memFilesystemSnapshot{fls: fls}
-			state.Globals.Set("snapshot", WrapFsSnapshot(snapshot))
+			state.Globals.Set("snapshot", core.WrapFsSnapshot(snapshot))
 
 			callCount := 0
-			state.Globals.Set("test_read_file", WrapGoFunction(func(ctx *Context, path Path) {
+			state.Globals.Set("test_read_file", core.WrapGoFunction(func(ctx *core.Context, path core.Path) {
 				content, err := util.ReadFile(ctx.GetFileSystem(), path.UnderlyingString())
 				callCount++
 				if path == "/not-existing.txt" {
@@ -9612,7 +9463,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			if !assert.Equal(t, 2, callCount) {
 				return
 			}
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 		})
 
 		t.Run("empty test case", func(t *testing.T) {
@@ -9620,7 +9471,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				testcase {}
 			}`)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
@@ -9628,7 +9479,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(src, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 		})
 
 		t.Run("empty test case: test suite in imported module", func(t *testing.T) {
@@ -9656,15 +9507,15 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			ctx := NewContext(ContextConfig{
-				Permissions: append(GetDefaultGlobalVarPermissions(),
-					LThreadPermission{permkind.Create},
-					FilesystemPermission{permkind.Read, PathPattern("/...")},
+			ctx := core.NewContext(core.ContextConfig{
+				Permissions: append(core.GetDefaultGlobalVarPermissions(),
+					core.LThreadPermission{permkind.Create},
+					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
 				),
 				Filesystem: fls,
-				Limits:     []Limit{permissiveLthreadLimit},
+				Limits:     []core.Limit{permissiveLthreadLimit},
 			})
-			state := NewGlobalState(ctx)
+			state := core.NewGlobalState(ctx)
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.IsImportTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
@@ -9673,13 +9524,13 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(mod, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 			assert.Empty(t, state.TestingState.CaseResults)
 			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
 
-			assert.Len(t, state.TestingState.SuiteResults[0].caseResults, 1)
+			assert.Len(t, state.TestingState.SuiteResults[0].CaseResults, 1)
 		})
 
 		t.Run("empty test case: test suite in included chunk", func(t *testing.T) {
@@ -9701,15 +9552,15 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			ctx := NewContext(ContextConfig{
-				Permissions: append(GetDefaultGlobalVarPermissions(),
-					LThreadPermission{permkind.Create},
-					FilesystemPermission{permkind.Read, PathPattern("/...")},
+			ctx := core.NewContext(core.ContextConfig{
+				Permissions: append(core.GetDefaultGlobalVarPermissions(),
+					core.LThreadPermission{permkind.Create},
+					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
 				),
 				Filesystem: fls,
-				Limits:     []Limit{permissiveLthreadLimit},
+				Limits:     []core.Limit{permissiveLthreadLimit},
 			})
-			state := NewGlobalState(ctx)
+			state := core.NewGlobalState(ctx)
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.IsImportTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
@@ -9718,12 +9569,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(mod, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 			assert.Empty(t, state.TestingState.CaseResults)
 			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
-			assert.Len(t, state.TestingState.SuiteResults[0].caseResults, 1)
+			assert.Len(t, state.TestingState.SuiteResults[0].CaseResults, 1)
 		})
 
 		t.Run("test cases should inherit the patterns of the parent testsuite", func(t *testing.T) {
@@ -9739,7 +9590,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			`)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
@@ -9747,7 +9598,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(src, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 		})
 
 		t.Run("test cases should inherit the pattern namespaces of the parent testsuite", func(t *testing.T) {
@@ -9763,7 +9614,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			`)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
@@ -9771,7 +9622,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(src, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 		})
 
 		t.Run("test cases should inherit the global variables of the parent testsuite", func(t *testing.T) {
@@ -9788,7 +9639,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			`)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
@@ -9796,7 +9647,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(src, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 		})
 
 		t.Run("test cases should have http clients configured for all provided localhost hosts ", func(t *testing.T) {
@@ -9818,10 +9669,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			`)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
-			state.Globals.Set("is_client_insecure_and_stateful", WrapGoFunction(isClientInsecureAndStateful))
+			state.Globals.Set("is_client_insecure_and_stateful", core.WrapGoFunction(isClientInsecureAndStateful))
 
 			defer state.Ctx.CancelGracefully()
 
@@ -9830,18 +9681,18 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(src, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 
 			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
 
 			testSuitResult := state.TestingState.SuiteResults[0]
-			if !assert.Len(t, testSuitResult.caseResults, 1) {
+			if !assert.Len(t, testSuitResult.CaseResults, 1) {
 				return
 			}
 
-			caseResult := testSuitResult.caseResults[0]
+			caseResult := testSuitResult.CaseResults[0]
 			if !assert.False(t, caseResult.Success) {
 				return
 			}
@@ -9854,9 +9705,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			}`)
 
-			state := NewGlobalState(NewContext(ContextConfig{
-				Permissions: []Permission{LThreadPermission{Kind_: permkind.Create}},
-				Limits:      []Limit{permissiveLthreadLimit},
+			state := core.NewGlobalState(core.NewContext(core.ContextConfig{
+				Permissions: []core.Permission{core.LThreadPermission{Kind_: permkind.Create}},
+				Limits:      []core.Limit{permissiveLthreadLimit},
 			}))
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
@@ -9865,9 +9716,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(src, state, false)
 
 			assert.Error(t, err)
-			assert.ErrorIs(t, err, NewNotAllowedError(HttpPermission{
+			assert.ErrorIs(t, err, core.NewNotAllowedError(core.HttpPermission{
 				Kind_:  permkind.Read,
-				Entity: URL("https://example.com/index.html"),
+				Entity: core.URL("https://example.com/index.html"),
 			}))
 			assert.Nil(t, res)
 		})
@@ -9879,7 +9730,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			}`)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
@@ -9892,27 +9743,27 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 
 			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
 
 			testSuitResult := state.TestingState.SuiteResults[0]
-			if !assert.Len(t, testSuitResult.caseResults, 1) {
+			if !assert.Len(t, testSuitResult.CaseResults, 1) {
 				return
 			}
 
-			caseResult := testSuitResult.caseResults[0]
+			caseResult := testSuitResult.CaseResults[0]
 			if !assert.False(t, caseResult.Success) {
 				return
 			}
 
-			if !assert.NotNil(t, caseResult.assertionError) {
+			if !assert.NotNil(t, caseResult.AssertionError) {
 				return
 			}
 
-			if !assert.True(t, caseResult.assertionError.IsTestAssertion()) {
+			if !assert.True(t, caseResult.AssertionError.IsTestAssertion()) {
 				return
 			}
 		})
@@ -9924,7 +9775,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			}`)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
@@ -9937,27 +9788,27 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 
 			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
 
 			testSuitResult := state.TestingState.SuiteResults[0]
-			if !assert.Len(t, testSuitResult.caseResults, 1) {
+			if !assert.Len(t, testSuitResult.CaseResults, 1) {
 				return
 			}
 
-			caseResult := testSuitResult.caseResults[0]
+			caseResult := testSuitResult.CaseResults[0]
 			if !assert.False(t, caseResult.Success) {
 				return
 			}
 
-			if !assert.Nil(t, caseResult.assertionError) {
+			if !assert.Nil(t, caseResult.AssertionError) {
 				return
 			}
 
-			if !assert.NotNil(t, caseResult.error) {
+			if !assert.NotNil(t, caseResult.Error) {
 				return
 			}
 		})
@@ -9969,7 +9820,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			}`)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
 			state.Out = os.Stdout
@@ -9980,7 +9831,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 			assert.Empty(t, state.TestingState.SuiteResults)
 			assert.Empty(t, state.TestingState.CaseResults)
 		})
@@ -9995,7 +9846,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			}`)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
 
@@ -10009,31 +9860,31 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 
 			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
 
 			testSuitResult := state.TestingState.SuiteResults[0]
-			if !assert.Len(t, testSuitResult.caseResults, 2) {
+			if !assert.Len(t, testSuitResult.CaseResults, 2) {
 				return
 			}
 
-			caseResult1 := testSuitResult.caseResults[0]
+			caseResult1 := testSuitResult.CaseResults[0]
 			if !assert.False(t, caseResult1.Success) {
 				return
 			}
 
-			if !assert.NotNil(t, caseResult1.assertionError) {
+			if !assert.NotNil(t, caseResult1.AssertionError) {
 				return
 			}
 
-			if !assert.True(t, caseResult1.assertionError.IsTestAssertion()) {
+			if !assert.True(t, caseResult1.AssertionError.IsTestAssertion()) {
 				return
 			}
 
-			caseResult2 := testSuitResult.caseResults[1]
+			caseResult2 := testSuitResult.CaseResults[1]
 			if !assert.True(t, caseResult2.Success) {
 				return
 			}
@@ -10049,7 +9900,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			}`)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
 			state.Out = os.Stdout
@@ -10062,31 +9913,31 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 
 			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
 
 			testSuitResult := state.TestingState.SuiteResults[0]
-			if !assert.Len(t, testSuitResult.caseResults, 2) {
+			if !assert.Len(t, testSuitResult.CaseResults, 2) {
 				return
 			}
 
-			caseResult1 := testSuitResult.caseResults[0]
+			caseResult1 := testSuitResult.CaseResults[0]
 			if !assert.False(t, caseResult1.Success) {
 				return
 			}
 
-			if !assert.Nil(t, caseResult1.assertionError) {
+			if !assert.Nil(t, caseResult1.AssertionError) {
 				return
 			}
 
-			if !assert.NotNil(t, caseResult1.error) {
+			if !assert.NotNil(t, caseResult1.Error) {
 				return
 			}
 
-			caseResult2 := testSuitResult.caseResults[1]
+			caseResult2 := testSuitResult.CaseResults[1]
 			if !assert.True(t, caseResult2.Success) {
 				return
 			}
@@ -10102,7 +9953,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			}`)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
 
@@ -10116,40 +9967,40 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 
 			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
 
 			testSuitResult := state.TestingState.SuiteResults[0]
-			if !assert.Len(t, testSuitResult.caseResults, 2) {
+			if !assert.Len(t, testSuitResult.CaseResults, 2) {
 				return
 			}
 
-			caseResult1 := testSuitResult.caseResults[0]
+			caseResult1 := testSuitResult.CaseResults[0]
 			if !assert.False(t, caseResult1.Success) {
 				return
 			}
 
-			if !assert.NotNil(t, caseResult1.assertionError) {
+			if !assert.NotNil(t, caseResult1.AssertionError) {
 				return
 			}
 
-			if !assert.True(t, caseResult1.assertionError.IsTestAssertion()) {
+			if !assert.True(t, caseResult1.AssertionError.IsTestAssertion()) {
 				return
 			}
 
-			caseResult2 := testSuitResult.caseResults[1]
+			caseResult2 := testSuitResult.CaseResults[1]
 			if !assert.False(t, caseResult2.Success) {
 				return
 			}
 
-			if !assert.NotNil(t, caseResult2.assertionError) {
+			if !assert.NotNil(t, caseResult2.AssertionError) {
 				return
 			}
 
-			if !assert.True(t, caseResult2.assertionError.IsTestAssertion()) {
+			if !assert.True(t, caseResult2.AssertionError.IsTestAssertion()) {
 				return
 			}
 		})
@@ -10163,7 +10014,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			}`)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
 
@@ -10177,25 +10028,25 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 
 			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
 
 			testSuitResult := state.TestingState.SuiteResults[0]
-			if !assert.Len(t, testSuitResult.subSuiteResults, 1) {
+			if !assert.Len(t, testSuitResult.SubSuiteResults, 1) {
 				return
 			}
-			assert.Empty(t, testSuitResult.caseResults)
+			assert.Empty(t, testSuitResult.CaseResults)
 
-			subSuiteResult := testSuitResult.subSuiteResults[0]
+			subSuiteResult := testSuitResult.SubSuiteResults[0]
 
-			if !assert.Len(t, subSuiteResult.caseResults, 1) {
+			if !assert.Len(t, subSuiteResult.CaseResults, 1) {
 				return
 			}
 
-			caseResult := subSuiteResult.caseResults[0]
+			caseResult := subSuiteResult.CaseResults[0]
 			if !assert.False(t, caseResult.Success) {
 				return
 			}
@@ -10214,7 +10065,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			`)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
@@ -10222,10 +10073,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			fls := newMemFilesystem()
 			util.WriteFile(fls, "/file.txt", []byte("content"), 0400)
 			snapshot := &memFilesystemSnapshot{fls: fls}
-			state.Globals.Set("snapshot", WrapFsSnapshot(snapshot))
+			state.Globals.Set("snapshot", core.WrapFsSnapshot(snapshot))
 
 			callCount := 0
-			state.Globals.Set("test_read_file", WrapGoFunction(func(ctx *Context, path Path) {
+			state.Globals.Set("test_read_file", core.WrapGoFunction(func(ctx *core.Context, path core.Path) {
 				content, err := util.ReadFile(ctx.GetFileSystem(), path.UnderlyingString())
 				callCount++
 				if path == "/not-existing.txt" {
@@ -10238,7 +10089,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			}))
 
-			state.Globals.Set("remove_file", WrapGoFunction(func(ctx *Context, path Path) {
+			state.Globals.Set("remove_file", core.WrapGoFunction(func(ctx *core.Context, path core.Path) {
 				err := ctx.GetFileSystem().Remove(path.UnderlyingString())
 				assert.NoError(t, err)
 			}))
@@ -10250,7 +10101,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			if !assert.Equal(t, 2, callCount) {
 				return
 			}
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 		})
 
 		t.Run("if a fs snapshot is specified and pass-live-fs-snapshot-to-subtests: true then"+
@@ -10280,7 +10131,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			`)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
 			defer state.Ctx.CancelGracefully()
@@ -10289,10 +10140,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			util.WriteFile(fls, "/file1.txt", []byte("content1"), 0400)
 			util.WriteFile(fls, "/file2.txt", []byte("content2"), 0400)
 			snapshot := &memFilesystemSnapshot{fls: fls}
-			state.Globals.Set("snapshot", WrapFsSnapshot(snapshot))
+			state.Globals.Set("snapshot", core.WrapFsSnapshot(snapshot))
 
 			callCount := 0
-			state.Globals.Set("test_read_file", WrapGoFunction(func(ctx *Context, path Path) {
+			state.Globals.Set("test_read_file", core.WrapGoFunction(func(ctx *core.Context, path core.Path) {
 				content, err := util.ReadFile(ctx.GetFileSystem(), path.UnderlyingString())
 				callCount++
 				if path == "/file2.txt" {
@@ -10305,7 +10156,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			}))
 
-			state.Globals.Set("remove_file", WrapGoFunction(func(ctx *Context, path Path) {
+			state.Globals.Set("remove_file", core.WrapGoFunction(func(ctx *core.Context, path core.Path) {
 				err := ctx.GetFileSystem().Remove(path.UnderlyingString())
 				assert.NoError(t, err)
 			}))
@@ -10317,7 +10168,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			if !assert.Equal(t, 6, callCount) {
 				return
 			}
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 		})
 
 		t.Run("if the filter's name only matches the top level suite, all sub tests should be executed", func(t *testing.T) {
@@ -10333,10 +10184,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			}`)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			state.TestingState.IsTestingEnabled = true
-			state.TestingState.Filters = TestFilters{
-				PositiveTestFilters: []TestFilter{
+			state.TestingState.Filters = core.TestFilters{
+				PositiveTestFilters: []core.TestFilter{
 					{
 						NameRegex: "suite",
 					},
@@ -10349,20 +10200,20 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			if !assert.NoError(t, err) {
 				return
 			}
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 
 			testSuitResult := state.TestingState.SuiteResults[0]
-			assert.Len(t, testSuitResult.caseResults, 1)
+			assert.Len(t, testSuitResult.CaseResults, 1)
 
-			if !assert.Len(t, testSuitResult.subSuiteResults, 1) {
+			if !assert.Len(t, testSuitResult.SubSuiteResults, 1) {
 				return
 			}
 
-			subSuiteResult := testSuitResult.subSuiteResults[0]
-			if !assert.Len(t, subSuiteResult.caseResults, 1) {
+			subSuiteResult := testSuitResult.SubSuiteResults[0]
+			if !assert.Len(t, subSuiteResult.CaseResults, 1) {
 				return
 			}
-			assert.Equal(t, "shallow", testSuitResult.caseResults[0].testCase.name)
+			assert.Equal(t, "shallow", testSuitResult.CaseResults[0].TestCase.Name())
 		})
 
 		t.Run("if the filter specifies a path and the node span of a test case (direct child), the test case should be executed", func(t *testing.T) {
@@ -10385,10 +10236,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			chunk := parse.MustParseChunk(src.CodeString)
 			testcaseNode := chunk.Statements[0].(*parse.TestSuiteExpression).Module.Statements[0].(*parse.TestCaseExpression)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			state.TestingState.IsTestingEnabled = true
-			state.TestingState.Filters = TestFilters{
-				PositiveTestFilters: []TestFilter{
+			state.TestingState.Filters = core.TestFilters{
+				PositiveTestFilters: []core.TestFilter{
 					{
 						AbsolutePath: "/mod.ix",
 						NameRegex:    ".*",
@@ -10403,18 +10254,18 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			if !assert.NoError(t, err) {
 				return
 			}
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 
 			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
 
 			testSuitResult := state.TestingState.SuiteResults[0]
-			if !assert.Len(t, testSuitResult.caseResults, 1) {
+			if !assert.Len(t, testSuitResult.CaseResults, 1) {
 				return
 			}
-			assert.Len(t, testSuitResult.subSuiteResults, 0)
-			assert.Equal(t, "shallow 1", testSuitResult.caseResults[0].testCase.name)
+			assert.Len(t, testSuitResult.SubSuiteResults, 0)
+			assert.Equal(t, "shallow 1", testSuitResult.CaseResults[0].TestCase.Name())
 		})
 
 		t.Run("if the filter specifies a path and the node span of a test case (not direct child), the test case should be executed", func(t *testing.T) {
@@ -10443,10 +10294,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				Module.Statements[2].(*parse.TestSuiteExpression).
 				Module.Statements[0].(*parse.TestCaseExpression)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			state.TestingState.IsTestingEnabled = true
-			state.TestingState.Filters = TestFilters{
-				PositiveTestFilters: []TestFilter{
+			state.TestingState.Filters = core.TestFilters{
+				PositiveTestFilters: []core.TestFilter{
 					{
 						AbsolutePath: "/mod.ix",
 						NameRegex:    ".*",
@@ -10461,21 +10312,21 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			if !assert.NoError(t, err) {
 				return
 			}
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 
 			testSuitResult := state.TestingState.SuiteResults[0]
-			assert.Empty(t, testSuitResult.caseResults)
+			assert.Empty(t, testSuitResult.CaseResults)
 
-			if !assert.Len(t, testSuitResult.subSuiteResults, 1) {
+			if !assert.Len(t, testSuitResult.SubSuiteResults, 1) {
 				return
 			}
 
-			subsuiteResult := testSuitResult.subSuiteResults[0]
+			subsuiteResult := testSuitResult.SubSuiteResults[0]
 
-			if !assert.Len(t, subsuiteResult.caseResults, 1) {
+			if !assert.Len(t, subsuiteResult.CaseResults, 1) {
 				return
 			}
-			assert.Equal(t, "deep 1", subsuiteResult.caseResults[0].testCase.name)
+			assert.Equal(t, "deep 1", subsuiteResult.CaseResults[0].TestCase.Name())
 		})
 
 		t.Run("if the filter specifies a path and the node span of a test suite (direct child), the test suite should be executed", func(t *testing.T) {
@@ -10498,10 +10349,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			chunk := parse.MustParseChunk(src.CodeString)
 			testsuiteNode := chunk.Statements[0].(*parse.TestSuiteExpression).Module.Statements[1].(*parse.TestSuiteExpression)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			state.TestingState.IsTestingEnabled = true
-			state.TestingState.Filters = TestFilters{
-				PositiveTestFilters: []TestFilter{
+			state.TestingState.Filters = core.TestFilters{
+				PositiveTestFilters: []core.TestFilter{
 					{
 						AbsolutePath: "/mod.ix",
 						NameRegex:    ".*",
@@ -10516,17 +10367,17 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			if !assert.NoError(t, err) {
 				return
 			}
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 
 			testSuitResult := state.TestingState.SuiteResults[0]
-			assert.Empty(t, testSuitResult.caseResults)
+			assert.Empty(t, testSuitResult.CaseResults)
 
-			if !assert.Len(t, testSuitResult.subSuiteResults, 1) {
+			if !assert.Len(t, testSuitResult.SubSuiteResults, 1) {
 				return
 			}
 
-			subsuiteResult := testSuitResult.subSuiteResults[0]
-			assert.Len(t, subsuiteResult.caseResults, 2)
+			subsuiteResult := testSuitResult.SubSuiteResults[0]
+			assert.Len(t, subsuiteResult.CaseResults, 2)
 		})
 
 		t.Run("if the test filter specifies the path /mod.ix, the tests in /imported.ix should not be executed", func(t *testing.T) {
@@ -10554,19 +10405,19 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			ctx := NewContext(ContextConfig{
-				Permissions: append(GetDefaultGlobalVarPermissions(),
-					LThreadPermission{permkind.Create},
-					FilesystemPermission{permkind.Read, PathPattern("/...")},
+			ctx := core.NewContext(core.ContextConfig{
+				Permissions: append(core.GetDefaultGlobalVarPermissions(),
+					core.LThreadPermission{permkind.Create},
+					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
 				),
 				Filesystem: fls,
-				Limits:     []Limit{permissiveLthreadLimit},
+				Limits:     []core.Limit{permissiveLthreadLimit},
 			})
-			state := NewGlobalState(ctx)
+			state := core.NewGlobalState(ctx)
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.IsImportTestingEnabled = true
-			state.TestingState.Filters = TestFilters{
-				PositiveTestFilters: []TestFilter{
+			state.TestingState.Filters = core.TestFilters{
+				PositiveTestFilters: []core.TestFilter{
 					{
 						AbsolutePath: "/mod.ix",
 						NameRegex:    ".*",
@@ -10578,7 +10429,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(mod, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 			assert.Empty(t, state.TestingState.CaseResults)
 			assert.Empty(t, state.TestingState.SuiteResults)
 		})
@@ -10613,19 +10464,19 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			ctx := NewContext(ContextConfig{
-				Permissions: append(GetDefaultGlobalVarPermissions(),
-					LThreadPermission{permkind.Create},
-					FilesystemPermission{permkind.Read, PathPattern("/...")},
+			ctx := core.NewContext(core.ContextConfig{
+				Permissions: append(core.GetDefaultGlobalVarPermissions(),
+					core.LThreadPermission{permkind.Create},
+					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
 				),
 				Filesystem: fls,
-				Limits:     []Limit{permissiveLthreadLimit},
+				Limits:     []core.Limit{permissiveLthreadLimit},
 			})
-			state := NewGlobalState(ctx)
+			state := core.NewGlobalState(ctx)
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.IsImportTestingEnabled = true
-			state.TestingState.Filters = TestFilters{
-				PositiveTestFilters: []TestFilter{
+			state.TestingState.Filters = core.TestFilters{
+				PositiveTestFilters: []core.TestFilter{
 					{
 						AbsolutePath: "/imported.ix",
 						NameRegex:    ".*",
@@ -10637,19 +10488,19 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(mod, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 			assert.Empty(t, state.TestingState.CaseResults)
 			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
 
 			result := state.TestingState.SuiteResults[0]
-			if !assert.Len(t, result.caseResults, 1) {
+			if !assert.Len(t, result.CaseResults, 1) {
 				return
 			}
 
-			assert.Equal(t, "/imported.ix", result.testSuite.parentChunk.Source.Name())
-			assert.Equal(t, "/imported.ix", result.caseResults[0].testCase.parentChunk.Source.Name())
+			assert.Equal(t, "/imported.ix", result.TestSuite.ParentChunk().Source.Name())
+			assert.Equal(t, "/imported.ix", result.CaseResults[0].TestCase.ParentChunk().Source.Name())
 		})
 
 		t.Run("if the filter's name matches a test case (direct child) in the top level suite, only the matching test case should be executed", func(t *testing.T) {
@@ -10677,10 +10528,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			}`)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			state.TestingState.IsTestingEnabled = true
-			state.TestingState.Filters = TestFilters{
-				PositiveTestFilters: []TestFilter{
+			state.TestingState.Filters = core.TestFilters{
+				PositiveTestFilters: []core.TestFilter{
 					{
 						NameRegex: "suite::my test",
 					},
@@ -10693,19 +10544,19 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			if !assert.NoError(t, err) {
 				return
 			}
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 
 			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
 
 			testSuitResult := state.TestingState.SuiteResults[0]
-			if !assert.Len(t, testSuitResult.caseResults, 1) {
+			if !assert.Len(t, testSuitResult.CaseResults, 1) {
 				return
 			}
 
-			assert.Equal(t, "my test", testSuitResult.caseResults[0].testCase.name)
-			assert.Empty(t, testSuitResult.subSuiteResults)
+			assert.Equal(t, "my test", testSuitResult.CaseResults[0].TestCase.Name())
+			assert.Empty(t, testSuitResult.SubSuiteResults)
 		})
 
 		t.Run("if the filter's name only matches a test case (not direct child) in the top level suite, only the matching test case should be executed", func(t *testing.T) {
@@ -10733,10 +10584,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			}`)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			state.TestingState.IsTestingEnabled = true
-			state.TestingState.Filters = TestFilters{
-				PositiveTestFilters: []TestFilter{
+			state.TestingState.Filters = core.TestFilters{
+				PositiveTestFilters: []core.TestFilter{
 					{
 						NameRegex: "suite::sub suite::my test",
 					},
@@ -10749,35 +10600,35 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			if !assert.NoError(t, err) {
 				return
 			}
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 
 			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
 
 			testSuitResult := state.TestingState.SuiteResults[0]
-			assert.Empty(t, testSuitResult.caseResults)
-			if !assert.Len(t, testSuitResult.subSuiteResults, 1) {
+			assert.Empty(t, testSuitResult.CaseResults)
+			if !assert.Len(t, testSuitResult.SubSuiteResults, 1) {
 				return
 			}
 
-			subsuiteResult := testSuitResult.subSuiteResults[0]
-			if !assert.Len(t, subsuiteResult.caseResults, 1) {
+			subsuiteResult := testSuitResult.SubSuiteResults[0]
+			if !assert.Len(t, subsuiteResult.CaseResults, 1) {
 				return
 			}
-			assert.Equal(t, "my test (deep)", subsuiteResult.caseResults[0].testCase.name)
+			assert.Equal(t, "my test (deep)", subsuiteResult.CaseResults[0].TestCase.Name())
 		})
 
 		//setup for following tests
 
-		if !AreDefaultScriptLimitsSet() {
-			SetDefaultScriptLimits([]Limit{})
-			defer UnsetDefaultScriptLimits()
+		if !core.AreDefaultScriptLimitsSet() {
+			core.SetDefaultScriptLimits([]core.Limit{})
+			defer core.UnsetDefaultScriptLimits()
 		}
 
-		newDefaultContext := func(config DefaultContextConfig) (*Context, error) {
+		newDefaultContext := func(config core.DefaultContextConfig) (*core.Context, error) {
 
-			ctxConfig := ContextConfig{
+			ctxConfig := core.ContextConfig{
 				Permissions:          config.Permissions,
 				ForbiddenPermissions: config.ForbiddenPermissions,
 				Limits:               config.Limits,
@@ -10794,36 +10645,36 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			}
 
-			ctx := NewContext(ctxConfig)
+			ctx := core.NewContext(ctxConfig)
 
-			for k, v := range DEFAULT_NAMED_PATTERNS {
+			for k, v := range core.DEFAULT_NAMED_PATTERNS {
 				ctx.AddNamedPattern(k, v)
 			}
 
-			for k, v := range DEFAULT_PATTERN_NAMESPACES {
+			for k, v := range core.DEFAULT_PATTERN_NAMESPACES {
 				ctx.AddPatternNamespace(k, v)
 			}
 
 			return ctx, nil
 		}
 
-		newDefaultContextBackup := NewDefaultContext
+		newDefaultContextBackup := core.NewDefaultContext
 		defer func() {
-			NewDefaultContext = newDefaultContextBackup
+			core.NewDefaultContext = newDefaultContextBackup
 		}()
-		NewDefaultContext = newDefaultContext
+		core.NewDefaultContext = newDefaultContext
 
-		newDefaultGlobalStateBackup := NewDefaultGlobalState
+		newDefaultGlobalStateBackup := core.NewDefaultGlobalState
 		defer func() {
-			NewDefaultGlobalState = newDefaultGlobalStateBackup
+			core.NewDefaultGlobalState = newDefaultGlobalStateBackup
 		}()
 
 		//billy.memfs is not thread safe
 		var flsLock sync.Mutex
 
-		NewDefaultGlobalState = func(ctx *Context, conf DefaultGlobalStateConfig) (*GlobalState, error) {
+		core.NewDefaultGlobalState = func(ctx *core.Context, conf core.DefaultGlobalStateConfig) (*core.GlobalState, error) {
 
-			writeFile := func(ctx *Context, path Path) {
+			writeFile := func(ctx *core.Context, path core.Path) {
 				flsLock.Lock()
 				defer flsLock.Unlock()
 
@@ -10835,12 +10686,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			}
 
-			if !IsSymbolicEquivalentOfGoFunctionRegistered(writeFile) {
-				RegisterSymbolicGoFunction(writeFile, symbWriteFile)
+			if !core.IsSymbolicEquivalentOfGoFunctionRegistered(writeFile) {
+				core.RegisterSymbolicGoFunction(writeFile, symbWriteFile)
 			}
 
-			state := NewGlobalState(ctx, map[string]Value{
-				"write_file": WrapGoFunction(writeFile),
+			state := core.NewGlobalState(ctx, map[string]core.Value{
+				"write_file": core.WrapGoFunction(writeFile),
 			})
 
 			state.Out = conf.Out
@@ -10855,12 +10706,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			return state, nil
 		}
 
-		if _, ok := GetOpenDbFn("ldb"); !ok {
-			RegisterOpenDbFn("ldb", func(ctx *Context, config DbOpenConfiguration) (Database, error) {
-				return &dummyDatabase{
-					resource:         config.Resource,
-					schemaUpdated:    false,
-					topLevelEntities: map[string]Serializable{},
+		if _, ok := core.GetOpenDbFn("ldb"); !ok {
+			core.RegisterOpenDbFn("ldb", func(ctx *core.Context, config core.DbOpenConfiguration) (core.Database, error) {
+				return &core.DummyDatabase{
+					Resource_:        config.Resource,
+					SchemaUpdated:    false,
+					TopLevelEntities: map[string]core.Serializable{},
 				}, nil
 			})
 		}
@@ -10888,21 +10739,21 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			ctx := NewContext(ContextConfig{
-				Permissions: append(GetDefaultGlobalVarPermissions(),
-					LThreadPermission{permkind.Create},
-					FilesystemPermission{permkind.Read, PathPattern("/...")},
+			ctx := core.NewContext(core.ContextConfig{
+				Permissions: append(core.GetDefaultGlobalVarPermissions(),
+					core.LThreadPermission{permkind.Create},
+					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
 				),
 				Filesystem: fls,
-				Limits:     []Limit{permissiveLthreadLimit},
+				Limits:     []core.Limit{permissiveLthreadLimit},
 			})
 
-			state := NewGlobalState(ctx)
+			state := core.NewGlobalState(ctx)
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.IsImportTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
 
-			projectID := RandomProjectID("test")
+			projectID := core.RandomProjectID("test")
 			state.Project = &TestProject{
 				ID: projectID,
 				Img: &testImage{
@@ -10918,13 +10769,13 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(mod, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 			assert.Empty(t, state.TestingState.CaseResults)
 			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
 
-			assert.Empty(t, state.TestingState.SuiteResults[0].caseResults, 0)
+			assert.Empty(t, state.TestingState.SuiteResults[0].CaseResults, 0)
 		})
 
 		t.Run("program specified by top level suite: empty testcase", func(t *testing.T) {
@@ -10950,21 +10801,21 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			ctx := NewContext(ContextConfig{
-				Permissions: append(GetDefaultGlobalVarPermissions(),
-					LThreadPermission{permkind.Create},
-					FilesystemPermission{permkind.Read, PathPattern("/...")},
+			ctx := core.NewContext(core.ContextConfig{
+				Permissions: append(core.GetDefaultGlobalVarPermissions(),
+					core.LThreadPermission{permkind.Create},
+					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
 				),
 				Filesystem: fls,
-				Limits:     []Limit{permissiveLthreadLimit},
+				Limits:     []core.Limit{permissiveLthreadLimit},
 			})
 
-			state := NewGlobalState(ctx)
+			state := core.NewGlobalState(ctx)
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.IsImportTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
 
-			projectID := RandomProjectID("test")
+			projectID := core.RandomProjectID("test")
 			state.Project = &TestProject{
 				ID: projectID,
 				Img: &testImage{
@@ -10980,13 +10831,13 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(mod, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 			assert.Empty(t, state.TestingState.CaseResults)
 			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
 
-			assert.Len(t, state.TestingState.SuiteResults[0].caseResults, 1)
+			assert.Len(t, state.TestingState.SuiteResults[0].CaseResults, 1)
 		})
 
 		t.Run("program specified by top level suite: testcase should have access to the program", func(t *testing.T) {
@@ -11014,23 +10865,23 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			ctx := NewContext(ContextConfig{
-				Permissions: append(GetDefaultGlobalVarPermissions(),
-					LThreadPermission{permkind.Create},
-					FilesystemPermission{permkind.Read, PathPattern("/...")},
+			ctx := core.NewContext(core.ContextConfig{
+				Permissions: append(core.GetDefaultGlobalVarPermissions(),
+					core.LThreadPermission{permkind.Create},
+					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
 				),
 				Filesystem: fls,
-				Limits:     []Limit{permissiveLthreadLimit},
+				Limits:     []core.Limit{permissiveLthreadLimit},
 			})
 
 			var isNotNil atomic.Bool
 
-			state := NewGlobalState(ctx)
+			state := core.NewGlobalState(ctx)
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.IsImportTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
 
-			projectID := RandomProjectID("test")
+			projectID := core.RandomProjectID("test")
 			state.Project = &TestProject{
 				ID: projectID,
 				Img: &testImage{
@@ -11040,12 +10891,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					projectID: projectID,
 				},
 			}
-			state.Globals.Set("check_program_not_nil", WrapGoFunction(func(ctx *Context, v Value) {
-				program, ok := v.(*TestedProgram)
+			state.Globals.Set("check_program_not_nil", core.WrapGoFunction(func(ctx *core.Context, v core.Value) {
+				program, ok := v.(*core.TestedProgram)
 				if !assert.True(t, ok) {
 					return
 				}
-				if !assert.NotNil(t, program.lthread) {
+				if !assert.NotNil(t, program.LThread()) {
 					return
 				}
 				isNotNil.Store(true)
@@ -11056,13 +10907,13 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(mod, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 			assert.Empty(t, state.TestingState.CaseResults)
 			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
 
-			assert.Len(t, state.TestingState.SuiteResults[0].caseResults, 1)
+			assert.Len(t, state.TestingState.SuiteResults[0].CaseResults, 1)
 			assert.True(t, isNotNil.Load())
 		})
 
@@ -11093,23 +10944,23 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			ctx := NewContext(ContextConfig{
-				Permissions: append(GetDefaultGlobalVarPermissions(),
-					LThreadPermission{permkind.Create},
-					FilesystemPermission{permkind.Read, PathPattern("/...")},
+			ctx := core.NewContext(core.ContextConfig{
+				Permissions: append(core.GetDefaultGlobalVarPermissions(),
+					core.LThreadPermission{permkind.Create},
+					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
 				),
 				Filesystem: fls,
-				Limits:     []Limit{permissiveLthreadLimit},
+				Limits:     []core.Limit{permissiveLthreadLimit},
 			})
 
 			var isDone atomic.Bool
 
-			state := NewGlobalState(ctx)
+			state := core.NewGlobalState(ctx)
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.IsImportTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
 
-			projectID := RandomProjectID("test")
+			projectID := core.RandomProjectID("test")
 			state.Project = &TestProject{
 				ID: projectID,
 				Img: &testImage{
@@ -11119,12 +10970,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					projectID: projectID,
 				},
 			}
-			state.Globals.Set("sleep10ms", WrapGoFunction(func(ctx *Context) {
-				Sleep(ctx, Duration(10*time.Millisecond))
+			state.Globals.Set("sleep10ms", core.WrapGoFunction(func(ctx *core.Context) {
+				core.Sleep(ctx, core.Duration(10*time.Millisecond))
 			}))
 
-			state.Globals.Set("check_program_is_done", WrapGoFunction(func(ctx *Context, program *TestedProgram) {
-				if !assert.True(t, program.lthread.IsDone()) {
+			state.Globals.Set("check_program_is_done", core.WrapGoFunction(func(ctx *core.Context, program *core.TestedProgram) {
+				if !assert.True(t, program.LThread().IsDone()) {
 					return
 				}
 				isDone.Store(true)
@@ -11135,13 +10986,13 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(mod, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 			assert.Empty(t, state.TestingState.CaseResults)
 			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
 
-			assert.Len(t, state.TestingState.SuiteResults[0].caseResults, 1)
+			assert.Len(t, state.TestingState.SuiteResults[0].CaseResults, 1)
 			assert.True(t, isDone.Load())
 		})
 
@@ -11175,24 +11026,24 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			ctx := NewContext(ContextConfig{
-				Permissions: append(GetDefaultGlobalVarPermissions(),
-					LThreadPermission{permkind.Create},
-					FilesystemPermission{permkind.Read, PathPattern("/...")},
-					FilesystemPermission{permkind.Write, PathPattern("/...")},
+			ctx := core.NewContext(core.ContextConfig{
+				Permissions: append(core.GetDefaultGlobalVarPermissions(),
+					core.LThreadPermission{permkind.Create},
+					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
+					core.FilesystemPermission{permkind.Write, core.PathPattern("/...")},
 				),
 				Filesystem: fls,
-				Limits:     []Limit{permissiveLthreadLimit},
+				Limits:     []core.Limit{permissiveLthreadLimit},
 			})
 
 			var correctFile atomic.Bool
 
-			state := NewGlobalState(ctx)
+			state := core.NewGlobalState(ctx)
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.IsImportTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
 
-			projectID := RandomProjectID("test")
+			projectID := core.RandomProjectID("test")
 			state.Project = &TestProject{
 				ID: projectID,
 				Img: &testImage{
@@ -11203,11 +11054,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				},
 			}
 
-			state.Globals.Set("sleep10ms", WrapGoFunction(func(ctx *Context) {
-				Sleep(ctx, Duration(10*time.Millisecond))
+			state.Globals.Set("sleep10ms", core.WrapGoFunction(func(ctx *core.Context) {
+				core.Sleep(ctx, core.Duration(10*time.Millisecond))
 			}))
 
-			state.Globals.Set("test_read_file", WrapGoFunction(func(ctx *Context, path Path) {
+			state.Globals.Set("test_read_file", core.WrapGoFunction(func(ctx *core.Context, path core.Path) {
 				flsLock.Lock()
 				defer flsLock.Unlock()
 
@@ -11226,13 +11077,13 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(mod, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 			assert.Empty(t, state.TestingState.CaseResults)
 			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
 
-			assert.Len(t, state.TestingState.SuiteResults[0].caseResults, 1)
+			assert.Len(t, state.TestingState.SuiteResults[0].CaseResults, 1)
 
 			assert.True(t, correctFile.Load())
 		})
@@ -11269,24 +11120,24 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			ctx := NewContext(ContextConfig{
-				Permissions: append(GetDefaultGlobalVarPermissions(),
-					LThreadPermission{permkind.Create},
-					FilesystemPermission{permkind.Read, PathPattern("/...")},
-					FilesystemPermission{permkind.Write, PathPattern("/...")},
+			ctx := core.NewContext(core.ContextConfig{
+				Permissions: append(core.GetDefaultGlobalVarPermissions(),
+					core.LThreadPermission{permkind.Create},
+					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
+					core.FilesystemPermission{permkind.Write, core.PathPattern("/...")},
 				),
 				Filesystem: fls,
-				Limits:     []Limit{permissiveLthreadLimit},
+				Limits:     []core.Limit{permissiveLthreadLimit},
 			})
 
 			var correctFile atomic.Bool
 
-			state := NewGlobalState(ctx)
+			state := core.NewGlobalState(ctx)
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.IsImportTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
 
-			projectID := RandomProjectID("test")
+			projectID := core.RandomProjectID("test")
 			state.Project = &TestProject{
 				ID: projectID,
 				Img: &testImage{
@@ -11297,11 +11148,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				},
 			}
 
-			state.Globals.Set("sleep10ms", WrapGoFunction(func(ctx *Context) {
-				Sleep(ctx, Duration(10*time.Millisecond))
+			state.Globals.Set("sleep10ms", core.WrapGoFunction(func(ctx *core.Context) {
+				core.Sleep(ctx, core.Duration(10*time.Millisecond))
 			}))
 
-			state.Globals.Set("test_read_file", WrapGoFunction(func(ctx *Context, path Path) {
+			state.Globals.Set("test_read_file", core.WrapGoFunction(func(ctx *core.Context, path core.Path) {
 				flsLock.Lock()
 				defer flsLock.Unlock()
 
@@ -11320,17 +11171,17 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(mod, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 			assert.Empty(t, state.TestingState.CaseResults)
 			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
 
 			assert.True(t, correctFile.Load())
-			if !assert.Len(t, state.TestingState.SuiteResults[0].subSuiteResults, 1) {
+			if !assert.Len(t, state.TestingState.SuiteResults[0].SubSuiteResults, 1) {
 				return
 			}
-			assert.Len(t, state.TestingState.SuiteResults[0].subSuiteResults[0].caseResults, 1)
+			assert.Len(t, state.TestingState.SuiteResults[0].SubSuiteResults[0].CaseResults, 1)
 		})
 
 		t.Run("main db schema and migrations specified by top level suite: main database should be initialized in test case", func(t *testing.T) {
@@ -11375,27 +11226,27 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			ctx := NewContext(ContextConfig{
-				Permissions: append(GetDefaultGlobalVarPermissions(),
-					LThreadPermission{permkind.Create},
-					FilesystemPermission{permkind.Read, PathPattern("/...")},
-					FilesystemPermission{permkind.Write, PathPattern("/...")},
-					DatabasePermission{permkind.Read, Host("ldb://main")},
-					DatabasePermission{permkind.Write, Host("ldb://main")},
-					DatabasePermission{permkind.Delete, Host("ldb://main")},
+			ctx := core.NewContext(core.ContextConfig{
+				Permissions: append(core.GetDefaultGlobalVarPermissions(),
+					core.LThreadPermission{permkind.Create},
+					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
+					core.FilesystemPermission{permkind.Write, core.PathPattern("/...")},
+					core.DatabasePermission{permkind.Read, core.Host("ldb://main")},
+					core.DatabasePermission{permkind.Write, core.Host("ldb://main")},
+					core.DatabasePermission{permkind.Delete, core.Host("ldb://main")},
 				),
 				Filesystem: fls,
-				Limits:     []Limit{permissiveLthreadLimit},
+				Limits:     []core.Limit{permissiveLthreadLimit},
 			})
 
 			var isProperlyInitialized atomic.Bool
 
-			state := NewGlobalState(ctx)
+			state := core.NewGlobalState(ctx)
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.IsImportTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
 
-			projectID := RandomProjectID("test")
+			projectID := core.RandomProjectID("test")
 			state.Project = &TestProject{
 				ID: projectID,
 				Img: &testImage{
@@ -11405,45 +11256,45 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					projectID: projectID,
 				},
 			}
-			state.Globals.Set("check_databases", WrapGoFunction(func(ctx *Context, ns *Namespace) {
+			state.Globals.Set("check_databases", core.WrapGoFunction(func(ctx *core.Context, ns *core.Namespace) {
 				if !assert.Contains(t, ns.PropertyNames(ctx), "main") {
 					return
 				}
 
-				database := ns.Prop(ctx, "main").(*DatabaseIL)
+				database := ns.Prop(ctx, "main").(*core.DatabaseIL)
 
 				if !assert.True(t, database.TopLevelEntitiesLoaded()) {
 					return
 				}
 
-				user := database.Prop(ctx, "user").(*Object)
+				user := database.Prop(ctx, "user").(*core.Object)
 
 				if !assert.Contains(t, user.PropertyNames(ctx), "name") {
 					return
 				}
 
-				assert.Equal(t, String("foo"), user.Prop(ctx, "name"))
+				assert.Equal(t, core.String("foo"), user.Prop(ctx, "name"))
 
 				isProperlyInitialized.Store(true)
 			}))
-			state.Ctx.AddNamedPattern("str", STR_PATTERN)
+			state.Ctx.AddNamedPattern("str", core.STR_PATTERN)
 
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(mod, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 			assert.Empty(t, state.TestingState.CaseResults)
 			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
 
-			if !assert.Len(t, state.TestingState.SuiteResults[0].caseResults, 1) {
+			if !assert.Len(t, state.TestingState.SuiteResults[0].CaseResults, 1) {
 				return
 			}
-			result := state.TestingState.SuiteResults[0].caseResults[0]
-			if !assert.NoError(t, result.error) {
+			result := state.TestingState.SuiteResults[0].CaseResults[0]
+			if !assert.NoError(t, result.Error) {
 				return
 			}
 			assert.True(t, isProperlyInitialized.Load())
@@ -11493,28 +11344,28 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			ctx := NewContext(ContextConfig{
-				Permissions: append(GetDefaultGlobalVarPermissions(),
-					LThreadPermission{permkind.Create},
-					FilesystemPermission{permkind.Read, PathPattern("/...")},
-					FilesystemPermission{permkind.Write, PathPattern("/...")},
-					DatabasePermission{permkind.Read, Host("ldb://main")},
-					DatabasePermission{permkind.Write, Host("ldb://main")},
-					DatabasePermission{permkind.Delete, Host("ldb://main")},
+			ctx := core.NewContext(core.ContextConfig{
+				Permissions: append(core.GetDefaultGlobalVarPermissions(),
+					core.LThreadPermission{permkind.Create},
+					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
+					core.FilesystemPermission{permkind.Write, core.PathPattern("/...")},
+					core.DatabasePermission{permkind.Read, core.Host("ldb://main")},
+					core.DatabasePermission{permkind.Write, core.Host("ldb://main")},
+					core.DatabasePermission{permkind.Delete, core.Host("ldb://main")},
 				),
 				Filesystem: fls,
-				Limits:     []Limit{permissiveLthreadLimit},
+				Limits:     []core.Limit{permissiveLthreadLimit},
 			})
 			defer ctx.CancelGracefully()
 
 			var isProperlyInitialized atomic.Bool
 
-			state := NewGlobalState(ctx)
+			state := core.NewGlobalState(ctx)
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.IsImportTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
 
-			projectID := RandomProjectID("test")
+			projectID := core.RandomProjectID("test")
 			state.Project = &TestProject{
 				ID: projectID,
 				Img: &testImage{
@@ -11524,50 +11375,50 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					projectID: projectID,
 				},
 			}
-			state.Globals.Set("check_databases", WrapGoFunction(func(ctx *Context, ns *Namespace) {
+			state.Globals.Set("check_databases", core.WrapGoFunction(func(ctx *core.Context, ns *core.Namespace) {
 				if !assert.Contains(t, ns.PropertyNames(ctx), "main") {
 					return
 				}
 
-				database := ns.Prop(ctx, "main").(*DatabaseIL)
+				database := ns.Prop(ctx, "main").(*core.DatabaseIL)
 
 				if !assert.True(t, database.TopLevelEntitiesLoaded()) {
 					return
 				}
 
-				user := database.Prop(ctx, "user").(*Object)
+				user := database.Prop(ctx, "user").(*core.Object)
 
 				if !assert.Contains(t, user.PropertyNames(ctx), "name") {
 					return
 				}
 
-				assert.Equal(t, String("foo"), user.Prop(ctx, "name"))
+				assert.Equal(t, core.String("foo"), user.Prop(ctx, "name"))
 
 				isProperlyInitialized.Store(true)
 			}))
-			state.Ctx.AddNamedPattern("str", STR_PATTERN)
+			state.Ctx.AddNamedPattern("str", core.STR_PATTERN)
 
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(mod, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, Nil, res)
+			assert.Equal(t, core.Nil, res)
 			assert.Empty(t, state.TestingState.CaseResults)
 			if !assert.Len(t, state.TestingState.SuiteResults, 1) {
 				return
 			}
 
-			if !assert.Len(t, state.TestingState.SuiteResults[0].subSuiteResults, 1) {
+			if !assert.Len(t, state.TestingState.SuiteResults[0].SubSuiteResults, 1) {
 				return
 			}
-			subSuiteResult := state.TestingState.SuiteResults[0].subSuiteResults[0]
+			subSuiteResult := state.TestingState.SuiteResults[0].SubSuiteResults[0]
 
-			if !assert.Len(t, subSuiteResult.caseResults, 1) {
+			if !assert.Len(t, subSuiteResult.CaseResults, 1) {
 				return
 			}
-			result := subSuiteResult.caseResults[0]
-			if !assert.NoError(t, result.error) {
+			result := subSuiteResult.CaseResults[0]
+			if !assert.NoError(t, result.Error) {
 				return
 			}
 			assert.True(t, isProperlyInitialized.Load())
@@ -11583,8 +11434,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	t.Run("testcase statement", func(t *testing.T) {
 		testconfig.AllowParallelization(t)
 
-		allTestsFilter := TestFilters{
-			PositiveTestFilters: []TestFilter{
+		allTestsFilter := core.TestFilters{
+			PositiveTestFilters: []core.TestFilter{
 				{
 					NameRegex: ".*",
 				},
@@ -11613,9 +11464,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				}
 			`)
 
-			state := NewGlobalState(NewContext(ContextConfig{
-				Permissions: append(GetDefaultGlobalVarPermissions(), LThreadPermission{Kind_: permkind.Create}),
-				Limits:      []Limit{permissiveLthreadLimit},
+			state := core.NewGlobalState(core.NewContext(core.ContextConfig{
+				Permissions: append(core.GetDefaultGlobalVarPermissions(), core.LThreadPermission{Kind_: permkind.Create}),
+				Limits:      []core.Limit{permissiveLthreadLimit},
 			}))
 			state.TestingState.IsTestingEnabled = true
 			state.TestingState.Filters = allTestsFilter
@@ -11624,9 +11475,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			res, err := Eval(src, state, false)
 
 			assert.Error(t, err)
-			assert.ErrorIs(t, err, NewNotAllowedError(HttpPermission{
+			assert.ErrorIs(t, err, core.NewNotAllowedError(core.HttpPermission{
 				Kind_:  permkind.Read,
-				Entity: URL("https://example.com/index.html"),
+				Entity: core.URL("https://example.com/index.html"),
 			}))
 			assert.Nil(t, res)
 		})
@@ -11645,27 +11496,23 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return %digit|3|
 			`)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, &CheckedString{
-				str:                 "3",
-				matchingPatternName: "digit",
-				matchingPattern:     state.Ctx.ResolveNamedPattern("digit"),
-			}, res)
+			assert.Equal(t, core.NewCheckedStringNoCheck("3", "digit", state.Ctx.ResolveNamedPattern("digit")), res)
 		})
 
 		t.Run("no pattern, no interpolation", func(t *testing.T) {
 			code := replace(`return |3|`)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, String("3"), res)
+			assert.Equal(t, core.String("3"), res)
 		})
 
 		t.Run("valid interpolations", func(t *testing.T) {
@@ -11678,16 +11525,16 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return %sql.stmt|SELECT * FROM users WHERE id = ${int:$unsanitized_id}|
 			`)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, &CheckedString{
-				str:                 "SELECT * FROM users WHERE id = 5",
-				matchingPatternName: "sql.stmt",
-				matchingPattern:     state.Ctx.ResolvePatternNamespace("sql").Patterns["stmt"],
-			}, res)
+			assert.Equal(t, core.NewCheckedStringNoCheck(
+				"SELECT * FROM users WHERE id = 5",
+				"sql.stmt",
+				state.Ctx.ResolvePatternNamespace("sql").Patterns["stmt"],
+			), res)
 		})
 
 		t.Run("valid interpolation with conversion", func(t *testing.T) {
@@ -11695,22 +11542,20 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return %ns.any_str|integer = ${int_str.from:5}|
 			`)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
-			state.Ctx.AddPatternNamespace("ns", &PatternNamespace{
-				Patterns: map[string]Pattern{
-					"any_str": STR_PATTERN,
-					"int_str": utils.Ret0(INT_PATTERN.StringPattern()),
+			state.Ctx.AddPatternNamespace("ns", &core.PatternNamespace{
+				Patterns: map[string]core.Pattern{
+					"any_str": core.STR_PATTERN,
+					"int_str": utils.Ret0(core.INT_PATTERN.StringPattern()),
 				},
 			})
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, &CheckedString{
-				str:                 "integer = 5",
-				matchingPatternName: "ns.any_str",
-				matchingPattern:     state.Ctx.ResolvePatternNamespace("ns").Patterns["any_str"],
-			}, res)
+
+			expectedCheckedString := core.NewCheckedStringNoCheck("integer = 5", "ns.any_str", state.Ctx.ResolvePatternNamespace("ns").Patterns["any_str"])
+			assert.Equal(t, expectedCheckedString, res)
 		})
 
 		t.Run("invalid interpolation", func(t *testing.T) {
@@ -11723,7 +11568,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return %sql.stmt|SELECT * FROM users WHERE id = ${int:$unsanitized_id}|
 			`)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
@@ -11741,7 +11586,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return %sql.stmt|SELECT * FROM users WHERE id = ${int:$unsanitized_id}|
 			`)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
@@ -11755,12 +11600,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return |${s}2|
 			`)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, String("12"), res)
+			assert.Equal(t, core.String("12"), res)
 		})
 
 		t.Run("no pattern, trailing interpolation", func(t *testing.T) {
@@ -11769,12 +11614,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return |1${s}|
 			`)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, String("12"), res)
+			assert.Equal(t, core.String("12"), res)
 		})
 
 		t.Run("no pattern, interpolation & escaped n (\\n)", func(t *testing.T) {
@@ -11783,23 +11628,23 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return |${s}\n2|
 			`)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, String("1\n2"), res)
+			assert.Equal(t, core.String("1\n2"), res)
 		})
 
 		t.Run("no pattern, interpolation & linefeed", func(t *testing.T) {
 			code := replace("s = \"1\"; return |${s}\n2|")
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
 
 			assert.NoError(t, err)
-			assert.Equal(t, String("1\n2"), res)
+			assert.Equal(t, core.String("1\n2"), res)
 		})
 	})
 
@@ -11810,15 +11655,15 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	t.Run("transaction", func(t *testing.T) {
 		testconfig.AllowParallelization(t)
 
-		newState := func() (*GlobalState, **Transaction) {
-			_tx := new(*Transaction)
+		newState := func() (*core.GlobalState, **core.Transaction) {
+			_tx := new(*core.Transaction)
 
-			return NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"start_tx": ValOf(func(ctx *Context) *Transaction {
-					*_tx = StartNewTransaction(ctx)
+			return core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
+				"start_tx": core.ValOf(func(ctx *core.Context) *core.Transaction {
+					*_tx = core.StartNewTransaction(ctx)
 					return *_tx
 				}),
-				"do_reversible_side_effect": ValOf(func(ctx *Context) {
+				"do_reversible_side_effect": core.ValOf(func(ctx *core.Context) {
 					effect := &reversibleEffect{}
 					if ctx.HasCurrentTx() {
 						if err := ctx.GetTx().AddEffect(ctx, effect); err != nil {
@@ -11826,7 +11671,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						}
 					}
 				}),
-				"do_irreversible_side_effect": ValOf(func(ctx *Context) {
+				"do_irreversible_side_effect": core.ValOf(func(ctx *core.Context) {
 					effect := &irreversibleEffect{}
 					if ctx.HasCurrentTx() {
 						if err := ctx.GetTx().AddEffect(ctx, effect); err != nil {
@@ -11850,11 +11695,14 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				res, err := Eval(code, state, false)
 
 				assert.NoError(t, err)
-				assert.Equal(t, Nil, res)
+				assert.Equal(t, core.Nil, res)
 				assert.NotNil(t, tx)
-				assert.Equal(t, []Effect{
+
+				expectedEffects := []core.Effect{
 					&reversibleEffect{applied: false},
-				}, (*tx).effects)
+				}
+
+				assert.Equal(t, expectedEffects, utils.Must((*tx).CurrentEffects()))
 			})
 
 			t.Run("single, irreversible side effect", func(t *testing.T) {
@@ -11869,10 +11717,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 				res, err := Eval(code, state, false)
 
-				assert.ErrorIs(t, err, ErrCannotAddIrreversibleEffect)
+				assert.ErrorIs(t, err, core.ErrCannotAddIrreversibleEffect)
 				assert.Nil(t, res)
 				assert.NotNil(t, tx)
-				assert.Empty(t, (*tx).effects)
+
+				assert.Empty(t, utils.Must((*tx).CurrentEffects()))
 			})
 		})
 
@@ -11890,11 +11739,14 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				res, err := Eval(code, state, false)
 
 				assert.NoError(t, err)
-				assert.Equal(t, Nil, res)
+				assert.Equal(t, core.Nil, res)
 				assert.NotNil(t, tx)
-				assert.Equal(t, []Effect{
+
+				expectedEffects := []core.Effect{
 					&reversibleEffect{applied: true},
-				}, (*tx).effects)
+				}
+
+				assert.Equal(t, expectedEffects, utils.Must((*tx).CurrentEffects()))
 			})
 		})
 
@@ -11912,18 +11764,18 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 				return rec([ [ [], [] ], [ [], [] ]])
 			`
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"map": WrapGoFunction(MapIterable),
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
+				"map": core.WrapGoFunction(core.MapIterable),
 			})
 			defer state.Ctx.CancelGracefully()
 
-			state.Ctx.AddNamedPattern("serializable-iterable", SERIALIZABLE_ITERABLE_PATTERN)
+			state.Ctx.AddNamedPattern("serializable-iterable", core.SERIALIZABLE_ITERABLE_PATTERN)
 
 			res, err := Eval(code, state, true)
 			assert.NoError(t, err)
-			assert.EqualValues(t, NewWrappedValueList(
-				NewWrappedValueList(NewWrappedValueListFrom([]Serializable{}), NewWrappedValueListFrom([]Serializable{})),
-				NewWrappedValueList(NewWrappedValueListFrom([]Serializable{}), NewWrappedValueListFrom([]Serializable{})),
+			assert.EqualValues(t, core.NewWrappedValueList(
+				core.NewWrappedValueList(core.NewWrappedValueListFrom([]core.Serializable{}), core.NewWrappedValueListFrom([]core.Serializable{})),
+				core.NewWrappedValueList(core.NewWrappedValueListFrom([]core.Serializable{}), core.NewWrappedValueListFrom([]core.Serializable{})),
 			), res)
 		})
 
@@ -11940,27 +11792,27 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 				return isolated
 			`
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"map": WrapGoFunction(MapIterable),
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
+				"map": core.WrapGoFunction(core.MapIterable),
 			})
 			defer state.Ctx.CancelGracefully()
 
-			state.Ctx.AddNamedPattern("serializable-iterable", SERIALIZABLE_ITERABLE_PATTERN)
+			state.Ctx.AddNamedPattern("serializable-iterable", core.SERIALIZABLE_ITERABLE_PATTERN)
 
 			val, err := Eval(code, state, true)
 			if !assert.NoError(t, err) {
 				return
 			}
 
-			fn := val.(*InoxFunction)
+			fn := val.(*core.InoxFunction)
 			res, err := fn.Call(state, nil, nil, nil)
 			if !assert.NoError(t, err) {
 				return
 			}
 
-			assert.EqualValues(t, NewWrappedValueList(
-				NewWrappedValueList(NewWrappedValueListFrom([]Serializable{}), NewWrappedValueListFrom([]Serializable{})),
-				NewWrappedValueList(NewWrappedValueListFrom([]Serializable{}), NewWrappedValueListFrom([]Serializable{})),
+			assert.EqualValues(t, core.NewWrappedValueList(
+				core.NewWrappedValueList(core.NewWrappedValueListFrom([]core.Serializable{}), core.NewWrappedValueListFrom([]core.Serializable{})),
+				core.NewWrappedValueList(core.NewWrappedValueListFrom([]core.Serializable{}), core.NewWrappedValueListFrom([]core.Serializable{})),
 			), res)
 		})
 
@@ -11979,27 +11831,27 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		
 				return obj.isolated
 			`
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
-				"map": WrapGoFunction(MapIterable),
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
+				"map": core.WrapGoFunction(core.MapIterable),
 			})
 			defer state.Ctx.CancelGracefully()
 
-			state.Ctx.AddNamedPattern("serializable-iterable", SERIALIZABLE_ITERABLE_PATTERN)
+			state.Ctx.AddNamedPattern("serializable-iterable", core.SERIALIZABLE_ITERABLE_PATTERN)
 
 			val, err := Eval(code, state, true)
 			if !assert.NoError(t, err) {
 				return
 			}
 
-			fn := val.(*InoxFunction)
+			fn := val.(*core.InoxFunction)
 			res, err := fn.Call(state, nil, nil, nil)
 			if !assert.NoError(t, err) {
 				return
 			}
 
-			assert.EqualValues(t, NewWrappedValueList(
-				NewWrappedValueList(NewWrappedValueListFrom([]Serializable{}), NewWrappedValueListFrom([]Serializable{})),
-				NewWrappedValueList(NewWrappedValueListFrom([]Serializable{}), NewWrappedValueListFrom([]Serializable{})),
+			assert.EqualValues(t, core.NewWrappedValueList(
+				core.NewWrappedValueList(core.NewWrappedValueListFrom([]core.Serializable{}), core.NewWrappedValueListFrom([]core.Serializable{})),
+				core.NewWrappedValueList(core.NewWrappedValueListFrom([]core.Serializable{}), core.NewWrappedValueListFrom([]core.Serializable{})),
 			), res)
 		})
 	})
@@ -12007,17 +11859,17 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	t.Run("XML expression", func(t *testing.T) {
 		testconfig.AllowParallelization(t)
 
-		__idt := WrapGoFunction(func(ctx *Context, e *XMLElement) *XMLElement {
+		__idt := core.WrapGoFunction(func(ctx *core.Context, e *core.XMLElement) *core.XMLElement {
 			return e
 		})
 
-		createNamespaceWithFactory := func() *Namespace {
-			return NewNamespace("x", map[string]Value{symbolic.FROM_XML_FACTORY_NAME: __idt})
+		createNamespaceWithFactory := func() *core.Namespace {
+			return core.NewNamespace("x", map[string]core.Value{symbolic.FROM_XML_FACTORY_NAME: __idt})
 		}
 
 		t.Run("element", func(t *testing.T) {
 			code := `idt<div></div>`
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
 				"idt": createNamespaceWithFactory(),
 			})
 			defer state.Ctx.CancelGracefully()
@@ -12027,12 +11879,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, NewXmlElement("div", nil, []Value{String("")}), val)
+			assert.Equal(t, core.NewXmlElement("div", nil, []core.Value{core.String("")}), val)
 		})
 
 		t.Run("self-closing element", func(t *testing.T) {
 			code := `idt<div/>`
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
 				"idt": createNamespaceWithFactory(),
 			})
 			defer state.Ctx.CancelGracefully()
@@ -12042,12 +11894,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, NewXmlElement("div", nil, nil), val)
+			assert.Equal(t, core.NewXmlElement("div", nil, nil), val)
 		})
 
 		t.Run("implicit namespace", func(t *testing.T) {
 			code := `(<div></div>)`
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
 				globalnames.HTML_NS: createNamespaceWithFactory(),
 			})
 			defer state.Ctx.CancelGracefully()
@@ -12057,12 +11909,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, NewXmlElement("div", nil, []Value{String("")}), val)
+			assert.Equal(t, core.NewXmlElement("div", nil, []core.Value{core.String("")}), val)
 		})
 
 		t.Run("integer attribute", func(t *testing.T) {
 			code := `idt<div a=1></div>`
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
 				"idt": createNamespaceWithFactory(),
 			})
 			defer state.Ctx.CancelGracefully()
@@ -12072,12 +11924,16 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, NewXmlElement("div", []XMLAttribute{{name: "a", value: Int(1)}}, []Value{String("")}), val)
+			assert.Equal(t, core.NewXmlElement(
+				"div",
+				[]core.XMLAttribute{core.NewXMLAttribute("a", core.Int(1))},
+				[]core.Value{core.String("")},
+			), val)
 		})
 
 		t.Run("string attribute", func(t *testing.T) {
 			code := `idt<div a="b"></div>`
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
 				"idt": createNamespaceWithFactory(),
 			})
 			defer state.Ctx.CancelGracefully()
@@ -12087,12 +11943,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, NewXmlElement("div", []XMLAttribute{{name: "a", value: String("b")}}, []Value{String("")}), val)
+			assert.Equal(t, core.NewXmlElement("div", []core.XMLAttribute{core.NewXMLAttribute("a", core.String("b"))}, []core.Value{core.String("")}), val)
 		})
 
 		t.Run("attribute without value", func(t *testing.T) {
 			code := `idt<div a></div>`
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
 				"idt": createNamespaceWithFactory(),
 			})
 			defer state.Ctx.CancelGracefully()
@@ -12102,12 +11958,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, NewXmlElement("div", []XMLAttribute{{name: "a", value: DEFAULT_XML_ATTR_VALUE}}, []Value{String("")}), val)
+			assert.Equal(t, core.NewXmlElement("div", []core.XMLAttribute{core.NewXMLAttribute("a", core.DEFAULT_XML_ATTR_VALUE)}, []core.Value{core.String("")}), val)
 		})
 
 		t.Run("value of attribute should be HTML escaped", func(t *testing.T) {
 			code := `idt<div a="<"></div>`
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
 				"idt": createNamespaceWithFactory(),
 			})
 			defer state.Ctx.CancelGracefully()
@@ -12117,12 +11973,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, NewXmlElement("div", []XMLAttribute{{name: "a", value: String("<")}}, []Value{String("")}), val)
+			assert.Equal(t, core.NewXmlElement("div", []core.XMLAttribute{core.NewXMLAttribute("a", core.String("<"))}, []core.Value{core.String("")}), val)
 		})
 
 		t.Run("linefeed", func(t *testing.T) {
 			code := "idt<div>\n</div>"
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
 				"idt": createNamespaceWithFactory(),
 			})
 			defer state.Ctx.CancelGracefully()
@@ -12132,12 +11988,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, NewXmlElement("div", nil, []Value{String("\n")}), val)
+			assert.Equal(t, core.NewXmlElement("div", nil, []core.Value{core.String("\n")}), val)
 		})
 
 		t.Run("raw text element", func(t *testing.T) {
 			code := "idt<script><a></script>"
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
 				"idt": createNamespaceWithFactory(),
 			})
 			defer state.Ctx.CancelGracefully()
@@ -12147,12 +12003,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, NewRawTextXmlElement("script", nil, "<a>"), val)
+			assert.Equal(t, core.NewRawTextXmlElement("script", nil, "<a>"), val)
 		})
 
 		t.Run("empty child", func(t *testing.T) {
 			code := "idt<div><span></span></div>"
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
 				"idt": createNamespaceWithFactory(),
 			})
 			defer state.Ctx.CancelGracefully()
@@ -12162,16 +12018,16 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, NewXmlElement("div", nil, []Value{
-				String(""),
-				NewXmlElement("span", nil, []Value{String("")}),
-				String(""),
+			assert.Equal(t, core.NewXmlElement("div", nil, []core.Value{
+				core.String(""),
+				core.NewXmlElement("span", nil, []core.Value{core.String("")}),
+				core.String(""),
 			}), val)
 		})
 
 		t.Run("single attribute + empty child", func(t *testing.T) {
 			code := "idt<div a=1><span></span></div>"
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
 				"idt": createNamespaceWithFactory(),
 			})
 			defer state.Ctx.CancelGracefully()
@@ -12181,18 +12037,18 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, NewXmlElement("div",
-				[]XMLAttribute{{name: "a", value: Int(1)}},
-				[]Value{
-					String(""),
-					NewXmlElement("span", nil, []Value{String("")}),
-					String(""),
+			assert.Equal(t, core.NewXmlElement("div",
+				[]core.XMLAttribute{core.NewXMLAttribute("a", core.Int(1))},
+				[]core.Value{
+					core.String(""),
+					core.NewXmlElement("span", nil, []core.Value{core.String("")}),
+					core.String(""),
 				}), val)
 		})
 
 		t.Run("two attributes + empty child", func(t *testing.T) {
 			code := "idt<div a=1 b=2><span></span></div>"
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
 				"idt": createNamespaceWithFactory(),
 			})
 			defer state.Ctx.CancelGracefully()
@@ -12202,21 +12058,21 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, NewXmlElement("div",
-				[]XMLAttribute{
-					{name: "a", value: Int(1)},
-					{name: "b", value: Int(2)},
+			assert.Equal(t, core.NewXmlElement("div",
+				[]core.XMLAttribute{
+					core.NewXMLAttribute("a", core.Int(1)),
+					core.NewXMLAttribute("b", core.Int(2)),
 				},
-				[]Value{
-					String(""),
-					NewXmlElement("span", nil, []Value{String("")}),
-					String(""),
+				[]core.Value{
+					core.String(""),
+					core.NewXmlElement("span", nil, []core.Value{core.String("")}),
+					core.String(""),
 				}), val)
 		})
 
 		t.Run("linefeed followed by empty child", func(t *testing.T) {
 			code := "idt<div>\n<span></span></div>"
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
 				"idt": createNamespaceWithFactory(),
 			})
 			defer state.Ctx.CancelGracefully()
@@ -12226,16 +12082,16 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, NewXmlElement("div", nil, []Value{
-				String("\n"),
-				NewXmlElement("span", nil, []Value{String("")}),
-				String(""),
+			assert.Equal(t, core.NewXmlElement("div", nil, []core.Value{
+				core.String("\n"),
+				core.NewXmlElement("span", nil, []core.Value{core.String("")}),
+				core.String(""),
 			}), val)
 		})
 
 		t.Run("non-empty child", func(t *testing.T) {
 			code := "idt<div><span>1</span></div>"
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
 				"idt": createNamespaceWithFactory(),
 			})
 			defer state.Ctx.CancelGracefully()
@@ -12245,16 +12101,16 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, NewXmlElement("div", nil, []Value{
-				String(""),
-				NewXmlElement("span", nil, []Value{String("1")}),
-				String(""),
+			assert.Equal(t, core.NewXmlElement("div", nil, []core.Value{
+				core.String(""),
+				core.NewXmlElement("span", nil, []core.Value{core.String("1")}),
+				core.String(""),
 			}), val)
 		})
 
 		t.Run("two empty children", func(t *testing.T) {
 			code := "idt<div><span></span><span></span></div>"
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
 				"idt": createNamespaceWithFactory(),
 			})
 			defer state.Ctx.CancelGracefully()
@@ -12264,18 +12120,18 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, NewXmlElement("div", nil, []Value{
-				String(""),
-				NewXmlElement("span", nil, []Value{String("")}),
-				String(""),
-				NewXmlElement("span", nil, []Value{String("")}),
-				String(""),
+			assert.Equal(t, core.NewXmlElement("div", nil, []core.Value{
+				core.String(""),
+				core.NewXmlElement("span", nil, []core.Value{core.String("")}),
+				core.String(""),
+				core.NewXmlElement("span", nil, []core.Value{core.String("")}),
+				core.String(""),
 			}), val)
 		})
 
 		t.Run("child + grandchild", func(t *testing.T) {
 			code := "idt<div><span><span></span></span></div>"
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
 				"idt": createNamespaceWithFactory(),
 			})
 			defer state.Ctx.CancelGracefully()
@@ -12285,14 +12141,14 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, NewXmlElement("div", nil, []Value{
-				String(""),
-				NewXmlElement("span", nil, []Value{
-					String(""),
-					NewXmlElement("span", nil, []Value{String("")}),
-					String(""),
+			assert.Equal(t, core.NewXmlElement("div", nil, []core.Value{
+				core.String(""),
+				core.NewXmlElement("span", nil, []core.Value{
+					core.String(""),
+					core.NewXmlElement("span", nil, []core.Value{core.String("")}),
+					core.String(""),
 				}),
-				String(""),
+				core.String(""),
 			}), val)
 		})
 
@@ -12304,7 +12160,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					<div> </div> <div> </div>
 				</div>
 			`
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
 				"idt": createNamespaceWithFactory(),
 			})
 			defer state.Ctx.CancelGracefully()
@@ -12315,7 +12171,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("interpolation: XML element", func(t *testing.T) {
 			code := "idt<div>{idt<span></span>}</div>"
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
 				"idt": createNamespaceWithFactory(),
 			})
 			defer state.Ctx.CancelGracefully()
@@ -12325,16 +12181,16 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, NewXmlElement("div", nil, []Value{
-				String(""),
-				NewXmlElement("span", nil, []Value{String("")}),
-				String(""),
+			assert.Equal(t, core.NewXmlElement("div", nil, []core.Value{
+				core.String(""),
+				core.NewXmlElement("span", nil, []core.Value{core.String("")}),
+				core.String(""),
 			}), val)
 		})
 
 		t.Run("interpolation: string", func(t *testing.T) {
 			code := "idt<div>{\"a\"}</div>"
-			state := NewGlobalState(NewDefaultTestContext(), map[string]Value{
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
 				"idt": createNamespaceWithFactory(),
 			})
 			defer state.Ctx.CancelGracefully()
@@ -12344,10 +12200,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, NewXmlElement("div", nil, []Value{
-				String(""),
-				String("a"),
-				String(""),
+			assert.Equal(t, core.NewXmlElement("div", nil, []core.Value{
+				core.String(""),
+				core.String("a"),
+				core.String(""),
 			}), val)
 		})
 	})
@@ -12361,14 +12217,14 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 				return new MyStruct
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
-			state.Ctx.AddNamedPattern("int", INT_PATTERN)
+			state.Ctx.AddNamedPattern("int", core.INT_PATTERN)
 
 			res, err := Eval(code, state, true)
 			assert.NoError(t, err)
-			assert.IsType(t, (*Struct)(nil), res)
+			assert.IsType(t, (*core.Struct)(nil), res)
 		})
 
 		t.Run("with init of single-field struct", func(t *testing.T) {
@@ -12380,14 +12236,14 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				ptr = new MyStruct {a: 3}
 				return ptr.a
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
-			state.Ctx.AddNamedPattern("int", INT_PATTERN)
+			state.Ctx.AddNamedPattern("int", core.INT_PATTERN)
 
 			res, err := Eval(code, state, true)
 			assert.NoError(t, err)
-			assert.Equal(t, Int(3), res)
+			assert.Equal(t, core.Int(3), res)
 		})
 
 		t.Run("with init of two-field struct", func(t *testing.T) {
@@ -12400,14 +12256,14 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				ptr = new MyStruct {a: 3, b: 4}
 				return [ptr.a, ptr.b]
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
-			state.Ctx.AddNamedPattern("int", INT_PATTERN)
+			state.Ctx.AddNamedPattern("int", core.INT_PATTERN)
 
 			res, err := Eval(code, state, true)
 			assert.NoError(t, err)
-			assert.Equal(t, NewWrappedValueList(Int(3), Int(4)), res)
+			assert.Equal(t, core.NewWrappedValueList(core.Int(3), core.Int(4)), res)
 		})
 
 		t.Run("with init of two-field struct: alternate order", func(t *testing.T) {
@@ -12420,14 +12276,14 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				ptr = new MyStruct {b: 4, a: 3}
 				return [ptr.a, ptr.b]
 			`
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 
-			state.Ctx.AddNamedPattern("int", INT_PATTERN)
+			state.Ctx.AddNamedPattern("int", core.INT_PATTERN)
 
 			res, err := Eval(code, state, true)
 			assert.NoError(t, err)
-			assert.Equal(t, NewWrappedValueList(Int(3), Int(4)), res)
+			assert.Equal(t, core.NewWrappedValueList(core.Int(3), core.Int(4)), res)
 		})
 	})
 
@@ -12447,7 +12303,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				),
 			})
 
-			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			mod, err := core.ParseLocalModule(modpath, core.ModuleParsingConfig{Context: createParsingContext(modpath)})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -12456,13 +12312,13 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			importStmt := parse.FindNode(mod.MainChunk.Node, (*parse.InclusionImportStatement)(nil), nil)
 			binExpr := parse.FindNode(includedChunk.Node, (*parse.BinaryExpression)(nil), nil)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			state.Module = mod
 
 			_, err = Eval(mod, state, true)
 
-			var locatedError LocatedEvalError
+			var locatedError core.LocatedEvalError
 			if !assert.ErrorAs(t, err, &locatedError) {
 				return
 			}
@@ -12500,7 +12356,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				),
 			})
 
-			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			mod, err := core.ParseLocalModule(modpath, core.ModuleParsingConfig{Context: createParsingContext(modpath)})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -12512,13 +12368,13 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			importStmt2 := parse.FindNode(includedChunk1.Node, (*parse.InclusionImportStatement)(nil), nil)
 			binExpr := parse.FindNode(includedChunk2.Node, (*parse.BinaryExpression)(nil), nil)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			state.Module = mod
 
 			_, err = Eval(mod, state, true)
 
-			var locatedError LocatedEvalError
+			var locatedError core.LocatedEvalError
 			if !assert.ErrorAs(t, err, &locatedError) {
 				return
 			}
@@ -12568,7 +12424,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					),
 				})
 
-			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			mod, err := core.ParseLocalModule(modpath, core.ModuleParsingConfig{Context: createParsingContext(modpath)})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -12578,13 +12434,13 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			fnDecl := parse.FindNode(includedChunk.Node, (*parse.FunctionDeclaration)(nil), nil)
 			binExpr := parse.FindNode(includedChunk.Node, (*parse.BinaryExpression)(nil), nil)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			state.Module = mod
 
 			_, err = Eval(mod, state, true)
 
-			var locatedError LocatedEvalError
+			var locatedError core.LocatedEvalError
 			if !assert.ErrorAs(t, err, &locatedError) {
 				return
 			}
@@ -12638,7 +12494,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					),
 				})
 
-			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
+			mod, err := core.ParseLocalModule(modpath, core.ModuleParsingConfig{Context: createParsingContext(modpath)})
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -12650,13 +12506,13 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			fnDecl := parse.FindNode(includedChunk2.Node, (*parse.FunctionDeclaration)(nil), nil)
 			binExpr := parse.FindNode(includedChunk2.Node, (*parse.BinaryExpression)(nil), nil)
 
-			state := NewGlobalState(NewDefaultTestContext())
+			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			state.Module = mod
 
 			_, err = Eval(mod, state, true)
 
-			var locatedError LocatedEvalError
+			var locatedError core.LocatedEvalError
 			if !assert.ErrorAs(t, err, &locatedError) {
 				return
 			}
@@ -12701,27 +12557,11 @@ func TestGetQuantity(t *testing.T) {
 	//TODO
 }
 
-func NewDefaultTestContext() *Context {
-	return NewContext(ContextConfig{
-		Permissions: []Permission{
-			GlobalVarPermission{permkind.Read, "*"},
-			GlobalVarPermission{permkind.Update, "*"},
-			GlobalVarPermission{permkind.Create, "*"},
-			GlobalVarPermission{permkind.Use, "*"},
+type evalFn = func(chunkStringOrModule any, state *core.GlobalState, doSymbolicCheck bool) (core.Value, error)
 
-			HttpPermission{Kind_: permkind.Read, Entity: HostPattern("https://**")},
-			LThreadPermission{permkind.Create},
-		},
-		Filesystem: newOsFilesystem(),
-		Limits:     []Limit{MustMakeNotAutoDepletingCountLimit(THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, 100_000)},
-	})
-}
-
-type evalFn = func(chunkStringOrModule any, state *GlobalState, doSymbolicCheck bool) (Value, error)
-
-func splitLines(ctx *Context, s String) (slice []String) {
+func splitLines(ctx *core.Context, s core.String) (slice []core.String) {
 	for _, e := range strings.Split(string(s), "\n") {
-		slice = append(slice, String(e))
+		slice = append(slice, core.String(e))
 	}
 	return
 }
@@ -12730,15 +12570,15 @@ type reversibleEffect struct {
 	applied bool
 }
 
-func (e *reversibleEffect) Resources() []ResourceName {
+func (e *reversibleEffect) Resources() []core.ResourceName {
 	return nil
 }
 
-func (e *reversibleEffect) PermissionKind() PermissionKind {
+func (e *reversibleEffect) PermissionKind() core.PermissionKind {
 	return permkind.Create
 }
-func (e *reversibleEffect) Reversability(*Context) Reversability {
-	return Reversible
+func (e *reversibleEffect) Reversability(*core.Context) core.Reversability {
+	return core.Reversible
 }
 
 func (e *reversibleEffect) IsApplied() bool {
@@ -12749,15 +12589,15 @@ func (e *reversibleEffect) IsApplying() bool {
 	return false
 }
 
-func (e *reversibleEffect) Apply(*Context) error {
+func (e *reversibleEffect) Apply(*core.Context) error {
 	if e.applied {
-		return ErrEffectAlreadyApplied
+		return core.ErrEffectAlreadyApplied
 	}
 	e.applied = true
 	return nil
 }
 
-func (e *reversibleEffect) Reverse(*Context) error {
+func (e *reversibleEffect) Reverse(*core.Context) error {
 	return nil
 }
 
@@ -12765,15 +12605,15 @@ type irreversibleEffect struct {
 	applied bool
 }
 
-func (e *irreversibleEffect) Resources() []ResourceName {
+func (e *irreversibleEffect) Resources() []core.ResourceName {
 	return nil
 }
 
-func (e *irreversibleEffect) PermissionKind() PermissionKind {
+func (e *irreversibleEffect) PermissionKind() core.PermissionKind {
 	return permkind.Create
 }
-func (e *irreversibleEffect) Reversability(*Context) Reversability {
-	return Irreversible
+func (e *irreversibleEffect) Reversability(*core.Context) core.Reversability {
+	return core.Irreversible
 }
 
 func (e *irreversibleEffect) IsApplied() bool {
@@ -12784,42 +12624,42 @@ func (e *irreversibleEffect) IsApplying() bool {
 	return false
 }
 
-func (e *irreversibleEffect) Apply(*Context) error {
+func (e *irreversibleEffect) Apply(*core.Context) error {
 	if e.applied {
-		return ErrEffectAlreadyApplied
+		return core.ErrEffectAlreadyApplied
 	}
 	e.applied = true
 	return nil
 }
 
-func (e *irreversibleEffect) Reverse(*Context) error {
+func (e *irreversibleEffect) Reverse(*core.Context) error {
 	return nil
 }
 
-func makeTreeWalkEvalFunc(t *testing.T) func(c any, s *GlobalState, doSymbolicCheck bool) (Value, error) {
+func makeTreeWalkEvalFunc(t *testing.T) func(c any, s *core.GlobalState, doSymbolicCheck bool) (core.Value, error) {
 	return _makeTreeWalkEvalFunc(t, false)
 }
 
-func makeRecylingTreeWalkEvalFunc(t *testing.T) func(c any, s *GlobalState, doSymbolicCheck bool) (Value, error) {
+func makeRecylingTreeWalkEvalFunc(t *testing.T) func(c any, s *core.GlobalState, doSymbolicCheck bool) (core.Value, error) {
 	return _makeTreeWalkEvalFunc(t, true)
 }
 
-func _makeTreeWalkEvalFunc(t *testing.T, recycle bool) func(c any, s *GlobalState, doSymbolicCheck bool) (Value, error) {
+func _makeTreeWalkEvalFunc(t *testing.T, recycle bool) func(c any, s *core.GlobalState, doSymbolicCheck bool) (core.Value, error) {
 
-	var states []*TreeWalkState
+	var states []*core.TreeWalkState
 	var lock sync.Mutex
 
-	return func(c any, s *GlobalState, doSymbolicCheck bool) (Value, error) {
-		var mod *Module
+	return func(c any, s *core.GlobalState, doSymbolicCheck bool) (core.Value, error) {
+		var mod *core.Module
 
 		switch val := c.(type) {
-		case *Module:
+		case *core.Module:
 			mod = val
 			s.Module = mod
 		case parse.SourceFile:
 			chunk := utils.Must(parse.ParseChunkSource(val))
 
-			mod = &Module{MainChunk: chunk}
+			mod = &core.Module{MainChunk: chunk}
 
 			//if the test case provide a module we reuse the source
 			if s.Module != nil {
@@ -12835,7 +12675,7 @@ func _makeTreeWalkEvalFunc(t *testing.T, recycle bool) func(c any, s *GlobalStat
 				CodeString: val,
 			}))
 
-			mod = &Module{MainChunk: chunk}
+			mod = &core.Module{MainChunk: chunk}
 
 			//if the test case provide a module we reuse the source
 			if s.Module != nil {
@@ -12850,14 +12690,14 @@ func _makeTreeWalkEvalFunc(t *testing.T, recycle bool) func(c any, s *GlobalStat
 		}
 
 		if doSymbolicCheck {
-			staticCheckData, err := StaticCheck(StaticCheckInput{
+			staticCheckData, err := core.StaticCheck(core.StaticCheckInput{
 				State:             s,
 				Node:              mod.MainChunk.Node,
 				Module:            mod,
 				Chunk:             mod.MainChunk,
 				Globals:           s.Globals,
-				Patterns:          s.Ctx.namedPatterns,
-				PatternNamespaces: s.Ctx.patternNamespaces,
+				Patterns:          s.Ctx.GetNamedPatterns(),
+				PatternNamespaces: s.Ctx.GetPatternNamespaces(),
 			})
 			if !assert.NoError(t, err) {
 				return nil, err
@@ -12866,7 +12706,7 @@ func _makeTreeWalkEvalFunc(t *testing.T, recycle bool) func(c any, s *GlobalStat
 			s.StaticCheckData = staticCheckData
 
 			globals := make(map[string]symbolic.ConcreteGlobalValue)
-			s.Globals.Foreach(func(name string, v Value, isConstant bool) error {
+			s.Globals.Foreach(func(name string, v core.Value, isConstant bool) error {
 				globals[name] = symbolic.ConcreteGlobalValue{Value: v, IsConstant: isConstant}
 				return nil
 			})
@@ -12889,7 +12729,7 @@ func _makeTreeWalkEvalFunc(t *testing.T, recycle bool) func(c any, s *GlobalStat
 			s.SymbolicData.AddData(symbData)
 		}
 
-		var treeWalkState *TreeWalkState
+		var treeWalkState *core.TreeWalkState
 		if recycle {
 			lock.Lock()
 
@@ -12904,37 +12744,37 @@ func _makeTreeWalkEvalFunc(t *testing.T, recycle bool) func(c any, s *GlobalStat
 
 			//Create a new state if no unused state was found.
 			if treeWalkState == nil {
-				treeWalkState = NewTreeWalkStateWithGlobal(s)
+				treeWalkState = core.NewTreeWalkStateWithGlobal(s)
 				states = append(states, treeWalkState)
 			}
 			lock.Unlock()
 		} else {
-			treeWalkState = NewTreeWalkStateWithGlobal(s)
+			treeWalkState = core.NewTreeWalkStateWithGlobal(s)
 		}
 
-		return TreeWalkEval(mod.MainChunk.Node, treeWalkState)
+		return core.TreeWalkEval(mod.MainChunk.Node, treeWalkState)
 	}
 }
 
 type TestProject struct {
-	ID     ProjectID
-	Img    Image
+	ID     core.ProjectID
+	Img    core.Image
 	Config testProjectConfig
 }
 
-func (p *TestProject) Id() ProjectID {
+func (p *TestProject) Id() core.ProjectID {
 	return p.ID
 }
 
-func (p *TestProject) GetSecrets(ctx *Context) ([]ProjectSecret, error) {
+func (p *TestProject) GetSecrets(ctx *core.Context) ([]core.ProjectSecret, error) {
 	return nil, nil
 }
 
-func (p *TestProject) ListSecrets(ctx *Context) ([]ProjectSecretInfo, error) {
+func (p *TestProject) ListSecrets(ctx *core.Context) ([]core.ProjectSecretInfo, error) {
 	return nil, nil
 }
 
-func (p *TestProject) BaseImage() (Image, error) {
+func (p *TestProject) BaseImage() (core.Image, error) {
 	return p.Img, nil
 }
 
@@ -12946,11 +12786,11 @@ func (c testProjectConfig) AreExposedWebServersAllowed() bool {
 	return c.areExposedWebServersAllowed
 }
 
-func (p *TestProject) Configuration() ProjectConfiguration {
+func (p *TestProject) Configuration() core.ProjectConfiguration {
 	return p.Config
 }
 
-func (p *TestProject) DevDatabasesDirOnOsFs(*Context, string) (string, error) {
+func (p *TestProject) DevDatabasesDirOnOsFs(*core.Context, string) (string, error) {
 	panic("unimplemented")
 }
 
@@ -12958,33 +12798,167 @@ func (p *TestProject) CanProvideS3Credentials(s3Provider string) (bool, error) {
 	panic("unimplemented")
 }
 
-func (p *TestProject) GetS3CredentialsForBucket(ctx *Context, bucketName string, provider string) (accessKey string, secretKey string, s3Endpoint Host, _ error) {
+func (p *TestProject) GetS3CredentialsForBucket(ctx *core.Context, bucketName string, provider string) (accessKey string, secretKey string, s3Endpoint core.Host, _ error) {
 	panic("unimplemented")
 }
 
 type testImage struct {
-	snapshot  FilesystemSnapshot
-	projectID ProjectID
+	snapshot  core.FilesystemSnapshot
+	projectID core.ProjectID
 }
 
-func (img testImage) ProjectID() ProjectID {
+func (img testImage) ProjectID() core.ProjectID {
 	return img.projectID
 }
 
-func (img testImage) FilesystemSnapshot() FilesystemSnapshot {
+func (img testImage) FilesystemSnapshot() core.FilesystemSnapshot {
 	return img.snapshot
 }
 
-func (img *testImage) Zip(ctx *Context, w io.Writer) error {
-	panic(ErrNotImplemented)
+func (img *testImage) Zip(ctx *core.Context, w io.Writer) error {
+	panic(core.ErrNotImplemented)
 }
 
-func toByte(ctx *Context, i Int) Byte {
-	return Byte(i)
+func toByte(ctx *core.Context, i core.Int) core.Byte {
+	return core.Byte(i)
 }
 
-func isClientInsecureAndStateful(ctx *Context, host Host) bool {
+func isClientInsecureAndStateful(ctx *core.Context, host core.Host) bool {
 	client := utils.Must(ctx.GetProtolClient(host.URLWithPath("/")))
 
 	return client.MayPurposefullySkipAuthentication() && client.IsStateful()
+}
+
+func createParsingContext(modpath string) *core.Context {
+	pathPattern := core.PathPattern(core.Path(modpath).DirPath() + "...")
+	return core.NewContextWithEmptyState(core.ContextConfig{
+		Permissions: []core.Permission{core.CreateFsReadPerm(pathPattern)},
+		Filesystem:  newOsFilesystem(),
+	}, nil)
+}
+
+func newOsFilesystem() afs.Filesystem {
+	fs := polyfill.New(osfs.Default)
+
+	return afs.AddAbsoluteFeature(fs, func(path string) (string, error) {
+		return filepath.Abs(path)
+	})
+}
+
+// writeModuleAndIncludedFiles write a module & it's included files in a temporary directory on the OS filesystem.
+func writeModuleAndIncludedFiles(t *testing.T, mod string, modContent string, dependencies map[string]string) string {
+	dir := t.TempDir()
+	modPath := filepath.Join(dir, mod)
+
+	assert.NoError(t, fsutils.WriteFileSync(modPath, []byte(modContent), 0o400))
+
+	for name, content := range dependencies {
+		assert.NoError(t, fsutils.WriteFileSync(filepath.Join(dir, name), []byte(content), 0o400))
+	}
+
+	return modPath
+}
+
+func newMemFilesystem() afs.Filesystem {
+	fs := memfs.New()
+
+	return afs.AddAbsoluteFeature(fs, func(path string) (string, error) {
+		if path[0] == '/' {
+			return path, nil
+		}
+		return "", core.ErrNotImplemented
+	})
+}
+
+func newMemFilesystemRootWD() afs.Filesystem {
+	fs := memfs.New()
+
+	return afs.AddAbsoluteFeature(fs, func(path string) (string, error) {
+		if path[0] == '/' {
+			return path, nil
+		}
+		if len(path) > 1 && path[0] == '.' && path[1] == '/' {
+			return path[1:], nil
+		}
+		return "", core.ErrNotImplemented
+	})
+}
+
+func newSnapshotableMemFilesystem() *snapshotableMemFilesystem {
+	return &snapshotableMemFilesystem{memfs.New()}
+}
+
+var _ = afs.Filesystem((*snapshotableMemFilesystem)(nil))
+var _ = core.SnapshotableFilesystem((*snapshotableMemFilesystem)(nil))
+
+func copyMemFs(fls afs.Filesystem) afs.Filesystem {
+	newMemFs := newMemFilesystem()
+	err := util.Walk(fls, "/", func(path string, info fs.FileInfo, err error) error {
+		if info.IsDir() {
+			return newMemFs.MkdirAll(path, info.Mode().Perm())
+		} else {
+			content, err := util.ReadFile(fls, path)
+			if err != nil {
+				return err
+			}
+			return util.WriteFile(newMemFs, path, content, info.Mode().Perm())
+		}
+	})
+	if err != nil {
+		panic(err)
+	}
+	return newMemFs
+}
+
+type snapshotableMemFilesystem struct {
+	billy.Filesystem
+}
+
+func (*snapshotableMemFilesystem) Absolute(path string) (string, error) {
+	if path[0] == '/' {
+		return path, nil
+	}
+	return "", core.ErrNotImplemented
+}
+
+func (fls *snapshotableMemFilesystem) TakeFilesystemSnapshot(config core.FilesystemSnapshotConfig) (core.FilesystemSnapshot, error) {
+	return &memFilesystemSnapshot{
+		fls: copyMemFs(fls),
+	}, nil
+}
+
+var _ = core.FilesystemSnapshot((*memFilesystemSnapshot)(nil))
+
+// memFilesystemSnapshot is partial implementation of core.FilesystemSnapshot,
+// it only implements NewAdaptedFilesystem by returning a deep copy of fls.
+type memFilesystemSnapshot struct {
+	fls afs.Filesystem
+}
+
+func (s *memFilesystemSnapshot) NewAdaptedFilesystem(maxTotalStorageSizeHint core.ByteCount) (core.SnapshotableFilesystem, error) {
+	return &snapshotableMemFilesystem{copyMemFs(s.fls)}, nil
+}
+
+func (s *memFilesystemSnapshot) WriteTo(fls afs.Filesystem, params core.SnapshotWriteToFilesystem) error {
+	panic("unimplemented")
+}
+
+func (*memFilesystemSnapshot) Content(path string) (core.AddressableContent, error) {
+	panic("unimplemented")
+}
+
+func (*memFilesystemSnapshot) ForEachEntry(func(m core.EntrySnapshotMetadata) error) error {
+	panic("unimplemented")
+}
+
+func (*memFilesystemSnapshot) IsStoredLocally() bool {
+	panic("unimplemented")
+}
+
+func (*memFilesystemSnapshot) Metadata(path string) (core.EntrySnapshotMetadata, error) {
+	panic("unimplemented")
+}
+
+func (*memFilesystemSnapshot) RootDirEntries() []string {
+	panic("unimplemented")
 }

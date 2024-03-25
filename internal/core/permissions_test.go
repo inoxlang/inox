@@ -372,8 +372,8 @@ func TestDatabasePermission(t *testing.T) {
 			Filesystem:  newMemFilesystem(),
 		}, nil)
 		db, err := WrapDatabase(ctx, DatabaseWrappingArgs{
-			Inner: &dummyDatabase{
-				resource: Host("ldb://main"),
+			Inner: &DummyDatabase{
+				Resource_: Host("ldb://main"),
 			},
 			Name: "main",
 		})
@@ -433,9 +433,9 @@ func TestDatabasePermission(t *testing.T) {
 
 	t.Run("missing permission to get top-level entity of database", func(t *testing.T) {
 		ctx := NewContextWithEmptyState(ContextConfig{}, nil)
-		db := &dummyDatabase{
-			resource: Host("ldb://main"),
-			topLevelEntities: map[string]Serializable{"a": &loadableTestValue{
+		db := &DummyDatabase{
+			Resource_: Host("ldb://main"),
+			TopLevelEntities: map[string]Serializable{"a": &loadableTestValue{
 				value: 1,
 			}},
 		}
@@ -471,9 +471,9 @@ func TestDatabasePermission(t *testing.T) {
 				},
 			},
 		}, nil)
-		db := &dummyDatabase{
-			resource: Host("ldb://main"),
-			topLevelEntities: map[string]Serializable{"a": &loadableTestValue{
+		db := &DummyDatabase{
+			Resource_: Host("ldb://main"),
+			TopLevelEntities: map[string]Serializable{"a": &loadableTestValue{
 				value: 1,
 			}},
 		}

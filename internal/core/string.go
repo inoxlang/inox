@@ -318,6 +318,18 @@ func NewCheckedString(slices []Value, node *parse.StringTemplateLiteral, ctx *Co
 	}, nil
 }
 
+func NewCheckedStringNoCheck(
+	str String,
+	matchingPatternName string, //if the matching pattern is in the namespace the name will contain a dot '.'
+	matchingPattern Pattern,
+) *CheckedString {
+	return &CheckedString{
+		str:                 str,
+		matchingPatternName: matchingPatternName,
+		matchingPattern:     matchingPattern,
+	}
+}
+
 func (str *CheckedString) GetOrBuildString() string {
 	return str.str.GetOrBuildString()
 }

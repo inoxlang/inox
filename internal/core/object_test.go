@@ -217,7 +217,7 @@ func TestObject(t *testing.T) {
 				defer ctx.CancelGracefully()
 
 				time.Sleep(10 * time.Millisecond)
-				jobs := obj.jobInstances()
+				jobs := obj.JobInstances()
 				if !assert.Len(t, jobs, 1) {
 					return
 				}
@@ -232,7 +232,7 @@ func TestObject(t *testing.T) {
 
 				time.Sleep(10 * time.Millisecond)
 
-				jobs := obj.jobInstances()
+				jobs := obj.JobInstances()
 				if !assert.Len(t, jobs, 2) {
 					return
 				}
@@ -245,7 +245,7 @@ func TestObject(t *testing.T) {
 				defer ctx.CancelGracefully()
 
 				time.Sleep(10 * time.Millisecond)
-				jobs := obj.jobInstances()
+				jobs := obj.JobInstances()
 				if !assert.Len(t, jobs, 1) {
 					return
 				}
@@ -262,7 +262,7 @@ func TestObject(t *testing.T) {
 				defer ctx.CancelGracefully()
 
 				time.Sleep(10 * time.Millisecond)
-				jobs := obj.jobInstances()
+				jobs := obj.JobInstances()
 				if !assert.Len(t, jobs, 1) {
 					return
 				}
@@ -283,7 +283,7 @@ func TestObject(t *testing.T) {
 				defer ctx.CancelGracefully()
 
 				time.Sleep(10 * time.Millisecond)
-				jobs := obj.jobInstances()
+				jobs := obj.JobInstances()
 				if !assert.Len(t, jobs, 1) {
 					return
 				}

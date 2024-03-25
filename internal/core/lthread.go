@@ -362,6 +362,14 @@ func (lthread *LThread) IsDone() bool {
 	return lthread.done.Load()
 }
 
+func (lthread *LThread) Context() *Context {
+	return lthread.state.Ctx
+}
+
+func (lthread *LThread) Module() *Module {
+	return lthread.state.Module
+}
+
 // yield creates a new ExecutedStep with the given result, if a the step callback function is set it is executed
 // to determinate if execution will be paused, if not set the execution is paused.
 func (lthread *LThread) yield(ctx *Context, value Value) {
@@ -521,6 +529,11 @@ func (group *LThreadGroup) WaitAllResults(ctx *Context) (*Array, error) {
 	}
 
 	return &results, nil
+}
+
+// CurrentThreads returns the threads currently in the group, the result should not be modified.
+func (group *LThreadGroup) CurrentThreads() []*LThread {
+	return group.threads
 }
 
 // CancelAll stops the execution of all threads in the group.

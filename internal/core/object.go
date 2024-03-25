@@ -277,7 +277,7 @@ func (obj *Object) SmartUnlock(state *GlobalState) {
 	obj.lock.Unlock(state, obj, true)
 }
 
-func (obj *Object) jobInstances() []*LifetimeJobInstance {
+func (obj *Object) JobInstances() []*LifetimeJobInstance {
 	if !obj.hasAdditionalFields() {
 		return nil
 	}

@@ -441,6 +441,11 @@ func (g *SystemGraph) SmartUnlock(state *GlobalState) {
 
 }
 
+func (g *SystemGraph) GetNodesSnapshot(ctx *Context) []*SystemGraphNode {
+	snapshot := g.takeSnapshot(ctx)
+	return snapshot.nodes.list
+}
+
 type SystemGraphNodes struct {
 	lock           sync.Mutex
 	list           []*SystemGraphNode
@@ -477,6 +482,10 @@ type SystemGraphNode struct {
 	edgesFrom []SystemGraphEdge
 	available bool
 	version   uint64
+}
+
+func (n SystemGraphNode) Name() string {
+	return n.name
 }
 
 func (n *SystemGraphNode) Prop(ctx *Context, name string) Value {

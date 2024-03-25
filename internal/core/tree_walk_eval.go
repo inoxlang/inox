@@ -2226,8 +2226,8 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		return evalPatternNode(n.Value, state)
 	case *parse.LazyExpression:
 		return AstNode{
-			Node:  n.Expression,
-			chunk: state.currentChunk(),
+			Node:   n.Expression,
+			Chunk_: state.currentChunk(),
 		}, nil
 	case *parse.SelfExpression:
 		return state.self, nil

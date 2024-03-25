@@ -178,8 +178,16 @@ func NewDebugger(args DebuggerArgs) *Debugger {
 	return debugger
 }
 
-func (d *Debugger) threadId() StateId {
+func (d *Debugger) ThreadId() StateId {
 	return d.globalState.id
+}
+
+func (d *Debugger) GetDebuggerOfThread(id StateId) *Debugger {
+	return d.shared.getDebuggerOfThread(id)
+}
+
+func (d *Debugger) ThreadModule() *Module {
+	return d.globalState.Module
 }
 
 func (d *Debugger) isRoot() bool {
@@ -250,7 +258,7 @@ func (d *Debugger) AttachAndStart(state evaluationState) {
 	d.evaluationState = state
 
 	d.shared.debuggersLock.Lock()
-	d.shared.debuggers[d.threadId()] = d
+	d.shared.debuggers[d.ThreadId()] = d
 	d.shared.debuggersLock.Unlock()
 
 	d.startGoroutine()
@@ -277,7 +285,7 @@ func (d *Debugger) sendCommandToTargetDebugger(cmd any, threadId StateId) {
 	defer d.shared.debuggersLock.Unlock()
 
 	for _, debugger := range d.shared.debuggers {
-		if debugger.threadId() == threadId {
+		if debugger.ThreadId() == threadId {
 			debugger.controlChan <- cmd
 			break
 		}
@@ -303,7 +311,7 @@ func (d *Debugger) Threads() (threads []ThreadInfo) {
 	for _, debugger := range d.shared.debuggers {
 		threads = append(threads, ThreadInfo{
 			Name: debugger.globalState.Module.Name(),
-			Id:   debugger.threadId(),
+			Id:   debugger.ThreadId(),
 		})
 	}
 
@@ -315,14 +323,14 @@ func (d *Debugger) Threads() (threads []ThreadInfo) {
 }
 
 func (d *Debugger) startGoroutine() {
-	d.logger.Info().Msgf("start debugging thread %d (%s)", d.threadId(), d.globalState.Module.Name())
+	d.logger.Info().Msgf("start debugging thread %d (%s)", d.ThreadId(), d.globalState.Module.Name())
 
 	go func() {
 		var done func()
 		cancelExecution := false
 
 		defer func() {
-			d.logger.Info().Msgf("stop debugging thread %d (%s)", d.threadId(), d.globalState.Module.Name())
+			d.logger.Info().Msgf("stop debugging thread %d (%s)", d.ThreadId(), d.globalState.Module.Name())
 			d.closed.Store(true)
 
 			if d.isRoot() {
@@ -336,7 +344,7 @@ func (d *Debugger) startGoroutine() {
 			close(d.resumeExecutionChan)
 
 			d.shared.debuggersLock.Lock()
-			delete(d.shared.debuggers, d.threadId())
+			delete(d.shared.debuggers, d.ThreadId())
 			d.shared.debuggersLock.Unlock()
 
 			if cancelExecution {
@@ -365,38 +373,38 @@ func (d *Debugger) loop(done *func(), cancelExecution *bool) {
 				case DebugCommandContinue:
 					if c.ResumeAllThreads {
 						d.broadcastCommand(c)
-					} else if c.ThreadId != d.threadId() {
+					} else if c.ThreadId != d.ThreadId() {
 						d.sendCommandToTargetDebugger(c, c.ThreadId)
 						continue
 					}
 				case DebugCommandGetStackTrace:
-					if c.ThreadId != d.threadId() {
+					if c.ThreadId != d.ThreadId() {
 						d.sendCommandToTargetDebugger(c, c.ThreadId)
 						continue
 					}
 				case DebugCommandGetScopes:
-					if c.ThreadId != d.threadId() {
+					if c.ThreadId != d.ThreadId() {
 						d.sendCommandToTargetDebugger(c, c.ThreadId)
 						continue
 					}
 				case DebugCommandNextStep:
 					if c.ResumeAllThreads {
 						d.broadcastCommand(c)
-					} else if c.ThreadId != d.threadId() {
+					} else if c.ThreadId != d.ThreadId() {
 						d.sendCommandToTargetDebugger(c, c.ThreadId)
 						continue
 					}
 				case DebugCommandStepIn:
 					if c.ResumeAllThreads {
 						d.broadcastCommand(c)
-					} else if c.ThreadId != d.threadId() {
+					} else if c.ThreadId != d.ThreadId() {
 						d.sendCommandToTargetDebugger(c, c.ThreadId)
 						continue
 					}
 				case DebugCommandStepOut:
 					if c.ResumeAllThreads {
 						d.broadcastCommand(c)
-					} else if c.ThreadId != d.threadId() {
+					} else if c.ThreadId != d.ThreadId() {
 						d.sendCommandToTargetDebugger(c, c.ThreadId)
 						continue
 					}
@@ -549,7 +557,7 @@ func (d *Debugger) beforeInstruction(n parse.Node, trace []StackFrameInfo, excep
 		}
 	}
 
-	d.shared.updateFrameIdMapping(d.threadId(), trace)
+	d.shared.updateFrameIdMapping(d.ThreadId(), trace)
 
 	var (
 		stopReason     ProgramStopReason
@@ -602,7 +610,7 @@ func (d *Debugger) beforeInstruction(n parse.Node, trace []StackFrameInfo, excep
 	if stopReason > 0 {
 		d.stoppedProgram.Store(true)
 		event := ProgramStoppedEvent{
-			ThreadId:       d.threadId(),
+			ThreadId:       d.ThreadId(),
 			Reason:         stopReason,
 			ExceptionError: exceptionError,
 		}

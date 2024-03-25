@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"runtime/debug"
+	"slices"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -221,6 +222,13 @@ func (tx *Transaction) AddEffect(ctx *Context, effect Effect) error {
 	tx.effects = append(tx.effects, effect)
 
 	return nil
+}
+
+func (tx *Transaction) CurrentEffects() ([]Effect, error) {
+	tx.lock.RLock()
+	defer tx.lock.RUnlock()
+
+	return slices.Clone(tx.effects), nil
 }
 
 func (tx *Transaction) Commit(ctx *Context) error {

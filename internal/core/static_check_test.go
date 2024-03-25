@@ -5761,43 +5761,43 @@ func TestCheckDatabasesObject(t *testing.T) {
 	})
 }
 
-// testMutableGoValue implements the GoValue interface
-type testMutableGoValue struct {
+// TestMutableGoValue implements the GoValue interface
+type TestMutableGoValue struct {
 	Name   string
-	secret string
+	Secret string
 }
 
-func (v testMutableGoValue) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
+func (v TestMutableGoValue) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
 	return true
 }
 
-func (v testMutableGoValue) IsMutable() bool {
+func (v TestMutableGoValue) IsMutable() bool {
 	return true
 }
 
-func (v testMutableGoValue) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
+func (v TestMutableGoValue) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
 	_, err := w.Write([]byte("mygoval"))
 	return err
 }
 
-func (v testMutableGoValue) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
+func (v TestMutableGoValue) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
 	return true
 }
 
-func (v testMutableGoValue) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
+func (v TestMutableGoValue) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
 	_, err := w.Write([]byte("\"mygoval\""))
 	return err
 }
 
-func (r testMutableGoValue) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (r TestMutableGoValue) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(fmt.Fprintf(w, "%#v", r))
 }
 
-func (v testMutableGoValue) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+func (v TestMutableGoValue) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.ANY, nil
 }
 
-func (v testMutableGoValue) GetGoMethod(name string) (*GoFunction, bool) {
+func (v TestMutableGoValue) GetGoMethod(name string) (*GoFunction, bool) {
 	switch name {
 	case "getName":
 		return WrapGoMethod(v.GetName), true
@@ -5808,7 +5808,7 @@ func (v testMutableGoValue) GetGoMethod(name string) (*GoFunction, bool) {
 	}
 }
 
-func (v testMutableGoValue) Prop(ctx *Context, name string) Value {
+func (v TestMutableGoValue) Prop(ctx *Context, name string) Value {
 	switch name {
 	case "name":
 		return String(v.Name)
@@ -5821,28 +5821,28 @@ func (v testMutableGoValue) Prop(ctx *Context, name string) Value {
 	}
 }
 
-func (v testMutableGoValue) SetProp(ctx *Context, name string, value Value) error {
+func (v TestMutableGoValue) SetProp(ctx *Context, name string, value Value) error {
 	return ErrCannotSetProp
 }
 
-func (v testMutableGoValue) PropertyNames(ctx *Context) []string {
+func (v TestMutableGoValue) PropertyNames(ctx *Context) []string {
 	return []string{"name", "getName", "getNameNoCtx"}
 }
 
-func (val testMutableGoValue) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherVal, ok := other.(*testMutableGoValue)
-	return ok && val.Name == otherVal.Name && val.secret == otherVal.secret
+func (val TestMutableGoValue) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherVal, ok := other.(*TestMutableGoValue)
+	return ok && val.Name == otherVal.Name && val.Secret == otherVal.Secret
 }
 
-func (user testMutableGoValue) GetName(ctx *Context) String {
+func (user TestMutableGoValue) GetName(ctx *Context) String {
 	return String(user.Name)
 }
 
-func (user testMutableGoValue) GetNameNoCtx() String {
+func (user TestMutableGoValue) GetNameNoCtx() String {
 	return String(user.Name)
 }
 
-func (user testMutableGoValue) Clone(clones map[uintptr]map[int]Value, depth int) (Value, error) {
+func (user TestMutableGoValue) Clone(clones map[uintptr]map[int]Value, depth int) (Value, error) {
 	return nil, ErrNotClonable
 }
 

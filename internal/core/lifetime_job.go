@@ -37,6 +37,14 @@ type LifetimeJob struct {
 	symbolicSubjectObjectPattern symbolic.Pattern
 }
 
+func (j *LifetimeJob) Meta() Value {
+	return j.meta
+}
+
+func (j *LifetimeJob) Module() *Module {
+	return j.module
+}
+
 type LifetimeJobInstance struct {
 	job    *LifetimeJob
 	thread *LThread
@@ -53,6 +61,14 @@ func NewLifetimeJob(meta Value, subjectPattern Pattern, mod *Module /*bytecode *
 		parentModule:   parentState.Module,
 		//bytecode:       bytecode,
 	}, nil
+}
+
+func (inst *LifetimeJobInstance) Job() *LifetimeJob {
+	return inst.job
+}
+
+func (inst *LifetimeJobInstance) Thread() *LThread {
+	return inst.thread
 }
 
 //func NewLifetimeJob(meta Value, subjectPattern Pattern, embeddedModChunk *parse.Chunk, parentState *GlobalState) (*LifetimeJob, error) {

@@ -41,10 +41,10 @@ var (
 )
 
 func init() {
-	resetLimitRegistry()
+	ResetLimitRegistry()
 }
 
-func resetLimitRegistry() {
+func ResetLimitRegistry() {
 	limRegistry.clear()
 	limRegistry.registerLimit(THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, TotalLimit, 0)
 	limRegistry.registerLimit(EXECUTION_TOTAL_LIMIT_NAME, TotalLimit, 0)

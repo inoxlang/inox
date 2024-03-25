@@ -1031,6 +1031,14 @@ func (patt *DifferencePattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
+func (patt *DifferencePattern) Base() Pattern {
+	return patt.base
+}
+
+func (patt *DifferencePattern) Removed() Pattern {
+	return patt.removed
+}
+
 // An OptionalPattern represents a pattern that matches the nil value in additional to the same values as an underlying pattern.
 // Optional pattern expressions (e.g. `%int?`) evaluate to an optional pattern.
 type OptionalPattern struct {

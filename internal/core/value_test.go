@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	permkind "github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
@@ -593,4 +594,20 @@ func parseEval(t *testing.T, s string) Value {
 	res, err := TreeWalkEval(mod, NewTreeWalkState(NewDefaultTestContext()))
 	assert.NoError(t, err)
 	return res
+}
+
+func NewDefaultTestContext() *Context {
+	return NewContext(ContextConfig{
+		Permissions: []Permission{
+			GlobalVarPermission{permkind.Read, "*"},
+			GlobalVarPermission{permkind.Update, "*"},
+			GlobalVarPermission{permkind.Create, "*"},
+			GlobalVarPermission{permkind.Use, "*"},
+
+			HttpPermission{Kind_: permkind.Read, Entity: HostPattern("https://**")},
+			LThreadPermission{permkind.Create},
+		},
+		Filesystem: newOsFilesystem(),
+		Limits:     []Limit{MustMakeNotAutoDepletingCountLimit(THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, 100_000)},
+	})
 }

@@ -30,8 +30,8 @@ func TestPreInit(t *testing.T) {
 
 	//register limits
 	{
-		resetLimitRegistry()
-		defer resetLimitRegistry()
+		ResetLimitRegistry()
+		defer ResetLimitRegistry()
 
 		limRegistry.registerLimit("a", TotalLimit, 0)
 		limRegistry.registerLimit("b", ByteRateLimit, 0)
@@ -1119,7 +1119,7 @@ func TestPreInit(t *testing.T) {
 				databases: {
 					main: {
 						resource: ldb://main
-						resolution-data: s3://database
+						resolution-data: nil
 					}
 				}
 			}`,
@@ -1133,7 +1133,7 @@ func TestPreInit(t *testing.T) {
 				{
 					Name:           "main",
 					Resource:       Host("ldb://main"),
-					ResolutionData: Host("s3://database"),
+					ResolutionData: Nil,
 				},
 			},
 			expectedResolutions: nil,

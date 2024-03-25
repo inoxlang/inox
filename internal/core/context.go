@@ -1382,6 +1382,10 @@ func (ctx *Context) GetTypeExtension(id string) *TypeExtension {
 	return nil
 }
 
+func (ctx *Context) GetAllTypeExtensions() []*TypeExtension {
+	return slices.Clone(ctx.typeExtensions)
+}
+
 func (ctx *Context) AddTypeExtension(extension *TypeExtension) {
 	ctx.lock.Lock()
 	defer ctx.lock.Unlock()

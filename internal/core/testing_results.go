@@ -32,9 +32,9 @@ var (
 )
 
 type TestCaseResult struct {
-	error          error //may wrap an *AssertionError
-	assertionError *AssertionError
-	testCase       *TestCase
+	Error          error //may wrap an *AssertionError
+	AssertionError *AssertionError
+	TestCase       *TestCase
 
 	Success                bool   `json:"success"`
 	DarkModePrettyMessage  string //colorized
@@ -48,10 +48,10 @@ func NewTestCaseResult(ctx *Context, executionResult Value, executionError error
 	isAssertionError := errors.As(executionError, &assertionError)
 
 	result := &TestCaseResult{
-		error:          executionError,
-		assertionError: assertionError,
+		Error:          executionError,
+		AssertionError: assertionError,
 		Success:        executionError == nil,
-		testCase:       testCase,
+		TestCase:       testCase,
 	}
 
 	red := string(GetFullColorSequence(termenv.ANSIBrightRed, false))
@@ -121,9 +121,9 @@ func (r *TestCaseResult) forEachNotEmptyMessage(fn func(s string, isDarkMode, is
 }
 
 type TestSuiteResult struct {
-	testSuite       *TestSuite
-	caseResults     []*TestCaseResult
-	subSuiteResults []*TestSuiteResult
+	TestSuite       *TestSuite
+	CaseResults     []*TestCaseResult
+	SubSuiteResults []*TestSuiteResult
 
 	Success bool
 
@@ -134,9 +134,9 @@ type TestSuiteResult struct {
 
 func NewTestSuiteResult(ctx *Context, testCaseResults []*TestCaseResult, subSuiteResults []*TestSuiteResult, testSuite *TestSuite) (*TestSuiteResult, error) {
 	suiteResult := &TestSuiteResult{
-		testSuite:       testSuite,
-		caseResults:     testCaseResults,
-		subSuiteResults: subSuiteResults,
+		TestSuite:       testSuite,
+		CaseResults:     testCaseResults,
+		SubSuiteResults: subSuiteResults,
 		Success:         true,
 	}
 
@@ -198,7 +198,7 @@ func NewTestSuiteResult(ctx *Context, testCaseResults []*TestCaseResult, subSuit
 		suiteResult.Message += subSuiteResult.Message + "\n\n"
 	}
 
-	name := suiteResult.testSuite.nameFrom
+	name := suiteResult.TestSuite.nameFromMeta
 	if name == "" {
 		if testSuite.module != nil {
 			name = "(no name) " + testSuite.module.MainChunk.GetFormattedNodeLocation(testSuite.module.MainChunk.Node)

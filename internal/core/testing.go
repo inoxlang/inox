@@ -56,7 +56,7 @@ type TestItem interface {
 // A TestSuite represents a test suite, TestSuite implements Value.
 type TestSuite struct {
 	meta                             Value
-	nameFrom                         string             //can be empty
+	nameFromMeta                     string             //can be empty
 	filesystemSnapshot               FilesystemSnapshot //can be nil
 	passLiveFilesystemCopyToSubTests bool
 	testedProgramPath                Path //can be empty
@@ -118,14 +118,14 @@ func NewTestSuite(input TestSuiteCreationInput) (*TestSuite, error) {
 
 	switch m := meta.(type) {
 	case StringLike:
-		suite.nameFrom = m.GetOrBuildString()
+		suite.nameFromMeta = m.GetOrBuildString()
 	case *Object:
 		err := m.ForEachEntry(func(k string, v Serializable) error {
 			switch k {
 			case symbolic.TEST_ITEM_META__NAME_PROPNAME:
 				strLike, ok := v.(StringLike)
 				if ok {
-					suite.nameFrom = strLike.GetOrBuildString()
+					suite.nameFromMeta = strLike.GetOrBuildString()
 				}
 			case symbolic.TEST_ITEM_META__FS_PROPNAME:
 				snapshot, ok := v.(*FilesystemSnapshotIL)
@@ -186,10 +186,10 @@ func (s *TestSuite) ParentChunk() *parse.ParsedChunkSource {
 }
 
 func (s *TestSuite) ItemName() (string, bool) {
-	if s.nameFrom == "" {
+	if s.nameFromMeta == "" {
 		return "", false
 	}
-	return s.nameFrom, true
+	return s.nameFromMeta, true
 }
 
 func (s *TestSuite) Statement() parse.Node {
@@ -201,6 +201,20 @@ func (s *TestSuite) FilesystemSnapshot() (FilesystemSnapshot, bool) {
 		return s.filesystemSnapshot, true
 	}
 	return nil, false
+}
+
+// The result should not be modified.
+func (s *TestSuite) Meta() Value {
+	return s.meta
+}
+
+func (s *TestSuite) Module() *Module {
+	return s.module
+}
+
+// Can be empty.
+func (s *TestSuite) NameFromMeta() string {
+	return s.nameFromMeta
 }
 
 func (s *TestSuite) Run(ctx *Context, options ...Option) (*LThread, error) {
@@ -421,6 +435,19 @@ func (c *TestCase) FilesystemSnapshot() (FilesystemSnapshot, bool) {
 		return c.filesystemSnapshot, true
 	}
 	return nil, false
+}
+
+// The result should not be modified.
+func (c *TestCase) Meta() Value {
+	return c.meta
+}
+
+func (c *TestCase) Module() *Module {
+	return c.module
+}
+
+func (c *TestCase) Name() string {
+	return c.name
 }
 
 func (c *TestCase) Run(ctx *Context, options ...Option) (*LThread, error) {
@@ -1102,6 +1129,10 @@ func (*CurrentTest) PropertyNames(ctx *Context) []string {
 type TestedProgram struct {
 	lthread   *LThread
 	databases *Namespace
+}
+
+func (p *TestedProgram) LThread() *LThread {
+	return p.lthread
 }
 
 func (p *TestedProgram) Cancel(*Context) {

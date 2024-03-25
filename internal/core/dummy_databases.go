@@ -8,7 +8,7 @@ import (
 
 var (
 	_ Database = (*FailedToOpenDatabase)(nil)
-	_ Database = (*dummyDatabase)(nil)
+	_ Database = (*DummyDatabase)(nil)
 )
 
 type FailedToOpenDatabase struct {
@@ -39,38 +39,38 @@ func (db *FailedToOpenDatabase) Close(ctx *Context) error {
 	return ErrNotImplemented
 }
 
-type dummyDatabase struct {
-	resource         SchemeHolder
-	schemaUpdated    bool
-	currentSchema    *ObjectPattern //if nil EMPTY_INEXACT_OBJECT_PATTERN is the schema.
-	topLevelEntities map[string]Serializable
-	loadError        error
-	closed           atomic.Bool
+type DummyDatabase struct {
+	Resource_        SchemeHolder
+	SchemaUpdated    bool
+	CurrentSchema    *ObjectPattern //if nil EMPTY_INEXACT_OBJECT_PATTERN is the schema.
+	TopLevelEntities map[string]Serializable
+	LoadError        error
+	Closed           atomic.Bool
 }
 
-func (db *dummyDatabase) Resource() SchemeHolder {
-	return db.resource
+func (db *DummyDatabase) Resource() SchemeHolder {
+	return db.Resource_
 }
 
-func (db *dummyDatabase) Schema() *ObjectPattern {
-	if db.closed.Load() {
+func (db *DummyDatabase) Schema() *ObjectPattern {
+	if db.Closed.Load() {
 		panic(ErrDatabaseClosed)
 	}
-	if db.currentSchema != nil {
-		return db.currentSchema
+	if db.CurrentSchema != nil {
+		return db.CurrentSchema
 	}
 	return EMPTY_INEXACT_OBJECT_PATTERN
 }
 
-func (db *dummyDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern, handlers MigrationOpHandlers) {
-	if db.schemaUpdated {
+func (db *DummyDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern, handlers MigrationOpHandlers) {
+	if db.SchemaUpdated {
 		panic(ErrDatabaseSchemaAlreadyUpdatedOrNotAllowed)
 	}
-	if db.closed.Load() {
+	if db.Closed.Load() {
 		panic(ErrDatabaseClosed)
 	}
-	db.schemaUpdated = true
-	db.currentSchema = schema
+	db.SchemaUpdated = true
+	db.CurrentSchema = schema
 
 	state := ctx.MustGetClosestState()
 
@@ -83,21 +83,21 @@ func (db *dummyDatabase) UpdateSchema(ctx *Context, schema *ObjectPattern, handl
 			panic(errors.New("only shallow inclusion handlers are supported"))
 		}
 		result := handler.GetResult(ctx, state)
-		db.topLevelEntities[string(pattern[1:])] = result.(Serializable)
+		db.TopLevelEntities[string(pattern[1:])] = result.(Serializable)
 	}
 }
 
-func (db *dummyDatabase) LoadTopLevelEntities(_ *Context) (map[string]Serializable, error) {
-	if db.closed.Load() {
+func (db *DummyDatabase) LoadTopLevelEntities(_ *Context) (map[string]Serializable, error) {
+	if db.Closed.Load() {
 		return nil, ErrDatabaseClosed
 	}
-	if db.loadError != nil {
-		return nil, db.loadError
+	if db.LoadError != nil {
+		return nil, db.LoadError
 	}
-	return db.topLevelEntities, nil
+	return db.TopLevelEntities, nil
 }
 
-func (db *dummyDatabase) Close(ctx *Context) error {
-	db.closed.Store(true)
+func (db *DummyDatabase) Close(ctx *Context) error {
+	db.Closed.Store(true)
 	return nil
 }

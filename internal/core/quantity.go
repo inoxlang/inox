@@ -176,6 +176,23 @@ type QuantityRange struct {
 	end          Serializable
 }
 
+func NewQuantityRange(start, end Serializable, inclusiveEnd bool) QuantityRange {
+	return QuantityRange{
+		unknownStart: false,
+		start:        start,
+		end:          end,
+		inclusiveEnd: inclusiveEnd,
+	}
+}
+
+func NewUnknownStartQuantityRange(end Serializable, inclusiveEnd bool) QuantityRange {
+	return QuantityRange{
+		unknownStart: true,
+		end:          end,
+		inclusiveEnd: inclusiveEnd,
+	}
+}
+
 func (r QuantityRange) KnownStart() Serializable {
 	if r.unknownStart {
 		panic(ErrUnknownStartQtyRange)
@@ -324,7 +341,7 @@ func mustEvalQuantityRange(n *parse.QuantityRangeLiteral) QuantityRange {
 	if n.UpperBound != nil {
 		upperBound = utils.Must(evalQuantity(n.UpperBound.(*parse.QuantityLiteral).Values, n.UpperBound.(*parse.QuantityLiteral).Units))
 	} else {
-		upperBound = getQuantityTypeMaxValue(lowerBound)
+		upperBound = GetQuantityTypeMaxValue(lowerBound)
 	}
 
 	return QuantityRange{
@@ -350,7 +367,7 @@ func getQuantityTypeStart(v Serializable) Serializable {
 	}
 }
 
-func getQuantityTypeMaxValue(v Serializable) Serializable {
+func GetQuantityTypeMaxValue(v Serializable) Serializable {
 	switch v.(type) {
 	case ByteCount:
 		return ByteCount(math.MaxInt64)

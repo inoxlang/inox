@@ -4,11 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"slices"
 	"sync"
 	"sync/atomic"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/parse"
+	"golang.org/x/exp/maps"
 )
 
 // An InoxFunction is a Value that represents a function declared inside Inox code.
@@ -128,6 +130,17 @@ func (fn *InoxFunction) SmartLock(state *GlobalState) {
 
 func (fn *InoxFunction) SmartUnlock(state *GlobalState) {
 
+}
+
+func (fn *InoxFunction) CapturedLocals() []Value {
+	if fn.capturedLocals != nil {
+		return slices.Clone(fn.capturedLocals)
+	}
+	return maps.Values(fn.treeWalkCapturedLocals)
+}
+
+func (fn *InoxFunction) OriginStateEqual(state *GlobalState) bool {
+	return fn.originState == state
 }
 
 // checkTransformInoxMustCallResult checks the result of an Inox function 'must' call:

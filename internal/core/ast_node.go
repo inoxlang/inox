@@ -9,13 +9,13 @@ import (
 
 // An AstNode is an immutable Value wrapping an AST node.
 type AstNode struct {
-	Node  parse.Node
-	chunk *parse.ParsedChunkSource
+	Node   parse.Node
+	Chunk_ *parse.ParsedChunkSource
 }
 
 // Chunk returns the parsed chunk the node is part of.
 func (n AstNode) Chunk() *parse.ParsedChunkSource {
-	return n.chunk
+	return n.Chunk_
 }
 
 func (AstNode) PropertyNames(ctx *Context) []string {
@@ -25,11 +25,11 @@ func (AstNode) PropertyNames(ctx *Context) []string {
 func (n AstNode) Prop(ctx *Context, name string) Value {
 	switch name {
 	case "position":
-		pos := n.chunk.GetSourcePosition(n.Node.Base().Span)
+		pos := n.Chunk_.GetSourcePosition(n.Node.Base().Span)
 		return createRecordFromSourcePosition(pos)
 	case "token-at-position":
 		return WrapGoClosure(func(ctx *Context, pos Int) Value {
-			token, ok := parse.GetTokenAtPosition(int(pos), n.Node, n.chunk.Node)
+			token, ok := parse.GetTokenAtPosition(int(pos), n.Node, n.Chunk_.Node)
 			if !ok {
 				return Nil
 			}

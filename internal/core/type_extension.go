@@ -18,6 +18,10 @@ func (e TypeExtension) Id() string {
 	return e.symbolicExtension.Id
 }
 
+func (e TypeExtension) Symbolic() *symbolic.TypeExtension {
+	return e.symbolicExtension
+}
+
 type propertyExpression struct {
 	name string
 

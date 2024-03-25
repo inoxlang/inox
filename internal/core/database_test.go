@@ -41,9 +41,9 @@ func TestDatabaseIL(t *testing.T) {
 		}, nil)
 		defer ctx.CancelGracefully()
 
-		db := &dummyDatabase{
-			resource:         Host("ldb://main"),
-			topLevelEntities: map[string]Serializable{},
+		db := &DummyDatabase{
+			Resource_:        Host("ldb://main"),
+			TopLevelEntities: map[string]Serializable{},
 		}
 
 		dbIL := utils.Must(WrapDatabase(ctx, DatabaseWrappingArgs{
@@ -105,9 +105,9 @@ func TestDatabaseIL(t *testing.T) {
 		}, nil)
 		defer ctx.CancelGracefully()
 
-		db := &dummyDatabase{
-			resource:         Host("ldb://main"),
-			topLevelEntities: map[string]Serializable{},
+		db := &DummyDatabase{
+			Resource_:        Host("ldb://main"),
+			TopLevelEntities: map[string]Serializable{},
 		}
 
 		dbIL := utils.Must(WrapDatabase(ctx, DatabaseWrappingArgs{
@@ -174,9 +174,9 @@ func TestDatabaseIL(t *testing.T) {
 		}, nil)
 		defer ctx.CancelGracefully()
 
-		db := &dummyDatabase{
-			resource: Host("ldb://main"),
-			topLevelEntities: map[string]Serializable{"a": &loadableTestValue{
+		db := &DummyDatabase{
+			Resource_: Host("ldb://main"),
+			TopLevelEntities: map[string]Serializable{"a": &loadableTestValue{
 				value: 1,
 			}},
 		}
@@ -212,10 +212,10 @@ func TestDatabaseIL(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		errCannotLoad := errors.New("cannot load")
-		db := &dummyDatabase{
-			resource:  Host("ldb://main"),
-			loadError: errCannotLoad, //ERROR
-			topLevelEntities: map[string]Serializable{"a": &loadableTestValue{
+		db := &DummyDatabase{
+			Resource_: Host("ldb://main"),
+			LoadError: errCannotLoad, //ERROR
+			TopLevelEntities: map[string]Serializable{"a": &loadableTestValue{
 				value: 1,
 			}},
 		}
@@ -225,12 +225,12 @@ func TestDatabaseIL(t *testing.T) {
 			ForceLoadBeforeOwnerStateSet: false,
 		}))
 
-		assert.False(t, db.closed.Load())
+		assert.False(t, db.Closed.Load())
 
 		err := dbIL.SetOwnerStateOnceAndLoadIfNecessary(ctx, ctx.state)
 		assert.ErrorIs(t, err, errCannotLoad)
 
-		assert.True(t, db.closed.Load())
+		assert.True(t, db.Closed.Load())
 	})
 
 	t.Run("if the current schema is not equal to the expected schema an error should be returned", func(t *testing.T) {
@@ -244,9 +244,9 @@ func TestDatabaseIL(t *testing.T) {
 		}, nil)
 		defer ctx.CancelGracefully()
 
-		db := &dummyDatabase{
-			resource: Host("ldb://main"),
-			topLevelEntities: map[string]Serializable{"a": &loadableTestValue{
+		db := &DummyDatabase{
+			Resource_: Host("ldb://main"),
+			TopLevelEntities: map[string]Serializable{"a": &loadableTestValue{
 				value: 1,
 			}},
 		}
@@ -280,9 +280,9 @@ func TestDatabaseIL(t *testing.T) {
 		}, nil)
 		defer ctx.CancelGracefully()
 
-		db := &dummyDatabase{
-			resource: Host("ldb://main"),
-			topLevelEntities: map[string]Serializable{"a": &loadableTestValue{
+		db := &DummyDatabase{
+			Resource_: Host("ldb://main"),
+			TopLevelEntities: map[string]Serializable{"a": &loadableTestValue{
 				value: 1,
 			}},
 		}
@@ -320,9 +320,9 @@ func TestDatabaseIL(t *testing.T) {
 		}, nil)
 		defer ctx.CancelGracefully()
 
-		db := &dummyDatabase{
-			resource: Host("ldb://main"),
-			topLevelEntities: map[string]Serializable{"a": &loadableTestValue{
+		db := &DummyDatabase{
+			Resource_: Host("ldb://main"),
+			TopLevelEntities: map[string]Serializable{"a": &loadableTestValue{
 				value: 1,
 			}},
 		}
@@ -356,9 +356,9 @@ func TestDatabaseIL(t *testing.T) {
 		}, nil)
 		defer ctx.CancelGracefully()
 
-		db := &dummyDatabase{
-			resource: Host("ldb://main"),
-			topLevelEntities: map[string]Serializable{"a": &loadableTestValue{
+		db := &DummyDatabase{
+			Resource_: Host("ldb://main"),
+			TopLevelEntities: map[string]Serializable{"a": &loadableTestValue{
 				value: 1,
 			}},
 		}
@@ -393,9 +393,9 @@ func TestDatabaseIL(t *testing.T) {
 		}, nil)
 		defer ctx.CancelGracefully()
 
-		db := &dummyDatabase{
-			resource: Host("ldb://main"),
-			topLevelEntities: map[string]Serializable{"a": &loadableTestValue{
+		db := &DummyDatabase{
+			Resource_: Host("ldb://main"),
+			TopLevelEntities: map[string]Serializable{"a": &loadableTestValue{
 				value: 1,
 			}},
 		}
@@ -433,9 +433,9 @@ func TestDatabaseIL(t *testing.T) {
 		}, nil)
 		defer ctx.CancelGracefully()
 
-		db := &dummyDatabase{
-			resource: Host("ldb://main"),
-			topLevelEntities: map[string]Serializable{"a": &loadableTestValue{
+		db := &DummyDatabase{
+			Resource_: Host("ldb://main"),
+			TopLevelEntities: map[string]Serializable{"a": &loadableTestValue{
 				value: 1,
 			}},
 		}
@@ -463,9 +463,9 @@ func TestDatabaseIL(t *testing.T) {
 		}, nil)
 		defer ctx1.CancelGracefully()
 
-		db := &dummyDatabase{
-			resource:         Host("ldb://main"),
-			topLevelEntities: map[string]Serializable{},
+		db := &DummyDatabase{
+			Resource_:        Host("ldb://main"),
+			TopLevelEntities: map[string]Serializable{},
 		}
 
 		dbIL := utils.Must(WrapDatabase(ctx1, DatabaseWrappingArgs{
@@ -494,9 +494,9 @@ func TestDatabaseIL(t *testing.T) {
 		}, nil)
 		defer ctx.CancelGracefully()
 
-		db := &dummyDatabase{
-			resource:         Host("ldb://main"),
-			topLevelEntities: map[string]Serializable{},
+		db := &DummyDatabase{
+			Resource_:        Host("ldb://main"),
+			TopLevelEntities: map[string]Serializable{},
 		}
 
 		dbIL := utils.Must(WrapDatabase(ctx, DatabaseWrappingArgs{
@@ -521,9 +521,9 @@ func TestDatabaseIL(t *testing.T) {
 		}, nil)
 		defer ctx.CancelGracefully()
 
-		db := &dummyDatabase{
-			resource:         Host("ldb://main"),
-			topLevelEntities: map[string]Serializable{},
+		db := &DummyDatabase{
+			Resource_:        Host("ldb://main"),
+			TopLevelEntities: map[string]Serializable{},
 		}
 
 		dbIL := utils.Must(WrapDatabase(ctx, DatabaseWrappingArgs{
@@ -554,9 +554,9 @@ func TestDatabaseIL(t *testing.T) {
 		}, nil)
 		defer ctx.CancelGracefully()
 
-		db := &dummyDatabase{
-			resource: Host("ldb://main"),
-			topLevelEntities: map[string]Serializable{"a": &loadableTestValue{
+		db := &DummyDatabase{
+			Resource_: Host("ldb://main"),
+			TopLevelEntities: map[string]Serializable{"a": &loadableTestValue{
 				value: 1,
 			}},
 		}
@@ -592,9 +592,9 @@ func TestDatabaseIL(t *testing.T) {
 		}, nil)
 		defer ctx.CancelGracefully()
 
-		db := &dummyDatabase{
-			resource:         Host("ldb://main"),
-			topLevelEntities: map[string]Serializable{},
+		db := &DummyDatabase{
+			Resource_:        Host("ldb://main"),
+			TopLevelEntities: map[string]Serializable{},
 		}
 
 		dbIL := utils.Must(WrapDatabase(ctx, DatabaseWrappingArgs{
@@ -632,7 +632,7 @@ func TestDatabaseIL(t *testing.T) {
 		}, ctx))
 
 		val := dbIL.Prop(ctx, "a")
-		assert.Same(t, db.topLevelEntities["a"], val)
+		assert.Same(t, db.TopLevelEntities["a"], val)
 
 		assert.Same(t, newSchema, dbIL.Prop(ctx, "schema"))
 	})
@@ -665,9 +665,9 @@ func TestDatabaseIL(t *testing.T) {
 			{Name: "b", Pattern: LOADABLE_TEST_VALUE_PATTERN},
 		})
 
-		db := &dummyDatabase{
-			resource:         Host("ldb://main"),
-			topLevelEntities: map[string]Serializable{},
+		db := &DummyDatabase{
+			Resource_:        Host("ldb://main"),
+			TopLevelEntities: map[string]Serializable{},
 		}
 
 		dbIL := utils.Must(WrapDatabase(ctx, DatabaseWrappingArgs{
@@ -716,9 +716,9 @@ func TestDatabaseIL(t *testing.T) {
 			}, nil)
 			defer ctx.CancelGracefully()
 
-			db := &dummyDatabase{
-				resource:         Host("ldb://main"),
-				topLevelEntities: map[string]Serializable{},
+			db := &DummyDatabase{
+				Resource_:        Host("ldb://main"),
+				TopLevelEntities: map[string]Serializable{},
 			}
 
 			utils.Must(WrapDatabase(ctx, DatabaseWrappingArgs{
@@ -728,9 +728,9 @@ func TestDatabaseIL(t *testing.T) {
 				Name:                 "main",
 			}))
 
-			assert.False(t, db.closed.Load())
+			assert.False(t, db.Closed.Load())
 			ctx.CancelGracefully()
-			assert.True(t, db.closed.Load())
+			assert.True(t, db.Closed.Load())
 		})
 
 		t.Run("owner state set during WrapDatabase call", func(t *testing.T) {
@@ -744,9 +744,9 @@ func TestDatabaseIL(t *testing.T) {
 			}, nil)
 			defer ctx.CancelGracefully()
 
-			db := &dummyDatabase{
-				resource:         Host("ldb://main"),
-				topLevelEntities: map[string]Serializable{},
+			db := &DummyDatabase{
+				Resource_:        Host("ldb://main"),
+				TopLevelEntities: map[string]Serializable{},
 			}
 
 			dbIL := utils.Must(WrapDatabase(ctx, DatabaseWrappingArgs{
@@ -756,9 +756,9 @@ func TestDatabaseIL(t *testing.T) {
 
 			dbIL.SetOwnerStateOnceAndLoadIfNecessary(ctx, ctx.MustGetClosestState())
 
-			assert.False(t, db.closed.Load())
+			assert.False(t, db.Closed.Load())
 			ctx.CancelGracefully()
-			assert.True(t, db.closed.Load())
+			assert.True(t, db.Closed.Load())
 		})
 	})
 
@@ -791,9 +791,9 @@ func TestDatabaseILGetOrLoad(t *testing.T) {
 		}),
 	)}
 
-	db := &dummyDatabase{
-		resource: Host("ldb://main"),
-		topLevelEntities: map[string]Serializable{
+	db := &DummyDatabase{
+		Resource_: Host("ldb://main"),
+		TopLevelEntities: map[string]Serializable{
 			"users": COLLECTION,
 			"object": NewObjectFromMapNoInit(ValMap{
 				"list": INDEXABLE,
@@ -820,7 +820,7 @@ func TestDatabaseILGetOrLoad(t *testing.T) {
 	if !assert.NoError(t, err) {
 		return
 	}
-	assert.Equal(t, db.topLevelEntities["users"], users)
+	assert.Equal(t, db.TopLevelEntities["users"], users)
 
 	{
 
@@ -842,7 +842,7 @@ func TestDatabaseILGetOrLoad(t *testing.T) {
 		if !assert.NoError(t, err) {
 			return
 		}
-		if !assert.Equal(t, db.topLevelEntities["users"].(*testCollection).At(nil, 0), firstUser) {
+		if !assert.Equal(t, db.TopLevelEntities["users"].(*testCollection).At(nil, 0), firstUser) {
 			return
 		}
 
@@ -869,7 +869,7 @@ func TestDatabaseILGetOrLoad(t *testing.T) {
 	if !assert.NoError(t, err) {
 		return
 	}
-	assert.Equal(t, db.topLevelEntities["object"], object)
+	assert.Equal(t, db.TopLevelEntities["object"], object)
 
 	//element of the indexable
 	elem, err := dbIL.GetOrLoad(ctx, "/object/list/0")
