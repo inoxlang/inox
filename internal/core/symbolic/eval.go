@@ -373,7 +373,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		return evalGlobalVariable(n, state, options)
 	case *parse.ReturnStatement:
 		return evalReturnStatement(n, state)
-	case *parse.YieldStatement:
+	case *parse.CoyieldStatement:
 		if n.Expr == nil {
 			return nil, nil
 		}

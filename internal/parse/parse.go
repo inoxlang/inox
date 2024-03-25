@@ -9474,7 +9474,7 @@ func (p *parser) parseReturnStatement(returnIdent *IdentifierLiteral) *ReturnSta
 	}
 }
 
-func (p *parser) parseYieldStatement(yieldIdent *IdentifierLiteral) *YieldStatement {
+func (p *parser) parseYieldStatement(yieldIdent *IdentifierLiteral) *CoyieldStatement {
 	p.panicIfContextDone()
 
 	var end int32 = p.i
@@ -9487,9 +9487,9 @@ func (p *parser) parseYieldStatement(yieldIdent *IdentifierLiteral) *YieldStatem
 		end = returnValue.Base().Span.End
 	}
 
-	p.tokens = append(p.tokens, Token{Type: YIELD_KEYWORD, Span: yieldIdent.Span})
+	p.tokens = append(p.tokens, Token{Type: COYIELD_KEYWORD, Span: yieldIdent.Span})
 
-	return &YieldStatement{
+	return &CoyieldStatement{
 		NodeBase: NodeBase{
 			Span: NodeSpan{yieldIdent.Span.Start, end},
 		},

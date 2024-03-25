@@ -3851,23 +3851,23 @@ func TestCheck(t *testing.T) {
 		})
 	})
 
-	t.Run("yield statement", func(t *testing.T) {
+	t.Run("coyield statement", func(t *testing.T) {
 		t.Run("in embedded module", func(t *testing.T) {
 			n, src := mustParseCode(`
-				go do { yield }
+				go do { coyield }
 			`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
 		t.Run("in function in embedded modue", func(t *testing.T) {
 			n, src := mustParseCode(`
-				go do { fn f(){ yield } }
+				go do { fn f(){ coyield } }
 			`)
 
-			yieldStmt := parse.FindNode(n, (*parse.YieldStatement)(nil), nil)
+			yieldStmt := parse.FindNode(n, (*parse.CoyieldStatement)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(yieldStmt, src, MISPLACE_YIELD_STATEMENT_ONLY_ALLOWED_IN_EMBEDDED_MODULES),
+				makeError(yieldStmt, src, MISPLACE_COYIELD_STATEMENT_ONLY_ALLOWED_IN_EMBEDDED_MODULES),
 			)
 			assert.Equal(t, expectedErr, err)
 		})

@@ -85,7 +85,7 @@ const (
 	MATCH_KEYWORD
 	DEFAULTCASE_KEYWORD
 	RETURN_KEYWORD
-	YIELD_KEYWORD
+	COYIELD_KEYWORD
 	BREAK_KEYWORD
 	CONTINUE_KEYWORD
 	PRUNE_KEYWORD
@@ -329,7 +329,7 @@ var tokenStrings = [...]string{
 	MATCH_KEYWORD:                  MATCH_KEYWORD_STRING,
 	DEFAULTCASE_KEYWORD:            "defaultcase",
 	RETURN_KEYWORD:                 "return",
-	YIELD_KEYWORD:                  "yield",
+	COYIELD_KEYWORD:                "coyield",
 	BREAK_KEYWORD:                  "break",
 	CONTINUE_KEYWORD:               "continue",
 	PRUNE_KEYWORD:                  "prune",
@@ -500,7 +500,7 @@ var tokenTypenames = [...]string{
 	MATCH_KEYWORD:                  "MATCH_KEYWORD",
 	DEFAULTCASE_KEYWORD:            "DEFAULTCASE_KEYWORD",
 	RETURN_KEYWORD:                 "RETURN_KEYWORD",
-	YIELD_KEYWORD:                  "YIELD_KEYWORD",
+	COYIELD_KEYWORD:                "YIELD_KEYWORD",
 	BREAK_KEYWORD:                  "BREAK_KEYWORD",
 	CONTINUE_KEYWORD:               "CONTINUE_KEYWORD",
 	PRUNE_KEYWORD:                  "PRUNE_KEYWORD",

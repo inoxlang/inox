@@ -596,7 +596,7 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 		return c.checkFuncExpr(node, closestModule, ancestorChain)
 	case *parse.FunctionPatternExpression:
 		return c.checkFuncPatternExpr(node, closestModule)
-	case *parse.YieldStatement:
+	case *parse.CoyieldStatement:
 		return c.checkYieldStmt(node, ancestorChain)
 	case *parse.BreakStatement, *parse.ContinueStatement:
 		iterativeStmtIndex := -1
@@ -1944,7 +1944,7 @@ func (c *checker) checkFuncPatternExpr(node *parse.FunctionPatternExpression, cl
 	return parse.ContinueTraversal
 }
 
-func (c *checker) checkYieldStmt(node *parse.YieldStatement, ancestorChain []parse.Node) parse.TraversalAction {
+func (c *checker) checkYieldStmt(node *parse.CoyieldStatement, ancestorChain []parse.Node) parse.TraversalAction {
 	ok := c.checkInput.Module != nil && c.checkInput.Module.IsEmbedded()
 
 	for i := len(ancestorChain) - 1; i >= 0; i-- {
@@ -1965,7 +1965,7 @@ func (c *checker) checkYieldStmt(node *parse.YieldStatement, ancestorChain []par
 	}
 
 	if !ok {
-		c.addError(node, MISPLACE_YIELD_STATEMENT_ONLY_ALLOWED_IN_EMBEDDED_MODULES)
+		c.addError(node, MISPLACE_COYIELD_STATEMENT_ONLY_ALLOWED_IN_EMBEDDED_MODULES)
 	}
 	return parse.ContinueTraversal
 }

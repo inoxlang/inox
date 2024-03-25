@@ -201,7 +201,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 
 		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
 			NameString: "lthread-test",
-			CodeString: "yield 0; return 0",
+			CodeString: "coyield 0; return 0",
 		}))
 
 		lthreadCtx := NewContext(ContextConfig{

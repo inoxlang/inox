@@ -1496,12 +1496,12 @@ func (ReturnStatement) Kind() NodeKind {
 	return Stmt
 }
 
-type YieldStatement struct {
+type CoyieldStatement struct {
 	NodeBase
 	Expr Node //can be nil
 }
 
-func (YieldStatement) Kind() NodeKind {
+func (CoyieldStatement) Kind() NodeKind {
 	return Stmt
 }
 
@@ -2934,7 +2934,7 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 		walk(n.Body, node, ancestorChain, fn, afterFn)
 	case *ReturnStatement:
 		walk(n.Expr, node, ancestorChain, fn, afterFn)
-	case *YieldStatement:
+	case *CoyieldStatement:
 		walk(n.Expr, node, ancestorChain, fn, afterFn)
 	case *BreakStatement:
 		walk(n.Label, node, ancestorChain, fn, afterFn)

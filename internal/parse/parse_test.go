@@ -23339,21 +23339,21 @@ func testParse(
 
 	})
 
-	t.Run("yield statement", func(t *testing.T) {
+	t.Run("coyield statement", func(t *testing.T) {
 		t.Run("value", func(t *testing.T) {
-			n := mustparseChunk(t, "yield 1")
+			n := mustparseChunk(t, "coyield 1")
 
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 7}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 9}, nil, false},
 				Statements: []Node{
-					&YieldStatement{
+					&CoyieldStatement{
 						NodeBase: NodeBase{
-							NodeSpan{0, 7},
+							NodeSpan{0, 9},
 							nil,
 							false,
 						},
 						Expr: &IntLiteral{
-							NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
+							NodeBase: NodeBase{NodeSpan{8, 9}, nil, false},
 							Raw:      "1",
 							Value:    1,
 						},
@@ -23363,14 +23363,14 @@ func testParse(
 		})
 
 		t.Run("no value", func(t *testing.T) {
-			n := mustparseChunk(t, "yield")
+			n := mustparseChunk(t, "coyield")
 
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 5}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 7}, nil, false},
 				Statements: []Node{
-					&YieldStatement{
+					&CoyieldStatement{
 						NodeBase: NodeBase{
-							NodeSpan{0, 5},
+							NodeSpan{0, 7},
 							nil,
 							false,
 						},
@@ -23380,24 +23380,13 @@ func testParse(
 		})
 
 		t.Run("no value, followed by line feed", func(t *testing.T) {
-			n := mustparseChunk(t, "yield\n")
+			n := mustparseChunk(t, "coyield\n")
 
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{
-					NodeSpan{0, 6},
-					nil,
-					false,
-					/*[]Token{
-						{Type: NEWLINE, Span: NodeSpan{5, 6}},
-					},*/
-				},
+				NodeBase: NodeBase{Span: NodeSpan{0, 8}},
 				Statements: []Node{
-					&YieldStatement{
-						NodeBase: NodeBase{
-							NodeSpan{0, 5},
-							nil,
-							false,
-						},
+					&CoyieldStatement{
+						NodeBase: NodeBase{Span: NodeSpan{0, 7}},
 					},
 				},
 			}, n)

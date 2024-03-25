@@ -6977,7 +6977,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("embedded module yields once and has no return statement", func(t *testing.T) {
 			code := `
 				rt = go do { 
-					yield 0
+					coyield 0
 				}
 	
 				result = rt.wait_result!()
@@ -7001,9 +7001,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("embedded module yields twice and has no return statement", func(t *testing.T) {
 			code := `
 				rt = go do { 
-					yield 0
+					coyield 0
 
-					yield 1
+					coyield 1
 				}
 	
 				result = rt.wait_result!()
@@ -7027,11 +7027,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("embedded module yields three times and has no return statement", func(t *testing.T) {
 			code := `
 				rt = go do { 
-					yield 0
+					coyield 0
 
-					yield 1
+					coyield 1
 
-					yield 2
+					coyield 2
 				}
 	
 				result = rt.wait_result!()
@@ -7056,7 +7056,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		t.Run("embedded module yields once and has a return statement", func(t *testing.T) {
 			code := `
 				rt = go do { 
-					yield 0
+					coyield 0
 					return "final result"
 				}
 	

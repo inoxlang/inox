@@ -268,7 +268,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		state.returnValue = value
 		return Nil, nil
-	case *parse.YieldStatement:
+	case *parse.CoyieldStatement:
 		if n.Expr == nil {
 			state.returnValue = Nil
 			return Nil, nil

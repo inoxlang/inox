@@ -34,7 +34,7 @@ func init() {
 }
 
 // A LThread is similar to a goroutine in Golang, it represents the execution of a single module and can be cancelled at any time.
-// It pauses at each yield statement.
+// It pauses at each coyield statement.
 type LThread struct {
 	useBytecode bool
 	module      *Module

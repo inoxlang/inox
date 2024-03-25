@@ -172,7 +172,7 @@ func TestSpawnLThread(t *testing.T) {
 
 		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
 			NameString: "lthread-test",
-			CodeString: "yield 0; return {a: 1}",
+			CodeString: "coyield 0; return {a: 1}",
 		}))
 
 		lthread, err := SpawnLThread(LthreadSpawnArgs{
