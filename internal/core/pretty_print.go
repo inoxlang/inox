@@ -1993,6 +1993,8 @@ func (u *Treedata) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth
 		for _, b := range [][]byte{config.Colors.OtherKeyword, utils.StringAsBytes("treedata"), ANSI_RESET_SEQUENCE} {
 			utils.Must(w.Write(b))
 		}
+	} else {
+		utils.Must(w.WriteString("treedata"))
 	}
 
 	if depth > config.MaxDepth {
