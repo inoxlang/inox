@@ -1012,7 +1012,7 @@ func evalChunk(n *parse.Chunk, state *State) (_ Value, finalErr error) {
 
 		//if the manifest object has the correct AND the module arguments variable is not already defined
 		//we read the type & name of parameters and we set the module arguments variable.
-		if object, ok := manifestObject.(*Object); ok && !state.hasGlobal(extData.MOD_ARGS_VARNAME) {
+		if object, ok := manifestObject.(*Object); ok && !state.hasGlobal(globalnames.MOD_ARGS_VARNAME) {
 			parameters := getModuleParameters(object, n.Manifest.Object.(*parse.ObjectLiteral))
 			args := make(map[string]Value)
 
@@ -1027,7 +1027,7 @@ func evalChunk(n *parse.Chunk, state *State) (_ Value, finalErr error) {
 
 			paramsPattern := NewModuleParamsPattern(paramNames, paramPatterns)
 
-			if !state.setGlobal(extData.MOD_ARGS_VARNAME, NewModuleArgs(paramsPattern, args), GlobalConst) {
+			if !state.setGlobal(globalnames.MOD_ARGS_VARNAME, NewModuleArgs(paramsPattern, args), GlobalConst) {
 				panic(ErrUnreachable)
 			}
 		}

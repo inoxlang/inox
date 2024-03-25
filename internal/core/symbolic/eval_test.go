@@ -13190,7 +13190,7 @@ func TestSymbolicEval(t *testing.T) {
 			}
 
 			return args
-		`, "args", extData.MOD_ARGS_VARNAME))
+		`, "args", globalnames.MOD_ARGS_VARNAME))
 
 		res, err := symbolicEval(n, state)
 		assert.NoError(t, err)

@@ -13,6 +13,8 @@ import (
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/afs"
 	permkind "github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/text"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/inoxlang/inox/internal/utils"
@@ -130,7 +132,7 @@ func TestPreInit(t *testing.T) {
 				}`,
 			expectedLimits:            []Limit{minLimitA, minLimitB, threadLimit},
 			error:                     true,
-			expectedStaticCheckErrors: []string{KIND_SECTION_SHOULD_BE_A_STRING_LITERAL},
+			expectedStaticCheckErrors: []string{text.KIND_SECTION_SHOULD_BE_A_STRING_LITERAL},
 		},
 		{
 			name: "kind: embedded module kinds are not allowed",
@@ -140,7 +142,7 @@ func TestPreInit(t *testing.T) {
 				}`,
 			expectedLimits:            []Limit{minLimitA, minLimitB, threadLimit},
 			error:                     true,
-			expectedStaticCheckErrors: []string{INVALID_KIND_SECTION_EMBEDDED_MOD_KINDS_NOT_ALLOWED},
+			expectedStaticCheckErrors: []string{text.INVALID_KIND_SECTION_EMBEDDED_MOD_KINDS_NOT_ALLOWED},
 		},
 		{
 			name: "kind: invalid module kind",
@@ -383,7 +385,7 @@ func TestPreInit(t *testing.T) {
 			expectedResolutions: nil,
 			error:               true,
 
-			expectedStaticCheckErrors: []string{fmtNotValidPermissionKindName("Read")},
+			expectedStaticCheckErrors: []string{text.FmtNotValidPermissionKindName("Read")},
 		},
 		{
 			name: "limits",
@@ -685,7 +687,7 @@ func TestPreInit(t *testing.T) {
 				`), 0600)
 			},
 			error:         true,
-			errorContains: FORBIDDEN_NODE_TYPE_IN_INCLUDABLE_CHUNK_IMPORTED_BY_PREINIT,
+			errorContains: text.FORBIDDEN_NODE_TYPE_IN_INCLUDABLE_CHUNK_IMPORTED_BY_PREINIT,
 		},
 		{
 			name: "invalid value for permissions section",
@@ -697,7 +699,7 @@ func TestPreInit(t *testing.T) {
 				ValueVisibilityPermission{Pattern: EMAIL_ADDR_PATTERN},
 				ValueVisibilityPermission{Pattern: INT_PATTERN},
 			},
-			expectedStaticCheckErrors: []string{PERMS_SECTION_SHOULD_BE_AN_OBJECT},
+			expectedStaticCheckErrors: []string{text.PERMS_SECTION_SHOULD_BE_AN_OBJECT},
 			error:                     true,
 		},
 		{
@@ -862,7 +864,7 @@ func TestPreInit(t *testing.T) {
 					preinit-files: 1
 				}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{PREINIT_FILES_SECTION_SHOULD_BE_AN_OBJECT},
+			expectedStaticCheckErrors: []string{text.PREINIT_FILES_SECTION_SHOULD_BE_AN_OBJECT},
 		},
 		{
 			name: "empty_databases",
@@ -1015,7 +1017,7 @@ func TestPreInit(t *testing.T) {
 					}
 				}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{DATABASES__DB_RESOURCE_SHOULD_BE_HOST_OR_URL},
+			expectedStaticCheckErrors: []string{text.DATABASES__DB_RESOURCE_SHOULD_BE_HOST_OR_URL},
 		},
 		{
 			name: "database_with_invalid_resolution_data",
@@ -1028,7 +1030,7 @@ func TestPreInit(t *testing.T) {
 					}
 				}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{DATABASES__DB_RESOLUTION_DATA_ONLY_NIL_AND_PATHS_SUPPORTED},
+			expectedStaticCheckErrors: []string{text.DATABASES__DB_RESOLUTION_DATA_ONLY_NIL_AND_PATHS_SUPPORTED},
 		},
 		{
 			name: "database_with_invalid_expected_schema_udapte_value",
@@ -1042,7 +1044,7 @@ func TestPreInit(t *testing.T) {
 					}
 				}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{DATABASES__DB_EXPECTED_SCHEMA_UPDATE_SHOULD_BE_BOOL_LIT},
+			expectedStaticCheckErrors: []string{text.DATABASES__DB_EXPECTED_SCHEMA_UPDATE_SHOULD_BE_BOOL_LIT},
 		},
 		{
 			name: "database_with_missing_resource",
@@ -1054,7 +1056,7 @@ func TestPreInit(t *testing.T) {
 					}
 				}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtMissingPropInDatabaseDescription(MANIFEST_DATABASE__RESOURCE_PROP_NAME, "main")},
+			expectedStaticCheckErrors: []string{text.FmtMissingPropInDatabaseDescription(inoxconsts.MANIFEST_DATABASE__RESOURCE_PROP_NAME, "main")},
 		},
 		{
 			name: "database_with_missing_resolution_data",
@@ -1066,7 +1068,7 @@ func TestPreInit(t *testing.T) {
 					}
 				}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtMissingPropInDatabaseDescription(MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME, "main")},
+			expectedStaticCheckErrors: []string{text.FmtMissingPropInDatabaseDescription(inoxconsts.MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME, "main")},
 		},
 		{
 			name: "database_description_should_be_an_object",
@@ -1076,19 +1078,19 @@ func TestPreInit(t *testing.T) {
 					}
 				}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{DATABASES__DB_CONFIG_SHOULD_BE_AN_OBJECT},
+			expectedStaticCheckErrors: []string{text.DATABASES__DB_CONFIG_SHOULD_BE_AN_OBJECT},
 		},
 		{
-			name: "databases_section_should_be_an_object",
+			name: "text.DATABASES_section_should_be_an_object",
 			module: `manifest {
 					databases: 1
 				}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{DATABASES_SECTION_SHOULD_BE_AN_OBJECT_OR_ABS_PATH},
+			expectedStaticCheckErrors: []string{text.DATABASES_SECTION_SHOULD_BE_AN_OBJECT_OR_ABS_PATH},
 		},
 
 		{
-			name: "databases_path_value",
+			name: "text.DATABASES_path_value",
 			parentModule: `manifest {
 				databases: {
 					main: {
@@ -1114,7 +1116,7 @@ func TestPreInit(t *testing.T) {
 			error:               false,
 		},
 		{
-			name: "databases_host_value",
+			name: "text.DATABASES_host_value",
 			parentModule: `manifest {
 				databases: {
 					main: {
@@ -1160,7 +1162,7 @@ func TestPreInit(t *testing.T) {
 				resetStaticallyCheckDbResolutionDataFnRegistry()
 			},
 			error:                     true,
-			expectedStaticCheckErrors: []string{THE_DATABASES_SECTION_SHOULD_BE_PRESENT},
+			expectedStaticCheckErrors: []string{text.THE_DATABASES_SECTION_SHOULD_BE_PRESENT},
 		},
 		{
 			name: "invocation_section_with_added_elem_and_dbs_section",
@@ -1226,7 +1228,7 @@ func TestPreInit(t *testing.T) {
 			expectedPermissions:       []Permission{},
 			expectedLimits:            []Limit{},
 			error:                     true,
-			expectedStaticCheckErrors: []string{A_BOOL_LIT_IS_EXPECTED},
+			expectedStaticCheckErrors: []string{text.A_BOOL_LIT_IS_EXPECTED},
 
 			setup: func() error {
 				resetStaticallyCheckDbResolutionDataFnRegistry()
@@ -1333,7 +1335,7 @@ func TestPreInit(t *testing.T) {
 					parameters: {}
 				}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters", SpecModule)},
+			expectedStaticCheckErrors: []string{text.FmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters", SpecModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1345,7 +1347,7 @@ func TestPreInit(t *testing.T) {
 					parameters: {}
 				}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters", LifetimeJobModule)},
+			expectedStaticCheckErrors: []string{text.FmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters", LifetimeJobModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1357,7 +1359,7 @@ func TestPreInit(t *testing.T) {
 					parameters: {}
 				}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters", UserLThreadModule)},
+			expectedStaticCheckErrors: []string{text.FmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters", UserLThreadModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1369,7 +1371,7 @@ func TestPreInit(t *testing.T) {
 					parameters: {}
 				}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters", TestSuiteModule)},
+			expectedStaticCheckErrors: []string{text.FmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters", TestSuiteModule)},
 			expectedLimits:            []Limit{},
 		},
 		{
@@ -1380,7 +1382,7 @@ func TestPreInit(t *testing.T) {
 					parameters: {}
 				}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters", TestCaseModule)},
+			expectedStaticCheckErrors: []string{text.FmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters", TestCaseModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1394,7 +1396,7 @@ func TestPreInit(t *testing.T) {
 					databases: {}
 				}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("databases", SpecModule)},
+			expectedStaticCheckErrors: []string{text.FmtTheXSectionIsNotAllowedForTheCurrentModuleKind("databases", SpecModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1406,7 +1408,7 @@ func TestPreInit(t *testing.T) {
 					databases: {}
 				}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("databases", LifetimeJobModule)},
+			expectedStaticCheckErrors: []string{text.FmtTheXSectionIsNotAllowedForTheCurrentModuleKind("databases", LifetimeJobModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1418,7 +1420,7 @@ func TestPreInit(t *testing.T) {
 					databases: {}
 				}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("databases", UserLThreadModule)},
+			expectedStaticCheckErrors: []string{text.FmtTheXSectionIsNotAllowedForTheCurrentModuleKind("databases", UserLThreadModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1430,7 +1432,7 @@ func TestPreInit(t *testing.T) {
 					databases: {}
 				}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("databases", TestSuiteModule)},
+			expectedStaticCheckErrors: []string{text.FmtTheXSectionIsNotAllowedForTheCurrentModuleKind("databases", TestSuiteModule)},
 			expectedLimits:            []Limit{},
 		},
 		{
@@ -1441,7 +1443,7 @@ func TestPreInit(t *testing.T) {
 					databases: {}
 				}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("databases", TestCaseModule)},
+			expectedStaticCheckErrors: []string{text.FmtTheXSectionIsNotAllowedForTheCurrentModuleKind("databases", TestCaseModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1455,7 +1457,7 @@ func TestPreInit(t *testing.T) {
 						parameters: {}
 					}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters", SpecModule)},
+			expectedStaticCheckErrors: []string{text.FmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters", SpecModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1467,7 +1469,7 @@ func TestPreInit(t *testing.T) {
 						parameters: {}
 					}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters", LifetimeJobModule)},
+			expectedStaticCheckErrors: []string{text.FmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters", LifetimeJobModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1479,7 +1481,7 @@ func TestPreInit(t *testing.T) {
 						parameters: {}
 					}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters", UserLThreadModule)},
+			expectedStaticCheckErrors: []string{text.FmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters", UserLThreadModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1491,7 +1493,7 @@ func TestPreInit(t *testing.T) {
 						parameters: {}
 					}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters", TestSuiteModule)},
+			expectedStaticCheckErrors: []string{text.FmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters", TestSuiteModule)},
 			expectedLimits:            []Limit{},
 		},
 		{
@@ -1502,7 +1504,7 @@ func TestPreInit(t *testing.T) {
 						parameters: {}
 					}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters", TestCaseModule)},
+			expectedStaticCheckErrors: []string{text.FmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters", TestCaseModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1516,7 +1518,7 @@ func TestPreInit(t *testing.T) {
 						invocation: {}
 					}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("invocation", SpecModule)},
+			expectedStaticCheckErrors: []string{text.FmtTheXSectionIsNotAllowedForTheCurrentModuleKind("invocation", SpecModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1528,7 +1530,7 @@ func TestPreInit(t *testing.T) {
 						invocation: {}
 					}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("invocation", LifetimeJobModule)},
+			expectedStaticCheckErrors: []string{text.FmtTheXSectionIsNotAllowedForTheCurrentModuleKind("invocation", LifetimeJobModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1540,7 +1542,7 @@ func TestPreInit(t *testing.T) {
 						invocation: {}
 					}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("invocation", UserLThreadModule)},
+			expectedStaticCheckErrors: []string{text.FmtTheXSectionIsNotAllowedForTheCurrentModuleKind("invocation", UserLThreadModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1552,7 +1554,7 @@ func TestPreInit(t *testing.T) {
 						invocation: {}
 					}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("invocation", TestSuiteModule)},
+			expectedStaticCheckErrors: []string{text.FmtTheXSectionIsNotAllowedForTheCurrentModuleKind("invocation", TestSuiteModule)},
 			expectedLimits:            []Limit{},
 		},
 		{
@@ -1563,7 +1565,7 @@ func TestPreInit(t *testing.T) {
 						invocation: {}
 					}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("invocation", TestCaseModule)},
+			expectedStaticCheckErrors: []string{text.FmtTheXSectionIsNotAllowedForTheCurrentModuleKind("invocation", TestCaseModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1577,7 +1579,7 @@ func TestPreInit(t *testing.T) {
 						preinit-files: {}
 					}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("preinit-files", SpecModule)},
+			expectedStaticCheckErrors: []string{text.FmtTheXSectionIsNotAllowedForTheCurrentModuleKind("preinit-files", SpecModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1589,7 +1591,7 @@ func TestPreInit(t *testing.T) {
 						preinit-files: {}
 					}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("preinit-files", LifetimeJobModule)},
+			expectedStaticCheckErrors: []string{text.FmtTheXSectionIsNotAllowedForTheCurrentModuleKind("preinit-files", LifetimeJobModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1601,7 +1603,7 @@ func TestPreInit(t *testing.T) {
 						preinit-files: {}
 					}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("preinit-files", UserLThreadModule)},
+			expectedStaticCheckErrors: []string{text.FmtTheXSectionIsNotAllowedForTheCurrentModuleKind("preinit-files", UserLThreadModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1613,7 +1615,7 @@ func TestPreInit(t *testing.T) {
 						preinit-files: {}
 					}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("preinit-files", TestSuiteModule)},
+			expectedStaticCheckErrors: []string{text.FmtTheXSectionIsNotAllowedForTheCurrentModuleKind("preinit-files", TestSuiteModule)},
 			expectedLimits:            []Limit{},
 		},
 		{
@@ -1624,7 +1626,7 @@ func TestPreInit(t *testing.T) {
 						preinit-files: {}
 					}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("preinit-files", TestCaseModule)},
+			expectedStaticCheckErrors: []string{text.FmtTheXSectionIsNotAllowedForTheCurrentModuleKind("preinit-files", TestCaseModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1638,7 +1640,7 @@ func TestPreInit(t *testing.T) {
 							env: {}
 						}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("env", SpecModule)},
+			expectedStaticCheckErrors: []string{text.FmtTheXSectionIsNotAllowedForTheCurrentModuleKind("env", SpecModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1650,7 +1652,7 @@ func TestPreInit(t *testing.T) {
 							env: {}
 						}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("env", LifetimeJobModule)},
+			expectedStaticCheckErrors: []string{text.FmtTheXSectionIsNotAllowedForTheCurrentModuleKind("env", LifetimeJobModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1662,7 +1664,7 @@ func TestPreInit(t *testing.T) {
 							env: {}
 						}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("env", UserLThreadModule)},
+			expectedStaticCheckErrors: []string{text.FmtTheXSectionIsNotAllowedForTheCurrentModuleKind("env", UserLThreadModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1674,7 +1676,7 @@ func TestPreInit(t *testing.T) {
 							env: {}
 						}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("env", TestSuiteModule)},
+			expectedStaticCheckErrors: []string{text.FmtTheXSectionIsNotAllowedForTheCurrentModuleKind("env", TestSuiteModule)},
 			expectedLimits:            []Limit{},
 		},
 		{
@@ -1685,7 +1687,7 @@ func TestPreInit(t *testing.T) {
 							env: {}
 						}`,
 			error:                     true,
-			expectedStaticCheckErrors: []string{fmtTheXSectionIsNotAllowedForTheCurrentModuleKind("env", TestCaseModule)},
+			expectedStaticCheckErrors: []string{text.FmtTheXSectionIsNotAllowedForTheCurrentModuleKind("env", TestCaseModule)},
 			expectedLimits:            []Limit{},
 		},
 

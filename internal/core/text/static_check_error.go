@@ -1,10 +1,12 @@
-package core
+package text
 
 import (
 	"fmt"
 	"strings"
 
 	permkind "github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/globals/globalnames"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
 )
 
@@ -23,23 +25,23 @@ const (
 	ELEMENTS_NOT_ALLOWED_IN_MANIFEST = "elements (valus without a key) are not allowed in the manifest object"
 
 	//kind section
-	KIND_SECTION_SHOULD_BE_A_STRING_LITERAL             = "the '" + MANIFEST_KIND_SECTION_NAME + "' section of the manifest should have a string value (string literal)"
-	INVALID_KIND_SECTION_EMBEDDED_MOD_KINDS_NOT_ALLOWED = "invalid '" + MANIFEST_KIND_SECTION_NAME + "' section: embedded module kinds are not allowed"
+	KIND_SECTION_SHOULD_BE_A_STRING_LITERAL             = "the '" + inoxconsts.MANIFEST_KIND_SECTION_NAME + "' section of the manifest should have a string value (string literal)"
+	INVALID_KIND_SECTION_EMBEDDED_MOD_KINDS_NOT_ALLOWED = "invalid '" + inoxconsts.MANIFEST_KIND_SECTION_NAME + "' section: embedded module kinds are not allowed"
 
 	//permissions section
-	PERMS_SECTION_SHOULD_BE_AN_OBJECT     = "the '" + MANIFEST_PERMS_SECTION_NAME + "' section of the manifest should be an object"
+	PERMS_SECTION_SHOULD_BE_AN_OBJECT     = "the '" + inoxconsts.MANIFEST_PERMS_SECTION_NAME + "' section of the manifest should be an object"
 	ELEMENTS_NOT_ALLOWED_IN_PERMS_SECTION = "elements are not allowed in the 'permissions' section"
 
 	//limits section
-	LIMITS_SECTION_SHOULD_BE_AN_OBJECT = "the '" + MANIFEST_LIMITS_SECTION_NAME + "' section of the manifest should be an object"
+	LIMITS_SECTION_SHOULD_BE_AN_OBJECT = "the '" + inoxconsts.MANIFEST_LIMITS_SECTION_NAME + "' section of the manifest should be an object"
 
 	//env section
-	ENV_SECTION_SHOULD_BE_AN_OBJECT_PATTERN                = "the '" + MANIFEST_ENV_SECTION_NAME + "' section of the manifest should be an object pattern literal"
-	ENV_SECTION_NOT_AVAILABLE_IN_EMBEDDED_MODULE_MANIFESTS = "the '" + MANIFEST_ENV_SECTION_NAME + "' section is not available in embedded module manifests"
+	ENV_SECTION_SHOULD_BE_AN_OBJECT_PATTERN                = "the '" + inoxconsts.MANIFEST_ENV_SECTION_NAME + "' section of the manifest should be an object pattern literal"
+	ENV_SECTION_NOT_AVAILABLE_IN_EMBEDDED_MODULE_MANIFESTS = "the '" + inoxconsts.MANIFEST_ENV_SECTION_NAME + "' section is not available in embedded module manifests"
 
 	//params section
-	PARAMS_SECTION_SHOULD_BE_AN_OBJECT                        = "the '" + MANIFEST_PARAMS_SECTION_NAME + "' section of the manifest should be an object literal"
-	PARAMS_SECTION_NOT_AVAILABLE_IN_EMBEDDED_MODULE_MANIFESTS = "the '" + MANIFEST_PARAMS_SECTION_NAME + "' section is not available in embedded module manifests"
+	PARAMS_SECTION_SHOULD_BE_AN_OBJECT                        = "the '" + inoxconsts.MANIFEST_PARAMS_SECTION_NAME + "' section of the manifest should be an object literal"
+	PARAMS_SECTION_NOT_AVAILABLE_IN_EMBEDDED_MODULE_MANIFESTS = "the '" + inoxconsts.MANIFEST_PARAMS_SECTION_NAME + "' section is not available in embedded module manifests"
 
 	FORBIDDEN_NODE_TYPE_IN_INCLUDABLE_CHUNK_IMPORTED_BY_PREINIT = "forbidden node type in includable file imported by preinit"
 
@@ -52,29 +54,29 @@ const (
 	MAYBE_YOU_MEANT_TO_WRITE_A_URL_PATTERN_LITERAL  = "maybe you meant to write a url pattern literal such as %https://example.com/... (always unquoted)"
 
 	//preinit-files section
-	PREINIT_FILES_SECTION_SHOULD_BE_AN_OBJECT                        = "the '" + MANIFEST_PREINIT_FILES_SECTION_NAME + "' section of the manifest should be an object literal"
-	PREINIT_FILES__FILE_CONFIG_SHOULD_BE_AN_OBJECT                   = "the description of each file in the '" + MANIFEST_PREINIT_FILES_SECTION_NAME + "' section of the manifest should be an object literal"
-	PREINIT_FILES__FILE_CONFIG_PATH_SHOULD_BE_ABS_PATH               = "the ." + MANIFEST_PREINIT_FILE__PATH_PROP_NAME + " of each file in the '" + MANIFEST_PREINIT_FILES_SECTION_NAME + "' section (manifest) should be an absolute path"
-	PREINIT_FILES_SECTION_NOT_AVAILABLE_IN_EMBEDDED_MODULE_MANIFESTS = "the '" + MANIFEST_PREINIT_FILES_SECTION_NAME + "' section is not available in embedded module manifests"
+	PREINIT_FILES_SECTION_SHOULD_BE_AN_OBJECT                        = "the '" + inoxconsts.MANIFEST_PREINIT_FILES_SECTION_NAME + "' section of the manifest should be an object literal"
+	PREINIT_FILES__FILE_CONFIG_SHOULD_BE_AN_OBJECT                   = "the description of each file in the '" + inoxconsts.MANIFEST_PREINIT_FILES_SECTION_NAME + "' section of the manifest should be an object literal"
+	PREINIT_FILES__FILE_CONFIG_PATH_SHOULD_BE_ABS_PATH               = "the ." + inoxconsts.MANIFEST_PREINIT_FILE__PATH_PROP_NAME + " of each file in the '" + inoxconsts.MANIFEST_PREINIT_FILES_SECTION_NAME + "' section (manifest) should be an absolute path"
+	PREINIT_FILES_SECTION_NOT_AVAILABLE_IN_EMBEDDED_MODULE_MANIFESTS = "the '" + inoxconsts.MANIFEST_PREINIT_FILES_SECTION_NAME + "' section is not available in embedded module manifests"
 
 	//databases section
-	DATABASES_SECTION_SHOULD_BE_AN_OBJECT_OR_ABS_PATH            = "the '" + MANIFEST_DATABASES_SECTION_NAME + "' section of the manifest should be an object literal or an absolute path literal"
-	DATABASES__DB_CONFIG_SHOULD_BE_AN_OBJECT                     = "the description of each database in the '" + MANIFEST_DATABASES_SECTION_NAME + "' section of the manifest should be an object literal"
-	DATABASES__DB_RESOURCE_SHOULD_BE_HOST_OR_URL                 = "the ." + MANIFEST_DATABASE__RESOURCE_PROP_NAME + " property of database descriptions in the '" + MANIFEST_DATABASES_SECTION_NAME + "' section (manifest) should be a Host or a URL"
-	DATABASES__DB_EXPECTED_SCHEMA_UPDATE_SHOULD_BE_BOOL_LIT      = "the ." + MANIFEST_DATABASE__EXPECTED_SCHEMA_UPDATE_PROP_NAME + " property of database descriptions in the '" + MANIFEST_DATABASES_SECTION_NAME + "' section (manifest) should be a boolean literal (the property is optional)"
-	DATABASES__DB_ASSERT_SCHEMA_SHOULD_BE_PATT_IDENT_OR_OBJ_PATT = "the ." + MANIFEST_DATABASE__ASSERT_SCHEMA_UPDATE_PROP_NAME + " property of database descriptions in the '" + MANIFEST_DATABASES_SECTION_NAME + "' section (manifest) should be a pattern identifier or an object pattern literal (the property is optional)"
-	DATABASES_SECTION_NOT_AVAILABLE_IN_EMBEDDED_MODULE_MANIFESTS = "the '" + MANIFEST_DATABASES_SECTION_NAME + "' section is not available in embedded module manifests"
-	DATABASES__DB_RESOLUTION_DATA_ONLY_NIL_AND_PATHS_SUPPORTED   = "nil and paths are the only supported values for ." + MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME + " in a database description"
+	DATABASES_SECTION_SHOULD_BE_AN_OBJECT_OR_ABS_PATH            = "the '" + inoxconsts.MANIFEST_DATABASES_SECTION_NAME + "' section of the manifest should be an object literal or an absolute path literal"
+	DATABASES__DB_CONFIG_SHOULD_BE_AN_OBJECT                     = "the description of each database in the '" + inoxconsts.MANIFEST_DATABASES_SECTION_NAME + "' section of the manifest should be an object literal"
+	DATABASES__DB_RESOURCE_SHOULD_BE_HOST_OR_URL                 = "the ." + inoxconsts.MANIFEST_DATABASE__RESOURCE_PROP_NAME + " property of database descriptions in the '" + inoxconsts.MANIFEST_DATABASES_SECTION_NAME + "' section (manifest) should be a Host or a URL"
+	DATABASES__DB_EXPECTED_SCHEMA_UPDATE_SHOULD_BE_BOOL_LIT      = "the ." + inoxconsts.MANIFEST_DATABASE__EXPECTED_SCHEMA_UPDATE_PROP_NAME + " property of database descriptions in the '" + inoxconsts.MANIFEST_DATABASES_SECTION_NAME + "' section (manifest) should be a boolean literal (the property is optional)"
+	DATABASES__DB_ASSERT_SCHEMA_SHOULD_BE_PATT_IDENT_OR_OBJ_PATT = "the ." + inoxconsts.MANIFEST_DATABASE__ASSERT_SCHEMA_UPDATE_PROP_NAME + " property of database descriptions in the '" + inoxconsts.MANIFEST_DATABASES_SECTION_NAME + "' section (manifest) should be a pattern identifier or an object pattern literal (the property is optional)"
+	DATABASES_SECTION_NOT_AVAILABLE_IN_EMBEDDED_MODULE_MANIFESTS = "the '" + inoxconsts.MANIFEST_DATABASES_SECTION_NAME + "' section is not available in embedded module manifests"
+	DATABASES__DB_RESOLUTION_DATA_ONLY_NIL_AND_PATHS_SUPPORTED   = "nil and paths are the only supported values for ." + inoxconsts.MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME + " in a database description"
 
 	//invocation section
-	INVOCATION_SECTION_SHOULD_BE_AN_OBJECT                        = "the '" + MANIFEST_INVOCATION_SECTION_NAME + "' section of the manifest should be an object literal"
-	INVOCATION_SECTION_NOT_AVAILABLE_IN_EMBEDDED_MODULE_MANIFESTS = "the '" + MANIFEST_INVOCATION_SECTION_NAME + "' section is not available in embedded module manifests"
+	INVOCATION_SECTION_SHOULD_BE_AN_OBJECT                        = "the '" + inoxconsts.MANIFEST_INVOCATION_SECTION_NAME + "' section of the manifest should be an object literal"
+	INVOCATION_SECTION_NOT_AVAILABLE_IN_EMBEDDED_MODULE_MANIFESTS = "the '" + inoxconsts.MANIFEST_INVOCATION_SECTION_NAME + "' section is not available in embedded module manifests"
 	ONLY_URL_LITS_ARE_SUPPORTED_FOR_NOW                           = "only URL literals are supported for now"
 	A_BOOL_LIT_IS_EXPECTED                                        = "a boolean literal is expected"
 	SCHEME_NOT_DB_SCHEME_OR_IS_NOT_SUPPORTED                      = "this scheme is not a database scheme or is not supported"
 	THE_DATABASES_SECTION_SHOULD_BE_PRESENT                       = "the databases section should be present because the auto invocation of the module depends on one or more database(s)"
 
-	HOST_DEFS_SECTION_SHOULD_BE_A_DICT = "the '" + MANIFEST_HOST_DEFINITIONS_SECTION_NAME + "' section of the manifest should be a dictionary with host keys"
+	HOST_DEFS_SECTION_SHOULD_BE_A_DICT = "the '" + inoxconsts.MANIFEST_HOST_DEFINITIONS_SECTION_NAME + "' section of the manifest should be a dictionary with host keys"
 	HOST_SCHEME_NOT_SUPPORTED          = "the host's scheme is not supported"
 
 	//includable file
@@ -133,7 +135,7 @@ const (
 	MISPLACED_GLOBAL_VAR_DECLS_TOP_LEVEL_STMT             = "misplaced global variable declaration(s): declarations are only allowed at the top level"
 	MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_REF_TO_FN = "misplaced global variable declaration(s): declarations are not allowed after a function declaration, or after a reference to a function that is declared further below"
 
-	INVALID_MEM_HOST_ONLY_VALID_VALUE                                 = "invalid mem:// host, only valid value is " + MEM_HOSTNAME
+	INVALID_MEM_HOST_ONLY_VALID_VALUE                                 = "invalid mem:// host, only valid value is " + inoxconsts.MEM_HOSTNAME
 	LOWER_BOUND_OF_INT_RANGE_LIT_SHOULD_BE_SMALLER_THAN_UPPER_BOUND   = "the lower bound of an integer range literal should be smaller than the upper bound"
 	LOWER_BOUND_OF_FLOAT_RANGE_LIT_SHOULD_BE_SMALLER_THAN_UPPER_BOUND = "the lower bound of a float range literal should be smaller than the upper bound"
 
@@ -175,243 +177,243 @@ const (
 
 var (
 	A_LIMITED_NUMBER_OF_BUILTINS_ARE_ALLOWED_TO_BE_CALLED_IN_GLOBAL_CONST_DECLS = //
-	"a limited number of builtins are allowed to be called in global constant declarations: " + strings.Join(USABLE_GLOBALS_IN_PREINIT, " ")
+	"a limited number of builtins are allowed to be called in global constant declarations: " + strings.Join(globalnames.USABLE_GLOBALS_IN_PREINIT, " ")
 )
 
-func fmtNotValidPermissionKindName(name string) string {
+func FmtNotValidPermissionKindName(name string) string {
 	return fmt.Sprintf("'%s' is not a valid permission kind, valid permissions are %s", name, strings.Join(permkind.PERMISSION_KIND_NAMES, ", "))
 }
 
-func fmtUnknownSectionOfManifest(name string) string {
+func FmtUnknownSectionOfManifest(name string) string {
 	return fmt.Sprintf("unknown section '%s' of manifest", name)
 }
 
-func fmtForbiddenNodeInPermListing(n parse.Node) string {
+func FmtForbiddenNodeInPermListing(n parse.Node) string {
 	return fmt.Sprintf("invalid permission listing: invalid node %T, only variables, simple values, objects, lists & dictionaries are allowed", n)
 }
 
-func fmtForbiddenNodeInLimitsSection(n parse.Node) string {
+func FmtForbiddenNodeInLimitsSection(n parse.Node) string {
 	return fmt.Sprintf(
 		"invalid %s: invalid node %T, only variables and simple literals are allowed",
-		MANIFEST_LIMITS_SECTION_NAME, n)
+		inoxconsts.MANIFEST_LIMITS_SECTION_NAME, n)
 }
 
-func fmtForbiddenNodeInEnvSection(n parse.Node) string {
+func FmtForbiddenNodeInEnvSection(n parse.Node) string {
 	return fmt.Sprintf(
 		"invalid %s section: invalid node %T, only variables, simple literals & named patterns are allowed",
-		MANIFEST_ENV_SECTION_NAME, n)
+		inoxconsts.MANIFEST_ENV_SECTION_NAME, n)
 }
 
-func fmtForbiddenNodeInPreinitFilesSection(n parse.Node) string {
+func FmtForbiddenNodeInPreinitFilesSection(n parse.Node) string {
 	return fmt.Sprintf(
 		"invalid %s section: invalid node %T, only variables, simple literals & named patterns are allowed",
-		MANIFEST_PREINIT_FILES_SECTION_NAME, n)
+		inoxconsts.MANIFEST_PREINIT_FILES_SECTION_NAME, n)
 }
 
-func fmtForbiddenNodeInDatabasesSection(n parse.Node) string {
+func FmtForbiddenNodeInDatabasesSection(n parse.Node) string {
 	return fmt.Sprintf(
 		"invalid %s section: invalid node %T, only variables, simple literals, path expressions & named patterns are allowed",
-		MANIFEST_DATABASES_SECTION_NAME, n)
+		inoxconsts.MANIFEST_DATABASES_SECTION_NAME, n)
 }
 
-func fmtForbiddenNodeInHostDefinitionsSection(n parse.Node) string {
+func FmtForbiddenNodeInHostDefinitionsSection(n parse.Node) string {
 	return fmt.Sprintf(
 		"invalid %s description: invalid node %T, only object literals, variables and simple literals are allowed",
-		MANIFEST_HOST_DEFINITIONS_SECTION_NAME, n)
+		inoxconsts.MANIFEST_HOST_DEFINITIONS_SECTION_NAME, n)
 }
 
-func fmtForbiddenNodeInParametersSection(n parse.Node) string {
-	return fmt.Sprintf("invalid %s description: forbidden node %T", MANIFEST_PARAMS_SECTION_NAME, n)
+func FmtForbiddenNodeInParametersSection(n parse.Node) string {
+	return fmt.Sprintf("invalid %s description: forbidden node %T", inoxconsts.MANIFEST_PARAMS_SECTION_NAME, n)
 }
 
-func fmtMissingPropInPreinitFileDescription(propName, name string) string {
+func FmtMissingPropInPreinitFileDescription(propName, name string) string {
 	return fmt.Sprintf("missing .%s property in description of preinit file %s", propName, name)
 }
 
-func fmtMissingPropInDatabaseDescription(propName, name string) string {
+func FmtMissingPropInDatabaseDescription(propName, name string) string {
 	return fmt.Sprintf("missing .%s property in description of database %s", propName, name)
 }
 
-func fmtUnexpectedPropOfDatabaseDescription(name string) string {
+func FmtUnexpectedPropOfDatabaseDescription(name string) string {
 	return fmt.Sprintf("unexpected property '%s' of database description", name)
 }
 
-func fmtUnexpectedPropOfInvocationDescription(name string) string {
+func FmtUnexpectedPropOfInvocationDescription(name string) string {
 	return fmt.Sprintf("unexpected property '%s' of invocation description", name)
 }
 
-func fmtFollowingNodeTypeNotAllowedInAssertions(n parse.Node) string {
+func FmtFollowingNodeTypeNotAllowedInAssertions(n parse.Node) string {
 	return fmt.Sprintf("following node type is not allowed in assertion: %T", n)
 }
 
-func fmtFollowingNodeTypeNotAllowedInGlobalConstantDeclarations(n parse.Node) string {
+func FmtFollowingNodeTypeNotAllowedInGlobalConstantDeclarations(n parse.Node) string {
 	return fmt.Sprintf("following node type is not allowed in global constant declarations: %T", n)
 }
 
-func fmtNonSupportedUnit(unit string) string {
+func FmtNonSupportedUnit(unit string) string {
 	return fmt.Sprintf("non supported unit: %s", unit)
 }
 
-func fmtRecLitExplicityDeclaresPropWithImplicitKey(k string) string {
+func FmtRecLitExplicityDeclaresPropWithImplicitKey(k string) string {
 	return fmt.Sprintf("A record literal explictly declares a property with key '%s' but has the same implicit key", k)
 }
 
-func fmtValuesOfRecordLiteralsShouldBeImmutablePropHasMutable(k string) string {
+func FmtValuesOfRecordLiteralsShouldBeImmutablePropHasMutable(k string) string {
 	return fmt.Sprintf("invalid value for key '%s', values of a record should be immutable", k)
 }
 
-func fmtValuesOfTupleLiteralsShouldBeImmutableElemIsMutable(i int) string {
+func FmtValuesOfTupleLiteralsShouldBeImmutableElemIsMutable(i int) string {
 	return fmt.Sprintf("invalid value for element at index %d, values of a tuple should be immutable", i)
 }
 
-func fmtDuplicateKey(k string) string {
+func FmtDuplicateKey(k string) string {
 	return fmt.Sprintf("duplicate key '%s'", k)
 }
 
-func fmtDuplicateFieldName(k string) string {
+func FmtDuplicateFieldName(k string) string {
 	return fmt.Sprintf("duplicate field name '%s'", k)
 }
 
-func fmtDuplicateDictKey(k string) string {
+func FmtDuplicateDictKey(k string) string {
 	return fmt.Sprintf("duplicate dictionary key '%s'", k)
 }
 
-func fmtInvalidImportStmtAlreadyDeclaredGlobal(name string) string {
+func FmtInvalidImportStmtAlreadyDeclaredGlobal(name string) string {
 	return fmt.Sprintf("invalid import statement: global '%s' is already declared", name)
 }
 
-func fmtInvalidConstDeclGlobalAlreadyDeclared(name string) string {
+func FmtInvalidConstDeclGlobalAlreadyDeclared(name string) string {
 	return fmt.Sprintf("invalid constant declaration: '%s' is already declared", name)
 }
 
-func fmtInvalidLocalVarDeclAlreadyDeclared(name string) string {
+func FmtInvalidLocalVarDeclAlreadyDeclared(name string) string {
 	return fmt.Sprintf("invalid local variable declaration: '%s' is already declared", name)
 }
 
-func fmtInvalidGlobalVarDeclAlreadyDeclared(name string) string {
+func FmtInvalidGlobalVarDeclAlreadyDeclared(name string) string {
 	return fmt.Sprintf("invalid global variable declaration: '%s' is already declared", name)
 }
 
-func fmtInvalidGlobalVarAssignmentNameIsFuncName(name string) string {
+func FmtInvalidGlobalVarAssignmentNameIsFuncName(name string) string {
 	return fmt.Sprintf("invalid global variable assignment: '%s' is a declared function's name", name)
 }
 
-func fmtInvalidGlobalVarAssignmentNameIsConstant(name string) string {
+func FmtInvalidGlobalVarAssignmentNameIsConstant(name string) string {
 	return fmt.Sprintf("invalid global variable assignment: '%s' is a constant", name)
 }
 
-func fmtInvalidGlobalVarAssignmentVarDoesNotExist(name string) string {
+func FmtInvalidGlobalVarAssignmentVarDoesNotExist(name string) string {
 	return fmt.Sprintf("invalid global variable assignment: '%s' does not exist", name)
 }
 
-func fmtInvalidVariableAssignmentVarDoesNotExist(name string) string {
+func FmtInvalidVariableAssignmentVarDoesNotExist(name string) string {
 	return fmt.Sprintf("invalid variable assignment: '%s' does not exist", name)
 }
 
-func fmtInvalidMemberAssignmentCannotModifyMetaProperty(name string) string {
+func FmtInvalidMemberAssignmentCannotModifyMetaProperty(name string) string {
 	return fmt.Sprintf("invalid member assignment: cannot modify metaproperty '%s'", name)
 }
 
-func fmtCannotShadowVariable(name string) string {
+func FmtCannotShadowVariable(name string) string {
 	return fmt.Sprintf("cannot shadow variable '%s', use another name instead", name)
 }
 
-func fmtCannotShadowGlobalVariable(name string) string {
+func FmtCannotShadowGlobalVariable(name string) string {
 	return fmt.Sprintf("cannot shadow global variable '%s', use another name instead", name)
 }
 
-func fmtCannotShadowLocalVariable(name string) string {
+func FmtCannotShadowLocalVariable(name string) string {
 	return fmt.Sprintf("cannot shadow local variable '%s', use another name instead", name)
 }
 
-func fmtParameterCannotShadowGlobalVariable(name string) string {
+func FmtParameterCannotShadowGlobalVariable(name string) string {
 	return fmt.Sprintf("a parameter cannot shadow global variable '%s', use another name instead", name)
 }
 
-func fmtInvalidFnDeclAlreadyDeclared(name string) string {
+func FmtInvalidFnDeclAlreadyDeclared(name string) string {
 	return fmt.Sprintf("invalid function declaration: %s is already declared", name)
 }
 
-func fmtInvalidOrMisplacedFnDeclShouldBeAfterCapturedVarDeclaration(name string) string {
+func FmtInvalidOrMisplacedFnDeclShouldBeAfterCapturedVarDeclaration(name string) string {
 	return fmt.Sprintf("invalid or misplaced function declaration: the function should be declared after the declaration of the local variable '%s'", name)
 }
 
-func fmtInvalidFnDeclGlobVarExist(name string) string {
+func FmtInvalidFnDeclGlobVarExist(name string) string {
 	return fmt.Sprintf("invalid function declaration: a global variable named '%s' exists", name)
 }
 
-func fmtMisplacedFnDeclGlobVarExist(name string) string {
+func FmtMisplacedFnDeclGlobVarExist(name string) string {
 	return fmt.Sprintf("misplaced function declaration: a global variable named '%s' exists", name)
 }
 
-func fmtInvalidStructDefAlreadyDeclared(name string) string {
+func FmtInvalidStructDefAlreadyDeclared(name string) string {
 	return fmt.Sprintf("invalid struct definition: %s is already declared", name)
 }
 
-func fmtAnXFieldOrMethodIsAlreadyDefined(name string) string {
+func FmtAnXFieldOrMethodIsAlreadyDefined(name string) string {
 	return fmt.Sprintf("a field or method named '%s' is already defined ", name)
 }
 
-func fmtPatternAlreadyDeclared(name string) string {
+func FmtPatternAlreadyDeclared(name string) string {
 	return fmt.Sprintf("pattern %%%s is already declared", name)
 }
 
-func fmtPatternNamespaceAlreadyDeclared(name string) string {
+func FmtPatternNamespaceAlreadyDeclared(name string) string {
 	return fmt.Sprintf("pattern namespace %%%s is already declared", name)
 }
 
-func fmtStructTypeIsNotDefined(name string) string {
+func FmtStructTypeIsNotDefined(name string) string {
 	return fmt.Sprintf("struct type '%s' is not defined", name)
 }
 
-func fmtCannotPassGlobalThatIsNotDeclaredToLThread(name string) string {
+func FmtCannotPassGlobalThatIsNotDeclaredToLThread(name string) string {
 	return fmt.Sprintf("cannot pass global variable '%s' to lthread, '%s' is not declared", name, name)
 }
 
-func fmtCannotPassGlobalToFunction(name string) string {
+func FmtCannotPassGlobalToFunction(name string) string {
 	return fmt.Sprintf("cannot pass global variable '%s' to function.", name)
 }
 
-func fmtNameIsTooLong(name string) string {
+func FmtNameIsTooLong(name string) string {
 	return fmt.Sprintf("name '%s' is too long", name)
 }
 
-func fmtVarIsNotDeclared(name string) string {
+func FmtVarIsNotDeclared(name string) string {
 	return fmt.Sprintf("variable '%s' is not declared", name)
 }
 
-func fmtLocalVarIsNotDeclared(name string) string {
+func FmtLocalVarIsNotDeclared(name string) string {
 	return fmt.Sprintf("local variable '%s' is not declared", name)
 }
 
-func fmtGlobalVarIsNotDeclared(name string) string {
+func FmtGlobalVarIsNotDeclared(name string) string {
 	return fmt.Sprintf("global variable '%s' is not declared", name)
 }
 
-func fmtPatternIsNotDeclared(name string) string {
+func FmtPatternIsNotDeclared(name string) string {
 	return fmt.Sprintf("pattern %%%s is not declared", name)
 }
 
-func fmtPatternNamespaceIsNotDeclared(name string) string {
+func FmtPatternNamespaceIsNotDeclared(name string) string {
 	return fmt.Sprintf("pattern namespace %%%s is not declared", name)
 }
 
-func fmtObjectDoesNotHaveProp(name string) string {
+func FmtObjectDoesNotHaveProp(name string) string {
 	return fmt.Sprintf("object dos not have a .%s property", name)
 }
 
-func fmtOnlyAbsPathsAreAcceptedInPerms(v string) string {
+func FmtOnlyAbsPathsAreAcceptedInPerms(v string) string {
 	return fmt.Sprintf("only absolute paths are accepted in permissions: %s", v)
 }
 
-func fmtOnlyAbsPathPatternsAreAcceptedInPerms(v string) string {
+func FmtOnlyAbsPathPatternsAreAcceptedInPerms(v string) string {
 	return fmt.Sprintf("only absolute path patterns are accepted in permissions: %s", v)
 }
 
-func fmtCannotInferPermission(kind string, name string) string {
+func FmtCannotInferPermission(kind string, name string) string {
 	return fmt.Sprintf("cannot infer '%s' permission '%s", kind, name)
 }
 
-func fmtTheXSectionIsNotAllowedForTheCurrentModuleKind(sectionName string, moduleKind ModuleKind) string {
-	return fmt.Sprintf("the %q section is not allowed for the current module kind (%s)", sectionName, moduleKind.String())
+func FmtTheXSectionIsNotAllowedForTheCurrentModuleKind(sectionName string, moduleKind fmt.Stringer) string {
+	return fmt.Sprintf("the %q section is not allowed for the current module kind (%s)", sectionName, moduleKind)
 }

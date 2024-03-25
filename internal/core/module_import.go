@@ -20,6 +20,7 @@ import (
 	afs "github.com/inoxlang/inox/internal/afs"
 	permkind "github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/memds"
 	"github.com/inoxlang/inox/internal/parse"
@@ -225,9 +226,9 @@ func ImportModule(config ImportConfig) (*LThread, error) {
 		if err != nil {
 			return nil, fmt.Errorf("invalid arguments: %w", err)
 		}
-		globals.Set(MOD_ARGS_VARNAME, args)
+		globals.Set(globalnames.MOD_ARGS_VARNAME, args)
 	} else {
-		globals.Set(MOD_ARGS_VARNAME, Nil)
+		globals.Set(globalnames.MOD_ARGS_VARNAME, Nil)
 	}
 
 	logLevels := config.ParentState.LogLevels

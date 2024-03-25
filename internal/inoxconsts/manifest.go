@@ -30,10 +30,6 @@ const (
 	MANIFEST_INVOCATION__ON_ADDED_ELEM_PROP_NAME = "on-added-element"
 	MANIFEST_INVOCATION__ASYNC_PROP_NAME         = "async"
 
-	//permissions section
-	INVALID_COMMANDS_PREFIX = "invalid manifest, use: commands: "
-	ERR                     = INVALID_COMMANDS_PREFIX + "a command (or subcommand) name should be followed by object literals with the next subcommands as keys (or empty)"
-
 	//parameters
 	MANIFEST_PARAM__PATTERN_PROPNAME                  = "pattern"
 	MANIFEST_PARAM__DESCRIPTION_PROPNAME              = "description"

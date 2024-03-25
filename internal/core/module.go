@@ -26,7 +26,6 @@ import (
 
 const (
 	INCLUDED_FILE_PATH_SHOULD_NOT_CONTAIN_X = "included file path should not contain '..'"
-	MOD_ARGS_VARNAME                        = "mod-args"
 	MAX_PREINIT_FILE_SIZE                   = int32(100_000)
 	DEFAULT_MAX_READ_FILE_SIZE              = int32(100_000_000)
 
@@ -185,7 +184,7 @@ func (mod *Module) ParameterNames() (names []string) {
 		return nil
 	}
 
-	propValue, _ := objLit.PropValue(MANIFEST_PARAMS_SECTION_NAME)
+	propValue, _ := objLit.PropValue(inoxconsts.MANIFEST_PARAMS_SECTION_NAME)
 	paramsObject, ok := propValue.(*parse.ObjectLiteral)
 
 	if !ok {
@@ -503,7 +502,7 @@ func ParseModuleFromSource(src parse.ChunkSource, resource ResourceName, config 
 	} else {
 		//attempt to determine the module kind, we don't report errors because the static checker will.
 		objLit := code.Node.Manifest.Object.(*parse.ObjectLiteral)
-		node, ok := objLit.PropValue(MANIFEST_KIND_SECTION_NAME)
+		node, ok := objLit.PropValue(inoxconsts.MANIFEST_KIND_SECTION_NAME)
 		if ok {
 			kindName, ok := getUncheckedModuleKindNameFromNode(node)
 			if ok {

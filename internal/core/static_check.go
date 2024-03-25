@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/core/text"
 	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
@@ -251,7 +252,7 @@ func (c *checker) defineStructs(closestModule parse.Node, statements []parse.Nod
 			defs := c.getModStructDefs(closestModule)
 			_, alreadyDefined := defs[name]
 			if alreadyDefined {
-				c.addError(structDef.Name, fmtInvalidStructDefAlreadyDeclared(name))
+				c.addError(structDef.Name, text.FmtInvalidStructDefAlreadyDeclared(name))
 			} else {
 				defs[name] = 0
 			}
@@ -280,7 +281,7 @@ func (c *checker) defineStructs(closestModule parse.Node, statements []parse.Nod
 			}
 
 			if slices.Contains(names, name) {
-				c.addError(nameNode, fmtAnXFieldOrMethodIsAlreadyDefined(name))
+				c.addError(nameNode, text.FmtAnXFieldOrMethodIsAlreadyDefined(name))
 			} else {
 				names = append(names, name)
 			}
@@ -511,11 +512,11 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 			}
 
 			if !allowed {
-				c.addError(n, fmtFollowingNodeTypeNotAllowedInAssertions(n))
+				c.addError(n, text.FmtFollowingNodeTypeNotAllowedInAssertions(n))
 			}
 		default:
 			if !parse.NodeIsSimpleValueLiteral(n) {
-				c.addError(n, fmtFollowingNodeTypeNotAllowedInAssertions(n))
+				c.addError(n, text.FmtFollowingNodeTypeNotAllowedInAssertions(n))
 			}
 		}
 	}
@@ -525,11 +526,11 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 	switch node := n.(type) {
 	case *parse.IntegerRangeLiteral:
 		if upperBound, ok := node.UpperBound.(*parse.IntLiteral); ok && node.LowerBound.Value > upperBound.Value {
-			c.addError(n, LOWER_BOUND_OF_INT_RANGE_LIT_SHOULD_BE_SMALLER_THAN_UPPER_BOUND)
+			c.addError(n, text.LOWER_BOUND_OF_INT_RANGE_LIT_SHOULD_BE_SMALLER_THAN_UPPER_BOUND)
 		}
 	case *parse.FloatRangeLiteral:
 		if upperBound, ok := node.UpperBound.(*parse.FloatLiteral); ok && node.LowerBound.Value > upperBound.Value {
-			c.addError(n, LOWER_BOUND_OF_FLOAT_RANGE_LIT_SHOULD_BE_SMALLER_THAN_UPPER_BOUND)
+			c.addError(n, text.LOWER_BOUND_OF_FLOAT_RANGE_LIT_SHOULD_BE_SMALLER_THAN_UPPER_BOUND)
 		}
 	case *parse.QuantityLiteral:
 		return c.checkQuantityLiteral(node)
@@ -537,11 +538,11 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 		return c.checkRateLiteral(node)
 	case *parse.URLLiteral:
 		if strings.HasPrefix(node.Value, "mem://") && utils.Must(url.Parse(node.Value)).Host != MEM_HOSTNAME {
-			c.addError(node, INVALID_MEM_HOST_ONLY_VALID_VALUE)
+			c.addError(node, text.INVALID_MEM_HOST_ONLY_VALID_VALUE)
 		}
 	case *parse.HostLiteral:
 		if strings.HasPrefix(node.Value, "mem://") && utils.Must(url.Parse(node.Value)).Host != MEM_HOSTNAME {
-			c.addError(node, INVALID_MEM_HOST_ONLY_VALID_VALUE)
+			c.addError(node, text.INVALID_MEM_HOST_ONLY_VALID_VALUE)
 		}
 	case *parse.ObjectLiteral:
 		return c.checkObjectLiteral(node)
@@ -557,7 +558,7 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 		return c.checkLifetimejobExpr(node, parent, closestModule)
 	case *parse.ReceptionHandlerExpression:
 		if prop, ok := parent.(*parse.ObjectProperty); !ok || !prop.HasImplicitKey() {
-			c.addError(node, MISPLACED_RECEPTION_HANDLER_EXPRESSION)
+			c.addError(node, text.MISPLACED_RECEPTION_HANDLER_EXPRESSION)
 		}
 
 	case *parse.MappingExpression:
@@ -612,7 +613,7 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 		}
 
 		if iterativeStmtIndex < 0 {
-			c.addError(node, INVALID_BREAK_OR_CONTINUE_STMT_SHOULD_BE_IN_A_FOR_OR_WALK_STMT)
+			c.addError(node, text.INVALID_BREAK_OR_CONTINUE_STMT_SHOULD_BE_IN_A_FOR_OR_WALK_STMT)
 			return parse.ContinueTraversal
 		}
 
@@ -621,7 +622,7 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 			case *parse.IfStatement, *parse.SwitchStatement, *parse.SwitchStatementCase,
 				*parse.MatchStatementCase, *parse.MatchStatement, *parse.Block:
 			default:
-				c.addError(node, INVALID_BREAK_OR_CONTINUE_STMT_SHOULD_BE_IN_A_FOR_OR_WALK_STMT)
+				c.addError(node, text.INVALID_BREAK_OR_CONTINUE_STMT_SHOULD_BE_IN_A_FOR_OR_WALK_STMT)
 				return parse.ContinueTraversal
 			}
 		}
@@ -653,16 +654,16 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 		return c.checkRuntimeTypeCheckExpr(node, parent)
 	case *parse.DynamicMemberExpression:
 		if node.Optional {
-			c.addError(node, OPTIONAL_DYN_MEMB_EXPR_NOT_SUPPORTED_YET)
+			c.addError(node, text.OPTIONAL_DYN_MEMB_EXPR_NOT_SUPPORTED_YET)
 		}
 	case *parse.ExtendStatement:
 		if _, ok := parent.(*parse.Chunk); !ok {
-			c.addError(node, MISPLACED_EXTEND_STATEMENT_TOP_LEVEL_STMT)
+			c.addError(node, text.MISPLACED_EXTEND_STATEMENT_TOP_LEVEL_STMT)
 			return parse.ContinueTraversal
 		}
 	case *parse.StructDefinition:
 		if parent != closestModule {
-			c.addError(node, MISPLACED_STRUCT_DEF_TOP_LEVEL_STMT)
+			c.addError(node, text.MISPLACED_STRUCT_DEF_TOP_LEVEL_STMT)
 			return parse.ContinueTraversal
 		}
 		//already defined.
@@ -719,7 +720,7 @@ func (c *checker) precheckTopLevelStatements(module parse.Node) {
 		//otter nodes
 		default:
 			if isIncludedChunk {
-				c.addError(stmt, AN_INCLUDABLE_FILE_CAN_ONLY_CONTAIN_DEFINITIONS)
+				c.addError(stmt, text.AN_INCLUDABLE_FILE_CAN_ONLY_CONTAIN_DEFINITIONS)
 			}
 		}
 	}
@@ -751,7 +752,7 @@ func (c *checker) checkQuantityLiteral(node *parse.QuantityLiteral) parse.Traver
 		_ = prevMultiplier
 
 		if i > 0 && len(node.Units[partIndex]) == 1 {
-			c.addError(node, fmtNonSupportedUnit(node.Units[0]))
+			c.addError(node, text.FmtNonSupportedUnit(node.Units[0]))
 			return parse.ContinueTraversal
 		}
 
@@ -760,7 +761,7 @@ func (c *checker) checkQuantityLiteral(node *parse.QuantityLiteral) parse.Traver
 		switch unit {
 		case "x", LINE_COUNT_UNIT, RUNE_COUNT_UNIT, BYTE_COUNT_UNIT:
 			if partIndex != 0 || prevUnit != "" {
-				c.addError(node, INVALID_QUANTITY)
+				c.addError(node, text.INVALID_QUANTITY)
 				return parse.ContinueTraversal
 			}
 			prevUnit = unit
@@ -783,7 +784,7 @@ func (c *checker) checkQuantityLiteral(node *parse.QuantityLiteral) parse.Traver
 			}
 
 			if prevUnit != "" && (prevDurationUnitValue == 0 || durationUnitValue >= prevDurationUnitValue) {
-				c.addError(node, INVALID_QUANTITY)
+				c.addError(node, text.INVALID_QUANTITY)
 				return parse.ContinueTraversal
 			}
 
@@ -791,7 +792,7 @@ func (c *checker) checkQuantityLiteral(node *parse.QuantityLiteral) parse.Traver
 			prevUnit = unit
 		case "%":
 			if partIndex != 0 || prevUnit != "" {
-				c.addError(node, INVALID_QUANTITY)
+				c.addError(node, text.INVALID_QUANTITY)
 				return parse.ContinueTraversal
 			}
 			if i == 0 {
@@ -800,7 +801,7 @@ func (c *checker) checkQuantityLiteral(node *parse.QuantityLiteral) parse.Traver
 			}
 			fallthrough
 		default:
-			c.addError(node, fmtNonSupportedUnit(node.Units[0]))
+			c.addError(node, text.FmtNonSupportedUnit(node.Units[0]))
 			return parse.ContinueTraversal
 		}
 	}
@@ -830,7 +831,7 @@ func (c *checker) checkRateLiteral(node *parse.RateLiteral) parse.TraversalActio
 			return parse.ContinueTraversal
 		}
 	}
-	c.addError(node, INVALID_RATE)
+	c.addError(node, text.INVALID_RATE)
 	return parse.ContinueTraversal
 }
 
@@ -904,13 +905,13 @@ func (c *checker) checkObjectRecordPatternLiteral(node parse.Node) parse.Travers
 		}
 
 		if len(k) > MAX_NAME_BYTE_LEN {
-			c.addError(prop.Key, fmtNameIsTooLong(k))
+			c.addError(prop.Key, text.FmtNameIsTooLong(k))
 		}
 
 		if parse.IsMetadataKey(k) {
-			c.addError(prop.Key, OBJ_REC_LIT_CANNOT_HAVE_METAPROP_KEYS)
+			c.addError(prop.Key, text.OBJ_REC_LIT_CANNOT_HAVE_METAPROP_KEYS)
 		} else if _, found := keys[k]; found {
-			c.addError(prop, fmtDuplicateKey(k))
+			c.addError(prop, text.FmtDuplicateKey(k))
 		}
 
 		keys[k] = struct{}{}
@@ -928,7 +929,7 @@ func (c *checker) checkObjectRecordPatternLiteral(node parse.Node) parse.Travers
 
 			_, found := keys[name]
 			if found {
-				c.addError(key, fmtDuplicateKey(name))
+				c.addError(key, text.FmtDuplicateKey(name))
 				return parse.ContinueTraversal
 			}
 			keys[name] = struct{}{}
@@ -941,7 +942,7 @@ func (c *checker) checkObjectRecordPatternLiteral(node parse.Node) parse.Travers
 			patternIdent, ok := prop.Pattern.(*parse.PatternIdentifierLiteral)
 
 			if !ok || patternIdent.Name != parse.NO_OTHERPROPS_PATTERN_NAME {
-				c.addError(prop, UNEXPECTED_OTHER_PROPS_EXPR_OTHERPROPS_NO_IS_PRESENT)
+				c.addError(prop, text.UNEXPECTED_OTHER_PROPS_EXPR_OTHERPROPS_NO_IS_PRESENT)
 			}
 		}
 	}
@@ -964,7 +965,7 @@ func (c *checker) checkDictionaryLiteral(node *parse.DictionaryLiteral) parse.Tr
 		keyRepr := keyNode.ValueString()
 
 		if keys[keyRepr] {
-			c.addError(entry.Key, fmtDuplicateDictKey(keyRepr))
+			c.addError(entry.Key, text.FmtDuplicateDictKey(keyRepr))
 		} else {
 			keys[keyRepr] = true
 		}
@@ -989,12 +990,12 @@ func (c *checker) checkSpawnExpr(node *parse.SpawnExpression, closestModule pars
 	// add globals passed by user
 	if obj, ok := node.Meta.(*parse.ObjectLiteral); ok {
 		if len(obj.SpreadElements) > 0 {
-			c.addError(node.Meta, INVALID_SPAWN_ONLY_OBJECT_LITERALS_WITH_NO_SPREAD_ELEMENTS_SUPPORTED)
+			c.addError(node.Meta, text.INVALID_SPAWN_ONLY_OBJECT_LITERALS_WITH_NO_SPREAD_ELEMENTS_SUPPORTED)
 		}
 
 		for _, prop := range obj.Properties {
 			if prop.HasImplicitKey() {
-				c.addError(node.Meta, INVALID_SPAWN_ONLY_OBJECT_LITERALS_WITH_NO_SPREAD_ELEMENTS_SUPPORTED)
+				c.addError(node.Meta, text.INVALID_SPAWN_ONLY_OBJECT_LITERALS_WITH_NO_SPREAD_ELEMENTS_SUPPORTED)
 			}
 		}
 
@@ -1003,7 +1004,7 @@ func (c *checker) checkSpawnExpr(node *parse.SpawnExpression, closestModule pars
 			globalDescNode = val
 		}
 	} else if node.Meta != nil {
-		c.addError(node.Meta, INVALID_SPAWN_ONLY_OBJECT_LITERALS_WITH_NO_SPREAD_ELEMENTS_SUPPORTED)
+		c.addError(node.Meta, text.INVALID_SPAWN_ONLY_OBJECT_LITERALS_WITH_NO_SPREAD_ELEMENTS_SUPPORTED)
 	}
 
 	switch desc := globalDescNode.(type) {
@@ -1011,18 +1012,18 @@ func (c *checker) checkSpawnExpr(node *parse.SpawnExpression, closestModule pars
 		for _, ident := range desc.Keys {
 			globVarName := ident.(*parse.IdentifierLiteral).Name
 			if !c.doGlobalVarExist(globVarName, closestModule) {
-				c.addError(globalDescNode, fmtCannotPassGlobalThatIsNotDeclaredToLThread(globVarName))
+				c.addError(globalDescNode, text.FmtCannotPassGlobalThatIsNotDeclaredToLThread(globVarName))
 			}
 			globals[globVarName] = globalVarInfo{isConst: true}
 		}
 	case *parse.ObjectLiteral:
 		if len(desc.SpreadElements) > 0 {
-			c.addError(desc, INVALID_SPAWN_GLOBALS_SHOULD_BE)
+			c.addError(desc, text.INVALID_SPAWN_GLOBALS_SHOULD_BE)
 		}
 
 		for _, prop := range desc.Properties {
 			if prop.HasImplicitKey() {
-				c.addError(desc, INVALID_SPAWN_GLOBALS_SHOULD_BE)
+				c.addError(desc, text.INVALID_SPAWN_GLOBALS_SHOULD_BE)
 				continue
 			}
 			globals[prop.Name()] = globalVarInfo{isConst: true}
@@ -1030,7 +1031,7 @@ func (c *checker) checkSpawnExpr(node *parse.SpawnExpression, closestModule pars
 	case *parse.NilLiteral:
 	case nil:
 	default:
-		c.addError(node, INVALID_SPAWN_GLOBALS_SHOULD_BE)
+		c.addError(node, text.INVALID_SPAWN_GLOBALS_SHOULD_BE)
 	}
 
 	if node.Module != nil && node.Module.SingleCallExpr {
@@ -1081,7 +1082,7 @@ func (c *checker) checkLifetimejobExpr(node *parse.LifetimejobExpression, parent
 	}
 
 	if prop, ok := parent.(*parse.ObjectProperty); !ok || !prop.HasImplicitKey() {
-		c.addError(node, MISSING_LIFETIMEJOB_SUBJECT_PATTERN_NOT_AN_IMPLICIT_OBJ_PROP)
+		c.addError(node, text.MISSING_LIFETIMEJOB_SUBJECT_PATTERN_NOT_AN_IMPLICIT_OBJ_PROP)
 	}
 
 	return parse.ContinueTraversal
@@ -1092,7 +1093,7 @@ func (c *checker) checkStaticMappingEntry(node *parse.StaticMappingEntry) parse.
 	case *parse.PatternIdentifierLiteral, *parse.PatternNamespaceMemberExpression:
 	default:
 		if !parse.NodeIsSimpleValueLiteral(node.Key) {
-			c.addError(node.Key, INVALID_MAPPING_ENTRY_KEY_ONLY_SIMPL_LITS_AND_PATT_IDENTS)
+			c.addError(node.Key, text.INVALID_MAPPING_ENTRY_KEY_ONLY_SIMPL_LITS_AND_PATT_IDENTS)
 		}
 	}
 
@@ -1104,7 +1105,7 @@ func (c *checker) checkDynamicMappingEntry(node *parse.DynamicMappingEntry) pars
 	case *parse.PatternIdentifierLiteral, *parse.PatternNamespaceMemberExpression:
 	default:
 		if !parse.NodeIsSimpleValueLiteral(node.Key) {
-			c.addError(node.Key, INVALID_MAPPING_ENTRY_KEY_ONLY_SIMPL_LITS_AND_PATT_IDENTS)
+			c.addError(node.Key, text.INVALID_MAPPING_ENTRY_KEY_ONLY_SIMPL_LITS_AND_PATT_IDENTS)
 		}
 	}
 
@@ -1122,7 +1123,7 @@ func (c *checker) checkDynamicMappingEntry(node *parse.DynamicMappingEntry) pars
 
 func (c *checker) checkComputeExpr(node *parse.ComputeExpression, scopeNode parse.Node, ancestorChain []parse.Node) parse.TraversalAction {
 	if _, ok := scopeNode.(*parse.DynamicMappingEntry); !ok {
-		c.addError(node, MISPLACED_COMPUTE_EXPR_SHOULD_BE_IN_DYNAMIC_MAPPING_EXPR_ENTRY)
+		c.addError(node, text.MISPLACED_COMPUTE_EXPR_SHOULD_BE_IN_DYNAMIC_MAPPING_EXPR_ENTRY)
 	} else {
 	ancestor_loop:
 		for i := len(ancestorChain) - 1; i >= 0; i-- {
@@ -1133,11 +1134,11 @@ func (c *checker) checkComputeExpr(node *parse.ComputeExpression, scopeNode pars
 
 			switch a := ancestor.(type) {
 			case *parse.StaticMappingEntry:
-				c.addError(node, MISPLACED_COMPUTE_EXPR_SHOULD_BE_IN_DYNAMIC_MAPPING_EXPR_ENTRY)
+				c.addError(node, text.MISPLACED_COMPUTE_EXPR_SHOULD_BE_IN_DYNAMIC_MAPPING_EXPR_ENTRY)
 				break ancestor_loop
 			case *parse.DynamicMappingEntry:
 				if a.Key == node || i < len(ancestorChain)-1 && ancestorChain[i+1] == a.Key {
-					c.addError(node, MISPLACED_COMPUTE_EXPR_SHOULD_BE_IN_DYNAMIC_MAPPING_EXPR_ENTRY)
+					c.addError(node, text.MISPLACED_COMPUTE_EXPR_SHOULD_BE_IN_DYNAMIC_MAPPING_EXPR_ENTRY)
 				}
 				break ancestor_loop
 			}
@@ -1153,7 +1154,7 @@ func (c *checker) checkInclusionImportStmt(node *parse.InclusionImportStatement,
 	}
 
 	if _, ok := parent.(*parse.Chunk); !ok {
-		c.addError(node, MISPLACED_INCLUSION_IMPORT_STATEMENT_TOP_LEVEL_STMT)
+		c.addError(node, text.MISPLACED_INCLUSION_IMPORT_STATEMENT_TOP_LEVEL_STMT)
 		return parse.ContinueTraversal
 	}
 
@@ -1250,7 +1251,7 @@ func (c *checker) checkInclusionImportStmt(node *parse.InclusionImportStatement,
 
 		globalVars := c.getModGlobalVars(closestModule)
 		if _, ok := globalVars[k]; ok {
-			c.addError(node, fmtCannotShadowGlobalVariable(k))
+			c.addError(node, text.FmtCannotShadowGlobalVariable(k))
 		} else {
 			globalVars[k] = v
 		}
@@ -1259,7 +1260,7 @@ func (c *checker) checkInclusionImportStmt(node *parse.InclusionImportStatement,
 	for k, v := range chunkChecker.localVars[includedChunk.Node] {
 		localVars := c.getLocalVarsInScope(closestModule)
 		if _, ok := localVars[k]; ok {
-			c.addError(node, fmtCannotShadowLocalVariable(k))
+			c.addError(node, text.FmtCannotShadowLocalVariable(k))
 		} else {
 			localVars[k] = v
 		}
@@ -1272,7 +1273,7 @@ func (c *checker) checkInclusionImportStmt(node *parse.InclusionImportStatement,
 
 		patterns := c.getModPatterns(closestModule)
 		if _, ok := patterns[k]; ok {
-			c.addError(node, fmtPatternAlreadyDeclared(k))
+			c.addError(node, text.FmtPatternAlreadyDeclared(k))
 		} else {
 			patterns[k] = v
 		}
@@ -1285,7 +1286,7 @@ func (c *checker) checkInclusionImportStmt(node *parse.InclusionImportStatement,
 
 		namespaces := c.getModPatternNamespaces(closestModule)
 		if _, ok := namespaces[k]; ok {
-			c.addError(node, fmtPatternNamespaceAlreadyDeclared(k))
+			c.addError(node, text.FmtPatternNamespaceAlreadyDeclared(k))
 		} else {
 			namespaces[k] = v
 		}
@@ -1300,12 +1301,12 @@ func (c *checker) checkInclusionImportStmt(node *parse.InclusionImportStatement,
 
 func (c *checker) checkImportStmt(node *parse.ImportStatement, parent, closestModule parse.Node) parse.TraversalAction {
 	if c.inclusionImportStatement != nil {
-		c.addError(node, MODULE_IMPORTS_NOT_ALLOWED_IN_INCLUDABLE_FILES)
+		c.addError(node, text.MODULE_IMPORTS_NOT_ALLOWED_IN_INCLUDABLE_FILES)
 		return parse.Prune
 	}
 
 	if _, ok := parent.(*parse.Chunk); !ok {
-		c.addError(node, MISPLACED_MOD_IMPORT_STATEMENT_TOP_LEVEL_STMT)
+		c.addError(node, text.MISPLACED_MOD_IMPORT_STATEMENT_TOP_LEVEL_STMT)
 		return parse.Prune
 	}
 
@@ -1314,7 +1315,7 @@ func (c *checker) checkImportStmt(node *parse.ImportStatement, parent, closestMo
 
 	_, alreadyUsed := variables[name]
 	if alreadyUsed {
-		c.addError(node, fmtInvalidImportStmtAlreadyDeclaredGlobal(name))
+		c.addError(node, text.FmtInvalidImportStmtAlreadyDeclaredGlobal(name))
 		return parse.ContinueTraversal
 	}
 	variables[name] = globalVarInfo{isConst: true}
@@ -1353,7 +1354,7 @@ func (c *checker) checkImportStmt(node *parse.ImportStatement, parent, closestMo
 	}
 
 	//add module arguments variable to child checker
-	globals[importedModuleNode][MOD_ARGS_VARNAME] = globalVarInfo{isConst: true, isStartConstant: true}
+	globals[importedModuleNode][globalnames.MOD_ARGS_VARNAME] = globalVarInfo{isConst: true, isStartConstant: true}
 
 	//add base patterns & pattern namespaces to child checker
 	basePatterns, basePatternNamespaces := c.checkInput.State.GetBasePatternsForImportedModule()
@@ -1427,7 +1428,7 @@ func (c *checker) checkGlobalConstDecls(node *parse.GlobalConstantDeclarations, 
 
 		_, alreadyUsed := globalVars[name]
 		if alreadyUsed {
-			c.addError(decl, fmtInvalidConstDeclGlobalAlreadyDeclared(name))
+			c.addError(decl, text.FmtInvalidConstDeclGlobalAlreadyDeclared(name))
 			return parse.ContinueTraversal
 		}
 
@@ -1464,23 +1465,23 @@ func (c *checker) checkGlobalConstDecls(node *parse.GlobalConstantDeclarations, 
 				//ok
 			case *parse.CallExpression:
 				if inIncludedChunk {
-					c.addError(n.Callee, CALL_EXPRS_NOT_ALLOWED_INSIDE_GLOBAL_CONST_DECLS_OF_INCLUDABLE_FILES)
+					c.addError(n.Callee, text.CALL_EXPRS_NOT_ALLOWED_INSIDE_GLOBAL_CONST_DECLS_OF_INCLUDABLE_FILES)
 					return parse.Prune, nil
 				}
 
 				switch callee := n.Callee.(type) {
 				case *parse.IdentifierLiteral:
 					if !slices.Contains(USABLE_GLOBALS_IN_PREINIT, callee.Name) {
-						c.addError(n.Callee, A_LIMITED_NUMBER_OF_BUILTINS_ARE_ALLOWED_TO_BE_CALLED_IN_GLOBAL_CONST_DECLS)
+						c.addError(n.Callee, text.A_LIMITED_NUMBER_OF_BUILTINS_ARE_ALLOWED_TO_BE_CALLED_IN_GLOBAL_CONST_DECLS)
 						return parse.Prune, nil
 					}
 				case *parse.MemberExpression, *parse.IdentifierMemberExpression:
 				default:
-					c.addError(n, CALLED_NOT_ALLOWED_INSIDE_GLOBAL_CONST_DECLS)
+					c.addError(n, text.CALLED_NOT_ALLOWED_INSIDE_GLOBAL_CONST_DECLS)
 					return parse.Prune, nil
 				}
 			default:
-				c.addError(n, fmtFollowingNodeTypeNotAllowedInGlobalConstantDeclarations(n))
+				c.addError(n, text.FmtFollowingNodeTypeNotAllowedInGlobalConstantDeclarations(n))
 				return parse.Prune, nil
 			}
 			return parse.ContinueTraversal, nil
@@ -1504,13 +1505,13 @@ func (c *checker) checkLocalVarDecls(node *parse.LocalVariableDeclarations, scop
 		globalVariables := c.getModGlobalVars(closestModule)
 
 		if _, alreadyDefined := globalVariables[name]; alreadyDefined {
-			c.addError(decl, fmtCannotShadowGlobalVariable(name))
+			c.addError(decl, text.FmtCannotShadowGlobalVariable(name))
 			return parse.ContinueTraversal
 		}
 
 		_, alreadyUsed := localVars[name]
 		if alreadyUsed {
-			c.addError(decl, fmtInvalidLocalVarDeclAlreadyDeclared(name))
+			c.addError(decl, text.FmtInvalidLocalVarDeclAlreadyDeclared(name))
 			return parse.ContinueTraversal
 		}
 		localVars[name] = localVarInfo{}
@@ -1524,13 +1525,13 @@ func (c *checker) checkGlobalVarDecls(node *parse.GlobalVariableDeclarations, pa
 	//Check the declarations are not misplaced.
 
 	if !SamePointer(parentNode, closestModule) {
-		c.addError(node, MISPLACED_GLOBAL_VAR_DECLS_TOP_LEVEL_STMT)
+		c.addError(node, text.MISPLACED_GLOBAL_VAR_DECLS_TOP_LEVEL_STMT)
 		return parse.Prune
 	}
 
 	firstForbiddenPos := c.data.firstForbiddenPosForGlobalElementDecls[closestModule]
 	if firstForbiddenPos != 0 && node.Base().Span.Start >= firstForbiddenPos {
-		c.addError(node, MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_REF_TO_FN)
+		c.addError(node, text.MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_REF_TO_FN)
 		return parse.Prune
 	}
 
@@ -1546,13 +1547,13 @@ func (c *checker) checkGlobalVarDecls(node *parse.GlobalVariableDeclarations, pa
 		localVariables := c.getLocalVarsInScope(scopeNode)
 
 		if _, alreadyDefined := localVariables[name]; alreadyDefined {
-			c.addError(decl, fmtCannotShadowLocalVariable(name))
+			c.addError(decl, text.FmtCannotShadowLocalVariable(name))
 			return parse.ContinueTraversal
 		}
 
 		_, alreadyUsed := globalVars[name]
 		if alreadyUsed {
-			c.addError(decl, fmtInvalidGlobalVarDeclAlreadyDeclared(name))
+			c.addError(decl, text.FmtInvalidGlobalVarDeclAlreadyDeclared(name))
 			return parse.ContinueTraversal
 		}
 		globalVars[name] = globalVarInfo{}
@@ -1573,7 +1574,7 @@ func (c *checker) checkAssignment(node parse.Node, parentNode, scopeNode, closes
 			if ok {
 				_, alreadyUsed := fns[left.Name]
 				if alreadyUsed {
-					c.addError(node, fmtInvalidGlobalVarAssignmentNameIsFuncName(left.Name))
+					c.addError(node, text.FmtInvalidGlobalVarAssignmentNameIsFuncName(left.Name))
 					return parse.ContinueTraversal
 				}
 			}
@@ -1583,7 +1584,7 @@ func (c *checker) checkAssignment(node parse.Node, parentNode, scopeNode, closes
 			localVars := c.getLocalVarsInScope(scopeNode)
 
 			if _, alreadyDefined := localVars[left.Name]; alreadyDefined {
-				c.addError(node, fmtCannotShadowLocalVariable(left.Name))
+				c.addError(node, text.FmtCannotShadowLocalVariable(left.Name))
 				return parse.ContinueTraversal
 			}
 
@@ -1592,25 +1593,25 @@ func (c *checker) checkAssignment(node parse.Node, parentNode, scopeNode, closes
 			varInfo, alreadyDefined := variables[left.Name]
 			if alreadyDefined {
 				if varInfo.isConst {
-					c.addError(node, fmtInvalidGlobalVarAssignmentNameIsConstant(left.Name))
+					c.addError(node, text.FmtInvalidGlobalVarAssignmentNameIsConstant(left.Name))
 					return parse.ContinueTraversal
 				}
 
 			} else {
 				if assignment.Operator != parse.Assign {
-					c.addError(node, fmtInvalidGlobalVarAssignmentVarDoesNotExist(left.Name))
+					c.addError(node, text.FmtInvalidGlobalVarAssignmentVarDoesNotExist(left.Name))
 				}
 
 				//Check the declaration is not misplaced.
 
 				if !SamePointer(parentNode, closestModule) {
-					c.addError(node, MISPLACED_GLOBAL_VAR_DECLS_TOP_LEVEL_STMT)
+					c.addError(node, text.MISPLACED_GLOBAL_VAR_DECLS_TOP_LEVEL_STMT)
 					return parse.Prune
 				}
 
 				firstForbiddenPos := c.data.firstForbiddenPosForGlobalElementDecls[closestModule]
 				if firstForbiddenPos != 0 && node.Base().Span.Start >= firstForbiddenPos {
-					c.addError(node, MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_REF_TO_FN)
+					c.addError(node, text.MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_REF_TO_FN)
 					return parse.Prune
 				}
 
@@ -1619,21 +1620,21 @@ func (c *checker) checkAssignment(node parse.Node, parentNode, scopeNode, closes
 
 		case *parse.Variable:
 			if left.Name == "" { //$
-				c.addError(node, INVALID_ASSIGNMENT_ANONYMOUS_VAR_CANNOT_BE_ASSIGNED)
+				c.addError(node, text.INVALID_ASSIGNMENT_ANONYMOUS_VAR_CANNOT_BE_ASSIGNED)
 				return parse.ContinueTraversal
 			}
 
 			globalVariables := c.getModGlobalVars(closestModule)
 
 			if _, alreadyDefined := globalVariables[left.Name]; alreadyDefined {
-				c.addError(node, fmtCannotShadowGlobalVariable(left.Name))
+				c.addError(node, text.FmtCannotShadowGlobalVariable(left.Name))
 				return parse.ContinueTraversal
 			}
 
 			localVars := c.getLocalVarsInScope(scopeNode)
 
 			if _, alreadyDefined := localVars[left.Name]; !alreadyDefined && assignment.Operator != parse.Assign {
-				c.addError(node, fmtInvalidVariableAssignmentVarDoesNotExist(left.Name))
+				c.addError(node, text.FmtInvalidVariableAssignmentVarDoesNotExist(left.Name))
 			}
 
 			names = append(names, left.Name)
@@ -1641,14 +1642,14 @@ func (c *checker) checkAssignment(node parse.Node, parentNode, scopeNode, closes
 			globalVariables := c.getModGlobalVars(closestModule)
 
 			if _, alreadyDefined := globalVariables[left.Name]; alreadyDefined {
-				c.addError(node, fmtCannotShadowGlobalVariable(left.Name))
+				c.addError(node, text.FmtCannotShadowGlobalVariable(left.Name))
 				return parse.ContinueTraversal
 			}
 
 			localVars := c.getLocalVarsInScope(scopeNode)
 
 			if _, alreadyDefined := localVars[left.Name]; !alreadyDefined && assignment.Operator != parse.Assign {
-				c.addError(node, fmtInvalidVariableAssignmentVarDoesNotExist(left.Name))
+				c.addError(node, text.FmtInvalidVariableAssignmentVarDoesNotExist(left.Name))
 			}
 
 			names = append(names, left.Name)
@@ -1656,7 +1657,7 @@ func (c *checker) checkAssignment(node parse.Node, parentNode, scopeNode, closes
 
 			for _, ident := range left.PropertyNames {
 				if parse.IsMetadataKey(ident.Name) {
-					c.addError(node, fmtInvalidMemberAssignmentCannotModifyMetaProperty(ident.Name))
+					c.addError(node, text.FmtInvalidMemberAssignmentCannotModifyMetaProperty(ident.Name))
 				}
 			}
 		case *parse.MemberExpression:
@@ -1664,7 +1665,7 @@ func (c *checker) checkAssignment(node parse.Node, parentNode, scopeNode, closes
 			var ok bool
 			for {
 				if parse.IsMetadataKey(curr.PropertyName.Name) {
-					c.addError(node, fmtInvalidMemberAssignmentCannotModifyMetaProperty(curr.PropertyName.Name))
+					c.addError(node, text.FmtInvalidMemberAssignmentCannotModifyMetaProperty(curr.PropertyName.Name))
 					break
 				}
 				if curr, ok = curr.Left.(*parse.MemberExpression); !ok {
@@ -1673,7 +1674,7 @@ func (c *checker) checkAssignment(node parse.Node, parentNode, scopeNode, closes
 			}
 		case *parse.SliceExpression:
 			if assignment.Operator != parse.Assign {
-				c.addError(node, INVALID_ASSIGNMENT_EQUAL_ONLY_SUPPORTED_ASSIGNMENT_OPERATOR_FOR_SLICE_EXPRS)
+				c.addError(node, text.INVALID_ASSIGNMENT_EQUAL_ONLY_SUPPORTED_ASSIGNMENT_OPERATOR_FOR_SLICE_EXPRS)
 			}
 		}
 	} else {
@@ -1689,7 +1690,7 @@ func (c *checker) checkAssignment(node parse.Node, parentNode, scopeNode, closes
 			globalVariables := c.getModGlobalVars(closestModule)
 
 			if _, alreadyDefined := globalVariables[name]; alreadyDefined {
-				c.addError(node, fmtCannotShadowGlobalVariable(name))
+				c.addError(node, text.FmtCannotShadowGlobalVariable(name))
 			}
 
 			names = append(names, name)
@@ -1715,9 +1716,9 @@ func (c *checker) checkForStmt(node *parse.ForStatement, scopeNode, closestModul
 		name := node.KeyIndexIdent.Name
 
 		if _, alreadyDefined := localVars[name]; alreadyDefined && !c.shellLocalVars[name] {
-			c.addError(node.KeyIndexIdent, fmtCannotShadowLocalVariable(name))
+			c.addError(node.KeyIndexIdent, text.FmtCannotShadowLocalVariable(name))
 		} else if _, alreadyDefined := globalVars[name]; alreadyDefined {
-			c.addError(node.KeyIndexIdent, fmtCannotShadowGlobalVariable(name))
+			c.addError(node.KeyIndexIdent, text.FmtCannotShadowGlobalVariable(name))
 		} else {
 			localVars[name] = localVarInfo{}
 		}
@@ -1727,9 +1728,9 @@ func (c *checker) checkForStmt(node *parse.ForStatement, scopeNode, closestModul
 		name := node.ValueElemIdent.Name
 
 		if _, alreadyDefined := localVars[name]; alreadyDefined {
-			c.addError(node.ValueElemIdent, fmtCannotShadowLocalVariable(name))
+			c.addError(node.ValueElemIdent, text.FmtCannotShadowLocalVariable(name))
 		} else if _, alreadyDefined := globalVars[name]; alreadyDefined {
-			c.addError(node.ValueElemIdent, fmtCannotShadowGlobalVariable(name))
+			c.addError(node.ValueElemIdent, text.FmtCannotShadowGlobalVariable(name))
 		} else {
 			localVars[name] = localVarInfo{}
 		}
@@ -1749,9 +1750,9 @@ func (c *checker) checkForExpression(node *parse.ForExpression, scopeNode, close
 		name := node.KeyIndexIdent.Name
 
 		if _, alreadyDefined := localVars[name]; alreadyDefined && !c.shellLocalVars[name] {
-			c.addError(node.KeyIndexIdent, fmtCannotShadowLocalVariable(name))
+			c.addError(node.KeyIndexIdent, text.FmtCannotShadowLocalVariable(name))
 		} else if _, alreadyDefined := globalVars[name]; alreadyDefined {
-			c.addError(node.KeyIndexIdent, fmtCannotShadowGlobalVariable(name))
+			c.addError(node.KeyIndexIdent, text.FmtCannotShadowGlobalVariable(name))
 		} else {
 			localVars[name] = localVarInfo{}
 		}
@@ -1761,9 +1762,9 @@ func (c *checker) checkForExpression(node *parse.ForExpression, scopeNode, close
 		name := node.ValueElemIdent.Name
 
 		if _, alreadyDefined := localVars[name]; alreadyDefined {
-			c.addError(node.ValueElemIdent, fmtCannotShadowLocalVariable(name))
+			c.addError(node.ValueElemIdent, text.FmtCannotShadowLocalVariable(name))
 		} else if _, alreadyDefined := globalVars[name]; alreadyDefined {
-			c.addError(node.ValueElemIdent, fmtCannotShadowGlobalVariable(name))
+			c.addError(node.ValueElemIdent, text.FmtCannotShadowGlobalVariable(name))
 		} else {
 			localVars[name] = localVarInfo{}
 		}
@@ -1782,9 +1783,9 @@ func (c *checker) checkWalkStmt(node *parse.WalkStatement, scopeNode, closestMod
 	if node.EntryIdent != nil {
 		name := node.EntryIdent.Name
 		if _, alreadyDefined := localVars[name]; alreadyDefined && !c.shellLocalVars[name] {
-			c.addError(node.EntryIdent, fmtCannotShadowLocalVariable(name))
+			c.addError(node.EntryIdent, text.FmtCannotShadowLocalVariable(name))
 		} else if _, alreadyDefined := globalVars[name]; alreadyDefined {
-			c.addError(node.EntryIdent, fmtCannotShadowGlobalVariable(name))
+			c.addError(node.EntryIdent, text.FmtCannotShadowGlobalVariable(name))
 		} else {
 			localVars[name] = localVarInfo{}
 		}
@@ -1801,7 +1802,7 @@ func (c *checker) checkReadonlyPatternExpr(node *parse.ReadonlyPatternExpression
 	}
 
 	if !ok {
-		c.addError(node, MISPLACED_READONLY_PATTERN_EXPRESSION)
+		c.addError(node, text.MISPLACED_READONLY_PATTERN_EXPRESSION)
 	}
 
 	return parse.ContinueTraversal
@@ -1813,7 +1814,7 @@ func (c *checker) precheckTopLevelFuncDecl(stmt *parse.FunctionDeclaration, modu
 
 	_, alreadyDeclared := fnDecls[stmt.Name.Name]
 	if alreadyDeclared {
-		c.addError(stmt, fmtInvalidFnDeclAlreadyDeclared(stmt.Name.Name))
+		c.addError(stmt, text.FmtInvalidFnDeclAlreadyDeclared(stmt.Name.Name))
 		return
 	}
 
@@ -1867,7 +1868,7 @@ func (c *checker) checkFuncDecl(node *parse.FunctionDeclaration, parent, closest
 					if isLocal {
 						declInfo.capturedLocals = append(declInfo.capturedLocals, ident.Name)
 					} else if !isGlobal {
-						c.addError(node, fmtInvalidOrMisplacedFnDeclShouldBeAfterCapturedVarDeclaration(ident.Name))
+						c.addError(node, text.FmtInvalidOrMisplacedFnDeclShouldBeAfterCapturedVarDeclaration(ident.Name))
 					}
 				}
 			}
@@ -1879,7 +1880,7 @@ func (c *checker) checkFuncDecl(node *parse.FunctionDeclaration, parent, closest
 	case *parse.StructBody:
 		//struct method
 	default:
-		c.addError(node, INVALID_FN_DECL_SHOULD_BE_TOP_LEVEL_STMT)
+		c.addError(node, text.INVALID_FN_DECL_SHOULD_BE_TOP_LEVEL_STMT)
 		return parse.ContinueTraversal
 	}
 
@@ -1898,9 +1899,9 @@ func (c *checker) checkFuncExpr(node *parse.FunctionExpression, closestModule pa
 		name := ident.Name
 
 		if !c.varExists(name, ancestorChain) {
-			c.addError(e, fmtVarIsNotDeclared(name))
+			c.addError(e, text.FmtVarIsNotDeclared(name))
 		} else if c.doGlobalVarExist(name, closestModule) {
-			c.addError(node, fmtCannotPassGlobalToFunction(name))
+			c.addError(node, text.FmtCannotPassGlobalToFunction(name))
 		}
 
 		fnLocalVars[name] = localVarInfo{}
@@ -1912,7 +1913,7 @@ func (c *checker) checkFuncExpr(node *parse.FunctionExpression, closestModule pa
 		globalVariables := c.getModGlobalVars(closestModule)
 
 		if _, alreadyDefined := globalVariables[name]; alreadyDefined {
-			c.addError(p, fmtParameterCannotShadowGlobalVariable(name))
+			c.addError(p, text.FmtParameterCannotShadowGlobalVariable(name))
 			return parse.ContinueTraversal
 		}
 
@@ -1934,7 +1935,7 @@ func (c *checker) checkFuncPatternExpr(node *parse.FunctionPatternExpression, cl
 		globalVariables := c.getModGlobalVars(closestModule)
 
 		if _, alreadyDefined := globalVariables[name]; alreadyDefined {
-			c.addError(p, fmtParameterCannotShadowGlobalVariable(name))
+			c.addError(p, text.FmtParameterCannotShadowGlobalVariable(name))
 			return parse.ContinueTraversal
 		}
 
@@ -1965,7 +1966,7 @@ func (c *checker) checkYieldStmt(node *parse.CoyieldStatement, ancestorChain []p
 	}
 
 	if !ok {
-		c.addError(node, MISPLACE_COYIELD_STATEMENT_ONLY_ALLOWED_IN_EMBEDDED_MODULES)
+		c.addError(node, text.MISPLACE_COYIELD_STATEMENT_ONLY_ALLOWED_IN_EMBEDDED_MODULES)
 	}
 	return parse.ContinueTraversal
 }
@@ -1983,7 +1984,7 @@ loop1:
 	}
 
 	if walkStmtIndex < 0 {
-		c.addError(node, INVALID_PRUNE_STMT_SHOULD_BE_IN_WALK_STMT)
+		c.addError(node, text.INVALID_PRUNE_STMT_SHOULD_BE_IN_WALK_STMT)
 		return parse.ContinueTraversal
 	}
 
@@ -1991,7 +1992,7 @@ loop1:
 		switch ancestorChain[i].(type) {
 		case *parse.IfStatement, *parse.SwitchStatement, *parse.MatchStatement, *parse.Block, *parse.ForStatement:
 		default:
-			c.addError(node, INVALID_PRUNE_STMT_SHOULD_BE_IN_WALK_STMT)
+			c.addError(node, text.INVALID_PRUNE_STMT_SHOULD_BE_IN_WALK_STMT)
 			return parse.ContinueTraversal
 		}
 	}
@@ -2027,14 +2028,14 @@ func (c *checker) checkMatchCase(node *parse.MatchStatementCase, scopeNode, clos
 	variable := node.GroupMatchingVariable.(*parse.IdentifierLiteral)
 
 	if _, alreadyDefined := c.getModGlobalVars(closestModule)[variable.Name]; alreadyDefined {
-		c.addError(variable, fmtCannotShadowGlobalVariable(variable.Name))
+		c.addError(variable, text.FmtCannotShadowGlobalVariable(variable.Name))
 		return parse.ContinueTraversal
 	}
 
 	localVars := c.getLocalVarsInScope(scopeNode)
 
 	if info, alreadyDefined := localVars[variable.Name]; alreadyDefined && info != (localVarInfo{isGroupMatchingVar: true}) {
-		c.addError(variable, fmtCannotShadowLocalVariable(variable.Name))
+		c.addError(variable, text.FmtCannotShadowLocalVariable(variable.Name))
 		return parse.ContinueTraversal
 	}
 
@@ -2045,7 +2046,7 @@ func (c *checker) checkMatchCase(node *parse.MatchStatementCase, scopeNode, clos
 
 func (c *checker) checkVariable(node *parse.Variable, scopeNode, closestModule parse.Node) parse.TraversalAction {
 	if len(node.Name) > MAX_NAME_BYTE_LEN {
-		c.addError(node, fmtNameIsTooLong(node.Name))
+		c.addError(node, text.FmtNameIsTooLong(node.Name))
 		return parse.ContinueTraversal
 	}
 
@@ -2058,12 +2059,12 @@ func (c *checker) checkVariable(node *parse.Variable, scopeNode, closestModule p
 	}
 
 	if _, ok := scopeNode.(*parse.ExtendStatement); ok {
-		c.addError(node, VARS_NOT_ALLOWED_IN_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES)
+		c.addError(node, text.VARS_NOT_ALLOWED_IN_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES)
 		return parse.ContinueTraversal
 	}
 
 	if _, ok := scopeNode.(*parse.StructDefinition); ok {
-		c.addError(node, VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS)
+		c.addError(node, text.VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS)
 		return parse.ContinueTraversal
 	}
 
@@ -2071,7 +2072,7 @@ func (c *checker) checkVariable(node *parse.Variable, scopeNode, closestModule p
 	_, exist := variables[node.Name]
 
 	if !exist {
-		c.addError(node, fmtLocalVarIsNotDeclared(node.Name))
+		c.addError(node, text.FmtLocalVarIsNotDeclared(node.Name))
 		return parse.ContinueTraversal
 	}
 
@@ -2081,7 +2082,7 @@ func (c *checker) checkVariable(node *parse.Variable, scopeNode, closestModule p
 func (c *checker) checkGlobalVar(node *parse.GlobalVariable, parent, scopeNode, closestModule parse.Node, ancestorChain []parse.Node) parse.TraversalAction {
 
 	if len(node.Name) > MAX_NAME_BYTE_LEN {
-		c.addError(node, fmtNameIsTooLong(node.Name))
+		c.addError(node, text.FmtNameIsTooLong(node.Name))
 		return parse.ContinueTraversal
 	}
 
@@ -2100,17 +2101,17 @@ func (c *checker) checkGlobalVar(node *parse.GlobalVariable, parent, scopeNode, 
 	globalVarInfo, exist := globalVars[node.Name]
 
 	if _, ok := scopeNode.(*parse.ExtendStatement); ok {
-		c.addError(node, VARS_NOT_ALLOWED_IN_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES)
+		c.addError(node, text.VARS_NOT_ALLOWED_IN_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES)
 		return parse.ContinueTraversal
 	}
 
 	if _, ok := scopeNode.(*parse.StructDefinition); ok {
-		c.addError(node, VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS)
+		c.addError(node, text.VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS)
 		return parse.ContinueTraversal
 	}
 
 	if !exist {
-		c.addError(node, fmtGlobalVarIsNotDeclared(node.Name))
+		c.addError(node, text.FmtGlobalVarIsNotDeclared(node.Name))
 		return parse.ContinueTraversal
 	}
 
@@ -2167,7 +2168,7 @@ func (c *checker) checkGlobalVar(node *parse.GlobalVariable, parent, scopeNode, 
 func (c *checker) checkIdentifier(node *parse.IdentifierLiteral, parent, scopeNode, closestModule parse.Node, ancestorChain []parse.Node) parse.TraversalAction {
 
 	if len(node.Name) > MAX_NAME_BYTE_LEN {
-		c.addError(node, fmtNameIsTooLong(node.Name))
+		c.addError(node, text.FmtNameIsTooLong(node.Name))
 		return parse.ContinueTraversal
 	}
 
@@ -2266,20 +2267,20 @@ func (c *checker) checkIdentifier(node *parse.IdentifierLiteral, parent, scopeNo
 	}
 
 	if _, ok := scopeNode.(*parse.ExtendStatement); ok {
-		c.addError(node, VARS_NOT_ALLOWED_IN_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES)
+		c.addError(node, text.VARS_NOT_ALLOWED_IN_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES)
 		return parse.ContinueTraversal
 	}
 
 	if _, ok := scopeNode.(*parse.StructDefinition); ok {
-		c.addError(node, VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS)
+		c.addError(node, text.VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS)
 		return parse.ContinueTraversal
 	}
 
 	if !c.varExists(node.Name, ancestorChain) {
 		if node.Name == "const" {
-			c.addError(node, VAR_CONST_NOT_DECLARED_IF_YOU_MEANT_TO_DECLARE_CONSTANTS_GLOBAL_CONST_DECLS_ONLY_SUPPORTED_AT_THE_START_OF_THE_MODULE)
+			c.addError(node, text.VAR_CONST_NOT_DECLARED_IF_YOU_MEANT_TO_DECLARE_CONSTANTS_GLOBAL_CONST_DECLS_ONLY_SUPPORTED_AT_THE_START_OF_THE_MODULE)
 		} else {
-			c.addError(node, fmtVarIsNotDeclared(node.Name))
+			c.addError(node, text.FmtVarIsNotDeclared(node.Name))
 		}
 		return parse.ContinueTraversal
 	}
@@ -2344,7 +2345,7 @@ func (c *checker) checkSelfExprAndSendValExpr(node, parent parse.Node, ancestorC
 	isSelfExpr := true
 
 	var objectLiteral *parse.ObjectLiteral
-	var misplacementErr = SELF_ACCESSIBILITY_EXPLANATION
+	var misplacementErr = text.SELF_ACCESSIBILITY_EXPLANATION
 	isInExtensionMethod := false
 	inReceptionHandler := false
 	isSelfInStructMethod := false
@@ -2352,7 +2353,7 @@ func (c *checker) checkSelfExprAndSendValExpr(node, parent parse.Node, ancestorC
 	switch node.(type) {
 	case *parse.SendValueExpression:
 		isSelfExpr = false
-		misplacementErr = MISPLACED_SENDVAL_EXPR
+		misplacementErr = text.MISPLACED_SENDVAL_EXPR
 	}
 
 loop:
@@ -2369,7 +2370,7 @@ loop:
 				switch ancestorChain[i-1].(type) {
 				case *parse.ObjectMetaProperty:
 					if i == 1 {
-						c.addError(node, CANNOT_CHECK_OBJECT_METAPROP_WITHOUT_PARENT)
+						c.addError(node, text.CANNOT_CHECK_OBJECT_METAPROP_WITHOUT_PARENT)
 						break
 					}
 				}
@@ -2400,7 +2401,7 @@ loop:
 			switch ancestorChain[j].(type) {
 			case *parse.ObjectProperty:
 				if j == 0 {
-					c.addError(node, CANNOT_CHECK_OBJECT_PROP_WITHOUT_PARENT)
+					c.addError(node, text.CANNOT_CHECK_OBJECT_PROP_WITHOUT_PARENT)
 					break loop
 				}
 				j--
@@ -2423,7 +2424,7 @@ loop:
 				}
 			case *parse.FunctionDeclaration:
 				if j == 0 {
-					c.addError(node, CANNOT_CHECK_STRUCT_METHOD_DEF_WITHOUT_PARENT)
+					c.addError(node, text.CANNOT_CHECK_STRUCT_METHOD_DEF_WITHOUT_PARENT)
 					break loop
 				}
 				_, ok := ancestorChain[j-1].(*parse.StructBody)
@@ -2460,7 +2461,7 @@ loop:
 		switch p := parent.(type) {
 		case *parse.MemberExpression:
 			if !propInfo.known[p.PropertyName.Name] && !isInExtensionMethod {
-				c.addError(p, fmtObjectDoesNotHaveProp(p.PropertyName.Name))
+				c.addError(p, text.FmtObjectDoesNotHaveProp(p.PropertyName.Name))
 			}
 		}
 	}
@@ -2473,14 +2474,14 @@ func (c *checker) checkPatternDef(node *parse.PatternDefinition, parent, closest
 	case *parse.Chunk, *parse.EmbeddedModule:
 	default:
 		if !inPreinitBlock {
-			c.addError(node, MISPLACED_PATTERN_DEF_NOT_TOP_LEVEL_STMT)
+			c.addError(node, text.MISPLACED_PATTERN_DEF_NOT_TOP_LEVEL_STMT)
 			return parse.Prune
 		}
 	}
 
 	firstForbiddenPos := c.data.firstForbiddenPosForGlobalElementDecls[closestModule]
 	if firstForbiddenPos != 0 && node.Base().Span.Start >= firstForbiddenPos {
-		c.addError(node, MISPLACED_PATTERN_DEF_AFTER_FN_DECL_OR_REF_TO_FN)
+		c.addError(node, text.MISPLACED_PATTERN_DEF_AFTER_FN_DECL_OR_REF_TO_FN)
 		return parse.Prune
 	}
 
@@ -2489,7 +2490,7 @@ func (c *checker) checkPatternDef(node *parse.PatternDefinition, parent, closest
 		patterns := c.getModPatterns(closestModule)
 
 		if _, alreadyDefined := patterns[patternName]; alreadyDefined && !inPreinitBlock {
-			c.addError(node, fmtPatternAlreadyDeclared(patternName))
+			c.addError(node, text.FmtPatternAlreadyDeclared(patternName))
 		} else {
 			patterns[patternName] = 0
 		}
@@ -2502,14 +2503,14 @@ func (c *checker) checkPatternNamespaceDefinition(node *parse.PatternNamespaceDe
 	case *parse.Chunk, *parse.EmbeddedModule:
 	default:
 		if !inPreinitBlock {
-			c.addError(node, MISPLACED_PATTERN_NS_DEF_NOT_TOP_LEVEL_STMT)
+			c.addError(node, text.MISPLACED_PATTERN_NS_DEF_NOT_TOP_LEVEL_STMT)
 			return parse.Prune
 		}
 	}
 
 	firstForbiddenPos := c.data.firstForbiddenPosForGlobalElementDecls[closestModule]
 	if firstForbiddenPos != 0 && node.Base().Span.Start >= firstForbiddenPos {
-		c.addError(node, MISPLACED_PATTERN_NS_DEF_AFTER_FN_DECL_OR_REF_TO_FN)
+		c.addError(node, text.MISPLACED_PATTERN_NS_DEF_AFTER_FN_DECL_OR_REF_TO_FN)
 		return parse.Prune
 	}
 
@@ -2517,7 +2518,7 @@ func (c *checker) checkPatternNamespaceDefinition(node *parse.PatternNamespaceDe
 	if ok {
 		namespaces := c.getModPatternNamespaces(closestModule)
 		if _, alreadyDefined := namespaces[namespaceName]; alreadyDefined && !inPreinitBlock {
-			c.addError(node, fmtPatternNamespaceAlreadyDeclared(namespaceName))
+			c.addError(node, text.FmtPatternNamespaceAlreadyDeclared(namespaceName))
 		} else {
 			namespaces[namespaceName] = 0
 		}
@@ -2530,7 +2531,7 @@ func (c *checker) checkPatternNamespaceIdentifier(node *parse.PatternNamespaceId
 	namespaces := c.getModPatternNamespaces(closestModule)
 
 	if _, alreadyDefined := namespaces[namespaceName]; !alreadyDefined {
-		c.addError(node, fmtPatternNamespaceIsNotDeclared(namespaceName))
+		c.addError(node, text.FmtPatternNamespaceIsNotDeclared(namespaceName))
 	}
 
 	return parse.ContinueTraversal
@@ -2558,15 +2559,15 @@ func (c *checker) checkPatternIdentifier(node *parse.PatternIdentifierLiteral, p
 		case *parse.PointerType, *parse.StructFieldDefinition, *parse.NewExpression:
 			//ok
 		case *parse.FunctionParameter:
-			errMsg = STRUCT_TYPES_NOT_ALLOWED_AS_PARAMETER_TYPES
+			errMsg = text.STRUCT_TYPES_NOT_ALLOWED_AS_PARAMETER_TYPES
 		case *parse.FunctionExpression:
 			if node == parent.ReturnType {
-				errMsg = STRUCT_TYPES_NOT_ALLOWED_AS_RETURN_TYPES
+				errMsg = text.STRUCT_TYPES_NOT_ALLOWED_AS_RETURN_TYPES
 			} else {
-				errMsg = MISPLACED_STRUCT_TYPE_NAME
+				errMsg = text.MISPLACED_STRUCT_TYPE_NAME
 			}
 		default:
-			errMsg = MISPLACED_STRUCT_TYPE_NAME
+			errMsg = text.MISPLACED_STRUCT_TYPE_NAME
 		}
 
 		if errMsg != "" {
@@ -2593,9 +2594,9 @@ func (c *checker) checkPatternIdentifier(node *parse.PatternIdentifierLiteral, p
 		errMsg := ""
 		switch parent.(type) {
 		case *parse.PointerType, *parse.NewExpression:
-			errMsg = fmtStructTypeIsNotDefined(name)
+			errMsg = text.FmtStructTypeIsNotDefined(name)
 		default:
-			errMsg = fmtPatternIsNotDeclared(name)
+			errMsg = text.FmtPatternIsNotDeclared(name)
 		}
 		c.addError(node, errMsg)
 	}
@@ -2611,9 +2612,9 @@ func (c *checker) checkRuntimeTypeCheckExpr(node *parse.RuntimeTypeCheckExpressi
 			}
 		}
 
-		c.addError(node, MISPLACED_RUNTIME_TYPECHECK_EXPRESSION)
+		c.addError(node, text.MISPLACED_RUNTIME_TYPECHECK_EXPRESSION)
 	default:
-		c.addError(node, MISPLACED_RUNTIME_TYPECHECK_EXPRESSION)
+		c.addError(node, text.MISPLACED_RUNTIME_TYPECHECK_EXPRESSION)
 	}
 	return parse.ContinueTraversal
 }
@@ -2627,7 +2628,7 @@ func (c *checker) checkNewExpr(node *parse.NewExpression) parse.TraversalAction 
 	case nil:
 		return parse.ContinueTraversal
 	default:
-		c.addError(node.Type, A_STRUCT_TYPE_NAME_IS_EXPECTED)
+		c.addError(node.Type, text.A_STRUCT_TYPE_NAME_IS_EXPECTED)
 		return parse.ContinueTraversal
 	}
 	return parse.ContinueTraversal
@@ -2642,7 +2643,7 @@ func (c *checker) checkStructInitLiteral(node *parse.StructInitializationLiteral
 		if ok {
 			name := fieldInit.Name.Name
 			if slices.Contains(fieldNames, name) {
-				c.addError(fieldInit.Name, fmtDuplicateFieldName(name))
+				c.addError(fieldInit.Name, text.FmtDuplicateFieldName(name))
 			} else {
 				fieldNames = append(fieldNames, name)
 			}
@@ -2654,7 +2655,7 @@ func (c *checker) checkStructInitLiteral(node *parse.StructInitializationLiteral
 func (c *checker) checkPointerType(node *parse.PointerType, parent parse.Node) parse.TraversalAction {
 	patternIdent, ok := node.ValueType.(*parse.PatternIdentifierLiteral)
 	if !ok {
-		c.addError(node.ValueType, A_STRUCT_TYPE_IS_EXPECTED_AFTER_THE_STAR)
+		c.addError(node.ValueType, text.A_STRUCT_TYPE_IS_EXPECTED_AFTER_THE_STAR)
 	} else {
 		//Check that the node is not misplaced.
 		switch parent := parent.(type) {
@@ -2662,14 +2663,14 @@ func (c *checker) checkPointerType(node *parse.PointerType, parent parse.Node) p
 			//ok
 		case *parse.FunctionExpression:
 			if node != parent.ReturnType {
-				c.addError(node, MISPLACED_POINTER_TYPE)
+				c.addError(node, text.MISPLACED_POINTER_TYPE)
 			}
 		case *parse.LocalVariableDeclaration:
 			if node != parent.Type {
-				c.addError(node, MISPLACED_POINTER_TYPE)
+				c.addError(node, text.MISPLACED_POINTER_TYPE)
 			}
 		default:
-			c.addError(node, MISPLACED_POINTER_TYPE)
+			c.addError(node, text.MISPLACED_POINTER_TYPE)
 		}
 
 		if symbolic.IsNameOfBuiltinComptimeType(patternIdent.Name) {
@@ -2703,7 +2704,7 @@ func (c *checker) checkTestSuiteExpr(node *parse.TestSuiteExpression, ancestorCh
 			switch stmt := stmt.(type) {
 			case *parse.TestCaseExpression:
 				if stmt.IsStatement {
-					c.addError(stmt, TEST_CASES_NOT_ALLOWED_IF_SUBSUITES_ARE_PRESENT)
+					c.addError(stmt, text.TEST_CASES_NOT_ALLOWED_IF_SUBSUITES_ARE_PRESENT)
 				}
 			case *parse.TestSuiteExpression:
 				if stmt.IsStatement {
@@ -2725,7 +2726,7 @@ func (c *checker) checkTestSuiteExpr(node *parse.TestSuiteExpression, ancestorCh
 				}
 				testCaseExpr, ok := ancestorChain[i-1].(*parse.TestCaseExpression)
 				if ok && testCaseExpr.IsStatement {
-					c.addError(node, TEST_SUITE_STMTS_NOT_ALLOWED_INSIDE_TEST_CASE_STMTS)
+					c.addError(node, text.TEST_SUITE_STMTS_NOT_ALLOWED_INSIDE_TEST_CASE_STMTS)
 					break search_test_case
 				}
 			}
@@ -2754,7 +2755,7 @@ search_test_suite:
 	}
 
 	if !inTestSuite && node.IsStatement && (c.currentModule == nil || c.currentModule.ModuleKind != TestSuiteModule) {
-		c.addError(node, TEST_CASE_STMTS_NOT_ALLOWED_OUTSIDE_OF_TEST_SUITES)
+		c.addError(node, text.TEST_CASE_STMTS_NOT_ALLOWED_OUTSIDE_OF_TEST_SUITES)
 	}
 
 	return parse.ContinueTraversal
@@ -2822,7 +2823,7 @@ func (checker *checker) postCheckSingleNode(node, parent, scopeNode parse.Node, 
 
 		if utils.Implements[*parse.Manifest](parent) {
 			if len(ancestorChain) < 3 {
-				checker.addError(parent, CANNOT_CHECK_MANIFEST_WITHOUT_PARENT)
+				checker.addError(parent, text.CANNOT_CHECK_MANIFEST_WITHOUT_PARENT)
 				break
 			}
 
@@ -2868,19 +2869,19 @@ func (checker *checker) postCheckSingleNode(node, parent, scopeNode parse.Node, 
 
 func checkVisibilityInitializationBlock(propInfo *propertyInfo, block *parse.InitializationBlock, onError func(n parse.Node, msg string)) {
 	if len(block.Statements) != 1 || !utils.Implements[*parse.ObjectLiteral](block.Statements[0]) {
-		onError(block, INVALID_VISIB_INIT_BLOCK_SHOULD_CONT_OBJ)
+		onError(block, text.INVALID_VISIB_INIT_BLOCK_SHOULD_CONT_OBJ)
 		return
 	}
 
 	objLiteral := block.Statements[0].(*parse.ObjectLiteral)
 
 	if len(objLiteral.MetaProperties) != 0 {
-		onError(objLiteral, INVALID_VISIB_DESC_SHOULDNT_HAVE_METAPROPS)
+		onError(objLiteral, text.INVALID_VISIB_DESC_SHOULDNT_HAVE_METAPROPS)
 	}
 
 	for _, prop := range objLiteral.Properties {
 		if prop.HasImplicitKey() {
-			onError(objLiteral, INVALID_VISIB_DESC_SHOULDNT_HAVE_ELEMENTS)
+			onError(objLiteral, text.INVALID_VISIB_DESC_SHOULDNT_HAVE_ELEMENTS)
 			return
 		}
 
@@ -2888,13 +2889,13 @@ func checkVisibilityInitializationBlock(propInfo *propertyInfo, block *parse.Ini
 		case "public":
 			_, ok := prop.Value.(*parse.KeyListExpression)
 			if !ok {
-				onError(prop, VAL_SHOULD_BE_KEYLIST_LIT)
+				onError(prop, text.VAL_SHOULD_BE_KEYLIST_LIT)
 				return
 			}
 		case "visible_by":
 			dict, ok := prop.Value.(*parse.DictionaryLiteral)
 			if !ok {
-				onError(prop, VAL_SHOULD_BE_DICT_LIT)
+				onError(prop, text.VAL_SHOULD_BE_DICT_LIT)
 				return
 			}
 
@@ -2905,19 +2906,19 @@ func checkVisibilityInitializationBlock(propInfo *propertyInfo, block *parse.Ini
 					case "self":
 						_, ok := entry.Value.(*parse.KeyListExpression)
 						if !ok {
-							onError(entry, VAL_SHOULD_BE_KEYLIST_LIT)
+							onError(entry, text.VAL_SHOULD_BE_KEYLIST_LIT)
 							return
 						}
 					default:
-						onError(entry, INVALID_VISIBILITY_DESC_KEY)
+						onError(entry, text.INVALID_VISIBILITY_DESC_KEY)
 					}
 				default:
-					onError(entry, INVALID_VISIBILITY_DESC_KEY)
+					onError(entry, text.INVALID_VISIBILITY_DESC_KEY)
 					return
 				}
 			}
 		default:
-			onError(prop, INVALID_VISIBILITY_DESC_KEY)
+			onError(prop, text.INVALID_VISIBILITY_DESC_KEY)
 			return
 		}
 	}
@@ -2947,7 +2948,7 @@ func shallowCheckObjectRecordProperties(
 			k = n.Name
 		case nil:
 			if _, ok := keys[inoxconsts.IMPLICIT_PROP_NAME]; ok && !hasElements {
-				addError(prop.Value, ELEMENTS_NOT_ALLOWED_IF_EMPTY_PROP_NAME)
+				addError(prop.Value, text.ELEMENTS_NOT_ALLOWED_IF_EMPTY_PROP_NAME)
 				continue
 			}
 			keys[inoxconsts.IMPLICIT_PROP_NAME] = struct{}{}
@@ -2958,18 +2959,18 @@ func shallowCheckObjectRecordProperties(
 		}
 
 		if k == inoxconsts.IMPLICIT_PROP_NAME && hasElements {
-			addError(prop.Key, EMPTY_PROP_NAME_NOT_ALLOWED_IF_ELEMENTS)
+			addError(prop.Key, text.EMPTY_PROP_NAME_NOT_ALLOWED_IF_ELEMENTS)
 			continue
 		}
 
 		if len(k) > MAX_NAME_BYTE_LEN {
-			addError(prop.Key, fmtNameIsTooLong(k))
+			addError(prop.Key, text.FmtNameIsTooLong(k))
 		}
 
 		if parse.IsMetadataKey(k) {
-			addError(prop.Key, OBJ_REC_LIT_CANNOT_HAVE_METAPROP_KEYS)
+			addError(prop.Key, text.OBJ_REC_LIT_CANNOT_HAVE_METAPROP_KEYS)
 		} else if _, found := keys[k]; found {
-			addError(prop, fmtDuplicateKey(k))
+			addError(prop, text.FmtDuplicateKey(k))
 		}
 
 		keys[k] = struct{}{}
@@ -2988,7 +2989,7 @@ func shallowCheckObjectRecordProperties(
 
 			_, found := keys[name]
 			if found {
-				addError(key, fmtDuplicateKey(name))
+				addError(key, text.FmtDuplicateKey(name))
 				return parse.ContinueTraversal, nil
 			}
 			keys[name] = struct{}{}

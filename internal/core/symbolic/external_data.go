@@ -16,7 +16,6 @@ var (
 		CONSTRAINTS_KEY:                         "_constraints_",
 		VISIBILITY_KEY:                          "_visibility_",
 		MANIFEST_PARAMS_SECTION_NAME:            "parameters",
-		MOD_ARGS_VARNAME:                        "mod-args",
 		MANIFEST_POSITIONAL_PARAM_NAME_FIELD:    "name",
 		MANIFEST_POSITIONAL_PARAM_PATTERN_FIELD: "pattern",
 		GetConcretePatternMatchingSymbolicValue: func(ctx ConcreteContext, v Value) (any, bool) {
@@ -89,7 +88,6 @@ type ExternalData struct {
 	MANIFEST_PARAMS_SECTION_NAME            string
 	MANIFEST_POSITIONAL_PARAM_NAME_FIELD    string
 	MANIFEST_POSITIONAL_PARAM_PATTERN_FIELD string
-	MOD_ARGS_VARNAME                        string
 }
 
 func SetExternalData(data ExternalData) {

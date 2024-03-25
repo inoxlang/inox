@@ -7,6 +7,7 @@ import (
 	"github.com/inoxlang/inox/internal/afs"
 	permkind "github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/globals/globalnames"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -175,20 +176,20 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 		}
 
 		global := NewGlobalState(ctx, map[string]Value{
-			INITIAL_WORKING_DIR_VARNAME:        initialWorkingDirectory,
-			INITIAL_WORKING_DIR_PREFIX_VARNAME: initialWorkingDirectory.ToPrefixPattern(),
+			globalnames.INITIAL_WORKING_DIR_VARNAME:        initialWorkingDirectory,
+			globalnames.INITIAL_WORKING_DIR_PREFIX_VARNAME: initialWorkingDirectory.ToPrefixPattern(),
 		})
 		global.OutputFieldsInitialized.Store(true)
 		global.Module = m
 		state = NewTreeWalkStateWithGlobal(global)
 
 		//Pre-evaluate the env section of the manifest.
-		envSection, ok := manifestObjLiteral.PropValue(MANIFEST_ENV_SECTION_NAME)
+		envSection, ok := manifestObjLiteral.PropValue(inoxconsts.MANIFEST_ENV_SECTION_NAME)
 		if ok {
 			v, err := TreeWalkEval(envSection, state)
 			if err != nil {
 				if err != nil {
-					return nil, nil, nil, fmt.Errorf("%s: failed to pre-evaluate the %s section: %w", m.Name(), MANIFEST_ENV_SECTION_NAME, err)
+					return nil, nil, nil, fmt.Errorf("%s: failed to pre-evaluate the %s section: %w", m.Name(), inoxconsts.MANIFEST_ENV_SECTION_NAME, err)
 				}
 			}
 			envPattern = v.(*ObjectPattern)
@@ -231,12 +232,12 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 		}
 
 		// pre evaluate the preinit-files section of the manifest
-		preinitFilesSection, ok := manifestObjLiteral.PropValue(MANIFEST_PREINIT_FILES_SECTION_NAME)
+		preinitFilesSection, ok := manifestObjLiteral.PropValue(inoxconsts.MANIFEST_PREINIT_FILES_SECTION_NAME)
 		if ok {
 			v, err := TreeWalkEval(preinitFilesSection, state)
 			if err != nil {
 				if err != nil {
-					return nil, nil, nil, fmt.Errorf("%s: failed to pre-evaluate the %s section: %w", m.Name(), MANIFEST_PREINIT_FILES_SECTION_NAME, err)
+					return nil, nil, nil, fmt.Errorf("%s: failed to pre-evaluate the %s section: %w", m.Name(), inoxconsts.MANIFEST_PREINIT_FILES_SECTION_NAME, err)
 				}
 			}
 
@@ -246,25 +247,25 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 				desc := v.(*Object)
 				propNames := desc.PropertyNames(ctx)
 
-				if !utils.SliceContains(propNames, MANIFEST_PREINIT_FILE__PATH_PROP_NAME) {
-					return fmt.Errorf("missing .%s property in description of preinit file %s", MANIFEST_PREINIT_FILE__PATH_PROP_NAME, k)
+				if !utils.SliceContains(propNames, inoxconsts.MANIFEST_PREINIT_FILE__PATH_PROP_NAME) {
+					return fmt.Errorf("missing .%s property in description of preinit file %s", inoxconsts.MANIFEST_PREINIT_FILE__PATH_PROP_NAME, k)
 				}
 
-				if !utils.SliceContains(propNames, MANIFEST_PREINIT_FILE__PATTERN_PROP_NAME) {
-					return fmt.Errorf("missing .%s property in description of preinit file %s", MANIFEST_PREINIT_FILE__PATTERN_PROP_NAME, k)
+				if !utils.SliceContains(propNames, inoxconsts.MANIFEST_PREINIT_FILE__PATTERN_PROP_NAME) {
+					return fmt.Errorf("missing .%s property in description of preinit file %s", inoxconsts.MANIFEST_PREINIT_FILE__PATTERN_PROP_NAME, k)
 				}
 
-				path, ok := desc.Prop(ctx, MANIFEST_PREINIT_FILE__PATH_PROP_NAME).(Path)
+				path, ok := desc.Prop(ctx, inoxconsts.MANIFEST_PREINIT_FILE__PATH_PROP_NAME).(Path)
 				if !ok {
-					return fmt.Errorf("property .%s in description of preinit file %s is not a path", MANIFEST_PREINIT_FILE__PATH_PROP_NAME, k)
+					return fmt.Errorf("property .%s in description of preinit file %s is not a path", inoxconsts.MANIFEST_PREINIT_FILE__PATH_PROP_NAME, k)
 				}
-				pattern, ok := desc.Prop(ctx, MANIFEST_PREINIT_FILE__PATTERN_PROP_NAME).(Pattern)
+				pattern, ok := desc.Prop(ctx, inoxconsts.MANIFEST_PREINIT_FILE__PATTERN_PROP_NAME).(Pattern)
 				if !ok {
-					return fmt.Errorf("property .%s in description of preinit file %s is not a pattern", MANIFEST_PREINIT_FILE__PATTERN_PROP_NAME, k)
+					return fmt.Errorf("property .%s in description of preinit file %s is not a pattern", inoxconsts.MANIFEST_PREINIT_FILE__PATTERN_PROP_NAME, k)
 				}
 
 				if !path.IsAbsolute() {
-					return fmt.Errorf("property .%s in description of preinit file %s should be an absolute path", MANIFEST_PREINIT_FILE__PATH_PROP_NAME, k)
+					return fmt.Errorf("property .%s in description of preinit file %s should be an absolute path", inoxconsts.MANIFEST_PREINIT_FILE__PATH_PROP_NAME, k)
 				}
 
 				switch patt := pattern.(type) {
@@ -292,7 +293,7 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 			})
 
 			if err != nil {
-				return nil, nil, nil, fmt.Errorf("%s: failed to pre-evaluate the %s section: %w", m.Name(), MANIFEST_PREINIT_FILES_SECTION_NAME, err)
+				return nil, nil, nil, fmt.Errorf("%s: failed to pre-evaluate the %s section: %w", m.Name(), inoxconsts.MANIFEST_PREINIT_FILES_SECTION_NAME, err)
 			}
 
 			//read & parse preinit files

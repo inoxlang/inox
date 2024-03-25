@@ -10,6 +10,8 @@ import (
 
 	"github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/core/text"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
@@ -83,7 +85,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(intLit, src, fmtFollowingNodeTypeNotAllowedInGlobalConstantDeclarations((*parse.SpawnExpression)(nil))),
+				makeError(intLit, src, text.FmtFollowingNodeTypeNotAllowedInGlobalConstantDeclarations((*parse.SpawnExpression)(nil))),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -103,7 +105,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(callExpr, src, CALL_EXPRS_NOT_ALLOWED_INSIDE_GLOBAL_CONST_DECLS_OF_INCLUDABLE_FILES),
+				makeError(callExpr, src, text.CALL_EXPRS_NOT_ALLOWED_INSIDE_GLOBAL_CONST_DECLS_OF_INCLUDABLE_FILES),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -126,7 +128,7 @@ func TestCheck(t *testing.T) {
 				}, []string{"f"}),
 			})
 			expectedErr := utils.CombineErrors(
-				makeError(callExpr, src, CALL_EXPRS_NOT_ALLOWED_INSIDE_GLOBAL_CONST_DECLS_OF_INCLUDABLE_FILES),
+				makeError(callExpr, src, text.CALL_EXPRS_NOT_ALLOWED_INSIDE_GLOBAL_CONST_DECLS_OF_INCLUDABLE_FILES),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -143,7 +145,7 @@ func TestCheck(t *testing.T) {
 			intLit := parse.FindNode(n, (*parse.IntLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(intLit, src, ELEMENTS_NOT_ALLOWED_IF_EMPTY_PROP_NAME),
+				makeError(intLit, src, text.ELEMENTS_NOT_ALLOWED_IF_EMPTY_PROP_NAME),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -153,7 +155,7 @@ func TestCheck(t *testing.T) {
 			strLit := parse.FindNode(n, (*parse.DoubleQuotedStringLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(strLit, src, EMPTY_PROP_NAME_NOT_ALLOWED_IF_ELEMENTS),
+				makeError(strLit, src, text.EMPTY_PROP_NAME_NOT_ALLOWED_IF_ELEMENTS),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -169,7 +171,7 @@ func TestCheck(t *testing.T) {
 			keyNode := parse.FindNode(n, (*parse.DoubleQuotedStringLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(keyNode, src, fmtDuplicateKey("0")),
+				makeError(keyNode, src, text.FmtDuplicateKey("0")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -180,7 +182,7 @@ func TestCheck(t *testing.T) {
 			keyNode := parse.FindNode(n, (*parse.DoubleQuotedStringLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(keyNode, src, fmtDuplicateKey("a")),
+				makeError(keyNode, src, text.FmtDuplicateKey("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -191,7 +193,7 @@ func TestCheck(t *testing.T) {
 			keyNode := parse.FindNode(n, (*parse.DoubleQuotedStringLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(keyNode, src, fmtDuplicateKey("a")),
+				makeError(keyNode, src, text.FmtDuplicateKey("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -202,7 +204,7 @@ func TestCheck(t *testing.T) {
 			keyNode := parse.FindNode(n, (*parse.DoubleQuotedStringLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(keyNode, src, fmtDuplicateKey("a")),
+				makeError(keyNode, src, text.FmtDuplicateKey("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -215,7 +217,7 @@ func TestCheck(t *testing.T) {
 			keyNode := parse.FindNodes(n, (*parse.IdentifierLiteral)(nil), nil)[2]
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(keyNode, src, fmtDuplicateKey("a")),
+				makeError(keyNode, src, text.FmtDuplicateKey("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -245,7 +247,7 @@ func TestCheck(t *testing.T) {
 			keyNode := parse.FindNode(n, (*parse.DoubleQuotedStringLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(keyNode, src, fmtNameIsTooLong(name)),
+				makeError(keyNode, src, text.FmtNameIsTooLong(name)),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -255,7 +257,7 @@ func TestCheck(t *testing.T) {
 			keyNode := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(keyNode, src, OBJ_REC_LIT_CANNOT_HAVE_METAPROP_KEYS),
+				makeError(keyNode, src, text.OBJ_REC_LIT_CANNOT_HAVE_METAPROP_KEYS),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -265,7 +267,7 @@ func TestCheck(t *testing.T) {
 			varNode := parse.FindNodes(n, (*parse.IdentifierLiteral)(nil), nil)[1]
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(varNode, src, fmtVarIsNotDeclared("a")),
+				makeError(varNode, src, text.FmtVarIsNotDeclared("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -278,7 +280,7 @@ func TestCheck(t *testing.T) {
 			varNode := parse.FindNodes(n, (*parse.IdentifierLiteral)(nil), nil)[2]
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(varNode, src, fmtVarIsNotDeclared("a")),
+				makeError(varNode, src, text.FmtVarIsNotDeclared("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -289,7 +291,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(init, src, INVALID_VISIB_INIT_BLOCK_SHOULD_CONT_OBJ),
+				makeError(init, src, text.INVALID_VISIB_INIT_BLOCK_SHOULD_CONT_OBJ),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -300,7 +302,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(innerObj, src, INVALID_VISIB_DESC_SHOULDNT_HAVE_METAPROPS),
+				makeError(innerObj, src, text.INVALID_VISIB_DESC_SHOULDNT_HAVE_METAPROPS),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -311,7 +313,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(innerObj, src, INVALID_VISIB_DESC_SHOULDNT_HAVE_ELEMENTS),
+				makeError(innerObj, src, text.INVALID_VISIB_DESC_SHOULDNT_HAVE_ELEMENTS),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -322,7 +324,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(prop, src, INVALID_VISIBILITY_DESC_KEY),
+				makeError(prop, src, text.INVALID_VISIBILITY_DESC_KEY),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -333,7 +335,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(publicProp, src, VAL_SHOULD_BE_KEYLIST_LIT),
+				makeError(publicProp, src, text.VAL_SHOULD_BE_KEYLIST_LIT),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -344,7 +346,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(publicProp, src, VAL_SHOULD_BE_DICT_LIT),
+				makeError(publicProp, src, text.VAL_SHOULD_BE_DICT_LIT),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -359,7 +361,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(dictEntry, src, VAL_SHOULD_BE_KEYLIST_LIT),
+				makeError(dictEntry, src, text.VAL_SHOULD_BE_KEYLIST_LIT),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -383,7 +385,7 @@ func TestCheck(t *testing.T) {
 			keyNode := parse.FindNode(n, (*parse.DoubleQuotedStringLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(keyNode, src, fmtDuplicateKey("0")),
+				makeError(keyNode, src, text.FmtDuplicateKey("0")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -396,7 +398,7 @@ func TestCheck(t *testing.T) {
 			keyNode := parse.FindNodes(n, (*parse.IdentifierLiteral)(nil), nil)[2]
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(keyNode, src, fmtDuplicateKey("a")),
+				makeError(keyNode, src, text.FmtDuplicateKey("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -426,7 +428,7 @@ func TestCheck(t *testing.T) {
 			keyNode := parse.FindNode(n, (*parse.DoubleQuotedStringLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(keyNode, src, fmtNameIsTooLong(name)),
+				makeError(keyNode, src, text.FmtNameIsTooLong(name)),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -436,7 +438,7 @@ func TestCheck(t *testing.T) {
 			keyNode := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(keyNode, src, OBJ_REC_LIT_CANNOT_HAVE_METAPROP_KEYS),
+				makeError(keyNode, src, text.OBJ_REC_LIT_CANNOT_HAVE_METAPROP_KEYS),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -454,7 +456,7 @@ func TestCheck(t *testing.T) {
 			keyNode := parse.FindNode(n, (*parse.DoubleQuotedStringLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(keyNode, src, fmtDuplicateKey("0")),
+				makeError(keyNode, src, text.FmtDuplicateKey("0")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -467,7 +469,7 @@ func TestCheck(t *testing.T) {
 			})
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(keyNodes[2], src, fmtDuplicateKey("a")),
+				makeError(keyNodes[2], src, text.FmtDuplicateKey("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -480,7 +482,7 @@ func TestCheck(t *testing.T) {
 			keyNode := parse.FindNode(n, (*parse.DoubleQuotedStringLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(keyNode, src, fmtNameIsTooLong(name)),
+				makeError(keyNode, src, text.FmtNameIsTooLong(name)),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -490,7 +492,7 @@ func TestCheck(t *testing.T) {
 			keyNode := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(keyNode, src, OBJ_REC_LIT_CANNOT_HAVE_METAPROP_KEYS),
+				makeError(keyNode, src, text.OBJ_REC_LIT_CANNOT_HAVE_METAPROP_KEYS),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -507,7 +509,7 @@ func TestCheck(t *testing.T) {
 			secondOtherPropsExpr := parse.FindNodes(n, (*parse.OtherPropsExpr)(nil), nil)[1]
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(secondOtherPropsExpr, src, UNEXPECTED_OTHER_PROPS_EXPR_OTHERPROPS_NO_IS_PRESENT),
+				makeError(secondOtherPropsExpr, src, text.UNEXPECTED_OTHER_PROPS_EXPR_OTHERPROPS_NO_IS_PRESENT),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -525,7 +527,7 @@ func TestCheck(t *testing.T) {
 			keyNode := parse.FindNode(n, (*parse.DoubleQuotedStringLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(keyNode, src, fmtDuplicateKey("0")),
+				makeError(keyNode, src, text.FmtDuplicateKey("0")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -538,7 +540,7 @@ func TestCheck(t *testing.T) {
 			})
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(keyNodes[2], src, fmtDuplicateKey("a")),
+				makeError(keyNodes[2], src, text.FmtDuplicateKey("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -551,7 +553,7 @@ func TestCheck(t *testing.T) {
 			keyNode := parse.FindNode(n, (*parse.DoubleQuotedStringLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(keyNode, src, fmtNameIsTooLong(name)),
+				makeError(keyNode, src, text.FmtNameIsTooLong(name)),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -561,7 +563,7 @@ func TestCheck(t *testing.T) {
 			keyNode := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(keyNode, src, OBJ_REC_LIT_CANNOT_HAVE_METAPROP_KEYS),
+				makeError(keyNode, src, text.OBJ_REC_LIT_CANNOT_HAVE_METAPROP_KEYS),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -574,7 +576,7 @@ func TestCheck(t *testing.T) {
 			selfExpr := parse.FindNode(n, (*parse.SelfExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(selfExpr, src, SELF_ACCESSIBILITY_EXPLANATION),
+				makeError(selfExpr, src, text.SELF_ACCESSIBILITY_EXPLANATION),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -585,7 +587,7 @@ func TestCheck(t *testing.T) {
 			selfExpr := parse.FindNode(n, (*parse.SelfExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(selfExpr, src, SELF_ACCESSIBILITY_EXPLANATION),
+				makeError(selfExpr, src, text.SELF_ACCESSIBILITY_EXPLANATION),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -596,7 +598,7 @@ func TestCheck(t *testing.T) {
 			selfExpr := parse.FindNode(n, (*parse.SelfExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(selfExpr, src, SELF_ACCESSIBILITY_EXPLANATION),
+				makeError(selfExpr, src, text.SELF_ACCESSIBILITY_EXPLANATION),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -607,7 +609,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(selfExpr, src, SELF_ACCESSIBILITY_EXPLANATION),
+				makeError(selfExpr, src, text.SELF_ACCESSIBILITY_EXPLANATION),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -635,7 +637,7 @@ func TestCheck(t *testing.T) {
 			selfExpr := parse.FindNode(n, (*parse.SelfExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(selfExpr, src, SELF_ACCESSIBILITY_EXPLANATION),
+				makeError(selfExpr, src, text.SELF_ACCESSIBILITY_EXPLANATION),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -664,7 +666,7 @@ func TestCheck(t *testing.T) {
 			selfExpr := parse.FindNode(n, (*parse.SelfExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(selfExpr, src, SELF_ACCESSIBILITY_EXPLANATION),
+				makeError(selfExpr, src, text.SELF_ACCESSIBILITY_EXPLANATION),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -676,7 +678,7 @@ func TestCheck(t *testing.T) {
 				}
 			
 				extend p {
-					self_: (1 + self.a)
+					text.SELF_: (1 + self.a)
 				}
 			`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
@@ -691,7 +693,7 @@ func TestCheck(t *testing.T) {
 			sendValExpr := parse.FindNode(n, (*parse.SendValueExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(sendValExpr, src, MISPLACED_SENDVAL_EXPR),
+				makeError(sendValExpr, src, text.MISPLACED_SENDVAL_EXPR),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -702,7 +704,7 @@ func TestCheck(t *testing.T) {
 			sendValExpr := parse.FindNode(n, (*parse.SendValueExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(sendValExpr, src, MISPLACED_SENDVAL_EXPR),
+				makeError(sendValExpr, src, text.MISPLACED_SENDVAL_EXPR),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -713,7 +715,7 @@ func TestCheck(t *testing.T) {
 			sendValExpr := parse.FindNode(n, (*parse.SendValueExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(sendValExpr, src, MISPLACED_SENDVAL_EXPR),
+				makeError(sendValExpr, src, text.MISPLACED_SENDVAL_EXPR),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -724,7 +726,7 @@ func TestCheck(t *testing.T) {
 			sendValExpr := parse.FindNode(n, (*parse.SendValueExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(sendValExpr, src, MISPLACED_SENDVAL_EXPR),
+				makeError(sendValExpr, src, text.MISPLACED_SENDVAL_EXPR),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -750,7 +752,7 @@ func TestCheck(t *testing.T) {
 			sendValExpr := parse.FindNode(n, (*parse.SendValueExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(sendValExpr, src, MISPLACED_SENDVAL_EXPR),
+				makeError(sendValExpr, src, text.MISPLACED_SENDVAL_EXPR),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -768,7 +770,7 @@ func TestCheck(t *testing.T) {
 			sendValExpr := parse.FindNode(n, (*parse.SendValueExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(sendValExpr, src, MISPLACED_SENDVAL_EXPR),
+				makeError(sendValExpr, src, text.MISPLACED_SENDVAL_EXPR),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -799,7 +801,7 @@ func TestCheck(t *testing.T) {
 			selfExpr := parse.FindNode(n, (*parse.SelfExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(selfExpr, src, SELF_ACCESSIBILITY_EXPLANATION),
+				makeError(selfExpr, src, text.SELF_ACCESSIBILITY_EXPLANATION),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -816,7 +818,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(ident, src, fmtVarIsNotDeclared("b")),
+				makeError(ident, src, text.FmtVarIsNotDeclared("b")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -857,7 +859,7 @@ func TestCheck(t *testing.T) {
 			keyNode := parse.FindNodes(n, (*parse.RelativePathLiteral)(nil), nil)[1]
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(keyNode, src, fmtDuplicateDictKey("./a")),
+				makeError(keyNode, src, text.FmtDuplicateDictKey("./a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -940,7 +942,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(ident, src, fmtVarIsNotDeclared("myconst")),
+				makeError(ident, src, text.FmtVarIsNotDeclared("myconst")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -956,7 +958,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(ident, src, fmtVarIsNotDeclared("myglobal")),
+				makeError(ident, src, text.FmtVarIsNotDeclared("myglobal")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -972,7 +974,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(ident, src, fmtVarIsNotDeclared("mylocal")),
+				makeError(ident, src, text.FmtVarIsNotDeclared("mylocal")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -999,7 +1001,7 @@ func TestCheck(t *testing.T) {
 			boolLit := parse.FindNode(n, (*parse.BooleanLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(boolLit, src, INVALID_SPAWN_ONLY_OBJECT_LITERALS_WITH_NO_SPREAD_ELEMENTS_SUPPORTED),
+				makeError(boolLit, src, text.INVALID_SPAWN_ONLY_OBJECT_LITERALS_WITH_NO_SPREAD_ELEMENTS_SUPPORTED),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -1012,7 +1014,7 @@ func TestCheck(t *testing.T) {
 			objLits := parse.FindNodes(n, (*parse.ObjectLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(objLits[1], src, INVALID_SPAWN_ONLY_OBJECT_LITERALS_WITH_NO_SPREAD_ELEMENTS_SUPPORTED),
+				makeError(objLits[1], src, text.INVALID_SPAWN_ONLY_OBJECT_LITERALS_WITH_NO_SPREAD_ELEMENTS_SUPPORTED),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -1025,7 +1027,7 @@ func TestCheck(t *testing.T) {
 			objLit := parse.FindNode(n, (*parse.ObjectLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(objLit, src, INVALID_SPAWN_ONLY_OBJECT_LITERALS_WITH_NO_SPREAD_ELEMENTS_SUPPORTED),
+				makeError(objLit, src, text.INVALID_SPAWN_ONLY_OBJECT_LITERALS_WITH_NO_SPREAD_ELEMENTS_SUPPORTED),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -1067,7 +1069,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(objLit, src, INVALID_SPAWN_GLOBALS_SHOULD_BE),
+				makeError(objLit, src, text.INVALID_SPAWN_GLOBALS_SHOULD_BE),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -1082,7 +1084,7 @@ func TestCheck(t *testing.T) {
 			objLit := parse.FindNode(n, (*parse.ObjectLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(objLit, src, INVALID_SPAWN_GLOBALS_SHOULD_BE),
+				makeError(objLit, src, text.INVALID_SPAWN_GLOBALS_SHOULD_BE),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -1096,7 +1098,7 @@ func TestCheck(t *testing.T) {
 			keyList := parse.FindNode(n, (*parse.KeyListExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(keyList, src, fmtCannotPassGlobalThatIsNotDeclaredToLThread("global")),
+				makeError(keyList, src, text.FmtCannotPassGlobalThatIsNotDeclaredToLThread("global")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -1115,7 +1117,7 @@ func TestCheck(t *testing.T) {
 			obj := parse.FindNode(n, (*parse.ObjectLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(obj, src, INVALID_MAPPING_ENTRY_KEY_ONLY_SIMPL_LITS_AND_PATT_IDENTS),
+				makeError(obj, src, text.INVALID_MAPPING_ENTRY_KEY_ONLY_SIMPL_LITS_AND_PATT_IDENTS),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -1178,7 +1180,7 @@ func TestCheck(t *testing.T) {
 			ident := parse.FindNodes(n, (*parse.IdentifierLiteral)(nil), nil)[1]
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(ident, src, fmtVarIsNotDeclared("loc")),
+				makeError(ident, src, text.FmtVarIsNotDeclared("loc")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -1254,7 +1256,7 @@ func TestCheck(t *testing.T) {
 			computeExpr := parse.FindNode(n, (*parse.ComputeExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(computeExpr, src, MISPLACED_COMPUTE_EXPR_SHOULD_BE_IN_DYNAMIC_MAPPING_EXPR_ENTRY),
+				makeError(computeExpr, src, text.MISPLACED_COMPUTE_EXPR_SHOULD_BE_IN_DYNAMIC_MAPPING_EXPR_ENTRY),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -1265,7 +1267,7 @@ func TestCheck(t *testing.T) {
 			computeExpr := parse.FindNode(n, (*parse.ComputeExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(computeExpr, src, MISPLACED_COMPUTE_EXPR_SHOULD_BE_IN_DYNAMIC_MAPPING_EXPR_ENTRY),
+				makeError(computeExpr, src, text.MISPLACED_COMPUTE_EXPR_SHOULD_BE_IN_DYNAMIC_MAPPING_EXPR_ENTRY),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -1282,7 +1284,7 @@ func TestCheck(t *testing.T) {
 			fnExprNode := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(fnExprNode.CaptureList[0], src, fmtVarIsNotDeclared("a")),
+				makeError(fnExprNode.CaptureList[0], src, text.FmtVarIsNotDeclared("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -1295,7 +1297,7 @@ func TestCheck(t *testing.T) {
 			fnExprNode := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(fnExprNode, src, fmtCannotPassGlobalToFunction("a")),
+				makeError(fnExprNode, src, text.FmtCannotPassGlobalToFunction("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -1545,8 +1547,8 @@ func TestCheck(t *testing.T) {
 			fnDecl := parse.FindNode(n, (*parse.FunctionDeclaration)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(fnDecl, src, fmtInvalidOrMisplacedFnDeclShouldBeAfterCapturedVarDeclaration("a")),
-				makeError(fnDecl.Function.CaptureList[0], src, fmtVarIsNotDeclared("a")),
+				makeError(fnDecl, src, text.FmtInvalidOrMisplacedFnDeclShouldBeAfterCapturedVarDeclaration("a")),
+				makeError(fnDecl.Function.CaptureList[0], src, text.FmtVarIsNotDeclared("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -1559,7 +1561,7 @@ func TestCheck(t *testing.T) {
 			fnExpr := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(fnExpr, src, fmtCannotPassGlobalToFunction("a")),
+				makeError(fnExpr, src, text.FmtCannotPassGlobalToFunction("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -1572,7 +1574,7 @@ func TestCheck(t *testing.T) {
 			fn := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(fn.Parameters[0], src, fmtParameterCannotShadowGlobalVariable("a")),
+				makeError(fn.Parameters[0], src, text.FmtParameterCannotShadowGlobalVariable("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -1596,7 +1598,7 @@ func TestCheck(t *testing.T) {
 			declNode := parse.FindNodes(n, (*parse.FunctionDeclaration)(nil), nil)[1]
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(declNode, src, INVALID_FN_DECL_SHOULD_BE_TOP_LEVEL_STMT),
+				makeError(declNode, src, text.INVALID_FN_DECL_SHOULD_BE_TOP_LEVEL_STMT),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -1609,7 +1611,7 @@ func TestCheck(t *testing.T) {
 			declNode := parse.FindNodes(n, (*parse.FunctionDeclaration)(nil), nil)[1]
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(declNode, src, fmtInvalidFnDeclAlreadyDeclared("f")),
+				makeError(declNode, src, text.FmtInvalidFnDeclAlreadyDeclared("f")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -1634,7 +1636,7 @@ func TestCheck(t *testing.T) {
 			globalVar := parse.FindNode(n, (*parse.GlobalVariable)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(globalVar, src, fmtInvalidGlobalVarAssignmentNameIsFuncName("f")),
+				makeError(globalVar, src, text.FmtInvalidGlobalVarAssignmentNameIsFuncName("f")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2020,8 +2022,8 @@ func TestCheck(t *testing.T) {
 			declNode := parse.FindNode(n, (*parse.FunctionDeclaration)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(declNode, src, fmtInvalidOrMisplacedFnDeclShouldBeAfterCapturedVarDeclaration("x")),
-				makeError(declNode.Function.CaptureList[0], src, fmtVarIsNotDeclared("x")),
+				makeError(declNode, src, text.FmtInvalidOrMisplacedFnDeclShouldBeAfterCapturedVarDeclaration("x")),
+				makeError(declNode.Function.CaptureList[0], src, text.FmtVarIsNotDeclared("x")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2045,8 +2047,8 @@ func TestCheck(t *testing.T) {
 			callExprs := parse.FindNodes(n, (*parse.CallExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(callExprs[0].Callee, src, fmtVarIsNotDeclared("f")),
-				makeError(callExprs[1].Callee, src, fmtVarIsNotDeclared("f")),
+				makeError(callExprs[0].Callee, src, text.FmtVarIsNotDeclared("f")),
+				makeError(callExprs[1].Callee, src, text.FmtVarIsNotDeclared("f")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2062,7 +2064,7 @@ func TestCheck(t *testing.T) {
 			fnExprNode := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(fnExprNode.CaptureList[0], src, fmtVarIsNotDeclared("a")),
+				makeError(fnExprNode.CaptureList[0], src, text.FmtVarIsNotDeclared("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2075,7 +2077,7 @@ func TestCheck(t *testing.T) {
 			fnExprNode := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(fnExprNode, src, fmtCannotPassGlobalToFunction("a")),
+				makeError(fnExprNode, src, text.FmtCannotPassGlobalToFunction("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2100,7 +2102,7 @@ func TestCheck(t *testing.T) {
 			fn := parse.FindNode(n, (*parse.FunctionPatternExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(fn.Parameters[0], src, fmtParameterCannotShadowGlobalVariable("a")),
+				makeError(fn.Parameters[0], src, text.FmtParameterCannotShadowGlobalVariable("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2116,7 +2118,7 @@ func TestCheck(t *testing.T) {
 			decl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(decl, src, fmtInvalidLocalVarDeclAlreadyDeclared("a")),
+				makeError(decl, src, text.FmtInvalidLocalVarDeclAlreadyDeclared("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2129,7 +2131,7 @@ func TestCheck(t *testing.T) {
 			decl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(decl, src, fmtCannotShadowGlobalVariable("a")),
+				makeError(decl, src, text.FmtCannotShadowGlobalVariable("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2142,7 +2144,7 @@ func TestCheck(t *testing.T) {
 			decl := parse.FindNodes(n, (*parse.LocalVariableDeclaration)(nil), nil)[1]
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(decl, src, fmtInvalidLocalVarDeclAlreadyDeclared("a")),
+				makeError(decl, src, text.FmtInvalidLocalVarDeclAlreadyDeclared("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2165,7 +2167,7 @@ func TestCheck(t *testing.T) {
 			decl := parse.FindNode(n, (*parse.GlobalVariableDeclaration)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(decl, src, fmtInvalidGlobalVarDeclAlreadyDeclared("a")),
+				makeError(decl, src, text.FmtInvalidGlobalVarDeclAlreadyDeclared("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2178,7 +2180,7 @@ func TestCheck(t *testing.T) {
 			decl := parse.FindNode(n, (*parse.GlobalVariableDeclaration)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(decl, src, fmtCannotShadowLocalVariable("a")),
+				makeError(decl, src, text.FmtCannotShadowLocalVariable("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2191,7 +2193,7 @@ func TestCheck(t *testing.T) {
 			decl := parse.FindNodes(n, (*parse.GlobalVariableDeclaration)(nil), nil)[1]
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(decl, src, fmtInvalidGlobalVarDeclAlreadyDeclared("a")),
+				makeError(decl, src, text.FmtInvalidGlobalVarDeclAlreadyDeclared("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2205,7 +2207,7 @@ func TestCheck(t *testing.T) {
 			decls := parse.FindNode(n, (*parse.GlobalVariableDeclarations)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(decls, src, MISPLACED_GLOBAL_VAR_DECLS_TOP_LEVEL_STMT),
+				makeError(decls, src, text.MISPLACED_GLOBAL_VAR_DECLS_TOP_LEVEL_STMT),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2219,7 +2221,7 @@ func TestCheck(t *testing.T) {
 			decls := parse.FindNode(n, (*parse.GlobalVariableDeclarations)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(decls, src, MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_REF_TO_FN),
+				makeError(decls, src, text.MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_REF_TO_FN),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2235,7 +2237,7 @@ func TestCheck(t *testing.T) {
 			decls := parse.FindNode(n, (*parse.GlobalVariableDeclarations)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(decls, src, MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_REF_TO_FN),
+				makeError(decls, src, text.MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_REF_TO_FN),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2251,7 +2253,7 @@ func TestCheck(t *testing.T) {
 			decls := parse.FindNode(n, (*parse.GlobalVariableDeclarations)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(decls, src, MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_REF_TO_FN),
+				makeError(decls, src, text.MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_REF_TO_FN),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2267,7 +2269,7 @@ func TestCheck(t *testing.T) {
 			decls := parse.FindNode(n, (*parse.GlobalVariableDeclarations)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(decls, src, MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_REF_TO_FN),
+				makeError(decls, src, text.MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_REF_TO_FN),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2315,7 +2317,7 @@ func TestCheck(t *testing.T) {
 			assignment := parse.FindNodes(n, (*parse.Assignment)(nil), nil)[0]
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(assignment, src, fmtInvalidGlobalVarAssignmentNameIsFuncName("f")),
+				makeError(assignment, src, text.FmtInvalidGlobalVarAssignmentNameIsFuncName("f")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2331,7 +2333,7 @@ func TestCheck(t *testing.T) {
 			assignment := parse.FindNodes(n, (*parse.Assignment)(nil), nil)[0]
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(assignment, src, fmtInvalidGlobalVarAssignmentNameIsConstant("a")),
+				makeError(assignment, src, text.FmtInvalidGlobalVarAssignmentNameIsConstant("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2350,7 +2352,7 @@ func TestCheck(t *testing.T) {
 			assignment := parse.FindNodes(n, (*parse.Assignment)(nil), nil)[0]
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(assignment, src, fmtInvalidGlobalVarAssignmentNameIsConstant("a")),
+				makeError(assignment, src, text.FmtInvalidGlobalVarAssignmentNameIsConstant("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2377,7 +2379,7 @@ func TestCheck(t *testing.T) {
 			assignment := parse.FindNodes(n, (*parse.Assignment)(nil), nil)[1]
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(assignment, src, fmtCannotShadowGlobalVariable("a")),
+				makeError(assignment, src, text.FmtCannotShadowGlobalVariable("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2390,7 +2392,7 @@ func TestCheck(t *testing.T) {
 			assignment := parse.FindNode(n, (*parse.Assignment)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(assignment, src, fmtInvalidGlobalVarAssignmentVarDoesNotExist("a")),
+				makeError(assignment, src, text.FmtInvalidGlobalVarAssignmentVarDoesNotExist("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2404,7 +2406,7 @@ func TestCheck(t *testing.T) {
 			assignment := parse.FindNodes(n, (*parse.Assignment)(nil), nil)[1]
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(assignment, src, fmtCannotShadowLocalVariable("a")),
+				makeError(assignment, src, text.FmtCannotShadowLocalVariable("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2417,7 +2419,7 @@ func TestCheck(t *testing.T) {
 			assignment := parse.FindNode(n, (*parse.Assignment)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(assignment, src, fmtInvalidVariableAssignmentVarDoesNotExist("a")),
+				makeError(assignment, src, text.FmtInvalidVariableAssignmentVarDoesNotExist("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2431,7 +2433,7 @@ func TestCheck(t *testing.T) {
 			assignment := parse.FindNode(n, (*parse.Assignment)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(assignment, src, INVALID_ASSIGNMENT_EQUAL_ONLY_SUPPORTED_ASSIGNMENT_OPERATOR_FOR_SLICE_EXPRS),
+				makeError(assignment, src, text.INVALID_ASSIGNMENT_EQUAL_ONLY_SUPPORTED_ASSIGNMENT_OPERATOR_FOR_SLICE_EXPRS),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2445,7 +2447,7 @@ func TestCheck(t *testing.T) {
 			assignment := parse.FindNode(n, (*parse.Assignment)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(assignment, src, MISPLACED_GLOBAL_VAR_DECLS_TOP_LEVEL_STMT),
+				makeError(assignment, src, text.MISPLACED_GLOBAL_VAR_DECLS_TOP_LEVEL_STMT),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2460,7 +2462,7 @@ func TestCheck(t *testing.T) {
 			assignment := parse.FindNode(n, (*parse.Assignment)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(assignment, src, MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_REF_TO_FN),
+				makeError(assignment, src, text.MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_REF_TO_FN),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2477,7 +2479,7 @@ func TestCheck(t *testing.T) {
 			assignment := parse.FindNode(n, (*parse.Assignment)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(assignment, src, MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_REF_TO_FN),
+				makeError(assignment, src, text.MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_REF_TO_FN),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2493,7 +2495,7 @@ func TestCheck(t *testing.T) {
 			assignment := parse.FindNode(n, (*parse.Assignment)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(assignment, src, MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_REF_TO_FN),
+				makeError(assignment, src, text.MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_REF_TO_FN),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2509,7 +2511,7 @@ func TestCheck(t *testing.T) {
 			assignment := parse.FindNode(n, (*parse.Assignment)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(assignment, src, MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_REF_TO_FN),
+				makeError(assignment, src, text.MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_REF_TO_FN),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2549,7 +2551,7 @@ func TestCheck(t *testing.T) {
 			assignment := parse.FindNode(n, (*parse.MultiAssignment)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(assignment, src, fmtCannotShadowGlobalVariable("a")),
+				makeError(assignment, src, text.FmtCannotShadowGlobalVariable("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2646,7 +2648,7 @@ func TestCheck(t *testing.T) {
 			`)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(n.Statements[0], src, fmtLocalVarIsNotDeclared("a")),
+				makeError(n.Statements[0], src, text.FmtLocalVarIsNotDeclared("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2669,7 +2671,7 @@ func TestCheck(t *testing.T) {
 			varNode := parse.FindNode(n, (*parse.Variable)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(varNode, src, fmtLocalVarIsNotDeclared("a")),
+				makeError(varNode, src, text.FmtLocalVarIsNotDeclared("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2684,7 +2686,7 @@ func TestCheck(t *testing.T) {
 			varNode := parse.FindNode(n, (*parse.Variable)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(varNode, src, fmtLocalVarIsNotDeclared("a")),
+				makeError(varNode, src, text.FmtLocalVarIsNotDeclared("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2928,7 +2930,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(identLiteral, src, fmtVarIsNotDeclared("a")),
+				makeError(identLiteral, src, text.FmtVarIsNotDeclared("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -3039,7 +3041,7 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
-		t.Run(TEST_CASES_NOT_ALLOWED_IF_SUBSUITES_ARE_PRESENT, func(t *testing.T) {
+		t.Run(text.TEST_CASES_NOT_ALLOWED_IF_SUBSUITES_ARE_PRESENT, func(t *testing.T) {
 			n, src := mustParseCode(`
 				manifest {}
 
@@ -3056,12 +3058,12 @@ func TestCheck(t *testing.T) {
 			testCaseStmt := parse.FindNode(n, (*parse.TestCaseExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(testCaseStmt, src, TEST_CASES_NOT_ALLOWED_IF_SUBSUITES_ARE_PRESENT),
+				makeError(testCaseStmt, src, text.TEST_CASES_NOT_ALLOWED_IF_SUBSUITES_ARE_PRESENT),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
 
-		t.Run(TEST_CASES_NOT_ALLOWED_IF_SUBSUITES_ARE_PRESENT, func(t *testing.T) {
+		t.Run(text.TEST_CASES_NOT_ALLOWED_IF_SUBSUITES_ARE_PRESENT, func(t *testing.T) {
 			n, src := mustParseCode(`
 				manifest {}
 
@@ -3078,12 +3080,12 @@ func TestCheck(t *testing.T) {
 			testCaseStmt := parse.FindNode(n, (*parse.TestCaseExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(testCaseStmt, src, TEST_CASES_NOT_ALLOWED_IF_SUBSUITES_ARE_PRESENT),
+				makeError(testCaseStmt, src, text.TEST_CASES_NOT_ALLOWED_IF_SUBSUITES_ARE_PRESENT),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
 
-		t.Run(TEST_SUITE_STMTS_NOT_ALLOWED_INSIDE_TEST_CASE_STMTS, func(t *testing.T) {
+		t.Run(text.TEST_SUITE_STMTS_NOT_ALLOWED_INSIDE_TEST_CASE_STMTS, func(t *testing.T) {
 			n, src := mustParseCode(`
 				manifest {}
 
@@ -3101,7 +3103,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(testSuiteStmt, src, TEST_SUITE_STMTS_NOT_ALLOWED_INSIDE_TEST_CASE_STMTS),
+				makeError(testSuiteStmt, src, text.TEST_SUITE_STMTS_NOT_ALLOWED_INSIDE_TEST_CASE_STMTS),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -3128,7 +3130,7 @@ func TestCheck(t *testing.T) {
 			}))
 		})
 
-		t.Run(TEST_CASE_STMTS_NOT_ALLOWED_OUTSIDE_OF_TEST_SUITES, func(t *testing.T) {
+		t.Run(text.TEST_CASE_STMTS_NOT_ALLOWED_OUTSIDE_OF_TEST_SUITES, func(t *testing.T) {
 			n, src := mustParseCode(`
 				manifest {}
 
@@ -3138,12 +3140,12 @@ func TestCheck(t *testing.T) {
 			testCaseStmt := parse.FindNode(n, (*parse.TestCaseExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(testCaseStmt, src, TEST_CASE_STMTS_NOT_ALLOWED_OUTSIDE_OF_TEST_SUITES),
+				makeError(testCaseStmt, src, text.TEST_CASE_STMTS_NOT_ALLOWED_OUTSIDE_OF_TEST_SUITES),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
 
-		t.Run(TEST_CASE_STMTS_NOT_ALLOWED_OUTSIDE_OF_TEST_SUITES, func(t *testing.T) {
+		t.Run(text.TEST_CASE_STMTS_NOT_ALLOWED_OUTSIDE_OF_TEST_SUITES, func(t *testing.T) {
 			n, src := mustParseCode(`
 				manifest {}
 
@@ -3155,7 +3157,7 @@ func TestCheck(t *testing.T) {
 			testCaseStmt := parse.FindNode(n, (*parse.TestCaseExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(testCaseStmt, src, TEST_CASE_STMTS_NOT_ALLOWED_OUTSIDE_OF_TEST_SUITES),
+				makeError(testCaseStmt, src, text.TEST_CASE_STMTS_NOT_ALLOWED_OUTSIDE_OF_TEST_SUITES),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -3173,7 +3175,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(identLiteral, src, fmtVarIsNotDeclared("a")),
+				makeError(identLiteral, src, text.FmtVarIsNotDeclared("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -3190,7 +3192,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(identLiteral, src, fmtVarIsNotDeclared("dbs")),
+				makeError(identLiteral, src, text.FmtVarIsNotDeclared("dbs")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -3208,7 +3210,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(identLiteral, src, fmtVarIsNotDeclared("a")),
+				makeError(identLiteral, src, text.FmtVarIsNotDeclared("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -3233,7 +3235,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(identLiteral, src, fmtVarIsNotDeclared("dbs")),
+				makeError(identLiteral, src, text.FmtVarIsNotDeclared("dbs")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -3263,8 +3265,8 @@ func TestCheck(t *testing.T) {
 			variable := parse.FindNode(mod.MainChunk.Node, (*parse.Variable)(nil), nil)
 
 			expectedErr := utils.CombineErrors(
-				makeError(importStmt, mod.MainChunk, MISPLACED_INCLUSION_IMPORT_STATEMENT_TOP_LEVEL_STMT),
-				makeError(variable, mod.MainChunk, fmtLocalVarIsNotDeclared("a")),
+				makeError(importStmt, mod.MainChunk, text.MISPLACED_INCLUSION_IMPORT_STATEMENT_TOP_LEVEL_STMT),
+				makeError(variable, mod.MainChunk, text.FmtLocalVarIsNotDeclared("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -3335,7 +3337,7 @@ func TestCheck(t *testing.T) {
 			})
 
 			expectedErr := utils.CombineErrors(
-				NewStaticCheckError(fmtVarIsNotDeclared("b"), parse.SourcePositionStack{
+				NewStaticCheckError(text.FmtVarIsNotDeclared("b"), parse.SourcePositionStack{
 					parse.SourcePositionRange{
 						SourceName:  mod.MainChunk.Name(),
 						StartLine:   3,
@@ -3369,7 +3371,7 @@ func TestCheck(t *testing.T) {
 			})
 
 			expectedErr := utils.CombineErrors(
-				NewStaticCheckError(fmtCannotShadowGlobalVariable("a"), parse.SourcePositionStack{
+				NewStaticCheckError(text.FmtCannotShadowGlobalVariable("a"), parse.SourcePositionStack{
 					parse.SourcePositionRange{
 						SourceName:  mod.MainChunk.Name(),
 						StartLine:   4,
@@ -3428,7 +3430,7 @@ func TestCheck(t *testing.T) {
 				Chunk:  mod.MainChunk,
 			})
 			expectedErr := utils.CombineErrors(
-				NewStaticCheckError(AN_INCLUDABLE_FILE_CAN_ONLY_CONTAIN_DEFINITIONS, parse.SourcePositionStack{
+				NewStaticCheckError(text.AN_INCLUDABLE_FILE_CAN_ONLY_CONTAIN_DEFINITIONS, parse.SourcePositionStack{
 					parse.SourcePositionRange{
 						SourceName:  mod.MainChunk.Name(),
 						StartLine:   3,
@@ -3440,7 +3442,7 @@ func TestCheck(t *testing.T) {
 						StartColumn: 6,
 					},
 				}),
-				NewStaticCheckError(MODULE_IMPORTS_NOT_ALLOWED_IN_INCLUDABLE_FILES, parse.SourcePositionStack{
+				NewStaticCheckError(text.MODULE_IMPORTS_NOT_ALLOWED_IN_INCLUDABLE_FILES, parse.SourcePositionStack{
 					parse.SourcePositionRange{
 						SourceName:  mod.MainChunk.Name(),
 						StartLine:   3,
@@ -3519,8 +3521,8 @@ func TestCheck(t *testing.T) {
 			globalVariable := parse.FindNode(mod.MainChunk.Node, (*parse.GlobalVariable)(nil), nil)
 
 			expectedErr := utils.CombineErrors(
-				makeError(importStmt, mod.MainChunk, MISPLACED_MOD_IMPORT_STATEMENT_TOP_LEVEL_STMT),
-				makeError(globalVariable, mod.MainChunk, fmtGlobalVarIsNotDeclared("res")),
+				makeError(importStmt, mod.MainChunk, text.MISPLACED_MOD_IMPORT_STATEMENT_TOP_LEVEL_STMT),
+				makeError(globalVariable, mod.MainChunk, text.FmtGlobalVarIsNotDeclared("res")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -3696,7 +3698,7 @@ func TestCheck(t *testing.T) {
 			})
 
 			expectedErr := utils.CombineErrors(
-				NewStaticCheckError(fmtVarIsNotDeclared("b"), parse.SourcePositionStack{
+				NewStaticCheckError(text.FmtVarIsNotDeclared("b"), parse.SourcePositionStack{
 					parse.SourcePositionRange{
 						SourceName:  mod.MainChunk.Name(),
 						StartLine:   3,
@@ -3798,7 +3800,7 @@ func TestCheck(t *testing.T) {
 			})
 
 			expectedErr := utils.CombineErrors(
-				NewStaticCheckError(fmtVarIsNotDeclared("b"), parse.SourcePositionStack{
+				NewStaticCheckError(text.FmtVarIsNotDeclared("b"), parse.SourcePositionStack{
 					parse.SourcePositionRange{
 						SourceName:  modpath,
 						StartLine:   3,
@@ -3867,7 +3869,7 @@ func TestCheck(t *testing.T) {
 			yieldStmt := parse.FindNode(n, (*parse.CoyieldStatement)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(yieldStmt, src, MISPLACE_COYIELD_STATEMENT_ONLY_ALLOWED_IN_EMBEDDED_MODULES),
+				makeError(yieldStmt, src, text.MISPLACE_COYIELD_STATEMENT_ONLY_ALLOWED_IN_EMBEDDED_MODULES),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -3927,7 +3929,7 @@ func TestCheck(t *testing.T) {
 			breakStmt := parse.FindNode(n, (*parse.BreakStatement)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(breakStmt, src, INVALID_BREAK_OR_CONTINUE_STMT_SHOULD_BE_IN_A_FOR_OR_WALK_STMT),
+				makeError(breakStmt, src, text.INVALID_BREAK_OR_CONTINUE_STMT_SHOULD_BE_IN_A_FOR_OR_WALK_STMT),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -3941,7 +3943,7 @@ func TestCheck(t *testing.T) {
 			breakStmt := parse.FindNode(n, (*parse.BreakStatement)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(breakStmt, src, INVALID_BREAK_OR_CONTINUE_STMT_SHOULD_BE_IN_A_FOR_OR_WALK_STMT),
+				makeError(breakStmt, src, text.INVALID_BREAK_OR_CONTINUE_STMT_SHOULD_BE_IN_A_FOR_OR_WALK_STMT),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -3956,7 +3958,7 @@ func TestCheck(t *testing.T) {
 			varNode := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(varNode, src, fmtVarIsNotDeclared("a")),
+				makeError(varNode, src, text.FmtVarIsNotDeclared("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -3973,7 +3975,7 @@ func TestCheck(t *testing.T) {
 			varNode := parse.FindNodes(n, (*parse.IdentifierLiteral)(nil), nil)[2]
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(varNode, src, fmtVarIsNotDeclared("file")),
+				makeError(varNode, src, text.FmtVarIsNotDeclared("file")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -3988,7 +3990,7 @@ func TestCheck(t *testing.T) {
 			varNode := parse.FindNodes(n, (*parse.IdentifierLiteral)(nil), nil)[3]
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(varNode, src, fmtVarIsNotDeclared("x")),
+				makeError(varNode, src, text.FmtVarIsNotDeclared("x")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4004,8 +4006,8 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(keyIdent, src, fmtCannotShadowLocalVariable("k")),
-				makeError(valueIdent, src, fmtCannotShadowLocalVariable("v")),
+				makeError(keyIdent, src, text.FmtCannotShadowLocalVariable("k")),
+				makeError(valueIdent, src, text.FmtCannotShadowLocalVariable("v")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4021,8 +4023,8 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(keyIdent, src, fmtCannotShadowGlobalVariable("k")),
-				makeError(valueIdent, src, fmtCannotShadowGlobalVariable("v")),
+				makeError(keyIdent, src, text.FmtCannotShadowGlobalVariable("k")),
+				makeError(valueIdent, src, text.FmtCannotShadowGlobalVariable("v")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4037,7 +4039,7 @@ func TestCheck(t *testing.T) {
 			varNode := parse.FindNodes(n, (*parse.IdentifierLiteral)(nil), nil)[2]
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(varNode, src, fmtVarIsNotDeclared("file")),
+				makeError(varNode, src, text.FmtVarIsNotDeclared("file")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4053,8 +4055,8 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(keyIdent, src, fmtCannotShadowLocalVariable("k")),
-				makeError(valueIdent, src, fmtCannotShadowLocalVariable("v")),
+				makeError(keyIdent, src, text.FmtCannotShadowLocalVariable("k")),
+				makeError(valueIdent, src, text.FmtCannotShadowLocalVariable("v")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4070,8 +4072,8 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(keyIdent, src, fmtCannotShadowGlobalVariable("k")),
-				makeError(valueIdent, src, fmtCannotShadowGlobalVariable("v")),
+				makeError(keyIdent, src, text.FmtCannotShadowGlobalVariable("k")),
+				makeError(valueIdent, src, text.FmtCannotShadowGlobalVariable("v")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4088,7 +4090,7 @@ func TestCheck(t *testing.T) {
 			varNode := parse.FindNodes(n, (*parse.IdentifierLiteral)(nil), nil)[1]
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(varNode, src, fmtVarIsNotDeclared("entry")),
+				makeError(varNode, src, text.FmtVarIsNotDeclared("entry")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4104,7 +4106,7 @@ func TestCheck(t *testing.T) {
 			varNode := parse.FindNodes(n, (*parse.IdentifierLiteral)(nil), nil)[2]
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(varNode, src, fmtVarIsNotDeclared("x")),
+				makeError(varNode, src, text.FmtVarIsNotDeclared("x")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4118,7 +4120,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(entryIdent, src, fmtCannotShadowLocalVariable("e")),
+				makeError(entryIdent, src, text.FmtCannotShadowLocalVariable("e")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4132,7 +4134,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(entryIdent, src, fmtCannotShadowGlobalVariable("e")),
+				makeError(entryIdent, src, text.FmtCannotShadowGlobalVariable("e")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4152,7 +4154,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(n.Statements[0], src, MISPLACED_RUNTIME_TYPECHECK_EXPRESSION),
+				makeError(n.Statements[0], src, text.MISPLACED_RUNTIME_TYPECHECK_EXPRESSION),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4175,8 +4177,8 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(callNode, src, fmtFollowingNodeTypeNotAllowedInAssertions(callNode)),
-				makeError(callNode, src, fmtVarIsNotDeclared("sideEffect")),
+				makeError(callNode, src, text.FmtFollowingNodeTypeNotAllowedInAssertions(callNode)),
+				makeError(callNode, src, text.FmtVarIsNotDeclared("sideEffect")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4196,7 +4198,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(identLiteral, src, fmtVarIsNotDeclared("a")),
+				makeError(identLiteral, src, text.FmtVarIsNotDeclared("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4212,7 +4214,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(job, src, MISSING_LIFETIMEJOB_SUBJECT_PATTERN_NOT_AN_IMPLICIT_OBJ_PROP),
+				makeError(job, src, text.MISSING_LIFETIMEJOB_SUBJECT_PATTERN_NOT_AN_IMPLICIT_OBJ_PROP),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4258,7 +4260,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(n.Statements[0], src, MISPLACED_RECEPTION_HANDLER_EXPRESSION),
+				makeError(n.Statements[0], src, text.MISPLACED_RECEPTION_HANDLER_EXPRESSION),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4285,7 +4287,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(def, src, fmtPatternAlreadyDeclared("p")),
+				makeError(def, src, text.FmtPatternAlreadyDeclared("p")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4300,7 +4302,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(def, src, MISPLACED_PATTERN_DEF_NOT_TOP_LEVEL_STMT),
+				makeError(def, src, text.MISPLACED_PATTERN_DEF_NOT_TOP_LEVEL_STMT),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4316,7 +4318,7 @@ func TestCheck(t *testing.T) {
 			def := parse.FindNode(n, (*parse.PatternDefinition)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(def, src, MISPLACED_PATTERN_DEF_AFTER_FN_DECL_OR_REF_TO_FN),
+				makeError(def, src, text.MISPLACED_PATTERN_DEF_AFTER_FN_DECL_OR_REF_TO_FN),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4330,7 +4332,7 @@ func TestCheck(t *testing.T) {
 			def := parse.FindNode(n, (*parse.PatternDefinition)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(def, src, MISPLACED_PATTERN_DEF_AFTER_FN_DECL_OR_REF_TO_FN),
+				makeError(def, src, text.MISPLACED_PATTERN_DEF_AFTER_FN_DECL_OR_REF_TO_FN),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4346,7 +4348,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(def, src, fmtPatternNamespaceAlreadyDeclared("p")),
+				makeError(def, src, text.FmtPatternNamespaceAlreadyDeclared("p")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4361,7 +4363,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(def, src, MISPLACED_PATTERN_NS_DEF_NOT_TOP_LEVEL_STMT),
+				makeError(def, src, text.MISPLACED_PATTERN_NS_DEF_NOT_TOP_LEVEL_STMT),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4377,7 +4379,7 @@ func TestCheck(t *testing.T) {
 			def := parse.FindNode(n, (*parse.PatternNamespaceDefinition)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(def, src, MISPLACED_PATTERN_NS_DEF_AFTER_FN_DECL_OR_REF_TO_FN),
+				makeError(def, src, text.MISPLACED_PATTERN_NS_DEF_AFTER_FN_DECL_OR_REF_TO_FN),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4393,7 +4395,7 @@ func TestCheck(t *testing.T) {
 			def := parse.FindNode(n, (*parse.PatternNamespaceDefinition)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(def, src, MISPLACED_PATTERN_NS_DEF_AFTER_FN_DECL_OR_REF_TO_FN),
+				makeError(def, src, text.MISPLACED_PATTERN_NS_DEF_AFTER_FN_DECL_OR_REF_TO_FN),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4409,7 +4411,7 @@ func TestCheck(t *testing.T) {
 			def := parse.FindNode(n, (*parse.PatternNamespaceDefinition)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(def, src, MISPLACED_PATTERN_NS_DEF_AFTER_FN_DECL_OR_REF_TO_FN),
+				makeError(def, src, text.MISPLACED_PATTERN_NS_DEF_AFTER_FN_DECL_OR_REF_TO_FN),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4423,7 +4425,7 @@ func TestCheck(t *testing.T) {
 			def := parse.FindNode(n, (*parse.PatternNamespaceDefinition)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(def, src, MISPLACED_PATTERN_NS_DEF_AFTER_FN_DECL_OR_REF_TO_FN),
+				makeError(def, src, text.MISPLACED_PATTERN_NS_DEF_AFTER_FN_DECL_OR_REF_TO_FN),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4438,7 +4440,7 @@ func TestCheck(t *testing.T) {
 			pattern := parse.FindNode(n, (*parse.PatternIdentifierLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(pattern, src, fmtPatternIsNotDeclared("p")),
+				makeError(pattern, src, text.FmtPatternIsNotDeclared("p")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4486,7 +4488,7 @@ func TestCheck(t *testing.T) {
 			expr := parse.FindNode(n, (*parse.ReadonlyPatternExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(expr, src, MISPLACED_READONLY_PATTERN_EXPRESSION),
+				makeError(expr, src, text.MISPLACED_READONLY_PATTERN_EXPRESSION),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4505,10 +4507,10 @@ func TestCheck(t *testing.T) {
 			{"1h1s5ms10us15ns", nil},
 			//
 			{"-1s", []string{ErrNegQuantityNotSupported.Error()}},
-			//{"1o1s", []string{INVALID_QUANTITY}},
-			//{"1o2h", []string{INVALID_QUANTITY}},
-			{"1s1x", []string{INVALID_QUANTITY}},
-			{"1s1h", []string{INVALID_QUANTITY}},
+			//{"1o1s", []string{text.INVALID_QUANTITY}},
+			//{"1o2h", []string{text.INVALID_QUANTITY}},
+			{"1s1x", []string{text.INVALID_QUANTITY}},
+			{"1s1h", []string{text.INVALID_QUANTITY}},
 		}
 
 		for _, testCase := range testCases {
@@ -4540,16 +4542,16 @@ func TestCheck(t *testing.T) {
 		}{
 
 			{"1x/s", nil},
-			{"1x/h", []string{INVALID_RATE, INVALID_QUANTITY}},
-			{"1s/s", []string{INVALID_RATE, INVALID_QUANTITY}},
-			{"1h/s", []string{INVALID_RATE, INVALID_QUANTITY}},
-			{"1h1s/s", []string{INVALID_RATE, INVALID_QUANTITY}},
-			{"1h1s5ms10us15ns/s", []string{INVALID_RATE, INVALID_QUANTITY}},
+			{"1x/h", []string{text.INVALID_RATE, text.INVALID_QUANTITY}},
+			{"1s/s", []string{text.INVALID_RATE, text.INVALID_QUANTITY}},
+			{"1h/s", []string{text.INVALID_RATE, text.INVALID_QUANTITY}},
+			{"1h1s/s", []string{text.INVALID_RATE, text.INVALID_QUANTITY}},
+			{"1h1s5ms10us15ns/s", []string{text.INVALID_RATE, text.INVALID_QUANTITY}},
 			//
-			{"1x1s/s", []string{INVALID_RATE, INVALID_QUANTITY}},
-			{"1x2h/s", []string{INVALID_RATE, INVALID_QUANTITY}},
-			{"1s1x/s", []string{INVALID_RATE, INVALID_QUANTITY}},
-			{"1s1h/s", []string{INVALID_RATE, INVALID_QUANTITY}},
+			{"1x1s/s", []string{text.INVALID_RATE, text.INVALID_QUANTITY}},
+			{"1x2h/s", []string{text.INVALID_RATE, text.INVALID_QUANTITY}},
+			{"1s1x/s", []string{text.INVALID_RATE, text.INVALID_QUANTITY}},
+			{"1s1h/s", []string{text.INVALID_RATE, text.INVALID_QUANTITY}},
 		}
 
 		for _, testCase := range testCases {
@@ -4593,7 +4595,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(n.Statements[0], src, LOWER_BOUND_OF_INT_RANGE_LIT_SHOULD_BE_SMALLER_THAN_UPPER_BOUND),
+				makeError(n.Statements[0], src, text.LOWER_BOUND_OF_INT_RANGE_LIT_SHOULD_BE_SMALLER_THAN_UPPER_BOUND),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4615,7 +4617,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(n.Statements[0], src, LOWER_BOUND_OF_FLOAT_RANGE_LIT_SHOULD_BE_SMALLER_THAN_UPPER_BOUND),
+				makeError(n.Statements[0], src, text.LOWER_BOUND_OF_FLOAT_RANGE_LIT_SHOULD_BE_SMALLER_THAN_UPPER_BOUND),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4650,8 +4652,8 @@ func TestCheck(t *testing.T) {
 			`)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(n.Statements[1], src, fmtVarIsNotDeclared("a")),
-				makeError(n.Statements[2], src, fmtVarIsNotDeclared("b")),
+				makeError(n.Statements[1], src, text.FmtVarIsNotDeclared("a")),
+				makeError(n.Statements[2], src, text.FmtVarIsNotDeclared("b")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4669,7 +4671,7 @@ func TestCheck(t *testing.T) {
 			variable := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(variable, src, fmtCannotShadowGlobalVariable("m")),
+				makeError(variable, src, text.FmtCannotShadowGlobalVariable("m")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4684,7 +4686,7 @@ func TestCheck(t *testing.T) {
 			variable := parse.FindNode(n, (*parse.IdentifierLiteral)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(variable, src, fmtCannotShadowLocalVariable("m")),
+				makeError(variable, src, text.FmtCannotShadowLocalVariable("m")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4709,7 +4711,7 @@ func TestCheck(t *testing.T) {
 			variable := parse.FindNodes(n, (*parse.IdentifierLiteral)(nil), nil)[1]
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(variable, src, fmtVarIsNotDeclared("m")),
+				makeError(variable, src, text.FmtVarIsNotDeclared("m")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4729,8 +4731,8 @@ func TestCheck(t *testing.T) {
 			`)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(n.Statements[1], src, fmtVarIsNotDeclared("a")),
-				makeError(n.Statements[2], src, fmtVarIsNotDeclared("b")),
+				makeError(n.Statements[1], src, text.FmtVarIsNotDeclared("a")),
+				makeError(n.Statements[2], src, text.FmtVarIsNotDeclared("b")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4754,7 +4756,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
 			expectedErr := utils.CombineErrors(
-				makeError(variable, src, fmtVarIsNotDeclared("b")),
+				makeError(variable, src, text.FmtVarIsNotDeclared("b")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4774,7 +4776,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
 			expectedErr := utils.CombineErrors(
-				makeError(extendStmt, src, MISPLACED_EXTEND_STATEMENT_TOP_LEVEL_STMT),
+				makeError(extendStmt, src, text.MISPLACED_EXTEND_STATEMENT_TOP_LEVEL_STMT),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4792,7 +4794,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
 			expectedErr := utils.CombineErrors(
-				makeError(extendStmt, src, MISPLACED_EXTEND_STATEMENT_TOP_LEVEL_STMT),
+				makeError(extendStmt, src, text.MISPLACED_EXTEND_STATEMENT_TOP_LEVEL_STMT),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4812,7 +4814,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
 			expectedErr := utils.CombineErrors(
-				makeError(ident, src, VARS_NOT_ALLOWED_IN_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES),
+				makeError(ident, src, text.VARS_NOT_ALLOWED_IN_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4832,7 +4834,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
 			expectedErr := utils.CombineErrors(
-				makeError(ident, src, VARS_NOT_ALLOWED_IN_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES),
+				makeError(ident, src, text.VARS_NOT_ALLOWED_IN_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4852,7 +4854,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
 			expectedErr := utils.CombineErrors(
-				makeError(globalVar, src, VARS_NOT_ALLOWED_IN_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES),
+				makeError(globalVar, src, text.VARS_NOT_ALLOWED_IN_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4872,7 +4874,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
 			expectedErr := utils.CombineErrors(
-				makeError(variable, src, VARS_NOT_ALLOWED_IN_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES),
+				makeError(variable, src, text.VARS_NOT_ALLOWED_IN_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4889,7 +4891,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(def, src, MISPLACED_STRUCT_DEF_TOP_LEVEL_STMT),
+				makeError(def, src, text.MISPLACED_STRUCT_DEF_TOP_LEVEL_STMT),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4905,7 +4907,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(def, src, MISPLACED_STRUCT_DEF_TOP_LEVEL_STMT),
+				makeError(def, src, text.MISPLACED_STRUCT_DEF_TOP_LEVEL_STMT),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4923,7 +4925,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(ident, src, VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS),
+				makeError(ident, src, text.VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4941,7 +4943,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(ident, src, VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS),
+				makeError(ident, src, text.VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4959,7 +4961,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(globalVar, src, VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS),
+				makeError(globalVar, src, text.VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4977,7 +4979,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(variable, src, VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS),
+				makeError(variable, src, text.VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4994,7 +4996,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(selfExpr, src, SELF_ACCESSIBILITY_EXPLANATION),
+				makeError(selfExpr, src, text.SELF_ACCESSIBILITY_EXPLANATION),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -5013,7 +5015,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(sendValExpr, src, MISPLACED_SENDVAL_EXPR),
+				makeError(sendValExpr, src, text.MISPLACED_SENDVAL_EXPR),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -5044,7 +5046,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(duplicateDef.Name, src, fmtInvalidStructDefAlreadyDeclared("MyStruct")),
+				makeError(duplicateDef.Name, src, text.FmtInvalidStructDefAlreadyDeclared("MyStruct")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -5071,7 +5073,7 @@ func TestCheck(t *testing.T) {
 			duplicateDef := parse.FindNode(mod.MainChunk.Node, (*parse.StructDefinition)(nil), nil)
 
 			expectedErr := utils.CombineErrors(
-				makeError(duplicateDef.Name, mod.MainChunk, fmtInvalidStructDefAlreadyDeclared("MyStruct")),
+				makeError(duplicateDef.Name, mod.MainChunk, text.FmtInvalidStructDefAlreadyDeclared("MyStruct")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -5100,7 +5102,7 @@ func TestCheck(t *testing.T) {
 			duplicateDef := parse.FindNode(mod.MainChunk.Node, (*parse.StructDefinition)(nil), nil)
 
 			expectedErr := utils.CombineErrors(
-				makeError(duplicateDef.Name, mod.MainChunk, fmtInvalidStructDefAlreadyDeclared("MyStruct")),
+				makeError(duplicateDef.Name, mod.MainChunk, text.FmtInvalidStructDefAlreadyDeclared("MyStruct")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -5132,7 +5134,7 @@ func TestCheck(t *testing.T) {
 				Patterns: map[string]Pattern{"int": INT_PATTERN, "bool": BOOL_PATTERN},
 			})
 			expectedErr := utils.CombineErrors(
-				makeError(secondStructDef.Name, src, fmtAnXFieldOrMethodIsAlreadyDefined("a")),
+				makeError(secondStructDef.Name, src, text.FmtAnXFieldOrMethodIsAlreadyDefined("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -5154,7 +5156,7 @@ func TestCheck(t *testing.T) {
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 
 			expectedErr := utils.CombineErrors(
-				makeError(secondMethodDecl.Name, src, fmtAnXFieldOrMethodIsAlreadyDefined("m")),
+				makeError(secondMethodDecl.Name, src, text.FmtAnXFieldOrMethodIsAlreadyDefined("m")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -5175,7 +5177,7 @@ func TestCheck(t *testing.T) {
 			})
 
 			expectedErr := utils.CombineErrors(
-				makeError(methodDecl.Name, src, fmtAnXFieldOrMethodIsAlreadyDefined("m")),
+				makeError(methodDecl.Name, src, text.FmtAnXFieldOrMethodIsAlreadyDefined("m")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -5196,7 +5198,7 @@ func TestCheck(t *testing.T) {
 			})
 
 			expectedErr := utils.CombineErrors(
-				makeError(fieldDef.Name, src, fmtAnXFieldOrMethodIsAlreadyDefined("m")),
+				makeError(fieldDef.Name, src, text.FmtAnXFieldOrMethodIsAlreadyDefined("m")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -5252,7 +5254,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(inits[1].Name, src, fmtDuplicateFieldName("index")),
+				makeError(inits[1].Name, src, text.FmtDuplicateFieldName("index")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -5266,7 +5268,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(newExpr.Type, src, fmtStructTypeIsNotDefined("Lexer")),
+				makeError(newExpr.Type, src, text.FmtStructTypeIsNotDefined("Lexer")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -5283,7 +5285,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(newExpr.Type, src, fmtStructTypeIsNotDefined("Lexer")),
+				makeError(newExpr.Type, src, text.FmtStructTypeIsNotDefined("Lexer")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -5312,7 +5314,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(ptrType.ValueType, src, fmtStructTypeIsNotDefined("Int")),
+				makeError(ptrType.ValueType, src, text.FmtStructTypeIsNotDefined("Int")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -5342,7 +5344,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(ptrType, src, MISPLACED_POINTER_TYPE),
+				makeError(ptrType, src, text.MISPLACED_POINTER_TYPE),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -5366,7 +5368,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(pointerType, src, MISPLACED_POINTER_TYPE),
+				makeError(pointerType, src, text.MISPLACED_POINTER_TYPE),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -5407,7 +5409,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(ptrType, src, MISPLACED_POINTER_TYPE),
+				makeError(ptrType, src, text.MISPLACED_POINTER_TYPE),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -5429,7 +5431,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(pointerType, src, MISPLACED_POINTER_TYPE),
+				makeError(pointerType, src, text.MISPLACED_POINTER_TYPE),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -5458,7 +5460,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(patternIdentLiteral, src, MISPLACED_STRUCT_TYPE_NAME),
+				makeError(patternIdentLiteral, src, text.MISPLACED_STRUCT_TYPE_NAME),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -5473,7 +5475,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(patternIdentLiteral, src, MISPLACED_STRUCT_TYPE_NAME),
+				makeError(patternIdentLiteral, src, text.MISPLACED_STRUCT_TYPE_NAME),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -5488,7 +5490,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(patternIdentLiteral, src, MISPLACED_STRUCT_TYPE_NAME),
+				makeError(patternIdentLiteral, src, text.MISPLACED_STRUCT_TYPE_NAME),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -5503,7 +5505,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(patternIdentLiteral, src, STRUCT_TYPES_NOT_ALLOWED_AS_PARAMETER_TYPES),
+				makeError(patternIdentLiteral, src, text.STRUCT_TYPES_NOT_ALLOWED_AS_PARAMETER_TYPES),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -5518,7 +5520,7 @@ func TestCheck(t *testing.T) {
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(patternIdentLiteral, src, STRUCT_TYPES_NOT_ALLOWED_AS_RETURN_TYPES),
+				makeError(patternIdentLiteral, src, text.STRUCT_TYPES_NOT_ALLOWED_AS_RETURN_TYPES),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -5570,7 +5572,7 @@ func TestCheckPreinitFilesObject(t *testing.T) {
 
 		checkPreinitFilesObject(objLiteral, func(n parse.Node, msg string) {
 			err = true
-			assert.Equal(t, PREINIT_FILES__FILE_CONFIG_PATH_SHOULD_BE_ABS_PATH, msg)
+			assert.Equal(t, text.PREINIT_FILES__FILE_CONFIG_PATH_SHOULD_BE_ABS_PATH, msg)
 		})
 		assert.True(t, err)
 	})
@@ -5589,7 +5591,7 @@ func TestCheckPreinitFilesObject(t *testing.T) {
 
 		checkPreinitFilesObject(objLiteral, func(n parse.Node, msg string) {
 			err = true
-			assert.Equal(t, PREINIT_FILES__FILE_CONFIG_PATH_SHOULD_BE_ABS_PATH, msg)
+			assert.Equal(t, text.PREINIT_FILES__FILE_CONFIG_PATH_SHOULD_BE_ABS_PATH, msg)
 		})
 		assert.True(t, err)
 	})
@@ -5637,7 +5639,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 
 		checkDatabasesObject(objLiteral, func(n parse.Node, msg string) {
 			err = true
-			assert.Equal(t, fmtMissingPropInDatabaseDescription(MANIFEST_DATABASE__RESOURCE_PROP_NAME, "main"), msg)
+			assert.Equal(t, text.FmtMissingPropInDatabaseDescription(inoxconsts.MANIFEST_DATABASE__RESOURCE_PROP_NAME, "main"), msg)
 		}, nil, nil)
 
 		assert.True(t, err)
@@ -5656,7 +5658,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 
 		checkDatabasesObject(objLiteral, func(n parse.Node, msg string) {
 			err = true
-			assert.Equal(t, DATABASES__DB_RESOURCE_SHOULD_BE_HOST_OR_URL, msg)
+			assert.Equal(t, text.DATABASES__DB_RESOURCE_SHOULD_BE_HOST_OR_URL, msg)
 		}, nil, nil)
 		assert.True(t, err)
 	})
@@ -5689,7 +5691,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 
 		checkDatabasesObject(objLiteral, func(n parse.Node, msg string) {
 			err = true
-			assert.Equal(t, DATABASES__DB_RESOLUTION_DATA_ONLY_NIL_AND_PATHS_SUPPORTED, msg)
+			assert.Equal(t, text.DATABASES__DB_RESOLUTION_DATA_ONLY_NIL_AND_PATHS_SUPPORTED, msg)
 		}, nil, nil)
 
 		assert.True(t, err)

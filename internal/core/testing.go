@@ -16,6 +16,7 @@ import (
 	permkind "github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/globalnames"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -682,7 +683,7 @@ func runTestItem(
 			return nil, fmtImpossibleToDetermineDatabaseResources("tested program's manifest has no object literal")
 		}
 
-		val, _ := manifestObj.PropValue(MANIFEST_DATABASES_SECTION_NAME)
+		val, _ := manifestObj.PropValue(inoxconsts.MANIFEST_DATABASES_SECTION_NAME)
 		databasesObj, ok := val.(*parse.ObjectLiteral)
 
 		//add database permissions

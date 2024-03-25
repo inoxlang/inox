@@ -177,8 +177,8 @@ func NewDefaultGlobalState(ctx *core.Context, conf core.DefaultGlobalStateConfig
 
 	constants := map[string]core.Value{
 		// constants
-		core.INITIAL_WORKING_DIR_VARNAME:        initialWorkingDir,
-		core.INITIAL_WORKING_DIR_PREFIX_VARNAME: initialWorkingDirPattern,
+		globalnames.INITIAL_WORKING_DIR_VARNAME:        initialWorkingDir,
+		globalnames.INITIAL_WORKING_DIR_PREFIX_VARNAME: initialWorkingDirPattern,
 
 		// namespaces
 		globalnames.FS_NS:       fs_ns.NewFsNamespace(),

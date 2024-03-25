@@ -11,59 +11,13 @@ import (
 	"slices"
 
 	permkind "github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/text"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"golang.org/x/exp/maps"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
-)
-
-const (
-	// -------- sections --------
-
-	//section names
-	MANIFEST_KIND_SECTION_NAME             = "kind"
-	MANIFEST_ENV_SECTION_NAME              = "env"
-	MANIFEST_PARAMS_SECTION_NAME           = "parameters"
-	MANIFEST_PERMS_SECTION_NAME            = "permissions"
-	MANIFEST_LIMITS_SECTION_NAME           = "limits"
-	MANIFEST_HOST_DEFINITIONS_SECTION_NAME = "host-definitions"
-	MANIFEST_PREINIT_FILES_SECTION_NAME    = "preinit-files"
-	MANIFEST_INVOCATION_SECTION_NAME       = "invocation"
-
-	//preinit-files section
-	MANIFEST_PREINIT_FILE__PATTERN_PROP_NAME = "pattern"
-	MANIFEST_PREINIT_FILE__PATH_PROP_NAME    = "path"
-
-	//databases section
-	MANIFEST_DATABASES_SECTION_NAME = "databases"
-
-	//database description in databases section
-	MANIFEST_DATABASE__RESOURCE_PROP_NAME               = "resource"
-	MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME        = "resolution-data"
-	MANIFEST_DATABASE__EXPECTED_SCHEMA_UPDATE_PROP_NAME = "expected-schema-update"
-	MANIFEST_DATABASE__ASSERT_SCHEMA_UPDATE_PROP_NAME   = "assert-schema"
-
-	//invocation section
-	MANIFEST_INVOCATION__ON_ADDED_ELEM_PROP_NAME = "on-added-element"
-	MANIFEST_INVOCATION__ASYNC_PROP_NAME         = "async"
-
-	//permissions section
-	INVALID_COMMANDS_PREFIX = "invalid manifest, use: commands: "
-	ERR                     = INVALID_COMMANDS_PREFIX + "a command (or subcommand) name should be followed by object literals with the next subcommands as keys (or empty)"
-
-	//parameters
-	MANIFEST_PARAM__PATTERN_PROPNAME                  = "pattern"
-	MANIFEST_PARAM__DESCRIPTION_PROPNAME              = "description"
-	MANIFEST_POSITIONAL_PARAM__REST_PROPNAME          = "rest"
-	MANIFEST_NON_POSITIONAL_PARAM__NAME_PROPNAME      = "name"
-	MANIFEST_NON_POSITIONAL_PARAM__DEFAULT_PROPNAME   = "default"
-	MANIFEST_NON_POSITIONAL_PARAM__CHAR_NAME_PROPNAME = "char-name"
-
-	// --------------------------------
-	INITIAL_WORKING_DIR_VARNAME        = "IWD"
-	INITIAL_WORKING_DIR_PREFIX_VARNAME = "IWD_PREFIX"
 )
 
 var (
@@ -74,10 +28,10 @@ var (
 	MODULE_KIND_TO_ALLOWED_SECTION_NAMES = map[ModuleKind][]string{
 		UnspecifiedModuleKind: inoxconsts.MANIFEST_SECTION_NAMES,
 		ApplicationModule:     inoxconsts.MANIFEST_SECTION_NAMES,
-		SpecModule:            {MANIFEST_KIND_SECTION_NAME, MANIFEST_PERMS_SECTION_NAME, MANIFEST_LIMITS_SECTION_NAME},
-		LifetimeJobModule:     {MANIFEST_PERMS_SECTION_NAME, MANIFEST_LIMITS_SECTION_NAME},
-		TestSuiteModule:       {MANIFEST_PERMS_SECTION_NAME, MANIFEST_LIMITS_SECTION_NAME},
-		TestCaseModule:        {MANIFEST_PERMS_SECTION_NAME, MANIFEST_LIMITS_SECTION_NAME},
+		SpecModule:            {inoxconsts.MANIFEST_KIND_SECTION_NAME, inoxconsts.MANIFEST_PERMS_SECTION_NAME, inoxconsts.MANIFEST_LIMITS_SECTION_NAME},
+		LifetimeJobModule:     {inoxconsts.MANIFEST_PERMS_SECTION_NAME, inoxconsts.MANIFEST_LIMITS_SECTION_NAME},
+		TestSuiteModule:       {inoxconsts.MANIFEST_PERMS_SECTION_NAME, inoxconsts.MANIFEST_LIMITS_SECTION_NAME},
+		TestCaseModule:        {inoxconsts.MANIFEST_PERMS_SECTION_NAME, inoxconsts.MANIFEST_LIMITS_SECTION_NAME},
 	}
 
 	ErrURLNotCorrespondingToDefinedDB = errors.New("URL does not correspond to a defined database")
@@ -754,7 +708,7 @@ func (m *Module) createManifest(ctx *Context, object *Object, config manifestObj
 
 	err := object.ForEachEntry(func(k string, v Serializable) error {
 		switch k {
-		case MANIFEST_KIND_SECTION_NAME:
+		case inoxconsts.MANIFEST_KIND_SECTION_NAME:
 			kindName, ok := v.(StringLike)
 			if !ok {
 				return fmt.Errorf("invalid manifest, the " + k + " section should have a value of type string")
@@ -769,61 +723,61 @@ func (m *Module) createManifest(ctx *Context, object *Object, config manifestObj
 				return errors.New("unexpected state: module kind not equal to the kind determined during parsing")
 			}
 			if actualModuleKind.IsEmbedded() {
-				return errors.New(INVALID_KIND_SECTION_EMBEDDED_MOD_KINDS_NOT_ALLOWED)
+				return errors.New(text.INVALID_KIND_SECTION_EMBEDDED_MOD_KINDS_NOT_ALLOWED)
 			}
 			manifestModuleKind = parsedKind
-		case MANIFEST_LIMITS_SECTION_NAME:
+		case inoxconsts.MANIFEST_LIMITS_SECTION_NAME:
 			l, err := getLimits(v)
 			if err != nil {
 				return err
 			}
 			maps.Copy(limits, l)
-		case MANIFEST_HOST_DEFINITIONS_SECTION_NAME:
+		case inoxconsts.MANIFEST_HOST_DEFINITIONS_SECTION_NAME:
 			definitions, err := getHostDefinitions(v)
 			if err != nil {
 				return err
 			}
 			hostDefinitions = definitions
-		case MANIFEST_PERMS_SECTION_NAME:
+		case inoxconsts.MANIFEST_PERMS_SECTION_NAME:
 			listing, ok := v.(*Object)
 			if !ok {
-				return fmt.Errorf("invalid manifest, the " + MANIFEST_PERMS_SECTION_NAME + " section should have a value of type object")
+				return fmt.Errorf("invalid manifest, the " + inoxconsts.MANIFEST_PERMS_SECTION_NAME + " section should have a value of type object")
 			}
 			permListing = listing
-		case MANIFEST_ENV_SECTION_NAME:
+		case inoxconsts.MANIFEST_ENV_SECTION_NAME:
 			envPattern = config.envPattern
 			if envPattern == nil {
 				return fmt.Errorf("missing pre-evaluated environment pattern")
 			}
-		case MANIFEST_PARAMS_SECTION_NAME:
+		case inoxconsts.MANIFEST_PARAMS_SECTION_NAME:
 			params, err := getModuleParameters(ctx, v)
 			if err != nil {
 				return err
 			}
 			moduleParams = params
-		case MANIFEST_PREINIT_FILES_SECTION_NAME:
+		case inoxconsts.MANIFEST_PREINIT_FILES_SECTION_NAME:
 			configs := config.preinitFileConfigs
 			if configs == nil {
-				return fmt.Errorf("missing pre-evaluated description of %s", MANIFEST_PREINIT_FILES_SECTION_NAME)
+				return fmt.Errorf("missing pre-evaluated description of %s", inoxconsts.MANIFEST_PREINIT_FILES_SECTION_NAME)
 			}
-		case MANIFEST_DATABASES_SECTION_NAME:
+		case inoxconsts.MANIFEST_DATABASES_SECTION_NAME:
 			configs, err := getDatabaseConfigurations(v, config.parentState)
 			if err != nil {
 				return err
 			}
 			dbConfigs = configs
-		case MANIFEST_INVOCATION_SECTION_NAME:
+		case inoxconsts.MANIFEST_INVOCATION_SECTION_NAME:
 			description, ok := v.(*Object)
 			if !ok {
-				return fmt.Errorf("invalid manifest, the '%s' section should have a value of type object", MANIFEST_INVOCATION_SECTION_NAME)
+				return fmt.Errorf("invalid manifest, the '%s' section should have a value of type object", inoxconsts.MANIFEST_INVOCATION_SECTION_NAME)
 			}
 			autoInvocation = &AutoInvocationConfig{}
 
 			description.ForEachEntry(func(k string, v Serializable) error {
 				switch k {
-				case MANIFEST_INVOCATION__ASYNC_PROP_NAME:
+				case inoxconsts.MANIFEST_INVOCATION__ASYNC_PROP_NAME:
 					autoInvocation.Async = bool(v.(Bool))
-				case MANIFEST_INVOCATION__ON_ADDED_ELEM_PROP_NAME:
+				case inoxconsts.MANIFEST_INVOCATION__ON_ADDED_ELEM_PROP_NAME:
 					autoInvocation.OnAddedElement = v.(URL)
 				}
 				return nil
@@ -947,7 +901,7 @@ func evaluateEnvSection(n *parse.ObjectPatternLiteral, state *TreeWalkState, m *
 
 	patt, ok := v.(*ObjectPattern)
 	if !ok {
-		return nil, fmt.Errorf("invalid manifest, the " + MANIFEST_ENV_SECTION_NAME + " section should have a value of type object pattern")
+		return nil, fmt.Errorf("invalid manifest, the " + inoxconsts.MANIFEST_ENV_SECTION_NAME + " section should have a value of type object pattern")
 	}
 	err = patt.ForEachEntry(func(entry ObjectPatternEntry) error {
 		switch entry.Pattern.(type) {
@@ -959,7 +913,7 @@ func evaluateEnvSection(n *parse.ObjectPatternLiteral, state *TreeWalkState, m *
 			}
 		default:
 		}
-		return fmt.Errorf("invalid "+MANIFEST_ENV_SECTION_NAME+" section in manifest: invalid pattern type %T for environment variable '%s'",
+		return fmt.Errorf("invalid "+inoxconsts.MANIFEST_ENV_SECTION_NAME+" section in manifest: invalid pattern type %T for environment variable '%s'",
 			entry.Pattern, entry.Name)
 	})
 	if err != nil {
@@ -1132,17 +1086,17 @@ func getHostDefinitions(desc Value) (map[Host]Value, error) {
 
 	dict, ok := desc.(*Dictionary)
 	if !ok {
-		return nil, fmt.Errorf("invalid manifest, description of %s should be an object", MANIFEST_HOST_DEFINITIONS_SECTION_NAME)
+		return nil, fmt.Errorf("invalid manifest, description of %s should be an object", inoxconsts.MANIFEST_HOST_DEFINITIONS_SECTION_NAME)
 	}
 
 	for k, v := range dict.entries {
 		host, ok := dict.keys[k].(Host)
 		if !ok {
-			return nil, fmt.Errorf("invalid manifest, keys of of %s should be hosts", MANIFEST_HOST_DEFINITIONS_SECTION_NAME)
+			return nil, fmt.Errorf("invalid manifest, keys of of %s should be hosts", inoxconsts.MANIFEST_HOST_DEFINITIONS_SECTION_NAME)
 		}
 		// resource, ok := v.(ResourceName)
 		// if !ok {
-		// 	return nil, fmt.Errorf("invalid manifest, values of of %s should be resource names", MANIFEST_HOST_RESOLUTION_SECTION_NAME)
+		// 	return nil, fmt.Errorf("invalid manifest, values of of %s should be resource names", inoxconsts.MANIFEST_HOST_RESOLUTION_SECTION_NAME)
 		// }
 
 		resolutions[host] = v
@@ -1266,7 +1220,7 @@ func getSingleKindNamedPermPermissions(
 			customPerms, handled, err := handleCustomType(permKind, typeName, propVal)
 			if handled {
 				if err != nil {
-					return nil, fmt.Errorf(fmtCannotInferPermission(permKind.String(), typeName)+": %w", err)
+					return nil, fmt.Errorf(text.FmtCannotInferPermission(permKind.String(), typeName)+": %w", err)
 				}
 				p = append(p, customPerms...)
 				break
@@ -1274,7 +1228,7 @@ func getSingleKindNamedPermPermissions(
 		}
 		fallthrough
 	default:
-		return nil, errors.New(fmtCannotInferPermission(permKind.String(), typeName))
+		return nil, errors.New(text.FmtCannotInferPermission(permKind.String(), typeName))
 	}
 
 	if err != nil {
@@ -1352,7 +1306,7 @@ func getPermissionFromSingleKindPermissionItem(e Value, permKind PermissionKind)
 		}
 	case Path:
 		if !v.IsAbsolute() {
-			return nil, errors.New(fmtOnlyAbsPathsAreAcceptedInPerms(v.UnderlyingString()))
+			return nil, errors.New(text.FmtOnlyAbsPathsAreAcceptedInPerms(v.UnderlyingString()))
 		}
 		return FilesystemPermission{
 			Kind_:  permKind,
@@ -1361,7 +1315,7 @@ func getPermissionFromSingleKindPermissionItem(e Value, permKind PermissionKind)
 
 	case PathPattern:
 		if !v.IsAbsolute() {
-			return nil, errors.New(fmtOnlyAbsPathPatternsAreAcceptedInPerms(v.UnderlyingString()))
+			return nil, errors.New(text.FmtOnlyAbsPathPatternsAreAcceptedInPerms(v.UnderlyingString()))
 		}
 		return FilesystemPermission{
 			Kind_:  permKind,
@@ -1375,7 +1329,7 @@ func getPermissionFromSingleKindPermissionItem(e Value, permKind PermissionKind)
 func getModuleParameters(ctx *Context, v Value) (ModuleParameters, error) {
 	description, ok := v.(*Object)
 	if !ok {
-		return ModuleParameters{}, fmt.Errorf("invalid manifest, the '%s' section should have a value of type object", MANIFEST_PARAMS_SECTION_NAME)
+		return ModuleParameters{}, fmt.Errorf("invalid manifest, the '%s' section should have a value of type object", inoxconsts.MANIFEST_PARAMS_SECTION_NAME)
 	}
 
 	var params ModuleParameters
@@ -1392,20 +1346,20 @@ func getModuleParameters(ctx *Context, v Value) (ModuleParameters, error) {
 
 		obj.ForEachEntry(func(propName string, propVal Serializable) error {
 			switch propName {
-			case MANIFEST_NON_POSITIONAL_PARAM__NAME_PROPNAME: //name
+			case inoxconsts.MANIFEST_NON_POSITIONAL_PARAM__NAME_PROPNAME: //name
 				param.name = propVal.(Identifier)
 				param.positional = true
-			case MANIFEST_POSITIONAL_PARAM__REST_PROPNAME: //rest
+			case inoxconsts.MANIFEST_POSITIONAL_PARAM__REST_PROPNAME: //rest
 				rest := bool(propVal.(Bool))
 				if rest && restParamFound {
 					return errors.New("at most one positional parameter should be a rest parameter")
 				}
 				param.rest = rest
 				restParamFound = rest
-			case MANIFEST_PARAM__PATTERN_PROPNAME: //pattern
+			case inoxconsts.MANIFEST_PARAM__PATTERN_PROPNAME: //pattern
 				patt := propVal.(Pattern)
 				param.pattern = patt
-			case MANIFEST_PARAM__DESCRIPTION_PROPNAME:
+			case inoxconsts.MANIFEST_PARAM__DESCRIPTION_PROPNAME:
 				param.description = string(propVal.(String))
 			}
 			return nil
@@ -1419,7 +1373,7 @@ func getModuleParameters(ctx *Context, v Value) (ModuleParameters, error) {
 	})
 
 	if err != nil {
-		return ModuleParameters{}, fmt.Errorf("invalid manifest: '%s' section: %w", MANIFEST_PARAMS_SECTION_NAME, err)
+		return ModuleParameters{}, fmt.Errorf("invalid manifest: '%s' section: %w", inoxconsts.MANIFEST_PARAMS_SECTION_NAME, err)
 	}
 
 	//non-positional parameters.
@@ -1451,14 +1405,14 @@ func getModuleParameters(ctx *Context, v Value) (ModuleParameters, error) {
 					return nil
 				}
 				switch propName {
-				case MANIFEST_PARAM__PATTERN_PROPNAME:
+				case inoxconsts.MANIFEST_PARAM__PATTERN_PROPNAME:
 					patt := propVal.(Pattern)
 					param.pattern = patt
-				case MANIFEST_NON_POSITIONAL_PARAM__DEFAULT_PROPNAME:
+				case inoxconsts.MANIFEST_NON_POSITIONAL_PARAM__DEFAULT_PROPNAME:
 					param.defaultVal = propVal
-				case MANIFEST_NON_POSITIONAL_PARAM__CHAR_NAME_PROPNAME:
+				case inoxconsts.MANIFEST_NON_POSITIONAL_PARAM__CHAR_NAME_PROPNAME:
 					param.singleLetterCliArgName = rune(propVal.(Rune))
-				case MANIFEST_PARAM__DESCRIPTION_PROPNAME:
+				case inoxconsts.MANIFEST_PARAM__DESCRIPTION_PROPNAME:
 					param.description = string(propVal.(String))
 				}
 				return nil
@@ -1485,7 +1439,7 @@ func getModuleParameters(ctx *Context, v Value) (ModuleParameters, error) {
 	}
 
 	if err != nil {
-		return ModuleParameters{}, fmt.Errorf("invalid manifest: '%s' section: %w", MANIFEST_PARAMS_SECTION_NAME, err)
+		return ModuleParameters{}, fmt.Errorf("invalid manifest: '%s' section: %w", inoxconsts.MANIFEST_PARAMS_SECTION_NAME, err)
 	}
 
 	var paramNames []string
@@ -1536,7 +1490,7 @@ func getDatabaseConfigurations(v Value, parentState *GlobalState) (DatabaseConfi
 
 	description, ok := v.(*Object)
 	if !ok {
-		return nil, fmt.Errorf("invalid manifest, the '%s' section should have a value of type object or path", MANIFEST_DATABASES_SECTION_NAME)
+		return nil, fmt.Errorf("invalid manifest, the '%s' section should have a value of type object or path", inoxconsts.MANIFEST_DATABASES_SECTION_NAME)
 	}
 
 	err := description.ForEachEntry(func(dbName string, desc Serializable) error {
@@ -1549,16 +1503,16 @@ func getDatabaseConfigurations(v Value, parentState *GlobalState) (DatabaseConfi
 
 		err := dbDesc.ForEachEntry(func(propName string, propVal Serializable) error {
 			switch propName {
-			case MANIFEST_DATABASE__RESOURCE_PROP_NAME:
+			case inoxconsts.MANIFEST_DATABASE__RESOURCE_PROP_NAME:
 				switch val := propVal.(type) {
 				case Host:
 					config.Resource = val
 				case URL:
 					config.Resource = val
 				default:
-					return fmt.Errorf("invalid value found for the .%s of a database description", MANIFEST_DATABASE__RESOURCE_PROP_NAME)
+					return fmt.Errorf("invalid value found for the .%s of a database description", inoxconsts.MANIFEST_DATABASE__RESOURCE_PROP_NAME)
 				}
-			case MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME:
+			case inoxconsts.MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME:
 				switch val := propVal.(type) {
 				case Path:
 					config.ResolutionData = val
@@ -1567,16 +1521,16 @@ func getDatabaseConfigurations(v Value, parentState *GlobalState) (DatabaseConfi
 				case NilT:
 					config.ResolutionData = Nil
 				default:
-					return fmt.Errorf("invalid value found for the .%s of a database description", MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME)
+					return fmt.Errorf("invalid value found for the .%s of a database description", inoxconsts.MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME)
 				}
-			case MANIFEST_DATABASE__EXPECTED_SCHEMA_UPDATE_PROP_NAME:
+			case inoxconsts.MANIFEST_DATABASE__EXPECTED_SCHEMA_UPDATE_PROP_NAME:
 				switch val := propVal.(type) {
 				case Bool:
 					config.ExpectedSchemaUpdate = bool(val)
 				default:
-					return fmt.Errorf("invalid value found for the .%s of a database description", MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME)
+					return fmt.Errorf("invalid value found for the .%s of a database description", inoxconsts.MANIFEST_DATABASE__RESOLUTION_DATA_PROP_NAME)
 				}
-			case MANIFEST_DATABASE__ASSERT_SCHEMA_UPDATE_PROP_NAME:
+			case inoxconsts.MANIFEST_DATABASE__ASSERT_SCHEMA_UPDATE_PROP_NAME:
 				switch val := propVal.(type) {
 				case *ObjectPattern:
 					config.ExpectedSchema = val
@@ -1585,7 +1539,7 @@ func getDatabaseConfigurations(v Value, parentState *GlobalState) (DatabaseConfi
 						return err
 					}
 				default:
-					return fmt.Errorf("invalid value found for the .%s of a database description", MANIFEST_DATABASE__ASSERT_SCHEMA_UPDATE_PROP_NAME)
+					return fmt.Errorf("invalid value found for the .%s of a database description", inoxconsts.MANIFEST_DATABASE__ASSERT_SCHEMA_UPDATE_PROP_NAME)
 				}
 			}
 			return nil
@@ -1596,7 +1550,7 @@ func getDatabaseConfigurations(v Value, parentState *GlobalState) (DatabaseConfi
 	})
 
 	if err != nil {
-		return nil, fmt.Errorf("invalid manifest: '%s' section: %w", MANIFEST_DATABASES_SECTION_NAME, err)
+		return nil, fmt.Errorf("invalid manifest: '%s' section: %w", inoxconsts.MANIFEST_DATABASES_SECTION_NAME, err)
 	}
 
 	return configs, nil
@@ -1747,7 +1701,7 @@ func getCommandPermissions(n Value) ([]Permission, error) {
 
 	topObject, ok := n.(*Object)
 	if !ok {
-		return nil, errors.New(ERR)
+		return nil, errors.New(text.CMD_NAME_ERROR)
 	}
 
 	err := topObject.ForEachEntry(func(name string, propValue Serializable) error {
@@ -1759,7 +1713,7 @@ func getCommandPermissions(n Value) ([]Permission, error) {
 		var cmdName GoString
 		if strings.HasPrefix(cmdNameKey, "./") || strings.HasPrefix(cmdNameKey, "/") || strings.HasPrefix(cmdNameKey, "%") {
 
-			const PATH_ERR = INVALID_COMMANDS_PREFIX + "command starting with / or ./ should be valid paths"
+			const PATH_ERR = text.INVALID_COMMANDS_PREFIX + "command starting with / or ./ should be valid paths"
 
 			chunk, err := parse.ParseChunk(cmdNameKey, "")
 			if err != nil || len(chunk.Statements) != 1 {
@@ -1787,7 +1741,7 @@ func getCommandPermissions(n Value) ([]Permission, error) {
 
 		cmdDesc, ok := propValue.(*Object)
 		if !ok {
-			return errors.New(ERR)
+			return errors.New(text.CMD_NAME_ERROR)
 		}
 
 		if len(cmdDesc.keys) == 0 {
@@ -1816,12 +1770,12 @@ func getCommandPermissions(n Value) ([]Permission, error) {
 func getSubcommandPermissions(cmdName GoString, cmdDesc *Object, perms *[]Permission) error {
 	return cmdDesc.ForEachEntry(func(subcmdName string, cmdDescPropVal Serializable) error {
 		if subcmdName == inoxconsts.IMPLICIT_PROP_NAME {
-			return errors.New(INVALID_COMMANDS_PREFIX + "elements (values without a key) are not allowed")
+			return errors.New(text.INVALID_COMMANDS_PREFIX + "elements (values without a key) are not allowed")
 		}
 
 		subCmdDesc, ok := cmdDescPropVal.(*Object)
 		if !ok {
-			return errors.New(ERR)
+			return errors.New(text.CMD_NAME_ERROR)
 		}
 
 		if len(subCmdDesc.keys) == 0 {
@@ -1836,16 +1790,16 @@ func getSubcommandPermissions(cmdName GoString, cmdDesc *Object, perms *[]Permis
 		return subCmdDesc.ForEachEntry(func(deepSubCmdName string, subCmdDescPropVal Serializable) error {
 
 			if _, err := strconv.Atoi(deepSubCmdName); err == nil {
-				return errors.New(ERR)
+				return errors.New(text.CMD_NAME_ERROR)
 			}
 
 			nestedSubCmdDesc, ok := subCmdDescPropVal.(*Object)
 			if !ok {
-				return errors.New(ERR)
+				return errors.New(text.CMD_NAME_ERROR)
 			}
 
 			if len(nestedSubCmdDesc.keys) != 0 {
-				return errors.New(INVALID_COMMANDS_PREFIX + "the subcommand chain has a maximum length of 2")
+				return errors.New(text.INVALID_COMMANDS_PREFIX + "the subcommand chain has a maximum length of 2")
 			}
 
 			subcommandPerm := CommandPermission{

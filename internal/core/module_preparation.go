@@ -622,7 +622,7 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 	}
 
 	if modArgsError == nil {
-		state.Globals.Set(MOD_ARGS_VARNAME, modArgs)
+		state.Globals.Set(globalnames.MOD_ARGS_VARNAME, modArgs)
 	}
 
 	// Static check
@@ -644,7 +644,7 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 			Globals: state.Globals,
 			AdditionalGlobalConsts: func() []string {
 				if modArgsError != nil {
-					return []string{MOD_ARGS_VARNAME}
+					return []string{globalnames.MOD_ARGS_VARNAME}
 				}
 				return nil
 			}(),
@@ -696,9 +696,9 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 			return nil
 		})
 
-		delete(globals, MOD_ARGS_VARNAME)
+		delete(globals, globalnames.MOD_ARGS_VARNAME)
 		additionalSymbolicGlobals := map[string]symbolic.Value{
-			MOD_ARGS_VARNAME: manifest.Parameters.GetSymbolicArguments(ctx),
+			globalnames.MOD_ARGS_VARNAME: manifest.Parameters.GetSymbolicArguments(ctx),
 		}
 
 		symbolicCtx, err := state.Ctx.ToSymbolicValue()

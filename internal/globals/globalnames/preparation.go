@@ -1,8 +1,9 @@
 package globalnames
 
 const (
-	DATABASES       = "dbs"
-	PROJECT_SECRETS = "project-secrets"
+	DATABASES        = "dbs"
+	PROJECT_SECRETS  = "project-secrets"
+	MOD_ARGS_VARNAME = "mod-args"
 )
 
 var (
