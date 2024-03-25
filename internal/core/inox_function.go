@@ -18,12 +18,12 @@ type InoxFunction struct {
 	Node  parse.Node
 	Chunk *parse.ParsedChunkSource
 
-	originState            *GlobalState
-	shared                 atomic.Bool
-	treeWalkCapturedLocals map[string]Value
-	capturedGlobals        []capturedGlobal // set when shared, should not be nil in this case
+	originState     *GlobalState
+	shared          atomic.Bool
+	capturedGlobals []capturedGlobal // set when shared, should not be nil in this case
 
-	capturedLocals []Value //alway empty if .CompiledFunction is nil
+	treeWalkCapturedLocals map[string]Value
+	capturedLocals         []Value //alway empty if .CompiledFunction is nil
 
 	symbolicValue *symbolic.InoxFunction
 	staticData    *FunctionStaticData
