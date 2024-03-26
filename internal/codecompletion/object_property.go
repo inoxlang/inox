@@ -37,7 +37,7 @@ func findObjectPropertyNameCompletions(
 			}
 
 			suffix := ""
-			if prop.HasImplicitKey() {
+			if prop.HasNoKey() {
 				suffix = ": "
 
 				valueCompletion, ok := MANIFEST_SECTION_DEFAULT_VALUE_COMPLETIONS[sectionName]
@@ -79,7 +79,7 @@ func findObjectPropertyNameCompletions(
 			}
 
 			suffix := ""
-			if prop.HasImplicitKey() {
+			if prop.HasNoKey() {
 				suffix = ": "
 
 				valueCompletion, ok := MANIFEST_DB_DESC_DEFAULT_VALUE_COMPLETIONS[descPropName]
@@ -114,7 +114,7 @@ func findObjectPropertyNameCompletions(
 			}
 
 			suffix := ""
-			if prop.HasImplicitKey() {
+			if prop.HasNoKey() {
 				suffix = ": "
 
 				valueCompletion, ok := MODULE_IMPORT_SECTION_DEFAULT_VALUE_COMPLETIONS[sectionName]
@@ -141,7 +141,7 @@ func findObjectPropertyNameCompletions(
 			if hasPrefixCaseInsensitive(sectionName, ident.Name) {
 
 				suffix := ""
-				if prop.HasImplicitKey() {
+				if prop.HasNoKey() {
 					suffix = ": "
 
 					valueCompletion, ok := LTHREAD_META_SECTION_DEFAULT_VALUE_COMPLETIONS[sectionName]

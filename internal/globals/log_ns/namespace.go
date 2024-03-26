@@ -46,21 +46,22 @@ func init() {
 			ctx.SetSymbolicGoFunctionParameters(&SYMBOLIC_LOG_ADD_ARGS, SYMBOLIC_LOG_ADD_PARAM_NAMES)
 
 			var hasMessageField bool
-			var hasImplicitProp bool
+			var hasElements bool
 
 			r.ForEachEntry(func(k string, v symbolic.Value) error {
 				if k == zerolog.MessageFieldName {
 					hasMessageField = true
 				}
 
-				if core.IsIndexKey(k) {
-					hasImplicitProp = true
+				if k == inoxconsts.IMPLICIT_PROP_NAME {
+					hasElements = true
 				}
+
 				return nil
 			})
 
-			if hasMessageField && hasImplicitProp {
-				ctx.AddSymbolicGoFunctionErrorf("the %q field should not be present if there are implicit properties", zerolog.MessageFieldName)
+			if hasMessageField && hasElements {
+				ctx.AddSymbolicGoFunctionErrorf("the %q field should not be present if there are record elements", zerolog.MessageFieldName)
 			}
 		},
 	})

@@ -976,8 +976,8 @@ func TestPrepareLocalModule(t *testing.T) {
 
 		wd := utils.Must(os.Getwd())
 
-		IWD := state.Globals.Get(core.INITIAL_WORKING_DIR_VARNAME)
-		IWD_PREFIX_PATTERN := state.Globals.Get(core.INITIAL_WORKING_DIR_PREFIX_VARNAME)
+		IWD := state.Globals.Get(globalnames.INITIAL_WORKING_DIR_VARNAME)
+		IWD_PREFIX_PATTERN := state.Globals.Get(globalnames.INITIAL_WORKING_DIR_PREFIX_VARNAME)
 
 		if !assert.EqualValues(t, wd+"/", IWD) {
 			return

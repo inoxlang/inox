@@ -4,7 +4,6 @@ import (
 	"context"
 	"path"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/inoxlang/inox/internal/parse"
@@ -21,12 +20,6 @@ var (
 		GetConcretePatternMatchingSymbolicValue: func(ctx ConcreteContext, v Value) (any, bool) {
 			//not a real pattern but it's okay
 			return struct{}{}, true
-		},
-		IsIndexKey: func(key string) bool {
-			//TODO: number of implicit keys will be soon limited so this function should be refactored to only check for integers
-			// with a small number of digits.
-			_, err := strconv.ParseUint(key, 10, 32)
-			return err == nil
 		},
 		PathMatch: func(pth, pattern string) bool {
 			if strings.HasSuffix(pattern, "/...") {
@@ -68,7 +61,6 @@ type ExternalData struct {
 	ConvertKeyReprToValue                   func(string) any
 	IsReadable                              func(v any) bool
 	IsWritable                              func(v any) bool
-	IsIndexKey                              func(k string) bool
 	PathMatch                               func(path, pattern string) bool
 	URLMatch                                func(url, pattern string) bool
 	HostMatch                               func(host, pattern string) bool

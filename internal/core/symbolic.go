@@ -116,7 +116,6 @@ func init() {
 		AppendPathSegmentToURLPattern: func(u, segment string) string {
 			return appendPathSegmentToURLPattern(u, segment)
 		},
-		IsIndexKey: IsIndexKey,
 		CheckDatabaseSchema: func(objectPattern any) error {
 			return checkDatabaseSchema(objectPattern.(*ObjectPattern))
 		},

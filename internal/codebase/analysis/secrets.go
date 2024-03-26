@@ -14,7 +14,7 @@ func findHarcodedSecretsInInoxFile(inoxChunk *parse.Chunk, result *Result) {
 
 		switch node := node.(type) {
 		case *parse.ObjectProperty:
-			if node.HasImplicitKey() {
+			if node.HasNoKey() {
 				break
 			}
 			//name := node.Name()

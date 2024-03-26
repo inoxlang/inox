@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/fs"
 	"reflect"
-	"strconv"
 	"time"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
@@ -68,13 +67,6 @@ func (m FileMode) Executable() bool {
 }
 
 // ---------------------------
-
-func IsIndexKey(key string) bool {
-	//TODO: number of implicit keys will be soon limited so this function should be refactored to only check for integers
-	// with a small number of digits.
-	_, err := strconv.ParseUint(key, 10, 32)
-	return err == nil
-}
 
 func SamePointer(a, b interface{}) bool {
 	return reflect.ValueOf(a).Pointer() == reflect.ValueOf(b).Pointer()

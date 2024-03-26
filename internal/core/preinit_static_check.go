@@ -117,7 +117,7 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 	}, nil)
 
 	for _, p := range objLit.Properties {
-		if p.HasImplicitKey() {
+		if p.HasNoKey() {
 			onError(p, text.ELEMENTS_NOT_ALLOWED_IN_MANIFEST)
 			continue
 		}
@@ -327,7 +327,7 @@ func checkPermissionListingObject(objLit *parse.ObjectLiteral, onError func(n pa
 	}, nil)
 
 	for _, p := range objLit.Properties {
-		if p.HasImplicitKey() {
+		if p.HasNoKey() {
 			onError(p, text.ELEMENTS_NOT_ALLOWED_IN_PERMS_SECTION)
 			continue
 		}
@@ -410,7 +410,7 @@ func checkSingleKindPermissions(permKind PermissionKind, desc parse.Node, onErro
 		}
 	case *parse.ObjectLiteral:
 		for _, prop := range v.Properties {
-			if prop.HasImplicitKey() {
+			if prop.HasNoKey() {
 				checkSingleItem(prop.Value)
 			} else {
 				typeName := prop.Name()
@@ -523,7 +523,7 @@ func checkDatabasesObject(
 	}, nil)
 
 	for _, p := range obj.Properties {
-		if p.HasImplicitKey() || p.Value == nil {
+		if p.HasNoKey() || p.Value == nil {
 			continue
 		}
 		dbName := p.Name()
@@ -541,7 +541,7 @@ func checkDatabasesObject(
 		isValidDescription := true
 
 		for _, prop := range dbDesc.Properties {
-			if prop.HasImplicitKey() {
+			if prop.HasNoKey() {
 				continue
 			}
 
@@ -628,7 +628,7 @@ func checkInvocationObject(obj *parse.ObjectLiteral, manifestObj *parse.ObjectLi
 			continue
 		}
 
-		if p.HasImplicitKey() {
+		if p.HasNoKey() {
 			continue
 		}
 
@@ -694,7 +694,7 @@ func checkParametersObject(objLit *parse.ObjectLiteral, onError func(n parse.Nod
 	positionalParamsEnd := false
 
 	for _, prop := range objLit.Properties {
-		if !prop.HasImplicitKey() { // non positional parameter
+		if !prop.HasNoKey() { // non positional parameter
 			positionalParamsEnd = true
 
 			propValue := prop.Value
@@ -712,7 +712,7 @@ func checkParametersObject(objLit *parse.ObjectLiteral, onError func(n parse.Nod
 				missingPropertyNames := []string{"pattern"}
 
 				for _, paramDescProp := range propVal.Properties {
-					if paramDescProp.HasImplicitKey() {
+					if paramDescProp.HasNoKey() {
 						continue
 					}
 					name := paramDescProp.Name()
@@ -767,7 +767,7 @@ func checkParametersObject(objLit *parse.ObjectLiteral, onError func(n parse.Nod
 			missingPropertyNames := []string{"name", "pattern"}
 
 			for _, paramDescProp := range obj.Properties {
-				if paramDescProp.HasImplicitKey() {
+				if paramDescProp.HasNoKey() {
 					onError(paramDescProp, "the description of a positional parameter should not contain elements (values without a key)")
 					continue
 				}

@@ -3725,7 +3725,7 @@ func evalSpawnExpression(node *parse.SpawnExpression, state *State) (_ Value, fi
 	if objLit, ok := node.Meta.(*parse.ObjectLiteral); ok { //$ok will be false if node.Meta is nil
 
 		for _, sectionProp := range objLit.Properties {
-			if sectionProp.HasImplicitKey() {
+			if sectionProp.HasNoKey() {
 				//okay because there sould be a static check error
 				continue
 			}
@@ -3739,7 +3739,7 @@ func evalSpawnExpression(node *parse.SpawnExpression, state *State) (_ Value, fi
 					globals = globalMap
 
 					for _, prop := range globalsObjectLit.Properties {
-						if prop.HasImplicitKey() {
+						if prop.HasNoKey() {
 							//okay because there sould be a static check error
 							continue
 						}
@@ -5992,16 +5992,12 @@ func evalExtendStatement(n *parse.ExtendStatement, state *State, options evalOpt
 	stateFork := state.fork() //used for evaluating computed properties
 
 	for _, prop := range objLit.Properties {
-		if prop.HasImplicitKey() {
+		if prop.HasNoKey() {
 			state.addError(makeSymbolicEvalError(prop, state, KEYS_OF_EXT_OBJ_MUST_BE_VALID_INOX_IDENTS))
 			continue
 		}
 
 		key := prop.Name()
-		if extData.IsIndexKey(key) {
-			state.addError(makeSymbolicEvalError(prop.Key, state, KEYS_OF_EXT_OBJ_MUST_BE_VALID_INOX_IDENTS))
-			continue
-		}
 
 		expr, ok := parse.ParseExpression(key)
 		_, isIdent := expr.(*parse.IdentifierLiteral)

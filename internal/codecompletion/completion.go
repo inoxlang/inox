@@ -1267,7 +1267,7 @@ func findObjectInteriorCompletions(n *parse.ObjectLiteral, search completionSear
 	manifest_sections_loop:
 		for _, sectionName := range inoxconsts.MANIFEST_SECTION_NAMES {
 			for _, prop := range n.Properties {
-				if !prop.HasImplicitKey() && prop.Name() == sectionName {
+				if !prop.HasNoKey() && prop.Name() == sectionName {
 					continue manifest_sections_loop
 				}
 			}
@@ -1290,7 +1290,7 @@ func findObjectInteriorCompletions(n *parse.ObjectLiteral, search completionSear
 	mod_import_sections_loop:
 		for _, sectionName := range core.IMPORT_CONFIG_SECTION_NAMES {
 			for _, prop := range n.Properties {
-				if !prop.HasImplicitKey() && prop.Name() == sectionName {
+				if !prop.HasNoKey() && prop.Name() == sectionName {
 					continue mod_import_sections_loop
 				}
 			}
@@ -1317,7 +1317,7 @@ func findObjectInteriorCompletions(n *parse.ObjectLiteral, search completionSear
 	lthread_meta_sections_loop:
 		for _, sectionName := range symbolic.LTHREAD_SECTION_NAMES {
 			for _, prop := range n.Properties {
-				if !prop.HasImplicitKey() && prop.Name() == sectionName {
+				if !prop.HasNoKey() && prop.Name() == sectionName {
 					continue lthread_meta_sections_loop
 				}
 			}
@@ -1338,7 +1338,7 @@ func findObjectInteriorCompletions(n *parse.ObjectLiteral, search completionSear
 			})
 		}
 	case *parse.ObjectProperty:
-		if parent.HasImplicitKey() || len(ancestors) < 3 {
+		if parent.HasNoKey() || len(ancestors) < 3 {
 			return
 		}
 

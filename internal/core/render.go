@@ -271,11 +271,8 @@ func (obj *Object) Render(ctx *Context, w io.Writer, config RenderingInput) (int
 		keys := obj.Keys(nil)
 		sort.Strings(keys)
 
-		for i, k := range keys {
-			isIndexKey := IsIndexKey(k)
+		for i, _ := range keys {
 			propVal := obj.values[i]
-
-			_ = isIndexKey
 
 			n, err := w.Write(DIV_OPENING_TAG)
 			totalN += n

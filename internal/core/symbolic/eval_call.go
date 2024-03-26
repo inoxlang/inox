@@ -658,7 +658,7 @@ func setAllowedNonPresentProperties(argNodes []parse.Node, nonSpreadArgCount int
 	removePropertiesAlreadyPresent := func(allowedNonPresentProperties []string, propNodes []*parse.ObjectProperty) []string {
 		//remove properties already present
 		for _, propNode := range propNodes {
-			if propNode.HasImplicitKey() {
+			if propNode.HasNoKey() {
 				continue
 			}
 			propName := propNode.Name()

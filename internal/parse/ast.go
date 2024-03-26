@@ -945,7 +945,7 @@ type ObjectProperty struct {
 	Value Node
 }
 
-func (prop ObjectProperty) HasImplicitKey() bool {
+func (prop ObjectProperty) HasNoKey() bool {
 	return prop.Key == nil
 }
 
@@ -973,14 +973,10 @@ func (prop ObjectProperty) HasNameEqualTo(name string) bool {
 
 type ObjectPatternProperty struct {
 	NodeBase
-	Key      Node //can be nil (implicit key)
+	Key      Node //can be nil (error)
 	Type     Node //can be nil
 	Value    Node
 	Optional bool
-}
-
-func (prop ObjectPatternProperty) HasImplicitKey() bool {
-	return prop.Key == nil
 }
 
 func (prop ObjectPatternProperty) Name() string {
@@ -3382,7 +3378,7 @@ func FindIntLiteralWithValue(root Node, value int64) *IntLiteral {
 
 func FindObjPropWithName(root Node, name string) *ObjectProperty {
 	return FindNode(root, (*ObjectProperty)(nil), func(n *ObjectProperty, isFirstFound bool, ancestors []Node) bool {
-		return !n.HasImplicitKey() && n.Name() == name
+		return !n.HasNoKey() && n.Name() == name
 	})
 }
 

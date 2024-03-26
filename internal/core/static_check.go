@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/url"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 
@@ -557,7 +556,7 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 	case *parse.LifetimejobExpression:
 		return c.checkLifetimejobExpr(node, parent, closestModule)
 	case *parse.ReceptionHandlerExpression:
-		if prop, ok := parent.(*parse.ObjectProperty); !ok || !prop.HasImplicitKey() {
+		if prop, ok := parent.(*parse.ObjectProperty); !ok || !prop.HasNoKey() {
 			c.addError(node, text.MISPLACED_RECEPTION_HANDLER_EXPRESSION)
 		}
 
@@ -869,7 +868,6 @@ func (c *checker) checkRecordLiteral(node *parse.RecordLiteral) parse.TraversalA
 }
 
 func (c *checker) checkObjectRecordPatternLiteral(node parse.Node) parse.TraversalAction {
-	indexKey := 0
 	keys := map[string]struct{}{}
 
 	var propertyNodes []*parse.ObjectPatternProperty
@@ -900,8 +898,7 @@ func (c *checker) checkObjectRecordPatternLiteral(node parse.Node) parse.Travers
 		case *parse.IdentifierLiteral:
 			k = n.Name
 		case nil:
-			k = strconv.Itoa(indexKey)
-			indexKey++
+			continue
 		}
 
 		if len(k) > MAX_NAME_BYTE_LEN {
@@ -994,7 +991,7 @@ func (c *checker) checkSpawnExpr(node *parse.SpawnExpression, closestModule pars
 		}
 
 		for _, prop := range obj.Properties {
-			if prop.HasImplicitKey() {
+			if prop.HasNoKey() {
 				c.addError(node.Meta, text.INVALID_SPAWN_ONLY_OBJECT_LITERALS_WITH_NO_SPREAD_ELEMENTS_SUPPORTED)
 			}
 		}
@@ -1022,7 +1019,7 @@ func (c *checker) checkSpawnExpr(node *parse.SpawnExpression, closestModule pars
 		}
 
 		for _, prop := range desc.Properties {
-			if prop.HasImplicitKey() {
+			if prop.HasNoKey() {
 				c.addError(desc, text.INVALID_SPAWN_GLOBALS_SHOULD_BE)
 				continue
 			}
@@ -1081,7 +1078,7 @@ func (c *checker) checkLifetimejobExpr(node *parse.LifetimejobExpression, parent
 		return parse.ContinueTraversal
 	}
 
-	if prop, ok := parent.(*parse.ObjectProperty); !ok || !prop.HasImplicitKey() {
+	if prop, ok := parent.(*parse.ObjectProperty); !ok || !prop.HasNoKey() {
 		c.addError(node, text.MISSING_LIFETIMEJOB_SUBJECT_PATTERN_NOT_AN_IMPLICIT_OBJ_PROP)
 	}
 
@@ -2880,7 +2877,7 @@ func checkVisibilityInitializationBlock(propInfo *propertyInfo, block *parse.Ini
 	}
 
 	for _, prop := range objLiteral.Properties {
-		if prop.HasImplicitKey() {
+		if prop.HasNoKey() {
 			onError(objLiteral, text.INVALID_VISIB_DESC_SHOULDNT_HAVE_ELEMENTS)
 			return
 		}

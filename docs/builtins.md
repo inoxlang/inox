@@ -1055,7 +1055,7 @@ UUIDv4("968011a9-52dc-4816-8527-04b737376471")
 The log namespace contains functions for structured logging.
 ### log.add
 
-The log.add function logs an event that is created from the provided record. The log level is specified with the `lvl` property, it defaults to `debug`. The message can be either provided by setting the `msg` property or by adding properties with implicit keys: each implicit-key property will be a single part of the message. ⚠️ It is recommended to use the default level (debug) for high frequency events.
+The log.add function logs an event that is created from the provided record. The log level is specified with the `lvl` property, it defaults to `debug`. The message can be either provided by setting the `msg` property or by adding record elements: each element will be a single part of the message. ⚠️ It is recommended to use the default level (debug) for high frequency events.
 
 **examples**
 

@@ -12342,7 +12342,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors())
 		})
 
-		t.Run("no error should be reported if the meta object has an implicit property", func(t *testing.T) {
+		t.Run("no error should be reported if the meta object has an element", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				lthread = go {globals: {a: 1}, 2} do {
 					b = a
@@ -12355,7 +12355,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors())
 		})
 
-		t.Run("no error should be reported if the 'globals' object has an implicit property", func(t *testing.T) {
+		t.Run("no error should be reported if the 'globals' object has an element", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				lthread = go {
 					globals: {a: 1, 2}
@@ -13574,7 +13574,7 @@ func TestSymbolicEval(t *testing.T) {
 			}, state.errors())
 		})
 
-		t.Run("properties of the extension object should not be implicit or index-like", func(t *testing.T) {
+		t.Run("extension object should not have elements", func(t *testing.T) {
 			n, state := MakeTestStateAndChunks(`
 				pattern p = {a: 1}
 

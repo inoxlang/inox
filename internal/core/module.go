@@ -192,7 +192,7 @@ func (mod *Module) ParameterNames() (names []string) {
 	}
 
 	for _, prop := range paramsObject.Properties {
-		if prop.HasImplicitKey() {
+		if prop.HasNoKey() {
 			positionalParamDesc, ok := prop.Value.(*parse.ObjectLiteral)
 
 			if !ok {

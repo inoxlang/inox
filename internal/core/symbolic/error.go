@@ -137,7 +137,7 @@ const (
 	//extend statement
 	EXTENDED_PATTERN_MUST_BE_CONCRETIZABLE_AT_CHECK_TIME = "extended pattern must be concretizable at check time (example of non concretizable pattern: %{a: $runtime-value})"
 	ONLY_SERIALIZABLE_VALUE_PATTERNS_ARE_ALLOWED         = "only patterns of serializable values are allowed"
-	KEYS_OF_EXT_OBJ_MUST_BE_VALID_INOX_IDENTS            = "keys of the extension object must be valid Inox identifiers (e.g. total, first-name, total_count). Implicit and index-like keys are not allowed"
+	KEYS_OF_EXT_OBJ_MUST_BE_VALID_INOX_IDENTS            = "keys of the extension object must be valid Inox identifiers (e.g. total, first-name, total_count); elements are not allowed"
 	META_PROPERTIES_NOT_ALLOWED_IN_EXTENSION_OBJECT      = "metaproperties are not allowed in the extension object"
 
 	THIS_VAL_IS_AN_OPT_LIT_DID_YOU_FORGET_A_SPACE = "this value is an option literal, did you forget a space between '-' and the variable name ?"

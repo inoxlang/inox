@@ -4,10 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"slices"
-	"strconv"
 
 	"github.com/inoxlang/inox/internal/inoxconsts"
-	"github.com/inoxlang/inox/internal/utils"
 )
 
 // Record is the immutable counterpart of an Object, Record implements Value.
@@ -25,15 +23,10 @@ func NewRecordFromMap(entryMap ValMap) *Record {
 	keys := make([]string, len(entryMap))
 	values := make([]Serializable, len(entryMap))
 
-	maxKeyIndex := -1
-
 	i := 0
 	for k, v := range entryMap {
 		if v.IsMutable() {
 			panic(fmt.Errorf("value of provided property .%s is mutable", k))
-		}
-		if IsIndexKey(k) {
-			maxKeyIndex = max(maxKeyIndex, utils.Must(strconv.Atoi(k)))
 		}
 		keys[i] = k
 		values[i] = v
@@ -52,7 +45,6 @@ func NewRecordFromKeyValLists(keys []string, values []Serializable) *Record {
 	if values == nil {
 		values = []Serializable{}
 	}
-	maxKeyIndex := -1
 	i := 0
 	for ind, k := range keys {
 		v := values[ind]
@@ -60,9 +52,6 @@ func NewRecordFromKeyValLists(keys []string, values []Serializable) *Record {
 			panic(fmt.Errorf("value of provided property .%s is mutable", k))
 		}
 
-		if IsIndexKey(k) {
-			maxKeyIndex = max(maxKeyIndex, utils.Must(strconv.Atoi(k)))
-		}
 		values[i] = v
 		i++
 	}

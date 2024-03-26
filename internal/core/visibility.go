@@ -46,7 +46,7 @@ func initializeVisibilityMetaproperty(v *Object, block *parse.InitializationBloc
 	//TODO: return error if invalid keys or if there are metaproperties
 
 	for _, prop := range objLiteral.Properties {
-		if prop.HasImplicitKey() {
+		if prop.HasNoKey() {
 			continue
 		}
 

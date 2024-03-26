@@ -133,7 +133,7 @@ func getModuleParameters(manifestObject *Object, manifestObjectLiteral *parse.Ob
 	var noKeyPropIndex = 0
 
 	for _, prop := range parametersObjectNode.Properties {
-		if prop.HasImplicitKey() { //positional parameter
+		if prop.HasNoKey() { //positional parameter
 			paramDesc, ok := noKeyProperties.ElementAt(noKeyPropIndex).(*Object)
 			noKeyPropIndex++
 

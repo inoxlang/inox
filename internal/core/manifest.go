@@ -975,7 +975,7 @@ func estimatePermissionsFromListingNode(permDescriptions *parse.ObjectLiteral) (
 	}
 
 	for _, propNode := range permDescriptions.Properties {
-		if propNode.HasImplicitKey() {
+		if propNode.HasNoKey() {
 			continue
 		}
 		propName := propNode.Name()
@@ -1004,7 +1004,7 @@ func estimatePartialPermissionNodeValue(n parse.Node) (Serializable, bool) {
 		i := 0
 		for _, propNode := range node.Properties {
 			var key string
-			if propNode.HasImplicitKey() {
+			if propNode.HasNoKey() {
 				key = strconv.Itoa(i)
 			} else {
 				key = propNode.Name()

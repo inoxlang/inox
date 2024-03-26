@@ -457,7 +457,7 @@ func handleDefinition(callCtx context.Context, req *defines.DefinitionParams) (r
 		case *parse.ObjectProperty:
 			absPathLit, ok := n.(*parse.AbsolutePathLiteral)
 
-			if !ok || len(ancestors) < 4 || p.HasImplicitKey() || p.Name() != "databases" {
+			if !ok || len(ancestors) < 4 || p.HasNoKey() || p.Name() != "databases" {
 				break
 			}
 

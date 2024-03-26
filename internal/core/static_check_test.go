@@ -678,7 +678,7 @@ func TestCheck(t *testing.T) {
 				}
 			
 				extend p {
-					text.SELF_: (1 + self.a)
+					SELF_: (1 + self.a)
 				}
 			`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))

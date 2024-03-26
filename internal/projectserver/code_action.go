@@ -101,7 +101,7 @@ func getPermissionsObject(chunk *parse.ParsedChunkSource) (*parse.ObjectLiteral,
 	}
 
 	for _, prop := range obj.Properties {
-		if prop.HasImplicitKey() || prop.Name() != inoxconsts.MANIFEST_PERMS_SECTION_NAME {
+		if prop.HasNoKey() || prop.Name() != inoxconsts.MANIFEST_PERMS_SECTION_NAME {
 			continue
 		}
 		permsObject, ok := prop.Value.(*parse.ObjectLiteral)
