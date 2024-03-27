@@ -959,8 +959,8 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("multivalue LHS", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				return fn(v %| %[]%int | %[]%str){
-					var a %| %[]%int | %[]%str = v; 
+				return fn(v []int | []str){
+					var a []int | []str = v; 
 					return a
 				}
 			`)

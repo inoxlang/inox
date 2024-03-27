@@ -54,12 +54,12 @@ func (mv *Multivalue) Test(v Value, state RecTestCallState) bool {
 		}
 	}
 
-	otherMv, ok := v.(*Multivalue)
-	if !ok || len(mv.values) < len(otherMv.values) {
+	otherMv, ok := v.(IMultivalue)
+	if !ok || len(mv.values) < len(otherMv.OriginalMultivalue().values) {
 		return false
 	}
 
-	for _, otherVal := range otherMv.values {
+	for _, otherVal := range otherMv.OriginalMultivalue().values {
 		ok := false
 
 		for _, val := range mv.values {

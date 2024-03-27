@@ -2868,6 +2868,16 @@ func TestSymbolicUnionPattern(t *testing.T) {
 						&TypePattern{val: ANY_STRING},
 					},
 				},
+				AsSerializable(NewMultivalue(ANY_INT, ANY_STRING)),
+				true,
+			},
+			{
+				&UnionPattern{
+					cases: []Pattern{
+						&TypePattern{val: ANY_INT},
+						&TypePattern{val: ANY_STRING},
+					},
+				},
 				NewMultivalue(ANY_STRING, ANY_INT),
 				true,
 			},

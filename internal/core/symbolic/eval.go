@@ -2976,12 +2976,12 @@ func evalBinaryExpression(n *parse.BinaryExpression, state *State, options evalO
 		return nil, err
 	}
 
-	if multi, ok := left.(*Multivalue); ok {
-		left = multi.WidenSimpleValues()
+	if multi, ok := left.(IMultivalue); ok {
+		left = multi.OriginalMultivalue().WidenSimpleValues()
 	}
 
-	if multi, ok := right.(*Multivalue); ok {
-		right = multi.WidenSimpleValues()
+	if multi, ok := right.(IMultivalue); ok {
+		right = multi.OriginalMultivalue().WidenSimpleValues()
 	}
 
 	left = MergeValuesWithSameStaticTypeInMultivalue(left)

@@ -2597,8 +2597,8 @@ func (p *UnionPattern) TestValue(v Value, state RecTestCallState) bool {
 	defer state.FinishCall()
 
 	var values []Value
-	if multi, ok := v.(*Multivalue); ok {
-		values = multi.values
+	if multi, ok := v.(IMultivalue); ok {
+		values = multi.OriginalMultivalue().values
 	} else {
 		values = []Value{v}
 	}
