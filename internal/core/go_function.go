@@ -123,6 +123,11 @@ func (goFunc *GoFunction) Call(args []any, globalState, extState *GlobalState, i
 		//ok
 	} else {
 		//add context as the first argument
+		if len(args) >= len(globalState.goCallArgPrepBuf) {
+			globalState.goCallArgPrepBuf = make([]any, len(args)+1)
+			globalState.goCallArgsBuf = make([]reflect.Value, len(args)+1)
+		}
+
 		copy(globalState.goCallArgPrepBuf[1:], args)
 		globalState.goCallArgPrepBuf[0] = ctx
 		args = globalState.goCallArgPrepBuf[:len(args)+1]

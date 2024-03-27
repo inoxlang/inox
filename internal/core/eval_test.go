@@ -4875,6 +4875,22 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				result: core.Int(3),
 			},
 			{
+				name:  "variadic: many arguments",
+				input: "gofunc(1, 2, 3,   1, 2, 3,   1, 2, 3,   1, 2, 3,   1, 2, 3,   1, 2, 3,   1, 2, 3)",
+				globalVariables: map[string]core.Value{
+					"gofunc": core.WrapGoFunction(func(ctx *core.Context, xs ...core.Int) core.Int {
+
+						sum := core.Int(0)
+						for _, e := range xs {
+							sum += e
+						}
+
+						return core.Int(core.Int(len(xs)) /*21*/ + sum /* 7 * (1 + 2 + 3) = 42 */)
+					}),
+				},
+				result: core.Int(63),
+			},
+			{
 				name: "shared values should be unwrapped",
 				input: `
 					$rt = go {globals: {gofunc: gofunc, x: {a: 1}}} do {
