@@ -24882,13 +24882,7 @@ func testParse(
 				Statements: []Node{
 					&ListPatternLiteral{
 						NodeBase: NodeBase{
-							NodeSpan{0, 6},
-							nil,
-							false,
-							/*[]Token{
-								{Type: OPENING_LIST_PATTERN_BRACKET, Span: NodeSpan{0, 2}},
-								{Type: CLOSING_BRACKET, Span: NodeSpan{5, 6}},
-							},*/
+							Span: NodeSpan{0, 6},
 						},
 						Elements: []Node{
 							&PatternIdentifierLiteral{
@@ -24908,38 +24902,13 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 18}, nil, false},
 				Statements: []Node{
 					&ListPatternLiteral{
-						NodeBase: NodeBase{
-							NodeSpan{0, 18},
-							nil,
-							false,
-							/*[]Token{
-								{Type: OPENING_LIST_PATTERN_BRACKET, Span: NodeSpan{0, 2}},
-								{Type: CLOSING_BRACKET, Span: NodeSpan{17, 18}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 18}},
 						Elements: []Node{
 							&ObjectPatternLiteral{
-								NodeBase: NodeBase{
-									NodeSpan{2, 17},
-									nil,
-									false,
-									/*[]Token{
-										{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{2, 3}},
-										{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{16, 17}},
-									},*/
-								},
-
+								NodeBase: NodeBase{Span: NodeSpan{2, 17}},
 								Properties: []*ObjectPatternProperty{
 									{
-										NodeBase: NodeBase{
-											NodeSpan{4, 15},
-											nil,
-											false,
-											/*[]Token{
-												{Type: QUESTION_MARK, Span: NodeSpan{8, 9}},
-												{Type: COLON, Span: NodeSpan{9, 10}},
-											},*/
-										},
+										NodeBase: NodeBase{Span: NodeSpan{4, 15}},
 										Key: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{4, 8}, nil, false},
 											Name:     "name",
@@ -26903,15 +26872,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
 				Statements: []Node{
 					&PatternUnion{
-						NodeBase: NodeBase{
-							NodeSpan{0, 12},
-							nil,
-							false,
-							/*[]Token{
-								{Type: PATTERN_UNION_OPENING_PIPE, Span: NodeSpan{0, 2}},
-								{Type: PATTERN_UNION_PIPE, Span: NodeSpan{7, 8}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 12}},
 						Cases: []Node{
 							&DoubleQuotedStringLiteral{
 								NodeBase: NodeBase{NodeSpan{3, 6}, nil, false},
@@ -26954,6 +26915,33 @@ func testParse(
 							},
 							&DoubleQuotedStringLiteral{
 								NodeBase: NodeBase{NodeSpan{10, 13}, nil, false},
+								Raw:      `"b"`,
+								Value:    "b",
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("two cases, first one being a list pattern with a general elemet", func(t *testing.T) {
+			n := mustparseChunk(t, `%| []int | "b"`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
+				Statements: []Node{
+					&PatternUnion{
+						NodeBase: NodeBase{Span: NodeSpan{0, 14}},
+						Cases: []Node{
+							&ListPatternLiteral{
+								NodeBase: NodeBase{Span: NodeSpan{3, 8}},
+								GeneralElement: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{Span: NodeSpan{5, 8}},
+									Name:       "int",
+									Unprefixed: true,
+								},
+							},
+							&DoubleQuotedStringLiteral{
+								NodeBase: NodeBase{NodeSpan{11, 14}, nil, false},
 								Raw:      `"b"`,
 								Value:    "b",
 							},

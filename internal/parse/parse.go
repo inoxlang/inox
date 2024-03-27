@@ -2939,7 +2939,9 @@ func (p *parser) parseListTuplePatternLiteral(percentPrefixed, isTuplePattern bo
 		} else {
 			elements = nil
 		}
-		generalElement, _ = p.parseExpression()
+		generalElement, _ = p.parseExpression(exprParsingConfig{
+			disallowParsingSeveralPatternUnionCases: true,
+		})
 	}
 
 	if isTuplePattern {
