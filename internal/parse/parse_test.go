@@ -15512,12 +15512,12 @@ func testParse(
 
 	t.Run("for expression", func(t *testing.T) {
 		t.Run("for <index>, <elem> ... in", func(t *testing.T) {
-			n := mustparseChunk(t, "(for i, u in $users: i)")
+			n := mustparseChunk(t, "(for i, u in $users => i)")
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 25}, nil, false},
 				Statements: []Node{
 					&ForExpression{
-						NodeBase: NodeBase{Span: NodeSpan{0, 23}, IsParenthesized: true},
+						NodeBase: NodeBase{Span: NodeSpan{0, 25}, IsParenthesized: true},
 						KeyIndexIdent: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{5, 6}, nil, false},
 							Name:     "i",
@@ -15531,7 +15531,7 @@ func testParse(
 							Name:     "users",
 						},
 						Body: &IdentifierLiteral{
-							NodeBase: NodeBase{NodeSpan{21, 22}, nil, false},
+							NodeBase: NodeBase{NodeSpan{23, 24}, nil, false},
 							Name:     "i",
 						},
 					},
@@ -15540,12 +15540,12 @@ func testParse(
 		})
 
 		t.Run("for <index pattern> <index>, <elem> ... in", func(t *testing.T) {
-			n := mustparseChunk(t, "(for %even i, u in $users: i)")
+			n := mustparseChunk(t, "(for %even i, u in $users => i)")
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 29}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 31}, nil, false},
 				Statements: []Node{
 					&ForExpression{
-						NodeBase: NodeBase{Span: NodeSpan{0, 29}, IsParenthesized: true},
+						NodeBase: NodeBase{Span: NodeSpan{0, 31}, IsParenthesized: true},
 						KeyPattern: &PatternIdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{5, 10}, nil, false},
 							Name:     "even",
@@ -15563,7 +15563,7 @@ func testParse(
 							Name:     "users",
 						},
 						Body: &IdentifierLiteral{
-							NodeBase: NodeBase{NodeSpan{27, 28}, nil, false},
+							NodeBase: NodeBase{NodeSpan{29, 30}, nil, false},
 							Name:     "i",
 						},
 					},
@@ -15572,12 +15572,12 @@ func testParse(
 		})
 
 		t.Run("for <index pattern> <index>, <elem pattern> <elem> ... in", func(t *testing.T) {
-			n := mustparseChunk(t, "(for %even i, %p u in $users: i)")
+			n := mustparseChunk(t, "(for %even i, %p u in $users => i)")
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 32}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 34}, nil, false},
 				Statements: []Node{
 					&ForExpression{
-						NodeBase: NodeBase{Span: NodeSpan{0, 32}, IsParenthesized: true},
+						NodeBase: NodeBase{Span: NodeSpan{0, 34}, IsParenthesized: true},
 						KeyPattern: &PatternIdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{5, 10}, nil, false},
 							Name:     "even",
@@ -15599,7 +15599,7 @@ func testParse(
 							Name:     "users",
 						},
 						Body: &IdentifierLiteral{
-							NodeBase: NodeBase{NodeSpan{30, 31}, nil, false},
+							NodeBase: NodeBase{NodeSpan{32, 33}, nil, false},
 							Name:     "i",
 						},
 					},
@@ -15608,12 +15608,12 @@ func testParse(
 		})
 
 		t.Run("for <index>, <elem pattern> <elem> ... in", func(t *testing.T) {
-			n := mustparseChunk(t, "(for i, %p u in $users: i)")
+			n := mustparseChunk(t, "(for i, %p u in $users => i)")
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 26}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 28}, nil, false},
 				Statements: []Node{
 					&ForExpression{
-						NodeBase: NodeBase{Span: NodeSpan{0, 26}, IsParenthesized: true},
+						NodeBase: NodeBase{Span: NodeSpan{0, 28}, IsParenthesized: true},
 						KeyIndexIdent: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{5, 6}, nil, false},
 							Name:     "i",
@@ -15631,7 +15631,7 @@ func testParse(
 							Name:     "users",
 						},
 						Body: &IdentifierLiteral{
-							NodeBase: NodeBase{NodeSpan{24, 25}, nil, false},
+							NodeBase: NodeBase{NodeSpan{26, 27}, nil, false},
 							Name:     "i",
 						},
 					},
@@ -15640,12 +15640,12 @@ func testParse(
 		})
 
 		t.Run("for <elem> ... in", func(t *testing.T) {
-			n := mustparseChunk(t, "(for u in $users: i)")
+			n := mustparseChunk(t, "(for u in $users => i)")
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 22}, nil, false},
 				Statements: []Node{
 					&ForExpression{
-						NodeBase:      NodeBase{Span: NodeSpan{0, 20}, IsParenthesized: true},
+						NodeBase:      NodeBase{Span: NodeSpan{0, 22}, IsParenthesized: true},
 						KeyIndexIdent: nil,
 						ValueElemIdent: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{5, 6}, nil, false},
@@ -15656,7 +15656,7 @@ func testParse(
 							Name:     "users",
 						},
 						Body: &IdentifierLiteral{
-							NodeBase: NodeBase{NodeSpan{18, 19}, nil, false},
+							NodeBase: NodeBase{NodeSpan{20, 21}, nil, false},
 							Name:     "i",
 						},
 					},
@@ -15665,12 +15665,12 @@ func testParse(
 		})
 
 		t.Run("for <elem> ... in chunked", func(t *testing.T) {
-			n := mustparseChunk(t, "(for chunked u in $users: u)")
+			n := mustparseChunk(t, "(for chunked u in $users => u)")
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 28}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 30}, nil, false},
 				Statements: []Node{
 					&ForExpression{
-						NodeBase:      NodeBase{Span: NodeSpan{0, 28}, IsParenthesized: true},
+						NodeBase:      NodeBase{Span: NodeSpan{0, 30}, IsParenthesized: true},
 						KeyIndexIdent: nil,
 						ValueElemIdent: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{13, 14}, nil, false},
@@ -15682,7 +15682,7 @@ func testParse(
 							Name:     "users",
 						},
 						Body: &IdentifierLiteral{
-							NodeBase: NodeBase{NodeSpan{26, 27}, nil, false},
+							NodeBase: NodeBase{NodeSpan{28, 29}, nil, false},
 							Name:     "u",
 						},
 					},
@@ -15691,12 +15691,12 @@ func testParse(
 		})
 
 		t.Run("for <elem> ... in: unparenthesized binary expression", func(t *testing.T) {
-			n := mustparseChunk(t, "(for u in $users: i + 1)")
+			n := mustparseChunk(t, "(for u in $users => i + 1)")
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 24}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 26}, nil, false},
 				Statements: []Node{
 					&ForExpression{
-						NodeBase:      NodeBase{Span: NodeSpan{0, 24}, IsParenthesized: true},
+						NodeBase:      NodeBase{Span: NodeSpan{0, 26}, IsParenthesized: true},
 						KeyIndexIdent: nil,
 						ValueElemIdent: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{5, 6}, nil, false},
@@ -15707,13 +15707,13 @@ func testParse(
 							Name:     "users",
 						},
 						Body: &BinaryExpression{
-							NodeBase: NodeBase{NodeSpan{18, 23}, nil, false},
+							NodeBase: NodeBase{NodeSpan{20, 25}, nil, false},
 							Left: &IdentifierLiteral{
-								NodeBase: NodeBase{NodeSpan{18, 19}, nil, false},
+								NodeBase: NodeBase{NodeSpan{20, 21}, nil, false},
 								Name:     "i",
 							},
 							Right: &IntLiteral{
-								NodeBase: NodeBase{NodeSpan{22, 23}, nil, false},
+								NodeBase: NodeBase{NodeSpan{24, 25}, nil, false},
 								Raw:      "1",
 								Value:    1,
 							},
@@ -15723,14 +15723,14 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("for <elem> ... in: unterminated unparenthesized binary expression", func(t *testing.T) {
-			n, err := parseChunk(t, "(for u in $users: i + )", "")
+		t.Run("for <elem> ... in => unterminated unparenthesized binary expression", func(t *testing.T) {
+			n, err := parseChunk(t, "(for u in $users => i + )", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 25}, nil, false},
 				Statements: []Node{
 					&ForExpression{
-						NodeBase:      NodeBase{Span: NodeSpan{0, 23}, IsParenthesized: true},
+						NodeBase:      NodeBase{Span: NodeSpan{0, 25}, IsParenthesized: true},
 						KeyIndexIdent: nil,
 						ValueElemIdent: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{5, 6}, nil, false},
@@ -15742,17 +15742,17 @@ func testParse(
 						},
 						Body: &BinaryExpression{
 							NodeBase: NodeBase{
-								NodeSpan{18, 22},
+								NodeSpan{20, 24},
 								&ParsingError{UnspecifiedParsingError, UNTERMINATED_BIN_EXPR_MISSING_RIGHT_OPERAND},
 								false,
 							},
 							Left: &IdentifierLiteral{
-								NodeBase: NodeBase{NodeSpan{18, 19}, nil, false},
+								NodeBase: NodeBase{NodeSpan{20, 21}, nil, false},
 								Name:     "i",
 							},
 							Right: &MissingExpression{
 								NodeBase: NodeBase{
-									NodeSpan{22, 23},
+									NodeSpan{24, 25},
 									&ParsingError{UnspecifiedParsingError, "an expression was expected: ... i + <<here>>)..."},
 									false,
 								},
@@ -15763,14 +15763,14 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("missing body", func(t *testing.T) {
-			n, err := parseChunk(t, "(for i, u in $users:)", "")
+		t.Run("missing value after arrow", func(t *testing.T) {
+			n, err := parseChunk(t, "(for i, u in $users =>)", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
 				Statements: []Node{
 					&ForExpression{
-						NodeBase: NodeBase{Span: NodeSpan{0, 21}, IsParenthesized: true},
+						NodeBase: NodeBase{Span: NodeSpan{0, 23}, IsParenthesized: true},
 						KeyIndexIdent: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{5, 6}, nil, false},
 							Name:     "i",
@@ -15785,8 +15785,8 @@ func testParse(
 						},
 						Body: &MissingExpression{
 							NodeBase: NodeBase{
-								NodeSpan{20, 21},
-								&ParsingError{UnspecifiedParsingError, "an expression was expected: ...sers:<<here>>)..."},
+								NodeSpan{22, 23},
+								&ParsingError{UnspecifiedParsingError, "an expression was expected: ...rs =><<here>>)..."},
 								false,
 							},
 						},
@@ -15795,8 +15795,68 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("misisng closing parenthesis", func(t *testing.T) {
-			n, err := parseChunk(t, "(for i, u in $users: i", "")
+		t.Run("missing closing parenthesis after item value", func(t *testing.T) {
+			n, err := parseChunk(t, "(for i, u in $users => i", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 24}, nil, false},
+				Statements: []Node{
+					&ForExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 24},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_FOR_EXPR_MISSING_CLOSIN_PAREN},
+							true,
+						},
+						KeyIndexIdent: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{5, 6}, nil, false},
+							Name:     "i",
+						},
+						ValueElemIdent: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{8, 9}, nil, false},
+							Name:     "u",
+						},
+						IteratedValue: &Variable{
+							NodeBase: NodeBase{NodeSpan{13, 19}, nil, false},
+							Name:     "users",
+						},
+						Body: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{23, 24}, nil, false},
+							Name:     "i",
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("empty block body", func(t *testing.T) {
+			n := mustparseChunk(t, "(for i, u in $users {})")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
+				Statements: []Node{
+					&ForExpression{
+						NodeBase: NodeBase{Span: NodeSpan{0, 23}, IsParenthesized: true},
+						KeyIndexIdent: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{5, 6}, nil, false},
+							Name:     "i",
+						},
+						ValueElemIdent: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{8, 9}, nil, false},
+							Name:     "u",
+						},
+						IteratedValue: &Variable{
+							NodeBase: NodeBase{NodeSpan{13, 19}, nil, false},
+							Name:     "users",
+						},
+						Body: &Block{
+							NodeBase: NodeBase{NodeSpan{20, 22}, nil, false},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("missing parenthesis after block body", func(t *testing.T) {
+			n, err := parseChunk(t, "(for i, u in $users {}", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 22}, nil, false},
@@ -15819,9 +15879,8 @@ func testParse(
 							NodeBase: NodeBase{NodeSpan{13, 19}, nil, false},
 							Name:     "users",
 						},
-						Body: &IdentifierLiteral{
-							NodeBase: NodeBase{NodeSpan{21, 22}, nil, false},
-							Name:     "i",
+						Body: &Block{
+							NodeBase: NodeBase{NodeSpan{20, 22}, nil, false},
 						},
 					},
 				},
@@ -31737,7 +31796,134 @@ func testParse(
 		})
 
 		t.Run("interpolation: for expression", func(t *testing.T) {
-			n := mustparseChunk(t, "h<div>{for i in []: i}</div>")
+			n := mustparseChunk(t, "h<div>{for i in [] => i}</div>")
+
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 30}, nil, false},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 30}, nil, false},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "h",
+						},
+						Element: &XMLElement{
+							NodeBase: NodeBase{Span: NodeSpan{1, 30}},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:     "div",
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+								&XMLInterpolation{
+									NodeBase: NodeBase{Span: NodeSpan{7, 23}},
+									Expr: &ForExpression{
+										NodeBase: NodeBase{Span: NodeSpan{7, 23}, IsParenthesized: true},
+										ValueElemIdent: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{11, 12}, nil, false},
+											Name:     "i",
+										},
+										IteratedValue: &ListLiteral{
+											NodeBase: NodeBase{NodeSpan{16, 18}, nil, false},
+										},
+										Body: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{22, 23}, nil, false},
+											Name:     "i",
+										},
+									},
+								},
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{24, 24}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &XMLClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{24, 30}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{26, 29}, nil, false},
+									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("interpolation: for expression followed by a linefeed", func(t *testing.T) {
+			n := mustparseChunk(t, "h<div>{for i in [] => i\n}</div>")
+
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 31}, nil, false},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 31}, nil, false},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "h",
+						},
+						Element: &XMLElement{
+							NodeBase: NodeBase{Span: NodeSpan{1, 31}},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:     "div",
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+								&XMLInterpolation{
+									NodeBase: NodeBase{Span: NodeSpan{7, 24}},
+									Expr: &ForExpression{
+										NodeBase: NodeBase{Span: NodeSpan{7, 24}, IsParenthesized: true},
+										ValueElemIdent: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{11, 12}, nil, false},
+											Name:     "i",
+										},
+										IteratedValue: &ListLiteral{
+											NodeBase: NodeBase{NodeSpan{16, 18}, nil, false},
+										},
+										Body: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{22, 23}, nil, false},
+											Name:     "i",
+										},
+									},
+								},
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{25, 25}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &XMLClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{25, 31}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{27, 30}, nil, false},
+									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("interpolation: unterminated for expression: missing body", func(t *testing.T) {
+			n, err := parseChunk(t, "h<div>{for i in [] =>}</div>", "")
+			assert.Error(t, err)
 
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 28}, nil, false},
@@ -31774,9 +31960,12 @@ func testParse(
 										IteratedValue: &ListLiteral{
 											NodeBase: NodeBase{NodeSpan{16, 18}, nil, false},
 										},
-										Body: &IdentifierLiteral{
-											NodeBase: NodeBase{NodeSpan{20, 21}, nil, false},
-											Name:     "i",
+										Body: &MissingExpression{
+											NodeBase: NodeBase{
+												NodeSpan{20, 21},
+												&ParsingError{UnspecifiedParsingError, fmtExprExpectedHere([]rune("h<div>{for i in [] =>"), 21, true)},
+												false,
+											},
 										},
 									},
 								},
@@ -31790,136 +31979,6 @@ func testParse(
 								NodeBase: NodeBase{Span: NodeSpan{22, 28}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{24, 27}, nil, false},
-									Name:     "div",
-								},
-							},
-						},
-					},
-				},
-			}, n)
-		})
-
-		t.Run("interpolation: for expression followed by a linefeed", func(t *testing.T) {
-			n := mustparseChunk(t, "h<div>{for i in []: i\n}</div>")
-
-			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 29}, nil, false},
-				Statements: []Node{
-					&XMLExpression{
-						NodeBase: NodeBase{NodeSpan{0, 29}, nil, false},
-						Namespace: &IdentifierLiteral{
-							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
-							Name:     "h",
-						},
-						Element: &XMLElement{
-							NodeBase: NodeBase{Span: NodeSpan{1, 29}},
-							Opening: &XMLOpeningElement{
-								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
-								Name: &IdentifierLiteral{
-									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
-									Name:     "div",
-								},
-							},
-							Children: []Node{
-								&XMLText{
-									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
-									Raw:      "",
-									Value:    "",
-								},
-								&XMLInterpolation{
-									NodeBase: NodeBase{Span: NodeSpan{7, 22}},
-									Expr: &ForExpression{
-										NodeBase: NodeBase{Span: NodeSpan{7, 22}, IsParenthesized: true},
-										ValueElemIdent: &IdentifierLiteral{
-											NodeBase: NodeBase{NodeSpan{11, 12}, nil, false},
-											Name:     "i",
-										},
-										IteratedValue: &ListLiteral{
-											NodeBase: NodeBase{NodeSpan{16, 18}, nil, false},
-										},
-										Body: &IdentifierLiteral{
-											NodeBase: NodeBase{NodeSpan{20, 21}, nil, false},
-											Name:     "i",
-										},
-									},
-								},
-								&XMLText{
-									NodeBase: NodeBase{NodeSpan{23, 23}, nil, false},
-									Raw:      "",
-									Value:    "",
-								},
-							},
-							Closing: &XMLClosingElement{
-								NodeBase: NodeBase{Span: NodeSpan{23, 29}},
-								Name: &IdentifierLiteral{
-									NodeBase: NodeBase{NodeSpan{25, 28}, nil, false},
-									Name:     "div",
-								},
-							},
-						},
-					},
-				},
-			}, n)
-		})
-
-		t.Run("interpolation: unterminated for expression: missing body", func(t *testing.T) {
-			n, err := parseChunk(t, "h<div>{for i in []:}</div>", "")
-			assert.Error(t, err)
-
-			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 26}, nil, false},
-				Statements: []Node{
-					&XMLExpression{
-						NodeBase: NodeBase{NodeSpan{0, 26}, nil, false},
-						Namespace: &IdentifierLiteral{
-							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
-							Name:     "h",
-						},
-						Element: &XMLElement{
-							NodeBase: NodeBase{Span: NodeSpan{1, 26}},
-							Opening: &XMLOpeningElement{
-								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
-								Name: &IdentifierLiteral{
-									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
-									Name:     "div",
-								},
-							},
-							Children: []Node{
-								&XMLText{
-									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
-									Raw:      "",
-									Value:    "",
-								},
-								&XMLInterpolation{
-									NodeBase: NodeBase{Span: NodeSpan{7, 19}},
-									Expr: &ForExpression{
-										NodeBase: NodeBase{Span: NodeSpan{7, 19}, IsParenthesized: true},
-										ValueElemIdent: &IdentifierLiteral{
-											NodeBase: NodeBase{NodeSpan{11, 12}, nil, false},
-											Name:     "i",
-										},
-										IteratedValue: &ListLiteral{
-											NodeBase: NodeBase{NodeSpan{16, 18}, nil, false},
-										},
-										Body: &MissingExpression{
-											NodeBase: NodeBase{
-												NodeSpan{18, 19},
-												&ParsingError{UnspecifiedParsingError, fmtExprExpectedHere([]rune("h<div>{for i in []:"), 19, true)},
-												false,
-											},
-										},
-									},
-								},
-								&XMLText{
-									NodeBase: NodeBase{NodeSpan{20, 20}, nil, false},
-									Raw:      "",
-									Value:    "",
-								},
-							},
-							Closing: &XMLClosingElement{
-								NodeBase: NodeBase{Span: NodeSpan{20, 26}},
-								Name: &IdentifierLiteral{
-									NodeBase: NodeBase{NodeSpan{22, 25}, nil, false},
 									Name:     "div",
 								},
 							},

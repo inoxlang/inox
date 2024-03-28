@@ -383,7 +383,7 @@ const (
 	INVALID_FOR_EXPR_MISSING_IN_KEYWORD                     = "invalid for expression: missing 'in' keyword "
 	INVALID_FOR_EXPR_IN_KEYWORD_SHOULD_BE_FOLLOWED_BY_SPACE = "invalid for expression: 'in' keyword should be followed by a space"
 	INVALID_FOR_EXPR_MISSING_VALUE_AFTER_IN                 = "unterminated for expression: missing value after 'in'"
-	UNTERMINATED_FOR_EXPR_MISSING_BODY                      = "unterminated for expression: missing body"
+	UNTERMINATED_FOR_EXPR_MISSING_ARROW_ITEM_OR_BODY        = "unterminated for expression: missing '=> item' or body"
 	UNTERMINATED_FOR_EXPR_MISSING_CLOSIN_PAREN              = "unterminated for expression: missing closing parenthesis"
 
 	UNTERMINATED_WALK_STMT_MISSING_WALKED_VALUE        = "unterminated walk statement: missing walked value"

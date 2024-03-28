@@ -1424,7 +1424,7 @@ type ForExpression struct {
 	ValueElemIdent *IdentifierLiteral //can be nil
 	ValuePattern   Node               //can be nil
 
-	Body          Node
+	Body          Node //*Block or expression
 	Chunked       bool
 	IteratedValue Node
 }

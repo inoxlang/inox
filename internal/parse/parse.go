@@ -8391,7 +8391,7 @@ func (p *parser) parseForExpression(openingParenIndex int32 /*-1 if no unparenth
 				return &ForExpression{
 					NodeBase: NodeBase{
 						Span:            NodeSpan{forExprStart, p.i},
-						Err:             &ParsingError{UnspecifiedParsingError, UNTERMINATED_FOR_STMT},
+						Err:             &ParsingError{UnspecifiedParsingError, UNTERMINATED_FOR_EXPR},
 						IsParenthesized: true,
 					},
 					Chunked:       chunked,
@@ -8490,16 +8490,26 @@ func (p *parser) parseForExpression(openingParenIndex int32 /*-1 if no unparenth
 		var body Node
 		var end = p.i
 
-		if p.i >= p.len || p.s[p.i] != ':' {
-			parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_FOR_EXPR_MISSING_BODY}
-		} else {
-			p.tokens = append(p.tokens, Token{Type: COLON, Span: NodeSpan{p.i, p.i + 1}})
-			p.i++
+		switch {
+		case p.i < p.len-1 && p.s[p.i] == '=' && p.s[p.i+1] == '>':
+			p.tokens = append(p.tokens, Token{Type: ARROW, Span: NodeSpan{p.i, p.i + 2}})
+			p.i += 2
 
 			p.eatSpaceNewlineComment()
 
 			body, _ = p.parseExpression()
 			end = body.Base().Span.End
+		case p.i == p.len-1 && p.s[p.i] == '=':
+			p.tokens = append(p.tokens, Token{Type: EQUAL, Span: NodeSpan{p.i, p.i + 1}})
+			p.i++
+			end = p.i
+
+			parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_FOR_EXPR_MISSING_ARROW_ITEM_OR_BODY}
+		case p.i < p.len && p.s[p.i] == '{':
+			body = p.parseBlock()
+			end = body.Base().Span.End
+		default:
+			parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_FOR_EXPR_MISSING_ARROW_ITEM_OR_BODY}
 		}
 
 		p.eatSpaceNewlineComment()
