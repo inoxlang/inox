@@ -1047,7 +1047,7 @@ func TestCheck(t *testing.T) {
 
 		t.Run("additional globals provided with an object literal", func(t *testing.T) {
 			n, src := mustParseCode(`
-				$$global = 0
+				global = 0
 				go {globals: {global: global}} do {
 					return global
 				}
@@ -1058,7 +1058,7 @@ func TestCheck(t *testing.T) {
 		t.Run("description of globals should not contain spread elements", func(t *testing.T) {
 			n, src := mustParseCode(`
 				obj = {a: 1}
-				$$global = 0
+				global = 0
 				go {globals: {global: global, ...$obj.{a}}} do {
 					return global
 				}
@@ -1076,7 +1076,7 @@ func TestCheck(t *testing.T) {
 
 		t.Run("description of globals should not contain implicit-key properties", func(t *testing.T) {
 			n, src := mustParseCode(`
-				$$global = 0
+				global = 0
 				go {globals: {global: global, 1}} do {
 					return global
 				}
@@ -1153,7 +1153,7 @@ func TestCheck(t *testing.T) {
 			defer ctx.CancelGracefully()
 
 			n, src := mustParseCode(`
-				$$g = 1
+				globalvar g = 1
 				Mapping { %int => g }
 			`)
 
@@ -1226,7 +1226,7 @@ func TestCheck(t *testing.T) {
 			defer ctx.CancelGracefully()
 
 			n, src := mustParseCode(`
-				$$g = 1
+				globalvar g = 1
 				Mapping { n %int => g }
 			`)
 
@@ -1291,7 +1291,7 @@ func TestCheck(t *testing.T) {
 
 		t.Run("captured variable is not a local", func(t *testing.T) {
 			n, src := mustParseCode(`
-				$$a = 1
+				globalvar a = 1
 				fn[a](){}
 			`)
 			fnExprNode := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
@@ -1325,7 +1325,7 @@ func TestCheck(t *testing.T) {
 			defer ctx.CancelGracefully()
 
 			n, src := mustParseCode(`
-				$$a = 1
+				globalvar a = 1
 				fn(){ return a }
 			`)
 
@@ -1348,7 +1348,7 @@ func TestCheck(t *testing.T) {
 			defer ctx.CancelGracefully()
 
 			n, src := mustParseCode(`
-				$$a = 1
+				globalvar a = 1
 				fn(){ 
 					{
 						lifetimejob #job {
@@ -1377,7 +1377,7 @@ func TestCheck(t *testing.T) {
 			defer ctx.CancelGracefully()
 
 			n, src := mustParseCode(`
-				$$a = 1
+				globalvar a = 1
 				fn f(){
 					return a
 				}
@@ -1403,7 +1403,7 @@ func TestCheck(t *testing.T) {
 			defer ctx.CancelGracefully()
 
 			n, src := mustParseCode(`
-				$$a = 1
+				globalvar a = 1
 				fn g(){
 					return a
 				}
@@ -1432,7 +1432,7 @@ func TestCheck(t *testing.T) {
 			defer ctx.CancelGracefully()
 
 			n, src := mustParseCode(`
-				$$a = 1
+				globalvar a = 1
 				fn f(){
 					return a
 				}
@@ -1460,7 +1460,7 @@ func TestCheck(t *testing.T) {
 			defer ctx.CancelGracefully()
 
 			n, src := mustParseCode(`
-				$$a = 1
+				globalvar a = 1
 				fn g(){
 					return a
 				}
@@ -1486,38 +1486,15 @@ func TestCheck(t *testing.T) {
 			}, data.GetFnData(fnExpr))
 		})
 
-		t.Run("functions assigning a global should be detected", func(t *testing.T) {
-			ctx := NewContext(ContextConfig{})
-			defer ctx.CancelGracefully()
-
-			n, src := mustParseCode(`
-				$$a = 1
-				fn(){ $$a = 2 }
-			`)
-
-			fnExpr := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
-			data, err := StaticCheck(StaticCheckInput{
-				State: NewGlobalState(ctx),
-				Node:  n,
-				Chunk: src,
-			})
-			if !assert.NoError(t, err) {
-				return
-			}
-			assert.Equal(t, map[*parse.FunctionExpression]*FunctionStaticData{
-				fnExpr: {assignGlobal: true},
-			}, data.fnData)
-		})
-
 		t.Run("globals captured by function defined in spawn expression should be listed", func(t *testing.T) {
 			ctx := NewContext(ContextConfig{})
 			defer ctx.CancelGracefully()
 
 			n, src := mustParseCode(`
-				$$a = 1
+				globalvar a = 1
 
 				go do {
-					$$b = 1
+					globalvar b = 1
 					fn(){ return b }
 				}
 			`)
@@ -1555,7 +1532,7 @@ func TestCheck(t *testing.T) {
 
 		t.Run("captured variable is not a local", func(t *testing.T) {
 			n, src := mustParseCode(`
-				$$a = 1
+				globalvar a = 1
 				fn[a] f(){}
 			`)
 			fnExpr := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
@@ -1568,7 +1545,7 @@ func TestCheck(t *testing.T) {
 
 		t.Run("parameter shadows a global", func(t *testing.T) {
 			n, src := mustParseCode(`
-				$$a = 1
+				globalvar a = 1
 				fn f(a){return a}
 			`)
 			fn := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
@@ -1627,16 +1604,16 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
-		t.Run("function declaration with the same name as a global variable assignment", func(t *testing.T) {
+		t.Run("function declaration with the same name as a global variable definition", func(t *testing.T) {
 			n, src := mustParseCode(`
-				$$f = 0
+				globalvar f = 0
 	
 				fn f(){}
 			`)
-			globalVar := parse.FindNode(n, (*parse.GlobalVariable)(nil), nil)
+			globalVar := parse.FindNode(n, (*parse.GlobalVariableDeclaration)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(globalVar, src, text.FmtInvalidGlobalVarAssignmentNameIsFuncName("f")),
+				makeError(globalVar, src, text.FmtInvalidAssignmentNameIsFuncName("f")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -1673,9 +1650,9 @@ func TestCheck(t *testing.T) {
 			assert.Len(t, decls, 2)
 		})
 
-		t.Run("a function that does not capture locals nor access globals is callable anywhere: global variable callee", func(t *testing.T) {
+		t.Run("a function that does not capture locals nor access globals is callable anywhere: variable callee", func(t *testing.T) {
 			n, src := mustParseCode(`
-				return ($$g() + $$f())
+				return ($g() + $f())
 
 				fn g(){
 					return f()
@@ -2071,7 +2048,7 @@ func TestCheck(t *testing.T) {
 
 		t.Run("captured variable is not a local", func(t *testing.T) {
 			n, src := mustParseCode(`
-				$$a = 1
+				globalvar a = 1
 				fn[a](){}
 			`)
 			fnExprNode := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
@@ -2095,7 +2072,7 @@ func TestCheck(t *testing.T) {
 
 		t.Run("parameter shadows a global", func(t *testing.T) {
 			n, src := mustParseCode(`
-				$$a = 1
+				globalvar a = 1
 				pattern one = 1
 				%fn(a %one)
 			`)
@@ -2125,7 +2102,7 @@ func TestCheck(t *testing.T) {
 
 		t.Run("shadowing of global variable", func(t *testing.T) {
 			n, src := mustParseCode(`
-				$$a = 0
+				globalvar a = 0
 				var a = 0
 			`)
 			decl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), nil)
@@ -2159,18 +2136,6 @@ func TestCheck(t *testing.T) {
 	})
 
 	t.Run("global variable declaration", func(t *testing.T) {
-		t.Run("declaration after assignment", func(t *testing.T) {
-			n, src := mustParseCode(`
-				$$a = 0
-				globalvar a = 0
-			`)
-			decl := parse.FindNode(n, (*parse.GlobalVariableDeclaration)(nil), nil)
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
-			expectedErr := utils.CombineErrors(
-				makeError(decl, src, text.FmtInvalidGlobalVarDeclAlreadyDeclared("a")),
-			)
-			assert.Equal(t, expectedErr, err)
-		})
 
 		t.Run("shadowing of local variable", func(t *testing.T) {
 			n, src := mustParseCode(`
@@ -2260,7 +2225,7 @@ func TestCheck(t *testing.T) {
 
 		t.Run("definitions are not allowed after a reference (global variable node) to a function declared below", func(t *testing.T) {
 			n, src := mustParseCode(`
-				$$f
+				$f
 				
 				globalvar a = 0
 
@@ -2308,105 +2273,125 @@ func TestCheck(t *testing.T) {
 	})
 
 	t.Run("assignment", func(t *testing.T) {
-		t.Run("assignment with a function's name", func(t *testing.T) {
+		t.Run("assignment with a function's name (identifier)", func(t *testing.T) {
 			n, src := mustParseCode(`
 				fn f(){}
 	
-				$$f = 0
+				f = 0
 			`)
 			assignment := parse.FindNodes(n, (*parse.Assignment)(nil), nil)[0]
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(assignment, src, text.FmtInvalidGlobalVarAssignmentNameIsFuncName("f")),
+				makeError(assignment, src, text.FmtInvalidAssignmentNameIsFuncName("f")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
 
-		t.Run("assignment of a constant in top level", func(t *testing.T) {
+		t.Run("assignment with a function's name (variable)", func(t *testing.T) {
+			n, src := mustParseCode(`
+				fn f(){}
+	
+				f = 0
+			`)
+			assignment := parse.FindNodes(n, (*parse.Assignment)(nil), nil)[0]
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(assignment, src, text.FmtInvalidAssignmentNameIsFuncName("f")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("assignment of a constant in top level (identifier)", func(t *testing.T) {
 			n, src := mustParseCode(`
 				const (
 					a = 1
 				)
 	
-				$$a = 0
+				a = 0
 			`)
 			assignment := parse.FindNodes(n, (*parse.Assignment)(nil), nil)[0]
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(assignment, src, text.FmtInvalidGlobalVarAssignmentNameIsConstant("a")),
+				makeError(assignment, src, text.GLOBAL_VARS_AND_CONSTS_CANNOT_BE_REASSIGNED),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
 
-		t.Run("assignment of a constant in a function", func(t *testing.T) {
+		t.Run("assignment of a constant in top level (variable)", func(t *testing.T) {
 			n, src := mustParseCode(`
 				const (
 					a = 1
+				)
+	
+				$a = 0
+			`)
+			assignment := parse.FindNodes(n, (*parse.Assignment)(nil), nil)[0]
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(assignment, src, text.GLOBAL_VARS_AND_CONSTS_CANNOT_BE_REASSIGNED),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("assignment of a global constant in a function", func(t *testing.T) {
+			n, src := mustParseCode(`
+				const (
+					a = 0
 				)
 	
 				fn f(){
-					$$a = 0
+					a = 1
 				}
 			`)
 
 			assignment := parse.FindNodes(n, (*parse.Assignment)(nil), nil)[0]
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(assignment, src, text.FmtInvalidGlobalVarAssignmentNameIsConstant("a")),
+				makeError(assignment, src, text.GLOBAL_VARS_AND_CONSTS_CANNOT_BE_REASSIGNED),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
 
-		t.Run("assignment of a global variable in embedded module: name of a global constant in parent module", func(t *testing.T) {
+		t.Run("assignment of a global variable in a function", func(t *testing.T) {
+			n, src := mustParseCode(`
+				globalvar a = 0
+
+				fn f(){
+					a = 1
+				}
+			`)
+
+			assignment := parse.FindNodes(n, (*parse.Assignment)(nil), nil)[0]
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(assignment, src, text.GLOBAL_VARS_AND_CONSTS_CANNOT_BE_REASSIGNED),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("assignment of a local variable in embedded module: name of a global constant in parent module", func(t *testing.T) {
 			n, src := mustParseCode(`
 				const (
 					a = 1
 				)
 	
 				go do {
-					$$a = 2
+					a = 2
 				}
 			`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
-		t.Run("global variable shadowing", func(t *testing.T) {
+		t.Run("global variable assignment is not allowed", func(t *testing.T) {
 			n, src := mustParseCode(`
-				$$a = 1
+				globalvar a = 1
 				a = 1
-			`)
-
-			assignment := parse.FindNodes(n, (*parse.Assignment)(nil), nil)[1]
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
-			expectedErr := utils.CombineErrors(
-				makeError(assignment, src, text.FmtCannotShadowGlobalVariable("a")),
-			)
-			assert.Equal(t, expectedErr, err)
-		})
-
-		t.Run("undefined global variable += assignment", func(t *testing.T) {
-			n, src := mustParseCode(`
-				$$a += 1
 			`)
 
 			assignment := parse.FindNode(n, (*parse.Assignment)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(assignment, src, text.FmtInvalidGlobalVarAssignmentVarDoesNotExist("a")),
-			)
-			assert.Equal(t, expectedErr, err)
-		})
-
-		t.Run("local variable shadowing", func(t *testing.T) {
-			n, src := mustParseCode(`
-				a = 1
-				$$a = 1
-			`)
-
-			assignment := parse.FindNodes(n, (*parse.Assignment)(nil), nil)[1]
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
-			expectedErr := utils.CombineErrors(
-				makeError(assignment, src, text.FmtCannotShadowLocalVariable("a")),
+				makeError(assignment, src, text.GLOBAL_VARS_AND_CONSTS_CANNOT_BE_REASSIGNED),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2438,120 +2423,19 @@ func TestCheck(t *testing.T) {
 			assert.Equal(t, expectedErr, err)
 		})
 
-		t.Run("assignments declaring a global variable are only allowed as top-level statements", func(t *testing.T) {
-			n, src := mustParseCode(`
-				fn f(){
-					$$a = 0
-				}
-			`)
-			assignment := parse.FindNode(n, (*parse.Assignment)(nil), nil)
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
-			expectedErr := utils.CombineErrors(
-				makeError(assignment, src, text.MISPLACED_GLOBAL_VAR_DECLS_TOP_LEVEL_STMT),
-			)
-			assert.Equal(t, expectedErr, err)
-		})
-
-		t.Run("assignments declaring a global variable are not allowed after a function declaration", func(t *testing.T) {
-			n, src := mustParseCode(`
-				fn f(){
-				}
-
-				$$a = 0
-			`)
-			assignment := parse.FindNode(n, (*parse.Assignment)(nil), nil)
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
-			expectedErr := utils.CombineErrors(
-				makeError(assignment, src, text.MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_REF_TO_FN),
-			)
-			assert.Equal(t, expectedErr, err)
-		})
-
-		t.Run("assignments declaring a global variable are not allowed after a call to a function declared below", func(t *testing.T) {
-			n, src := mustParseCode(`
-				f()
-				
-				$$a = 0
-
-				fn f(){
-				}
-			`)
-			assignment := parse.FindNode(n, (*parse.Assignment)(nil), nil)
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
-			expectedErr := utils.CombineErrors(
-				makeError(assignment, src, text.MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_REF_TO_FN),
-			)
-			assert.Equal(t, expectedErr, err)
-		})
-
-		t.Run("definitions are not allowed after a reference (identifier) to a function declared below", func(t *testing.T) {
-			n, src := mustParseCode(`
-				f
-				
-				$$a = 0
-
-				fn f(){}
-			`)
-			assignment := parse.FindNode(n, (*parse.Assignment)(nil), nil)
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
-			expectedErr := utils.CombineErrors(
-				makeError(assignment, src, text.MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_REF_TO_FN),
-			)
-			assert.Equal(t, expectedErr, err)
-		})
-
-		t.Run("definitions are not allowed after a reference (global variable node) to a function declared below", func(t *testing.T) {
-			n, src := mustParseCode(`
-				$$f
-				
-				$$a = 0
-
-				fn f(){}
-			`)
-			assignment := parse.FindNode(n, (*parse.Assignment)(nil), nil)
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
-			expectedErr := utils.CombineErrors(
-				makeError(assignment, src, text.MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_REF_TO_FN),
-			)
-			assert.Equal(t, expectedErr, err)
-		})
-
-		t.Run("declaring a global variable is allowed after a call to a function declared in an included chunk", func(t *testing.T) {
-			moduleName := "mymod.ix"
-			modpath := writeModuleAndIncludedFiles(t, moduleName, `
-				manifest {}
-				import ./dep.ix
-
-				f()
-				$$a = 0
-			`, map[string]string{"./dep.ix": "includable-file\n fn f(){}"})
-
-			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
-			if !assert.NoError(t, err) {
-				return
-			}
-
-			err = staticCheckNoData(StaticCheckInput{
-				Module: mod,
-				Node:   mod.MainChunk.Node,
-				Chunk:  mod.MainChunk,
-			})
-
-			assert.NoError(t, err)
-		})
 	})
 
 	t.Run("multi assignment", func(t *testing.T) {
-		t.Run("global variable shadowing", func(t *testing.T) {
+		t.Run("global variable re-assignment", func(t *testing.T) {
 			n, src := mustParseCode(`
-				$$a = 1
+				globalvar a = 1
 				assign a b = [1, 2]
 			`)
 
 			assignment := parse.FindNode(n, (*parse.MultiAssignment)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(assignment, src, text.FmtCannotShadowGlobalVariable("a")),
+				makeError(assignment, src, text.GLOBAL_VARS_AND_CONSTS_CANNOT_BE_REASSIGNED),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2574,7 +2458,7 @@ func TestCheck(t *testing.T) {
 	
 				manifest {
 					limits: {
-						"x": $$a
+						"x": $a
 					}
 				}
 			`)
@@ -2587,7 +2471,7 @@ func TestCheck(t *testing.T) {
 					a = 1
 				)
 	
-				return $$a
+				return $a
 			`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
@@ -2599,7 +2483,7 @@ func TestCheck(t *testing.T) {
 				)
 	
 				fn f(){
-					return $$a
+					return $a
 				}
 			`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
@@ -2610,7 +2494,7 @@ func TestCheck(t *testing.T) {
 			modpath := writeModuleAndIncludedFiles(t, moduleName, `
 				manifest {}
 				import result ./dep.ix {}
-				$$result
+				$result
 			`, map[string]string{
 				"./dep.ix": `
 					manifest {}
@@ -2648,7 +2532,7 @@ func TestCheck(t *testing.T) {
 			`)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(n.Statements[0], src, text.FmtLocalVarIsNotDeclared("a")),
+				makeError(n.Statements[0], src, text.FmtVarIsNotDeclared("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2671,7 +2555,7 @@ func TestCheck(t *testing.T) {
 			varNode := parse.FindNode(n, (*parse.Variable)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(varNode, src, text.FmtLocalVarIsNotDeclared("a")),
+				makeError(varNode, src, text.FmtVarIsNotDeclared("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2686,7 +2570,7 @@ func TestCheck(t *testing.T) {
 			varNode := parse.FindNode(n, (*parse.Variable)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(varNode, src, text.FmtLocalVarIsNotDeclared("a")),
+				makeError(varNode, src, text.FmtVarIsNotDeclared("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2937,7 +2821,7 @@ func TestCheck(t *testing.T) {
 
 		t.Run("should inherit globals", func(t *testing.T) {
 			n, src := mustParseCode(`
-				$$a = 1
+				globalvar a = 1
 				testsuite { 
 					a
 				}
@@ -2984,9 +2868,9 @@ func TestCheck(t *testing.T) {
 
 		t.Run("testcase should inherit globals of the test suite", func(t *testing.T) {
 			n, src := mustParseCode(`
-				$$a = 1
+				globalvar a = 1
 				testsuite { 
-					$$b = 2
+					globalvar b = 2
 					testcase {
 						a
 						b
@@ -3217,7 +3101,7 @@ func TestCheck(t *testing.T) {
 
 		t.Run("a __test global should be defined within test cases", func(t *testing.T) {
 			n, src := mustParseCode(`
-				return testcase { $$__test }
+				return testcase { $__test }
 			`)
 
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
@@ -3266,7 +3150,7 @@ func TestCheck(t *testing.T) {
 
 			expectedErr := utils.CombineErrors(
 				makeError(importStmt, mod.MainChunk, text.MISPLACED_INCLUSION_IMPORT_STATEMENT_TOP_LEVEL_STMT),
-				makeError(variable, mod.MainChunk, text.FmtLocalVarIsNotDeclared("a")),
+				makeError(variable, mod.MainChunk, text.FmtVarIsNotDeclared("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -3504,7 +3388,7 @@ func TestCheck(t *testing.T) {
 				manifest {}
 				fn f(){
 					import res ./dep.ix {}
-					return $$res
+					return $res
 				}
 			`, map[string]string{"./dep.ix": "manifest {}\n a = 1"})
 
@@ -3518,11 +3402,11 @@ func TestCheck(t *testing.T) {
 			})
 
 			importStmt := parse.FindNode(mod.MainChunk.Node, (*parse.ImportStatement)(nil), nil)
-			globalVariable := parse.FindNode(mod.MainChunk.Node, (*parse.GlobalVariable)(nil), nil)
+			variable := parse.FindNode(mod.MainChunk.Node, (*parse.Variable)(nil), nil)
 
 			expectedErr := utils.CombineErrors(
 				makeError(importStmt, mod.MainChunk, text.MISPLACED_MOD_IMPORT_STATEMENT_TOP_LEVEL_STMT),
-				makeError(globalVariable, mod.MainChunk, text.FmtGlobalVarIsNotDeclared("res")),
+				makeError(variable, mod.MainChunk, text.FmtVarIsNotDeclared("res")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -3623,7 +3507,7 @@ func TestCheck(t *testing.T) {
 				return res
 			`, map[string]string{"./dep.ix": `
 				manifest {}
-				b = $$a
+				b = a
 			`})
 
 			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: createParsingContext(modpath)})
@@ -4014,8 +3898,8 @@ func TestCheck(t *testing.T) {
 
 		t.Run("key and value vars should not shadow global variables", func(t *testing.T) {
 			n, src := mustParseCode(`
-				$$k = 1
-				$$v = 1
+				globalvar k = 1
+				globalvar v = 1
 				for k, v in [] {}
 			`)
 			keyIdent := parse.FindIdentWithName(n, "k")
@@ -4063,8 +3947,8 @@ func TestCheck(t *testing.T) {
 
 		t.Run("key and value vars should not shadow global variables", func(t *testing.T) {
 			n, src := mustParseCode(`
-				$$k = 1
-				$$v = 1
+				globalvar k = 1
+				globalvar v = 1
 				(for k, v in []: 0)
 			`)
 			keyIdent := parse.FindIdentWithName(n, "k")
@@ -4127,14 +4011,14 @@ func TestCheck(t *testing.T) {
 
 		t.Run("entry var should not shadow local variables", func(t *testing.T) {
 			n, src := mustParseCode(`
-				$$e = 1
+				var e = 1
 				walk ./ e {}
 			`)
 			entryIdent := n.Statements[1].(*parse.WalkStatement).EntryIdent
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(entryIdent, src, text.FmtCannotShadowGlobalVariable("e")),
+				makeError(entryIdent, src, text.FmtCannotShadowLocalVariable("e")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4402,7 +4286,7 @@ func TestCheck(t *testing.T) {
 
 		t.Run("definitions are not allowed after a reference (global variable node) to a function declared below", func(t *testing.T) {
 			n, src := mustParseCode(`
-				$$f
+				$f
 				
 				pnamespace p. = {}
 
@@ -4663,7 +4547,7 @@ func TestCheck(t *testing.T) {
 	t.Run("match statement", func(t *testing.T) {
 		t.Run("group matching variable shadows a global", func(t *testing.T) {
 			n, src := mustParseCode(`
-				$$m = 1
+				globalvar m = 1
 				match 1 {
 					%/{:a} m { }
 				}
@@ -4802,7 +4686,7 @@ func TestCheck(t *testing.T) {
 		t.Run("should not have variables in property expressions: identifier referring to a global variable", func(t *testing.T) {
 			n, src := mustParseCode(`
 				pattern p = {a: 1}
-				$$a = 1
+				globalvar a = 1
 				extend p {
 					b: a
 				}
@@ -4842,19 +4726,19 @@ func TestCheck(t *testing.T) {
 		t.Run("should not have variables in property expressions: global variable", func(t *testing.T) {
 			n, src := mustParseCode(`
 				pattern p = {a: 1}
-				$$a = 1
+				globalvar a = 1
 				extend p {
-					b: $$a
+					b: $a
 				}
 			`)
 
 			globals := GlobalVariablesFromMap(map[string]Value{}, nil)
 			extendStmt := parse.FindNode(n, (*parse.ExtendStatement)(nil), nil)
-			globalVar := parse.FindGlobalVarWithName(extendStmt, "a")
+			variable := parse.FindNode(extendStmt, (*parse.Variable)(nil), nil)
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src, Globals: globals})
 			expectedErr := utils.CombineErrors(
-				makeError(globalVar, src, text.VARS_NOT_ALLOWED_IN_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES),
+				makeError(variable, src, text.VARS_NOT_ALLOWED_IN_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4914,7 +4798,7 @@ func TestCheck(t *testing.T) {
 
 		t.Run("should not have variables in field definitions: identifier referring to a global variable", func(t *testing.T) {
 			n, src := mustParseCode(`
-				$$a = 1
+				globalvar a = 1
 				struct MyStruct {
 					value %(a)
 				}
@@ -4950,18 +4834,18 @@ func TestCheck(t *testing.T) {
 
 		t.Run("should not have variables in field definitions: global variable", func(t *testing.T) {
 			n, src := mustParseCode(`
-				$a = 1
+				globalvar a = 1
 				struct MyStruct {
-					value %($$a)
+					value %($a)
 				}
 			`)
 
 			def := parse.FindNode(n, (*parse.StructDefinition)(nil), nil)
-			globalVar := parse.FindGlobalVarWithName(def, "a")
+			variable := parse.FindNode(def, (*parse.Variable)(nil), nil)
 
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(globalVar, src, text.VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS),
+				makeError(variable, src, text.VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS),
 			)
 			assert.Equal(t, expectedErr, err)
 		})

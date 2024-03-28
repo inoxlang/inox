@@ -52,7 +52,7 @@ js_lines = split!(js, "\n")
 var new_js str = ""
 
 for line in js_lines {
-    if !(line match $$EXPORT_PATTERN) {
+    if !(line match $EXPORT_PATTERN) {
         new_js = concat new_js line "\n"
     }
 }
@@ -67,7 +67,7 @@ decl_lines = split!(decl, "\n")
 var new_decl str = ""
 
 for line in decl_lines {
-    if !(line match $$EXPORT_PATTERN) {
+    if !(line match $EXPORT_PATTERN) {
         new_decl = concat new_decl line "\n"
     }
 }

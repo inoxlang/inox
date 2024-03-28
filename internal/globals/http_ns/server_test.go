@@ -638,7 +638,7 @@ func TestHttpServerMapping(t *testing.T) {
 
 		runServerTest(t,
 			serverTestCase{
-				input: `$$model = {a: 1}
+				input: `globalvar model = {a: 1}
 
 				return Mapping {
 					%/... => model
@@ -656,7 +656,7 @@ func TestHttpServerMapping(t *testing.T) {
 		runServerTest(t,
 			serverTestCase{
 				input: `
-				$$model = {
+				globalvar model = {
 					a: 1
 					password: "mypassword"
 					e: EmailAddress("foo@mail.com")
@@ -677,7 +677,7 @@ func TestHttpServerMapping(t *testing.T) {
 
 		runServerTest(t,
 			serverTestCase{
-				input: `$$model = {
+				input: `globalvar model = {
 					a: 1
 					password: "mypassword"
 					e: EmailAddress("a@mail.com")

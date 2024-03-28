@@ -225,7 +225,7 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 			}, completions)
 		})
 
-		t.Run("global variable ($$) in top level module", func(t *testing.T) {
+		t.Run("global variable (identifier) in top level module", func(t *testing.T) {
 			if mode != LspCompletions {
 				t.Skip()
 				return
@@ -256,7 +256,7 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 			}, completions)
 		})
 
-		t.Run("global variable ($$) in top level module", func(t *testing.T) {
+		t.Run("global variable ($) in top level module", func(t *testing.T) {
 			if mode != LspCompletions {
 				t.Skip()
 				return
@@ -273,16 +273,16 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 				}
 				
 				import test ./test.ix {}
-				$$t
+				$t
 			`, "")
 
-			globalVarIdent := parse.FindNode(chunk.Node, (*parse.GlobalVariable)(nil), nil)
-			span := globalVarIdent.Span
+			globalVar := parse.FindNode(chunk.Node, (*parse.Variable)(nil), nil)
+			span := globalVar.Span
 
 			doSymbolicCheck(chunk, state.Global)
-			completions := findCompletions(state, chunk, int(globalVarIdent.Span.End))
+			completions := findCompletions(state, chunk, int(globalVar.Span.End))
 			assert.EqualValues(t, []Completion{
-				{ShownString: "test", Value: "$$test", ReplacedRange: parse.SourcePositionRange{Span: span}},
+				{ShownString: "test", Value: "$test", ReplacedRange: parse.SourcePositionRange{Span: span}},
 			}, completions)
 		})
 
@@ -290,15 +290,15 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
 			defer state.Global.Ctx.CancelGracefully()
 
-			chunk, _ := parseChunkSource("$$val = 1; print v", "")
+			chunk, _ := parseChunkSource("globalvar val = 1; print v", "")
 
 			doSymbolicCheck(chunk, state.Global)
-			completions := findCompletions(state, chunk, 18)
+			completions := findCompletions(state, chunk, 26)
 			assert.EqualValues(t, []Completion{
 				{
-					ShownString:   "$$val",
-					Value:         "$$val",
-					ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 17, End: 18}}},
+					ShownString:   "$val",
+					Value:         "$val",
+					ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 25, End: 26}}},
 			}, completions)
 		})
 
@@ -424,12 +424,12 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 			state := newState()
 			obj := core.NewObjectFromMap(core.ValMap{"name": core.String("foo")}, state.Global.Ctx)
 			state.SetGlobal("obj", obj, core.GlobalConst)
-			chunk, _ := parseChunkSource("$$obj.", "")
+			chunk, _ := parseChunkSource("$obj.", "")
 
 			doSymbolicCheck(chunk, state.Global)
-			completions := findCompletions(state, chunk, 6)
+			completions := findCompletions(state, chunk, 5)
 			assert.EqualValues(t, []Completion{
-				{ShownString: ".name", Value: ".name", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 5, End: 6}}},
+				{ShownString: ".name", Value: ".name", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 4, End: 5}}},
 			}, completions)
 		})
 
@@ -437,12 +437,12 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 			state := newState()
 			obj := core.NewObjectFromMap(core.ValMap{"name": core.String("foo")}, state.Global.Ctx)
 			state.SetGlobal("obj", obj, core.GlobalConst)
-			chunk, _ := parseChunkSource("$$obj.n", "")
+			chunk, _ := parseChunkSource("$obj.n", "")
 
 			doSymbolicCheck(chunk, state.Global)
-			completions := findCompletions(state, chunk, 7)
+			completions := findCompletions(state, chunk, 6)
 			assert.EqualValues(t, []Completion{
-				{ShownString: ".name", Value: ".name", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 5, End: 7}}},
+				{ShownString: ".name", Value: ".name", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 4, End: 6}}},
 			}, completions)
 		})
 
@@ -453,12 +453,12 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 			}, state.Global.Ctx)
 			state.SetGlobal("obj", obj, core.GlobalConst)
 
-			chunk, _ := parseChunkSource("$$obj.object.", "")
+			chunk, _ := parseChunkSource("$obj.object.", "")
 
 			doSymbolicCheck(chunk, state.Global)
-			completions := findCompletions(state, chunk, 13)
+			completions := findCompletions(state, chunk, 12)
 			assert.EqualValues(t, []Completion{
-				{ShownString: ".name", Value: ".name", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 12, End: 13}}},
+				{ShownString: ".name", Value: ".name", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 11, End: 12}}},
 			}, completions)
 		})
 

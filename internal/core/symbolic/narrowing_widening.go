@@ -272,21 +272,20 @@ switch_:
 	case *parse.Variable:
 		switch action {
 		case setExactValue:
-			state.narrowLocal(node.Name, value, chain)
-		case removePossibleValue:
-			prev, ok := state.getLocal(node.Name)
-			if ok {
-				state.narrowLocal(node.Name, narrowOut(value, prev.value), chain)
+			if state.hasGlobal(node.Name) {
+				state.narrowGlobal(node.Name, value, chain)
+			} else {
+				state.narrowLocal(node.Name, value, chain)
 			}
-		}
-	case *parse.GlobalVariable:
-		switch action {
-		case setExactValue:
-			state.narrowGlobal(node.Name, value, chain)
 		case removePossibleValue:
 			prev, ok := state.getGlobal(node.Name)
 			if ok {
 				state.narrowGlobal(node.Name, narrowOut(value, prev.value), chain)
+			} else {
+				prev, ok := state.getLocal(node.Name)
+				if ok {
+					state.narrowLocal(node.Name, narrowOut(value, prev.value), chain)
+				}
 			}
 		}
 	case *parse.IdentifierLiteral:

@@ -26,7 +26,7 @@ fn handle(rw http.resp-writer, r http.req){
     }
 }
 
-# $$kv = open-store!(./db.json)
+# $kv = open-store!(./db.json)
 
 
 client = http.Client{ save-cookies: true, insecure: true }

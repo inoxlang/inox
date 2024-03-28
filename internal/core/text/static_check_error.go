@@ -135,6 +135,8 @@ const (
 	MISPLACED_GLOBAL_VAR_DECLS_TOP_LEVEL_STMT             = "misplaced global variable declaration(s): declarations are only allowed at the top level"
 	MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_REF_TO_FN = "misplaced global variable declaration(s): declarations are not allowed after a function declaration, or after a reference to a function that is declared further below"
 
+	GLOBAL_VARS_AND_CONSTS_CANNOT_BE_REASSIGNED = "global variables and constants cannot be re-assigned"
+
 	INVALID_MEM_HOST_ONLY_VALID_VALUE                                 = "invalid mem:// host, only valid value is " + inoxconsts.MEM_HOSTNAME
 	LOWER_BOUND_OF_INT_RANGE_LIT_SHOULD_BE_SMALLER_THAN_UPPER_BOUND   = "the lower bound of an integer range literal should be smaller than the upper bound"
 	LOWER_BOUND_OF_FLOAT_RANGE_LIT_SHOULD_BE_SMALLER_THAN_UPPER_BOUND = "the lower bound of a float range literal should be smaller than the upper bound"
@@ -290,16 +292,8 @@ func FmtInvalidGlobalVarDeclAlreadyDeclared(name string) string {
 	return fmt.Sprintf("invalid global variable declaration: '%s' is already declared", name)
 }
 
-func FmtInvalidGlobalVarAssignmentNameIsFuncName(name string) string {
-	return fmt.Sprintf("invalid global variable assignment: '%s' is a declared function's name", name)
-}
-
-func FmtInvalidGlobalVarAssignmentNameIsConstant(name string) string {
-	return fmt.Sprintf("invalid global variable assignment: '%s' is a constant", name)
-}
-
-func FmtInvalidGlobalVarAssignmentVarDoesNotExist(name string) string {
-	return fmt.Sprintf("invalid global variable assignment: '%s' does not exist", name)
+func FmtInvalidAssignmentNameIsFuncName(name string) string {
+	return fmt.Sprintf("invalid assignment: '%s' is a declared function's name", name)
 }
 
 func FmtInvalidVariableAssignmentVarDoesNotExist(name string) string {
@@ -316,6 +310,10 @@ func FmtCannotShadowVariable(name string) string {
 
 func FmtCannotShadowGlobalVariable(name string) string {
 	return fmt.Sprintf("cannot shadow global variable '%s', use another name instead", name)
+}
+
+func FmtCannotShadowGlobalConstant(name string) string {
+	return fmt.Sprintf("cannot shadow global constant '%s', use another name instead", name)
 }
 
 func FmtCannotShadowLocalVariable(name string) string {

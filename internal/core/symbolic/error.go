@@ -496,10 +496,6 @@ func fmtGlobalVarIsNotDeclared(name string) string {
 	return fmt.Sprintf("global variable '%s' is not declared", name)
 }
 
-func fmtAttempToAssignConstantGlobal(name string) string {
-	return fmt.Sprintf("attempt to assign constant global '%s'", name)
-}
-
 func fmtAssertedValueShouldBeBoolNot(v Value) string {
 	return fmt.Sprintf("asserted value should be a boolean not a %s", Stringify(v))
 }
@@ -516,18 +512,12 @@ func fmtSpreadArgumentShouldBeIterable(v Value) string {
 	return fmt.Sprintf("a spread argument should be iterable but is a(n) %s", Stringify(v))
 }
 
-func fmtDidYouMeanDollarNameInCLI(name string, doubleDollar bool) string {
-	if doubleDollar {
-		name = "$$" + name
-	} else {
-		name = "$" + name
-	}
+func fmtDidYouMeanDollarNameInCLI(name string) string {
 
 	return fmt.Sprintf(
-		"did you mean `%s` ?"+
+		"did you mean `$%s` ?"+
 			" In a call with the CLI syntax, identifiers such as `a` are evaluated to identifier values (#a)."+
-			" Local variables must be prefixed with a dollar: $mylocal. Global variables must be prefixed "+
-			"with two dollars: $$myglobal.",
+			" Variables must be prefixed with a dollar: $mylocal",
 		name)
 }
 
@@ -750,8 +740,4 @@ func fmtDidYouMeanPercentName(name string) string {
 
 func fmtDidYouMeanDollarName(name string) string {
 	return fmt.Sprintf("; did you mean $%s ? In this location local variable names require a leading `$`", name)
-}
-
-func fmtDidYouMeanDollarDollarName(name string) string {
-	return fmt.Sprintf("; did you mean $^%s ? In this location global variable names require a `$$` prefix", name)
 }

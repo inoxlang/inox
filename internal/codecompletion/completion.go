@@ -117,9 +117,7 @@ func FindCompletions(args SearchArgs) []Completion {
 		case *parse.PatternNamespaceIdentifierLiteral, *parse.PatternNamespaceMemberExpression:
 			completions = handlePatternNamespaceCompletions(n, search)
 		case *parse.Variable:
-			completions = handleLocalVariableCompletions(n, search)
-		case *parse.GlobalVariable:
-			completions = handleGlobalVariableCompletions(n, search)
+			completions = handleVariableCompletions(n, search)
 		case *parse.IdentifierLiteral:
 			completions = handleIdentifierAndKeywordCompletions(n, deepestCall, search)
 		case *parse.IdentifierMemberExpression:
@@ -365,7 +363,7 @@ func handlePatternNamespaceCompletions(n parse.Node, search completionSearch) []
 	return completions
 }
 
-func handleLocalVariableCompletions(n *parse.Variable, search completionSearch) []Completion {
+func handleVariableCompletions(n *parse.Variable, search completionSearch) []Completion {
 	state := search.state
 	ctx := state.Global.Ctx
 	mode := search.mode
@@ -376,6 +374,17 @@ func handleLocalVariableCompletions(n *parse.Variable, search completionSearch) 
 	var names []string
 	var labelDetails []string
 	if mode == ShellCompletions {
+		//Global variables
+		state.Global.Globals.Foreach(func(name string, varVal core.Value, _ bool) error {
+			if hasPrefixCaseInsensitive(name, n.Name) {
+				names = append(names, name)
+				detail, _ := core.GetStringifiedSymbolicValue(ctx, varVal, false)
+				labelDetails = append(labelDetails, detail)
+			}
+			return nil
+		})
+
+		//Local variables
 		for name, varVal := range state.CurrentLocalScope() {
 
 			if hasPrefixCaseInsensitive(name, n.Name) {
@@ -386,11 +395,22 @@ func handleLocalVariableCompletions(n *parse.Variable, search completionSearch) 
 			}
 		}
 	} else {
+		//Global variables
+
+		globalScopeData, _ := state.Global.SymbolicData.GetGlobalScopeData(n, ancestorChain)
+
+		for _, varData := range globalScopeData.Variables {
+			if hasPrefixCaseInsensitive(varData.Name, n.Name) {
+				names = append(names, varData.Name)
+				labelDetails = append(labelDetails, symbolic.Stringify(varData.Value))
+			}
+		}
+
+		//Local variables
 		scopeData, _ := state.Global.SymbolicData.GetLocalScopeData(n, ancestorChain)
 		for _, varData := range scopeData.Variables {
 			if hasPrefixCaseInsensitive(varData.Name, n.Name) {
 				names = append(names, varData.Name)
-
 				labelDetails = append(labelDetails, symbolic.Stringify(varData.Value))
 			}
 		}
@@ -404,45 +424,6 @@ func handleLocalVariableCompletions(n *parse.Variable, search completionSearch) 
 			LabelDetail: labelDetails[i],
 		})
 	}
-	return completions
-}
-
-func handleGlobalVariableCompletions(n *parse.GlobalVariable, search completionSearch) []Completion {
-	state := search.state
-	ctx := state.Global.Ctx
-	mode := search.mode
-	ancestorChain := search.ancestorChain
-
-	var completions []Completion
-
-	if mode == ShellCompletions {
-		state.Global.Globals.Foreach(func(name string, varVal core.Value, _ bool) error {
-			if hasPrefixCaseInsensitive(name, n.Name) {
-				detail, _ := core.GetStringifiedSymbolicValue(ctx, varVal, false)
-				completions = append(completions, Completion{
-					ShownString: name,
-					Value:       "$$" + name,
-					Kind:        defines.CompletionItemKindVariable,
-					LabelDetail: detail,
-				})
-			}
-			return nil
-		})
-	} else {
-		scopeData, _ := state.Global.SymbolicData.GetGlobalScopeData(n, ancestorChain)
-
-		for _, varData := range scopeData.Variables {
-			if hasPrefixCaseInsensitive(varData.Name, n.Name) {
-				completions = append(completions, Completion{
-					ShownString: varData.Name,
-					Value:       "$$" + varData.Name,
-					Kind:        defines.CompletionItemKindVariable,
-					LabelDetail: symbolic.Stringify(varData.Value),
-				})
-			}
-		}
-	}
-
 	return completions
 }
 
@@ -624,7 +605,7 @@ after_subcommand_completions:
 				if isCommandLikeCallArgument {
 					ident, ok := callExpr.Callee.(*parse.IdentifierLiteral)
 					if !ok || !slices.Contains(GLOBALNAMES_WITHOUT_IDENT_CONVERSION_TO_VAR_IN_CMD_LIKE_CALL, ident.Name) {
-						name = "$$" + name
+						name = "$" + name
 					}
 				}
 
@@ -647,7 +628,7 @@ after_subcommand_completions:
 				if isCommandLikeCallArgument {
 					ident, ok := callExpr.Callee.(*parse.IdentifierLiteral)
 					if !ok || !slices.Contains(GLOBALNAMES_WITHOUT_IDENT_CONVERSION_TO_VAR_IN_CMD_LIKE_CALL, ident.Name) {
-						name = "$$" + name
+						name = "$" + name
 					}
 				}
 
@@ -858,8 +839,6 @@ loop:
 			}
 			curr = val
 			break loop
-		case *parse.GlobalVariable:
-			break loop
 		case *parse.Variable:
 			break loop
 		case *parse.SelfExpression:
@@ -870,16 +849,6 @@ loop:
 	}
 
 	switch left := left.(type) {
-	case *parse.GlobalVariable:
-		if mode == ShellCompletions {
-			if curr, ok = state.Global.Globals.CheckedGet(left.Name); !ok {
-				return nil
-			}
-		} else {
-			if curr, ok = state.Global.SymbolicData.GetMostSpecificNodeValue(left); !ok {
-				return nil
-			}
-		}
 	case *parse.Variable:
 		if mode == ShellCompletions {
 			if curr, ok = state.Get(left.Name); !ok {

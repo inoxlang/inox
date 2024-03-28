@@ -356,21 +356,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		}
 		return v, nil
 	case *parse.Variable:
-		info, ok := state.getLocal(n.Name)
-		if !ok {
-			msg := fmtLocalVarIsNotDeclared(n.Name)
-
-			if pattern := state.ctx.ResolveNamedPattern(n.Name); pattern != nil {
-				msg += fmt.Sprintf("; did you mean %%%s instead of $%s ?", n.Name, n.Name)
-			}
-
-			options.setHasShallowErrors()
-			state.addError(makeSymbolicEvalError(node, state, msg))
-			return ANY, nil
-		}
-		return info.value, nil
-	case *parse.GlobalVariable:
-		return evalGlobalVariable(n, state, options)
+		return evalVariable(n, state, options)
 	case *parse.ReturnStatement:
 		return evalReturnStatement(n, state)
 	case *parse.CoyieldStatement:
@@ -728,10 +714,8 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 			}
 
 			if n.Unprefixed {
-				if _, ok := state.getLocal(n.Name); ok {
+				if _, ok := state.get(n.Name); ok {
 					msg += fmtDidYouMeanDollarName(n.Name)
-				} else if _, ok := state.getGlobal(n.Name); ok {
-					msg += fmtDidYouMeanDollarDollarName(n.Name)
 				}
 			}
 
@@ -1171,31 +1155,41 @@ func evalIdentifier(node *parse.IdentifierLiteral, state *State, evalOptions eva
 	return info.value, nil
 }
 
-func evalGlobalVariable(node *parse.GlobalVariable, state *State, evalOptions evalOptions) (Value, error) {
+func evalVariable(node *parse.Variable, state *State, evalOptions evalOptions) (Value, error) {
 	info, ok := state.getGlobal(node.Name)
-
-	if !ok {
-		evalOptions.setHasShallowErrors()
-
-		state.addError(makeSymbolicEvalError(node, state, fmtGlobalVarIsNotDeclared(node.Name)))
-		return ANY, nil
-	}
-
-	inoxFn, ok := info.value.(*inoxFunctionToBeDeclared)
 	if ok {
-		//Properly declare the function.
-		_, err := evalFunctionDeclaration(inoxFn.decl, state, evalOptions)
-		if err != nil {
-			return nil, fmt.Errorf("error while evaluating the function declaration: %w", err)
+		inoxFn, ok := info.value.(*inoxFunctionToBeDeclared)
+		if ok {
+			//Properly declare the function.
+			_, err := evalFunctionDeclaration(inoxFn.decl, state, evalOptions)
+			if err != nil {
+				return nil, fmt.Errorf("error while evaluating the function declaration: %w", err)
+			}
+			varInfo, ok := state.getGlobal(node.Name)
+			if !ok {
+				return nil, fmt.Errorf("error while evaluating the function declaration: %w", err)
+			}
+			return varInfo.value, nil
 		}
-		varInfo, ok := state.getGlobal(node.Name)
-		if !ok {
-			return nil, fmt.Errorf("error while evaluating the function declaration: %w", err)
-		}
-		return varInfo.value, nil
+
+		return info.value, nil
 	}
 
-	return info.value, nil
+	info, ok = state.getLocal(node.Name)
+
+	if ok {
+		return info.value, nil
+	}
+
+	msg := fmtVarIsNotDeclared(node.Name)
+
+	if pattern := state.ctx.ResolveNamedPattern(node.Name); pattern != nil {
+		msg += fmt.Sprintf("; did you mean %%%s instead of $%s ?", node.Name, node.Name)
+	}
+
+	evalOptions.setHasShallowErrors()
+	state.addError(makeSymbolicEvalError(node, state, msg))
+	return ANY, nil
 }
 
 func evalReturnStatement(n *parse.ReturnStatement, state *State) (_ Value, finalErr error) {
@@ -1476,6 +1470,11 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 	case *parse.Variable:
 		name := lhs.Name
 
+		if state.hasGlobal(name) {
+			//Global variable assignments are not allowed, there should be a static check error.
+			return nil, nil
+		}
+
 		if state.hasLocal(name) {
 			if node.Operator.Int() {
 				info, _ := state.getLocal(name)
@@ -1511,6 +1510,11 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 	case *parse.IdentifierLiteral:
 		name := lhs.Name
 
+		if state.hasGlobal(name) {
+			//Global variable assignments are not allowed, there should be a static check error.
+			return nil, nil
+		}
+
 		if state.hasLocal(name) {
 			if node.Operator.Int() {
 				info, _ := state.getLocal(name)
@@ -1532,26 +1536,6 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 				}
 			}
 
-		} else if state.hasGlobal(name) {
-			if node.Operator.Int() {
-				info, _ := state.getGlobal(name)
-				rhs, _, err := getRHS(nil)
-				if err != nil {
-					return nil, err
-				}
-
-				lhsValue := MergeValuesWithSameStaticTypeInMultivalue(info.value)
-
-				if _, ok := lhsValue.(*Int); !ok {
-					state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
-				} else if !badIntOperationRHS {
-					state.updateGlobal(name, rhs, node)
-				}
-			} else {
-				if _, err := state.updateGlobal2(name, node, getRHS, false); err != nil {
-					return nil, err
-				}
-			}
 		} else {
 			rhs, _, err := getRHS(nil)
 			if err != nil {
@@ -1563,46 +1547,6 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 		//TODO: set to previous value instead ?
 		state.SetMostSpecificNodeValue(lhs, __rhs)
 		state.SetLocalScopeData(node, state.currentLocalScopeData())
-	case *parse.GlobalVariable:
-		name := lhs.Name
-
-		info, alreadyDefined := state.getGlobal(name)
-		if alreadyDefined && info.isConstant {
-			state.addError(makeSymbolicEvalError(node, state, fmtAttempToAssignConstantGlobal(name)))
-		}
-
-		if state.hasGlobal(name) {
-			if node.Operator.Int() {
-				info, _ := state.getGlobal(name)
-				rhs, _, err := getRHS(nil)
-				if err != nil {
-					return nil, err
-				}
-
-				lhsValue := MergeValuesWithSameStaticTypeInMultivalue(info.value)
-
-				if _, ok := lhsValue.(*Int); !ok {
-					state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
-				} else if !badIntOperationRHS {
-					state.updateGlobal(name, rhs, node)
-				}
-			} else {
-				if _, err := state.updateGlobal2(name, node, getRHS, false); err != nil {
-					return nil, err
-				}
-			}
-
-		} else {
-			rhs, _, err := getRHS(nil)
-			if err != nil {
-				return nil, err
-			}
-			state.setGlobal(name, rhs, GlobalVar, node.Left)
-		}
-
-		//TODO: set to previous value instead ?
-		state.SetMostSpecificNodeValue(lhs, __rhs)
-		state.SetGlobalScopeData(node, state.currentGlobalScopeData())
 	case *parse.MemberExpression:
 		object, err := _symbolicEval(lhs.Left, state, evalOptions{
 			doubleColonExprAncestorChain: []parse.Node{node},
@@ -2097,17 +2041,15 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 
 			switch indexed := lhs.Indexed.(type) {
 			case *parse.Variable:
-				info, ok := state.getLocal(indexed.Name)
-				if !ok {
-					break
-				}
-				lhsInfo = &info
-			case *parse.GlobalVariable:
 				info, ok := state.getGlobal(indexed.Name)
+				if ok {
+					lhsInfo = &info
+				}
+
+				info, ok = state.getLocal(indexed.Name)
 				if !ok {
 					break
 				}
-				lhsInfo = &info
 			case *parse.IdentifierLiteral:
 				info, ok := state.get(indexed.Name)
 				if !ok {

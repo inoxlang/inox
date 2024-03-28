@@ -63,17 +63,6 @@ fn add(a %{a: int}, b %{a: int}) %{a: int} {
 
 </details>
 
-Local variables are local to a function's scope or to the module's top local
-scope. Blocks might be introduced in the future.
-
-```
-fn f(){
-    var a = 1
-    if true {
-        var a = 2 # error ! 'a' is already declared
-    }
-}
-```
 
 ## Calling a Function
 

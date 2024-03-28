@@ -93,12 +93,11 @@ func _checkNotClonedObjectPropDeepMutation(path parse.Node, state *State, first 
 		}
 		switch node := n.(type) {
 		case *parse.Variable:
-			info, ok := state.getLocal(node.Name)
+			info, ok := state.getGlobal(node.Name)
 			if ok {
 				return info.value
 			}
-		case *parse.GlobalVariable:
-			info, ok := state.getGlobal(node.Name)
+			info, ok = state.getLocal(node.Name)
 			if ok {
 				return info.value
 			}
@@ -120,16 +119,15 @@ func _checkNotClonedObjectPropDeepMutation(path parse.Node, state *State, first 
 		if first {
 			return
 		}
-		info, ok := state.getLocal(node.Name)
-		if ok && isSharedObject(info.value) {
-
-			state.addError(makeSymbolicEvalError(path, state, fmtUselessMutationInClonedPropValue(elementNameHelp)))
-		}
-	case *parse.GlobalVariable:
-		if first {
-			return
-		}
 		info, ok := state.getGlobal(node.Name)
+		if ok {
+			if isSharedObject(info.value) {
+				state.addError(makeSymbolicEvalError(path, state, fmtUselessMutationInClonedPropValue(elementNameHelp)))
+			}
+			break
+		}
+
+		info, ok = state.getLocal(node.Name)
 		if ok && isSharedObject(info.value) {
 			state.addError(makeSymbolicEvalError(path, state, fmtUselessMutationInClonedPropValue(elementNameHelp)))
 		}
@@ -137,16 +135,17 @@ func _checkNotClonedObjectPropDeepMutation(path parse.Node, state *State, first 
 		if first {
 			return
 		}
-		if state.hasLocal(node.Name) {
-			info, _ := state.getLocal(node.Name)
+		info, ok := state.getGlobal(node.Name)
+		if ok {
 			if isSharedObject(info.value) {
 				state.addError(makeSymbolicEvalError(path, state, fmtUselessMutationInClonedPropValue(elementNameHelp)))
 			}
-		} else if state.hasGlobal(node.Name) {
-			info, _ := state.getGlobal(node.Name)
-			if isSharedObject(info.value) {
-				state.addError(makeSymbolicEvalError(path, state, fmtUselessMutationInClonedPropValue(elementNameHelp)))
-			}
+			break
+		}
+
+		info, ok = state.getLocal(node.Name)
+		if ok && isSharedObject(info.value) {
+			state.addError(makeSymbolicEvalError(path, state, fmtUselessMutationInClonedPropValue(elementNameHelp)))
 		}
 	case *parse.IdentifierMemberExpression:
 		left := getNodeValue(node.Left)

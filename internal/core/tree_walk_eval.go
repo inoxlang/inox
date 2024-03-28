@@ -238,21 +238,19 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		}
 		return NewHost(hostnamePort, n.Scheme.Name)
 	case *parse.Variable:
+
+		if val, ok := state.Global.Globals.CheckedGet(n.Name); ok {
+			err := state.Global.Ctx.CheckHasPermission(GlobalVarPermission{Kind_: permkind.Read, Name: n.Name})
+			if err != nil {
+				return nil, err
+			}
+			return val, nil
+		}
+
 		v, ok := state.CurrentLocalScope()[n.Name]
 
 		if !ok {
 			return nil, errors.New("variable " + n.Name + " is not declared")
-		}
-		return v, nil
-	case *parse.GlobalVariable:
-		err := state.Global.Ctx.CheckHasPermission(GlobalVarPermission{Kind_: permkind.Read, Name: n.Name})
-		if err != nil {
-			return nil, err
-		}
-		v, ok := state.Global.Globals.CheckedGet(n.Name)
-
-		if !ok {
-			return nil, errors.New("global variable " + n.Name + " is not declared")
 		}
 		return v, nil
 	case *parse.ReturnStatement:
@@ -524,9 +522,14 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		switch lhs := n.Left.(type) {
 		case *parse.Variable:
+			name := lhs.Name
+
+			if state.HasGlobal(name) {
+				return nil, errors.New("attempt to assign a global variable or constant")
+			}
+
 			currentLocalScope := state.CurrentLocalScope()
 
-			name := lhs.Name
 			right, err := TreeWalkEval(n.Right, state)
 			if err != nil {
 				return nil, err
@@ -539,9 +542,14 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 			currentLocalScope[name] = right
 		case *parse.IdentifierLiteral:
+			name := lhs.Name
+
+			if state.HasGlobal(name) {
+				return nil, errors.New("attempt to assign a global variable or constant")
+			}
+
 			currentLocalScope := state.CurrentLocalScope()
 
-			name := lhs.Name
 			right, err := TreeWalkEval(n.Right, state)
 			if err != nil {
 				return nil, err
@@ -553,39 +561,6 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			}
 
 			currentLocalScope[name] = right
-		case *parse.GlobalVariable:
-			name := lhs.Name
-			alreadyDefined := state.Global.Globals.Has(name)
-			if alreadyDefined {
-				if _, ok := state.constantVars[name]; ok {
-					return nil, errors.New("attempt to assign a constant global")
-				}
-
-				err := state.Global.Ctx.CheckHasPermission(GlobalVarPermission{Kind_: permkind.Update, Name: name})
-				if err != nil {
-					return nil, err
-				}
-			} else {
-				err = state.Global.Ctx.CheckHasPermission(GlobalVarPermission{Kind_: permkind.Create, Name: name})
-				if err != nil {
-					return nil, err
-				}
-			}
-
-			right, err := TreeWalkEval(n.Right, state)
-			if err != nil {
-				return nil, err
-			}
-
-			getLeft := func() Value {
-				return state.Global.Globals.Get(name)
-			}
-			right, err = handleAssignmentOperation(getLeft, right)
-			if err != nil {
-				return nil, err
-			}
-
-			state.SetGlobal(name, right, GlobalVar)
 		case *parse.MemberExpression:
 			left, err := TreeWalkEval(lhs.Left, state)
 			if err != nil {

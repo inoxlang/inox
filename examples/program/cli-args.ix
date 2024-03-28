@@ -10,4 +10,4 @@ manifest {
     }
 }
 
-print $$mod-args
+print $mod-args

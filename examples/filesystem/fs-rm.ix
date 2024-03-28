@@ -9,5 +9,5 @@ manifest {
     }
 }
 
-fs.mkdir $$DIR_PATH
-fs.rm $$DIR_PATH
+fs.mkdir $DIR_PATH
+fs.rm $DIR_PATH

@@ -129,9 +129,7 @@ func (err AssertionError) stringifyNode(node parse.Node) string {
 
 	switch n := node.(type) {
 	case *parse.Variable:
-		return "local variable `" + n.Name + "`"
-	case *parse.GlobalVariable:
-		return "global variable `" + n.Name + "`"
+		return "variable `" + n.Name + "`"
 	case *parse.IdentifierLiteral:
 		return "variable `" + n.Name + "`"
 	case *parse.CallExpression:

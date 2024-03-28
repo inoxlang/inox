@@ -24,7 +24,7 @@ type preinitBlockCheckParams struct {
 func checkPreinitBlock(args preinitBlockCheckParams) {
 	parse.Walk(args.node.Block, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
 		switch n := node.(type) {
-		case *parse.Block, *parse.IdentifierLiteral, *parse.GlobalVariable,
+		case *parse.Block, *parse.IdentifierLiteral, *parse.Variable,
 			parse.SimpleValueLiteral, *parse.URLExpression,
 			*parse.IntegerRangeLiteral, *parse.FloatRangeLiteral,
 
@@ -168,7 +168,7 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 
 				switch n := node.(type) {
 				case *parse.ObjectLiteral, *parse.ObjectProperty:
-				case *parse.DictionaryEntry, parse.SimpleValueLiteral, *parse.GlobalVariable,
+				case *parse.DictionaryEntry, parse.SimpleValueLiteral,
 					*parse.IdentifierMemberExpression:
 				default:
 					hasErrors = true
@@ -217,7 +217,7 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 				}
 
 				switch n := node.(type) {
-				case *parse.ObjectProperty, parse.SimpleValueLiteral, *parse.GlobalVariable:
+				case *parse.ObjectProperty, parse.SimpleValueLiteral:
 				default:
 					onError(n, text.FmtForbiddenNodeInLimitsSection(n))
 				}
@@ -245,7 +245,7 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 
 				switch n := node.(type) {
 				case *parse.PatternIdentifierLiteral, *parse.PatternNamespaceMemberExpression,
-					*parse.ObjectPatternProperty, *parse.PatternCallExpression, parse.SimpleValueLiteral, *parse.GlobalVariable:
+					*parse.ObjectPatternProperty, *parse.PatternCallExpression, parse.SimpleValueLiteral:
 				default:
 					onError(n, text.FmtForbiddenNodeInEnvSection(n))
 				}
@@ -318,7 +318,8 @@ func checkPermissionListingObject(objLit *parse.ObjectLiteral, onError func(n pa
 	parse.Walk(objLit, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
 		switch n := node.(type) {
 		case *parse.ObjectLiteral, *parse.ListLiteral, *parse.DictionaryLiteral, *parse.DictionaryEntry, *parse.ObjectProperty,
-			parse.SimpleValueLiteral, *parse.GlobalVariable, *parse.PatternIdentifierLiteral, *parse.URLExpression, *parse.PathPatternExpression:
+			parse.SimpleValueLiteral, *parse.PatternIdentifierLiteral, *parse.URLExpression, *parse.PathPatternExpression,
+			*parse.Variable:
 		default:
 			onError(n, text.FmtForbiddenNodeInPermListing(n))
 		}
@@ -358,7 +359,7 @@ func checkSingleKindPermissions(permKind PermissionKind, desc parse.Node, onErro
 		case *parse.HostLiteral:
 		case *parse.HostPatternLiteral:
 		case *parse.PatternIdentifierLiteral, *parse.PatternNamespaceIdentifierLiteral:
-		case *parse.GlobalVariable, *parse.Variable, *parse.IdentifierLiteral:
+		case *parse.Variable, *parse.IdentifierLiteral:
 
 		case *parse.DoubleQuotedStringLiteral, *parse.MultilineStringLiteral, *parse.UnquotedStringLiteral:
 			s := n.(parse.SimpleValueLiteral).ValueString()
@@ -448,7 +449,7 @@ func checkPreinitFilesObject(obj *parse.ObjectLiteral, onError func(n parse.Node
 
 		switch n := node.(type) {
 		case *parse.PatternIdentifierLiteral, *parse.PatternNamespaceMemberExpression, *parse.ObjectLiteral,
-			*parse.ObjectProperty, *parse.PatternCallExpression, parse.SimpleValueLiteral, *parse.GlobalVariable,
+			*parse.ObjectProperty, *parse.PatternCallExpression, parse.SimpleValueLiteral,
 			*parse.AbsolutePathExpression, *parse.RelativePathExpression:
 		default:
 			onError(n, text.FmtForbiddenNodeInPreinitFilesSection(n))
@@ -513,7 +514,7 @@ func checkDatabasesObject(
 
 		switch n := node.(type) {
 		case *parse.PatternIdentifierLiteral, *parse.PatternNamespaceMemberExpression, *parse.ObjectLiteral,
-			*parse.ObjectProperty, *parse.PatternCallExpression, parse.SimpleValueLiteral, *parse.GlobalVariable,
+			*parse.ObjectProperty, *parse.PatternCallExpression, parse.SimpleValueLiteral,
 			*parse.AbsolutePathExpression, *parse.RelativePathExpression:
 		default:
 			onError(n, text.FmtForbiddenNodeInDatabasesSection(n))
@@ -673,7 +674,7 @@ func checkParametersObject(objLit *parse.ObjectLiteral, onError func(n parse.Nod
 		case
 			*parse.ObjectProperty, *parse.ObjectLiteral, *parse.ListLiteral,
 			*parse.OptionExpression,
-			parse.SimpleValueLiteral, *parse.GlobalVariable,
+			parse.SimpleValueLiteral,
 			//patterns
 			*parse.PatternCallExpression,
 			*parse.ListPatternLiteral, *parse.TuplePatternLiteral,

@@ -216,8 +216,7 @@ const (
 	IDENTIFIER_LITERAL
 	PROP_NAME_LITERAL
 	UNAMBIGUOUS_IDENTIFIER_LITERAL
-	LOCAL_VARNAME
-	GLOBAL_VARNAME
+	VARNAME
 	ABSOLUTE_PATH_LITERAL
 	RELATIVE_PATH_LITERAL
 	ABSOLUTE_PATH_PATTERN_LITERAL
@@ -625,8 +624,7 @@ var tokenTypenames = [...]string{
 	IDENTIFIER_LITERAL:             "IDENTIFIER_LITERAL",
 	PROP_NAME_LITERAL:              "PROP_NAME_LITERAL",
 	UNAMBIGUOUS_IDENTIFIER_LITERAL: "UNAMBIGUOUS_IDENTIFIER_LITERAL",
-	LOCAL_VARNAME:                  "LOCAL_VARNAME",
-	GLOBAL_VARNAME:                 "GLOBAL_VARNAME",
+	VARNAME:                        "VARNAME",
 	ABSOLUTE_PATH_LITERAL:          "ABSOLUTE_PATH_LITERAL",
 	RELATIVE_PATH_LITERAL:          "RELATIVE_PATH_LITERAL",
 	ABSOLUTE_PATH_PATTERN_LITERAL:  "ABSOLUTE_PATH_PATTERN_LITERAL",
@@ -1001,11 +999,8 @@ func GetTokens(node Node, chunk *Chunk, addMeta bool) []Token {
 			tokenType = UNAMBIGUOUS_IDENTIFIER_LITERAL
 			raw = "#" + n.Name
 		case *Variable:
-			tokenType = LOCAL_VARNAME
+			tokenType = VARNAME
 			raw = "$" + n.Name
-		case *GlobalVariable:
-			tokenType = GLOBAL_VARNAME
-			raw = "$$" + n.Name
 		case *PropertyNameLiteral:
 			tokenType = PROP_NAME_LITERAL
 			raw = "." + n.Name

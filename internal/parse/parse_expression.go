@@ -54,36 +54,20 @@ func (p *parser) parseExpression(config ...exprParsingConfig) (expr Node, isMiss
 	}
 
 	switch p.s[p.i] {
-	case '$': //local & global variables
+	case '$': //variables
 		start := p.i
-		isGlobal := false
 		p.i++
-
-		if p.i < p.len && p.s[p.i] == '$' {
-			isGlobal = true
-			p.i++
-		}
 
 		for p.i < p.len && IsIdentChar(p.s[p.i]) {
 			p.i++
 		}
 
-		if isGlobal {
-			left = &GlobalVariable{
-				NodeBase: NodeBase{
-					Span: NodeSpan{start, p.i},
-				},
-				Name: string(p.s[start+2 : p.i]),
-			}
-		} else {
-			left = &Variable{
-				NodeBase: NodeBase{
-					Span: NodeSpan{start, p.i},
-				},
-				Name: string(p.s[start+1 : p.i]),
-			}
+		left = &Variable{
+			NodeBase: NodeBase{
+				Span: NodeSpan{start, p.i},
+			},
+			Name: string(p.s[start+1 : p.i]),
 		}
-
 	case '!':
 		p.i++
 		operand, _ := p.parseExpression()

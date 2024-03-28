@@ -16,7 +16,7 @@ func TestSymbolicEvalCheck(t *testing.T) {
 
 	t.Run("predefined global variables do not cause an error", func(t *testing.T) {
 
-		code := `return ($$var + 1)`
+		code := `return ($var + 1)`
 		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
 			NameString: "symbolic-core-test",
 			CodeString: code,
@@ -37,7 +37,7 @@ func TestSymbolicEvalCheck(t *testing.T) {
 	})
 
 	t.Run("", func(t *testing.T) {
-		code := `return ($$var + 1)`
+		code := `return ($var + 1)`
 		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
 			NameString: "symbolic-core-test",
 			CodeString: code,

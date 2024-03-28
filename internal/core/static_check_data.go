@@ -94,7 +94,6 @@ func (*StaticCheckData) PropertyNames(ctx *Context) []string {
 
 type FunctionStaticData struct {
 	capturedGlobals []string
-	assignGlobal    bool
 }
 
 type MappingStaticData struct {
@@ -136,16 +135,6 @@ func (data *StaticCheckData) addMappingCapturedGlobal(expr *parse.MappingExpress
 	if !utils.SliceContains(mappingData.referencedGlobals, name) {
 		mappingData.referencedGlobals = append(mappingData.referencedGlobals, name)
 	}
-}
-
-func (data *StaticCheckData) addFnAssigningGlobal(fnExpr *parse.FunctionExpression) {
-	fnData := data.fnData[fnExpr]
-	if fnData == nil {
-		fnData = &FunctionStaticData{}
-		data.fnData[fnExpr] = fnData
-	}
-
-	fnData.assignGlobal = true
 }
 
 func (data *StaticCheckData) GetFnData(fnExpr *parse.FunctionExpression) *FunctionStaticData {

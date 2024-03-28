@@ -47,7 +47,7 @@ if err? {
 }
 
 # this line will fail because the number of simultaneous connections is 1
-# other_conn = ws.connect!($$WS_URL)
+# other_conn = ws.connect!($WS_URL)
 
 conn.close()
 server.close()

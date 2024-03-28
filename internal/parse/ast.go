@@ -213,19 +213,6 @@ func (Variable) Kind() NodeKind {
 	return Expr
 }
 
-type GlobalVariable struct {
-	NodeBase `json:"base:global-variable"`
-	Name     string
-}
-
-func (v GlobalVariable) Str() string {
-	return "$$" + v.Name
-}
-
-func (GlobalVariable) Kind() NodeKind {
-	return Expr
-}
-
 type MemberExpression struct {
 	NodeBase     `json:"base:member-expr"`
 	Left         Node
@@ -1375,8 +1362,6 @@ func (CallExpression) Kind() NodeKind {
 func (e CallExpression) IsCalleeNamed(name string) bool {
 	switch callee := e.Callee.(type) {
 	case *IdentifierLiteral:
-		return callee.Name == name
-	case *GlobalVariable:
 		return callee.Name == name
 	case *Variable:
 		return callee.Name == name
@@ -3348,12 +3333,6 @@ func FindPreviousStatementAndChain(n Node, ancestorChain []Node, climbBlocks boo
 
 func FindIdentWithName(root Node, name string) Node {
 	return FindNode(root, (*IdentifierLiteral)(nil), func(n *IdentifierLiteral, isFirstFound bool, ancestors []Node) bool {
-		return n.Name == name
-	})
-}
-
-func FindGlobalVarWithName(root Node, name string) Node {
-	return FindNode(root, (*GlobalVariable)(nil), func(n *GlobalVariable, isFirstFound bool, ancestors []Node) bool {
 		return n.Name == name
 	})
 }

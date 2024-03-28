@@ -267,7 +267,7 @@ func TestPreInit(t *testing.T) {
 			name: "additional globals are accessible from within the preinit statement",
 			module: `
 				preinit {
-					pattern p = $$PATH_PATTERN
+					pattern p = $PATH_PATTERN
 				}
 				manifest {
 					permissions: { read: %p }
@@ -358,13 +358,13 @@ func TestPreInit(t *testing.T) {
 			error:               false,
 		},
 		{
-			name: "read @const var",
+			name: "read const var",
 			module: `
 				const (
 					URL = https://example.com/
 				)
 				manifest {
-					permissions: { read: $$URL}
+					permissions: { read: $URL}
 				}`,
 			expectedPermissions: []Permission{HttpPermission{Kind_: permkind.Read, Entity: URL("https://example.com/")}},
 			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
@@ -378,7 +378,7 @@ func TestPreInit(t *testing.T) {
 					URL = https://example.com/
 				)
 				manifest {
-					permissions: { Read: $$URL}
+					permissions: { Read: $URL}
 				}`,
 			expectedPermissions: []Permission{},
 			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},

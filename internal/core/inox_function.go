@@ -93,10 +93,6 @@ func (fn *InoxFunction) IsSharable(originState *GlobalState) (bool, string) {
 		//TODO: return false, "function is not sharable because static data is missing"
 	}
 
-	if fn.staticData.assignGlobal {
-		return false, "function is not sharable because it assigns a global"
-	}
-
 	return true, ""
 }
 

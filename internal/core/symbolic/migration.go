@@ -54,7 +54,7 @@ type MigrationInitialValueCapablePattern interface {
 func isNodeAllowedInMigrationHandler(visit visitArgs, globalsAtCreation map[string]Value) (parse.TraversalAction, bool, error) {
 	switch n := visit.node.(type) {
 	case parse.SimpleValueLiteral, //includes IdentifierLiteral
-		*parse.GlobalVariable, *parse.Variable,
+		*parse.Variable,
 		//basic data structures
 		*parse.ObjectLiteral, *parse.ObjectProperty, *parse.PropertySpreadElement, *parse.RecordLiteral,
 		*parse.ListLiteral, *parse.ElementSpreadElement, *parse.TupleLiteral:

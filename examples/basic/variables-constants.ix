@@ -23,14 +23,11 @@ print(c)
 $a = 2
 print $a
 
-# local variable declaration
+# global variable declaration
 globalvar g1 = 1
 globalvar g2 int = 1
 
-# global variable assignment
-$$myglobal = 100
-print $$myglobal
-print(myglobal)
+# global variables are not re-assignable
 
 # += assignment
 b = 1

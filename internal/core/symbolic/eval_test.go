@@ -1264,30 +1264,6 @@ func TestSymbolicEval(t *testing.T) {
 		})
 	})
 
-	t.Run("global variable assignment", func(t *testing.T) {
-		n, state := MakeTestStateAndChunk(`
-			$$v = []
-			return $$v
-		`)
-		res, err := symbolicEval(n, state)
-		assert.NoError(t, err)
-		assert.Empty(t, state.errors())
-		assert.Equal(t, &List{elements: []Serializable{}}, res)
-
-		//check definition position data
-		idents, ancestorChains := parse.FindNodesAndChains(n, (*parse.GlobalVariable)(nil), nil)
-		definitionIdent := idents[0]
-		returnIdent := idents[1]
-		returnIdentAncestors := ancestorChains[1]
-
-		pos, ok := state.symbolicData.GetVariableDefinitionPosition(returnIdent, returnIdentAncestors)
-		if !assert.True(t, ok) {
-			return
-		}
-
-		assert.Equal(t, definitionIdent.Span, pos.Span)
-	})
-
 	t.Run("variable assignment", func(t *testing.T) {
 
 		t.Run("local variable", func(t *testing.T) {
@@ -1299,34 +1275,6 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
 			assert.Equal(t, NewList(), res)
-		})
-
-		t.Run("global variable", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				$$v = []
-				return $$v
-			`)
-			res, err := symbolicEval(n, state)
-			if !assert.NoError(t, err) {
-				return
-			}
-			assert.Empty(t, state.errors())
-			assert.Equal(t, NewList(), res)
-
-			//check scope data
-			stmt, ancestors := parse.FindNodeAndChain(n, (*parse.ReturnStatement)(nil), nil)
-			data, ok := state.symbolicData.GetGlobalScopeData(stmt, ancestors)
-			if !assert.True(t, ok) {
-				return
-			}
-
-			for _, varData := range data.Variables {
-				if varData.Name == "v" {
-					return
-				}
-			}
-
-			assert.Fail(t, "variable not found in scope data")
 		})
 
 		t.Run("RHS has type incompatible with explicit static type of the variable", func(t *testing.T) {
@@ -1830,10 +1778,10 @@ func TestSymbolicEval(t *testing.T) {
 		})
 
 		t.Run("type annotation with incompatible value", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`{"name" %str : $$int}`)
+			n, state := MakeTestStateAndChunk(`{"name" %str : $int}`)
 			res, err := symbolicEval(n, state)
 
-			valueNode := parse.FindNode(state.Module.mainChunk.Node, (*parse.GlobalVariable)(nil), nil)
+			valueNode := parse.FindNode(state.Module.mainChunk.Node, (*parse.Variable)(nil), nil)
 
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
@@ -2425,14 +2373,14 @@ func TestSymbolicEval(t *testing.T) {
 		t.Run("property name is not a string", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				v = {"name": "foo"}
-				return v.($$int)
+				return v.($int)
 			`)
 			res, err := symbolicEval(n, state)
 			if !assert.NoError(t, err) {
 				return
 			}
 
-			propNameNode := parse.FindNode(n, (*parse.GlobalVariable)(nil), nil)
+			propNameNode := parse.FindNode(n, (*parse.Variable)(nil), nil)
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(propNameNode, state, fmtComputedPropNameShouldBeAStringNotA(ANY_INT)),
@@ -2662,7 +2610,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("list of unknown length", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				return $$v[0]
+				return $v[0]
 			`)
 			state.setGlobal("v", &List{generalElement: ANY_STRING}, GlobalConst)
 			res, err := symbolicEval(n, state)
@@ -2673,7 +2621,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("rune slice", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				return $$v[0]
+				return $v[0]
 			`)
 			state.setGlobal("v", ANY_RUNE_SLICE, GlobalConst)
 			res, err := symbolicEval(n, state)
@@ -2684,7 +2632,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("byte slice", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				return $$v[0]
+				return $v[0]
 			`)
 			state.setGlobal("v", ANY_BYTE_SLICE, GlobalConst)
 			res, err := symbolicEval(n, state)
@@ -2799,7 +2747,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("list of unknown length", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				return $$v[0:]
+				return $v[0:]
 			`)
 			state.setGlobal("v", &List{generalElement: ANY_STRING}, GlobalConst)
 			res, err := symbolicEval(n, state)
@@ -2810,7 +2758,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("rune slice", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				return $$v[0:]
+				return $v[0:]
 			`)
 			state.setGlobal("v", ANY_RUNE_SLICE, GlobalConst)
 			res, err := symbolicEval(n, state)
@@ -2821,7 +2769,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("byte slice", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				return $$v[0:]
+				return $v[0:]
 			`)
 			state.setGlobal("v", ANY_BYTE_SLICE, GlobalConst)
 			res, err := symbolicEval(n, state)
@@ -3645,7 +3593,7 @@ func TestSymbolicEval(t *testing.T) {
 				fn f(){
 					[%p, %int]
 				}
-				return $$f
+				return $f
 			`)
 			fnExpr := n.Statements[1].(*parse.FunctionDeclaration).Function
 			res, err := symbolicEval(n, state)
@@ -5889,7 +5837,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("useless deep mutation of a shared object property's value should be an error - member expression", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				$$shared.list.append(1)
+				shared.list.append(1)
 			`)
 			sharedObject := NewInexactObject(map[string]Serializable{
 				"list": NewListOf(ANY_INT),
@@ -6216,16 +6164,19 @@ func TestSymbolicEval(t *testing.T) {
 	t.Run("pipe statement", func(t *testing.T) {
 		t.Run("ok", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
+				globalvar result = {value: 0}
+
 				fn get_int(){
 					return Array(int, nil)
 				}
+
 	
 				fn addOne(i %int){
-					$$result = (i + int)
+					result.value = (i + int)
 				}
 	
 				get_int | addOne $
-				return $$result
+				return result.value
 			`)
 
 			state.setGlobal("Array", WrapGoFunction(NewArray), GlobalConst)
@@ -6238,19 +6189,21 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("$ is an invalid argument in second call", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
+				globalvar result = {value: 0}
+
 				fn one(){
 					return Array("1", nil)
 				}
 	
 				fn addOne(i %int){
-					$$result = (i + int)
+					result.value = (i + int)
 				}
 	
 				one | addOne $
-				return $$result
+				return $result.value
 			`)
 			state.setGlobal("Array", WrapGoFunction(NewArray), GlobalConst)
-			secondCall := parse.FindNodes(n.Statements[2], (*parse.CallExpression)(nil), nil)[1]
+			secondCall := parse.FindNodes(n.Statements[3], (*parse.CallExpression)(nil), nil)[1]
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -6295,7 +6248,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(varIdent, state, fmtLocalVarIsNotDeclared("")),
+				makeSymbolicEvalError(varIdent, state, fmtVarIsNotDeclared("")),
 			}, state.errors())
 
 			assert.Equal(t, ANY, res)
@@ -6573,7 +6526,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			t.Run("non existing variable (global var)", func(t *testing.T) {
 				n, state := MakeTestStateAndChunk(`
-					if $$v? {
+					if $v? {
 
 					} else {
 						
@@ -6612,7 +6565,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			t.Run("property of non existing variable (global var)", func(t *testing.T) {
 				n, state := MakeTestStateAndChunk(`
-					if $$v.a? {
+					if $v.a? {
 
 					} else {
 						
@@ -7187,7 +7140,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			t.Run("non existing variable (global var)", func(t *testing.T) {
 				n, state := MakeTestStateAndChunk(`
-					return (if $$v? $$v else false)
+					return (if $v? $v else false)
 				`)
 				res, err := symbolicEval(n, state)
 				assert.NoError(t, err)
@@ -7381,54 +7334,6 @@ func TestSymbolicEval(t *testing.T) {
 			})
 		})
 
-		t.Run("global variable LHS", func(t *testing.T) {
-
-			t.Run("value not assignable to type (deep mismatch: object property)", func(t *testing.T) {
-				n, state := MakeTestStateAndChunk(`
-					$$a = {a: "x"}; 
-					$$a = {a: 1}
-				`)
-				_, err := symbolicEval(n, state)
-				assert.NoError(t, err)
-
-				objectProp := parse.FindNode(n.Statements[1], (*parse.ObjectProperty)(nil), nil)
-
-				assert.Equal(t, []SymbolicEvaluationError{
-					makeSymbolicEvalError(objectProp.Value, state,
-						fmtNotAssignableToPropOfType(NewInt(1), ANY_STRING)),
-				}, state.errors())
-			})
-
-			t.Run("+= assignment: invalid RHS", func(t *testing.T) {
-				n, state := MakeTestStateAndChunk(`
-					$$a = 0
-					$$a += true
-					return $$a
-				`)
-				res, err := symbolicEval(n, state)
-				assignement := parse.FindNode(n.Statements[1], (*parse.Assignment)(nil), nil)
-
-				assert.NoError(t, err)
-				assert.Equal(t, []SymbolicEvaluationError{
-					makeSymbolicEvalError(assignement.Right, state, INVALID_ASSIGN_INT_OPER_ASSIGN_RHS_NOT_INT),
-				}, state.errors())
-				assert.Equal(t, NewInt(0), res)
-			})
-
-			t.Run("+= assignment: valid RHS", func(t *testing.T) {
-				n, state := MakeTestStateAndChunk(`
-					$$a = 0
-					$$a += 1
-					return $$a
-				`)
-				res, err := symbolicEval(n, state)
-
-				assert.NoError(t, err)
-				assert.Empty(t, state.errors())
-				assert.Equal(t, ANY_INT, res)
-			})
-		})
-
 		t.Run("variable LHS", func(t *testing.T) {
 
 			t.Run("value not assignable to type (deep mismatch: object property)", func(t *testing.T) {
@@ -7547,7 +7452,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			t.Run("property of shared object", func(t *testing.T) {
 				n, state := MakeTestStateAndChunk(`
-					$$shared.a = 1
+					shared.a = 1
 				`)
 				sharedObject := NewInexactObject(map[string]Serializable{
 					"a": ANY_INT,
@@ -7564,7 +7469,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			t.Run("useless deep mutation of a shared object property's value should be an error", func(t *testing.T) {
 				n, state := MakeTestStateAndChunk(`
-					$$shared.list[0].a = 1
+					$shared.list[0].a = 1
 				`)
 				sharedObject := NewInexactObject(map[string]Serializable{
 					"list": NewListOf(NewInexactObject(map[string]Serializable{
@@ -10764,7 +10669,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("exact value: multivalue", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				pattern p = $$val
+				pattern p = $val
 				return %p
 			`)
 			state.setGlobal("val", NewMultivalue(NewInt(1), NewInt(2)), GlobalConst)
@@ -11080,7 +10985,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("if the value is known at run time then no value should be matched: any int", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				pattern p = $$an_int
+				pattern p = $an_int
 
 				var a p = 1
 
@@ -11113,7 +11018,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("if the value is known at run time then no value should be matched: multivalue with concrete values", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				pattern p = $$one_or_two
+				pattern p = $one_or_two
 
 				var a p = 1
 
@@ -11183,7 +11088,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("if the value is known at run time then no value should be matched: str like", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				pattern p = $$s
+				pattern p = $s
 
 				var a p = "a"
 
@@ -11216,7 +11121,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("if the value is known at run time then no value should be matched: string matching a pattern", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				pattern p = $$s
+				pattern p = $s
 
 				var a p = "a"
 
@@ -11773,7 +11678,7 @@ func TestSymbolicEval(t *testing.T) {
 		t.Run("a __test global with a program property should be defined within the testcase", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				testcase {
-					$$__test.program
+					$__test.program
 				}
 			`)
 

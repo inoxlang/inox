@@ -184,7 +184,7 @@ func GetNodeColorizations(chunk *parse.Chunk, lightMode bool) []ColorizationInfo
 				ColorSequence: colorSeq,
 			})
 
-		case *parse.Variable, *parse.GlobalVariable, *parse.NamedPathSegment:
+		case *parse.Variable, *parse.NamedPathSegment:
 			colorizations = append(colorizations, ColorizationInfo{
 				Span:          n.Base().Span,
 				ColorSequence: colors.IdentifierLiteral,

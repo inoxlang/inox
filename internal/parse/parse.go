@@ -9698,7 +9698,7 @@ func (p *parser) parseAssignment(left Node) (result Node) {
 	var keywordLHSError *ParsingError
 
 	switch l := left.(type) {
-	case *GlobalVariable, *Variable, *MemberExpression, *IndexExpression, *SliceExpression, *IdentifierMemberExpression:
+	case *Variable, *MemberExpression, *IndexExpression, *SliceExpression, *IdentifierMemberExpression:
 	case *IdentifierLiteral:
 		if isKeyword(l.Name) {
 			keywordLHSError = &ParsingError{UnspecifiedParsingError, KEYWORDS_SHOULD_NOT_BE_USED_IN_ASSIGNMENT_LHS}
@@ -10362,7 +10362,7 @@ func IsMetadataKey(key string) bool {
 
 func IsAnyVariableIdentifier(node Node) bool {
 	switch node.(type) {
-	case *GlobalVariable, *Variable, *IdentifierLiteral:
+	case *Variable, *IdentifierLiteral:
 		return true
 	default:
 		return false
@@ -10375,8 +10375,6 @@ func IsSupportedSchemeName(s string) bool {
 
 func GetVariableName(node Node) string {
 	switch n := node.(type) {
-	case *GlobalVariable:
-		return n.Name
 	case *Variable:
 		return n.Name
 	case *IdentifierLiteral:
@@ -10388,8 +10386,6 @@ func GetVariableName(node Node) string {
 
 func GetNameIfVariable(node Node) (string, bool) {
 	switch n := node.(type) {
-	case *GlobalVariable:
-		return n.Name, true
 	case *Variable:
 		return n.Name, true
 	case *IdentifierLiteral:

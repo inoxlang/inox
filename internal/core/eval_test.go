@@ -1511,44 +1511,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		}
 	})
 
-	t.Run("global variable definition", func(t *testing.T) {
-		testconfig.AllowParallelization(t)
-
-		t.Run("simple value", func(t *testing.T) {
-			code := `$$a = 1; return a`
-			state := core.NewGlobalState(NewDefaultTestContext())
-			defer state.Ctx.CancelGracefully()
-
-			res, err := Eval(code, state, false)
-			if !assert.NoError(t, err) {
-				return
-			}
-			assert.Equal(t, core.Int(1), res)
-		})
-
-		t.Run("watchable", func(t *testing.T) {
-			code := `$$a = {}; return a`
-			state := core.NewGlobalState(NewDefaultTestContext())
-			defer state.Ctx.CancelGracefully()
-			state.InitSystemGraph()
-
-			res, err := Eval(code, state, false)
-			if !assert.NoError(t, err) {
-				return
-			}
-			assert.IsType(t, (*core.Object)(nil), res)
-
-			//check that the global variable's value has a node in the system graph
-
-			nodes := state.SystemGraph.GetNodesSnapshot(state.Ctx)
-
-			if !assert.Len(t, nodes, 1) {
-				return
-			}
-			assert.Equal(t, "a", nodes[0].Name())
-		})
-	})
-
 	t.Run("local variable declaration", func(t *testing.T) {
 		testconfig.AllowParallelization(t)
 
@@ -1710,7 +1672,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						}
 					}
 		
-					$$A = 2;
+					$A = 2;
 				`,
 				error:          true,
 				skipIfBytecode: true,
@@ -3150,7 +3112,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		GET_ENTRIES_CODE := `
 			entries = []
-			walk $$dir entry {
+			walk $dir entry {
 				$entries.append($entry)
 			}
 			return $entries
@@ -3253,7 +3215,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				name: "dir with a regular file and an empty subdirectory : prune when regular file is encountered",
 				input: `
 					entries = []
-					walk $$dir entry {
+					walk dir entry {
 						$entries.append($entry)
 						if $entry.is-regular {
 							prune
@@ -3292,7 +3254,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				name: "dir with to subdirectories : prune when one of the dir is encountered",
 				input: `
 					entries = []
-					walk $$dir entry {
+					walk dir entry {
 						$entries.append($entry)
 						if $entry.is-walk-start {
 							continue
@@ -3343,7 +3305,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				name: "dir with to subdirectories : break when one of the dir is encountered",
 				input: `
 					entries = []
-					walk $$dir entry {
+					walk dir entry {
 						$entries.append($entry)
 						if $entry.is-walk-start {
 							continue
@@ -3386,7 +3348,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				name: "for statement in body",
 				input: `
 					a = 0
-					walk $$dir entry {
+					walk dir entry {
 						for i in 1..10 {
 							a = (a + 1)
 							break
@@ -4564,7 +4526,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			{
 				name: "recursive function accessing a global",
 				input: `
-					$$a = 3
+					globalvar a = 3
 					fn rec(i %int) int {
 						if (i == 0) {
 							return 0
@@ -4580,7 +4542,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			{
 				name: "function calling a recursive function accessing a global",
 				input: `
-					$$a = 3
+					globalvar a = 3
 					fn rec(i %int) int {
 						if (i == 0) {
 							return 0
@@ -4600,7 +4562,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			{
 				name: "extension method calling a recursive function accessing a global",
 				input: `
-					$$a = 3
+					globalvar a = 3
 					pattern o = {}
 
 					fn rec(i %int) int {
@@ -5033,7 +4995,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			},
 			{
 				name:  "method",
-				input: "return $$user.getName()",
+				input: "return user.getName()",
 				globalVariables: map[string]core.Value{
 					"user": core.TestMutableGoValue{"Foo", ""},
 				},
@@ -5692,7 +5654,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				result: core.Int(1),
 			},
 			{
-				input: "return $$goval.secret",
+				input: "return $goval.secret",
 				error: true,
 				globalVariables: map[string]core.Value{
 					"goval": core.ValOf(core.TestMutableGoValue{Name: "Foo", Secret: "secret"}),
@@ -5808,7 +5770,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		// 		},
 		// 	},
 		// 	{
-		// 		input: "return $$goval.<secret",
+		// 		input: "return $goval.<secret",
 		// 		error: true,
 		// 		globals: map[string]core.Value{
 		// 			"goval": core.ValOf(core.TestMutableGoValue{Name: "Foo", Secret: "secret"}),
@@ -6164,7 +6126,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				import importname https://modules.com/return_1.ix {
 					validation: "<hash>"
 				}
-				return $$importname
+				return $importname
 			`, "<hash>", RETURN_1_MODULE_HASH))
 
 			if !assert.NoError(t, err) {
@@ -6187,7 +6149,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					validation: "<hash>"
 					arguments: {1}
 				}
-				return $$importname
+				return $importname
 			`, "<hash>", RETURN_POS_ARG_A_MODULE_HASH))
 
 			if !assert.NoError(t, err) {
@@ -6213,7 +6175,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					validation: "<hash>"
 					arguments: {a: 1}
 				}
-				return $$importname
+				return $importname
 			`, "<hash>", RETURN_NON_POS_ARG_A_MODULE_HASH))
 
 			if !assert.NoError(t, err) {
@@ -6241,7 +6203,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					validation: "<hash>"
 					arguments: {}
 				}
-				return $$two_patt
+				return $two_patt
 			`, "<hash>", RETURN_PATTERN_INT_TWO_MODULE_HASH))
 
 			if !assert.NoError(t, err) {
@@ -6267,7 +6229,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					validation: "<hash>"
 					arguments: {}
 				}
-				return $$two_patt
+				return $two_patt
 			`, "<hash>", RETURN_PATTERN_INT_TWO_MODULE_HASH))
 
 			if !assert.NoError(t, err) {
@@ -6293,7 +6255,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					validation: "<hash>"
 					arguments: {}
 				}
-				return $$int_pattern
+				return int_pattern
 			`, "<hash>", RETURN_INT_PATTERN_MODULE_HASH))
 
 			if !assert.NoError(t, err) {
@@ -6326,7 +6288,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					validation: "<hash>"
 					arguments: {a: 1}
 				}
-				return $$importname
+				return $importname
 			`, "<hash>", RETURN_NON_POS_ARG_A_MODULE_HASH))
 
 			if !assert.NoError(t, err) {
@@ -6657,7 +6619,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("allow <runtime manifest>", func(t *testing.T) {
 			code := `
-				$$URL = https://example.com/
+				globalvar URL = https://example.com/
 				rt = go {allow: {read: URL}} do { 
 	
 				}
@@ -6754,12 +6716,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("call a passed Inox function that access a captured global", func(t *testing.T) {
 			code := `
-				$$a = 1
+				globalvar a = 1
 				fn f(){
 					return a
 				}
 				rt = go {globals: {f: f}} do {
-					$$a = 2
+					globalvar a = 2
 
 					return f()
 				}
@@ -6775,7 +6737,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("call a function accessing a global variable within a passed Inox function that captured this global", func(t *testing.T) {
 			code := `
-				$$a = 1
+				globalvar a = 1
 				fn f(){
 					b = a
 					func = fn(){
@@ -6784,7 +6746,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return func()
 				}
 				rt = go {globals: {f: f}} do {
-					$$a = 2
+					globalvar a = 2
 
 					return f()
 				}
@@ -6800,12 +6762,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("compute a Mapping entry that access a captured global", func(t *testing.T) {
 			code := `
-				$$a = 1
+				globalvar a = 1
 				mapping = Mapping {
 					%/... => a
 				}
 				rt = go {globals: {m: mapping}} do {
-					$$a = 2
+					globalvar a = 2
 
 					return m.compute(/)
 				}
@@ -7274,7 +7236,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		// 	t.Run("should not be sharable if one of the captured globals is not sharable", func(t *testing.T) {
 		// 		code := `
-		// 			$$a = 1
+		// 			globalvar a = 1
 		// 			return Mapping{
 		// 				0 => notsharable
 		// 				1 => a
@@ -7294,8 +7256,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		// 	t.Run("should be sharable if all of the captured globals are sharable", func(t *testing.T) {
 		// 		code := `
-		// 			$$a = 1
-		// 			$$b = 2
+		// 			globalvar a = 1
+		// 			b = 2
 		// 			return Mapping{
 		// 				0 => a
 		// 				1 => b
@@ -7391,7 +7353,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("compute() with existing dynamic value static key entry", func(t *testing.T) {
 			code := `
-				$$v = "a"
+				globalvar v = "a"
 				m = Mapping{0 => v}
 				return m.compute(0)
 			`
@@ -7447,7 +7409,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 
 			code := `
-				$$m = Mapping{ n 0 => n }
+				globalvar m = Mapping{ n 0 => n }
 
 				group = LThreadGroup()
 
@@ -7497,8 +7459,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}
 
 			code := `
-				$$a = 1
-				$$m = Mapping{ n 0 => a }
+				globalvar a = 1
+				globalvar m = Mapping{ n 0 => a }
 
 				group = LThreadGroup()
 
@@ -7728,8 +7690,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		called := false
 
 		code := `
-			rt = go {globals: {gofunc: $$gofunc}} do {
-				return $$gofunc
+			rt = go {globals: {gofunc: $gofunc}} do {
+				return $gofunc
 			}
 
 			f = rt.wait_result!()
@@ -9028,9 +8990,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 		t.Run("empty: testing disabled: meta should not be evaluted", func(t *testing.T) {
 			src := makeSourceFile(`
-				$$a = 0
+				globalvar a = {value: 0}
 				fn f(){
-					$$a = 1
+					a.value = 1
 					return "my test suite"
 				}
 
@@ -9038,7 +9000,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					
 				}
 
-				return $$a
+				return $a.value
 			`)
 
 			state := core.NewGlobalState(NewDefaultTestContext())

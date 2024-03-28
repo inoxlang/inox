@@ -424,7 +424,7 @@ func handleDefinition(callCtx context.Context, req *defines.DefinitionParams) (r
 	positionSet := false
 
 	switch n := foundNode.(type) {
-	case *parse.Variable, *parse.GlobalVariable, *parse.IdentifierLiteral:
+	case *parse.Variable, *parse.IdentifierLiteral:
 		position, positionSet = state.SymbolicData.GetVariableDefinitionPosition(foundNode, ancestors)
 	case *parse.PatternIdentifierLiteral, *parse.PatternNamespaceIdentifierLiteral:
 		position, positionSet = state.SymbolicData.GetNamedPatternOrPatternNamespacePositionDefinition(foundNode, ancestors)

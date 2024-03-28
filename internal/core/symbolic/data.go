@@ -503,13 +503,17 @@ switch_:
 		}
 	case *parse.Variable:
 		name = node.Name
-		data, ok = d.GetLocalScopeData(node, ancestors)
-		if !ok {
-			return
-		}
-	case *parse.GlobalVariable:
-		name = node.Name
 		data, ok = d.GetGlobalScopeData(node, ancestors)
+
+		if ok {
+			for _, varInfo := range data.Variables {
+				if varInfo.Name == name {
+					break switch_
+				}
+			}
+		}
+
+		data, ok = d.GetLocalScopeData(node, ancestors)
 		if !ok {
 			return
 		}

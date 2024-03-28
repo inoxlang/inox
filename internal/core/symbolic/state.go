@@ -466,13 +466,12 @@ func (state *State) getInfoOfNode(partialNode parse.Node) (static Pattern, ofCon
 
 	switch node := partialNode.(type) {
 	case *parse.Variable:
-		info, ok := state.getLocal(node.Name)
-		if !ok {
-			return nil, false, false
-		}
-		return info.static, info.isConstant, true
-	case *parse.GlobalVariable:
 		info, ok := state.getGlobal(node.Name)
+		if ok {
+			return info.static, info.isConstant, true
+		}
+
+		info, ok = state.getLocal(node.Name)
 		if !ok {
 			return nil, false, false
 		}

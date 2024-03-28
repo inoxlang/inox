@@ -28,6 +28,18 @@ Local variable declarations can have a type annotation:
 var i int = 0
 ```
 
+Local variables are local to a function's scope or to the module's top local
+scope.
+
+```
+fn f(){
+    var a = 1
+    if true {
+        var a = 2 # error ! 'a' is already declared
+    }
+}
+```
+
 <details>
 
 **<summary>Learn more about type annotations</summary>**
@@ -65,9 +77,8 @@ print (myglobal + local2)
 var myglobal = 3
 ```
 
-Go to the [Functions](./functions.md) section to learn more about variables &
-scopes.
 
+ℹ️ Global variables cannot be re-assigned.
 
 <details>
 
@@ -86,17 +97,6 @@ globalvar b = {a: 1}
 ```
 
 </details>
-
-
-
-**Assignment of global variables**:
-
-```
-$$myglobal = 0
-```
-
-ℹ️ Assigning a global that is not defined is allowed (it will be considered as a declaration), but redeclaration is an
-error.
 
 **Global constants** are defined at the top of the file, before the manifest.
 
