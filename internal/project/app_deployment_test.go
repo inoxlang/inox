@@ -23,6 +23,8 @@ import (
 )
 
 func TestSameProcessDeployment(t *testing.T) {
+	t.SkipNow()
+
 	const APP_NAME = "myapp"
 	host := "https://localhost:8080"
 

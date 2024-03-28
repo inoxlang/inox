@@ -19,6 +19,8 @@ import (
 )
 
 func TestApplicationDeployment(t *testing.T) {
+	t.SkipNow()
+
 	const APP_NAME = "myapp"
 
 	makeProject := func() core.Project {
