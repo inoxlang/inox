@@ -136,7 +136,7 @@ func GetNodeColorizations(chunk *parse.Chunk, lightMode bool) []ColorizationInfo
 				ColorSequence: colors.PatternIdentifier,
 			})
 			//control keywords
-		case parse.BREAK_KEYWORD, parse.CONTINUE_KEYWORD, parse.PRUNE_KEYWORD, parse.COYIELD_KEYWORD, parse.RETURN_KEYWORD,
+		case parse.BREAK_KEYWORD, parse.CONTINUE_KEYWORD, parse.PRUNE_KEYWORD, parse.COYIELD_KEYWORD, parse.YIELD_KEYWORD, parse.RETURN_KEYWORD,
 			parse.DEFAULTCASE_KEYWORD, parse.SWITCH_KEYWORD, parse.MATCH_KEYWORD, parse.ASSERT_KEYWORD,
 			parse.GO_KEYWORD, parse.DO_KEYWORD, parse.TESTSUITE_KEYWORD, parse.TESTCASE_KEYWORD, parse.COMP_KEYWORD,
 			parse.LIFETIMEJOB_KEYWORD, parse.FOR_KEYWORD, parse.IN_KEYWORD, parse.IF_KEYWORD, parse.ELSE_KEYWORD,
