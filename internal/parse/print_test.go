@@ -79,7 +79,9 @@ func TestPrint(t *testing.T) {
 		"https://example.com/?x={1}&y=2",
 		"https://example.com/?x={1}&&y=2",
 		"https://example.com/?x={1}&=&y=2",
-		"@site/",
+		"$site/",
+		"$site/index.html",
+		"$site/index.html?q=a",
 		//date literals
 		"2020y-5mt-UTC",
 		"2020y-5mt-06d-UTC",

@@ -14,7 +14,7 @@ manifest {
     }
 }
 
-url = @HOST/posts/1
+url = $HOST/posts/1
 
 assign resp err = http.get(url)
 if err? {

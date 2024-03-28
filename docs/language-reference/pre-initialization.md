@@ -30,14 +30,14 @@ const (
 # < no code allowed here >
 
 preinit {
-    @host = HOST
+    ... statements ...
 }
 
 # < no code allowed here >
 
 manifest {
     permissions: {
-        read: @host/index.html
+        read: $HOST/index.html
     }
 }
 ```

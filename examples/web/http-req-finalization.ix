@@ -1,6 +1,6 @@
 const (
     DOMAIN = https://localhost:8081
-    URL = @DOMAIN/
+    URL = $DOMAIN/
 )
 
 manifest {

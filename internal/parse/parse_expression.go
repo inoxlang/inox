@@ -54,7 +54,7 @@ func (p *parser) parseExpression(config ...exprParsingConfig) (expr Node, isMiss
 	}
 
 	switch p.s[p.i] {
-	case '$': //variables
+	case '$': //variables and URL expressions
 		start := p.i
 		p.i++
 
@@ -62,12 +62,18 @@ func (p *parser) parseExpression(config ...exprParsingConfig) (expr Node, isMiss
 			p.i++
 		}
 
-		left = &Variable{
+		variable := &Variable{
 			NodeBase: NodeBase{
 				Span: NodeSpan{start, p.i},
 			},
 			Name: string(p.s[start+1 : p.i]),
 		}
+
+		if p.i < p.len && p.s[p.i] == '/' {
+			return p.parseURLLike(start, variable), false
+		}
+
+		left = variable
 	case '!':
 		p.i++
 		operand, _ := p.parseExpression()
@@ -101,7 +107,7 @@ func (p *parser) parseExpression(config ...exprParsingConfig) (expr Node, isMiss
 			if p.i >= p.len-2 || p.s[p.i+2] != '/' {
 				break
 			}
-			return p.parseURLLike(p.i), false
+			return p.parseURLLike(p.i, nil), false
 		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
 			return p.parsePortLiteral(), false
 		case '{':
@@ -192,7 +198,7 @@ func (p *parser) parseExpression(config ...exprParsingConfig) (expr Node, isMiss
 			Name: string(p.s[exprStartIndex+1 : p.i]),
 		}, false
 	case '@':
-		return p.parseLazyAndHostAliasStuff(), false
+		return p.parseLazyAndCodegenStuff(), false
 	case '*':
 		start := p.i
 		p.tokens = append(p.tokens, Token{Type: ASTERISK, Span: NodeSpan{p.i, p.i + 1}})

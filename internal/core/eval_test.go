@@ -673,9 +673,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 
 		t.Run("host interpolation", func(t *testing.T) {
-			code := `@api/index.html`
+			code := `$api/index.html`
 
-			ctx := core.NewContext(core.ContextConfig{})
+			ctx := core.NewContext(core.ContextConfig{
+				Permissions: []core.Permission{core.GlobalVarPermission{Kind_: permkind.Read, Name: "*"}},
+			})
 			state := core.NewGlobalState(ctx)
 			defer ctx.CancelGracefully()
 
@@ -9063,7 +9065,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			src := makeSourceFile(`
 				globalvar host = https://localhost
 				testsuite "name" {
-					assert (@host/index.html == https://localhost/index.html)
+					assert ($host/index.html == https://localhost/index.html)
 				}
 			`)
 
@@ -9611,8 +9613,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					globalvar host2 = https://localhost:8082
 
 					testcase {
-						assert (@host1/index.html == https://localhost:8081/index.html)
-						assert (@host2/index.html == https://localhost:8082/index.html)
+						assert ($host1/index.html == https://localhost:8081/index.html)
+						assert ($host2/index.html == https://localhost:8082/index.html)
 					}
 				}
 			`)

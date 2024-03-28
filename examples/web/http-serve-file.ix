@@ -28,7 +28,7 @@ fn handle(rw http.resp-writer, r http.req){
 
 server = http.Server!(HOST, handle)
 
-body = http.read!(@HOST/index.js, --insecure)
+body = http.read!($HOST/index.js, --insecure)
 print(body)
 
 server.close()

@@ -1,6 +1,6 @@
 const (
     WS_HOST = wss://localhost:8080
-    WS_URL = @WS_HOST/
+    WS_URL = $WS_HOST/
 )
 
 manifest {

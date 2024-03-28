@@ -25,16 +25,16 @@ testsuite({
 }) {
 
     testcase "user creation" {
-        assign result err = http.post(@HOST/users, {username: "test"})
+        assign result err = http.post($HOST/users, {username: "test"})
 
         assert (err == nil)
         assert (result.status-code == http.status.OK)
     }
 
     testcase "login" {
-        http.post!(@HOST/users, {username: "test"})
+        http.post!($HOST/users, {username: "test"})
 
-        assign result err = http.post(@HOST/sessions, {username: "test"})
+        assign result err = http.post($HOST/sessions, {username: "test"})
 
         assert (err == nil)
         assert (result.status-code == http.status.OK)

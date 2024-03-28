@@ -78,7 +78,7 @@ Host part interpolation:
 ```
 host = https://example.com  # host literal
 
-@host/index.html
+$host/index.html
 ```
 
 ## Path Expressions

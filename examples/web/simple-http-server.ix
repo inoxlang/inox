@@ -1,6 +1,6 @@
 const (
     HOST = https://localhost:8080
-    URL = @HOST/
+    URL = $HOST/
 )
 
 manifest {

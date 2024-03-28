@@ -171,7 +171,7 @@ func TestPrepareLocalModule(t *testing.T) {
 			)
 			manifest {
 				permissions: {
-					read: @HOST/
+					read: $HOST/
 				}
 			}
 		`), 0o600)

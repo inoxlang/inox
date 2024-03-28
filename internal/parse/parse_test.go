@@ -6036,15 +6036,15 @@ func testParse(
 		})
 
 		t.Run("whole host interpolation", func(t *testing.T) {
-			n := mustparseChunk(t, `@host/`)
+			n := mustparseChunk(t, `$host/`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, false},
 				Statements: []Node{
 					&URLExpression{
 						NodeBase: NodeBase{Span: NodeSpan{0, 6}},
-						Raw:      "@host/",
-						HostPart: &IdentifierLiteral{
-							NodeBase: NodeBase{NodeSpan{1, 5}, nil, false},
+						Raw:      "$host/",
+						HostPart: &Variable{
+							NodeBase: NodeBase{NodeSpan{0, 5}, nil, false},
 							Name:     "host",
 						},
 						Path: []Node{
@@ -6060,15 +6060,15 @@ func testParse(
 		})
 
 		t.Run("whole host interpolation: uppercase", func(t *testing.T) {
-			n := mustparseChunk(t, `@HOST/`)
+			n := mustparseChunk(t, `$HOST/`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, false},
 				Statements: []Node{
 					&URLExpression{
 						NodeBase: NodeBase{Span: NodeSpan{0, 6}},
-						Raw:      "@HOST/",
-						HostPart: &IdentifierLiteral{
-							NodeBase: NodeBase{NodeSpan{1, 5}, nil, false},
+						Raw:      "$HOST/",
+						HostPart: &Variable{
+							NodeBase: NodeBase{NodeSpan{0, 5}, nil, false},
 							Name:     "HOST",
 						},
 						Path: []Node{
@@ -7254,55 +7254,7 @@ func testParse(
 		})
 	})
 
-	t.Run("invalid host alias stuff", func(t *testing.T) {
-		t.Run("", func(t *testing.T) {
-			n, err := parseChunk(t, `@a`, "")
-			assert.Error(t, err)
-			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 2}, nil, false},
-				Statements: []Node{
-					&InvalidAliasRelatedNode{
-						NodeBase: NodeBase{
-							NodeSpan{0, 2},
-							&ParsingError{UnspecifiedParsingError, UNTERMINATED_URL_EXPRESSION},
-							false,
-						},
-						Raw: "@a",
-					},
-				},
-			}, n)
-		})
 
-		t.Run("in list", func(t *testing.T) {
-			n, err := parseChunk(t, `[@a]`, "")
-			assert.Error(t, err)
-			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 4}, nil, false},
-				Statements: []Node{
-					&ListLiteral{
-						NodeBase: NodeBase{
-							Span:            NodeSpan{0, 4},
-							IsParenthesized: false,
-							/*[]Token{
-								{Type: OPENING_BRACKET, Span: NodeSpan{0, 1}},
-								{Type: CLOSING_BRACKET, Span: NodeSpan{3, 4}},
-							},*/
-						},
-						Elements: []Node{
-							&InvalidAliasRelatedNode{
-								NodeBase: NodeBase{
-									NodeSpan{1, 3},
-									&ParsingError{UnspecifiedParsingError, UNTERMINATED_URL_EXPRESSION},
-									false,
-								},
-								Raw: "@a",
-							},
-						},
-					},
-				},
-			}, n)
-		})
-	})
 
 	t.Run("integer literal", func(t *testing.T) {
 		t.Run("decimal", func(t *testing.T) {

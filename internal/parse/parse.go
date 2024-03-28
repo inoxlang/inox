@@ -30,7 +30,7 @@ const (
 
 	//URL & host
 
-	LOOSE_URL_EXPR_PATTERN     = "^(@[a-zA-Z0-9_-]+|https?:\\/\\/([-\\w]+|(www\\.)?[-a-zA-Z0-9@:%._+~#=]{1,64}\\.[a-zA-Z0-9]{1,6}\\b|\\{[$]{0,2}[-\\w]+\\}))([{?#/][-a-zA-Z0-9@:%_+.~#?&//=${}]*)$"
+	LOOSE_URL_EXPR_PATTERN     = "^([$][a-zA-Z0-9_-]+|https?:\\/\\/([-\\w]+|(www\\.)?[-a-zA-Z0-9@:%._+~#=]{1,64}\\.[a-zA-Z0-9]{1,6}\\b|\\{[$]{0,2}[-\\w]+\\}))([{?#/][-a-zA-Z0-9@:%_+.~#?&//=${}]*)$"
 	LOOSE_HOST_PATTERN_PATTERN = "^([a-z0-9+]+)?:\\/\\/([-\\w]+|[*]+|(www\\.)?[-a-zA-Z0-9.*]{1,64}\\.[a-zA-Z0-9*]{1,6})(:[0-9]{1,5})?$"
 	LOOSE_HOST_PATTERN         = "^([a-z0-9+]+)?:\\/\\/([-\\w]+|(www\\.)?[-a-zA-Z0-9.]{1,64}\\.[a-zA-Z0-9]{1,6})(:[0-9]{1,5})?$"
 	URL_PATTERN                = "^([a-z0-9+]+):\\/\\/([-\\w]+|(www\\.)?[-a-zA-Z0-9@:%._+~#=]{1,64}\\.[a-zA-Z0-9]{1,6})\\b([-a-zA-Z0-9@:%_*+.~#?&//=]*)$"
@@ -1016,7 +1016,7 @@ func (p *parser) parseDashStartingExpression(precededByOpeningParen bool) Node {
 	}
 }
 
-func (p *parser) parseLazyAndHostAliasStuff() Node {
+func (p *parser) parseLazyAndCodegenStuff() Node {
 	p.panicIfContextDone()
 
 	start := p.i
@@ -1065,8 +1065,6 @@ func (p *parser) parseLazyAndHostAliasStuff() Node {
 				Raw: string(p.s[start:j]),
 			}
 		}
-
-		return p.parseURLLike(start)
 	}
 
 	p.tokens = append(p.tokens, Token{Type: UNEXPECTED_CHAR, Span: NodeSpan{start, p.i}, Raw: "@"})
@@ -1517,12 +1515,10 @@ func CheckURLPattern(u string) *ParsingError {
 }
 
 // parseURLLike parses URLs, URL expressions and Hosts
-func (p *parser) parseURLLike(start int32) Node {
+func (p *parser) parseURLLike(start int32, hostVariable *Variable) Node {
 	p.panicIfContextDone()
 
-	startsWithAtHost := p.s[start] == '@'
-
-	if !startsWithAtHost {
+	if hostVariable == nil {
 		p.i += 3 // ://
 	}
 	afterSchemeIndex := p.i
@@ -1562,7 +1558,7 @@ loop:
 	span := NodeSpan{start, p.i}
 
 	//scheme literal
-	if !startsWithAtHost && p.i == afterSchemeIndex {
+	if hostVariable == nil && p.i == afterSchemeIndex {
 		scheme := u[:int32(len(u))-3]
 		var parsingErr *ParsingError
 		if scheme == "" {
@@ -1591,7 +1587,7 @@ loop:
 			Value: u,
 		}
 
-	case LOOSE_URL_EXPR_REGEX.MatchString(u) && (startsWithAtHost || strings.Count(u, "{") >= 1): //url expressions
+	case LOOSE_URL_EXPR_REGEX.MatchString(u) && (hostVariable != nil || strings.Count(u, "{") >= 1): //url expressions
 		var parsingErr *ParsingError
 		pathStart := afterSchemeIndex
 		pathExclEnd := afterSchemeIndex
@@ -1606,7 +1602,7 @@ loop:
 			pathExclEnd = p.i
 		}
 
-		if !startsWithAtHost && p.s[afterSchemeIndex] == '{' { //host interpolation
+		if hostVariable == nil && p.s[afterSchemeIndex] == '{' { //host interpolation
 			p.tokens = append(p.tokens, Token{
 				Type:    OPENING_CURLY_BRACKET,
 				SubType: HOST_INTERP_OPENING_BRACE,
@@ -1635,7 +1631,7 @@ loop:
 			}
 		}
 
-		if pathStart == afterSchemeIndex {
+		if pathStart == afterSchemeIndex && hostVariable == nil {
 			pathStart = pathExclEnd
 		}
 
@@ -1731,12 +1727,7 @@ loop:
 				Value:    hostPartString,
 			}
 		} else {
-			hostPart = &IdentifierLiteral{
-				NodeBase: NodeBase{
-					Span: NodeSpan{hostPartBase.Span.Start + 1, hostPartBase.Span.End},
-				},
-				Name: hostPartString[1:],
-			}
+			hostPart = hostVariable
 		}
 
 		return &URLExpression{
@@ -2091,7 +2082,7 @@ func (p *parser) parseIdentStartingExpression(allowUnprefixedPatternNamespaceIde
 
 	if isProtocol {
 		if utils.SliceContains(SCHEMES, name) {
-			return p.parseURLLike(start)
+			return p.parseURLLike(start, nil)
 		}
 		base := firstIdent.NodeBase
 		base.Err = &ParsingError{UnspecifiedParsingError, fmtInvalidURIUnsupportedProtocol(name)}

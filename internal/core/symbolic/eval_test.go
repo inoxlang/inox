@@ -12804,7 +12804,7 @@ func TestSymbolicEval(t *testing.T) {
 		t.Run("invalid value for the host part", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				a = 1
-				return @a/index.html
+				return $a/index.html
 			`)
 
 			hostPart := parse.FindNode(n, (*parse.URLExpression)(nil), nil).HostPart

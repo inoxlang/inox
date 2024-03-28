@@ -97,7 +97,7 @@ func ParseURL(u string) (path string, ok bool) {
 	p := newParser([]rune(u))
 	defer p.cancel()
 
-	url, ok := p.parseURLLike(0).(*URLLiteral)
+	url, ok := p.parseURLLike(0, nil).(*URLLiteral)
 
 	return url.Value, ok && p.i >= p.len
 }
