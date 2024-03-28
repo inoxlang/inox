@@ -119,7 +119,9 @@ func (p *parser) parseStatement() Node {
 			return p.parseImportStatement(ev)
 		case tokenStrings[RETURN_KEYWORD]:
 			return p.parseReturnStatement(ev)
-		case tokenStrings[COYIELD_KEYWORD]:
+		case COYIELD_KEYWORD_STRING:
+			return p.parseCoyieldStatement(ev)
+		case YIELD_KEYWORD_STRING:
 			return p.parseYieldStatement(ev)
 		case tokenStrings[BREAK_KEYWORD]:
 			p.tokens = append(p.tokens, Token{Type: BREAK_KEYWORD, Span: ev.Span})

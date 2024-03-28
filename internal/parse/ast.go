@@ -1486,6 +1486,15 @@ func (CoyieldStatement) Kind() NodeKind {
 	return Stmt
 }
 
+type YieldStatement struct {
+	NodeBase
+	Expr Node //can be nil
+}
+
+func (YieldStatement) Kind() NodeKind {
+	return Stmt
+}
+
 type BreakStatement struct {
 	NodeBase
 	Label *IdentifierLiteral //can be nil

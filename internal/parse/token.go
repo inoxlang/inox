@@ -23,6 +23,9 @@ const (
 	STRUCT_KEYWORD_STRING          = "struct"
 	NEW_KEYWORD_STRING             = "new"
 	INCLUDABLE_FILE_KEYWORD_STRING = "includable-file"
+
+	COYIELD_KEYWORD_STRING = "coyield"
+	YIELD_KEYWORD_STRING   = "yield"
 )
 
 var (
@@ -86,6 +89,7 @@ const (
 	DEFAULTCASE_KEYWORD
 	RETURN_KEYWORD
 	COYIELD_KEYWORD
+	YIELD_KEYWORD
 	BREAK_KEYWORD
 	CONTINUE_KEYWORD
 	PRUNE_KEYWORD
@@ -328,7 +332,8 @@ var tokenStrings = [...]string{
 	MATCH_KEYWORD:                  MATCH_KEYWORD_STRING,
 	DEFAULTCASE_KEYWORD:            "defaultcase",
 	RETURN_KEYWORD:                 "return",
-	COYIELD_KEYWORD:                "coyield",
+	COYIELD_KEYWORD:                COYIELD_KEYWORD_STRING,
+	YIELD_KEYWORD:                  YIELD_KEYWORD_STRING,
 	BREAK_KEYWORD:                  "break",
 	CONTINUE_KEYWORD:               "continue",
 	PRUNE_KEYWORD:                  "prune",

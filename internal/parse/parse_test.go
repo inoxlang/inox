@@ -23344,6 +23344,53 @@ func testParse(
 
 	})
 
+	t.Run("yield statement", func(t *testing.T) {
+
+		t.Run("value", func(t *testing.T) {
+			n := mustparseChunk(t, "yield 1")
+
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 7}, nil, false},
+				Statements: []Node{
+					&YieldStatement{
+						NodeBase: NodeBase{Span: NodeSpan{0, 7}},
+						Expr: &IntLiteral{
+							NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
+							Raw:      "1",
+							Value:    1,
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("no value", func(t *testing.T) {
+			n := mustparseChunk(t, "yield")
+
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 5}, nil, false},
+				Statements: []Node{
+					&YieldStatement{
+						NodeBase: NodeBase{Span: NodeSpan{0, 5}},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("no value, followed by line feed", func(t *testing.T) {
+			n := mustparseChunk(t, "yield\n")
+
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{Span: NodeSpan{0, 6}},
+				Statements: []Node{
+					&YieldStatement{
+						NodeBase: NodeBase{Span: NodeSpan{0, 5}},
+					},
+				},
+			}, n)
+		})
+	})
+
 	t.Run("boolean conversion expression", func(t *testing.T) {
 		t.Run("variable", func(t *testing.T) {
 			n := mustparseChunk(t, "$err?")

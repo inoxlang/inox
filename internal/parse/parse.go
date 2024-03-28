@@ -9467,7 +9467,7 @@ func (p *parser) parseReturnStatement(returnIdent *IdentifierLiteral) *ReturnSta
 	}
 }
 
-func (p *parser) parseYieldStatement(yieldIdent *IdentifierLiteral) *CoyieldStatement {
+func (p *parser) parseCoyieldStatement(yieldIdent *IdentifierLiteral) *CoyieldStatement {
 	p.panicIfContextDone()
 
 	var end int32 = p.i
@@ -9483,6 +9483,29 @@ func (p *parser) parseYieldStatement(yieldIdent *IdentifierLiteral) *CoyieldStat
 	p.tokens = append(p.tokens, Token{Type: COYIELD_KEYWORD, Span: yieldIdent.Span})
 
 	return &CoyieldStatement{
+		NodeBase: NodeBase{
+			Span: NodeSpan{yieldIdent.Span.Start, end},
+		},
+		Expr: returnValue,
+	}
+}
+
+func (p *parser) parseYieldStatement(yieldIdent *IdentifierLiteral) *YieldStatement {
+	p.panicIfContextDone()
+
+	var end int32 = p.i
+	var returnValue Node
+
+	p.eatSpace()
+
+	if p.i < p.len && p.s[p.i] != ';' && p.s[p.i] != '}' && p.s[p.i] != '\n' {
+		returnValue, _ = p.parseExpression()
+		end = returnValue.Base().Span.End
+	}
+
+	p.tokens = append(p.tokens, Token{Type: YIELD_KEYWORD, Span: yieldIdent.Span})
+
+	return &YieldStatement{
 		NodeBase: NodeBase{
 			Span: NodeSpan{yieldIdent.Span.Start, end},
 		},
