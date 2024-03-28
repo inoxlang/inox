@@ -271,9 +271,12 @@ func (router *filesystemRouter) handleDynamic(req *Request, rw *ResponseWriter, 
 	moduleLogger := handlerGlobalState.Logger
 
 	state, _, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
-		Fpath:                 modulePath,
-		CacheEntry:            module,
-		ForceUseCache:         true,
+		Fpath: modulePath,
+
+		CacheEntry:        module,
+		ForceUseCache:     true,
+		DoNotRefreshCache: true,
+
 		ParentContext:         handlerCtx,
 		ParentContextRequired: true,
 		DefaultLimits:         core.GetDefaultRequestHandlingLimits(),

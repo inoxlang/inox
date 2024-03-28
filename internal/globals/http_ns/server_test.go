@@ -1047,17 +1047,19 @@ func runAdvancedServerTest(
 
 	//check responses
 	for i, info := range testCase.requests {
+		reqInfo := "request" + strconv.Itoa(i) + " " + info.method + " " + info.path
+
 		resp := responses[i]
 		err := responseErrors[i]
 
 		if info.err == nil {
-			if !assert.NoError(t, err) {
+			if !assert.NoError(t, err, reqInfo) {
 				return
 			}
 
 		} else if info.err != errAny {
 			assert.ErrorIs(t, err, info.err)
-		} else if !assert.Error(t, err) {
+		} else if !assert.Error(t, err, reqInfo) {
 			return
 		}
 
@@ -1072,8 +1074,6 @@ func runAdvancedServerTest(
 			}
 
 			//check status
-
-			reqInfo := "request" + strconv.Itoa(i) + " " + info.method + " " + info.path
 
 			if info.status == 0 {
 				if info.okayIf429 && resp.StatusCode == 429 {

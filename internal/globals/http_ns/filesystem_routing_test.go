@@ -877,11 +877,11 @@ func TestFilesystemRoutingCPULimit(t *testing.T) {
 		assert.WithinDuration(t, start.Add(workDuration), end, cpuTime/3)
 	})
 
-	t.Run("a status of 200 should be returned if a few parallel handlers have each worked for a duration slightly shorter than their CPU time", func(t *testing.T) {
+	t.Run("a status of 200 should be returned if several parallel handlers have each worked for a duration shorter than their CPU time", func(t *testing.T) {
 		var start time.Time
 		var end time.Time
 
-		workDuration := cpuTime - cpuTime/4
+		workDuration := cpuTime / 2
 		workDurationString := strconv.Itoa(int(workDuration/time.Millisecond)) + "ms"
 
 		runServerTest(t,
@@ -938,7 +938,7 @@ func TestFilesystemRoutingCPULimit(t *testing.T) {
 			createClient,
 		)
 
-		assert.WithinDuration(t, start.Add(workDuration), end, cpuTime/3)
+		assert.WithinDuration(t, start.Add(workDuration), end, workDuration/2)
 	})
 
 }
