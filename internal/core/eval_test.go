@@ -2316,7 +2316,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.NoError(t, err)
 
 			obj := res.(*core.Object)
-			time.Sleep(10 * time.Millisecond) //wait for job to finish
+
+			time.Sleep(100 * time.Millisecond) //wait for job to finish
+
 			assert.Equal(t, core.NewWrappedValueList(
 				state.Ctx.ResolveNamedPattern("p"),
 				state.Ctx.ResolveNamedPattern("int"),
