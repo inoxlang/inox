@@ -43,6 +43,8 @@ const (
 	RETURN_POS_ARG_A_MODULE_HASH       = "QNJpkgQeB5MA23yXpJ8L5XWLzUQIi6eDwi2HOnPTO3w="
 	RETURN_PATTERN_INT_TWO_MODULE_HASH = "HyCSyqI5UdPFc6c8IuSBw6huA6Iwv0TES0mHLx1DaIY="
 	RETURN_INT_PATTERN_MODULE_HASH     = "Ub9ua2QldCOc6MvxIPVpUYOQQfQoZpYEoDJitOdKFPA="
+
+	STREAM_TEST_CLOSE_DELAY = 50 * time.Millisecond //the delay should not be too small because of test parellization
 )
 
 var (
@@ -2858,7 +2860,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					watcher.InformAboutAsync(ctx, core.String("b"))
 
 					go func() {
-						time.Sleep(10 * time.Millisecond)
+						//Close the stream after a short delay.
+						time.Sleep(STREAM_TEST_CLOSE_DELAY)
 						watcher.Stop()
 					}()
 					return map[string]core.Value{
@@ -2882,7 +2885,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					watcher.InformAboutAsync(ctx, core.String("b"))
 
 					go func() {
-						time.Sleep(10 * time.Millisecond)
+						//Close the stream after a short delay.
+						time.Sleep(STREAM_TEST_CLOSE_DELAY)
 						watcher.Stop()
 					}()
 					return map[string]core.Value{
@@ -2903,7 +2907,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					watcher.InformAboutAsync(ctx, core.String("b"))
 
 					go func() {
-						time.Sleep(10 * time.Millisecond)
+						//Close the stream after a short delay.
+						time.Sleep(STREAM_TEST_CLOSE_DELAY)
 						watcher.Stop()
 					}()
 					return map[string]core.Value{
@@ -2927,7 +2932,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					watcher.InformAboutAsync(ctx, core.String("b"))
 
 					go func() {
-						time.Sleep(10 * time.Millisecond)
+						//Close the stream after a short delay.
+						time.Sleep(STREAM_TEST_CLOSE_DELAY)
 						watcher.Stop()
 					}()
 					return map[string]core.Value{
@@ -3047,7 +3053,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					watcher.InformAboutAsync(ctx, core.String("b"))
 
 					go func() {
-						time.Sleep(5 * time.Millisecond)
+						//Close the stream after a short delay.
+						time.Sleep(STREAM_TEST_CLOSE_DELAY)
 						watcher.Stop()
 					}()
 					return map[string]core.Value{
@@ -3064,7 +3071,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					watcher.InformAboutAsync(ctx, core.String("b"))
 
 					go func() {
-						time.Sleep(5 * time.Millisecond)
+						//Close the stream after a short delay.
+						time.Sleep(STREAM_TEST_CLOSE_DELAY)
 						watcher.Stop()
 					}()
 					return map[string]core.Value{

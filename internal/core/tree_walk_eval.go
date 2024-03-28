@@ -1532,493 +1532,23 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			return nil, fmt.Errorf("if statement expression's test is not a boolean but a %T", test)
 		}
 	case *parse.ForStatement:
-		iteratedValue, err := TreeWalkEval(n.IteratedValue, state)
-		scope := state.CurrentLocalScope()
-		if err != nil {
-			return nil, err
-		}
-
-		var keyPattern Pattern
-		var valuePattern Pattern
-
-		if n.KeyPattern != nil {
-			v, err := TreeWalkEval(n.KeyPattern, state)
-			if err != nil {
-				return nil, err
-			}
-			keyPattern = v.(Pattern)
-		}
-
-		if n.ValuePattern != nil {
-			v, err := TreeWalkEval(n.ValuePattern, state)
-			if err != nil {
-				return nil, err
-			}
-			valuePattern = v.(Pattern)
-		}
-
-		var kVarname string
-		var eVarname string
-
-		if n.KeyIndexIdent != nil {
-			kVarname = n.KeyIndexIdent.Name
-		}
-		if n.ValueElemIdent != nil {
-			eVarname = n.ValueElemIdent.Name
-		}
-
-		defer func() {
-			if n.KeyIndexIdent != nil {
-				delete(scope, kVarname)
-			}
-			if n.ValueElemIdent != nil {
-				delete(scope, eVarname)
-			}
-		}()
-
-		if iterable, ok := iteratedValue.(Iterable); ok {
-			if n.Chunked {
-				return nil, errors.New("chunked iteration of iterables is not supported yet")
-			}
-
-			it := iterable.Iterator(state.Global.Ctx, IteratorConfiguration{
-				KeyFilter:   keyPattern,
-				ValueFilter: valuePattern,
-			})
-			index := 0
-
-		iterable_iteration:
-			for it.HasNext(state.Global.Ctx) {
-				it.Next(state.Global.Ctx)
-
-				if n.KeyIndexIdent != nil {
-					scope[kVarname] = it.Key(state.Global.Ctx)
-				}
-				if n.ValueElemIdent != nil {
-					scope[eVarname] = it.Value(state.Global.Ctx)
-				}
-
-				_, err := TreeWalkEval(n.Body, state)
-				if err != nil {
-					return nil, err
-				}
-				if state.returnValue != nil {
-					return Nil, nil
-				}
-				switch state.iterationChange {
-				case BreakIteration:
-					state.iterationChange = NoIterationChange
-					break iterable_iteration
-				case ContinueIteration:
-					state.iterationChange = NoIterationChange
-					index++
-					continue iterable_iteration
-				case PruneWalk:
-					return Nil, nil
-				}
-				index++
-			}
-		} else if stremable, ok := iteratedValue.(StreamSource); ok {
-			stream := stremable.Stream(state.Global.Ctx, &ReadableStreamConfiguration{
-				Filter: valuePattern,
-			})
-			defer stream.Stop()
-
-			chunked := n.Chunked
-
-		stream_iteration:
-			for {
-				select {
-				case <-state.Global.Ctx.Done():
-					return nil, state.Global.Ctx.Err()
-				default:
-				}
-
-				var next Value
-				var streamErr error
-
-				if chunked {
-					sizeRange := NewIntRange(DEFAULT_MIN_STREAM_CHUNK_SIZE, DEFAULT_MAX_STREAM_CHUNK_SIZE)
-					next, streamErr = stream.WaitNextChunk(state.Global.Ctx, nil, sizeRange, STREAM_ITERATION_WAIT_TIMEOUT)
-				} else {
-					next, streamErr = stream.WaitNext(state.Global.Ctx, nil, STREAM_ITERATION_WAIT_TIMEOUT)
-				}
-
-				if streamErr == nil || (chunked && next.(*DataChunk) != nil) {
-					scope[eVarname] = next
-
-					//evalute body & handle return/break/continue/prune
-
-					_, err := TreeWalkEval(n.Body, state)
-					if err != nil {
-						return nil, err
-					}
-					if state.returnValue != nil {
-						return Nil, nil
-					}
-					switch state.iterationChange {
-					case BreakIteration:
-						state.iterationChange = NoIterationChange
-						break stream_iteration
-					case ContinueIteration:
-						state.iterationChange = NoIterationChange
-						continue stream_iteration
-					case PruneWalk:
-						return Nil, nil
-					}
-				}
-
-				if errors.Is(streamErr, ErrEndOfStream) {
-					break stream_iteration
-				}
-				if (chunked && errors.Is(streamErr, ErrStreamChunkWaitTimeout)) ||
-					(!chunked && errors.Is(streamErr, ErrStreamElemWaitTimeout)) {
-					continue stream_iteration
-				}
-				if streamErr != nil {
-					return nil, streamErr
-				}
-			}
-		} else {
-			return nil, fmt.Errorf("cannot iterate %#v", iteratedValue)
-		}
-		return Nil, nil
+		err := evalForStatement(n, state)
+		return nil, err
 	case *parse.ForExpression:
-		iteratedValue, err := TreeWalkEval(n.IteratedValue, state)
-		scope := state.CurrentLocalScope()
-		if err != nil {
-			return nil, err
-		}
-
-		var keyPattern Pattern
-		var valuePattern Pattern
-
-		if n.KeyPattern != nil {
-			v, err := TreeWalkEval(n.KeyPattern, state)
-			if err != nil {
-				return nil, err
-			}
-			keyPattern = v.(Pattern)
-		}
-
-		if n.ValuePattern != nil {
-			v, err := TreeWalkEval(n.ValuePattern, state)
-			if err != nil {
-				return nil, err
-			}
-			valuePattern = v.(Pattern)
-		}
-
-		var kVarname string
-		var eVarname string
-
-		if n.KeyIndexIdent != nil {
-			kVarname = n.KeyIndexIdent.Name
-		}
-		if n.ValueElemIdent != nil {
-			eVarname = n.ValueElemIdent.Name
-		}
-
-		defer func() {
-			if n.KeyIndexIdent != nil {
-				delete(scope, kVarname)
-			}
-			if n.ValueElemIdent != nil {
-				delete(scope, eVarname)
-			}
-		}()
-
-		var elements []Serializable
-
-		if iterable, ok := iteratedValue.(Iterable); ok {
-			if n.Chunked {
-				return nil, errors.New("chunked iteration of iterables is not supported yet")
-			}
-
-			it := iterable.Iterator(state.Global.Ctx, IteratorConfiguration{
-				KeyFilter:   keyPattern,
-				ValueFilter: valuePattern,
-			})
-			index := 0
-
-			for it.HasNext(state.Global.Ctx) {
-				it.Next(state.Global.Ctx)
-
-				if n.KeyIndexIdent != nil {
-					scope[kVarname] = it.Key(state.Global.Ctx)
-				}
-				if n.ValueElemIdent != nil {
-					scope[eVarname] = it.Value(state.Global.Ctx)
-				}
-
-				//Evaluate body.
-
-				elem, err := TreeWalkEval(n.Body, state)
-				if err != nil {
-					return nil, err
-				}
-				elements = append(elements, elem.(Serializable))
-				index++
-			}
-		} else if stremable, ok := iteratedValue.(StreamSource); ok {
-			stream := stremable.Stream(state.Global.Ctx, &ReadableStreamConfiguration{
-				Filter: valuePattern,
-			})
-			defer stream.Stop()
-
-			chunked := n.Chunked
-
-		stream_iteration_for_expr:
-			for {
-				select {
-				case <-state.Global.Ctx.Done():
-					return nil, state.Global.Ctx.Err()
-				default:
-				}
-
-				var next Value
-				var streamErr error
-
-				if chunked {
-					sizeRange := NewIntRange(DEFAULT_MIN_STREAM_CHUNK_SIZE, DEFAULT_MAX_STREAM_CHUNK_SIZE)
-					next, streamErr = stream.WaitNextChunk(state.Global.Ctx, nil, sizeRange, STREAM_ITERATION_WAIT_TIMEOUT)
-				} else {
-					next, streamErr = stream.WaitNext(state.Global.Ctx, nil, STREAM_ITERATION_WAIT_TIMEOUT)
-				}
-
-				if streamErr == nil || (chunked && next.(*DataChunk) != nil) {
-					scope[eVarname] = next
-
-					//Evaluate body.
-
-					elem, err := TreeWalkEval(n.Body, state)
-					if err != nil {
-						return nil, err
-					}
-					elements = append(elements, elem.(Serializable))
-				}
-
-				if errors.Is(streamErr, ErrEndOfStream) {
-					break stream_iteration_for_expr
-				}
-				if (chunked && errors.Is(streamErr, ErrStreamChunkWaitTimeout)) ||
-					(!chunked && errors.Is(streamErr, ErrStreamElemWaitTimeout)) {
-					continue stream_iteration_for_expr
-				}
-				if streamErr != nil {
-					return nil, streamErr
-				}
-			}
-		} else {
-			return nil, fmt.Errorf("cannot iterate %#v", iteratedValue)
-		}
-		return NewWrappedValueList(elements...), nil
+		return evalForExpression(n, state)
 	case *parse.WalkStatement:
-		walkable, err := TreeWalkEval(n.Walked, state)
-		if err != nil {
-			return nil, err
-		}
-		scope := state.CurrentLocalScope()
-		entryName := n.EntryIdent.Name
-		defer func() {
-			delete(scope, entryName)
-		}()
-
-		//we check the permissions
-
-		//
-
-		walker, err := walkable.(Walkable).Walker(state.Global.Ctx)
-		if err != nil {
-			return nil, err
-		}
-
-	walk_loop:
-		for {
-			if !walker.HasNext(state.Global.Ctx) {
-				break
-			}
-			walker.Next(state.Global.Ctx)
-			entry := walker.Value(state.Global.Ctx)
-			scope[entryName] = entry
-
-			_, blkErr := TreeWalkEval(n.Body, state)
-			if blkErr != nil {
-				return nil, blkErr
-			}
-
-			switch state.iterationChange {
-			case PruneWalk:
-				state.iterationChange = NoIterationChange
-				walker.Prune(state.Global.Ctx)
-			case BreakIteration:
-				break walk_loop
-			case ContinueIteration:
-				state.iterationChange = NoIterationChange
-				continue
-			}
-		}
-
-		state.iterationChange = NoIterationChange
-
+		err := evalWalkStatement(n, state)
 		return nil, err
 	case *parse.SwitchStatement:
-		discriminant, err := TreeWalkEval(n.Discriminant, state)
-		if err != nil {
-			return nil, err
-		}
-		for _, switchCase := range n.Cases {
-			for _, valNode := range switchCase.Values {
-				val, err := TreeWalkEval(valNode, state)
-				if err != nil {
-					return nil, err
-				}
-				if discriminant == val {
-					_, err := TreeWalkEval(switchCase.Block, state)
-					if err != nil {
-						return nil, err
-					}
-					goto switch_end
-				}
-			}
-		}
-		//if we are here there was no match
-		if len(n.DefaultCases) > 0 {
-			_, err := TreeWalkEval(n.DefaultCases[0].Block, state)
-			if err != nil {
-				return nil, err
-			}
-		}
-	switch_end:
-
-		return Nil, nil
+		err := evalSwitchStatement(n, state)
+		return nil, err
 	case *parse.SwitchExpression:
-		discriminant, err := TreeWalkEval(n.Discriminant, state)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, switchCase := range n.Cases {
-			for _, valNode := range switchCase.Values {
-				val, err := TreeWalkEval(valNode, state)
-				if err != nil {
-					return nil, err
-				}
-				if discriminant == val {
-					return TreeWalkEval(switchCase.Result, state)
-				}
-			}
-		}
-		//if we are here there was no match
-		if len(n.DefaultCases) > 0 {
-			return TreeWalkEval(n.DefaultCases[0].Result, state)
-		}
-		return DEFAULT_SWITCH_MATCH_EXPR_RESULT, nil
+		return evalSwitchExpression(n, state)
 	case *parse.MatchStatement:
-		discriminant, err := TreeWalkEval(n.Discriminant, state)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, matchCase := range n.Cases {
-
-			for _, valNode := range matchCase.Values {
-				m, err := TreeWalkEval(valNode, state)
-				if err != nil {
-					return nil, err
-				}
-
-				pattern, ok := m.(Pattern)
-
-				if !ok { //if the value of the case is not a pattern we just check for equality
-					pattern = &ExactValuePattern{value: m.(Serializable)}
-				}
-
-				if matchCase.GroupMatchingVariable != nil {
-					variable := matchCase.GroupMatchingVariable.(*parse.IdentifierLiteral)
-
-					groupPattern, _ := pattern.(GroupPattern)
-					groups, ok, err := groupPattern.MatchGroups(state.Global.Ctx, discriminant.(Serializable))
-
-					if err != nil {
-						return nil, fmt.Errorf("match statement: group maching: %w", err)
-					}
-					if ok {
-						state.CurrentLocalScope()[variable.Name] = objFrom(groups)
-
-						_, err := TreeWalkEval(matchCase.Block, state)
-						if err != nil {
-							return nil, err
-						}
-						goto match_end
-					}
-
-				} else if pattern.Test(state.Global.Ctx, discriminant) {
-					_, err := TreeWalkEval(matchCase.Block, state)
-					if err != nil {
-						return nil, err
-					}
-					goto match_end
-				}
-			}
-		}
-
-		//if we are here there was no match
-		if len(n.DefaultCases) > 0 {
-			_, err := TreeWalkEval(n.DefaultCases[0].Block, state)
-			if err != nil {
-				return nil, err
-			}
-		}
-	match_end:
-
-		return Nil, nil
+		err := evalMatchStatement(n, state)
+		return nil, err
 	case *parse.MatchExpression:
-		discriminant, err := TreeWalkEval(n.Discriminant, state)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, matchCase := range n.Cases {
-
-			for _, valNode := range matchCase.Values {
-				m, err := TreeWalkEval(valNode, state)
-				if err != nil {
-					return nil, err
-				}
-
-				pattern, ok := m.(Pattern)
-
-				if !ok { //if the value of the case is not a pattern we just check for equality
-					pattern = &ExactValuePattern{value: m.(Serializable)}
-				}
-
-				if matchCase.GroupMatchingVariable != nil {
-					variable := matchCase.GroupMatchingVariable.(*parse.IdentifierLiteral)
-
-					groupPattern, _ := pattern.(GroupPattern)
-					groups, ok, err := groupPattern.MatchGroups(state.Global.Ctx, discriminant.(Serializable))
-
-					if err != nil {
-						return nil, fmt.Errorf("match statement: group maching: %w", err)
-					}
-					if ok {
-						state.CurrentLocalScope()[variable.Name] = objFrom(groups)
-						return TreeWalkEval(matchCase.Result, state)
-					}
-
-				} else if pattern.Test(state.Global.Ctx, discriminant) {
-					return TreeWalkEval(matchCase.Result, state)
-				}
-			}
-		}
-
-		//if we are here there was no match
-		if len(n.DefaultCases) > 0 {
-			return TreeWalkEval(n.DefaultCases[0].Result, state)
-		}
-
-		return DEFAULT_SWITCH_MATCH_EXPR_RESULT, nil
+		return evalMatchExpression(n, state)
 	case *parse.UnaryExpression:
 
 		operand, err := TreeWalkEval(n.Operand, state)
@@ -3477,4 +3007,509 @@ func evalArithmeticBinaryExpression(left, right Value, operator parse.BinaryOper
 	case parse.Div:
 	}
 	panic(ErrUnreachable)
+}
+
+func evalForStatement(n *parse.ForStatement, state *TreeWalkState) error {
+	iteratedValue, err := TreeWalkEval(n.IteratedValue, state)
+	scope := state.CurrentLocalScope()
+	if err != nil {
+		return err
+	}
+
+	var keyPattern Pattern
+	var valuePattern Pattern
+
+	if n.KeyPattern != nil {
+		v, err := TreeWalkEval(n.KeyPattern, state)
+		if err != nil {
+			return err
+		}
+		keyPattern = v.(Pattern)
+	}
+
+	if n.ValuePattern != nil {
+		v, err := TreeWalkEval(n.ValuePattern, state)
+		if err != nil {
+			return err
+		}
+		valuePattern = v.(Pattern)
+	}
+
+	var kVarname string
+	var eVarname string
+
+	if n.KeyIndexIdent != nil {
+		kVarname = n.KeyIndexIdent.Name
+	}
+	if n.ValueElemIdent != nil {
+		eVarname = n.ValueElemIdent.Name
+	}
+
+	defer func() {
+		if n.KeyIndexIdent != nil {
+			delete(scope, kVarname)
+		}
+		if n.ValueElemIdent != nil {
+			delete(scope, eVarname)
+		}
+	}()
+
+	if iterable, ok := iteratedValue.(Iterable); ok {
+		if n.Chunked {
+			return errors.New("chunked iteration of iterables is not supported yet")
+		}
+
+		it := iterable.Iterator(state.Global.Ctx, IteratorConfiguration{
+			KeyFilter:   keyPattern,
+			ValueFilter: valuePattern,
+		})
+		index := 0
+
+	iterable_iteration:
+		for it.HasNext(state.Global.Ctx) {
+			it.Next(state.Global.Ctx)
+
+			if n.KeyIndexIdent != nil {
+				scope[kVarname] = it.Key(state.Global.Ctx)
+			}
+			if n.ValueElemIdent != nil {
+				scope[eVarname] = it.Value(state.Global.Ctx)
+			}
+
+			_, err := TreeWalkEval(n.Body, state)
+			if err != nil {
+				return err
+			}
+			if state.returnValue != nil {
+				return nil
+			}
+			switch state.iterationChange {
+			case BreakIteration:
+				state.iterationChange = NoIterationChange
+				break iterable_iteration
+			case ContinueIteration:
+				state.iterationChange = NoIterationChange
+				index++
+				continue iterable_iteration
+			case PruneWalk:
+				return nil
+			}
+			index++
+		}
+	} else if stremable, ok := iteratedValue.(StreamSource); ok {
+		stream := stremable.Stream(state.Global.Ctx, &ReadableStreamConfiguration{
+			Filter: valuePattern,
+		})
+		defer stream.Stop()
+
+		chunked := n.Chunked
+
+	stream_iteration:
+		for {
+			select {
+			case <-state.Global.Ctx.Done():
+				return state.Global.Ctx.Err()
+			default:
+			}
+
+			var next Value
+			var streamErr error
+
+			if chunked {
+				sizeRange := NewIntRange(DEFAULT_MIN_STREAM_CHUNK_SIZE, DEFAULT_MAX_STREAM_CHUNK_SIZE)
+				next, streamErr = stream.WaitNextChunk(state.Global.Ctx, nil, sizeRange, STREAM_ITERATION_WAIT_TIMEOUT)
+			} else {
+				next, streamErr = stream.WaitNext(state.Global.Ctx, nil, STREAM_ITERATION_WAIT_TIMEOUT)
+			}
+
+			nextChunk, _ := next.(*DataChunk)
+
+			if streamErr == nil || (nextChunk != nil && nextChunk.ElemCount() > 0) {
+				scope[eVarname] = next
+
+				//evalute body & handle return/break/continue/prune
+
+				_, err := TreeWalkEval(n.Body, state)
+				if err != nil {
+					return err
+				}
+				if state.returnValue != nil {
+					return nil
+				}
+				switch state.iterationChange {
+				case BreakIteration:
+					state.iterationChange = NoIterationChange
+					break stream_iteration
+				case ContinueIteration:
+					state.iterationChange = NoIterationChange
+					continue stream_iteration
+				case PruneWalk:
+					return nil
+				}
+			}
+
+			if errors.Is(streamErr, ErrEndOfStream) {
+				break stream_iteration
+			}
+			if (chunked && errors.Is(streamErr, ErrStreamChunkWaitTimeout)) ||
+				(!chunked && errors.Is(streamErr, ErrStreamElemWaitTimeout)) {
+				continue stream_iteration
+			}
+			if streamErr != nil {
+				return streamErr
+			}
+		}
+	} else {
+		return fmt.Errorf("cannot iterate %#v", iteratedValue)
+	}
+	return nil
+}
+
+func evalForExpression(n *parse.ForExpression, state *TreeWalkState) (Value, error) {
+	iteratedValue, err := TreeWalkEval(n.IteratedValue, state)
+	scope := state.CurrentLocalScope()
+	if err != nil {
+		return nil, err
+	}
+
+	var keyPattern Pattern
+	var valuePattern Pattern
+
+	if n.KeyPattern != nil {
+		v, err := TreeWalkEval(n.KeyPattern, state)
+		if err != nil {
+			return nil, err
+		}
+		keyPattern = v.(Pattern)
+	}
+
+	if n.ValuePattern != nil {
+		v, err := TreeWalkEval(n.ValuePattern, state)
+		if err != nil {
+			return nil, err
+		}
+		valuePattern = v.(Pattern)
+	}
+
+	var kVarname string
+	var eVarname string
+
+	if n.KeyIndexIdent != nil {
+		kVarname = n.KeyIndexIdent.Name
+	}
+	if n.ValueElemIdent != nil {
+		eVarname = n.ValueElemIdent.Name
+	}
+
+	defer func() {
+		if n.KeyIndexIdent != nil {
+			delete(scope, kVarname)
+		}
+		if n.ValueElemIdent != nil {
+			delete(scope, eVarname)
+		}
+	}()
+
+	var elements []Serializable
+
+	if iterable, ok := iteratedValue.(Iterable); ok {
+		if n.Chunked {
+			return nil, errors.New("chunked iteration of iterables is not supported yet")
+		}
+
+		it := iterable.Iterator(state.Global.Ctx, IteratorConfiguration{
+			KeyFilter:   keyPattern,
+			ValueFilter: valuePattern,
+		})
+		index := 0
+
+		for it.HasNext(state.Global.Ctx) {
+			it.Next(state.Global.Ctx)
+
+			if n.KeyIndexIdent != nil {
+				scope[kVarname] = it.Key(state.Global.Ctx)
+			}
+			if n.ValueElemIdent != nil {
+				scope[eVarname] = it.Value(state.Global.Ctx)
+			}
+
+			//Evaluate body.
+
+			elem, err := TreeWalkEval(n.Body, state)
+			if err != nil {
+				return nil, err
+			}
+			elements = append(elements, elem.(Serializable))
+			index++
+		}
+	} else if stremable, ok := iteratedValue.(StreamSource); ok {
+		stream := stremable.Stream(state.Global.Ctx, &ReadableStreamConfiguration{
+			Filter: valuePattern,
+		})
+		defer stream.Stop()
+
+		chunked := n.Chunked
+
+	stream_iteration_for_expr:
+		for {
+			select {
+			case <-state.Global.Ctx.Done():
+				return nil, state.Global.Ctx.Err()
+			default:
+			}
+
+			var next Value
+			var streamErr error
+
+			if chunked {
+				sizeRange := NewIntRange(DEFAULT_MIN_STREAM_CHUNK_SIZE, DEFAULT_MAX_STREAM_CHUNK_SIZE)
+				next, streamErr = stream.WaitNextChunk(state.Global.Ctx, nil, sizeRange, STREAM_ITERATION_WAIT_TIMEOUT)
+			} else {
+				next, streamErr = stream.WaitNext(state.Global.Ctx, nil, STREAM_ITERATION_WAIT_TIMEOUT)
+			}
+
+			nextChunk, _ := next.(*DataChunk)
+
+			if streamErr == nil || (nextChunk != nil && nextChunk.ElemCount() > 0) {
+				scope[eVarname] = next
+
+				//Evaluate body.
+
+				elem, err := TreeWalkEval(n.Body, state)
+				if err != nil {
+					return nil, err
+				}
+				elements = append(elements, elem.(Serializable))
+			}
+
+			if errors.Is(streamErr, ErrEndOfStream) {
+				break stream_iteration_for_expr
+			}
+			if (chunked && errors.Is(streamErr, ErrStreamChunkWaitTimeout)) ||
+				(!chunked && errors.Is(streamErr, ErrStreamElemWaitTimeout)) {
+				continue stream_iteration_for_expr
+			}
+			if streamErr != nil {
+				return nil, streamErr
+			}
+		}
+	} else {
+		return nil, fmt.Errorf("cannot iterate %#v", iteratedValue)
+	}
+	return NewWrappedValueList(elements...), nil
+}
+
+func evalWalkStatement(n *parse.WalkStatement, state *TreeWalkState) error {
+	walkable, err := TreeWalkEval(n.Walked, state)
+	if err != nil {
+		return err
+	}
+	scope := state.CurrentLocalScope()
+	entryName := n.EntryIdent.Name
+	defer func() {
+		delete(scope, entryName)
+	}()
+
+	//we check the permissions
+
+	//
+
+	walker, err := walkable.(Walkable).Walker(state.Global.Ctx)
+	if err != nil {
+		return err
+	}
+
+walk_loop:
+	for {
+		if !walker.HasNext(state.Global.Ctx) {
+			break
+		}
+		walker.Next(state.Global.Ctx)
+		entry := walker.Value(state.Global.Ctx)
+		scope[entryName] = entry
+
+		_, blkErr := TreeWalkEval(n.Body, state)
+		if blkErr != nil {
+			return blkErr
+		}
+
+		switch state.iterationChange {
+		case PruneWalk:
+			state.iterationChange = NoIterationChange
+			walker.Prune(state.Global.Ctx)
+		case BreakIteration:
+			break walk_loop
+		case ContinueIteration:
+			state.iterationChange = NoIterationChange
+			continue
+		}
+	}
+
+	state.iterationChange = NoIterationChange
+
+	return err
+}
+
+func evalSwitchStatement(n *parse.SwitchStatement, state *TreeWalkState) error {
+	discriminant, err := TreeWalkEval(n.Discriminant, state)
+	if err != nil {
+		return err
+	}
+	for _, switchCase := range n.Cases {
+		for _, valNode := range switchCase.Values {
+			val, err := TreeWalkEval(valNode, state)
+			if err != nil {
+				return err
+			}
+			if discriminant == val {
+				_, err := TreeWalkEval(switchCase.Block, state)
+				if err != nil {
+					return err
+				}
+				goto switch_end
+			}
+		}
+	}
+	//if we are here there was no match
+	if len(n.DefaultCases) > 0 {
+		_, err := TreeWalkEval(n.DefaultCases[0].Block, state)
+		if err != nil {
+			return err
+		}
+	}
+switch_end:
+	return nil
+}
+
+func evalSwitchExpression(n *parse.SwitchExpression, state *TreeWalkState) (Value, error) {
+	discriminant, err := TreeWalkEval(n.Discriminant, state)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, switchCase := range n.Cases {
+		for _, valNode := range switchCase.Values {
+			val, err := TreeWalkEval(valNode, state)
+			if err != nil {
+				return nil, err
+			}
+			if discriminant == val {
+				return TreeWalkEval(switchCase.Result, state)
+			}
+		}
+	}
+	//if we are here there was no match
+	if len(n.DefaultCases) > 0 {
+		return TreeWalkEval(n.DefaultCases[0].Result, state)
+	}
+	return DEFAULT_SWITCH_MATCH_EXPR_RESULT, nil
+}
+
+func evalMatchStatement(n *parse.MatchStatement, state *TreeWalkState) error {
+	discriminant, err := TreeWalkEval(n.Discriminant, state)
+	if err != nil {
+		return err
+	}
+
+	for _, matchCase := range n.Cases {
+
+		for _, valNode := range matchCase.Values {
+			m, err := TreeWalkEval(valNode, state)
+			if err != nil {
+				return err
+			}
+
+			pattern, ok := m.(Pattern)
+
+			if !ok { //if the value of the case is not a pattern we just check for equality
+				pattern = &ExactValuePattern{value: m.(Serializable)}
+			}
+
+			if matchCase.GroupMatchingVariable != nil {
+				variable := matchCase.GroupMatchingVariable.(*parse.IdentifierLiteral)
+
+				groupPattern, _ := pattern.(GroupPattern)
+				groups, ok, err := groupPattern.MatchGroups(state.Global.Ctx, discriminant.(Serializable))
+
+				if err != nil {
+					return fmt.Errorf("match statement: group maching: %w", err)
+				}
+				if ok {
+					state.CurrentLocalScope()[variable.Name] = objFrom(groups)
+
+					_, err := TreeWalkEval(matchCase.Block, state)
+					if err != nil {
+						return err
+					}
+					goto match_end
+				}
+
+			} else if pattern.Test(state.Global.Ctx, discriminant) {
+				_, err := TreeWalkEval(matchCase.Block, state)
+				if err != nil {
+					return err
+				}
+				goto match_end
+			}
+		}
+	}
+
+	//if we are here there was no match
+	if len(n.DefaultCases) > 0 {
+		_, err := TreeWalkEval(n.DefaultCases[0].Block, state)
+		if err != nil {
+			return err
+		}
+	}
+match_end:
+
+	return nil
+}
+
+func evalMatchExpression(n *parse.MatchExpression, state *TreeWalkState) (Value, error) {
+	discriminant, err := TreeWalkEval(n.Discriminant, state)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, matchCase := range n.Cases {
+
+		for _, valNode := range matchCase.Values {
+			m, err := TreeWalkEval(valNode, state)
+			if err != nil {
+				return nil, err
+			}
+
+			pattern, ok := m.(Pattern)
+
+			if !ok { //if the value of the case is not a pattern we just check for equality
+				pattern = &ExactValuePattern{value: m.(Serializable)}
+			}
+
+			if matchCase.GroupMatchingVariable != nil {
+				variable := matchCase.GroupMatchingVariable.(*parse.IdentifierLiteral)
+
+				groupPattern, _ := pattern.(GroupPattern)
+				groups, ok, err := groupPattern.MatchGroups(state.Global.Ctx, discriminant.(Serializable))
+
+				if err != nil {
+					return nil, fmt.Errorf("match statement: group maching: %w", err)
+				}
+				if ok {
+					state.CurrentLocalScope()[variable.Name] = objFrom(groups)
+					return TreeWalkEval(matchCase.Result, state)
+				}
+
+			} else if pattern.Test(state.Global.Ctx, discriminant) {
+				return TreeWalkEval(matchCase.Result, state)
+			}
+		}
+	}
+
+	//if we are here there was no match
+	if len(n.DefaultCases) > 0 {
+		return TreeWalkEval(n.DefaultCases[0].Result, state)
+	}
+
+	return DEFAULT_SWITCH_MATCH_EXPR_RESULT, nil
 }
