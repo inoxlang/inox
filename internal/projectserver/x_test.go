@@ -24,7 +24,11 @@ import (
 
 //utils
 
-func createTestServerAndClient(t *testing.T) (*core.Context, *testClient, bool) {
+func createTestServerAndClient(t *testing.T, out io.Writer) (*core.Context, *testClient, bool) {
+
+	if out == nil {
+		out = io.Discard
+	}
 
 	if !core.AreDefaultScriptLimitsSet() {
 		core.SetDefaultScriptLimits([]core.Limit{
@@ -74,7 +78,7 @@ func createTestServerAndClient(t *testing.T) (*core.Context, *testClient, bool) 
 
 	state := core.NewGlobalState(ctx)
 	state.Out = io.Discard
-	state.Logger = zerolog.Nop()
+	state.Logger = zerolog.New(out)
 	state.OutputFieldsInitialized.Store(true)
 
 	//configure server
@@ -113,7 +117,8 @@ func createTestServerAndClient(t *testing.T) (*core.Context, *testClient, bool) 
 		}
 	}()
 
-	time.Sleep(10 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
+
 	if hasErr.Load() {
 		return nil, nil, false
 	}
