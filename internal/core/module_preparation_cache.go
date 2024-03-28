@@ -134,6 +134,13 @@ func (c *PreparationCacheEntry) content() (_ *Module, _ *StaticCheckData, _ *sym
 	return c.module, c.staticCheckData, c.symbolicData, c.finalSymbolicCheckErr
 }
 
+func (c *PreparationCacheEntry) LastUpdateTime() time.Time {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	return c.time
+}
+
 func (c *PreparationCacheEntry) ModuleName() string {
 	c.lock.Lock()
 	defer c.lock.Unlock()

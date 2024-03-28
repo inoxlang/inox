@@ -2634,10 +2634,11 @@ func TestPrepareLocalModuleWithCache(t *testing.T) {
 		}
 
 		cacheKey := state1.EffectivePreparationParameters.PreparationCacheKey
+		cacheTime := time.Now()
 
 		cache := core.NewPreparationCacheEntry(cacheKey, core.PreparationCacheEntryUpdate{
 			Module: module,
-			Time:   time.Now(),
+			Time:   cacheTime,
 		})
 
 		//Second preparation but with the cache.
@@ -2695,6 +2696,8 @@ func TestPrepareLocalModuleWithCache(t *testing.T) {
 
 		// symbolic check should have been performed
 		assert.False(t, state2.SymbolicData.IsEmpty())
+
+		assert.Equal(t, cacheTime, cache.LastUpdateTime())
 	})
 
 	t.Run("module only: automatic cache update", func(t *testing.T) {

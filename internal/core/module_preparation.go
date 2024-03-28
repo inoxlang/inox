@@ -56,6 +56,8 @@ type ModulePreparationArgs struct {
 	//If true .CacheEntry and entries from .Cache are assumed to be valid.
 	ForceUseCache bool
 
+	DoNotRefreshCache bool
+
 	InoxChunkCache *parse.ChunkCache
 
 	IsUnderTest bool
@@ -767,18 +769,20 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 	//At this point we know there is no critical error.
 
 	//Update cache.
-	update := PreparationCacheEntryUpdate{
-		Module:                mod,
-		Time:                  preparationStart,
-		StaticCheckData:       staticCheckData,
-		SymbolicData:          symbolicData,
-		FinalSymbolicCheckErr: symbolicCheckError,
-	}
+	if !isCacheValid && !args.DoNotRefreshCache {
+		update := PreparationCacheEntryUpdate{
+			Module:                mod,
+			Time:                  preparationStart,
+			StaticCheckData:       staticCheckData,
+			SymbolicData:          symbolicData,
+			FinalSymbolicCheckErr: symbolicCheckError,
+		}
 
-	if cacheEntry != nil {
-		cacheEntry.Refresh(update)
-	} else if cache != nil {
-		cache.Put(effectiveParams.PreparationCacheKey, update)
+		if cacheEntry != nil {
+			cacheEntry.Refresh(update)
+		} else if cache != nil {
+			cache.Put(effectiveParams.PreparationCacheKey, update)
+		}
 	}
 
 	preparationLogger.Debug().Dur("total-dur", time.Since(preparationStart)).Send()
