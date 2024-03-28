@@ -433,6 +433,9 @@ func TestPrint(t *testing.T) {
 		"pattern p = str('a')",
 		"pattern p = str('a'",
 		"pattern p = str(",
+		//pattern declarations with bad LHS
+		"pattern int | int",
+		"pattern int + int",
 		//string template literals
 		"%p``",
 		"%p`",
@@ -658,6 +661,11 @@ func TestPrint(t *testing.T) {
 		"[(if true 1 else]",
 		"[(if true 1 else 2]",
 		"[(if true 1 el]",
+		//extend statement
+		"extend",
+		"extend user",
+		"extend ({})",
+		"extend user {}",
 		//others
 		"@(1)",
 	}

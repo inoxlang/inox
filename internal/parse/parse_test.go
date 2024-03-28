@@ -7254,8 +7254,6 @@ func testParse(
 		})
 	})
 
-
-
 	t.Run("integer literal", func(t *testing.T) {
 		t.Run("decimal", func(t *testing.T) {
 			n := mustparseChunk(t, "12")
@@ -32401,15 +32399,7 @@ func testParse(
 							Name:       "user",
 						},
 						Extension: &ObjectLiteral{
-							NodeBase: NodeBase{
-								NodeSpan{12, 14},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{12, 13}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{13, 14}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{12, 14}},
 						},
 					},
 				},
@@ -32574,6 +32564,33 @@ func testParse(
 							NodeBase:   NodeBase{NodeSpan{7, 11}, nil, false},
 							Unprefixed: true,
 							Name:       "user",
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("the extended pattern should be a named pattern", func(t *testing.T) {
+			n, err := parseChunk(t, "extend ({}) {}", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{
+					NodeSpan{0, 14},
+					nil,
+					false,
+				},
+				Statements: []Node{
+					&ExtendStatement{
+						NodeBase: NodeBase{Span: NodeSpan{0, 14}},
+						ExtendedPattern: &ObjectPatternLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{8, 10},
+								&ParsingError{UnspecifiedParsingError, A_PATTERN_NAME_WAS_EXPECTED},
+								true,
+							},
+						},
+						Extension: &ObjectLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{12, 14}},
 						},
 					},
 				},

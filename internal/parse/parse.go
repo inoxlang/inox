@@ -9894,11 +9894,14 @@ func (p *parser) parsePatternDefinition(patternIdent *IdentifierLiteral) *Patter
 				p.inPattern = prev
 			}()
 
-			patternDef.Left, _ = p.parseExpression()
+			patternDef.Left, _ = p.parseExpression(exprParsingConfig{
+				disallowUnparenthesizedBinExpr:          true,
+				disallowParsingSeveralPatternUnionCases: true,
+			})
 			patternDef.Span.End = p.i
 
-			if _, ok := patternDef.Left.(*PatternIdentifierLiteral); !ok {
-				patternDef.Err = &ParsingError{UnspecifiedParsingError, A_PATTERN_NAME_WAS_EXPECTED}
+			if _, ok := patternDef.Left.(*PatternIdentifierLiteral); !ok && patternDef.Left.Base().Err == nil {
+				patternDef.Left.BasePtr().Err = &ParsingError{UnspecifiedParsingError, A_PATTERN_NAME_WAS_EXPECTED}
 			}
 		}()
 
@@ -9962,11 +9965,14 @@ func (p *parser) parsePatternNamespaceDefinition(patternIdent *IdentifierLiteral
 				p.inPattern = prev
 			}()
 
-			namespaceDef.Left, _ = p.parseExpression()
+			namespaceDef.Left, _ = p.parseExpression(exprParsingConfig{
+				disallowUnparenthesizedBinExpr:          true,
+				disallowParsingSeveralPatternUnionCases: true,
+			})
 			namespaceDef.Span.End = p.i
 
-			if _, ok := namespaceDef.Left.(*PatternNamespaceIdentifierLiteral); !ok {
-				namespaceDef.Err = &ParsingError{UnspecifiedParsingError, A_PATTERN_NAMESPACE_NAME_WAS_EXPECTED}
+			if _, ok := namespaceDef.Left.(*PatternNamespaceIdentifierLiteral); !ok && namespaceDef.Left.Base().Err == nil {
+				namespaceDef.Left.BasePtr().Err = &ParsingError{UnspecifiedParsingError, A_PATTERN_NAMESPACE_NAME_WAS_EXPECTED}
 			}
 		}()
 
@@ -10017,11 +10023,14 @@ func (p *parser) parseExtendStatement(extendIdent *IdentifierLiteral) *ExtendSta
 				p.inPattern = prev
 			}()
 
-			extendStmt.ExtendedPattern, _ = p.parseExpression()
+			extendStmt.ExtendedPattern, _ = p.parseExpression(exprParsingConfig{
+				disallowUnparenthesizedBinExpr:          true,
+				disallowParsingSeveralPatternUnionCases: true,
+			})
 			extendStmt.Span.End = p.i
 
-			if _, ok := extendStmt.ExtendedPattern.(*PatternIdentifierLiteral); !ok {
-				extendStmt.Err = &ParsingError{UnspecifiedParsingError, A_PATTERN_NAME_WAS_EXPECTED}
+			if _, ok := extendStmt.ExtendedPattern.(*PatternIdentifierLiteral); !ok && extendStmt.ExtendedPattern.Base().Err == nil {
+				extendStmt.ExtendedPattern.BasePtr().Err = &ParsingError{UnspecifiedParsingError, A_PATTERN_NAME_WAS_EXPECTED}
 			}
 		}()
 
