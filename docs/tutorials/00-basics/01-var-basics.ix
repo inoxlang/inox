@@ -16,7 +16,7 @@ var i int = 0
 # Global variable declaration
 globalvar global1 = 1
 
-# Global variables cannot be shadowed by local variables.
+# Global variables cannot be shadowed by local variables and cannot be re-assigned.
 # var global1 = 3
 
 print("local1 =", local1, "global1 =", global1)
