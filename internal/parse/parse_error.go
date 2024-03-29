@@ -26,6 +26,10 @@ const (
 	UnterminatedMatchStmt
 	UnterminatedMatchExpr
 
+	UnterminatedWalkStmt
+
+	UnterminatedForExpr
+
 	MissingBlock
 	UnterminatedBlock
 
@@ -398,7 +402,7 @@ const (
 
 	INVALID_FOR_EXPR                                        = "invalid for ... expression"
 	UNTERMINATED_FOR_EXPR                                   = "unterminated for expression"
-	INVALID_FOR_EXPR_MISSING_IN_KEYWORD                     = "invalid for expression: missing 'in' keyword "
+	UNTERMINATED_FOR_EXPR_MISSING_IN_KEYWORD                = "unterminated for expression: missing 'in' keyword "
 	INVALID_FOR_EXPR_IN_KEYWORD_SHOULD_BE_FOLLOWED_BY_SPACE = "invalid for expression: 'in' keyword should be followed by a space"
 	INVALID_FOR_EXPR_MISSING_VALUE_AFTER_IN                 = "unterminated for expression: missing value after 'in'"
 	UNTERMINATED_FOR_EXPR_MISSING_ARROW_ITEM_OR_BODY        = "unterminated for expression: missing '=> item' or body"
@@ -407,7 +411,7 @@ const (
 	UNTERMINATED_WALK_STMT_MISSING_WALKED_VALUE        = "unterminated walk statement: missing walked value"
 	UNTERMINATED_WALK_STMT_MISSING_ENTRY_VARIABLE_NAME = "unterminated walk statement: missing entry variable's name"
 	INVALID_WALK_STMT_MISSING_ENTRY_IDENTIFIER         = "invalid walk statement: missing entry identifier"
-	UNTERMINATED_WALK_STMT_MISSING_BLOCK               = "unterminated walk statement: missing block"
+	UNTERMINATED_WALK_STMT_MISSING_BODY                = "unterminated walk statement: missing body (block)"
 
 	UNTERMINATED_MULTI_ASSIGN_MISSING_EQL_SIGN             = "unterminated multi assign statement: missing '=' sign"
 	ASSIGN_KEYWORD_SHOULD_BE_FOLLOWED_BY_IDENTS            = "assign keyword should be followed by identifiers (assign a b = <value>)"

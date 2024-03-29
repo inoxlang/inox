@@ -8399,7 +8399,7 @@ func (p *parser) parseForExpression(openingParenIndex int32 /*-1 if no unparenth
 				return &ForExpression{
 					NodeBase: NodeBase{
 						Span:            NodeSpan{forExprStart, p.i},
-						Err:             &ParsingError{UnspecifiedParsingError, UNTERMINATED_FOR_EXPR},
+						Err:             &ParsingError{UnterminatedForExpr, UNTERMINATED_FOR_EXPR},
 						IsParenthesized: true,
 					},
 					Chunked:       chunked,
@@ -8427,7 +8427,7 @@ func (p *parser) parseForExpression(openingParenIndex int32 /*-1 if no unparenth
 				return &ForExpression{
 					NodeBase: NodeBase{
 						Span:            NodeSpan{forExprStart, p.i},
-						Err:             &ParsingError{UnspecifiedParsingError, UNTERMINATED_FOR_EXPR},
+						Err:             &ParsingError{UnterminatedForExpr, UNTERMINATED_FOR_EXPR},
 						IsParenthesized: true,
 					},
 					KeyPattern:    firstPattern,
@@ -8441,7 +8441,7 @@ func (p *parser) parseForExpression(openingParenIndex int32 /*-1 if no unparenth
 				return &ForExpression{
 					NodeBase: NodeBase{
 						Span:            NodeSpan{forExprStart, p.i},
-						Err:             &ParsingError{UnspecifiedParsingError, INVALID_FOR_STMT_MISSING_IN_KEYWORD},
+						Err:             &ParsingError{UnterminatedForExpr, UNTERMINATED_FOR_EXPR_MISSING_IN_KEYWORD},
 						IsParenthesized: true,
 					},
 					KeyPattern:     keyPattern,
@@ -8465,7 +8465,7 @@ func (p *parser) parseForExpression(openingParenIndex int32 /*-1 if no unparenth
 			return &ForExpression{
 				NodeBase: NodeBase{
 					Span:            NodeSpan{forExprStart, p.i},
-					Err:             &ParsingError{UnspecifiedParsingError, INVALID_FOR_STMT_IN_KEYWORD_SHOULD_BE_FOLLOWED_BY_SPACE},
+					Err:             &ParsingError{UnterminatedForExpr, INVALID_FOR_EXPR_IN_KEYWORD_SHOULD_BE_FOLLOWED_BY_SPACE},
 					IsParenthesized: true,
 				},
 				KeyPattern:     keyPattern,
@@ -8512,12 +8512,12 @@ func (p *parser) parseForExpression(openingParenIndex int32 /*-1 if no unparenth
 			p.i++
 			end = p.i
 
-			parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_FOR_EXPR_MISSING_ARROW_ITEM_OR_BODY}
+			parsingErr = &ParsingError{UnterminatedForExpr, UNTERMINATED_FOR_EXPR_MISSING_ARROW_ITEM_OR_BODY}
 		case p.i < p.len && p.s[p.i] == '{':
 			body = p.parseBlock()
 			end = body.Base().Span.End
 		default:
-			parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_FOR_EXPR_MISSING_ARROW_ITEM_OR_BODY}
+			parsingErr = &ParsingError{UnterminatedForExpr, UNTERMINATED_FOR_EXPR_MISSING_ARROW_ITEM_OR_BODY}
 		}
 
 		p.eatSpaceNewlineComment()
@@ -8528,7 +8528,7 @@ func (p *parser) parseForExpression(openingParenIndex int32 /*-1 if no unparenth
 				p.i++
 				end = p.i
 			} else {
-				parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_FOR_EXPR_MISSING_CLOSIN_PAREN}
+				parsingErr = &ParsingError{UnterminatedForExpr, UNTERMINATED_FOR_EXPR_MISSING_CLOSIN_PAREN}
 			}
 		} else {
 			end = p.i
@@ -8564,6 +8564,15 @@ func (p *parser) parseForExpression(openingParenIndex int32 /*-1 if no unparenth
 func (p *parser) parseWalkStatement(walkIdent *IdentifierLiteral) *WalkStatement {
 	p.panicIfContextDone()
 
+	if p.i >= p.len {
+		return &WalkStatement{
+			NodeBase: NodeBase{
+				Span: NodeSpan{walkIdent.Span.Start, p.i},
+				Err:  &ParsingError{UnterminatedWalkStmt, UNTERMINATED_WALK_STMT_MISSING_WALKED_VALUE},
+			},
+		}
+	}
+
 	var parsingErr *ParsingError
 	var metaIdent, entryIdent *IdentifierLiteral
 	p.eatSpace()
@@ -8575,7 +8584,6 @@ func (p *parser) parseWalkStatement(walkIdent *IdentifierLiteral) *WalkStatement
 		return &WalkStatement{
 			NodeBase: NodeBase{
 				Span: NodeSpan{walkIdent.Span.Start, p.i},
-				Err:  &ParsingError{UnspecifiedParsingError, UNTERMINATED_WALK_STMT_MISSING_WALKED_VALUE},
 			},
 			Walked: walked,
 		}
@@ -8589,7 +8597,7 @@ func (p *parser) parseWalkStatement(walkIdent *IdentifierLiteral) *WalkStatement
 		return &WalkStatement{
 			NodeBase: NodeBase{
 				Span: NodeSpan{walkIdent.Span.Start, e.Base().Span.End},
-				Err:  &ParsingError{UnspecifiedParsingError, UNTERMINATED_WALK_STMT_MISSING_ENTRY_VARIABLE_NAME},
+				Err:  &ParsingError{UnterminatedWalkStmt, UNTERMINATED_WALK_STMT_MISSING_ENTRY_VARIABLE_NAME},
 			},
 			Walked: walked,
 		}
@@ -8629,7 +8637,7 @@ func (p *parser) parseWalkStatement(walkIdent *IdentifierLiteral) *WalkStatement
 
 	if p.i >= p.len || p.s[p.i] != '{' {
 		end = p.i
-		parsingErr = &ParsingError{MissingBlock, UNTERMINATED_WALK_STMT_MISSING_BLOCK}
+		parsingErr = &ParsingError{UnterminatedWalkStmt, UNTERMINATED_WALK_STMT_MISSING_BODY}
 	} else {
 		blk = p.parseBlock()
 		end = blk.Span.End

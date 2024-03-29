@@ -15819,7 +15819,7 @@ func testParse(
 					&ForExpression{
 						NodeBase: NodeBase{
 							NodeSpan{0, 24},
-							&ParsingError{UnspecifiedParsingError, UNTERMINATED_FOR_EXPR_MISSING_CLOSIN_PAREN},
+							&ParsingError{UnterminatedForExpr, UNTERMINATED_FOR_EXPR_MISSING_CLOSIN_PAREN},
 							true,
 						},
 						KeyIndexIdent: &IdentifierLiteral{
@@ -15879,7 +15879,7 @@ func testParse(
 					&ForExpression{
 						NodeBase: NodeBase{
 							NodeSpan{0, 22},
-							&ParsingError{UnspecifiedParsingError, UNTERMINATED_FOR_EXPR_MISSING_CLOSIN_PAREN},
+							&ParsingError{UnterminatedForExpr, UNTERMINATED_FOR_EXPR_MISSING_CLOSIN_PAREN},
 							true,
 						},
 						KeyIndexIdent: &IdentifierLiteral{
@@ -15926,15 +15926,7 @@ func testParse(
 							Name:     "entry",
 						},
 						Body: &Block{
-							NodeBase: NodeBase{
-								NodeSpan{14, 17},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{14, 15}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{16, 17}},
-								},*/
-							},
+							NodeBase:   NodeBase{Span: NodeSpan{14, 17}},
 							Statements: nil,
 						},
 					},
@@ -15948,15 +15940,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
 				Statements: []Node{
 					&WalkStatement{
-						NodeBase: NodeBase{
-							NodeSpan{0, 23},
-							nil,
-							false,
-							/*[]Token{
-								{Type: WALK_KEYWORD, Span: NodeSpan{0, 4}},
-								{Type: COMMA, Span: NodeSpan{12, 13}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 23}},
 						Walked: &RelativePathLiteral{
 							NodeBase: NodeBase{NodeSpan{5, 7}, nil, false},
 							Raw:      "./",
@@ -15971,16 +15955,98 @@ func testParse(
 							Name:     "entry",
 						},
 						Body: &Block{
-							NodeBase: NodeBase{
-								NodeSpan{20, 23},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{20, 21}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{22, 23}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{20, 23}},
+
 							Statements: nil,
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("no walked value: EOF", func(t *testing.T) {
+			n, err := parseChunk(t, "walk", "")
+			assert.Error(t, err)
+
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 4}, nil, false},
+				Statements: []Node{
+					&WalkStatement{
+						NodeBase: NodeBase{
+							NodeSpan{0, 4},
+							&ParsingError{UnterminatedWalkStmt, UNTERMINATED_WALK_STMT_MISSING_WALKED_VALUE},
+							false,
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("no walked value: space", func(t *testing.T) {
+			n, err := parseChunk(t, "walk ", "")
+			assert.Error(t, err)
+
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 5}, nil, false},
+				Statements: []Node{
+					&WalkStatement{
+						NodeBase: NodeBase{Span: NodeSpan{0, 5}},
+						Walked: &MissingExpression{
+							NodeBase: NodeBase{
+								NodeSpan{4, 5},
+								&ParsingError{MissingExpr, fmtExprExpectedHere([]rune("walk "), 5, true)},
+								false,
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("missing entry variable", func(t *testing.T) {
+			n, err := parseChunk(t, "walk ./", "")
+			assert.Error(t, err)
+
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 7}, nil, false},
+				Statements: []Node{
+					&WalkStatement{
+						NodeBase: NodeBase{
+							NodeSpan{0, 7},
+							&ParsingError{UnterminatedWalkStmt, UNTERMINATED_WALK_STMT_MISSING_ENTRY_VARIABLE_NAME},
+							false,
+						},
+						Walked: &RelativePathLiteral{
+							NodeBase: NodeBase{NodeSpan{5, 7}, nil, false},
+							Raw:      "./",
+							Value:    "./",
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("missing body", func(t *testing.T) {
+			n, err := parseChunk(t, "walk ./ entry", "")
+			assert.Error(t, err)
+
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
+				Statements: []Node{
+					&WalkStatement{
+						NodeBase: NodeBase{
+							NodeSpan{0, 13},
+							&ParsingError{UnterminatedWalkStmt, UNTERMINATED_WALK_STMT_MISSING_BODY},
+							false,
+						},
+						Walked: &RelativePathLiteral{
+							NodeBase: NodeBase{NodeSpan{5, 7}, nil, false},
+							Raw:      "./",
+							Value:    "./",
+						},
+						EntryIdent: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{8, 13}, nil, false},
+							Name:     "entry",
 						},
 					},
 				},
