@@ -273,12 +273,12 @@ func fmtEntriesOfRecordPatternShouldMatchOnlyImmutableValues(k string) string {
 	return fmt.Sprintf("invalid value for key '%s', entry patterns of a record pattern should match only immutable values", k)
 }
 
-func fmtIfStmtTestNotBoolBut(test Value) string {
-	return fmt.Sprintf("if statement test is not a boolean but a(n) %s", Stringify(test))
+func fmtIfStmtTestShouldBeBoolBut(test Value) string {
+	return fmt.Sprintf("if statement's test should a boolean but is a(n) %T", test)
 }
 
-func fmtIfExprTestNotBoolBut(test Value) string {
-	return fmt.Sprintf("if expression test is not a boolean but a %T", test)
+func fmtIfExprTestShouldBeBoolBut(test Value) string {
+	return fmt.Sprintf("if expression's test should a boolean but is a(n) %T", test)
 }
 
 func fmtValueIsAnXButYWasExpected(a Value, b Value) string {

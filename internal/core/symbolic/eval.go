@@ -2265,7 +2265,7 @@ func evalIfStatement(n *parse.IfStatement, state *State) (_ Value, finalErr erro
 	}
 
 	if _, ok := test.(*Bool); !ok {
-		state.addError(makeSymbolicEvalError(n.Test, state, fmtIfStmtTestNotBoolBut(test)))
+		state.addError(makeSymbolicEvalError(n.Test, state, fmtIfStmtTestShouldBeBoolBut(test)))
 	}
 
 	if n.Consequent != nil {
@@ -2387,7 +2387,7 @@ func evalIfExpression(n *parse.IfExpression, state *State, options evalOptions) 
 
 	options.setHasShallowErrors()
 
-	state.addError(makeSymbolicEvalError(n, state, fmtIfExprTestNotBoolBut(test)))
+	state.addError(makeSymbolicEvalError(n.Test, state, fmtIfExprTestShouldBeBoolBut(test)))
 	return ANY, nil
 }
 

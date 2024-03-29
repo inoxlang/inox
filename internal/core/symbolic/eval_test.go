@@ -6294,7 +6294,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(ifStmt.Test, state, fmtIfStmtTestNotBoolBut(ANY_INT)),
+				makeSymbolicEvalError(ifStmt.Test, state, fmtIfStmtTestShouldBeBoolBut(ANY_INT)),
 				makeSymbolicEvalError(idents[1], state, fmtVarIsNotDeclared("a")),
 				makeSymbolicEvalError(idents[2], state, fmtVarIsNotDeclared("b")),
 			}, state.errors())
@@ -6311,7 +6311,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(ifStmt.Test, state, fmtIfStmtTestNotBoolBut(ANY_INT)),
+				makeSymbolicEvalError(ifStmt.Test, state, fmtIfStmtTestShouldBeBoolBut(ANY_INT)),
 			}, state.errors())
 			assert.Nil(t, res)
 		})
@@ -6328,7 +6328,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(ifStmt.Test, state, fmtIfStmtTestNotBoolBut(ANY_INT)),
+				makeSymbolicEvalError(ifStmt.Test, state, fmtIfStmtTestShouldBeBoolBut(ANY_INT)),
 			}, state.errors())
 			assert.Nil(t, res)
 		})
@@ -7051,12 +7051,12 @@ func TestSymbolicEval(t *testing.T) {
 				(if int)
 			`, nil)
 
-			ifStmt := n.Statements[0]
+			ifExpr := n.Statements[0].(*parse.IfExpression)
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(ifStmt, state, fmtIfExprTestNotBoolBut(ANY_INT)),
+				makeSymbolicEvalError(ifExpr.Test, state, fmtIfExprTestShouldBeBoolBut(ANY_INT)),
 			}, state.errors())
 			assert.Equal(t, ANY, res)
 		})
@@ -7077,12 +7077,12 @@ func TestSymbolicEval(t *testing.T) {
 				(if int int else)
 			`, nil)
 
-			ifStmt := n.Statements[0]
+			ifExpr := n.Statements[0].(*parse.IfExpression)
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(ifStmt, state, fmtIfExprTestNotBoolBut(ANY_INT)),
+				makeSymbolicEvalError(ifExpr.Test, state, fmtIfExprTestShouldBeBoolBut(ANY_INT)),
 			}, state.errors())
 			assert.Equal(t, ANY, res)
 		})
