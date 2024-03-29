@@ -22,6 +22,7 @@ type TreeWalkState struct {
 
 	debug           *Debugger
 	returnValue     Value           //return value from a function or module
+	yieldedValue    Value           //step result of 'for' expressions
 	iterationChange IterationChange //break, continue, prune
 	self            Value           //value of self in methods
 	entryComputeFn  func(v Value) (Value, error)
@@ -88,6 +89,7 @@ func (state *TreeWalkState) Reset(global *GlobalState) {
 	state.iterationChange = NoIterationChange
 
 	state.returnValue = nil
+	state.yieldedValue = nil
 	state.self = nil
 	state.comptimeTypes = nil
 	state.entryComputeFn = nil
@@ -253,6 +255,7 @@ const (
 	NoIterationChange IterationChange = iota
 	BreakIteration
 	ContinueIteration
+	YieldItem
 	PruneWalk
 )
 

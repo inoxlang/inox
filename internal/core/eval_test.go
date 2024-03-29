@@ -2701,83 +2701,83 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			},
 			{
 				input: `
-				c1 = 0
-				c2 = 2
-				for i, e in [5] {
-					c1 = $i
-					c2 = $e;
-				}
-				return [$c1, $c2]
-			`,
+					c1 = 0
+					c2 = 2
+					for i, e in [5] {
+						c1 = $i
+						c2 = $e;
+					}
+					return [$c1, $c2]
+				`,
 				result:          core.NewWrappedValueList(core.Int(0), core.Int(5)),
 				doSymbolicCheck: true,
 			},
 			{
 				input: `
-				c = 0
-				for e in [5] {
-					c = $e
-				}
-				return $c
-			`,
+					c = 0
+					for e in [5] {
+						c = $e
+					}
+					return $c
+				`,
 				result:          core.Int(5),
 				doSymbolicCheck: true,
 			},
 			{
 				input: `
-				c1 = 0
-				c2 = 0
-				for i, e in [5,6] {
-					c1 = ($c1 + $i);
-					c2 = ($c2 + $e);
-				}
-				return [$c1, $c2]
-			`,
-				result:          core.NewWrappedValueList(core.Int(1), core.Int(11)),
-				doSymbolicCheck: true,
-			},
-			{
-				input: `
-				c1 = 0
-				$c2 = 0
-				for i, e in (5 .. 6) {
-					c1 = ($c1 + $i)
-					c2 = ($c2 + $e);
-				}
-				return [$c1, $c2]
-			`,
-				result:          core.NewWrappedValueList(core.Int(1), core.Int(11)),
-				doSymbolicCheck: true,
-			},
-			{
-				input: `
-				c1 = 0
-				c2 = 0;
-				for i, e in (5 .. 6) {
-					c1 = ($c1 + $i);
-					if ($i == 1) {
-						break
+					c1 = 0
+					c2 = 0
+					for i, e in [5,6] {
+						c1 = ($c1 + $i);
+						c2 = ($c2 + $e);
 					}
-					c2 = ($c2 + $e);
-				};
-				return [$c1, $c2]
-			`,
+					return [$c1, $c2]
+				`,
+				result:          core.NewWrappedValueList(core.Int(1), core.Int(11)),
+				doSymbolicCheck: true,
+			},
+			{
+				input: `
+					c1 = 0
+					$c2 = 0
+					for i, e in (5 .. 6) {
+						c1 = ($c1 + $i)
+						c2 = ($c2 + $e);
+					}
+					return [$c1, $c2]
+				`,
+				result:          core.NewWrappedValueList(core.Int(1), core.Int(11)),
+				doSymbolicCheck: true,
+			},
+			{
+				input: `
+					c1 = 0
+					c2 = 0;
+					for i, e in (5 .. 6) {
+						c1 = ($c1 + $i);
+						if ($i == 1) {
+							break
+						}
+						c2 = ($c2 + $e);
+					};
+					return [$c1, $c2]
+				`,
 				result:          core.NewWrappedValueList(core.Int(1), core.Int(5)),
 				doSymbolicCheck: true,
 			},
 			{
 				input: `
-				c1 = 0
-				c2 = 0;
-				for i, e in (5 .. 6) {
-					if ($i == 0) {
-						continue
-					}
-					c1 = ($c1 + $i);
-					c2 = ($c2 + $e);
-				};
-				return [$c1, $c2]
-			`,
+					c1 = 0
+					c2 = 0;
+					for i, e in (5 .. 6) {
+						if ($i == 0) {
+							continue
+						}
+						c1 = ($c1 + $i);
+						c2 = ($c2 + $e);
+					};
+					return [$c1, $c2]
+				`,
 				result:          core.NewWrappedValueList(core.Int(1), core.Int(6)),
 				doSymbolicCheck: true,
 			},
@@ -2794,57 +2794,54 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			},
 			{
 				input: `
-				c = 0
-				pattern p = %| 1 | 3
-				for %p n in [0 1 2 3] {
-					c = ($c + $n)
-				}
-				return $c
-			`,
+					c = 0
+					pattern p = %| 1 | 3
+					for %p n in [0 1 2 3] {
+						c = ($c + $n)
+					}
+					return $c
+				`,
 				result:          core.Int(4),
 				doSymbolicCheck: true,
 			},
 			{
 				input: `
-				c = 0
-				indexSum = 0
+					c = 0
+					indexSum = 0
 
-				pattern i = 3
-				pattern p = %| 1 | 3
-				for %i i, %p n in [0 1 2 3] {
-					c = (c + n)
-					indexSum = (indexSum + i)
-				}
-				return [c, indexSum]
-			`,
+					pattern i = 3
+					pattern p = %| 1 | 3
+					for %i i, %p n in [0 1 2 3] {
+						c = (c + n)
+						indexSum = (indexSum + i)
+					}
+					return [c, indexSum]
+				`,
 				result:          core.NewWrappedValueList(core.Int(3), core.Int(3)),
 				doSymbolicCheck: true,
 			},
 
 			{
 				input: `
-				for (1 .. 2) {
-					1
-				}
-			`,
-				result: core.Nil,
+					for (1 .. 2) {
+						1
+					}
+				`,
 			},
 			{
 				input: `
-				for e in (1 .. 2) {
-					1
-				}
-			`,
-				result: core.Nil,
+					for e in (1 .. 2) {
+						1
+					}
+				`,
 			},
 
 			{
 				input: `
-				for i, e in (1 .. 2) {
-					1
-				}
-			`,
-				result: core.Nil,
+					for i, e in (1 .. 2) {
+						1
+					}
+				`,
 			},
 			{
 				input: `
@@ -2993,25 +2990,26 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			globals         func(ctx *core.Context) map[string]core.Value
 			doSymbolicCheck bool
 		}{
+			//arrow
 			{
-				input:           `(for i, e in []: i)`,
+				input:           `(for i, e in [] => i)`,
 				result:          core.NewWrappedValueList(),
 				doSymbolicCheck: true,
 			},
 			{
-				input: `(for i, e in [5]: [i, e])`,
+				input: `(for i, e in [5] => [i, e])`,
 				result: core.NewWrappedValueList(
 					core.NewWrappedValueList(core.Int(0), core.Int(5)),
 				),
 				doSymbolicCheck: true,
 			},
 			{
-				input:           `(for e in [5]: e)`,
+				input:           `(for e in [5] => e)`,
 				result:          core.NewWrappedValueList(core.Int(5)),
 				doSymbolicCheck: true,
 			},
 			{
-				input: `(for i, e in [5, 6]: [i, e])`,
+				input: `(for i, e in [5, 6] => [i, e])`,
 				result: core.NewWrappedValueList(
 					core.NewWrappedValueList(core.Int(0), core.Int(5)),
 					core.NewWrappedValueList(core.Int(1), core.Int(6)),
@@ -3019,7 +3017,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				doSymbolicCheck: true,
 			},
 			{
-				input: `(for i, e in 5..6: [i, e])`,
+				input: `(for i, e in 5..6 => [i, e])`,
 				result: core.NewWrappedValueList(
 					core.NewWrappedValueList(core.Int(0), core.Int(5)),
 					core.NewWrappedValueList(core.Int(1), core.Int(6)),
@@ -3029,7 +3027,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			{
 				input: `
 					pattern p = %| 1 | 3
-					return (for %p n in [0, 1, 2, 3]: n)
+					return (for %p n in [0, 1, 2, 3] => n)
 				`,
 				result:          core.NewWrappedValueList(core.Int(1), core.Int(3)),
 				doSymbolicCheck: true,
@@ -3038,7 +3036,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				input: `
 					pattern i = 3
 					pattern p = %| 1 | 3
-					return (for %i i, %p n in [0, 1, 2, 3]: [i, n])
+					return (for %i i, %p n in [0, 1, 2, 3] => [i, n])
 				`,
 				result: core.NewWrappedValueList(
 					core.NewWrappedValueList(core.Int(3), core.Int(3)),
@@ -3046,7 +3044,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				doSymbolicCheck: true,
 			},
 			{
-				input: `(for e in streamable: e)`,
+				input: `(for e in streamable => e)`,
 				globals: func(ctx *core.Context) map[string]core.Value {
 					watcher := core.NewGenericWatcher(core.WatcherConfiguration{Filter: core.ANYVAL_PATTERN})
 					watcher.InformAboutAsync(ctx, core.String("a"))
@@ -3064,7 +3062,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				result: core.NewWrappedValueList(core.String("a"), core.String("b")),
 			},
 			{
-				input: `(for chunked chunk in streamable: chunk.data)`,
+				input: `(for chunked chunk in streamable => chunk.data)`,
 				globals: func(ctx *core.Context) map[string]core.Value {
 					watcher := core.NewGenericWatcher(core.WatcherConfiguration{Filter: core.ANYVAL_PATTERN})
 					watcher.InformAboutAsync(ctx, core.String("a"))
@@ -3084,7 +3082,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				),
 			},
 			{
-				input: `(for chunked chunk in streamable: chunk.data)`,
+				input: `(for chunked chunk in streamable => chunk.data)`,
 				globals: func(ctx *core.Context) map[string]core.Value {
 					return map[string]core.Value{
 						"streamable": core.NewElementsStream(
@@ -3099,6 +3097,167 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				),
 			},
 			//TODO: add more tests with EOS error
+			//body
+			{
+				input:           `(for i, e in [] {})`,
+				result:          core.NewWrappedValueList(),
+				doSymbolicCheck: true,
+			},
+			{
+				input:           `(for i, e in [] { yield i })`,
+				result:          core.NewWrappedValueList(),
+				doSymbolicCheck: true,
+			},
+			{
+				input:           `(for i, e in [1] {})`,
+				result:          core.NewWrappedValueList(),
+				doSymbolicCheck: true,
+			},
+			{
+				input: `(for i, e in [1] { yield [i, e] })`,
+				result: NewWrappedValueList(
+					NewWrappedValueList(Int(0), Int(1)),
+				),
+				doSymbolicCheck: true,
+			},
+			{
+				input: `
+					(for i, e in [1] { 
+						for (1 .. 2) {
+							yield [i, e] 
+						}
+					})
+				`,
+				result: NewWrappedValueList(
+					NewWrappedValueList(Int(0), Int(1)),
+				),
+				doSymbolicCheck: true,
+			},
+			{
+				input: `
+					(for i, e in [1] { 
+						walk (treedata 0 {1 {2}}) node {
+							yield [i, e] 
+						}
+					})
+				`,
+				result: NewWrappedValueList(
+					NewWrappedValueList(Int(0), Int(1)),
+				),
+				doSymbolicCheck: true,
+			},
+			{
+				input: `
+					(for i, e in [1, 2] { 
+						if i == 0 {
+							break
+						}
+						yield [i, e]
+					})
+				`,
+				result:          core.NewWrappedValueList(),
+				doSymbolicCheck: true,
+			},
+			{
+				input: `
+					(for i, e in ['a', 'b'] { 
+						if i == 0 {
+							continue
+						}
+						yield [i, e]
+					})
+				`,
+				result: core.NewWrappedValueList(
+					NewWrappedValueList(Int(1), Rune('b')),
+				),
+				doSymbolicCheck: true,
+			},
+			{
+				input: `(for e in streamable { })`,
+				globals: func(ctx *core.Context) map[string]core.Value {
+					watcher := core.NewGenericWatcher(core.WatcherConfiguration{Filter: core.ANYVAL_PATTERN})
+					watcher.InformAboutAsync(ctx, core.String("a"))
+					watcher.InformAboutAsync(ctx, core.String("b"))
+
+					go func() {
+						//Close the stream after a short delay.
+						time.Sleep(STREAM_TEST_CLOSE_DELAY)
+						watcher.Stop()
+					}()
+					return map[string]core.Value{
+						"streamable": core.StreamSource(watcher),
+					}
+				},
+				result: core.NewWrappedValueList(),
+			},
+			{
+				input: `(for e in streamable { yield e })`,
+				globals: func(ctx *core.Context) map[string]core.Value {
+					watcher := core.NewGenericWatcher(core.WatcherConfiguration{Filter: core.ANYVAL_PATTERN})
+					watcher.InformAboutAsync(ctx, core.String("a"))
+					watcher.InformAboutAsync(ctx, core.String("b"))
+
+					go func() {
+						//Close the stream after a short delay.
+						time.Sleep(STREAM_TEST_CLOSE_DELAY)
+						watcher.Stop()
+					}()
+					return map[string]core.Value{
+						"streamable": core.StreamSource(watcher),
+					}
+				},
+				result: core.NewWrappedValueList(core.String("a"), core.String("b")),
+			},
+			{
+				input: `
+					(for e in streamable { 
+						if e == "a" { # first element
+							break
+						}
+						yield e 
+					})
+				`,
+				globals: func(ctx *core.Context) map[string]core.Value {
+					watcher := core.NewGenericWatcher(core.WatcherConfiguration{Filter: core.ANYVAL_PATTERN})
+					watcher.InformAboutAsync(ctx, core.String("a"))
+					watcher.InformAboutAsync(ctx, core.String("b"))
+
+					go func() {
+						//Close the stream after a short delay.
+						time.Sleep(STREAM_TEST_CLOSE_DELAY)
+						watcher.Stop()
+					}()
+					return map[string]core.Value{
+						"streamable": core.StreamSource(watcher),
+					}
+				},
+				result: core.NewWrappedValueList(),
+			},
+			{
+				input: `
+					(for e in streamable { 
+						if e == "a" { # first element
+							continue
+						}
+						yield e 
+					})
+				`,
+				globals: func(ctx *core.Context) map[string]core.Value {
+					watcher := core.NewGenericWatcher(core.WatcherConfiguration{Filter: core.ANYVAL_PATTERN})
+					watcher.InformAboutAsync(ctx, core.String("a"))
+					watcher.InformAboutAsync(ctx, core.String("b"))
+
+					go func() {
+						//Close the stream after a short delay.
+						time.Sleep(STREAM_TEST_CLOSE_DELAY)
+						watcher.Stop()
+					}()
+					return map[string]core.Value{
+						"streamable": core.StreamSource(watcher),
+					}
+				},
+				result: core.NewWrappedValueList(core.String("b")),
+			},
 		}
 
 		for _, testCase := range testCases {
@@ -3422,104 +3581,104 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			{
 				name: "single case (that matches)",
 				input: `
-				a = 0
-				switch 0 { 
-					0 { a = 1 } 
-				}
-				return a
-			`,
+					a = 0
+					switch 0 { 
+						0 { a = 1 } 
+					}
+					return a
+				`,
 				result: core.Int(1),
 			},
 			{
 				name: "single case (that matches) and defaultcase",
 				input: `
-				a = 0
-				switch 0 { 
-					0 { a = 1 } 
-					defaultcase { a = 2 }
-				}
-				return a
-			`,
+					a = 0
+					switch 0 { 
+						0 { a = 1 } 
+						defaultcase { a = 2 }
+					}
+					return a
+				`,
 				result: core.Int(1),
 			},
 			{
 				name: "single case (that does not match) and defaultcase",
 				input: `
-				a = 0
-				switch 0 { 
-					1 { a = 1 } 
-					defaultcase { a = 2 }
-				}
-				return a
-			`,
+					a = 0
+					switch 0 { 
+						1 { a = 1 } 
+						defaultcase { a = 2 }
+					}
+					return a
+				`,
 				result: core.Int(2),
 			},
 			{
 				name: "two cases: first matches",
 				input: `
-				a = 0; 
-				b = 0; 
-				switch 0 { 
-					0 { a = 1 } 
-					1 { b = 1} 
-				}; 
-				return [$a,$b]
-			`,
+					a = 0; 
+					b = 0; 
+					switch 0 { 
+						0 { a = 1 } 
+						1 { b = 1} 
+					}; 
+					return [$a,$b]
+				`,
 				result: core.NewWrappedValueList(core.Int(1), core.Int(0)),
 			},
 			{
 				name: "two cases and defaultcase: first matches",
 				input: `
-				a = 0; 
-				b = 0; 
-				switch 0 { 
-					0 { a = 1 } 
-					1 { b = 1} 
-					defaultcase { a = 2; b = 2 }
-				}; 
-				return [$a,$b]
-			`,
+					a = 0; 
+					b = 0; 
+					switch 0 { 
+						0 { a = 1 } 
+						1 { b = 1} 
+						defaultcase { a = 2; b = 2 }
+					}; 
+					return [$a,$b]
+				`,
 				result: core.NewWrappedValueList(core.Int(1), core.Int(0)),
 			},
 			{
 				name: "two cases and defaultcase: no match",
 				input: `
-				a = 0; 
-				b = 0; 
-				switch 0 { 
-					1 { a = 1 } 
-					2 { b = 1} 
-					defaultcase { a = 2; b = 2 }
-				}; 
-				return [$a,$b]
-			`,
+					a = 0; 
+					b = 0; 
+					switch 0 { 
+						1 { a = 1 } 
+						2 { b = 1} 
+						defaultcase { a = 2; b = 2 }
+					}; 
+					return [$a,$b]
+				`,
 				result: core.NewWrappedValueList(core.Int(2), core.Int(2)),
 			},
 			{
 				name: "two cases: second matches",
 				input: `
-				a = 0
-				b = 0 
-				switch 1 { 
-					0 { a = 1 } 
-					1 { b = 1 } 
-				}; 
-				return [$a,$b]
-			`,
+					a = 0
+					b = 0 
+					switch 1 { 
+						0 { a = 1 } 
+						1 { b = 1 } 
+					}; 
+					return [$a,$b]
+				`,
 				result: core.NewWrappedValueList(core.Int(0), core.Int(1)),
 			},
 			{
 				name: "two cases and defaultcase: second matches",
 				input: `
-				a = 0
-				b = 0 
-				switch 1 { 
-					0 { a = 1 } 
-					1 { b = 1 } 
-					defaultcase { a = 2; b = 2 }
-				}; 
-				return [$a,$b]
-			`,
+					a = 0
+					b = 0 
+					switch 1 { 
+						0 { a = 1 } 
+						1 { b = 1 } 
+						defaultcase { a = 2; b = 2 }
+					}; 
+					return [$a,$b]
+				`,
 				result: core.NewWrappedValueList(core.Int(0), core.Int(1)),
 			},
 			{
@@ -3530,7 +3689,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						2 {}
 					}; 
 				`,
-				result: core.Nil,
 			},
 			{
 				name: "stack check: 2 cases + default case",
@@ -3541,7 +3699,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						defaultcase {}
 					}; 
 				`,
-				result: core.Nil,
 			},
 		}
 
@@ -3766,7 +3923,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						2 {}
 					}; 
 				`,
-				result: core.Nil,
 			},
 			{
 				name: "stack check: 2 cases + default case",
@@ -3777,7 +3933,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						defaultcase {}
 					}; 
 				`,
-				result: core.Nil,
 			},
 		}
 

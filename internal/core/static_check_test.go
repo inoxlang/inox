@@ -6031,6 +6031,7 @@ type ContextConfig = core.ContextConfig
 
 type Value = core.Value
 type Int = core.Int
+type Rune = core.Rune
 type URL = core.URL
 type Host = core.Host
 type String = core.String
@@ -6069,6 +6070,7 @@ var (
 	ValOf                  = core.ValOf
 	MapIterable            = core.MapIterable
 	RandomProjectID        = core.RandomProjectID
+	NewWrappedValueList    = core.NewWrappedValueList
 
 	CheckDatabasesObject    = core.CheckDatabasesObject
 	CheckPreinitFilesObject = core.CheckPreinitFilesObject

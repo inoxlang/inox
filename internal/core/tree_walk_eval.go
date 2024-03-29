@@ -256,7 +256,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 	case *parse.ReturnStatement:
 		if n.Expr == nil {
 			state.returnValue = Nil
-			return Nil, nil
+			return nil, nil
 		}
 
 		value, err := TreeWalkEval(n.Expr, state)
@@ -265,11 +265,11 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		}
 
 		state.returnValue = value
-		return Nil, nil
+		return nil, nil
 	case *parse.CoyieldStatement:
 		if n.Expr == nil {
 			state.returnValue = Nil
-			return Nil, nil
+			return nil, nil
 		}
 
 		value, err := TreeWalkEval(n.Expr, state)
@@ -281,16 +281,32 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			panic(errors.New("failed to yield: no associated lthread"))
 		}
 		state.Global.LThread.yield(state.Global.Ctx, value)
-		return Nil, nil
+		return nil, nil
 	case *parse.BreakStatement:
 		state.iterationChange = BreakIteration
-		return Nil, nil
+		return nil, nil
 	case *parse.ContinueStatement:
 		state.iterationChange = ContinueIteration
-		return Nil, nil
+		return nil, nil
+	case *parse.YieldStatement:
+		if n.Expr == nil {
+			state.yieldedValue = Nil
+			state.iterationChange = YieldItem
+			return nil, nil
+		}
+
+		value, err := TreeWalkEval(n.Expr, state)
+		if err != nil {
+			return nil, err
+		}
+
+		state.yieldedValue = value
+		state.iterationChange = YieldItem
+
+		return nil, nil
 	case *parse.PruneStatement:
 		state.iterationChange = PruneWalk
-		return Nil, nil
+		return nil, nil
 	case *parse.CallExpression:
 
 		var (
@@ -801,6 +817,8 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		}
 
 		state.returnValue = nil
+		state.yieldedValue = nil
+
 		defer func() {
 			state.returnValue = nil
 			state.iterationChange = NoIterationChange
@@ -914,7 +932,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			}
 
 			switch state.iterationChange {
-			case BreakIteration, ContinueIteration, PruneWalk:
+			case BreakIteration, ContinueIteration, YieldItem, PruneWalk:
 				break loop
 			}
 		}
@@ -3076,13 +3094,19 @@ func evalForStatement(n *parse.ForStatement, state *TreeWalkState) error {
 				scope[eVarname] = it.Value(state.Global.Ctx)
 			}
 
+			//Evalute body
+
 			_, err := TreeWalkEval(n.Body, state)
 			if err != nil {
 				return err
 			}
+
+			//Handle return/break/continue/yield/prune
+
 			if state.returnValue != nil {
 				return nil
 			}
+
 			switch state.iterationChange {
 			case BreakIteration:
 				state.iterationChange = NoIterationChange
@@ -3091,6 +3115,8 @@ func evalForStatement(n *parse.ForStatement, state *TreeWalkState) error {
 				state.iterationChange = NoIterationChange
 				index++
 				continue iterable_iteration
+			case YieldItem:
+				return nil
 			case PruneWalk:
 				return nil
 			}
@@ -3127,15 +3153,19 @@ func evalForStatement(n *parse.ForStatement, state *TreeWalkState) error {
 			if streamErr == nil || (nextChunk != nil && nextChunk.ElemCount() > 0) {
 				scope[eVarname] = next
 
-				//evalute body & handle return/break/continue/prune
+				//Evalute body
 
 				_, err := TreeWalkEval(n.Body, state)
 				if err != nil {
 					return err
 				}
+
+				//Handle return/break/continue/yield/prune
+
 				if state.returnValue != nil {
 					return nil
 				}
+
 				switch state.iterationChange {
 				case BreakIteration:
 					state.iterationChange = NoIterationChange
@@ -3143,6 +3173,8 @@ func evalForStatement(n *parse.ForStatement, state *TreeWalkState) error {
 				case ContinueIteration:
 					state.iterationChange = NoIterationChange
 					continue stream_iteration
+				case YieldItem:
+					return nil
 				case PruneWalk:
 					return nil
 				}
@@ -3223,6 +3255,7 @@ func evalForExpression(n *parse.ForExpression, state *TreeWalkState) (Value, err
 		})
 		index := 0
 
+	iterable_iteration:
 		for it.HasNext(state.Global.Ctx) {
 			it.Next(state.Global.Ctx)
 
@@ -3235,11 +3268,32 @@ func evalForExpression(n *parse.ForExpression, state *TreeWalkState) (Value, err
 
 			//Evaluate body.
 
+			_, isBlockBody := n.Body.(*parse.Block)
+
 			elem, err := TreeWalkEval(n.Body, state)
 			if err != nil {
 				return nil, err
 			}
-			elements = append(elements, elem.(Serializable))
+
+			if !isBlockBody {
+				elements = append(elements, elem.(Serializable))
+				index++
+			}
+
+			//Handle break/continue/yield. Return and yield statements are not allowed in the body.
+
+			switch state.iterationChange {
+			case BreakIteration:
+				state.iterationChange = NoIterationChange
+				break iterable_iteration
+			case ContinueIteration:
+				state.iterationChange = NoIterationChange
+			case YieldItem:
+				state.iterationChange = NoIterationChange
+				elements = append(elements, state.yieldedValue.(Serializable))
+				state.yieldedValue = nil
+			}
+
 			index++
 		}
 	} else if stremable, ok := iteratedValue.(StreamSource); ok {
@@ -3279,7 +3333,29 @@ func evalForExpression(n *parse.ForExpression, state *TreeWalkState) (Value, err
 				if err != nil {
 					return nil, err
 				}
-				elements = append(elements, elem.(Serializable))
+
+				_, isBlockBody := n.Body.(*parse.Block)
+
+				if !isBlockBody {
+					elements = append(elements, elem.(Serializable))
+					continue stream_iteration_for_expr
+				}
+
+				//Handle break/continue/yield. Return and yield statements are not allowed in the body.
+
+				switch state.iterationChange {
+				case BreakIteration:
+					state.iterationChange = NoIterationChange
+					break stream_iteration_for_expr
+				case ContinueIteration:
+					state.iterationChange = NoIterationChange
+					continue stream_iteration_for_expr
+				case YieldItem:
+					state.iterationChange = NoIterationChange
+					elements = append(elements, state.yieldedValue.(Serializable))
+					state.yieldedValue = nil
+					continue stream_iteration_for_expr
+				}
 			}
 
 			if errors.Is(streamErr, ErrEndOfStream) {
@@ -3342,6 +3418,8 @@ walk_loop:
 		case ContinueIteration:
 			state.iterationChange = NoIterationChange
 			continue
+		case YieldItem:
+			return nil
 		}
 	}
 
