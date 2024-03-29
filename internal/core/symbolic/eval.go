@@ -370,6 +370,8 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		}
 
 		return nil, nil
+	case *parse.YieldStatement:
+		return evalYieldStatement(n, state)
 	case *parse.BreakStatement:
 		return nil, nil
 	case *parse.ContinueStatement:
@@ -1227,6 +1229,45 @@ func evalReturnStatement(n *parse.ReturnStatement, state *State) (_ Value, final
 	}
 
 	state.conditionalReturn = false
+
+	return nil, nil
+}
+
+func evalYieldStatement(n *parse.YieldStatement, state *State) (_ Value, finalErr error) {
+
+	if n.Expr == nil {
+		return nil, nil
+	}
+
+	var deeperMismatch *bool
+	if state.yieldType != nil {
+		deeperMismatch = new(bool)
+	}
+
+	value, err := _symbolicEval(n.Expr, state, evalOptions{
+		expectedValue:       state.yieldType,
+		actualValueMismatch: deeperMismatch,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	v := value
+
+	if state.yieldType != nil && !state.yieldType.Test(v, RecTestCallState{}) {
+		if !*deeperMismatch {
+			state.addError(makeSymbolicEvalError(n, state, fmtInvalidReturnValue(v, state.yieldType)))
+		}
+		state.yieldedValue = state.yieldType
+	}
+
+	if state.yieldedValue != nil {
+		state.yieldedValue = joinValues([]Value{state.yieldedValue, v})
+	} else {
+		state.yieldedValue = v
+	}
+
+	state.conditionalYield = false
 
 	return nil, nil
 }
@@ -2348,7 +2389,7 @@ func evalForStatementAndExpr(n parse.Node, state *State) (_ Value, finalErr erro
 		isForExpr                     bool
 	)
 
-	var forExprListElements []Value
+	var forExprListElement Value
 
 	if stmt, ok := n.(*parse.ForStatement); ok {
 		iteratedValueNode = stmt.IteratedValue
@@ -2439,12 +2480,28 @@ func evalForStatementAndExpr(n parse.Node, state *State) (_ Value, finalErr erro
 		}
 
 		if isForExpr {
-			elem, ok := AsSerializable(res).(Serializable)
-			if !ok {
-				state.addError(makeSymbolicEvalError(body, state, ELEMENTS_PRODUCED_BY_A_FOR_EXPR_SHOULD_BE_SERIALIZABLE))
-				elem = ANY_SERIALIZABLE
+			var stepResult Value
+			if _, isBlockBody := body.(*parse.Block); isBlockBody {
+
+				if stateFork.yieldedValue != nil {
+					stepResult = stateFork.yieldedValue
+				}
+
+			} else {
+				stepResult = res
 			}
-			forExprListElements = append(forExprListElements, elem)
+
+			stateFork.yieldedValue = nil
+			stateFork.conditionalYield = false
+
+			if stepResult != nil {
+				elem, ok := AsSerializable(stepResult).(Serializable)
+				if !ok {
+					state.addError(makeSymbolicEvalError(body, state, ELEMENTS_PRODUCED_BY_A_FOR_EXPR_SHOULD_BE_SERIALIZABLE))
+					elem = ANY_SERIALIZABLE
+				}
+				forExprListElement = elem
+			}
 		}
 
 		areAllOutcomesCovered := false //The iterated value can be empty.
@@ -2455,7 +2512,10 @@ func evalForStatementAndExpr(n parse.Node, state *State) (_ Value, finalErr erro
 	}
 
 	if isForExpr {
-		elem := AsSerializableChecked(joinValues(forExprListElements))
+		if forExprListElement == nil {
+			return EMPTY_LIST, nil
+		}
+		elem := AsSerializableChecked(forExprListElement)
 		return NewListOf(elem), nil
 	}
 

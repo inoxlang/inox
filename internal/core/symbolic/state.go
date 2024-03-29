@@ -24,12 +24,19 @@ type State struct {
 	inPreinit             bool
 	recursiveFunctionName string
 
-	callStack             []inoxCallInfo
-	topLevelSelf          Value // can be nil
-	returnType            Value
-	returnValue           Value
-	conditionalReturn     bool
-	iterationChange       IterationChange
+	callStack    []inoxCallInfo
+	topLevelSelf Value // can be nil
+
+	returnType        Value
+	returnValue       Value
+	conditionalReturn bool
+
+	yieldType        Value
+	yieldedValue     Value
+	conditionalYield bool
+
+	iterationChange IterationChange
+
 	checkXMLInterpolation XMLInterpolationCheckingFunction
 	Module                *Module
 
@@ -684,18 +691,35 @@ func (state *State) join(areAllOutcomesCovered bool, forks ...*State) {
 		}
 	}
 
-	atLeastOneForkReturn := utils.Some(forks, func(fork *State) bool {
+	atLeastOneForkReturns := utils.Some(forks, func(fork *State) bool {
 		return fork.returnValue != nil
 	})
 
 	doAllForksReturn := false
 
-	if atLeastOneForkReturn {
+	if atLeastOneForkReturns {
 		doAllForksReturn = true
 
 		for _, fork := range forks {
 			if fork.returnValue == nil {
 				doAllForksReturn = false
+				break
+			}
+		}
+	}
+
+	atLeastOneForkYields := utils.Some(forks, func(fork *State) bool {
+		return fork.yieldedValue != nil
+	})
+
+	doAllForksYield := false
+
+	if atLeastOneForkYields {
+		doAllForksYield = true
+
+		for _, fork := range forks {
+			if fork.yieldedValue == nil {
+				doAllForksYield = false
 				break
 			}
 		}
@@ -723,21 +747,33 @@ func (state *State) join(areAllOutcomesCovered bool, forks ...*State) {
 			scope.variables[varName] = varInfo
 		}
 
-		if fork.returnValue == nil {
-			continue
+		if fork.returnValue != nil {
+			//Join the value returned by the state with the value returned by the fork.
+			if state.returnValue == nil {
+				state.returnValue = fork.returnValue
+				state.conditionalReturn = true
+			} else {
+				state.returnValue = joinValues([]Value{state.returnValue, fork.returnValue})
+			}
 		}
 
-		//Join the value returned by the state with the value returned by the fork.
-		if state.returnValue == nil {
-			state.returnValue = fork.returnValue
-			state.conditionalReturn = true
-		} else {
-			state.returnValue = joinValues([]Value{state.returnValue, fork.returnValue})
+		if fork.yieldedValue != nil {
+			//Join the value yielded by the state with the value yielded by the fork.
+			if state.yieldedValue == nil {
+				state.yieldedValue = fork.yieldedValue
+				state.conditionalYield = true
+			} else {
+				state.yieldedValue = joinValues([]Value{state.yieldedValue, fork.yieldedValue})
+			}
 		}
 	}
 
 	if areAllOutcomesCovered && doAllForksReturn {
 		state.conditionalReturn = false
+	}
+
+	if areAllOutcomesCovered && doAllForksYield {
+		state.conditionalYield = false
 	}
 }
 

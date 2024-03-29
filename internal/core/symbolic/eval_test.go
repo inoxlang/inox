@@ -8752,9 +8752,24 @@ func TestSymbolicEval(t *testing.T) {
 	})
 
 	t.Run("for expression", func(t *testing.T) {
+
+		t.Run("iterated value is not iterable", func(t *testing.T) {
+
+			n, state := MakeTestStateAndChunk(`
+				(for i, e in int {}) 
+			`)
+			res, err := symbolicEval(n, state)
+			forStmt := n.Statements[0]
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(forStmt, state, fmtXisNotIterable(ANY_INT)),
+			}, state.errors())
+			assert.Equal(t, EMPTY_LIST, res)
+		})
+
 		t.Run("key & element variables should be present in local scope data", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				(for k, v in {a: int}: [k, v])
+				(for k, v in {a: int} => [k, v])
 			`)
 
 			_, err := symbolicEval(n, state)
@@ -8781,8 +8796,8 @@ func TestSymbolicEval(t *testing.T) {
 			}
 		})
 
-		t.Run("the result should be a list containing the produced elements", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`(for r in 'a'..'z': r)`)
+		t.Run("arrow: the result should be a list containing the produced elements", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`(for r in 'a'..'z' => r)`)
 
 			res, err := symbolicEval(n, state)
 			if !assert.NoError(t, err) {
@@ -8792,8 +8807,8 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, NewListOf(ANY_RUNE), res)
 		})
 
-		t.Run("the produced elements should be serializable", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`(for i in 1..3: go do {})`)
+		t.Run("arrow: the produced elements should be serializable", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`(for i in 1..3 => go do {})`)
 
 			spawnExpr := parse.FindNode(n, (*parse.SpawnExpression)(nil), nil)
 
@@ -8805,6 +8820,92 @@ func TestSymbolicEval(t *testing.T) {
 				makeSymbolicEvalError(spawnExpr, state, ELEMENTS_PRODUCED_BY_A_FOR_EXPR_SHOULD_BE_SERIALIZABLE),
 			}, state.errors())
 			assert.Equal(t, NewListOf(ANY_SERIALIZABLE), res)
+		})
+
+		t.Run("body: empty", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`(for r in 'a'..'z' {})`)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Empty(t, state.errors())
+			assert.Equal(t, EMPTY_LIST, res)
+		})
+
+		t.Run("body: direct yielding of a value", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`(for r in 'a'..'z' { yield r })`)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewListOf(ANY_RUNE), res)
+		})
+
+		t.Run("body: single yield: conditional", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`(for r in 'a'..'z' { if r != 'a' { yield r } })`)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewListOf(ANY_RUNE), res)
+		})
+
+		t.Run("body: two yields value", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`(
+				for r in 'a'..'z' { 
+					if r != 'a' { yield r } 
+					yield 1 
+				}
+			)`)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewListOf(AsSerializableChecked(NewMultivalue(ANY_RUNE, INT_1))), res)
+		})
+
+		t.Run("yield inside a for expression in the body of another for expression without a yield statement", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`(
+				for r in 'a'..'z' { 
+					# The inner for expression should have no effect on the outer expression.
+					(for r in 'a'..'z' { 
+						yield 1
+					})
+				}
+			)`)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Empty(t, state.errors())
+			assert.Equal(t, EMPTY_LIST, res)
+		})
+
+		t.Run("yield inside a for expression in the body of another for expression with a yield statement", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`(
+				for r in 'a'..'z' { 
+					# The inner for expression should have no effect on the outer expression.
+					(for r in 'a'..'z' { 
+						yield 1
+					})
+					yield 2
+				}
+			)`)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewListOf(AsSerializableChecked(INT_2)), res)
 		})
 	})
 
