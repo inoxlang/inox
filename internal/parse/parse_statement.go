@@ -174,6 +174,13 @@ func (p *parser) parseStatement() Node {
 		return expr
 	}
 
+	isAllowedCommandCallee := false
+
+	switch expr.(type) {
+	case *IdentifierLiteral, *IdentifierMemberExpression:
+		isAllowedCommandCallee = true
+	}
+
 	switch p.s[p.i] {
 	case '=': //assignment
 		return p.parseAssignment(expr)
@@ -184,7 +191,7 @@ func (p *parser) parseStatement() Node {
 			return p.parseAssignment(expr)
 		}
 
-		if followedBySpace && !expr.Base().IsParenthesized {
+		if isAllowedCommandCallee && followedBySpace && !expr.Base().IsParenthesized {
 			return p.parseCommandLikeStatement(expr)
 		}
 	default:
@@ -192,8 +199,7 @@ func (p *parser) parseStatement() Node {
 			break
 		}
 
-		switch expr.(type) {
-		case *IdentifierLiteral, *IdentifierMemberExpression:
+		if isAllowedCommandCallee {
 			if !followedBySpace ||
 				(isUnpairedOrIsClosingDelim(p.s[p.i]) && p.s[p.i] != '(' && p.s[p.i] != '|' && p.s[p.i] != '\n' && p.s[p.i] != ':') {
 				break

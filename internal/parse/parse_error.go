@@ -10,6 +10,10 @@ import (
 
 const (
 	UnspecifiedParsingError ParsingErrorKind = iota
+	MissingExpr
+
+	UnterminatedOptionExpr
+
 	UnterminatedMemberExpr
 	UnterminatedDoubleColonExpr
 	UnterminatedExtendStmt
@@ -163,36 +167,40 @@ const (
 	UNTERMINATED_CSS_ID_SELECTOR_NAME_EXPECTED                 = "unterminated CSS id selector, a name was expected after '#'"
 	UNTERMINATED_CSS_CLASS_SELECTOR_NAME_EXPECTED              = "unterminated CSS class selector, a name was expected"
 
-	//list & tuple literals
+	//list literals
 	UNTERMINATED_LIST_LIT_MISSING_CLOSING_BRACKET            = "unterminated list literal, missing closing bracket ']'"
 	UNTERMINATED_SPREAD_ELEM_MISSING_EXPR                    = "unterminated spread element: missing expression"
 	UNTERMINATED_LIST_LIT_MISSING_OPENING_BRACKET_AFTER_TYPE = "unterminated list literal, missing opening bracket '[' after type annotation"
 
-	UNTERMINATED_RUNE_LIT                                            = "unterminated rune literal"
-	INVALID_RUNE_LIT_NO_CHAR                                         = "invalid rune literal: no character"
-	INVALID_RUNE_LIT_INVALID_SINGLE_CHAR_ESCAPE                      = "invalid rune literal: invalid single character escape"
-	UNTERMINATED_RUNE_LIT_MISSING_QUOTE                              = "unterminated rune literal, missing ' at the end"
-	INVALID_RUNE_RANGE_EXPR                                          = "invalid rune range expression"
-	INVALID_UPPER_BOUND_RANGE_EXPR                                   = "invalid upper-bound range expression"
-	UNTERMINATED_QUOTED_STRING_LIT                                   = "unterminated quoted string literal"
-	UNTERMINATED_MULTILINE_STRING_LIT                                = "unterminated multiline string literal"
-	UNKNOWN_BYTE_SLICE_BASE                                          = "unknown byte slice base"
-	UNTERMINATED_HEX_BYTE_SICE_LIT_MISSING_BRACKETS                  = "unterminated hexadecimal byte slice literal: missing brackets"
-	UNTERMINATED_BIN_BYTE_SICE_LIT_MISSING_BRACKETS                  = "unterminated binary byte slice literal: missing brackets"
-	UNTERMINATED_DECIMAL_BYTE_SICE_LIT_MISSING_BRACKETS              = "unterminated decimal byte slice literal: missing brackets"
-	INVALID_HEX_BYTE_SICE_LIT_LENGTH_SHOULD_BE_EVEN                  = "invalid hexadecimal byte slice literal: length should be even"
-	INVALID_HEX_BYTE_SICE_LIT_FAILED_TO_DECODE                       = "invalid hexadecimal byte slice literal: failed to decode"
-	UNTERMINATED_BYTE_SICE_LIT_MISSING_CLOSING_BRACKET               = "unterminated byte slice literal: missing closing bracket"
-	DOT_SHOULD_BE_FOLLOWED_BY                                        = "'.' should be followed by (.)?(/), or a letter"
-	DASH_SHOULD_BE_FOLLOWED_BY_OPTION_NAME                           = "'-' should be followed by an option name"
-	DOUBLE_DASH_SHOULD_BE_FOLLOWED_BY_OPTION_NAME                    = "'--' should be followed by an option name"
-	OPTION_NAME_CAN_ONLY_CONTAIN_ALPHANUM_CHARS                      = "the name of an option can only contain alphanumeric characters"
-	UNTERMINATED_OPION_EXPR_EQUAL_ASSIGN_SHOULD_BE_FOLLOWED_BY_EXPR  = "unterminated option expression, '=' should be followed by an expression"
-	UNTERMINATED_OPION_PATT_EQUAL_ASSIGN_SHOULD_BE_FOLLOWED_BY_EXPR  = "unterminated option pattern, '=' should be followed by an expression"
-	UNTERMINATED_OPION_PATTERN_A_VALUE_IS_EXPECTED_AFTER_EQUAKL_SIGN = "unterminated option pattern, a value is expected after '='"
-	AT_SYMBOL_SHOULD_BE_FOLLOWED_BY                                  = "'@' should be followed by '(' <expr> ')' or by the name of variable (@host/path)"
-	UNTERMINATED_URL_EXPRESSION                                      = "unterminated url expression"
-	INVALID_HOST_ALIAS_DEF_MISSING_VALUE_AFTER_EQL_SIGN              = "unterminated HostAliasDefinition, missing value after '='"
+	//tuple literals
+	UNTERMINATED_TUPLE_LIT_MISSING_OPENING_BRACKET_AFTER_TYPE = "unterminated tuple literal, missing opening bracket '[' after type annotation"
+	UNTERMINATED_TUPLE_LIT_MISSING_CLOSING_BRACKET            = "unterminated tuple literal, missing closing bracket ']'"
+
+	UNTERMINATED_RUNE_LIT                                             = "unterminated rune literal"
+	INVALID_RUNE_LIT_NO_CHAR                                          = "invalid rune literal: no character"
+	INVALID_RUNE_LIT_INVALID_SINGLE_CHAR_ESCAPE                       = "invalid rune literal: invalid single character escape"
+	UNTERMINATED_RUNE_LIT_MISSING_QUOTE                               = "unterminated rune literal, missing ' at the end"
+	INVALID_RUNE_RANGE_EXPR                                           = "invalid rune range expression"
+	INVALID_UPPER_BOUND_RANGE_EXPR                                    = "invalid upper-bound range expression"
+	UNTERMINATED_QUOTED_STRING_LIT                                    = "unterminated quoted string literal"
+	UNTERMINATED_MULTILINE_STRING_LIT                                 = "unterminated multiline string literal"
+	UNKNOWN_BYTE_SLICE_BASE                                           = "unknown byte slice base"
+	UNTERMINATED_HEX_BYTE_SICE_LIT_MISSING_BRACKETS                   = "unterminated hexadecimal byte slice literal: missing brackets"
+	UNTERMINATED_BIN_BYTE_SICE_LIT_MISSING_BRACKETS                   = "unterminated binary byte slice literal: missing brackets"
+	UNTERMINATED_DECIMAL_BYTE_SICE_LIT_MISSING_BRACKETS               = "unterminated decimal byte slice literal: missing brackets"
+	INVALID_HEX_BYTE_SICE_LIT_LENGTH_SHOULD_BE_EVEN                   = "invalid hexadecimal byte slice literal: length should be even"
+	INVALID_HEX_BYTE_SICE_LIT_FAILED_TO_DECODE                        = "invalid hexadecimal byte slice literal: failed to decode"
+	UNTERMINATED_BYTE_SICE_LIT_MISSING_CLOSING_BRACKET                = "unterminated byte slice literal: missing closing bracket"
+	DOT_SHOULD_BE_FOLLOWED_BY                                         = "'.' should be followed by (.)?(/), or a letter"
+	DASH_SHOULD_BE_FOLLOWED_BY_OPTION_NAME                            = "'-' should be followed by an option name"
+	DOUBLE_DASH_SHOULD_BE_FOLLOWED_BY_OPTION_NAME                     = "'--' should be followed by an option name"
+	OPTION_NAME_CAN_ONLY_CONTAIN_ALPHANUM_CHARS                       = "the name of an option can only contain alphanumeric characters"
+	UNTERMINATED_OPTION_EXPR_EQUAL_ASSIGN_SHOULD_BE_FOLLOWED_BY_EXPR  = "unterminated option expression, '=' should be followed by an expression"
+	UNTERMINATED_OPTION_PATT_EQUAL_ASSIGN_SHOULD_BE_FOLLOWED_BY_EXPR  = "unterminated option pattern, '=' should be followed by an expression"
+	UNTERMINATED_OPTION_PATTERN_A_VALUE_IS_EXPECTED_AFTER_EQUAKL_SIGN = "unterminated option pattern, a value is expected after '='"
+	AT_SYMBOL_SHOULD_BE_FOLLOWED_BY                                   = "'@' should be followed by '(' <expr> ')' or by the name of variable (@host/path)"
+	UNTERMINATED_URL_EXPRESSION                                       = "unterminated url expression"
+	INVALID_HOST_ALIAS_DEF_MISSING_VALUE_AFTER_EQL_SIGN               = "unterminated HostAliasDefinition, missing value after '='"
 
 	//parenthesized expression
 	UNTERMINATED_PARENTHESIZED_EXPR_MISSING_CLOSING_PAREN = "unterminated parenthesized expression: missing closing parenthesis"

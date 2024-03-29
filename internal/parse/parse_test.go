@@ -974,7 +974,7 @@ func testParse(
 							Right: &MissingExpression{
 								NodeBase: NodeBase{
 									NodeSpan{8, 9},
-									&ParsingError{UnspecifiedParsingError, fmtExprExpectedHere([]rune("const 1 ="), 9, true)},
+									&ParsingError{MissingExpr, fmtExprExpectedHere([]rune("const 1 ="), 9, true)},
 									false,
 								},
 							},
@@ -2772,7 +2772,7 @@ func testParse(
 					&OptionExpression{
 						NodeBase: NodeBase{
 							NodeSpan{0, 7},
-							&ParsingError{UnspecifiedParsingError, "unterminated option expression, '=' should be followed by an expression"},
+							&ParsingError{UnterminatedOptionExpr, UNTERMINATED_OPTION_EXPR_EQUAL_ASSIGN_SHOULD_BE_FOLLOWED_BY_EXPR},
 							false,
 						},
 						Name:       "name",
@@ -2782,6 +2782,34 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("unparenthesized binary expression are not supported", func(t *testing.T) {
+			n := mustparseChunk(t, `--name=1 + 2`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
+				Statements: []Node{
+					&OptionExpression{
+						NodeBase: NodeBase{Span: NodeSpan{0, 8}},
+						Name:     "name",
+						Value: &IntLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{7, 8}},
+							Raw:      "1",
+							Value:    1,
+						},
+						SingleDash: false,
+					},
+					&UnquotedStringLiteral{
+						NodeBase: NodeBase{Span: NodeSpan{9, 10}},
+						Raw:      "+",
+						Value:    "+",
+					},
+					&IntLiteral{
+						NodeBase: NodeBase{Span: NodeSpan{11, 12}},
+						Raw:      "2",
+						Value:    2,
+					},
+				},
+			}, n)
+		})
 	})
 
 	t.Run("option patterns", func(t *testing.T) {
@@ -2794,7 +2822,7 @@ func testParse(
 					&OptionPatternLiteral{
 						NodeBase: NodeBase{
 							NodeSpan{0, 7},
-							&ParsingError{UnspecifiedParsingError, UNTERMINATED_OPION_PATTERN_A_VALUE_IS_EXPECTED_AFTER_EQUAKL_SIGN},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_OPTION_PATTERN_A_VALUE_IS_EXPECTED_AFTER_EQUAKL_SIGN},
 							false,
 						},
 						Name:       "name",
@@ -2813,7 +2841,7 @@ func testParse(
 					&OptionPatternLiteral{
 						NodeBase: NodeBase{
 							NodeSpan{0, 8},
-							&ParsingError{UnspecifiedParsingError, UNTERMINATED_OPION_PATT_EQUAL_ASSIGN_SHOULD_BE_FOLLOWED_BY_EXPR},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_OPTION_PATT_EQUAL_ASSIGN_SHOULD_BE_FOLLOWED_BY_EXPR},
 							false,
 						},
 						Name:       "name",
@@ -4974,7 +5002,7 @@ func testParse(
 					&InvalidMemberLike{
 						NodeBase: NodeBase{
 							NodeSpan{0, 3},
-							&ParsingError{UnspecifiedParsingError, "unterminated member/index expression"},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_MEMB_OR_INDEX_EXPR},
 							false,
 						},
 						Left: &Variable{
@@ -9100,7 +9128,7 @@ func testParse(
 						Right: &MissingExpression{
 							NodeBase: NodeBase{
 								NodeSpan{9, 10},
-								&ParsingError{UnspecifiedParsingError, fmtExprExpectedHere([]rune("assign a ="), 10, true)},
+								&ParsingError{MissingExpr, fmtExprExpectedHere([]rune("assign a ="), 10, true)},
 								false,
 							},
 						},
@@ -13129,12 +13157,8 @@ func testParse(
 						&ListLiteral{
 							NodeBase: NodeBase{
 								NodeSpan{0, 6},
-								&ParsingError{UnspecifiedParsingError, "unterminated list literal, missing closing bracket ']'"},
+								&ParsingError{UnspecifiedParsingError, UNTERMINATED_LIST_LIT_MISSING_CLOSING_BRACKET},
 								false,
-								/*[]Token{
-									{Type: OPENING_BRACKET, Span: NodeSpan{0, 1}},
-									{Type: COMMA, Span: NodeSpan{3, 4}},
-								},*/
 							},
 							Elements: []Node{
 								&IntLiteral{
@@ -13217,7 +13241,7 @@ func testParse(
 									Expr: &MissingExpression{
 										NodeBase: NodeBase{
 											NodeSpan{5, 6},
-											&ParsingError{UnspecifiedParsingError, fmtExprExpectedHere([]rune("[ ..., ]"), 5, true)},
+											&ParsingError{MissingExpr, fmtExprExpectedHere([]rune("[ ..., ]"), 5, true)},
 											false,
 										},
 									},
@@ -13289,11 +13313,6 @@ func testParse(
 								NodeSpan{0, 7},
 								&ParsingError{UnspecifiedParsingError, UNTERMINATED_LIST_LIT_MISSING_CLOSING_BRACKET},
 								false,
-								/*[]Token{
-									{Type: OPENING_BRACKET, Span: NodeSpan{0, 1}},
-									{Type: CLOSING_BRACKET, Span: NodeSpan{1, 2}},
-									{Type: OPENING_BRACKET, Span: NodeSpan{6, 7}},
-								},*/
 							},
 							Elements: nil,
 							TypeAnnotation: &PatternIdentifierLiteral{
@@ -13523,12 +13542,8 @@ func testParse(
 						&TupleLiteral{
 							NodeBase: NodeBase{
 								NodeSpan{0, 7},
-								&ParsingError{UnspecifiedParsingError, "unterminated list literal, missing closing bracket ']'"},
+								&ParsingError{UnspecifiedParsingError, UNTERMINATED_TUPLE_LIT_MISSING_CLOSING_BRACKET},
 								false,
-								/*[]Token{
-									{Type: OPENING_TUPLE_BRACKET, Span: NodeSpan{0, 2}},
-									{Type: COMMA, Span: NodeSpan{4, 5}},
-								},*/
 							},
 							Elements: []Node{
 								&IntLiteral{
@@ -13611,7 +13626,7 @@ func testParse(
 									Expr: &MissingExpression{
 										NodeBase: NodeBase{
 											NodeSpan{6, 7},
-											&ParsingError{UnspecifiedParsingError, fmtExprExpectedHere([]rune("[ ..., ]"), 5, true)},
+											&ParsingError{MissingExpr, fmtExprExpectedHere([]rune("[ ..., ]"), 5, true)},
 											false,
 										},
 									},
@@ -13974,7 +13989,7 @@ func testParse(
 										NodeBase: NodeBase{
 											NodeSpan{11, 12},
 											&ParsingError{
-												UnspecifiedParsingError,
+												MissingExpr,
 												fmtExprExpectedHere([]rune(`:{ "a" :   }`), 11, true),
 											},
 											false,
@@ -14013,7 +14028,7 @@ func testParse(
 									Value: &MissingExpression{
 										NodeBase: NodeBase{
 											NodeSpan{8, 9},
-											&ParsingError{UnspecifiedParsingError, fmtExprExpectedHere([]rune(`(:{ "a":)`), 8, true)},
+											&ParsingError{MissingExpr, fmtExprExpectedHere([]rune(`(:{ "a":)`), 8, true)},
 											false,
 										},
 									},
@@ -14756,7 +14771,7 @@ func testParse(
 						Consequent: &MissingExpression{
 							NodeBase: NodeBase{
 								NodeSpan{7, 8},
-								&ParsingError{UnspecifiedParsingError, fmtExprExpectedHere([]rune(code), 8, true)},
+								&ParsingError{MissingExpr, fmtExprExpectedHere([]rune(code), 8, true)},
 								false,
 							},
 						},
@@ -14903,7 +14918,7 @@ func testParse(
 						Alternate: &MissingExpression{
 							NodeBase: NodeBase{
 								NodeSpan{14, 15},
-								&ParsingError{UnspecifiedParsingError, fmtExprExpectedHere([]rune(code), 15, true)},
+								&ParsingError{MissingExpr, fmtExprExpectedHere([]rune(code), 15, true)},
 								false,
 							},
 						},
@@ -14939,7 +14954,7 @@ func testParse(
 								Alternate: &MissingExpression{
 									NodeBase: NodeBase{
 										NodeSpan{16, 17},
-										&ParsingError{UnspecifiedParsingError, fmtExprExpectedHere([]rune(code), 16, true)},
+										&ParsingError{MissingExpr, fmtExprExpectedHere([]rune(code), 16, true)},
 										false,
 									},
 								},
@@ -15753,7 +15768,7 @@ func testParse(
 							Right: &MissingExpression{
 								NodeBase: NodeBase{
 									NodeSpan{24, 25},
-									&ParsingError{UnspecifiedParsingError, "an expression was expected: ... i + <<here>>)..."},
+									&ParsingError{MissingExpr, "an expression was expected: ... i + <<here>>)..."},
 									false,
 								},
 							},
@@ -15786,7 +15801,7 @@ func testParse(
 						Body: &MissingExpression{
 							NodeBase: NodeBase{
 								NodeSpan{22, 23},
-								&ParsingError{UnspecifiedParsingError, "an expression was expected: ...rs =><<here>>)..."},
+								&ParsingError{MissingExpr, "an expression was expected: ...rs =><<here>>)..."},
 								false,
 							},
 						},
@@ -16635,7 +16650,7 @@ func testParse(
 						Right: &MissingExpression{
 							NodeBase: NodeBase{
 								NodeSpan{8, 9},
-								&ParsingError{UnspecifiedParsingError, "an expression was expected: ... b or<<here>>..."},
+								&ParsingError{MissingExpr, "an expression was expected: ... b or<<here>>..."},
 								false,
 							},
 						},
@@ -17041,7 +17056,7 @@ func testParse(
 						Right: &MissingExpression{
 							NodeBase: NodeBase{
 								NodeSpan{5, 6},
-								&ParsingError{UnspecifiedParsingError, "an expression was expected: ...($a +<<here>>)..."},
+								&ParsingError{MissingExpr, "an expression was expected: ...($a +<<here>>)..."},
 								false,
 							},
 						},
@@ -17217,7 +17232,7 @@ func testParse(
 					&UnknownNode{
 						NodeBase: NodeBase{
 							NodeSpan{0, 1},
-							&ParsingError{UnspecifiedParsingError, fmtExprExpectedHere([]rune("("), 1, true)},
+							&ParsingError{MissingExpr, fmtExprExpectedHere([]rune("("), 1, true)},
 							false,
 						},
 					},
@@ -17234,7 +17249,7 @@ func testParse(
 					&UnknownNode{
 						NodeBase: NodeBase{
 							NodeSpan{0, 2},
-							&ParsingError{UnspecifiedParsingError, fmtExprExpectedHere([]rune("(\n"), 2, true)},
+							&ParsingError{MissingExpr, fmtExprExpectedHere([]rune("(\n"), 2, true)},
 							false,
 							/*[]Token{
 								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
@@ -17276,7 +17291,7 @@ func testParse(
 					&UnknownNode{
 						NodeBase: NodeBase{
 							NodeSpan{0, 2},
-							&ParsingError{UnspecifiedParsingError, fmtExprExpectedHere([]rune("()"), 1, true)},
+							&ParsingError{MissingExpr, fmtExprExpectedHere([]rune("()"), 1, true)},
 							true,
 							/*[]Token{
 								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
@@ -17493,7 +17508,7 @@ func testParse(
 							Right: &MissingExpression{
 								NodeBase: NodeBase{
 									NodeSpan{7, 8},
-									&ParsingError{UnspecifiedParsingError, "an expression was expected: ... $a +<<here>>..."},
+									&ParsingError{MissingExpr, "an expression was expected: ... $a +<<here>>..."},
 									false,
 								},
 							},
@@ -17751,7 +17766,7 @@ func testParse(
 						Expr: &MissingExpression{
 							NodeBase: NodeBase{
 								NodeSpan{0, 1},
-								&ParsingError{UnspecifiedParsingError, fmtExprExpectedHere([]rune("~"), 1, true)},
+								&ParsingError{MissingExpr, fmtExprExpectedHere([]rune("~"), 1, true)},
 								false,
 							},
 						},
@@ -20064,7 +20079,7 @@ func testParse(
 									&MissingExpression{
 										NodeBase: NodeBase{
 											NodeSpan{10, 11},
-											&ParsingError{UnspecifiedParsingError, fmtCaseValueExpectedHere([]rune(s), 10, true)},
+											&ParsingError{MissingExpr, fmtCaseValueExpectedHere([]rune(s), 10, true)},
 											false,
 										},
 									},
@@ -21887,7 +21902,7 @@ func testParse(
 								Value: &MissingExpression{
 									NodeBase: NodeBase{
 										NodeSpan{15, 16},
-										&ParsingError{UnspecifiedParsingError, fmtExprExpectedHere([]rune("Mapping { 0 => }"), 15, true)},
+										&ParsingError{MissingExpr, fmtExprExpectedHere([]rune("Mapping { 0 => }"), 15, true)},
 										false,
 									},
 								},
@@ -23025,7 +23040,7 @@ func testParse(
 						Arg: &MissingExpression{
 							NodeBase: NodeBase{
 								NodeSpan{3, 4},
-								&ParsingError{UnspecifiedParsingError, fmtExprExpectedHere([]rune("comp"), 4, true)},
+								&ParsingError{MissingExpr, fmtExprExpectedHere([]rune("comp"), 4, true)},
 								false,
 							},
 						},
@@ -24420,7 +24435,7 @@ func testParse(
 								Pattern: &MissingExpression{
 									NodeBase: NodeBase{
 										NodeSpan{12, 13},
-										&ParsingError{UnspecifiedParsingError, fmtExprExpectedHere([]rune("%{otherprops}"), 12, true)},
+										&ParsingError{MissingExpr, fmtExprExpectedHere([]rune("%{otherprops}"), 12, true)},
 										false,
 									},
 								},
@@ -24455,7 +24470,7 @@ func testParse(
 								Pattern: &MissingExpression{
 									NodeBase: NodeBase{
 										NodeSpan{11, 12},
-										&ParsingError{UnspecifiedParsingError, fmtExprExpectedHere([]rune("%{otherprops"), 12, true)},
+										&ParsingError{MissingExpr, fmtExprExpectedHere([]rune("%{otherprops"), 12, true)},
 										false,
 									},
 								},
@@ -25824,16 +25839,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
 				Statements: []Node{
 					&ComplexStringPatternPiece{
-						NodeBase: NodeBase{
-							NodeSpan{0, 8},
-							nil,
-							false,
-							/*[]Token{
-								{Type: PERCENT_STR, Span: NodeSpan{0, 4}},
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{4, 5}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{7, 8}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 8}},
 						Elements: []*PatternPieceElement{
 							{
 								NodeBase: NodeBase{
@@ -27424,7 +27430,7 @@ func testParse(
 						Expr: &MissingExpression{
 							NodeBase: NodeBase{
 								NodeSpan{5, 6},
-								&ParsingError{UnspecifiedParsingError, fmtExprExpectedHere([]rune(code), 6, true)},
+								&ParsingError{MissingExpr, fmtExprExpectedHere([]rune(code), 6, true)},
 								false,
 							},
 						},
@@ -28105,7 +28111,7 @@ func testParse(
 						&UnknownNode{
 							NodeBase: NodeBase{
 								NodeSpan{0, 2},
-								&ParsingError{UnspecifiedParsingError, fmtExprExpectedHere([]rune("()]"), 1, true)},
+								&ParsingError{MissingExpr, fmtExprExpectedHere([]rune("()]"), 1, true)},
 								true,
 								/*[]Token{
 									{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
@@ -29546,7 +29552,7 @@ func testParse(
 										Value: &MissingExpression{
 											NodeBase: NodeBase{
 												NodeSpan{8, 9},
-												&ParsingError{UnspecifiedParsingError, fmtExprExpectedHere([]rune("h<div a=></div>"), 8, true)},
+												&ParsingError{MissingExpr, fmtExprExpectedHere([]rune("h<div a=></div>"), 8, true)},
 												false,
 											},
 										},
@@ -29623,7 +29629,7 @@ func testParse(
 										Value: &MissingExpression{
 											NodeBase: NodeBase{
 												NodeSpan{8, 9},
-												&ParsingError{UnspecifiedParsingError, fmtExprExpectedHere([]rune("h<div a=></div>"), 8, true)},
+												&ParsingError{MissingExpr, fmtExprExpectedHere([]rune("h<div a=></div>"), 8, true)},
 												false,
 											},
 										},
@@ -31587,7 +31593,7 @@ func testParse(
 										Consequent: &MissingExpression{
 											NodeBase: NodeBase{
 												NodeSpan{13, 14},
-												&ParsingError{UnspecifiedParsingError, fmtExprExpectedHere([]rune("h<div>{if true"), 14, true)},
+												&ParsingError{MissingExpr, fmtExprExpectedHere([]rune("h<div>{if true"), 14, true)},
 												false,
 											},
 										},
@@ -31780,7 +31786,7 @@ func testParse(
 										Body: &MissingExpression{
 											NodeBase: NodeBase{
 												NodeSpan{20, 21},
-												&ParsingError{UnspecifiedParsingError, fmtExprExpectedHere([]rune("h<div>{for i in [] =>"), 21, true)},
+												&ParsingError{MissingExpr, fmtExprExpectedHere([]rune("h<div>{for i in [] =>"), 21, true)},
 												false,
 											},
 										},
@@ -31838,7 +31844,7 @@ func testParse(
 									Expr: &MissingExpression{
 										NodeBase: NodeBase{
 											NodeSpan{7, 8},
-											&ParsingError{UnspecifiedParsingError, fmtExprExpectedHere([]rune("...div>{?"), 8, true)},
+											&ParsingError{MissingExpr, fmtExprExpectedHere([]rune("...div>{?"), 8, true)},
 											false,
 										},
 									},

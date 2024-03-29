@@ -48,7 +48,7 @@ func (p *parser) parseExpression(config ...exprParsingConfig) (expr Node, isMiss
 		return &MissingExpression{
 			NodeBase: NodeBase{
 				Span: NodeSpan{p.i - 1, p.i},
-				Err:  &ParsingError{UnspecifiedParsingError, fmtExprExpectedHere(p.s, p.i, false)},
+				Err:  &ParsingError{MissingExpr, fmtExprExpectedHere(p.s, p.i, false)},
 			},
 		}, true
 	}
@@ -308,7 +308,7 @@ loop:
 	return &MissingExpression{
 		NodeBase: NodeBase{
 			Span: NodeSpan{p.i, p.i + 1},
-			Err:  &ParsingError{UnspecifiedParsingError, fmtExprExpectedHere(p.s, p.i, true)},
+			Err:  &ParsingError{MissingExpr, fmtExprExpectedHere(p.s, p.i, true)},
 		},
 	}, true
 }

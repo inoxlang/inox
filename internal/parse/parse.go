@@ -997,14 +997,16 @@ func (p *parser) parseDashStartingExpression(precededByOpeningParen bool) Node {
 		return &OptionExpression{
 			NodeBase: NodeBase{
 				Span: NodeSpan{__start, p.i},
-				Err:  &ParsingError{UnspecifiedParsingError, UNTERMINATED_OPION_EXPR_EQUAL_ASSIGN_SHOULD_BE_FOLLOWED_BY_EXPR},
+				Err:  &ParsingError{UnterminatedOptionExpr, UNTERMINATED_OPTION_EXPR_EQUAL_ASSIGN_SHOULD_BE_FOLLOWED_BY_EXPR},
 			},
 			Name:       name,
 			SingleDash: singleDash,
 		}
 	}
 
-	value, _ := p.parseExpression()
+	value, _ := p.parseExpression(exprParsingConfig{
+		disallowUnparenthesizedBinExpr: true,
+	})
 
 	return &OptionExpression{
 		NodeBase: NodeBase{
@@ -3379,6 +3381,9 @@ func (p *parser) parseListOrTupleLiteral(isTuple bool) Node {
 		type_ = p.parsePercentPrefixedPattern(false)
 		if p.i >= p.len || p.s[p.i] != '[' {
 			parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_LIST_LIT_MISSING_OPENING_BRACKET_AFTER_TYPE}
+			if isTuple {
+				parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_TUPLE_LIT_MISSING_OPENING_BRACKET_AFTER_TYPE}
+			}
 		} else {
 			p.tokens = append(p.tokens, Token{Type: OPENING_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
 			p.i++
@@ -3428,6 +3433,9 @@ func (p *parser) parseListOrTupleLiteral(isTuple bool) Node {
 
 		if p.i >= p.len || p.s[p.i] != ']' {
 			parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_LIST_LIT_MISSING_CLOSING_BRACKET}
+			if isTuple {
+				parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_TUPLE_LIT_MISSING_CLOSING_BRACKET}
+			}
 		} else {
 			p.tokens = append(p.tokens, Token{Type: CLOSING_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
 			p.i++
@@ -3914,7 +3922,7 @@ func (p *parser) parseOptionPatternLiteral(start int32, unprefixedOptionPatternN
 		return &OptionPatternLiteral{
 			NodeBase: NodeBase{
 				Span: NodeSpan{start, p.i},
-				Err:  &ParsingError{UnspecifiedParsingError, UNTERMINATED_OPION_PATTERN_A_VALUE_IS_EXPECTED_AFTER_EQUAKL_SIGN},
+				Err:  &ParsingError{UnspecifiedParsingError, UNTERMINATED_OPTION_PATTERN_A_VALUE_IS_EXPECTED_AFTER_EQUAKL_SIGN},
 			},
 			Name:       name,
 			SingleDash: singleDash,
@@ -3928,7 +3936,7 @@ func (p *parser) parseOptionPatternLiteral(start int32, unprefixedOptionPatternN
 		return &OptionPatternLiteral{
 			NodeBase: NodeBase{
 				Span: NodeSpan{start, p.i},
-				Err:  &ParsingError{UnspecifiedParsingError, UNTERMINATED_OPION_PATT_EQUAL_ASSIGN_SHOULD_BE_FOLLOWED_BY_EXPR},
+				Err:  &ParsingError{UnspecifiedParsingError, UNTERMINATED_OPTION_PATT_EQUAL_ASSIGN_SHOULD_BE_FOLLOWED_BY_EXPR},
 			},
 			Name:       name,
 			SingleDash: singleDash,
@@ -8712,7 +8720,7 @@ top_loop:
 			missingExpr := &MissingExpression{
 				NodeBase: NodeBase{
 					NodeSpan{p.i, p.i + 1},
-					&ParsingError{UnspecifiedParsingError, fmtCaseValueExpectedHere(p.s, p.i, true)},
+					&ParsingError{MissingExpr, fmtCaseValueExpectedHere(p.s, p.i, true)},
 					false,
 				},
 			}
