@@ -354,7 +354,9 @@ func (d *Data) getScopeData(n parse.Node, ancestorChain []parse.Node, global boo
 
 				if ok && index > 0 {
 					switch ancestor := ancestorChain[index-1].(type) {
-					case *parse.FunctionExpression, *parse.ForStatement, *parse.WalkStatement:
+					case *parse.FunctionExpression, *parse.ForStatement, *parse.WalkStatement,
+						*parse.IfStatement,
+						*parse.SwitchStatementCase, *parse.MatchStatementCase, *parse.DefaultCaseWithBlock:
 						return d.getScopeData(closestBlock, ancestorChain[:index], global)
 					case *parse.ForExpression:
 						if _, ok := ancestor.Body.(*parse.Block); ok {

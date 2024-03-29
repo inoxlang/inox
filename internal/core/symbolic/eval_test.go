@@ -7035,36 +7035,67 @@ func TestSymbolicEval(t *testing.T) {
 		t.Run("local scope data should be preserved inside the statement", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				a = 1
-				if true {} else {}
+				if true {
+					$a
+				} else {
+					$a
+				}
 			`)
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Nil(t, res)
 
-			blocks, chains := parse.FindNodesAndChains(n, (*parse.Block)(nil), nil)
+			blocks, blockAncestors := parse.FindNodesAndChains(n, (*parse.Block)(nil), nil)
+			vars, varAncestors := parse.FindNodesAndChains(n, (*parse.Variable)(nil), nil)
 
-			//Check the if clause.
+			//Check the local scope data for the if clause at the block.
 
-			data, ok := state.symbolicData.GetLocalScopeData(blocks[0], chains[0])
+			data, ok := state.symbolicData.GetLocalScopeData(blocks[0], blockAncestors[0])
 			if !assert.True(t, ok) {
 				return
 			}
 
-			if assert.Len(t, data.Variables, 1) {
+			if !assert.Len(t, data.Variables, 1) {
 				return
 			}
 
 			assert.Equal(t, "a", data.Variables[0].Name)
 
-			//Check the else clause.
+			//Check the local scope data for the if clause at the statement.
 
-			data, ok = state.symbolicData.GetLocalScopeData(blocks[1], chains[1])
+			data, ok = state.symbolicData.GetLocalScopeData(vars[0], varAncestors[0])
 			if !assert.True(t, ok) {
 				return
 			}
 
-			if assert.Len(t, data.Variables, 1) {
+			if !assert.Len(t, data.Variables, 1) {
+				return
+			}
+
+			assert.Equal(t, "a", data.Variables[0].Name)
+
+			//Check the local scope data for the else clause at the block.
+
+			data, ok = state.symbolicData.GetLocalScopeData(blocks[1], blockAncestors[1])
+			if !assert.True(t, ok) {
+				return
+			}
+
+			if !assert.Len(t, data.Variables, 1) {
+				return
+			}
+
+			assert.Equal(t, "a", data.Variables[0].Name)
+
+			//Check the local scope data for the else clause at the statement.
+
+			data, ok = state.symbolicData.GetLocalScopeData(vars[1], varAncestors[1])
+			if !assert.True(t, ok) {
+				return
+			}
+
+			if !assert.Len(t, data.Variables, 1) {
 				return
 			}
 
@@ -9359,8 +9390,12 @@ func TestSymbolicEval(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				a = 1
 				switch int {
-					1 {}
-					defaultcase {}
+					1 {
+						$a
+					}
+					defaultcase {
+						$a
+					}
 				}
 			`)
 
@@ -9368,29 +9403,56 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Nil(t, res)
 
-			blocks, chains := parse.FindNodesAndChains(n, (*parse.Block)(nil), nil)
+			blocks, blockAncestors := parse.FindNodesAndChains(n, (*parse.Block)(nil), nil)
+			vars, varAncestors := parse.FindNodesAndChains(n, (*parse.Variable)(nil), nil)
 
-			//Check the case 1.
+			//Check the local scope data for the case 1 at the block.
 
-			data, ok := state.symbolicData.GetLocalScopeData(blocks[0], chains[0])
+			data, ok := state.symbolicData.GetLocalScopeData(blocks[0], blockAncestors[0])
 			if !assert.True(t, ok) {
 				return
 			}
 
-			if assert.Len(t, data.Variables, 1) {
+			if !assert.Len(t, data.Variables, 1) {
 				return
 			}
 
 			assert.Equal(t, "a", data.Variables[0].Name)
 
-			//Check the default case.
+			//Check the local scope data for the case 1 at the statement.
 
-			data, ok = state.symbolicData.GetLocalScopeData(blocks[1], chains[1])
+			data, ok = state.symbolicData.GetLocalScopeData(vars[0], varAncestors[0])
 			if !assert.True(t, ok) {
 				return
 			}
 
-			if assert.Len(t, data.Variables, 1) {
+			if !assert.Len(t, data.Variables, 1) {
+				return
+			}
+
+			assert.Equal(t, "a", data.Variables[0].Name)
+
+			//Check the local scope data for the default case at the block.
+
+			data, ok = state.symbolicData.GetLocalScopeData(blocks[1], blockAncestors[1])
+			if !assert.True(t, ok) {
+				return
+			}
+
+			if !assert.Len(t, data.Variables, 1) {
+				return
+			}
+
+			assert.Equal(t, "a", data.Variables[0].Name)
+
+			//Check the local scope data for the default case at the statement.
+
+			data, ok = state.symbolicData.GetLocalScopeData(vars[1], varAncestors[1])
+			if !assert.True(t, ok) {
+				return
+			}
+
+			if !assert.Len(t, data.Variables, 1) {
 				return
 			}
 
@@ -9872,8 +9934,12 @@ func TestSymbolicEval(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				a = 1
 				match int {
-					1 {}
-					defaultcase {}
+					1 {
+						$a
+					}
+					defaultcase {
+						$a
+					}
 				}
 			`)
 
@@ -9881,29 +9947,56 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Nil(t, res)
 
-			blocks, chains := parse.FindNodesAndChains(n, (*parse.Block)(nil), nil)
+			blocks, blockAncestors := parse.FindNodesAndChains(n, (*parse.Block)(nil), nil)
+			vars, varAncestors := parse.FindNodesAndChains(n, (*parse.Variable)(nil), nil)
 
-			//Check the case 1.
+			//Check the local scope data for the case 1 at the block.
 
-			data, ok := state.symbolicData.GetLocalScopeData(blocks[0], chains[0])
+			data, ok := state.symbolicData.GetLocalScopeData(blocks[0], blockAncestors[0])
 			if !assert.True(t, ok) {
 				return
 			}
 
-			if assert.Len(t, data.Variables, 1) {
+			if !assert.Len(t, data.Variables, 1) {
 				return
 			}
 
 			assert.Equal(t, "a", data.Variables[0].Name)
 
-			//Check the default case.
+			//Check the local scope data for the case 1 at the statement.
 
-			data, ok = state.symbolicData.GetLocalScopeData(blocks[1], chains[1])
+			data, ok = state.symbolicData.GetLocalScopeData(vars[0], varAncestors[0])
 			if !assert.True(t, ok) {
 				return
 			}
 
-			if assert.Len(t, data.Variables, 1) {
+			if !assert.Len(t, data.Variables, 1) {
+				return
+			}
+
+			assert.Equal(t, "a", data.Variables[0].Name)
+
+			//Check the local scope data for the default case at the block.
+
+			data, ok = state.symbolicData.GetLocalScopeData(blocks[1], blockAncestors[1])
+			if !assert.True(t, ok) {
+				return
+			}
+
+			if !assert.Len(t, data.Variables, 1) {
+				return
+			}
+
+			assert.Equal(t, "a", data.Variables[0].Name)
+
+			//Check the local scope data for the default case at the statement.
+
+			data, ok = state.symbolicData.GetLocalScopeData(vars[1], varAncestors[1])
+			if !assert.True(t, ok) {
+				return
+			}
+
+			if !assert.Len(t, data.Variables, 1) {
 				return
 			}
 
