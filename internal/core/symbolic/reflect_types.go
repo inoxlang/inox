@@ -2,8 +2,6 @@ package symbolic
 
 import (
 	"reflect"
-
-	"github.com/inoxlang/inox/internal/parse"
 )
 
 var (
@@ -38,15 +36,4 @@ var (
 
 	ANY_READABLE = &AnyReadable{}
 	ANY_READER   = &Reader{}
-
-	SUPPORTED_PARSING_ERRORS = []parse.ParsingErrorKind{
-		parse.UnterminatedMemberExpr, parse.UnterminatedDoubleColonExpr,
-		parse.UnterminatedExtendStmt,
-		parse.UnterminatedStructDefinition,
-		parse.MissingBlock, parse.MissingFnBody,
-		parse.MissingEqualsSignInDeclaration,
-		parse.MissingObjectPropertyValue,
-		parse.MissingObjectPatternProperty,
-		parse.ExtractionExpressionExpected,
-	}
 )

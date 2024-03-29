@@ -8749,6 +8749,15 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors())
 			assert.Equal(t, NewMultivalue(&Identifier{name: "a"}, &Identifier{name: "b"}), res)
 		})
+
+		t.Run("no iterated value", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				(for e in)
+			`)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+		})
 	})
 
 	t.Run("for expression", func(t *testing.T) {
@@ -8941,6 +8950,15 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors())
 			assert.Equal(t, NewListOf(AsSerializableChecked(INT_2)), res)
 		})
+
+		t.Run("no iterated value", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				(for e in)
+			`)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+		})
 	})
 
 	t.Run("walk statement", func(t *testing.T) {
@@ -9021,6 +9039,15 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
 			assert.Equal(t, NewMultivalue(&Identifier{name: "a"}, &Identifier{name: "b"}), res)
+		})
+
+		t.Run("no walked value", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				walk
+			`)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
 		})
 	})
 
@@ -9230,7 +9257,7 @@ func TestSymbolicEval(t *testing.T) {
 		t.Run("narrowing of variable's value (with default case)", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				fn f(v %| int | str | bool){
-					match v {
+					switch v {
 						1 {
 							var int %(1) = v
 						}
@@ -9248,6 +9275,15 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
 			assert.Nil(t, res)
+		})
+
+		t.Run("no discriminant", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				switch
+			`)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
 		})
 
 	})
@@ -9382,6 +9418,17 @@ func TestSymbolicEval(t *testing.T) {
 				makeSymbolicEvalError(intLiterals[1], state, fmtValueIsAnXButYWasExpected(INT_2, ANY_BOOL)),
 			}, state.errors())
 		})
+
+		t.Run("no discriminant", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				return switch
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, DEFAULT_SWITCH_MATCH_EXPR_RESULT, res)
+		})
+
 	})
 
 	t.Run("match statement", func(t *testing.T) {
@@ -9700,6 +9747,15 @@ func TestSymbolicEval(t *testing.T) {
 			}, state.errors())
 			assert.Nil(t, res)
 		})
+
+		t.Run("no discriminant", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				match
+			`)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+		})
 	})
 
 	t.Run("match expression", func(t *testing.T) {
@@ -9955,6 +10011,16 @@ func TestSymbolicEval(t *testing.T) {
 				makeSymbolicEvalError(intLiterals[0], state, fmtValueIsAnXButYWasExpected(INT_1, ANY_BOOL)),
 				makeSymbolicEvalError(intLiterals[1], state, fmtValueIsAnXButYWasExpected(INT_2, ANY_BOOL)),
 			}, state.errors())
+		})
+
+		t.Run("no discriminant", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				return match
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, DEFAULT_SWITCH_MATCH_EXPR_RESULT, res)
 		})
 	})
 

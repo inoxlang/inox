@@ -19,6 +19,10 @@ import (
 	"golang.org/x/exp/maps"
 )
 
+var (
+	DEFAULT_SWITCH_MATCH_EXPR_RESULT = Nil
+)
+
 type EvalCheckInput struct {
 	Node   *parse.Chunk
 	Module *Module
@@ -147,6 +151,8 @@ type evalOptions struct {
 
 	//used for checking that double-colon expressions are not misplaced
 	doubleColonExprAncestorChain []parse.Node
+
+	fallbackResult Value //defaults to ANY, value returned for *parse.MissingExpression.
 
 	neverModifiedArgument bool
 }
@@ -932,6 +938,11 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		return ANY, nil
 	case *parse.UnknownNode:
 		return ANY, nil
+	case *parse.MissingExpression:
+		if options.fallbackResult == nil {
+			return ANY, nil
+		}
+		return options.fallbackResult, nil
 	default:
 		return nil, fmt.Errorf("cannot evaluate %#v (%T)\n%s", node, node, debug.Stack())
 	}
@@ -2399,6 +2410,10 @@ func evalForStatementAndExpr(n parse.Node, state *State) (_ Value, finalErr erro
 			body = stmt.Body
 		}
 		chunked = stmt.Chunked
+
+		if iteratedValueNode == nil {
+			return
+		}
 	} else {
 		expr := n.(*parse.ForExpression)
 		iteratedValueNode = expr.IteratedValue
@@ -2409,6 +2424,10 @@ func evalForStatementAndExpr(n parse.Node, state *State) (_ Value, finalErr erro
 		}
 		chunked = expr.Chunked
 		isForExpr = true
+
+		if iteratedValueNode == nil {
+			return ANY, nil
+		}
 	}
 
 	iteratedValue, err := symbolicEval(iteratedValueNode, state)
@@ -2571,7 +2590,11 @@ func evalWalkStatement(n *parse.WalkStatement, state *State) (_ Value, finalErr 
 }
 
 func evalSwitchStatement(n *parse.SwitchStatement, state *State) (_ Value, finalErr error) {
-	_, err := symbolicEval(n.Discriminant, state)
+
+	_, err := _symbolicEval(n.Discriminant, state, evalOptions{
+		fallbackResult: ANY,
+	})
+
 	if err != nil {
 		return nil, err
 	}
@@ -2624,7 +2647,11 @@ func evalSwitchStatement(n *parse.SwitchStatement, state *State) (_ Value, final
 }
 
 func evalSwitchExpression(n *parse.SwitchExpression, state *State, options evalOptions) (_ Value, finalErr error) {
-	_, err := symbolicEval(n.Discriminant, state)
+
+	_, err := _symbolicEval(n.Discriminant, state, evalOptions{
+		fallbackResult: DEFAULT_SWITCH_MATCH_EXPR_RESULT,
+	})
+
 	if err != nil {
 		return nil, err
 	}
@@ -2706,14 +2733,18 @@ func evalSwitchExpression(n *parse.SwitchExpression, state *State, options evalO
 	state.join(areAllOutcomesCovered, forks...)
 
 	if len(n.DefaultCases) == 0 {
-		results = append(results, Nil)
+		results = append(results, DEFAULT_SWITCH_MATCH_EXPR_RESULT)
 	}
 
 	return joinValues(results), nil
 }
 
 func evalMatchStatement(n *parse.MatchStatement, state *State) (_ Value, finalErr error) {
-	discriminant, err := symbolicEval(n.Discriminant, state)
+
+	discriminant, err := _symbolicEval(n.Discriminant, state, evalOptions{
+		fallbackResult: ANY,
+	})
+
 	if err != nil {
 		return nil, err
 	}
@@ -2824,7 +2855,11 @@ func evalMatchStatement(n *parse.MatchStatement, state *State) (_ Value, finalEr
 }
 
 func evalMatchExpression(n *parse.MatchExpression, state *State, options evalOptions) (_ Value, finalErr error) {
-	discriminant, err := symbolicEval(n.Discriminant, state)
+
+	discriminant, err := _symbolicEval(n.Discriminant, state, evalOptions{
+		fallbackResult: DEFAULT_SWITCH_MATCH_EXPR_RESULT,
+	})
+
 	if err != nil {
 		return nil, err
 	}
@@ -2964,7 +2999,7 @@ func evalMatchExpression(n *parse.MatchExpression, state *State, options evalOpt
 	}
 
 	if len(n.DefaultCases) == 0 {
-		results = append(results, Nil)
+		results = append(results, DEFAULT_SWITCH_MATCH_EXPR_RESULT)
 	}
 
 	areAllOutcomesCovered := hasValidDefaultCase
