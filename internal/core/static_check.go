@@ -2023,7 +2023,7 @@ loop0:
 		switch ancestorChain[i].(type) {
 		case *parse.IfStatement, *parse.SwitchStatement, *parse.SwitchStatementCase,
 			*parse.MatchStatementCase, *parse.MatchStatement, *parse.Block,
-			*parse.ForStatement:
+			*parse.ForStatement, *parse.WalkStatement:
 		default:
 			c.addError(node, text.YIELD_STMTS_ONLY_ALLOWED_IN_BODY_FOR_EXPR)
 			return parse.ContinueTraversal
