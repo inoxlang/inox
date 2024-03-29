@@ -16,11 +16,16 @@ const (
 	UnterminatedPatternDefinition
 	UnterminatedPatternNamespaceDefinition
 	UnterminatedStructDefinition
+
 	UnterminatedSwitchStmt
+	UnterminatedSwitchExpr
 	UnterminatedMatchStmt
+	UnterminatedMatchExpr
 
 	MissingBlock
 	UnterminatedBlock
+
+	UnterminatedArrow
 
 	MissingFnBody
 	MissingEqualsSignInDeclaration

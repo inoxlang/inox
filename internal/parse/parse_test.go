@@ -20141,6 +20141,22 @@ func testParse(
 				},
 			},
 			{
+				input:    "(switch",
+				hasError: true,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 7}, nil, false},
+					Statements: []Node{
+						&SwitchExpression{
+							NodeBase: NodeBase{
+								NodeSpan{1, 7},
+								&ParsingError{UnterminatedSwitchExpr, UNTERMINATED_SWITCH_EXPR_MISSING_VALUE},
+								true,
+							},
+						},
+					},
+				},
+			},
+			{
 				hasError: false,
 				input:    "a = switch 1 {\n}",
 			},
@@ -20227,7 +20243,7 @@ func testParse(
 	})
 
 	t.Run("match expression", func(t *testing.T) {
-		t.SkipNow()
+
 		t.Run("case is not a simple literal and is not statically known", func(t *testing.T) {
 			assert.Panics(t, func() {
 				mustparseChunk(t, "(match 1 { $a { } })")
@@ -20241,7 +20257,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 22}, nil, false},
 				Statements: []Node{
 					&MatchExpression{
-						NodeBase: NodeBase{Span: NodeSpan{1, 21}},
+						NodeBase: NodeBase{Span: NodeSpan{1, 21}, IsParenthesized: true},
 						Discriminant: &IntLiteral{
 							NodeBase: NodeBase{NodeSpan{7, 8}, nil, false},
 							Raw:      "1",
@@ -20252,7 +20268,7 @@ func testParse(
 								NodeBase: NodeBase{NodeSpan{11, 19}, nil, false},
 								Values: []Node{
 									&ObjectLiteral{
-										NodeBase: NodeBase{Span: NodeSpan{11, 13}},
+										NodeBase: NodeBase{Span: NodeSpan{12, 14}, IsParenthesized: true},
 									},
 								},
 
@@ -20274,7 +20290,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 39}, nil, false},
 				Statements: []Node{
 					&MatchExpression{
-						NodeBase: NodeBase{Span: NodeSpan{1, 38}},
+						NodeBase: NodeBase{Span: NodeSpan{1, 38}, IsParenthesized: true},
 						Discriminant: &IntLiteral{
 							NodeBase: NodeBase{NodeSpan{7, 8}, nil, false},
 							Raw:      "1",
@@ -20282,7 +20298,7 @@ func testParse(
 						},
 						Cases: []*MatchExpressionCase{
 							{
-								NodeBase: NodeBase{NodeSpan{11, 35}, nil, false},
+								NodeBase: NodeBase{NodeSpan{11, 36}, nil, false},
 								Values: []Node{
 									&NamedSegmentPathPatternLiteral{
 										NodeBase: NodeBase{Span: NodeSpan{11, 29}},
@@ -20301,8 +20317,13 @@ func testParse(
 									},
 								},
 								GroupMatchingVariable: &IdentifierLiteral{
-									NodeBase: NodeBase{NodeSpan{29, 30}, nil, false},
+									NodeBase: NodeBase{NodeSpan{30, 31}, nil, false},
 									Name:     "m",
+								},
+								Result: &IntLiteral{
+									NodeBase: NodeBase{NodeSpan{35, 36}, nil, false},
+									Raw:      "1",
+									Value:    1,
 								},
 							},
 						},
