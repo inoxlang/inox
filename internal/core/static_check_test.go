@@ -3769,6 +3769,15 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
+		t.Run("direct child of a for expression", func(t *testing.T) {
+			n, src := mustParseCode(`
+				(for i, e in [] {
+					break
+				})
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
 		t.Run("in an if statement in a for statement", func(t *testing.T) {
 			n, src := mustParseCode(`
 				for i, e in [] {
@@ -3776,6 +3785,17 @@ func TestCheck(t *testing.T) {
 						break
 					}
 				}
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("in an if statement in a for expression", func(t *testing.T) {
+			n, src := mustParseCode(`
+				(for i, e in [] {
+					if true {
+						break
+					}
+				})
 			`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
@@ -3813,7 +3833,7 @@ func TestCheck(t *testing.T) {
 			breakStmt := parse.FindNode(n, (*parse.BreakStatement)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(breakStmt, src, text.INVALID_BREAK_OR_CONTINUE_STMT_SHOULD_BE_IN_A_FOR_OR_WALK_STMT),
+				makeError(breakStmt, src, text.BREAK_AND_CONTINUE_STMTS_ONLY_ALLOWED_IN_BODY_FOR_OR_WALK_STMT),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -3827,7 +3847,109 @@ func TestCheck(t *testing.T) {
 			breakStmt := parse.FindNode(n, (*parse.BreakStatement)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(breakStmt, src, text.INVALID_BREAK_OR_CONTINUE_STMT_SHOULD_BE_IN_A_FOR_OR_WALK_STMT),
+				makeError(breakStmt, src, text.BREAK_AND_CONTINUE_STMTS_ONLY_ALLOWED_IN_BODY_FOR_OR_WALK_STMT),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+	})
+
+	t.Run("yield statement", func(t *testing.T) {
+		t.Run("direct child of a for expression", func(t *testing.T) {
+			n, src := mustParseCode(`
+				(for i, e in [] {
+					yield
+				})
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("direct child of a for statement inside a for expression", func(t *testing.T) {
+			n, src := mustParseCode(`
+				(for i, e in [] {
+					for j, el in [] {
+						yield
+					}
+				})
+			`)
+
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("in an if statement in a for expression", func(t *testing.T) {
+			n, src := mustParseCode(`
+				(for i, e in [] {
+					if true {
+						yield
+					}
+				})
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("in an switch statement in a for statement", func(t *testing.T) {
+			n, src := mustParseCode(`
+				(for i, e in [] {
+					switch i {
+						1 {
+							yield
+						}
+					}
+				})
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("in an match statement in a for statement", func(t *testing.T) {
+			n, src := mustParseCode(`
+				(for i, e in [] {
+					match i {
+						1 {
+							yield
+						}
+					}
+				})
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("direct child of a for statement", func(t *testing.T) {
+			n, src := mustParseCode(`
+				for i, e in [] {
+					yield
+				}
+			`)
+
+			yieldStmt := parse.FindNode(n, (*parse.YieldStatement)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(yieldStmt, src, text.YIELD_STMTS_ONLY_ALLOWED_IN_BODY_FOR_EXPR),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("direct child of a module", func(t *testing.T) {
+			n, src := mustParseCode(`
+				yield
+			`)
+			yieldStmt := parse.FindNode(n, (*parse.YieldStatement)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(yieldStmt, src, text.YIELD_STMTS_ONLY_ALLOWED_IN_BODY_FOR_EXPR),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("direct child of an embedded module", func(t *testing.T) {
+			n, src := mustParseCode(`
+				go do {
+					yield
+				}
+			`)
+			yieldStmt := parse.FindNode(n, (*parse.YieldStatement)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(yieldStmt, src, text.YIELD_STMTS_ONLY_ALLOWED_IN_BODY_FOR_EXPR),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -3917,7 +4039,7 @@ func TestCheck(t *testing.T) {
 	t.Run("for expression", func(t *testing.T) {
 		t.Run("variables defined in a for expression's head are not accessible after the expression", func(t *testing.T) {
 			n, src := mustParseCode(`
-				(for file in files: 0)
+				(for file in files => 0)
 				return file
 			`)
 			varNode := parse.FindNodes(n, (*parse.IdentifierLiteral)(nil), nil)[2]
@@ -3928,11 +4050,26 @@ func TestCheck(t *testing.T) {
 			assert.Equal(t, expectedErr, err)
 		})
 
+		t.Run("variables defined in a for expression's body are not accessible after the statement", func(t *testing.T) {
+			n, src := mustParseCode(`
+				(for file in files {
+					x = 3
+				})
+				return x
+			`)
+			varNode := parse.FindNodes(n, (*parse.IdentifierLiteral)(nil), nil)[3]
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(varNode, src, text.FmtVarIsNotDeclared("x")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
 		t.Run("key and value vars should not shadow local variables", func(t *testing.T) {
 			n, src := mustParseCode(`
 				k = 1
 				v = 1
-				(for k, v in []: 0)
+				(for k, v in [] => 0)
 			`)
 			keyIdent := n.Statements[2].(*parse.ForExpression).KeyIndexIdent
 			valueIdent := n.Statements[2].(*parse.ForExpression).ValueElemIdent
@@ -3949,7 +4086,7 @@ func TestCheck(t *testing.T) {
 			n, src := mustParseCode(`
 				globalvar k = 1
 				globalvar v = 1
-				(for k, v in []: 0)
+				(for k, v in [] => 0)
 			`)
 			keyIdent := parse.FindIdentWithName(n, "k")
 			valueIdent := parse.FindIdentWithName(n, "v")
@@ -3961,6 +4098,7 @@ func TestCheck(t *testing.T) {
 			)
 			assert.Equal(t, expectedErr, err)
 		})
+
 	})
 
 	t.Run("walk statement", func(t *testing.T) {

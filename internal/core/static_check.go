@@ -606,34 +606,11 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 	case *parse.FunctionPatternExpression:
 		return c.checkFuncPatternExpr(node, closestModule)
 	case *parse.CoyieldStatement:
-		return c.checkYieldStmt(node, ancestorChain)
+		return c.checkCoyieldStmt(node, ancestorChain)
 	case *parse.BreakStatement, *parse.ContinueStatement:
-		iterativeStmtIndex := -1
-
-		//we search for the last iterative statement in the ancestor chain
-	loop0:
-		for i := len(ancestorChain) - 1; i >= 0; i-- {
-			switch ancestorChain[i].(type) {
-			case *parse.ForStatement, *parse.WalkStatement:
-				iterativeStmtIndex = i
-				break loop0
-			}
-		}
-
-		if iterativeStmtIndex < 0 {
-			c.addError(node, text.INVALID_BREAK_OR_CONTINUE_STMT_SHOULD_BE_IN_A_FOR_OR_WALK_STMT)
-			return parse.ContinueTraversal
-		}
-
-		for i := iterativeStmtIndex + 1; i < len(ancestorChain); i++ {
-			switch ancestorChain[i].(type) {
-			case *parse.IfStatement, *parse.SwitchStatement, *parse.SwitchStatementCase,
-				*parse.MatchStatementCase, *parse.MatchStatement, *parse.Block:
-			default:
-				c.addError(node, text.INVALID_BREAK_OR_CONTINUE_STMT_SHOULD_BE_IN_A_FOR_OR_WALK_STMT)
-				return parse.ContinueTraversal
-			}
-		}
+		return c.checkBreakContinueStmt(node, ancestorChain)
+	case *parse.YieldStatement:
+		return c.checkYieldStmt(node, ancestorChain)
 	case *parse.PruneStatement:
 		return c.checkPruneStmt(node, ancestorChain)
 	case *parse.SwitchStatement:
@@ -1937,7 +1914,7 @@ func (c *checker) checkFuncPatternExpr(node *parse.FunctionPatternExpression, cl
 	return parse.ContinueTraversal
 }
 
-func (c *checker) checkYieldStmt(node *parse.CoyieldStatement, ancestorChain []parse.Node) parse.TraversalAction {
+func (c *checker) checkCoyieldStmt(node *parse.CoyieldStatement, ancestorChain []parse.Node) parse.TraversalAction {
 	ok := c.checkInput.Module != nil && c.checkInput.Module.IsEmbedded()
 
 	for i := len(ancestorChain) - 1; i >= 0; i-- {
@@ -1963,6 +1940,70 @@ func (c *checker) checkYieldStmt(node *parse.CoyieldStatement, ancestorChain []p
 	return parse.ContinueTraversal
 }
 
+func (c *checker) checkBreakContinueStmt(node parse.Node, ancestorChain []parse.Node) parse.TraversalAction {
+	iterativeStmtIndex := -1
+
+	//we search for the last iterative statement or expression in the ancestor chain
+loop0:
+	for i := len(ancestorChain) - 1; i >= 0; i-- {
+		switch ancestorChain[i].(type) {
+		case *parse.ForStatement, *parse.WalkStatement,
+			*parse.ForExpression:
+			iterativeStmtIndex = i
+			break loop0
+		}
+	}
+
+	if iterativeStmtIndex < 0 {
+		c.addError(node, text.BREAK_AND_CONTINUE_STMTS_ONLY_ALLOWED_IN_BODY_FOR_OR_WALK_STMT)
+		return parse.ContinueTraversal
+	}
+
+	for i := iterativeStmtIndex + 1; i < len(ancestorChain); i++ {
+		switch ancestorChain[i].(type) {
+		case *parse.IfStatement, *parse.SwitchStatement, *parse.SwitchStatementCase,
+			*parse.MatchStatementCase, *parse.MatchStatement, *parse.Block:
+		default:
+			c.addError(node, text.BREAK_AND_CONTINUE_STMTS_ONLY_ALLOWED_IN_BODY_FOR_OR_WALK_STMT)
+			return parse.ContinueTraversal
+		}
+
+	}
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkYieldStmt(node parse.Node, ancestorChain []parse.Node) parse.TraversalAction {
+	iterativeStmtIndex := -1
+
+	//we search for the last iterative statement or expression in the ancestor chain
+loop0:
+	for i := len(ancestorChain) - 1; i >= 0; i-- {
+		switch ancestorChain[i].(type) {
+		case *parse.ForExpression:
+			iterativeStmtIndex = i
+			break loop0
+		}
+	}
+
+	if iterativeStmtIndex < 0 {
+		c.addError(node, text.YIELD_STMTS_ONLY_ALLOWED_IN_BODY_FOR_EXPR)
+		return parse.ContinueTraversal
+	}
+
+	for i := iterativeStmtIndex + 1; i < len(ancestorChain); i++ {
+		switch ancestorChain[i].(type) {
+		case *parse.IfStatement, *parse.SwitchStatement, *parse.SwitchStatementCase,
+			*parse.MatchStatementCase, *parse.MatchStatement, *parse.Block,
+			*parse.ForStatement:
+		default:
+			c.addError(node, text.YIELD_STMTS_ONLY_ALLOWED_IN_BODY_FOR_EXPR)
+			return parse.ContinueTraversal
+		}
+
+	}
+	return parse.ContinueTraversal
+}
+
 func (c *checker) checkPruneStmt(node *parse.PruneStatement, ancestorChain []parse.Node) parse.TraversalAction {
 	walkStmtIndex := -1
 	//we search for the last walk statement in the ancestor chain
@@ -1976,7 +2017,7 @@ loop1:
 	}
 
 	if walkStmtIndex < 0 {
-		c.addError(node, text.INVALID_PRUNE_STMT_SHOULD_BE_IN_WALK_STMT)
+		c.addError(node, text.PRUNE_STMTS_ARE_ONLY_ALLOWED_IN_WALK_STMT)
 		return parse.ContinueTraversal
 	}
 
@@ -1984,7 +2025,7 @@ loop1:
 		switch ancestorChain[i].(type) {
 		case *parse.IfStatement, *parse.SwitchStatement, *parse.MatchStatement, *parse.Block, *parse.ForStatement:
 		default:
-			c.addError(node, text.INVALID_PRUNE_STMT_SHOULD_BE_IN_WALK_STMT)
+			c.addError(node, text.PRUNE_STMTS_ARE_ONLY_ALLOWED_IN_WALK_STMT)
 			return parse.ContinueTraversal
 		}
 	}
