@@ -2930,6 +2930,8 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 		walk(n.Label, node, ancestorChain, fn, afterFn)
 	case *ContinueStatement:
 		walk(n.Label, node, ancestorChain, fn, afterFn)
+	case *YieldStatement:
+		walk(n.Expr, node, ancestorChain, fn, afterFn)
 	case *SwitchStatement:
 		walk(n.Discriminant, node, ancestorChain, fn, afterFn)
 		for _, switchCase := range n.Cases {
