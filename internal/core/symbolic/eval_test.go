@@ -7031,6 +7031,45 @@ func TestSymbolicEval(t *testing.T) {
 				assert.NotZero(t, data.DefinitionPosition)
 			}
 		})
+
+		t.Run("local scope data should be preserved inside the statement", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				a = 1
+				if true {} else {}
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Nil(t, res)
+
+			blocks, chains := parse.FindNodesAndChains(n, (*parse.Block)(nil), nil)
+
+			//Check the if clause.
+
+			data, ok := state.symbolicData.GetLocalScopeData(blocks[0], chains[0])
+			if !assert.True(t, ok) {
+				return
+			}
+
+			if assert.Len(t, data.Variables, 1) {
+				return
+			}
+
+			assert.Equal(t, "a", data.Variables[0].Name)
+
+			//Check the else clause.
+
+			data, ok = state.symbolicData.GetLocalScopeData(blocks[1], chains[1])
+			if !assert.True(t, ok) {
+				return
+			}
+
+			if assert.Len(t, data.Variables, 1) {
+				return
+			}
+
+			assert.Equal(t, "a", data.Variables[0].Name)
+		})
 	})
 
 	t.Run("if expression", func(t *testing.T) {
@@ -9316,6 +9355,48 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Nil(t, res)
 		})
 
+		t.Run("local scope data should be preserved inside all cases", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				a = 1
+				switch int {
+					1 {}
+					defaultcase {}
+				}
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Nil(t, res)
+
+			blocks, chains := parse.FindNodesAndChains(n, (*parse.Block)(nil), nil)
+
+			//Check the case 1.
+
+			data, ok := state.symbolicData.GetLocalScopeData(blocks[0], chains[0])
+			if !assert.True(t, ok) {
+				return
+			}
+
+			if assert.Len(t, data.Variables, 1) {
+				return
+			}
+
+			assert.Equal(t, "a", data.Variables[0].Name)
+
+			//Check the default case.
+
+			data, ok = state.symbolicData.GetLocalScopeData(blocks[1], chains[1])
+			if !assert.True(t, ok) {
+				return
+			}
+
+			if assert.Len(t, data.Variables, 1) {
+				return
+			}
+
+			assert.Equal(t, "a", data.Variables[0].Name)
+		})
+
 		t.Run("no discriminant", func(t *testing.T) {
 			n, state, _ := _makeStateAndChunk(`
 				switch
@@ -9785,6 +9866,48 @@ func TestSymbolicEval(t *testing.T) {
 				makeSymbolicEvalError(unaryExpr, state, fmtOperandOfBoolNegateShouldBeBool(NewString("s"))),
 			}, state.errors())
 			assert.Nil(t, res)
+		})
+
+		t.Run("local scope data should be preserved inside all cases", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				a = 1
+				match int {
+					1 {}
+					defaultcase {}
+				}
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Nil(t, res)
+
+			blocks, chains := parse.FindNodesAndChains(n, (*parse.Block)(nil), nil)
+
+			//Check the case 1.
+
+			data, ok := state.symbolicData.GetLocalScopeData(blocks[0], chains[0])
+			if !assert.True(t, ok) {
+				return
+			}
+
+			if assert.Len(t, data.Variables, 1) {
+				return
+			}
+
+			assert.Equal(t, "a", data.Variables[0].Name)
+
+			//Check the default case.
+
+			data, ok = state.symbolicData.GetLocalScopeData(blocks[1], chains[1])
+			if !assert.True(t, ok) {
+				return
+			}
+
+			if assert.Len(t, data.Variables, 1) {
+				return
+			}
+
+			assert.Equal(t, "a", data.Variables[0].Name)
 		})
 
 		t.Run("no discriminant", func(t *testing.T) {
