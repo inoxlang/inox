@@ -465,7 +465,7 @@ func (p *parser) parseBlock() *Block {
 		})
 		p.i++
 	} else {
-		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_BLOCK_MISSING_BRACE}
+		parsingErr = &ParsingError{UnterminatedBlock, UNTERMINATED_BLOCK_MISSING_BRACE}
 	}
 
 	end := p.i
@@ -8653,12 +8653,11 @@ func (p *parser) parseSwitchMatchStatement(keywordIdent *IdentifierLiteral) Node
 	p.eatSpace()
 
 	if p.i >= p.len {
-
 		if keywordIdent.Name == "switch" {
 			return &SwitchStatement{
 				NodeBase: NodeBase{
 					Span: NodeSpan{keywordIdent.Span.Start, p.i},
-					Err:  &ParsingError{UnspecifiedParsingError, UNTERMINATED_SWITCH_STMT_MISSING_VALUE},
+					Err:  &ParsingError{UnterminatedSwitchStmt, UNTERMINATED_SWITCH_STMT_MISSING_VALUE},
 				},
 			}
 		}
@@ -8666,7 +8665,7 @@ func (p *parser) parseSwitchMatchStatement(keywordIdent *IdentifierLiteral) Node
 		return &MatchStatement{
 			NodeBase: NodeBase{
 				Span: NodeSpan{keywordIdent.Span.Start, p.i},
-				Err:  &ParsingError{UnspecifiedParsingError, UNTERMINATED_MATCH_STMT_MISSING_VALUE},
+				Err:  &ParsingError{UnterminatedMatchStmt, UNTERMINATED_MATCH_STMT_MISSING_VALUE},
 			},
 		}
 	}
@@ -8683,7 +8682,7 @@ func (p *parser) parseSwitchMatchStatement(keywordIdent *IdentifierLiteral) Node
 			return &SwitchStatement{
 				NodeBase: NodeBase{
 					Span: NodeSpan{keywordIdent.Span.Start, p.i},
-					Err:  &ParsingError{UnspecifiedParsingError, UNTERMINATED_SWITCH_STMT_MISSING_BODY},
+					Err:  &ParsingError{UnterminatedSwitchStmt, UNTERMINATED_SWITCH_STMT_MISSING_BODY},
 				},
 				Discriminant: discriminant,
 			}
@@ -8692,7 +8691,7 @@ func (p *parser) parseSwitchMatchStatement(keywordIdent *IdentifierLiteral) Node
 		return &MatchStatement{
 			NodeBase: NodeBase{
 				Span: NodeSpan{keywordIdent.Span.Start, p.i},
-				Err:  &ParsingError{UnspecifiedParsingError, UNTERMINATED_MATCH_STMT_MISSING_BODY},
+				Err:  &ParsingError{UnterminatedMatchStmt, UNTERMINATED_MATCH_STMT_MISSING_BODY},
 			},
 			Discriminant: discriminant,
 		}
@@ -8909,9 +8908,9 @@ top_loop:
 
 	if p.i >= p.len || p.s[p.i] != '}' {
 		if keywordIdent.Name == "switch" {
-			parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_SWITCH_STMT_MISSING_CLOSING_BRACE}
+			parsingErr = &ParsingError{UnterminatedSwitchStmt, UNTERMINATED_SWITCH_STMT_MISSING_CLOSING_BRACE}
 		} else {
-			parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_MATCH_STMT_MISSING_CLOSING_BRACE}
+			parsingErr = &ParsingError{UnterminatedMatchStmt, UNTERMINATED_MATCH_STMT_MISSING_CLOSING_BRACE}
 		}
 	} else {
 		p.tokens = append(p.tokens, Token{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{p.i, p.i + 1}})

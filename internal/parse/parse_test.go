@@ -18628,17 +18628,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
 				Statements: []Node{
 					&FunctionExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 14},
-							nil,
-							false,
-							/*[]Token{
-								{Type: FN_KEYWORD, Span: NodeSpan{0, 2}},
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{2, 3}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{4, 5}},
-								{Type: ARROW, Span: NodeSpan{10, 12}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 14}},
 						Parameters: []*FunctionParameter{
 							{
 								NodeBase: NodeBase{NodeSpan{3, 4}, nil, false},
@@ -18690,25 +18680,13 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 5}, nil, false},
 				Statements: []Node{
 					&FunctionExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 5},
-							nil,
-							false,
-							/*[]Token{
-								{Type: FN_KEYWORD, Span: NodeSpan{0, 2}},
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{2, 3}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{3, 4}},
-							},*/
-						},
+						NodeBase:   NodeBase{Span: NodeSpan{0, 5}},
 						Parameters: nil,
 						Body: &Block{
 							NodeBase: NodeBase{
 								NodeSpan{4, 5},
-								&ParsingError{UnspecifiedParsingError, UNTERMINATED_BLOCK_MISSING_BRACE},
+								&ParsingError{UnterminatedBlock, UNTERMINATED_BLOCK_MISSING_BRACE},
 								false,
-								/*[]Token{
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{4, 5}},
-								},*/
 							},
 							Statements: nil,
 						},
@@ -18725,25 +18703,13 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, false},
 				Statements: []Node{
 					&FunctionExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 6},
-							nil,
-							false,
-							/*[]Token{
-								{Type: FN_KEYWORD, Span: NodeSpan{0, 2}},
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{2, 3}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{3, 4}},
-							},*/
-						},
+						NodeBase:   NodeBase{Span: NodeSpan{0, 6}},
 						Parameters: nil,
 						Body: &Block{
 							NodeBase: NodeBase{
 								NodeSpan{4, 6},
-								&ParsingError{UnspecifiedParsingError, UNTERMINATED_BLOCK_MISSING_BRACE},
+								&ParsingError{UnterminatedBlock, UNTERMINATED_BLOCK_MISSING_BRACE},
 								false,
-								/*[]Token{
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{4, 5}},
-								},*/
 							},
 							Statements: nil,
 						},
@@ -18765,7 +18731,7 @@ func testParse(
 						Body: &Block{
 							NodeBase: NodeBase{
 								NodeSpan{5, 6},
-								&ParsingError{UnspecifiedParsingError, UNTERMINATED_BLOCK_MISSING_BRACE},
+								&ParsingError{UnterminatedBlock, UNTERMINATED_BLOCK_MISSING_BRACE},
 								false,
 							},
 							Statements: nil,
@@ -19576,6 +19542,7 @@ func testParse(
 		})
 
 	})
+
 	t.Run("switch statement", func(t *testing.T) {
 
 		testCases := []struct {
@@ -19590,16 +19557,7 @@ func testParse(
 					NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
 					Statements: []Node{
 						&SwitchStatement{
-							NodeBase: NodeBase{
-								NodeSpan{0, 12},
-								nil,
-								false,
-								/*[]Token{
-									{Type: SWITCH_KEYWORD, Span: NodeSpan{0, 6}},
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{11, 12}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{0, 12}},
 							Discriminant: &IntLiteral{
 								NodeBase: NodeBase{NodeSpan{7, 8}, nil, false},
 								Raw:      "1",
@@ -19617,16 +19575,7 @@ func testParse(
 					NodeBase: NodeBase{NodeSpan{0, 18}, nil, false},
 					Statements: []Node{
 						&SwitchStatement{
-							NodeBase: NodeBase{
-								NodeSpan{0, 18},
-								nil,
-								false,
-								/*[]Token{
-									{Type: SWITCH_KEYWORD, Span: NodeSpan{0, 6}},
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{17, 18}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{0, 18}},
 							Discriminant: &IntLiteral{
 								NodeBase: NodeBase{NodeSpan{7, 8}, nil, false},
 								Raw:      "1",
@@ -19643,15 +19592,7 @@ func testParse(
 										},
 									},
 									Block: &Block{
-										NodeBase: NodeBase{
-											NodeSpan{13, 16},
-											nil,
-											false,
-											/*[]Token{
-												{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{13, 14}},
-												{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{15, 16}},
-											},*/
-										},
+										NodeBase:   NodeBase{Span: NodeSpan{13, 16}},
 										Statements: nil,
 									},
 								},
@@ -19667,16 +19608,7 @@ func testParse(
 					NodeBase: NodeBase{NodeSpan{0, 28}, nil, false},
 					Statements: []Node{
 						&SwitchStatement{
-							NodeBase: NodeBase{
-								NodeSpan{0, 28},
-								nil,
-								false,
-								/*[]Token{
-									{Type: SWITCH_KEYWORD, Span: NodeSpan{0, 6}},
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{27, 28}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{0, 28}},
 							Discriminant: &IntLiteral{
 								NodeBase: NodeBase{NodeSpan{7, 8}, nil, false},
 								Raw:      "1",
@@ -19685,21 +19617,9 @@ func testParse(
 							Cases: []*SwitchStatementCase{},
 							DefaultCases: []*DefaultCaseWithBlock{
 								{
-									NodeBase: NodeBase{
-										NodeSpan{11, 26},
-										nil,
-										false,
-									},
+									NodeBase: NodeBase{Span: NodeSpan{11, 26}},
 									Block: &Block{
-										NodeBase: NodeBase{
-											NodeSpan{23, 26},
-											nil,
-											false,
-											/*[]Token{
-												{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{23, 24}},
-												{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{25, 26}},
-											},*/
-										},
+										NodeBase: NodeBase{Span: NodeSpan{23, 26}},
 									},
 								},
 							},
@@ -19714,16 +19634,7 @@ func testParse(
 					NodeBase: NodeBase{NodeSpan{0, 24}, nil, false},
 					Statements: []Node{
 						&SwitchStatement{
-							NodeBase: NodeBase{
-								NodeSpan{0, 24},
-								nil,
-								false,
-								/*[]Token{
-									{Type: SWITCH_KEYWORD, Span: NodeSpan{0, 6}},
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{23, 24}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{0, 24}},
 							Discriminant: &IntLiteral{
 								NodeBase: NodeBase{NodeSpan{7, 8}, nil, false},
 								Raw:      "1",
@@ -19740,15 +19651,7 @@ func testParse(
 										},
 									},
 									Block: &Block{
-										NodeBase: NodeBase{
-											NodeSpan{13, 16},
-											nil,
-											false,
-											/*[]Token{
-												{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{13, 14}},
-												{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{15, 16}},
-											},*/
-										},
+										NodeBase:   NodeBase{Span: NodeSpan{13, 16}},
 										Statements: nil,
 									},
 								},
@@ -19763,15 +19666,7 @@ func testParse(
 										},
 									},
 									Block: &Block{
-										NodeBase: NodeBase{
-											NodeSpan{19, 22},
-											nil,
-											false,
-											/*[]Token{
-												{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{19, 20}},
-												{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{21, 22}},
-											},*/
-										},
+										NodeBase:   NodeBase{Span: NodeSpan{19, 22}},
 										Statements: nil,
 									},
 								},
@@ -19787,16 +19682,7 @@ func testParse(
 					NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
 					Statements: []Node{
 						&SwitchStatement{
-							NodeBase: NodeBase{
-								NodeSpan{0, 21},
-								nil,
-								false,
-								/*[]Token{
-									{Type: SWITCH_KEYWORD, Span: NodeSpan{0, 6}},
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{20, 21}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{0, 21}},
 							Discriminant: &IntLiteral{
 								NodeBase: NodeBase{NodeSpan{7, 8}, nil, false},
 								Raw:      "1",
@@ -19818,15 +19704,7 @@ func testParse(
 										},
 									},
 									Block: &Block{
-										NodeBase: NodeBase{
-											NodeSpan{16, 19},
-											nil,
-											false,
-											/*[]Token{
-												{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{16, 17}},
-												{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{18, 19}},
-											},*/
-										},
+										NodeBase:   NodeBase{Span: NodeSpan{16, 19}},
 										Statements: nil,
 									},
 								},
@@ -19844,12 +19722,8 @@ func testParse(
 						&SwitchStatement{
 							NodeBase: NodeBase{
 								NodeSpan{0, 16},
-								&ParsingError{UnspecifiedParsingError, UNTERMINATED_SWITCH_STMT_MISSING_CLOSING_BRACE},
+								&ParsingError{UnterminatedSwitchStmt, UNTERMINATED_SWITCH_STMT_MISSING_CLOSING_BRACE},
 								false,
-								/*[]Token{
-									{Type: SWITCH_KEYWORD, Span: NodeSpan{0, 6}},
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
-								},*/
 							},
 							Discriminant: &IntLiteral{
 								NodeBase: NodeBase{NodeSpan{7, 8}, nil, false},
@@ -19867,15 +19741,7 @@ func testParse(
 										},
 									},
 									Block: &Block{
-										NodeBase: NodeBase{
-											NodeSpan{13, 16},
-											nil,
-											false,
-											/*[]Token{
-												{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{13, 14}},
-												{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{15, 16}},
-											},*/
-										},
+										NodeBase:   NodeBase{Span: NodeSpan{13, 16}},
 										Statements: nil,
 									},
 								},
@@ -19893,12 +19759,8 @@ func testParse(
 						&SwitchStatement{
 							NodeBase: NodeBase{
 								NodeSpan{0, 26},
-								&ParsingError{UnspecifiedParsingError, UNTERMINATED_SWITCH_STMT_MISSING_CLOSING_BRACE},
+								&ParsingError{UnterminatedSwitchStmt, UNTERMINATED_SWITCH_STMT_MISSING_CLOSING_BRACE},
 								false,
-								/*[]Token{
-									{Type: SWITCH_KEYWORD, Span: NodeSpan{0, 6}},
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
-								},*/
 							},
 							Discriminant: &IntLiteral{
 								NodeBase: NodeBase{NodeSpan{7, 8}, nil, false},
@@ -19908,21 +19770,9 @@ func testParse(
 							Cases: []*SwitchStatementCase{},
 							DefaultCases: []*DefaultCaseWithBlock{
 								{
-									NodeBase: NodeBase{
-										NodeSpan{11, 26},
-										nil,
-										false,
-									},
+									NodeBase: NodeBase{Span: NodeSpan{11, 26}},
 									Block: &Block{
-										NodeBase: NodeBase{
-											NodeSpan{23, 26},
-											nil,
-											false,
-											/*[]Token{
-												{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{23, 24}},
-												{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{25, 26}},
-											},*/
-										},
+										NodeBase: NodeBase{Span: NodeSpan{23, 26}},
 									},
 								},
 							},
@@ -19939,7 +19789,7 @@ func testParse(
 						&SwitchStatement{
 							NodeBase: NodeBase{
 								NodeSpan{0, 14},
-								&ParsingError{UnspecifiedParsingError, UNTERMINATED_SWITCH_STMT_MISSING_CLOSING_BRACE},
+								&ParsingError{UnterminatedSwitchStmt, UNTERMINATED_SWITCH_STMT_MISSING_CLOSING_BRACE},
 								false,
 								/*[]Token{
 									{Type: SWITCH_KEYWORD, Span: NodeSpan{0, 6}},
@@ -19964,7 +19814,7 @@ func testParse(
 									Block: &Block{
 										NodeBase: NodeBase{
 											NodeSpan{13, 14},
-											&ParsingError{UnspecifiedParsingError, UNTERMINATED_BLOCK_MISSING_BRACE},
+											&ParsingError{UnterminatedBlock, UNTERMINATED_BLOCK_MISSING_BRACE},
 											false,
 											/*[]Token{
 												{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{13, 14}},
@@ -19987,7 +19837,7 @@ func testParse(
 						&SwitchStatement{
 							NodeBase: NodeBase{
 								NodeSpan{0, 15},
-								&ParsingError{UnspecifiedParsingError, UNTERMINATED_SWITCH_STMT_MISSING_CLOSING_BRACE},
+								&ParsingError{UnterminatedSwitchStmt, UNTERMINATED_SWITCH_STMT_MISSING_CLOSING_BRACE},
 								false,
 								/*[]Token{
 									{Type: SWITCH_KEYWORD, Span: NodeSpan{0, 6}},
@@ -20012,7 +19862,7 @@ func testParse(
 									Block: &Block{
 										NodeBase: NodeBase{
 											NodeSpan{13, 15},
-											&ParsingError{UnspecifiedParsingError, UNTERMINATED_BLOCK_MISSING_BRACE},
+											&ParsingError{UnterminatedBlock, UNTERMINATED_BLOCK_MISSING_BRACE},
 											false,
 											/*[]Token{
 												{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{13, 14}},
@@ -20021,6 +19871,22 @@ func testParse(
 										Statements: nil,
 									},
 								},
+							},
+						},
+					},
+				},
+			},
+			{
+				input:    "switch",
+				hasError: true,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 6}, nil, false},
+					Statements: []Node{
+						&SwitchStatement{
+							NodeBase: NodeBase{
+								NodeSpan{0, 6},
+								&ParsingError{UnterminatedSwitchStmt, UNTERMINATED_SWITCH_STMT_MISSING_VALUE},
+								false,
 							},
 						},
 					},
@@ -20098,16 +19964,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
 				Statements: []Node{
 					&MatchStatement{
-						NodeBase: NodeBase{
-							NodeSpan{0, 20},
-							nil,
-							false,
-							/*[]Token{
-								{Type: MATCH_KEYWORD, Span: NodeSpan{0, 5}},
-								{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{8, 9}},
-								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{19, 20}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 20}},
 						Discriminant: &IntLiteral{
 							NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 							Raw:      "1",
@@ -20118,29 +19975,11 @@ func testParse(
 								NodeBase: NodeBase{NodeSpan{10, 18}, nil, false},
 								Values: []Node{
 									&ObjectLiteral{
-										NodeBase: NodeBase{
-											NodeSpan{11, 13},
-											nil,
-											true,
-											/*[]Token{
-												{Type: OPENING_PARENTHESIS, Span: NodeSpan{10, 11}},
-												{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{11, 12}},
-												{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{12, 13}},
-												{Type: CLOSING_PARENTHESIS, Span: NodeSpan{13, 14}},
-											},*/
-										},
+										NodeBase: NodeBase{Span: NodeSpan{11, 13}, IsParenthesized: true},
 									},
 								},
 								Block: &Block{
-									NodeBase: NodeBase{
-										NodeSpan{15, 18},
-										nil,
-										false,
-										/*[]Token{
-											{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{15, 16}},
-											{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{17, 18}},
-										},*/
-									},
+									NodeBase:   NodeBase{Span: NodeSpan{15, 18}},
 									Statements: nil,
 								},
 							},
@@ -20156,16 +19995,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 36}, nil, false},
 				Statements: []Node{
 					&MatchStatement{
-						NodeBase: NodeBase{
-							NodeSpan{0, 36},
-							nil,
-							false,
-							/*[]Token{
-								{Type: MATCH_KEYWORD, Span: NodeSpan{0, 5}},
-								{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{8, 9}},
-								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{35, 36}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 36}},
 						Discriminant: &IntLiteral{
 							NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 							Raw:      "1",
@@ -20176,16 +20006,7 @@ func testParse(
 								NodeBase: NodeBase{NodeSpan{10, 34}, nil, false},
 								Values: []Node{
 									&NamedSegmentPathPatternLiteral{
-										NodeBase: NodeBase{
-											NodeSpan{10, 28},
-											nil,
-											false,
-											/*[]Token{
-												{Type: PERCENT_SYMBOL, Span: NodeSpan{10, 11}},
-												{Type: SINGLE_INTERP_OPENING_BRACE, Span: NodeSpan{17, 18}},
-												{Type: SINGLE_INTERP_CLOSING_BRACE, Span: NodeSpan{27, 28}},
-											},*/
-										},
+										NodeBase: NodeBase{Span: NodeSpan{10, 28}},
 										Slices: []Node{
 											&PathPatternSlice{
 												NodeBase: NodeBase{NodeSpan{11, 17}, nil, false},
@@ -20205,15 +20026,7 @@ func testParse(
 									Name:     "m",
 								},
 								Block: &Block{
-									NodeBase: NodeBase{
-										NodeSpan{31, 34},
-										nil,
-										false,
-										/*[]Token{
-											{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{31, 32}},
-											{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{33, 34}},
-										},*/
-									},
+									NodeBase:   NodeBase{Span: NodeSpan{31, 34}},
 									Statements: nil,
 								},
 							},
@@ -20238,16 +20051,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
 				Statements: []Node{
 					&MatchStatement{
-						NodeBase: NodeBase{
-							NodeSpan{0, 14},
-							nil,
-							false,
-							/*[]Token{
-								{Type: MATCH_KEYWORD, Span: NodeSpan{0, 5}},
-								{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{8, 9}},
-								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{13, 14}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 14}},
 						Discriminant: &IntLiteral{
 							NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 							Raw:      "1",
@@ -20266,15 +20070,7 @@ func testParse(
 									},
 								},
 								Block: &Block{
-									NodeBase: NodeBase{
-										NodeSpan{10, 12},
-										nil,
-										false,
-										/*[]Token{
-											{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{10, 11}},
-											{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{11, 12}},
-										},*/
-									},
+									NodeBase:   NodeBase{Span: NodeSpan{10, 12}},
 									Statements: nil,
 								},
 							},
