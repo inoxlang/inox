@@ -353,9 +353,13 @@ func (d *Data) getScopeData(n parse.Node, ancestorChain []parse.Node, global boo
 				closestBlock, index, ok := parse.FindClosest(ancestorChain, (*parse.Block)(nil))
 
 				if ok && index > 0 {
-					switch ancestorChain[index-1].(type) {
+					switch ancestor := ancestorChain[index-1].(type) {
 					case *parse.FunctionExpression, *parse.ForStatement, *parse.WalkStatement:
 						return d.getScopeData(closestBlock, ancestorChain[:index], global)
+					case *parse.ForExpression:
+						if _, ok := ancestor.Body.(*parse.Block); ok {
+							return d.getScopeData(closestBlock, ancestorChain[:index], global)
+						}
 					}
 				}
 

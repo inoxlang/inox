@@ -8767,7 +8767,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, EMPTY_LIST, res)
 		})
 
-		t.Run("key & element variables should be present in local scope data", func(t *testing.T) {
+		t.Run("arrow: key & element variables should be present in local scope data", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				(for k, v in {a: int} => [k, v])
 			`)
@@ -8842,6 +8842,40 @@ func TestSymbolicEval(t *testing.T) {
 			}
 			assert.Empty(t, state.errors())
 			assert.Equal(t, NewListOf(ANY_RUNE), res)
+		})
+
+		t.Run("body: key & element variables should be present in local scope data", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				(for k, v in {a: int} { yield [k, v] })
+			`)
+
+			res, err := symbolicEval(n, state)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			assert.Equal(t,
+				NewListOf(NewList(ANY_STRING, ANY_SERIALIZABLE)),
+				res,
+			)
+
+			listLiteral, chain := parse.FindNodeAndChain(n, (*parse.ListLiteral)(nil), nil)
+			data, ok := state.symbolicData.GetLocalScopeData(listLiteral, chain)
+			if !assert.True(t, ok) {
+				return
+			}
+
+			if !assert.Len(t, data.Variables, 2) {
+				return
+			}
+
+			if data.Variables[0].Name == "k" {
+				assert.Equal(t, "v", data.Variables[1].Name)
+			} else {
+				assert.Equal(t, "v", data.Variables[0].Name)
+				assert.Equal(t, "k", data.Variables[1].Name)
+			}
 		})
 
 		t.Run("body: single yield: conditional", func(t *testing.T) {

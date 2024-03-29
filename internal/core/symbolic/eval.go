@@ -2507,7 +2507,7 @@ func evalForStatementAndExpr(n parse.Node, state *State) (_ Value, finalErr erro
 		areAllOutcomesCovered := false //The iterated value can be empty.
 
 		state.join(areAllOutcomesCovered, stateFork)
-		//we set the local scope data at the for statement, not the body
+		//we set the local scope data at the for statement or expression, not the body
 		state.SetLocalScopeData(n, state.currentLocalScopeData())
 	}
 
