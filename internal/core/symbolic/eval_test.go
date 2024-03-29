@@ -8962,6 +8962,24 @@ func TestSymbolicEval(t *testing.T) {
 			_, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 		})
+
+		t.Run("arrow: missing value", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				(for e in [] =>)
+			`)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+		})
+
+		t.Run("no body", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				(for e in [])
+			`)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+		})
 	})
 
 	t.Run("walk statement", func(t *testing.T) {
@@ -9047,6 +9065,24 @@ func TestSymbolicEval(t *testing.T) {
 		t.Run("no walked value", func(t *testing.T) {
 			n, state, _ := _makeStateAndChunk(`
 				walk
+			`)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+		})
+
+		t.Run("no entry variable", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				walk ./
+			`)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+		})
+
+		t.Run("no body", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				walk ./ e
 			`)
 
 			_, err := symbolicEval(n, state)

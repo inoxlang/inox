@@ -16,6 +16,9 @@ var (
 		parse.UnterminatedMatchStmt,
 		parse.UnterminatedMatchExpr,
 
+		parse.UnterminatedForExpr,
+		parse.UnterminatedWalkStmt,
+
 		parse.MissingBlock, parse.MissingFnBody,
 		parse.MissingEqualsSignInDeclaration,
 		parse.MissingObjectPropertyValue,
