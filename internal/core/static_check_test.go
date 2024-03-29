@@ -3767,6 +3767,50 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
+		t.Run("direct child of a switch statement's non-default case", func(t *testing.T) {
+			n, src := mustParseCode(`
+				switch 1 {
+					1 {
+						break
+					}
+				}
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("direct child of a switch statement's default case", func(t *testing.T) {
+			n, src := mustParseCode(`
+				switch 1 {
+					defaultcase {
+						break
+					}
+				}
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("direct child of a match statement's non-default case", func(t *testing.T) {
+			n, src := mustParseCode(`
+				match 1 {
+					1 {
+						break
+					}
+				}
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("direct child of a match statement's default case", func(t *testing.T) {
+			n, src := mustParseCode(`
+				match 1 {
+					defaultcase {
+						break
+					}
+				}
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
 		t.Run("in an if statement in a for statement", func(t *testing.T) {
 			n, src := mustParseCode(`
 				for i, e in [] {
@@ -3822,7 +3866,7 @@ func TestCheck(t *testing.T) {
 			breakStmt := parse.FindNode(n, (*parse.BreakStatement)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(breakStmt, src, text.BREAK_AND_CONTINUE_STMTS_ONLY_ALLOWED_IN_BODY_FOR_OR_WALK_STMT),
+				makeError(breakStmt, src, text.BREAK_STMTS_ONLY_ALLOWED_LOCATION),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -3836,7 +3880,196 @@ func TestCheck(t *testing.T) {
 			breakStmt := parse.FindNode(n, (*parse.BreakStatement)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(breakStmt, src, text.BREAK_AND_CONTINUE_STMTS_ONLY_ALLOWED_IN_BODY_FOR_OR_WALK_STMT),
+				makeError(breakStmt, src, text.BREAK_STMTS_ONLY_ALLOWED_LOCATION),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+	})
+
+	t.Run("continue statement", func(t *testing.T) {
+		t.Run("direct child of a for statement", func(t *testing.T) {
+			n, src := mustParseCode(`
+				for i, e in [] {
+					continue
+				}
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("direct child of a for expression", func(t *testing.T) {
+			n, src := mustParseCode(`
+				(for i, e in [] {
+					continue
+				})
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("in an if statement in a for statement", func(t *testing.T) {
+			n, src := mustParseCode(`
+				for i, e in [] {
+					if true {
+						continue
+					}
+				}
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("direct child of a switch statement's non-default case", func(t *testing.T) {
+			n, src := mustParseCode(`
+				switch 1 {
+					1 {
+						continue
+					}
+				}
+			`)
+
+			continueStmt := parse.FindNode(n, (*parse.ContinueStatement)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(continueStmt, src, text.CONTINUE_STMTS_ONLY_ALLOWED_IN_BODY_FOR_OR_WALK_STMT),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("direct child of a switch statement's non-default case in a for statement", func(t *testing.T) {
+			n, src := mustParseCode(`
+				for e in [] {
+					switch 1 {
+						1 {
+							continue
+						}
+					}
+				}
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("direct child of a switch statement's default case", func(t *testing.T) {
+			n, src := mustParseCode(`
+				switch 1 {
+					defaultcase {
+						continue
+					}
+				}
+			`)
+
+			continueStmt := parse.FindNode(n, (*parse.ContinueStatement)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(continueStmt, src, text.CONTINUE_STMTS_ONLY_ALLOWED_IN_BODY_FOR_OR_WALK_STMT),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("direct child of a switch statement's default case in a for statement", func(t *testing.T) {
+			n, src := mustParseCode(`
+				for e in [] {
+					switch 1 {
+						defaultcase {
+							continue
+						}
+					}
+				}
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("direct child of a match statement's non-default case", func(t *testing.T) {
+			n, src := mustParseCode(`
+				match 1 {
+					1 {
+						continue
+					}
+				}
+			`)
+
+			continueStmt := parse.FindNode(n, (*parse.ContinueStatement)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(continueStmt, src, text.CONTINUE_STMTS_ONLY_ALLOWED_IN_BODY_FOR_OR_WALK_STMT),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("direct child of a match statement's default case", func(t *testing.T) {
+			n, src := mustParseCode(`
+				match 1 {
+					defaultcase {
+						continue
+					}
+				}
+			`)
+
+			continueStmt := parse.FindNode(n, (*parse.ContinueStatement)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(continueStmt, src, text.CONTINUE_STMTS_ONLY_ALLOWED_IN_BODY_FOR_OR_WALK_STMT),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("in an if statement in a for expression", func(t *testing.T) {
+			n, src := mustParseCode(`
+				(for i, e in [] {
+					if true {
+						continue
+					}
+				})
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("in an switch statement in a for statement", func(t *testing.T) {
+			n, src := mustParseCode(`
+				for i, e in [] {
+					switch i {
+						1 {
+							continue
+						}
+					}
+				}
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("in an match statement in a for statement", func(t *testing.T) {
+			n, src := mustParseCode(`
+				for i, e in [] {
+					match i {
+						1 {
+							continue
+						}
+					}
+				}
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("direct child of a module", func(t *testing.T) {
+			n, src := mustParseCode(`
+				continue
+			`)
+			continueStmt := parse.FindNode(n, (*parse.ContinueStatement)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(continueStmt, src, text.CONTINUE_STMTS_ONLY_ALLOWED_IN_BODY_FOR_OR_WALK_STMT),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("direct child of an embedded module", func(t *testing.T) {
+			n, src := mustParseCode(`
+				go do {
+					continue
+				}
+			`)
+			continueStmt := parse.FindNode(n, (*parse.ContinueStatement)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(continueStmt, src, text.CONTINUE_STMTS_ONLY_ALLOWED_IN_BODY_FOR_OR_WALK_STMT),
 			)
 			assert.Equal(t, expectedErr, err)
 		})

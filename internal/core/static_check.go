@@ -609,8 +609,10 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 		return c.checkReturnStatement(node, ancestorChain)
 	case *parse.CoyieldStatement:
 		return c.checkCoyieldStmt(node, ancestorChain)
-	case *parse.BreakStatement, *parse.ContinueStatement:
-		return c.checkBreakContinueStmt(node, ancestorChain)
+	case *parse.BreakStatement:
+		return c.checkBreakStmt(node, ancestorChain)
+	case *parse.ContinueStatement:
+		return c.checkContinueStmt(node, ancestorChain)
 	case *parse.YieldStatement:
 		return c.checkYieldStmt(node, ancestorChain)
 	case *parse.PruneStatement:
@@ -1969,10 +1971,43 @@ func (c *checker) checkCoyieldStmt(node *parse.CoyieldStatement, ancestorChain [
 	return parse.ContinueTraversal
 }
 
-func (c *checker) checkBreakContinueStmt(node parse.Node, ancestorChain []parse.Node) parse.TraversalAction {
+func (c *checker) checkBreakStmt(node parse.Node, ancestorChain []parse.Node) parse.TraversalAction {
+	stmtIndex := -1
+
+	//we search for the closest switch, match or iterative statement/expression in the ancestor chain
+loop0:
+	for i := len(ancestorChain) - 1; i >= 0; i-- {
+		switch ancestorChain[i].(type) {
+		case *parse.SwitchStatement, *parse.MatchStatement,
+			*parse.ForStatement, *parse.WalkStatement, *parse.ForExpression:
+
+			stmtIndex = i
+			break loop0
+		}
+	}
+
+	if stmtIndex < 0 {
+		c.addError(node, text.BREAK_STMTS_ONLY_ALLOWED_LOCATION)
+		return parse.ContinueTraversal
+	}
+
+	for i := stmtIndex + 1; i < len(ancestorChain); i++ {
+		switch ancestorChain[i].(type) {
+		case *parse.IfStatement, *parse.SwitchStatementCase, *parse.MatchStatementCase, *parse.MatchStatement,
+			*parse.DefaultCaseWithBlock, *parse.Block:
+		default:
+			c.addError(node, text.BREAK_STMTS_ONLY_ALLOWED_LOCATION)
+			return parse.ContinueTraversal
+		}
+
+	}
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkContinueStmt(node parse.Node, ancestorChain []parse.Node) parse.TraversalAction {
 	iterativeStmtIndex := -1
 
-	//we search for the last iterative statement or expression in the ancestor chain
+	//we search for the closest iterative statement or expression in the ancestor chain
 loop0:
 	for i := len(ancestorChain) - 1; i >= 0; i-- {
 		switch ancestorChain[i].(type) {
@@ -1984,16 +2019,16 @@ loop0:
 	}
 
 	if iterativeStmtIndex < 0 {
-		c.addError(node, text.BREAK_AND_CONTINUE_STMTS_ONLY_ALLOWED_IN_BODY_FOR_OR_WALK_STMT)
+		c.addError(node, text.CONTINUE_STMTS_ONLY_ALLOWED_IN_BODY_FOR_OR_WALK_STMT)
 		return parse.ContinueTraversal
 	}
 
 	for i := iterativeStmtIndex + 1; i < len(ancestorChain); i++ {
 		switch ancestorChain[i].(type) {
-		case *parse.IfStatement, *parse.SwitchStatement, *parse.SwitchStatementCase,
-			*parse.MatchStatementCase, *parse.MatchStatement, *parse.Block:
+		case *parse.IfStatement, *parse.SwitchStatement, *parse.MatchStatement, *parse.SwitchStatementCase, *parse.MatchStatementCase,
+			*parse.DefaultCaseWithBlock, *parse.Block:
 		default:
-			c.addError(node, text.BREAK_AND_CONTINUE_STMTS_ONLY_ALLOWED_IN_BODY_FOR_OR_WALK_STMT)
+			c.addError(node, text.CONTINUE_STMTS_ONLY_ALLOWED_IN_BODY_FOR_OR_WALK_STMT)
 			return parse.ContinueTraversal
 		}
 

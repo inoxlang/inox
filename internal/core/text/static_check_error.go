@@ -93,10 +93,12 @@ const (
 	INVALID_ASSIGNMENT_ANONYMOUS_VAR_CANNOT_BE_ASSIGNED                         = "invalid assignment: anonymous variable '$' cannot be assigned"
 	INVALID_ASSIGNMENT_EQUAL_ONLY_SUPPORTED_ASSIGNMENT_OPERATOR_FOR_SLICE_EXPRS = "invalid assignment: '=' is the only supported assignment operators for slice expressions"
 
-	INVALID_FN_DECL_SHOULD_BE_TOP_LEVEL_STMT                       = "invalid function declaration: a function declaration should be a top level statement in a module (embedded or not)"
-	BREAK_AND_CONTINUE_STMTS_ONLY_ALLOWED_IN_BODY_FOR_OR_WALK_STMT = "break and continue statements are only allowed in the body of a 'for' or 'walk' statement"
-	YIELD_STMTS_ONLY_ALLOWED_IN_BODY_FOR_EXPR                      = "yield statements are only allowed in the body of a 'for' expression"
-	PRUNE_STMTS_ARE_ONLY_ALLOWED_IN_WALK_STMT                      = "prune statement are only allowed in 'walk' statements"
+	INVALID_FN_DECL_SHOULD_BE_TOP_LEVEL_STMT             = "invalid function declaration: a function declaration should be a top level statement in a module (embedded or not)"
+	CONTINUE_STMTS_ONLY_ALLOWED_IN_BODY_FOR_OR_WALK_STMT = "continue statements are only allowed in the body of a 'for' or 'walk' statement"
+	BREAK_STMTS_ONLY_ALLOWED_LOCATION    = "break statements are only allowed in the body of a switch or match statement, or of a 'for' or 'walk' statement"
+
+	YIELD_STMTS_ONLY_ALLOWED_IN_BODY_FOR_EXPR = "yield statements are only allowed in the body of a 'for' expression"
+	PRUNE_STMTS_ARE_ONLY_ALLOWED_IN_WALK_STMT = "prune statement are only allowed in 'walk' statements"
 
 	SELF_ACCESSIBILITY_EXPLANATION = "'self' is only accessible within " +
 		"extension methods, struct methods, metaproperty initialization blocks, and lifetime jobs"
