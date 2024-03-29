@@ -96,8 +96,20 @@ type FunctionStaticData struct {
 	capturedGlobals []string
 }
 
+func NewFunctionStaticData(capturedGlobals []string) *FunctionStaticData {
+	return &FunctionStaticData{
+		capturedGlobals: capturedGlobals,
+	}
+}
+
 type MappingStaticData struct {
 	referencedGlobals []string
+}
+
+func NewMappingStaticData(referencedGlobals []string) *MappingStaticData {
+	return &MappingStaticData{
+		referencedGlobals: referencedGlobals,
+	}
 }
 
 func (data *StaticCheckData) addFnCapturedGlobal(fnExpr *parse.FunctionExpression, name string, optionalInfo *globalVarInfo) {

@@ -4990,10 +4990,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				input: "return getuser()",
 				globalVariables: map[string]core.Value{
 					"getuser": core.WrapGoFunction(func(ctx *core.Context) core.GoValue {
-						return core.TestMutableGoValue{Name: "Foo"}
+						return TestMutableGoValue{Name: "Foo"}
 					}),
 				},
-				result: core.TestMutableGoValue{Name: "Foo"},
+				result: TestMutableGoValue{Name: "Foo"},
 			},
 			{
 				name:  "[]string returned, should be converted to a list",
@@ -5009,7 +5009,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				name:  "method",
 				input: "return user.getName()",
 				globalVariables: map[string]core.Value{
-					"user": core.TestMutableGoValue{"Foo", ""},
+					"user": TestMutableGoValue{"Foo", ""},
 				},
 				result: core.String("Foo"),
 			},
@@ -5669,7 +5669,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				input: "return $goval.secret",
 				error: true,
 				globalVariables: map[string]core.Value{
-					"goval": core.ValOf(core.TestMutableGoValue{Name: "Foo", Secret: "secret"}),
+					"goval": core.ValOf(TestMutableGoValue{Name: "Foo", Secret: "secret"}),
 				},
 				result: core.Nil,
 			},
@@ -5785,7 +5785,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		// 		input: "return $goval.<secret",
 		// 		error: true,
 		// 		globals: map[string]core.Value{
-		// 			"goval": core.ValOf(core.TestMutableGoValue{Name: "Foo", Secret: "secret"}),
+		// 			"goval": core.ValOf(TestMutableGoValue{Name: "Foo", Secret: "secret"}),
 		// 		},
 		// 		result: core.Nil,
 		// 	},
@@ -7256,7 +7256,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		// 		`
 		// 		state := core.NewGlobalState(NewDefaultTestContext())
 		// 		defer state.Ctx.CancelGracefully()
-		// 		state.Globals.Set("notsharable", core.TestMutableGoValue{})
+		// 		state.Globals.Set("notsharable", TestMutableGoValue{})
 
 		// 		res, err := Eval(code, state, true)
 
@@ -7277,7 +7277,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		// 		`
 		// 		state := core.NewGlobalState(NewDefaultTestContext())
 		// 		defer state.Ctx.CancelGracefully()
-		// 		state.Globals.Set("notsharable", core.TestMutableGoValue{})
+		// 		state.Globals.Set("notsharable", TestMutableGoValue{})
 
 		// 		res, err := Eval(code, state, true)
 

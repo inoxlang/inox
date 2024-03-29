@@ -265,7 +265,7 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 				continue
 			}
 
-			checkPreinitFilesObject(obj, onError)
+			CheckPreinitFilesObject(obj, onError)
 		case inoxconsts.MANIFEST_DATABASES_SECTION_NAME:
 			if args.moduleKind.IsEmbedded() {
 				onError(p, text.DATABASES_SECTION_NOT_AVAILABLE_IN_EMBEDDED_MODULE_MANIFESTS)
@@ -274,7 +274,7 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 
 			switch propVal := p.Value.(type) {
 			case *parse.ObjectLiteral:
-				checkDatabasesObject(propVal, onError, nil, args.project)
+				CheckDatabasesObject(propVal, onError, nil, args.project)
 			case *parse.AbsolutePathLiteral:
 			default:
 				onError(p, text.DATABASES_SECTION_SHOULD_BE_AN_OBJECT_OR_ABS_PATH)
@@ -438,7 +438,7 @@ func checkSingleKindPermissions(permKind PermissionKind, desc parse.Node, onErro
 
 }
 
-func checkPreinitFilesObject(obj *parse.ObjectLiteral, onError func(n parse.Node, msg string)) {
+func CheckPreinitFilesObject(obj *parse.ObjectLiteral, onError func(n parse.Node, msg string)) {
 
 	hasForbiddenNodes := false
 
@@ -492,7 +492,7 @@ func checkPreinitFilesObject(obj *parse.ObjectLiteral, onError func(n parse.Node
 	}
 }
 
-func checkDatabasesObject(
+func CheckDatabasesObject(
 	obj *parse.ObjectLiteral,
 	onError func(n parse.Node, msg string), //optional
 	onValidDatabase func(name string, scheme Scheme, resource ResourceName), //optional

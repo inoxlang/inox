@@ -1,4 +1,4 @@
-package core
+package core_test
 
 import (
 	"bufio"
@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/permkind"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/core/text"
@@ -1166,9 +1167,8 @@ func TestCheck(t *testing.T) {
 
 			assert.NoError(t, err)
 
-			assert.Equal(t, map[*parse.MappingExpression]*MappingStaticData{
-				parse.FindNode(n, (*parse.MappingExpression)(nil), nil): {referencedGlobals: []string{"g"}},
-			}, data.mappingData)
+			mappingExpr := parse.FindNode(n, (*parse.MappingExpression)(nil), nil)
+			assert.Equal(t, NewMappingStaticData([]string{"g"}), data.GetMappingData(mappingExpr))
 		})
 
 		t.Run("static key entries don't have access to locals", func(t *testing.T) {
@@ -1239,9 +1239,8 @@ func TestCheck(t *testing.T) {
 
 			assert.NoError(t, err)
 
-			assert.Equal(t, map[*parse.MappingExpression]*MappingStaticData{
-				parse.FindNode(n, (*parse.MappingExpression)(nil), nil): {referencedGlobals: []string{"g"}},
-			}, data.mappingData)
+			mappingExpr := parse.FindNode(n, (*parse.MappingExpression)(nil), nil)
+			assert.Equal(t, NewMappingStaticData([]string{"g"}), data.GetMappingData(mappingExpr))
 		})
 	})
 	t.Run("compute expression", func(t *testing.T) {
@@ -1338,9 +1337,7 @@ func TestCheck(t *testing.T) {
 			if !assert.NoError(t, err) {
 				return
 			}
-			assert.Equal(t, map[*parse.FunctionExpression]*FunctionStaticData{
-				fnExpr: {capturedGlobals: []string{"a"}},
-			}, data.fnData)
+			assert.Equal(t, NewFunctionStaticData([]string{"a"}), data.GetFnData(fnExpr))
 		})
 
 		t.Run("globals referenced in lifetimejob expressions inside a function should be listed in the function's list", func(t *testing.T) {
@@ -1367,9 +1364,7 @@ func TestCheck(t *testing.T) {
 			if !assert.NoError(t, err) {
 				return
 			}
-			assert.Equal(t, &FunctionStaticData{
-				capturedGlobals: []string{"a"},
-			}, data.GetFnData(fnExpr))
+			assert.Equal(t, NewFunctionStaticData([]string{"a"}), data.GetFnData(fnExpr))
 		})
 
 		t.Run("a global captured by a global function B referenced by a function A should be listed in A's data", func(t *testing.T) {
@@ -1393,9 +1388,7 @@ func TestCheck(t *testing.T) {
 			if !assert.NoError(t, err) {
 				return
 			}
-			assert.Equal(t, &FunctionStaticData{
-				capturedGlobals: []string{"f", "a"},
-			}, data.GetFnData(fnExpr))
+			assert.Equal(t, NewFunctionStaticData([]string{"f", "a"}), data.GetFnData(fnExpr))
 		})
 
 		t.Run("a global captured by a global function C referenced by a function B referenced by a function A should be listed in A's data", func(t *testing.T) {
@@ -1422,9 +1415,8 @@ func TestCheck(t *testing.T) {
 			if !assert.NoError(t, err) {
 				return
 			}
-			assert.Equal(t, &FunctionStaticData{
-				capturedGlobals: []string{"f", "g", "a"},
-			}, data.GetFnData(fnExpr))
+
+			assert.Equal(t, NewFunctionStaticData([]string{"f", "g", "a"}), data.GetFnData(fnExpr))
 		})
 
 		t.Run("a global captured by a global function B referenced by a method A should be listed in A's data", func(t *testing.T) {
@@ -1450,9 +1442,8 @@ func TestCheck(t *testing.T) {
 			if !assert.NoError(t, err) {
 				return
 			}
-			assert.Equal(t, &FunctionStaticData{
-				capturedGlobals: []string{"f", "a"},
-			}, data.GetFnData(fnExpr))
+
+			assert.Equal(t, NewFunctionStaticData([]string{"f", "a"}), data.GetFnData(fnExpr))
 		})
 
 		t.Run("a global captured by a global function C referenced by a function B referenced by a method A should be listed in A's data", func(t *testing.T) {
@@ -1481,9 +1472,8 @@ func TestCheck(t *testing.T) {
 			if !assert.NoError(t, err) {
 				return
 			}
-			assert.Equal(t, &FunctionStaticData{
-				capturedGlobals: []string{"f", "g", "a"},
-			}, data.GetFnData(fnExpr))
+
+			assert.Equal(t, NewFunctionStaticData([]string{"f", "g", "a"}), data.GetFnData(fnExpr))
 		})
 
 		t.Run("globals captured by function defined in spawn expression should be listed", func(t *testing.T) {
@@ -1508,9 +1498,8 @@ func TestCheck(t *testing.T) {
 			if !assert.NoError(t, err) {
 				return
 			}
-			assert.Equal(t, map[*parse.FunctionExpression]*FunctionStaticData{
-				fnExpr: {capturedGlobals: []string{"b"}},
-			}, data.fnData)
+
+			assert.Equal(t, NewFunctionStaticData([]string{"b"}), data.GetFnData(fnExpr))
 		})
 
 	})
@@ -3956,6 +3945,88 @@ func TestCheck(t *testing.T) {
 
 	})
 
+	t.Run("return statement", func(t *testing.T) {
+		t.Run("direct child of a module", func(t *testing.T) {
+			n, src := mustParseCode(`
+				return 1
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("direct child of a for statement", func(t *testing.T) {
+			n, src := mustParseCode(`
+				for i, e in [] {
+					return 1
+				}
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("direct child of a for statement inside a for expression", func(t *testing.T) {
+			n, src := mustParseCode(`
+				(for i, e in [] {
+					for j, el in [] {
+						return 1
+					}
+				})
+			`)
+
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("directed child of the 'if' clause of an if statement", func(t *testing.T) {
+			n, src := mustParseCode(`
+				if true {
+					return 1
+				}
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("directed child of the 'else' clause of an if-else statement", func(t *testing.T) {
+			n, src := mustParseCode(`
+				if true {
+
+				} else {
+					return 1
+				}
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("direct child of non-default case's body in an switch statement", func(t *testing.T) {
+			n, src := mustParseCode(`
+				switch 1 {
+					1 {
+						return 1
+					}
+				}
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("direct child of default case's body in an switch statement", func(t *testing.T) {
+			n, src := mustParseCode(`
+				switch 1 {
+					defaultcase {
+						return 1
+					}
+				}
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("direct child of an embedded module", func(t *testing.T) {
+			n, src := mustParseCode(`
+				go do {
+					return 
+				}
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+	})
+
 	t.Run("call", func(t *testing.T) {
 		t.Run("undefined callee", func(t *testing.T) {
 			n, src := mustParseCode(`
@@ -4098,7 +4169,6 @@ func TestCheck(t *testing.T) {
 			)
 			assert.Equal(t, expectedErr, err)
 		})
-
 	})
 
 	t.Run("walk statement", func(t *testing.T) {
@@ -5560,7 +5630,7 @@ func TestCheckPreinitFilesObject(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
 		objLiteral := parseObject("{}")
 
-		checkPreinitFilesObject(objLiteral, func(n parse.Node, msg string) {
+		CheckPreinitFilesObject(objLiteral, func(n parse.Node, msg string) {
 			assert.Fail(t, msg)
 		})
 	})
@@ -5575,7 +5645,7 @@ func TestCheckPreinitFilesObject(t *testing.T) {
 			}
 		`)
 
-		checkPreinitFilesObject(objLiteral, func(n parse.Node, msg string) {
+		CheckPreinitFilesObject(objLiteral, func(n parse.Node, msg string) {
 			assert.Fail(t, msg)
 		})
 	})
@@ -5592,7 +5662,7 @@ func TestCheckPreinitFilesObject(t *testing.T) {
 
 		err := false
 
-		checkPreinitFilesObject(objLiteral, func(n parse.Node, msg string) {
+		CheckPreinitFilesObject(objLiteral, func(n parse.Node, msg string) {
 			err = true
 			assert.Equal(t, text.PREINIT_FILES__FILE_CONFIG_PATH_SHOULD_BE_ABS_PATH, msg)
 		})
@@ -5611,7 +5681,7 @@ func TestCheckPreinitFilesObject(t *testing.T) {
 
 		err := false
 
-		checkPreinitFilesObject(objLiteral, func(n parse.Node, msg string) {
+		CheckPreinitFilesObject(objLiteral, func(n parse.Node, msg string) {
 			err = true
 			assert.Equal(t, text.PREINIT_FILES__FILE_CONFIG_PATH_SHOULD_BE_ABS_PATH, msg)
 		})
@@ -5628,7 +5698,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
 		objLiteral := parseObject("{}")
 
-		checkDatabasesObject(objLiteral, func(n parse.Node, msg string) {
+		CheckDatabasesObject(objLiteral, func(n parse.Node, msg string) {
 			assert.Fail(t, msg)
 		}, nil, nil)
 	})
@@ -5643,7 +5713,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 			}
 		`)
 
-		checkDatabasesObject(objLiteral, func(n parse.Node, msg string) {
+		CheckDatabasesObject(objLiteral, func(n parse.Node, msg string) {
 			assert.Fail(t, msg)
 		}, nil, nil)
 	})
@@ -5659,7 +5729,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 
 		err := false
 
-		checkDatabasesObject(objLiteral, func(n parse.Node, msg string) {
+		CheckDatabasesObject(objLiteral, func(n parse.Node, msg string) {
 			err = true
 			assert.Equal(t, text.FmtMissingPropInDatabaseDescription(inoxconsts.MANIFEST_DATABASE__RESOURCE_PROP_NAME, "main"), msg)
 		}, nil, nil)
@@ -5678,7 +5748,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 		`)
 		err := false
 
-		checkDatabasesObject(objLiteral, func(n parse.Node, msg string) {
+		CheckDatabasesObject(objLiteral, func(n parse.Node, msg string) {
 			err = true
 			assert.Equal(t, text.DATABASES__DB_RESOURCE_SHOULD_BE_HOST_OR_URL, msg)
 		}, nil, nil)
@@ -5695,7 +5765,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 			}
 		`)
 
-		checkDatabasesObject(objLiteral, func(n parse.Node, msg string) {
+		CheckDatabasesObject(objLiteral, func(n parse.Node, msg string) {
 			assert.Fail(t, msg)
 		}, nil, nil)
 	})
@@ -5711,7 +5781,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 		`)
 		err := false
 
-		checkDatabasesObject(objLiteral, func(n parse.Node, msg string) {
+		CheckDatabasesObject(objLiteral, func(n parse.Node, msg string) {
 			err = true
 			assert.Equal(t, text.DATABASES__DB_RESOLUTION_DATA_ONLY_NIL_AND_PATHS_SUPPORTED, msg)
 		}, nil, nil)
@@ -5720,8 +5790,8 @@ func TestCheckDatabasesObject(t *testing.T) {
 	})
 
 	t.Run("database with incorrect value for the resolution-data property", func(t *testing.T) {
-		resetStaticallyCheckDbResolutionDataFnRegistry()
-		defer resetStaticallyCheckDbResolutionDataFnRegistry()
+		ResetStaticallyCheckDbResolutionDataFnRegistry()
+		defer ResetStaticallyCheckDbResolutionDataFnRegistry()
 
 		RegisterStaticallyCheckDbResolutionDataFn("ldb", func(node parse.Node, _ Project) (errorMsg string) {
 			return "bad"
@@ -5742,7 +5812,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 
 		err := false
 
-		checkDatabasesObject(objLiteral, func(n parse.Node, msg string) {
+		CheckDatabasesObject(objLiteral, func(n parse.Node, msg string) {
 			err = true
 			assert.Equal(t, errMsg, msg)
 		}, nil, nil)
@@ -5751,8 +5821,8 @@ func TestCheckDatabasesObject(t *testing.T) {
 	})
 
 	t.Run("database with incorrect value for the resolution-data property: project passed", func(t *testing.T) {
-		resetStaticallyCheckDbResolutionDataFnRegistry()
-		defer resetStaticallyCheckDbResolutionDataFnRegistry()
+		ResetStaticallyCheckDbResolutionDataFnRegistry()
+		defer ResetStaticallyCheckDbResolutionDataFnRegistry()
 
 		project := &testProject{id: RandomProjectID("test")}
 
@@ -5776,7 +5846,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 
 		err := false
 
-		checkDatabasesObject(objLiteral, func(n parse.Node, msg string) {
+		CheckDatabasesObject(objLiteral, func(n parse.Node, msg string) {
 			err = true
 			assert.Equal(t, errMsg, msg)
 		}, nil, project)
@@ -5907,3 +5977,81 @@ func (*testProject) CanProvideS3Credentials(s3Provider string) (bool, error) {
 func (*testProject) GetS3CredentialsForBucket(ctx *Context, bucketName string, provider string) (accessKey string, secretKey string, s3Endpoint Host, _ error) {
 	panic("unimplemented")
 }
+
+type StaticCheckInput = core.StaticCheckInput
+type StaticCheckError = core.StaticCheckError
+type Pattern = core.Pattern
+type PatternNamespace = core.PatternNamespace
+type FunctionStaticData = core.FunctionStaticData
+type MappingStaticData = core.MappingStaticData
+
+type GlobalState = core.GlobalState
+type Context = core.Context
+type ContextConfig = core.ContextConfig
+
+type Value = core.Value
+type Int = core.Int
+type URL = core.URL
+type Host = core.Host
+type String = core.String
+type PathPattern = core.PathPattern
+
+type GoFunction = core.GoFunction
+type Image = core.Image
+
+type Module = core.Module
+type ModuleParsingConfig = core.ModuleParsingConfig
+type Permission = core.Permission
+type FilesystemPermission = core.FilesystemPermission
+
+type Project = core.Project
+type ProjectID = core.ProjectID
+type ProjectConfiguration = core.ProjectConfiguration
+type ProjectSecret = core.ProjectSecret
+type ProjectSecretInfo = core.ProjectSecretInfo
+
+type PrettyPrintConfig = core.PrettyPrintConfig
+type ReprConfig = core.ReprConfig
+type JSONSerializationConfig = core.JSONSerializationConfig
+
+var (
+	StaticCheck            = core.StaticCheck
+	NewContext             = core.NewContext
+	NewGlobalState         = core.NewGlobalState
+	GlobalVariablesFromMap = core.GlobalVariablesFromMap
+	NewFunctionStaticData  = core.NewFunctionStaticData
+	NewMappingStaticData   = core.NewMappingStaticData
+	ParseLocalModule       = core.ParseLocalModule
+	NewStaticCheckError    = core.NewStaticCheckError
+	NewNamespace           = core.NewNamespace
+	WrapGoFunction         = core.WrapGoFunction
+	WrapGoMethod           = core.WrapGoMethod
+	ValOf                  = core.ValOf
+	MapIterable            = core.MapIterable
+	RandomProjectID        = core.RandomProjectID
+
+	CheckDatabasesObject    = core.CheckDatabasesObject
+	CheckPreinitFilesObject = core.CheckPreinitFilesObject
+
+	ResetStaticallyCheckDbResolutionDataFnRegistry = core.ResetStaticallyCheckDbResolutionDataFnRegistry
+	RegisterStaticallyCheckDbResolutionDataFn      = core.RegisterStaticallyCheckDbResolutionDataFn
+	GetStaticallyCheckDbResolutionDataFn           = core.GetStaticallyCheckDbResolutionDataFn
+
+	STR_PATTERN                = core.STR_PATTERN
+	INT_PATTERN                = core.INT_PATTERN
+	BOOL_PATTERN               = core.BOOL_PATTERN
+	OBJECT_PATTERN             = core.OBJECT_PATTERN
+	MAX_NAME_BYTE_LEN          = core.MAX_NAME_BYTE_LEN
+	DEFAULT_PATTERN_NAMESPACES = core.DEFAULT_PATTERN_NAMESPACES
+
+	ErrNegQuantityNotSupported     = core.ErrNegQuantityNotSupported
+	ErrCannotAddIrreversibleEffect = core.ErrCannotAddIrreversibleEffect
+	ErrCannotSetProp               = core.ErrCannotSetProp
+	ErrNotClonable                 = core.ErrNotClonable
+
+	TestSuiteModule = core.TestSuiteModule
+
+	Nil = core.Nil
+
+	FormatErrPropertyDoesNotExist = core.FormatErrPropertyDoesNotExist
+)

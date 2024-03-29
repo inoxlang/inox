@@ -688,7 +688,7 @@ func runTestItem(
 
 		//add database permissions
 		if ok {
-			checkDatabasesObject(databasesObj, nil, func(name string, scheme Scheme, resource ResourceName) {
+			CheckDatabasesObject(databasesObj, nil, func(name string, scheme Scheme, resource ResourceName) {
 				implicitlyAddedPermissions = append(implicitlyAddedPermissions,
 					DatabasePermission{Kind_: permkind.Read, Entity: resource},
 					DatabasePermission{Kind_: permkind.Write, Entity: resource},

@@ -51,7 +51,7 @@ func IsStaticallyCheckDBFunctionRegistered(scheme Scheme) bool {
 	return ok
 }
 
-func resetStaticallyCheckDbResolutionDataFnRegistry() {
+func ResetStaticallyCheckDbResolutionDataFnRegistry() {
 	staticallyCheckDbResolutionDataFnRegistryLock.Lock()
 	defer staticallyCheckDbResolutionDataFnRegistryLock.Unlock()
 	clear(staticallyCheckDbResolutionDataFnRegistry)

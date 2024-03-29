@@ -1150,7 +1150,7 @@ func TestPreInit(t *testing.T) {
 				}`,
 
 			setup: func() error {
-				resetStaticallyCheckDbResolutionDataFnRegistry()
+				ResetStaticallyCheckDbResolutionDataFnRegistry()
 
 				RegisterStaticallyCheckDbResolutionDataFn("ldb", func(node parse.Node, p Project) (errorMsg string) {
 					return ""
@@ -1159,7 +1159,7 @@ func TestPreInit(t *testing.T) {
 				return nil
 			},
 			teardown: func() {
-				resetStaticallyCheckDbResolutionDataFnRegistry()
+				ResetStaticallyCheckDbResolutionDataFnRegistry()
 			},
 			error:                     true,
 			expectedStaticCheckErrors: []string{text.THE_DATABASES_SECTION_SHOULD_BE_PRESENT},
@@ -1194,7 +1194,7 @@ func TestPreInit(t *testing.T) {
 				OnAddedElement: "ldb://main/users",
 			},
 			setup: func() error {
-				resetStaticallyCheckDbResolutionDataFnRegistry()
+				ResetStaticallyCheckDbResolutionDataFnRegistry()
 
 				RegisterStaticallyCheckDbResolutionDataFn("ldb", func(node parse.Node, p Project) (errorMsg string) {
 					return ""
@@ -1203,7 +1203,7 @@ func TestPreInit(t *testing.T) {
 				return nil
 			},
 			teardown: func() {
-				resetStaticallyCheckDbResolutionDataFnRegistry()
+				ResetStaticallyCheckDbResolutionDataFnRegistry()
 			},
 		},
 
@@ -1231,7 +1231,7 @@ func TestPreInit(t *testing.T) {
 			expectedStaticCheckErrors: []string{text.A_BOOL_LIT_IS_EXPECTED},
 
 			setup: func() error {
-				resetStaticallyCheckDbResolutionDataFnRegistry()
+				ResetStaticallyCheckDbResolutionDataFnRegistry()
 
 				RegisterStaticallyCheckDbResolutionDataFn("ldb", func(node parse.Node, p Project) (errorMsg string) {
 					return ""
@@ -1240,7 +1240,7 @@ func TestPreInit(t *testing.T) {
 				return nil
 			},
 			teardown: func() {
-				resetStaticallyCheckDbResolutionDataFnRegistry()
+				ResetStaticallyCheckDbResolutionDataFnRegistry()
 			},
 		},
 
@@ -1267,7 +1267,7 @@ func TestPreInit(t *testing.T) {
 			errorIs:             ErrURLNotCorrespondingToDefinedDB,
 
 			setup: func() error {
-				resetStaticallyCheckDbResolutionDataFnRegistry()
+				ResetStaticallyCheckDbResolutionDataFnRegistry()
 
 				RegisterStaticallyCheckDbResolutionDataFn("ldb", func(node parse.Node, p Project) (errorMsg string) {
 					return ""
@@ -1276,7 +1276,7 @@ func TestPreInit(t *testing.T) {
 				return nil
 			},
 			teardown: func() {
-				resetStaticallyCheckDbResolutionDataFnRegistry()
+				ResetStaticallyCheckDbResolutionDataFnRegistry()
 			},
 		},
 
@@ -1312,7 +1312,7 @@ func TestPreInit(t *testing.T) {
 				Async:          true,
 			},
 			setup: func() error {
-				resetStaticallyCheckDbResolutionDataFnRegistry()
+				ResetStaticallyCheckDbResolutionDataFnRegistry()
 
 				RegisterStaticallyCheckDbResolutionDataFn("ldb", func(node parse.Node, p Project) (errorMsg string) {
 					return ""
@@ -1321,7 +1321,7 @@ func TestPreInit(t *testing.T) {
 				return nil
 			},
 			teardown: func() {
-				resetStaticallyCheckDbResolutionDataFnRegistry()
+				ResetStaticallyCheckDbResolutionDataFnRegistry()
 			},
 		},
 
