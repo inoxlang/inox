@@ -90,6 +90,21 @@ output:
 1
 ```
 
+The `break` statement causes an exit from the current case.
+
+```
+verbose = false
+
+switch 1 {
+    1 {
+        if !verbose {
+            break
+        }
+        print 1
+    }
+    defaultcase { }
+}
+```
 
 ## Switch Expression
 
@@ -156,6 +171,22 @@ fn print_type(arg){
         }
         defaultcase { }
     }
+}
+```
+
+The `break` statement causes an exit from the current case.
+
+```
+verbose = false
+
+switch 1 {
+    1 {
+        if !verbose {
+            break
+        }
+        print 1
+    }
+    defaultcase { }
 }
 ```
 
@@ -298,11 +329,11 @@ aa 2
 ## For Expression
 
 For expressions allow you to create a [list](./serializable-data-structures.md#lists) by
-evaluating an expression for each iteration.
+evaluating an expression for each iteration step.
 
 ```
-double = (for n in [1, 2, 3]: (2 * n))
-print(double)
+doubles = (for n in [1, 2, 3] => 2 * n)
+print(doubles)
 
 output:
 2
@@ -310,6 +341,24 @@ output:
 6
 ```
 
+A block can be used when complex logic needs to be executed for each step.
+
+```
+positive_doubles = (for n in [-1, 0, 1, 2, 3] {
+    if n > 0 {
+        yield 2 * n
+    }
+})
+
+print(positive_doubles)
+
+output:
+2
+4
+6
+```
+
+The `yield` statement **yields** an item, and ends the current step (like `continue`).
 
 ## Walk Statement
 
