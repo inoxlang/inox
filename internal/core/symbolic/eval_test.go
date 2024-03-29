@@ -6333,7 +6333,39 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Nil(t, res)
 		})
 
-		t.Run("join", func(t *testing.T) {
+		t.Run("join if: variable update", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				var a %object = {}
+				if true {
+					a = {a: int}
+				}
+				return a
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewMultivalue(
+				NewInexactObject(map[string]Serializable{}, nil, nil),
+				NewInexactObject(map[string]Serializable{"a": ANY_INT}, nil, map[string]Pattern{"a": ANY_INT.Static()}),
+			), res)
+		})
+
+		t.Run("join if: return", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				if true {
+					return 1
+				}
+				return 2
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, INT_1_OR_2, res)
+		})
+
+		t.Run("join if-else: variable updated in all cases", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				var a %object = {}
 				if true {
@@ -6348,13 +6380,27 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
 			assert.Equal(t, NewMultivalue(
-				NewEmptyObject(),
 				NewInexactObject(map[string]Serializable{"a": ANY_INT}, nil, map[string]Pattern{"a": ANY_INT.Static()}),
 				NewInexactObject(map[string]Serializable{"b": ANY_INT}, nil, map[string]Pattern{"b": ANY_INT.Static()}),
 			), res)
 		})
 
-		t.Run("join else-if", func(t *testing.T) {
+		t.Run("join if-else: return in all cases", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				if true {
+					return 1
+				} else {
+					return 2
+				}
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, INT_1_OR_2, res)
+		})
+
+		t.Run("join if-else-if", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				var a %object = {}
 				if true {
@@ -6371,7 +6417,6 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
 			assert.Equal(t, NewMultivalue(
-				NewEmptyObject(),
 				NewInexactObject(map[string]Serializable{"a": ANY_INT}, nil, map[string]Pattern{"a": ANY_INT.Static()}),
 				NewInexactObject(map[string]Serializable{"b": ANY_INT}, nil, map[string]Pattern{"b": ANY_INT.Static()}),
 				NewInexactObject(map[string]Serializable{"c": ANY_INT}, nil, map[string]Pattern{"c": ANY_INT.Static()}),
@@ -8916,6 +8961,117 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Nil(t, res)
 		})
 
+		t.Run("join single non-default case: variable update", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				var a %object = {}
+				switch int {
+					1 {
+						a = {a: int}
+					}
+				}
+				return a
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewMultivalue(
+				NewInexactObject(map[string]Serializable{}, nil, nil),
+				NewInexactObject(map[string]Serializable{"a": INT_1}, nil, map[string]Pattern{"a": ANY_INT.Static()}),
+			), res)
+		})
+
+		t.Run("join single non-default case: return", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				switch int {
+					0 {
+						return 1
+					}
+				}
+				return 2
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, INT_1_OR_2, res)
+		})
+
+		t.Run("join default case: variable update", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				var a %object = {}
+				switch int {
+					defaultcase {
+						a = {a: int}
+					}
+				}
+				return a
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewInexactObject(map[string]Serializable{"a": ANY_INT}, nil, map[string]Pattern{"a": ANY_INT.Static()}), res)
+		})
+
+		t.Run("join default case: return", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				switch int {
+					defaultcase {
+						return 1
+					}
+				}
+				return 2
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, INT_1, res)
+		})
+
+		t.Run("join non-default + default case: variable update in all cases", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				var a %object = {}
+				switch int {
+					1 {
+						a = {a: int}
+					}
+					defaultcase {
+						a = {b: int}
+					}
+				}
+				return a
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewMultivalue(
+				NewInexactObject(map[string]Serializable{"a": INT_1}, nil, map[string]Pattern{"a": ANY_INT.Static()}),
+				NewInexactObject(map[string]Serializable{"b": ANY_INT}, nil, map[string]Pattern{"b": ANY_INT.Static()}),
+			), res)
+		})
+
+		t.Run("join single non-default case: return in all cases", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				switch int {
+					0 {
+						return 1
+					}
+					defaultcase {
+						return 2
+					}
+				}
+				return 3
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, INT_1_OR_2, res)
+		})
+
 		t.Run("narrowing of variable's value (no default case)", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				fn f(v){
@@ -9094,29 +9250,121 @@ func TestSymbolicEval(t *testing.T) {
 	})
 
 	t.Run("match statement", func(t *testing.T) {
-		t.Run("the forked states should be joined after the statement", func(t *testing.T) {
+		t.Run("join single non-default case: variable update", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				var v %object = {}
-				match 1 {
+				var a %object = {}
+				match int_or_str {
 					%int {
-						v = {a: 1}
-					}
-					%str {
-						v = {b: 1}
+						a = {a: int_or_str}
 					}
 				}
-
-				return v
+				return a
 			`)
+			state.setGlobal("int_or_str", NewMultivalue(ANY_INT, ANY_STR_LIKE), GlobalConst)
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
 			assert.Equal(t, NewMultivalue(
-				NewEmptyObject(),
-				NewInexactObject(map[string]Serializable{"a": NewInt(1)}, nil, map[string]Pattern{"a": ANY_INT.Static()}),
-				NewInexactObject(map[string]Serializable{"b": NewInt(1)}, nil, map[string]Pattern{"b": ANY_INT.Static()}),
+				NewInexactObject(map[string]Serializable{}, nil, nil),
+				NewInexactObject(map[string]Serializable{"a": ANY_INT}, nil, map[string]Pattern{"a": ANY_INT.Static()}),
 			), res)
+		})
+
+		t.Run("join single non-default case: return", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				match int_or_str {
+					%int {
+						return 1
+					}
+				}
+				return 2
+			`)
+			state.setGlobal("int_or_str", NewMultivalue(ANY_INT, ANY_STR_LIKE), GlobalConst)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, INT_1_OR_2, res)
+		})
+
+		t.Run("join default case: variable update", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				var a %object = {}
+				match int_or_str {
+					defaultcase {
+						a = {a: 1}
+					}
+				}
+				return a
+			`)
+			state.setGlobal("int_or_str", NewMultivalue(ANY_INT, ANY_STR_LIKE), GlobalConst)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewInexactObject(map[string]Serializable{"a": INT_1}, nil, map[string]Pattern{"a": ANY_INT.Static()}), res)
+		})
+
+		t.Run("join default case: return", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				match int_or_str {
+					defaultcase {
+						return 1
+					}
+				}
+				return 2
+			`)
+			state.setGlobal("int_or_str", NewMultivalue(ANY_INT, ANY_STR_LIKE), GlobalConst)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, INT_1, res)
+		})
+
+		t.Run("join non-default + default case: variable update in all cases", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				var a %object = {}
+				match int_or_str {
+					%int {
+						a = {a: 1}
+					}
+					defaultcase {
+						a = {b: 2}
+					}
+				}
+				return a
+			`)
+			state.setGlobal("int_or_str", NewMultivalue(ANY_INT, ANY_STR_LIKE), GlobalConst)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewMultivalue(
+				NewInexactObject(map[string]Serializable{"a": INT_1}, nil, map[string]Pattern{"a": ANY_INT.Static()}),
+				NewInexactObject(map[string]Serializable{"b": INT_2}, nil, map[string]Pattern{"b": ANY_INT.Static()}),
+			), res)
+		})
+
+		t.Run("join single non-default case: return in all cases", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				match int_or_str {
+					%int {
+						return 1
+					}
+					defaultcase {
+						return 2
+					}
+				}
+				return 3
+			`)
+			state.setGlobal("int_or_str", NewMultivalue(ANY_INT, ANY_STR_LIKE), GlobalConst)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, INT_1_OR_2, res)
 		})
 
 		t.Run("error in a case value", func(t *testing.T) {

@@ -2245,9 +2245,11 @@ func evalIfStatement(n *parse.IfStatement, state *State) (_ Value, finalErr erro
 		}
 
 		if alternateStateFork != nil {
-			state.join(consequentStateFork, alternateStateFork)
+			areAllOutcomesCovered := true
+			state.join(areAllOutcomesCovered, consequentStateFork, alternateStateFork)
 		} else {
-			state.join(consequentStateFork)
+			areAllOutcomesCovered := false
+			state.join(areAllOutcomesCovered, consequentStateFork)
 		}
 	}
 
@@ -2320,9 +2322,11 @@ func evalIfExpression(n *parse.IfExpression, state *State, options evalOptions) 
 		}
 
 		if alternateStateFork != nil {
-			state.join(consequentStateFork, alternateStateFork)
+			areAllOutcomesCovered := true
+			state.join(areAllOutcomesCovered, consequentStateFork, alternateStateFork)
 		} else {
-			state.join(consequentStateFork)
+			areAllOutcomesCovered := false
+			state.join(areAllOutcomesCovered, consequentStateFork)
 		}
 
 		return consequentValue, nil
@@ -2443,7 +2447,9 @@ func evalForStatementAndExpr(n parse.Node, state *State) (_ Value, finalErr erro
 			forExprListElements = append(forExprListElements, elem)
 		}
 
-		state.join(stateFork)
+		areAllOutcomesCovered := false //The iterated value can be empty.
+
+		state.join(areAllOutcomesCovered, stateFork)
 		//we set the local scope data at the for statement, not the body
 		state.SetLocalScopeData(n, state.currentLocalScopeData())
 	}
@@ -2493,7 +2499,9 @@ func evalWalkStatement(n *parse.WalkStatement, state *State) (_ Value, finalErr 
 			return nil, blkErr
 		}
 
-		state.join(stateFork)
+		areAllOutcomesCovered := false //The iterated value can be empty.
+
+		state.join(areAllOutcomesCovered, stateFork)
 		//we set the local scope data at the for statement, not the body
 		state.SetLocalScopeData(n, state.currentLocalScopeData())
 	}
@@ -2532,6 +2540,8 @@ func evalSwitchStatement(n *parse.SwitchStatement, state *State) (_ Value, final
 		}
 	}
 
+	hasValidDefaultCase := false
+
 	for _, defaultCase := range n.DefaultCases {
 		if defaultCase.Block == nil {
 			continue
@@ -2543,9 +2553,12 @@ func evalSwitchStatement(n *parse.SwitchStatement, state *State) (_ Value, final
 		if err != nil {
 			return nil, err
 		}
+		hasValidDefaultCase = true
 	}
 
-	state.join(forks...)
+	areAllOutcomesCovered := hasValidDefaultCase
+
+	state.join(areAllOutcomesCovered, forks...)
 
 	return nil, nil
 }
@@ -2598,6 +2611,8 @@ func evalSwitchExpression(n *parse.SwitchExpression, state *State, options evalO
 		}
 	}
 
+	hasValidDefaultCase := false
+
 	for _, defaultCase := range n.DefaultCases {
 		if defaultCase.Result == nil {
 			continue
@@ -2615,6 +2630,7 @@ func evalSwitchExpression(n *parse.SwitchExpression, state *State, options evalO
 		}
 
 		results = append(results, result)
+		hasValidDefaultCase = true
 
 		if options.expectedValue != nil && !deeperValueMismatch && !options.expectedValue.Test(result, RecTestCallState{}) {
 			options.setActualValueMismatchIfNotNil()
@@ -2623,9 +2639,11 @@ func evalSwitchExpression(n *parse.SwitchExpression, state *State, options evalO
 			options.setActualValueMismatchIfNotNil()
 			deeperValueMismatch = false //reset so that we can use the variable for other results.
 		}
+
 	}
 
-	state.join(forks...)
+	areAllOutcomesCovered := hasValidDefaultCase
+	state.join(areAllOutcomesCovered, forks...)
 
 	if len(n.DefaultCases) == 0 {
 		results = append(results, Nil)
@@ -2717,7 +2735,13 @@ func evalMatchStatement(n *parse.MatchStatement, state *State) (_ Value, finalEr
 		}
 	}
 
+	hasValidDefaultCase := false
+
 	for _, defaultCase := range n.DefaultCases {
+		if defaultCase.Block == nil {
+			continue
+		}
+
 		blockStateFork := state.fork()
 		forks = append(forks, blockStateFork)
 
@@ -2729,9 +2753,12 @@ func evalMatchStatement(n *parse.MatchStatement, state *State) (_ Value, finalEr
 		if err != nil {
 			return nil, err
 		}
+		hasValidDefaultCase = true
 	}
 
-	state.join(forks...)
+	areAllOutcomesCovered := hasValidDefaultCase
+
+	state.join(areAllOutcomesCovered, forks...)
 
 	return nil, nil
 }
@@ -2841,7 +2868,13 @@ func evalMatchExpression(n *parse.MatchExpression, state *State, options evalOpt
 		}
 	}
 
+	hasValidDefaultCase := false
+
 	for _, defaultCase := range n.DefaultCases {
+		if defaultCase.Result == nil {
+			continue
+		}
+
 		blockStateFork := state.fork()
 		forks = append(forks, blockStateFork)
 
@@ -2859,6 +2892,7 @@ func evalMatchExpression(n *parse.MatchExpression, state *State, options evalOpt
 		}
 
 		results = append(results, result)
+		hasValidDefaultCase = true
 
 		if options.expectedValue != nil && !deeperValueMismatch && !options.expectedValue.Test(result, RecTestCallState{}) {
 			options.setActualValueMismatchIfNotNil()
@@ -2873,7 +2907,9 @@ func evalMatchExpression(n *parse.MatchExpression, state *State, options evalOpt
 		results = append(results, Nil)
 	}
 
-	state.join(forks...)
+	areAllOutcomesCovered := hasValidDefaultCase
+
+	state.join(areAllOutcomesCovered, forks...)
 
 	return joinValues(results), nil
 }

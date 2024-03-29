@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-git/go-billy/v5"
 	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/utils"
 	"golang.org/x/exp/slices"
 )
 
@@ -63,6 +64,7 @@ const (
 	NoIterationChange IterationChange = iota
 	BreakIteration
 	ContinueIteration
+	YieldItem
 	PruneWalk
 )
 
@@ -651,29 +653,91 @@ func (state *State) fork() *State {
 	return child
 }
 
-func (state *State) join(forks ...*State) {
+func (state *State) join(areAllOutcomesCovered bool, forks ...*State) {
 	scope := state.scopeStack[len(state.scopeStack)-1]
 
+	var varsUpdatedByAllForks []string
+
+	if areAllOutcomesCovered {
+		//Determine the list of variables updated by all forks.
+
+		for varName, varInfo := range scope.variables {
+
+			updatedByAllForks := true
+
+			for _, fork := range forks {
+				forkVarInfo, ok := fork.scopeStack[len(fork.scopeStack)-1].variables[varName]
+
+				if !ok {
+					panic(ErrUnreachable)
+				}
+
+				if forkVarInfo.value == varInfo.value {
+					updatedByAllForks = false
+					break
+				}
+			}
+
+			if updatedByAllForks {
+				varsUpdatedByAllForks = append(varsUpdatedByAllForks, varName)
+			}
+		}
+	}
+
+	atLeastOneForkReturn := utils.Some(forks, func(fork *State) bool {
+		return fork.returnValue != nil
+	})
+
+	doAllForksReturn := false
+
+	if atLeastOneForkReturn {
+		doAllForksReturn = true
+
+		for _, fork := range forks {
+			if fork.returnValue == nil {
+				doAllForksReturn = false
+				break
+			}
+		}
+	}
+
 	for _, fork := range forks {
-		for k, forkVarInfo := range fork.scopeStack[len(fork.scopeStack)-1].variables {
-			varInfo, ok := scope.variables[k]
+		for varName, forkVarInfo := range fork.scopeStack[len(fork.scopeStack)-1].variables {
+
+			varInfo, ok := scope.variables[varName]
 			if !ok {
+				//The variable is only present in the fork.
 				continue
 			}
-			varInfo.value = joinValues([]Value{varInfo.value, forkVarInfo.value})
-			scope.variables[k] = varInfo
+
+			if index := slices.Index(varsUpdatedByAllForks, varName); index >= 0 {
+				//Since the variable is updated by all forks we can ignore the original value.
+				varInfo.value = forkVarInfo.value
+
+				//Remove the variable from the list so that we can join the current value with values from other forks.
+				varsUpdatedByAllForks = slices.Delete(varsUpdatedByAllForks, index, index+1)
+			} else {
+				varInfo.value = joinValues([]Value{varInfo.value, forkVarInfo.value})
+			}
+
+			scope.variables[varName] = varInfo
 		}
 
 		if fork.returnValue == nil {
 			continue
 		}
 
+		//Join the value returned by the state with the value returned by the fork.
 		if state.returnValue == nil {
 			state.returnValue = fork.returnValue
 			state.conditionalReturn = true
 		} else {
 			state.returnValue = joinValues([]Value{state.returnValue, fork.returnValue})
 		}
+	}
+
+	if areAllOutcomesCovered && doAllForksReturn {
+		state.conditionalReturn = false
 	}
 }
 
