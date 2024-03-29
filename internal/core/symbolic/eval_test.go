@@ -8529,10 +8529,11 @@ func TestSymbolicEval(t *testing.T) {
 				} 
 			`)
 			res, err := symbolicEval(n, state)
-			forStmt := n.Statements[0]
+			forStmt := n.Statements[0].(*parse.ForStatement)
+
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(forStmt, state, fmtXisNotIterable(ANY_INT)),
+				makeSymbolicEvalError(forStmt.IteratedValue, state, fmtXisNotIterable(ANY_INT)),
 			}, state.errors())
 			assert.Nil(t, res)
 		})
@@ -8727,10 +8728,11 @@ func TestSymbolicEval(t *testing.T) {
 				for i, e in int
 			`, nil)
 			res, err := symbolicEval(n, state)
-			forStmt := n.Statements[0]
+			forStmt := n.Statements[0].(*parse.ForStatement)
+
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(forStmt, state, fmtXisNotIterable(ANY_INT)),
+				makeSymbolicEvalError(forStmt.IteratedValue, state, fmtXisNotIterable(ANY_INT)),
 			}, state.errors())
 			assert.Nil(t, res)
 		})
@@ -8768,10 +8770,11 @@ func TestSymbolicEval(t *testing.T) {
 				(for i, e in int {}) 
 			`)
 			res, err := symbolicEval(n, state)
-			forStmt := n.Statements[0]
+			forStmt := n.Statements[0].(*parse.ForExpression)
+
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(forStmt, state, fmtXisNotIterable(ANY_INT)),
+				makeSymbolicEvalError(forStmt.IteratedValue, state, fmtXisNotIterable(ANY_INT)),
 			}, state.errors())
 			assert.Equal(t, EMPTY_LIST, res)
 		})
@@ -8970,12 +8973,12 @@ func TestSymbolicEval(t *testing.T) {
 				}
 			`)
 
-			walkStmt := n.Statements[1]
+			walkStmt := n.Statements[1].(*parse.WalkStatement)
 			res, err := symbolicEval(n, state)
 
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(walkStmt, state, fmtXisNotWalkable(ANY_INT)),
+				makeSymbolicEvalError(walkStmt.Walked, state, fmtXisNotWalkable(ANY_INT)),
 			}, state.errors())
 			assert.Nil(t, res)
 		})
@@ -9016,12 +9019,12 @@ func TestSymbolicEval(t *testing.T) {
 				walk $path entry
 			`, nil)
 
-			walkStmt := n.Statements[1]
+			walkStmt := n.Statements[1].(*parse.WalkStatement)
 			res, err := symbolicEval(n, state)
 
 			assert.NoError(t, err)
 			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(walkStmt, state, fmtXisNotWalkable(ANY_INT)),
+				makeSymbolicEvalError(walkStmt.Walked, state, fmtXisNotWalkable(ANY_INT)),
 			}, state.errors())
 			assert.Nil(t, res)
 		})

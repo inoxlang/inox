@@ -2476,7 +2476,7 @@ func evalForStatementAndExpr(n parse.Node, state *State) (_ Value, finalErr erro
 			valueType = streamable.StreamElement()
 		}
 	} else {
-		state.addError(makeSymbolicEvalError(n, state, fmtXisNotIterable(iteratedValue)))
+		state.addError(makeSymbolicEvalError(iteratedValueNode, state, fmtXisNotIterable(iteratedValue)))
 	}
 
 	if body != nil && evaluateBody {
@@ -2555,7 +2555,7 @@ func evalWalkStatement(n *parse.WalkStatement, state *State) (_ Value, finalErr 
 		entry = walkable.WalkerElement()
 		nodeMeta = walkable.WalkerNodeMeta()
 	} else {
-		state.addError(makeSymbolicEvalError(n, state, fmtXisNotWalkable(walkedValue)))
+		state.addError(makeSymbolicEvalError(n.Walked, state, fmtXisNotWalkable(walkedValue)))
 		entry = ANY
 		nodeMeta = ANY
 	}
