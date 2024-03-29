@@ -605,6 +605,8 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 		return c.checkFuncExpr(node, closestModule, ancestorChain)
 	case *parse.FunctionPatternExpression:
 		return c.checkFuncPatternExpr(node, closestModule)
+	case *parse.ReturnStatement:
+		return c.checkReturnStatement(node, ancestorChain)
 	case *parse.CoyieldStatement:
 		return c.checkCoyieldStmt(node, ancestorChain)
 	case *parse.BreakStatement, *parse.ContinueStatement:
@@ -1911,6 +1913,33 @@ func (c *checker) checkFuncPatternExpr(node *parse.FunctionPatternExpression, cl
 		fnLocalVars[name] = localVarInfo{}
 	}
 
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkReturnStatement(node *parse.ReturnStatement, ancestorChain []parse.Node) parse.TraversalAction {
+
+	//Go up until we find a module, function body, or an invalid node.
+	for i := len(ancestorChain) - 1; i >= 0; i-- {
+		ancestor := ancestorChain[i]
+
+		if parse.IsTheTopLevel(ancestor) {
+			return parse.ContinueTraversal //ok
+		}
+
+		switch ancestor.(type) {
+		case *parse.FunctionExpression:
+			return parse.ContinueTraversal //ok
+		case *parse.IfStatement, *parse.ForStatement, *parse.WalkStatement,
+			*parse.SwitchStatement, *parse.SwitchStatementCase, *parse.DefaultCaseWithBlock,
+			*parse.MatchStatement, *parse.MatchStatementCase,
+			*parse.SynchronizedBlockStatement, *parse.Block:
+		default:
+			c.addError(node, text.MISPLACED_RETURN_STATEMENT)
+			return parse.ContinueTraversal //ok
+		}
+	}
+
+	c.addError(node, text.MISPLACED_RETURN_STATEMENT)
 	return parse.ContinueTraversal
 }
 

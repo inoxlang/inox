@@ -177,6 +177,9 @@ const (
 
 	//new expressions
 	A_STRUCT_TYPE_NAME_IS_EXPECTED = "a struct type name is expected"
+
+	//return statements
+	MISPLACED_RETURN_STATEMENT = "misplaced return statement"
 )
 
 var (

@@ -3953,6 +3953,15 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
+		t.Run("direct child of an embedded module", func(t *testing.T) {
+			n, src := mustParseCode(`
+				go do {
+					return 
+				}
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
 		t.Run("direct child of a for statement", func(t *testing.T) {
 			n, src := mustParseCode(`
 				for i, e in [] {
@@ -3960,6 +3969,20 @@ func TestCheck(t *testing.T) {
 				}
 			`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("direct child of a for expression with a body", func(t *testing.T) {
+			n, src := mustParseCode(`
+				(for i, e in [] {
+					return 1
+				})
+			`)
+			returnStmt := parse.FindNode(n, (*parse.ReturnStatement)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(returnStmt, src, text.MISPLACED_RETURN_STATEMENT),
+			)
+			assert.Equal(t, expectedErr, err)
 		})
 
 		t.Run("direct child of a for statement inside a for expression", func(t *testing.T) {
@@ -3971,10 +3994,15 @@ func TestCheck(t *testing.T) {
 				})
 			`)
 
-			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+			returnStmt := parse.FindNode(n, (*parse.ReturnStatement)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(returnStmt, src, text.MISPLACED_RETURN_STATEMENT),
+			)
+			assert.Equal(t, expectedErr, err)
 		})
 
-		t.Run("directed child of the 'if' clause of an if statement", func(t *testing.T) {
+		t.Run("direct child of the 'if' clause of an if statement", func(t *testing.T) {
 			n, src := mustParseCode(`
 				if true {
 					return 1
@@ -3983,7 +4011,7 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
-		t.Run("directed child of the 'else' clause of an if-else statement", func(t *testing.T) {
+		t.Run("direct child of the 'else' clause of an if-else statement", func(t *testing.T) {
 			n, src := mustParseCode(`
 				if true {
 
@@ -3994,7 +4022,7 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
-		t.Run("direct child of non-default case's body in an switch statement", func(t *testing.T) {
+		t.Run("direct child of a non-default case's body in an switch statement", func(t *testing.T) {
 			n, src := mustParseCode(`
 				switch 1 {
 					1 {
@@ -4005,7 +4033,7 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
-		t.Run("direct child of default case's body in an switch statement", func(t *testing.T) {
+		t.Run("direct child of a default case's body in an switch statement", func(t *testing.T) {
 			n, src := mustParseCode(`
 				switch 1 {
 					defaultcase {
@@ -4016,15 +4044,27 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
-		t.Run("direct child of an embedded module", func(t *testing.T) {
+		t.Run("direct child of a non-default case's body in an match statement", func(t *testing.T) {
 			n, src := mustParseCode(`
-				go do {
-					return 
+				match 1 {
+					1 {
+						return 1
+					}
 				}
 			`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
+		t.Run("direct child of a default case's body in an match statement", func(t *testing.T) {
+			n, src := mustParseCode(`
+				match 1 {
+					defaultcase {
+						return 1
+					}
+				}
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
 	})
 
 	t.Run("call", func(t *testing.T) {
