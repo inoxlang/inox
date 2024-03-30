@@ -28889,7 +28889,43 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("parenthesized with no namespace", func(t *testing.T) {
+		t.Run("implicit namespace", func(t *testing.T) {
+			n := mustparseChunk(t, "<div></div>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 11}, nil, false},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 11}, nil, false},
+						Element: &XMLElement{
+							NodeBase: NodeBase{NodeSpan{0, 11}, nil, false},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{0, 5}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{1, 4}, nil, false},
+									Name:     "div",
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{5, 5}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &XMLClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{5, 11}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{7, 10}, nil, false},
+									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("parenthesized, implicit namespace", func(t *testing.T) {
 			n := mustparseChunk(t, "(<div></div>)")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},

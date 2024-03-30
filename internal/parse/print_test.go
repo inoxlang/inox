@@ -570,6 +570,15 @@ func TestPrint(t *testing.T) {
 		"fn() int =",
 		"fn() int =\n",
 		//XML expressions with an implicit namespace
+		"<div>",
+		"<div></div>",
+		"<div><ul>",
+		"<div><ul></div>",
+		"<div><ul></ol></div>",
+		"<div><ul></ol><a></a></div>",
+		"<div><ul></ol><a></span>",
+		"<div><ul></ol><a></span></div>",
+		//parenthesized XML expressions with an implicit namespace
 		"(<div>",
 		"(<div></div>)",
 		"(<div><ul>",

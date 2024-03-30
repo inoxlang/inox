@@ -199,6 +199,11 @@ func (p *parser) parseExpression(config ...exprParsingConfig) (expr Node, isMiss
 		}, false
 	case '@':
 		return p.parseLazyAndCodegenStuff(), false
+	case '<':
+		//XML expression without namespace.
+		if p.i < p.len && isAlpha(p.s[p.i+1]) {
+			return p.parseXMLExpression(nil, p.i), false
+		}
 	case '*':
 		start := p.i
 		p.tokens = append(p.tokens, Token{Type: ASTERISK, Span: NodeSpan{p.i, p.i + 1}})
