@@ -2783,6 +2783,24 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			},
 			{
 				input: `
+					c1 = 0
+					c2 = 0;
+					for i, e in (5 .. 6) {
+						switch i {
+							0 {
+								continue
+							}
+						}
+						c1 = ($c1 + $i);
+						c2 = ($c2 + $e);
+					};
+					return [$c1, $c2]
+				`,
+				result:          core.NewWrappedValueList(core.Int(1), core.Int(6)),
+				doSymbolicCheck: true,
+			},
+			{
+				input: `
 				c = 0
 				for (1 .. 2) {
 					c = ($c + 1)
@@ -3682,6 +3700,69 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				result: core.NewWrappedValueList(core.Int(0), core.Int(1)),
 			},
 			{
+				name: "case value represented as a Go pointer type",
+				input: `
+					switch %/{:a} { 
+						%/{:b} { a = 1 } 
+						%/{:a} { a = 2 } 
+						defaultcase { a = 3 }
+					}
+					return a
+				`,
+				result: core.Int(2),
+			},
+			{
+				name: "conditional break in first case",
+				input: `
+					a = 1
+					b = 0
+
+					for e in [1] {
+						switch 0 {
+							0 { 
+								if true {
+									break
+								}
+								a = 2
+							} 
+							defaultcase {
+								a = 3
+							}
+						}
+						# The following line should be executed.
+						b = 1
+						break
+					}
+					
+					return [a, b]
+				`,
+				result: NewWrappedValueList(Int(1), Int(1)),
+			},
+			{
+				name: "unconditional break in first case",
+				input: `
+					a = 1
+					b = 0
+
+					for e in [1] {
+						switch 0 {
+							0 { 
+								break
+							} 
+							defaultcase {
+								a = 2
+							}
+						}
+						# The following line should be executed.
+						b = 1
+						break
+					}
+					
+					return [a, b]
+				`,
+				result: NewWrappedValueList(Int(1), Int(1)),
+			},
+			{
 				name: "stack check: 2 cases",
 				input: `
 					switch 1 { 
@@ -3914,6 +3995,57 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return [$a,$b]
 				`,
 				result: core.NewWrappedValueList(core.Int(0), core.Int(1)),
+			},
+			{
+				name: "conditional break in first case",
+				input: `
+					a = 1
+					b = 0
+
+					for e in [1] {
+						match 0 {
+							0 { 
+								if true {
+									break
+								}
+								a = 2
+							} 
+							defaultcase {
+								a = 3
+							}
+						}
+						# The following line should be executed.
+						b = 1
+						break
+					}
+					
+					return [a, b]
+				`,
+				result: NewWrappedValueList(Int(1), Int(1)),
+			},
+			{
+				name: "unconditional break in first case",
+				input: `
+					a = 1
+					b = 0
+
+					for e in [1] {
+						match 0 {
+							0 { 
+								break
+							} 
+							defaultcase {
+								a = 2
+							}
+						}
+						# The following line should be executed.
+						b = 1
+						break
+					}
+					
+					return [a, b]
+				`,
+				result: NewWrappedValueList(Int(1), Int(1)),
 			},
 			{
 				name: "stack check: 2 cases",

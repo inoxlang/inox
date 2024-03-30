@@ -3433,13 +3433,14 @@ func evalSwitchStatement(n *parse.SwitchStatement, state *TreeWalkState) error {
 	if err != nil {
 		return err
 	}
+
 	for _, switchCase := range n.Cases {
 		for _, valNode := range switchCase.Values {
 			val, err := TreeWalkEval(valNode, state)
 			if err != nil {
 				return err
 			}
-			if discriminant == val {
+			if discriminant.Equal(state.Global.Ctx, val, map[uintptr]uintptr{}, 0) {
 				_, err := TreeWalkEval(switchCase.Block, state)
 				if err != nil {
 					return err
@@ -3456,6 +3457,11 @@ func evalSwitchStatement(n *parse.SwitchStatement, state *TreeWalkState) error {
 		}
 	}
 switch_end:
+
+	if state.iterationChange == BreakIteration {
+		state.iterationChange = NoIterationChange
+	}
+
 	return nil
 }
 
@@ -3540,6 +3546,10 @@ func evalMatchStatement(n *parse.MatchStatement, state *TreeWalkState) error {
 		}
 	}
 match_end:
+
+	if state.iterationChange == BreakIteration {
+		state.iterationChange = NoIterationChange
+	}
 
 	return nil
 }
