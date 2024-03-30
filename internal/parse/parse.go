@@ -1018,67 +1018,6 @@ func (p *parser) parseDashStartingExpression(precededByOpeningParen bool) Node {
 	}
 }
 
-func (p *parser) parseLazyAndCodegenStuff() Node {
-	p.panicIfContextDone()
-
-	start := p.i
-	p.i++
-	if p.i >= p.len {
-		p.tokens = append(p.tokens, Token{Type: UNEXPECTED_CHAR, Span: NodeSpan{start, p.i}, Raw: "@"})
-		return &UnknownNode{
-			NodeBase: NodeBase{
-				Span: NodeSpan{start, p.i},
-				Err:  &ParsingError{UnspecifiedParsingError, AT_SYMBOL_SHOULD_BE_FOLLOWED_BY},
-			},
-		}
-	}
-
-	if p.s[p.i] == '(' { //lazy expression
-		//no increment on purpose
-		p.tokens = append(p.tokens, Token{Type: AT_SIGN, Span: NodeSpan{start, start + 1}})
-
-		e, _ := p.parseExpression()
-		return &LazyExpression{
-			NodeBase: NodeBase{
-				Span: NodeSpan{start, p.i},
-			},
-			Expression: e,
-		}
-	} else if IsFirstIdentChar(p.s[p.i]) { //url expression starting with a variable
-		j := p.i
-		p.i--
-
-		for j < p.len && IsIdentChar(p.s[j]) {
-			j++
-		}
-
-		for j < p.len && isSpaceNotLF(p.s[j]) {
-			j++
-		}
-
-		if j >= p.len || (p.s[j] != '=' && isUnpairedOrIsClosingDelim(p.s[j])) {
-			p.i = j
-			return &InvalidAliasRelatedNode{
-				NodeBase: NodeBase{
-					NodeSpan{start, j},
-					&ParsingError{UnspecifiedParsingError, UNTERMINATED_URL_EXPRESSION},
-					false,
-				},
-				Raw: string(p.s[start:j]),
-			}
-		}
-	}
-
-	p.tokens = append(p.tokens, Token{Type: UNEXPECTED_CHAR, Span: NodeSpan{start, p.i}, Raw: "@"})
-
-	return &UnknownNode{
-		NodeBase: NodeBase{
-			Span: NodeSpan{start, p.i},
-			Err:  &ParsingError{UnspecifiedParsingError, AT_SYMBOL_SHOULD_BE_FOLLOWED_BY},
-		},
-	}
-}
-
 func (p *parser) parseQuotedStringLiteral() *DoubleQuotedStringLiteral {
 	p.panicIfContextDone()
 

@@ -2165,7 +2165,7 @@ func (c *checker) checkVariable(node *parse.Variable, scopeNode parse.Node, ance
 			return parse.ContinueTraversal
 		}
 
-		if _, isLazyExpr := scopeNode.(*parse.LazyExpression); isLazyExpr {
+		if _, isLazyExpr := scopeNode.(*parse.QuotedExpression); isLazyExpr {
 			return parse.ContinueTraversal
 		}
 
@@ -2236,7 +2236,7 @@ func (c *checker) checkVariable(node *parse.Variable, scopeNode parse.Node, ance
 
 	//Local variable
 
-	if _, isLazyExpr := scopeNode.(*parse.LazyExpression); isLazyExpr {
+	if _, isLazyExpr := scopeNode.(*parse.QuotedExpression); isLazyExpr {
 		return parse.ContinueTraversal
 	}
 
@@ -2268,7 +2268,7 @@ func (c *checker) checkIdentifier(node *parse.IdentifierLiteral, parent, scopeNo
 		return parse.ContinueTraversal
 	}
 
-	if _, ok := scopeNode.(*parse.LazyExpression); ok {
+	if _, ok := scopeNode.(*parse.QuotedExpression); ok {
 		return parse.ContinueTraversal
 	}
 

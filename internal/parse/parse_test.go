@@ -19528,28 +19528,20 @@ func testParse(
 		}, n)
 	})
 
-	t.Run("lazy expression", func(t *testing.T) {
+	t.Run("quoted expression", func(t *testing.T) {
 
 		t.Run("integer value", func(t *testing.T) {
 			n := mustparseChunk(t, "@(1)")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 4}, nil, false},
 				Statements: []Node{
-					&LazyExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 4},
-							nil,
-							false,
-						},
+					&QuotedExpression{
+						NodeBase: NodeBase{Span: NodeSpan{0, 4}},
 						Expression: &IntLiteral{
 							NodeBase: NodeBase{
 								NodeSpan{2, 3},
 								nil,
 								true,
-								/*[]Token{
-									{Type: OPENING_PARENTHESIS, Span: NodeSpan{1, 2}},
-									{Type: CLOSING_PARENTHESIS, Span: NodeSpan{3, 4}},
-								},*/
 							},
 							Raw:   "1",
 							Value: 1,
@@ -19565,7 +19557,7 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 3}, nil, false},
 				Statements: []Node{
-					&LazyExpression{
+					&QuotedExpression{
 						NodeBase: NodeBase{
 							NodeSpan{0, 3},
 							nil,
@@ -19576,9 +19568,6 @@ func testParse(
 								NodeSpan{2, 3},
 								&ParsingError{UnspecifiedParsingError, UNTERMINATED_PARENTHESIZED_EXPR_MISSING_CLOSING_PAREN},
 								true,
-								/*[]Token{
-									{Type: OPENING_PARENTHESIS, Span: NodeSpan{1, 2}},
-								},*/
 							},
 							Raw:   "1",
 							Value: 1,
@@ -19588,12 +19577,12 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("lazy expression followed by another expression", func(t *testing.T) {
+		t.Run("followed by another expression", func(t *testing.T) {
 			n := mustparseChunk(t, "@(1) 2")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, false},
 				Statements: []Node{
-					&LazyExpression{
+					&QuotedExpression{
 						NodeBase: NodeBase{
 							NodeSpan{0, 4},
 							nil,
@@ -19622,6 +19611,137 @@ func testParse(
 			}, n)
 		})
 
+	})
+
+	t.Run("quoted statements", func(t *testing.T) {
+
+		t.Run("empty", func(t *testing.T) {
+			n := mustparseChunk(t, "@{}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 3}, nil, false},
+				Statements: []Node{
+					&QuotedStatements{
+						NodeBase: NodeBase{Span: NodeSpan{0, 3}},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("empty: linefeed", func(t *testing.T) {
+			n := mustparseChunk(t, "@{\n}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 4}, nil, false},
+				Statements: []Node{
+					&QuotedStatements{
+						NodeBase: NodeBase{Span: NodeSpan{0, 4}},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("single statement on the same line", func(t *testing.T) {
+			n := mustparseChunk(t, "@{ a; }")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 7}, nil, false},
+				Statements: []Node{
+					&QuotedStatements{
+						NodeBase: NodeBase{Span: NodeSpan{0, 7}},
+						Statements: []Node{
+							&CallExpression{
+								NodeBase: NodeBase{Span: NodeSpan{3, 5}},
+								Callee: &IdentifierLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{3, 4}},
+									Name:     "a",
+								},
+								Must:              true,
+								CommandLikeSyntax: true,
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("two statements on the same line", func(t *testing.T) {
+			n := mustparseChunk(t, "@{ a; b; }")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 10}, nil, false},
+				Statements: []Node{
+					&QuotedStatements{
+						NodeBase: NodeBase{Span: NodeSpan{0, 10}},
+						Statements: []Node{
+							&CallExpression{
+								NodeBase: NodeBase{Span: NodeSpan{3, 5}},
+								Callee: &IdentifierLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{3, 4}},
+									Name:     "a",
+								},
+								Must:              true,
+								CommandLikeSyntax: true,
+							},
+							&CallExpression{
+								NodeBase: NodeBase{Span: NodeSpan{6, 8}},
+								Callee: &IdentifierLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{6, 7}},
+									Name:     "b",
+								},
+								Must:              true,
+								CommandLikeSyntax: true,
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("two statements on different lines", func(t *testing.T) {
+			n := mustparseChunk(t, "@{\na;\nb; }")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 10}, nil, false},
+				Statements: []Node{
+					&QuotedStatements{
+						NodeBase: NodeBase{Span: NodeSpan{0, 10}},
+						Statements: []Node{
+							&CallExpression{
+								NodeBase: NodeBase{Span: NodeSpan{3, 5}},
+								Callee: &IdentifierLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{3, 4}},
+									Name:     "a",
+								},
+								Must:              true,
+								CommandLikeSyntax: true,
+							},
+							&CallExpression{
+								NodeBase: NodeBase{Span: NodeSpan{6, 8}},
+								Callee: &IdentifierLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{6, 7}},
+									Name:     "b",
+								},
+								Must:              true,
+								CommandLikeSyntax: true,
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("missing closing brace", func(t *testing.T) {
+			n, err := parseChunk(t, "@{", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 2}, nil, false},
+				Statements: []Node{
+					&QuotedStatements{
+						NodeBase: NodeBase{
+							NodeSpan{0, 2},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_QUOTED_STATEMENTS_REGION_MISSING_CLOSING_BRACE},
+							false,
+						},
+					},
+				},
+			}, n)
+		})
 	})
 
 	t.Run("switch statement", func(t *testing.T) {

@@ -27,9 +27,9 @@ func (p *parser) parseStatement() Node {
 
 		//function call with command-line syntax and no arguments
 		if p.i < p.len && p.s[p.i] == ';' {
-			if p.i < p.len {
-				p.i++
-			}
+			p.tokens = append(p.tokens, Token{Type: SEMICOLON, Span: NodeSpan{p.i, p.i + 1}})
+			p.i++
+
 			return &CallExpression{
 				NodeBase: NodeBase{
 					Span: NodeSpan{expr.Base().Span.Start, p.i},

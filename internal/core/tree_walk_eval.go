@@ -1747,7 +1747,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			return patt, nil
 		}
 		return evalPatternNode(n.Value, state)
-	case *parse.LazyExpression:
+	case *parse.QuotedExpression:
 		return AstNode{
 			Node:   n.Expression,
 			Chunk_: state.currentChunk(),

@@ -552,6 +552,9 @@ const (
 
 	//value path literals
 	UNTERMINATED_VALUE_PATH_LITERAL = "unterminated value path literal"
+
+	//quoted statements
+	UNTERMINATED_QUOTED_STATEMENTS_REGION_MISSING_CLOSING_BRACE = "unterminated quoted statements region, missing closing brace '}'"
 )
 
 func fmtInvalidRegexLiteral(err string) string {
@@ -728,6 +731,10 @@ func fmtRuneInfo(r rune) string {
 
 func fmtUnexpectedCharInBlockOrModule(r rune) string {
 	return fmt.Sprintf("unexpected char %s in block or module", fmtRuneInfo(r))
+}
+
+func fmtUnexpectedCharInQuotedStatements(r rune) string {
+	return fmt.Sprintf("unexpected char %s in quoted statements", fmtRuneInfo(r))
 }
 
 func fmtUnexpectedCharInParenthesizedExpression(r rune) string {

@@ -198,7 +198,7 @@ func (p *parser) parseExpression(config ...exprParsingConfig) (expr Node, isMiss
 			Name: string(p.s[exprStartIndex+1 : p.i]),
 		}, false
 	case '@':
-		return p.parseLazyAndCodegenStuff(), false
+		return p.parseQuotedAndMetaStuff(), false
 	case '<':
 		//XML expression without namespace.
 		if p.i < p.len && isAlpha(p.s[p.i+1]) {

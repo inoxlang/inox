@@ -606,7 +606,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		return evalFunctionPatternExpression(n, state)
 	case *parse.PatternConversionExpression:
 		return evalPatternNode(n.Value, state)
-	case *parse.LazyExpression:
+	case *parse.QuotedExpression:
 		return &AstNode{Node: n}, nil
 	case *parse.MemberExpression:
 		left, err := _symbolicEval(n.Left, state, evalOptions{

@@ -149,7 +149,7 @@ type Comment struct {
 
 func IsScopeContainerNode(node Node) bool {
 	switch node.(type) {
-	case *Chunk, *EmbeddedModule, *FunctionExpression, *FunctionPatternExpression, *LazyExpression,
+	case *Chunk, *EmbeddedModule, *FunctionExpression, *FunctionPatternExpression, *QuotedExpression,
 		*InitializationBlock, *MappingExpression, *StaticMappingEntry, *DynamicMappingEntry, *TestSuiteExpression, *TestCaseExpression,
 		*ExtendStatement,       //ExtendStatement being a scope container is not 100% incorrect
 		*StructDefinition,      //same
@@ -2012,12 +2012,21 @@ func (stmt *InclusionImportStatement) PathSource() (_ string, absolute bool) {
 	panic(errors.New(".Source of InclusionImportStatement is not a *RelativePathLiteral nor *AbsolutePathLiteral"))
 }
 
-type LazyExpression struct {
+type QuotedExpression struct {
 	NodeBase
 	Expression Node
 }
 
-func (LazyExpression) Kind() NodeKind {
+func (QuotedExpression) Kind() NodeKind {
+	return Expr
+}
+
+type QuotedStatements struct {
+	NodeBase
+	Statements []Node
+}
+
+func (QuotedStatements) Kind() NodeKind {
 	return Expr
 }
 
@@ -2989,8 +2998,12 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 		walk(n.Result, node, ancestorChain, fn, afterFn)
 	case *DefaultCaseWithResult:
 		walk(n.Result, node, ancestorChain, fn, afterFn)
-	case *LazyExpression:
+	case *QuotedExpression:
 		walk(n.Expression, node, ancestorChain, fn, afterFn)
+	case *QuotedStatements:
+		for _, stmt := range n.Statements {
+			walk(stmt, node, ancestorChain, fn, afterFn)
+		}
 	case *DynamicMemberExpression:
 		walk(n.Left, node, ancestorChain, fn, afterFn)
 		walk(n.PropertyName, node, ancestorChain, fn, afterFn)

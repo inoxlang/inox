@@ -675,8 +675,16 @@ func TestPrint(t *testing.T) {
 		"extend user",
 		"extend ({})",
 		"extend user {}",
-		//others
+		//quoted expressions
 		"@(1)",
+		"@(1",
+		//quoted statements
+		"@{}",
+		"@{",
+		"@{a;}",
+		"@{a;",
+		"@{a;b;}",
+		"@{a;\nb;}",
 	}
 
 	n, _ := ParseChunk("https://example.com/?x={1}&", "")
