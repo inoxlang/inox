@@ -205,7 +205,7 @@ func EvalSimpleValueLiteral(n parse.SimpleValueLiteral, global *GlobalState) (Se
 		}
 		return evalRate(q, node.DivUnit)
 	case *parse.NamedSegmentPathPatternLiteral:
-		return &NamedSegmentPathPattern{node: node}, nil
+		return NewNamedSegmentPathPattern(node),nil
 	case *parse.RegularExpressionLiteral:
 		return NewRegexPattern(node.Value), nil
 	case *parse.PathSlice:

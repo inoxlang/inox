@@ -1164,7 +1164,7 @@ func (patt *NamedSegmentPathPattern) Equal(ctx *Context, other Value, alreadyCom
 		return false
 	}
 
-	return patt.node == otherPatt.node
+	return patt.node == otherPatt.node || patt.node.StringValue == otherPatt.node.StringValue
 }
 
 func (patt *ObjectPattern) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
