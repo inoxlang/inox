@@ -11,20 +11,21 @@ namespace that interprets it:
 # The XML structure is passed to the html namespace.
 html<div></div> 
 
-# The namespace can be omitted if the expression is parenthesized.
-# The implicit namespace is always html.
+The namespace is optional and defaults to html if not explicitly specified.
+<div></div> 
+
+# Interpolation
 string = "world"
-element = (<div> Hello {string} ! </div>)
+element = <div> Hello {string} ! </div>
 
 # Self closing tag
-(<img src="..."/>)
+<img src="..."/>
 ```
 
-In the `<script>` and `<style>` tags, anything inside single brackets is not
-treated as an interpolation:
+In the `<script>` and `<style>` tags, anything inside single brackets is treated as text:
 
 ```
-html<html>
+<html>
     <style>
         html, body { # not an interpolation
             margin: 0;

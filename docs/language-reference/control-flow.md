@@ -179,12 +179,12 @@ The `break` statement causes an exit from the current case.
 ```
 verbose = false
 
-switch 1 {
-    1 {
+match value {
+    %int {
         if !verbose {
             break
         }
-        print 1
+        print "integer"
     }
     defaultcase { }
 }
