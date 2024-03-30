@@ -1086,7 +1086,68 @@ func TestPrepareLocalModuleWithInvalidInputs(t *testing.T) {
 
 	})
 
-	t.Run("recoverable parsing error", func(t *testing.T) {
+	t.Run("recoverable parsing error not supported by symbolic evaluation", func(t *testing.T) {
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.ix")
+		compilationCtx := createCompilationCtx(dir)
+		defer compilationCtx.CancelGracefully()
+
+		os.WriteFile(file, []byte(`
+			manifest {
+				permissions: {
+					read: %/...
+				}
+			}
+			a = <
+			b = 1
+			c = d 		  	# static check error
+			(b + "string") 	# symbolic check error
+		
+		`), 0o600)
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
+			Filesystem:  fs_ns.GetOsFilesystem(),
+		})
+		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
+
+		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
+			Fpath:                     file,
+			ParsingCompilationContext: compilationCtx,
+			ParentContext:             ctx,
+			ParentContextRequired:     true,
+			Out:                       io.Discard,
+			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
+		})
+
+		if !assert.Error(t, err) {
+			return
+		}
+
+		// the module should be present
+		if !assert.NotNil(t, mod) {
+			return
+		}
+
+		// the state should be present because we can still perform static check
+		if !assert.NotNil(t, state) {
+			return
+		}
+		if !assert.True(t, state.Ctx.HasPermission(core.CreateFsReadPerm(core.PathPattern("/...")))) {
+			return
+		}
+
+		// static check should have been performed
+		if !assert.NotEmpty(t, state.StaticCheckData.Errors()) {
+			return
+		}
+
+		// symbolic check should not have been performed
+		assert.True(t, state.SymbolicData.IsEmpty())
+	})
+
+	t.Run("recoverable parsing error supported by symbolic evaluation", func(t *testing.T) {
 		dir := t.TempDir()
 		file := filepath.Join(dir, "script.ix")
 		compilationCtx := createCompilationCtx(dir)
@@ -1143,8 +1204,8 @@ func TestPrepareLocalModuleWithInvalidInputs(t *testing.T) {
 			return
 		}
 
-		// symbolic check should not have been performed
-		assert.True(t, state.SymbolicData.IsEmpty())
+		// symbolic check should have been performed
+		assert.False(t, state.SymbolicData.IsEmpty())
 	})
 
 	t.Run("invalid CLI arguments: missing positional argument", func(t *testing.T) {
@@ -3128,7 +3189,55 @@ func TestPrepareLocalModuleWithCache(t *testing.T) {
 
 func TestPrepareDevModeIncludableChunkFile(t *testing.T) {
 
-	t.Run("recoverable parsing error", func(t *testing.T) {
+	t.Run("recoverable parsing error not supported by symbolic evaluation", func(t *testing.T) {
+		fs := fs_ns.NewMemFilesystem(10000)
+
+		util.WriteFile(fs, "/included.ix", []byte(`
+			includable-file
+
+			a = <
+			b = 1
+			c = d 		  	# static check error
+			(b + "string") 	# symbolic check error
+		
+		`), 0o600)
+
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{
+			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.CreateFsReadPerm(core.PathPattern("/..."))),
+			Filesystem:  fs,
+		}, nil)
+
+		state, _, _, err := core.PrepareExtractionModeIncludableFile(core.IncludableFilePreparationArgs{
+			Fpath:                          "/included.ix",
+			ParsingContext:                 ctx,
+			LogOut:                         io.Discard,
+			Out:                            io.Discard,
+			IncludedChunkContextFileSystem: fs,
+		})
+
+		if !assert.Error(t, err) {
+			return
+		}
+
+		// the state should be present because we can still perform static check
+		if !assert.NotNil(t, state) {
+			return
+		}
+
+		if !assert.NotEmpty(t, state.Module.ParsingErrors) {
+			return
+		}
+
+		// static check should have been performed
+		if !assert.NotEmpty(t, state.StaticCheckData.Errors()) {
+			return
+		}
+
+		// symbolic check should not have been performed
+		assert.True(t, state.SymbolicData.IsEmpty())
+	})
+
+	t.Run("recoverable parsing error supported by symbolic evaluation", func(t *testing.T) {
 		fs := fs_ns.NewMemFilesystem(10000)
 
 		util.WriteFile(fs, "/included.ix", []byte(`
@@ -3172,8 +3281,8 @@ func TestPrepareDevModeIncludableChunkFile(t *testing.T) {
 			return
 		}
 
-		// symbolic check should not have been performed
-		assert.True(t, state.SymbolicData.IsEmpty())
+		// symbolic check should have been performed
+		assert.False(t, state.SymbolicData.IsEmpty())
 	})
 
 	t.Run("static check error", func(t *testing.T) {
