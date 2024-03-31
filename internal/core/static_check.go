@@ -1895,7 +1895,11 @@ func (c *checker) checkFuncExpr(node *parse.FunctionExpression, closestModule pa
 	}
 
 	for _, p := range node.Parameters {
-		name := p.Var.Name
+		paramNameIdent, ok := p.Var.(*parse.IdentifierLiteral)
+		if !ok {
+			continue
+		}
+		name := paramNameIdent.Name
 
 		globalVariables := c.getModGlobalVars(closestModule)
 
@@ -1917,7 +1921,12 @@ func (c *checker) checkFuncPatternExpr(node *parse.FunctionPatternExpression, cl
 			continue
 		}
 
-		name := p.Var.Name
+		paramNameIdent, ok := p.Var.(*parse.IdentifierLiteral)
+		if !ok {
+			continue
+		}
+
+		name := paramNameIdent.Name
 
 		globalVariables := c.getModGlobalVars(closestModule)
 

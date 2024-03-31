@@ -19,31 +19,8 @@ func (p *parser) parseQuotedAndMetaStuff() Node {
 	}
 
 	switch p.s[p.i] {
-	case '(': //quoted expression
-		p.tokens = append(p.tokens, Token{Type: AT_SIGN, Span: NodeSpan{start, start + 1}})
-
-		// The opening parenthesis is not eaten because the expression is parsed as a parenthesized expression.
-
-		var parsingErr *ParsingError
-
-		if p.inQuotedRegion {
-			parsingErr = &ParsingError{UnspecifiedParsingError, NESTED_QUOTED_REGIONS_NOT_ALLOWED}
-		} else {
-			p.inQuotedRegion = true
-			defer func() {
-				p.inQuotedRegion = false
-			}()
-		}
-
-		e, _ := p.parseExpression()
-
-		return &QuotedExpression{
-			NodeBase: NodeBase{
-				Span: NodeSpan{start, p.i},
-				Err:  parsingErr,
-			},
-			Expression: e,
-		}
+	case '(':
+		return p.parseQuotedExpression()
 	case '{':
 		return p.parseQuotedStatements()
 	default:
@@ -68,6 +45,41 @@ func (p *parser) parseQuotedAndMetaStuff() Node {
 				Err:  &ParsingError{UnspecifiedParsingError, AT_SYMBOL_SHOULD_BE_FOLLOWED_BY},
 			},
 		}
+	}
+}
+
+func (p *parser) parseQuotedExpression() *QuotedExpression {
+	start := p.i - 1
+	p.tokens = append(p.tokens, Token{Type: AT_SIGN, Span: NodeSpan{start, start + 1}})
+
+	// The opening parenthesis is not eaten because the expression is parsed as a parenthesized expression.
+
+	var parsingErr *ParsingError
+
+	if p.inQuotedRegion {
+		parsingErr = &ParsingError{UnspecifiedParsingError, NESTED_QUOTED_REGIONS_NOT_ALLOWED}
+	} else {
+		p.inQuotedRegion = true
+		defer func() {
+			p.inQuotedRegion = false
+		}()
+	}
+
+	if p.inPattern {
+		p.inPattern = false
+		defer func() {
+			p.inPattern = true
+		}()
+	}
+
+	e, _ := p.parseExpression()
+
+	return &QuotedExpression{
+		NodeBase: NodeBase{
+			Span: NodeSpan{start, p.i},
+			Err:  parsingErr,
+		},
+		Expression: e,
 	}
 }
 
@@ -98,6 +110,13 @@ func (p *parser) parseQuotedStatements() *QuotedStatements {
 		p.inQuotedRegion = true
 		defer func() {
 			p.inQuotedRegion = false
+		}()
+	}
+
+	if p.inPattern {
+		p.inPattern = false
+		defer func() {
+			p.inPattern = true
 		}()
 	}
 
@@ -206,7 +225,13 @@ func (p *parser) parseUnquotedRegion() *UnquotedRegion {
 		}
 	} else {
 		parsingErr = &ParsingError{UnspecifiedParsingError, UNQUOTED_REGIONS_ONLY_ALLOWED_INSIDE_QUOTED_REGIONS}
+	}
 
+	if p.inPattern {
+		p.inPattern = false
+		defer func() {
+			p.inPattern = true
+		}()
 	}
 
 	//Parse the expression.

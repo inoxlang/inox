@@ -562,7 +562,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 	}
 
 	for i, p := range parameterNodes[:nonVariadicParamCount] {
-		name := p.Var.Name
+		name := p.Var.(*parse.IdentifierLiteral).Name
 		state.setLocal(name, args[i], &TypePattern{val: inoxFn.parameters[i]})
 	}
 
@@ -572,7 +572,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 
 	if isVariadic {
 		variadicArgs := NewArray(args[nonVariadicParamCount:]...)
-		name := variadicParamNode.Var.Name
+		name := variadicParamNode.Var.(*parse.IdentifierLiteral).Name
 		state.setLocal(name, variadicArgs, nil)
 	}
 

@@ -569,6 +569,11 @@ func TestPrint(t *testing.T) {
 		"fn() int => 0",
 		"fn() int =",
 		"fn() int =\n",
+		//function expressions with unquoted regions
+		"fn(<{param}>){}",
+		"fn(<{param}> int){}",
+		"fn(<{param}> <{type}>){}",
+		"fn(<{param1}> <{type1}>, <{param2}> <{type2}>){}",
 		//XML expressions with an implicit namespace
 		"<div>",
 		"<div></div>",
@@ -678,6 +683,7 @@ func TestPrint(t *testing.T) {
 		//quoted expressions
 		"@(1)",
 		"@(1",
+		"@(@())",
 		//quoted statements
 		"@{}",
 		"@{",
@@ -685,6 +691,8 @@ func TestPrint(t *testing.T) {
 		"@{a;",
 		"@{a;b;}",
 		"@{a;\nb;}",
+		"@{@{}}",
+		"@{@()}",
 	}
 
 	n, _ := ParseChunk("https://example.com/?x={1}&", "")

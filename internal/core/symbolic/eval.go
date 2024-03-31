@@ -3339,7 +3339,11 @@ func evalFunctionExpression(n *parse.FunctionExpression, state *State, options e
 
 	//declare arguments
 	for i, p := range n.Parameters[:n.NonVariadicParamCount()] {
-		name := p.Var.Name
+		paramNameIdent, ok := p.Var.(*parse.IdentifierLiteral)
+		if !ok {
+			return ANY_INOX_FUNC, nil
+		}
+		name := paramNameIdent.Name
 		var paramValue Value = ANY
 		var paramType Pattern
 
@@ -3357,6 +3361,10 @@ func evalFunctionExpression(n *parse.FunctionExpression, state *State, options e
 		state.SetMostSpecificNodeValue(p.Var, paramValue)
 		params[i] = paramValue
 		paramNames[i] = name
+	}
+
+	if n.IsVariadic && !utils.Implements[*parse.IdentifierLiteral](n.VariadicParameter().Var) {
+		return ANY_INOX_FUNC, nil
 	}
 
 	var signatureReturnType Value
@@ -3411,7 +3419,11 @@ func evalFunctionExpression(n *parse.FunctionExpression, state *State, options e
 	if n.IsVariadic {
 		index := n.NonVariadicParamCount()
 		variadicParam := n.VariadicParameter()
-		paramNames[index] = variadicParam.Var.Name
+		paramNameIdent, ok := variadicParam.Var.(*parse.IdentifierLiteral)
+		if !ok {
+			return ANY, nil
+		}
+		paramNames[index] = paramNameIdent.Name
 
 		var elemType Value = ANY
 
@@ -3429,7 +3441,7 @@ func evalFunctionExpression(n *parse.FunctionExpression, state *State, options e
 		}
 
 		params[index] = paramType
-		stateFork.setLocal(variadicParam.Var.Name, paramType, nil, variadicParam.Var)
+		stateFork.setLocal(paramNameIdent.Name, paramType, nil, paramNameIdent)
 	}
 	stateFork.symbolicData.SetLocalScopeData(n.Body, stateFork.currentLocalScopeData())
 
@@ -3604,8 +3616,13 @@ func evalFunctionPatternExpression(n *parse.FunctionPatternExpression, state *St
 	// declare arguments
 	for paramIndex, p := range n.Parameters[:n.NonVariadicParamCount()] {
 		name := "_"
+
 		if p.Var != nil {
-			name = p.Var.Name
+			paramNameIdent, ok := p.Var.(*parse.IdentifierLiteral)
+			if !ok {
+				return ANY_FUNCTION_PATTERN, nil
+			}
+			name = paramNameIdent.Name
 		}
 
 		var paramType Value = ANY
@@ -3629,7 +3646,13 @@ func evalFunctionPatternExpression(n *parse.FunctionPatternExpression, state *St
 
 	if n.IsVariadic {
 		variadicParam := n.VariadicParameter()
-		name := variadicParam.Var.Name
+		paramNameIdent, ok := variadicParam.Var.(*parse.IdentifierLiteral)
+		if !ok {
+			return ANY_FUNCTION_PATTERN, nil
+		}
+
+		name := paramNameIdent.Name
+
 		var elemType Value = ANY
 
 		if variadicParam.Type != nil {
@@ -3648,8 +3671,8 @@ func evalFunctionPatternExpression(n *parse.FunctionPatternExpression, state *St
 		parameterTypes[len(parameterTypes)-1] = paramType
 		parameterNames[len(parameterTypes)-1] = name
 
-		stateFork.setLocal(name, paramType, nil, variadicParam.Var)
-		state.SetMostSpecificNodeValue(variadicParam.Var, paramType)
+		stateFork.setLocal(name, paramType, nil, paramNameIdent)
+		state.SetMostSpecificNodeValue(paramNameIdent, paramType)
 	}
 
 	//-----------------------------

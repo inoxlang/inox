@@ -223,7 +223,7 @@ func TreeWalkCallFunc(call TreeWalkCall) (Value, error) {
 
 	//ARGUMENTS
 	for i, p := range fn.Parameters[:nonVariadicParamCount] {
-		name := p.Var.Name
+		name := p.Var.(*parse.IdentifierLiteral).Name
 		currentScope[name] = args[i].(Value)
 	}
 
@@ -233,7 +233,7 @@ func TreeWalkCallFunc(call TreeWalkCall) (Value, error) {
 		for _, e := range _variadicArgs {
 			variadicArgs = append(variadicArgs, e.(Value))
 		}
-		name := fn.Parameters[len(fn.Parameters)-1].Var.Name
+		name := fn.Parameters[len(fn.Parameters)-1].Var.(*parse.IdentifierLiteral).Name
 		currentScope[name] = NewArrayFrom(variadicArgs...)
 	}
 

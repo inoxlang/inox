@@ -1775,13 +1775,12 @@ func (RuneRangeExpression) Kind() NodeKind {
 
 type FunctionExpression struct {
 	NodeBase
-	CaptureList            []Node
-	Parameters             []*FunctionParameter
-	AdditionalInvalidNodes []Node
-	ReturnType             Node //can be nil
-	IsVariadic             bool
-	Body                   Node
-	IsBodyExpression       bool
+	CaptureList      []Node
+	Parameters       []*FunctionParameter
+	ReturnType       Node //can be nil
+	IsVariadic       bool
+	Body             Node
+	IsBodyExpression bool
 }
 
 func (expr FunctionExpression) NonVariadicParamCount() int {
@@ -1831,8 +1830,8 @@ func (FunctionDeclaration) Kind() NodeKind {
 
 type FunctionParameter struct {
 	NodeBase
-	Var        *IdentifierLiteral //can be nil
-	Type       Node               //can be nil
+	Var        Node //can be nil for function patterns, *IdentifierLiteral or *UnquotedRegion
+	Type       Node //can be nil
 	IsVariadic bool
 }
 
@@ -1843,11 +1842,10 @@ type ReadonlyPatternExpression struct {
 
 type FunctionPatternExpression struct {
 	NodeBase
-	Value                  Node
-	Parameters             []*FunctionParameter
-	AdditionalInvalidNodes []Node
-	ReturnType             Node //optional if .Body is present
-	IsVariadic             bool
+	Value      Node
+	Parameters []*FunctionParameter
+	ReturnType Node //optional if .Body is present
+	IsVariadic bool
 }
 
 func (expr FunctionPatternExpression) NonVariadicParamCount() int {
@@ -2729,19 +2727,12 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 
 		walk(n.ReturnType, node, ancestorChain, fn, afterFn)
 		walk(n.Body, node, ancestorChain, fn, afterFn)
-
-		for _, n := range n.AdditionalInvalidNodes {
-			walk(n, node, ancestorChain, fn, afterFn)
-		}
 	case *FunctionPatternExpression:
 		for _, p := range n.Parameters {
 			walk(p, node, ancestorChain, fn, afterFn)
 		}
 
 		walk(n.ReturnType, node, ancestorChain, fn, afterFn)
-		for _, n := range n.AdditionalInvalidNodes {
-			walk(n, node, ancestorChain, fn, afterFn)
-		}
 	case *ReadonlyPatternExpression:
 		walk(n.Pattern, node, ancestorChain, fn, afterFn)
 	case *FunctionParameter:

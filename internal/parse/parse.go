@@ -7482,12 +7482,11 @@ func (p *parser) parseFunction(start int32) Node {
 	p.eatSpace()
 
 	var (
-		funcName               Node
-		funcNameIdent          *IdentifierLiteral
-		parsingErr             *ParsingError
-		additionalInvalidNodes []Node
-		capturedLocals         []Node
-		hasCaptureList         = false
+		funcName       Node
+		funcNameIdent  *IdentifierLiteral
+		parsingErr     *ParsingError
+		capturedLocals []Node
+		hasCaptureList = false
 	)
 
 	createNodeWithError := func() Node {
@@ -7628,14 +7627,13 @@ func (p *parser) parseFunction(start int32) Node {
 			p.i++
 			p.tokens = append(p.tokens, Token{Type: UNEXPECTED_CHAR, Span: NodeSpan{p.i - 1, p.i}, Raw: string(r)})
 
-			additionalInvalidNodes = append(additionalInvalidNodes, &UnknownNode{
+			parameters = append(parameters, &FunctionParameter{
 				NodeBase: NodeBase{
 					NodeSpan{p.i - 1, p.i},
 					&ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInParameters(r)},
 					false,
 				},
 			})
-
 		} else {
 			p.eatSpace()
 
@@ -7652,35 +7650,34 @@ func (p *parser) parseFunction(start int32) Node {
 				typ = nil
 			}
 
-			if ident, ok := varNode.(*IdentifierLiteral); ok {
-				span := varNode.Base().Span
-				if typ != nil {
-					span.End = typ.Base().Span.End
-				}
+			span := varNode.Base().Span
 
+			if typ != nil {
+				span.End = typ.Base().Span.End
+			}
+
+			if ident, ok := varNode.(*IdentifierLiteral); ok {
 				if paramErr == nil && isKeyword(ident.Name) {
 					paramErr = &ParsingError{UnspecifiedParsingError, KEYWORDS_SHOULD_NOT_BE_USED_AS_PARAM_NAMES}
 				}
-
-				parameters = append(parameters, &FunctionParameter{
-					NodeBase: NodeBase{
-						span,
-						paramErr,
-						false,
-					},
-					Var:        varNode.(*IdentifierLiteral),
-					Type:       typ,
-					IsVariadic: isVariadic,
-				})
-			} else {
+			} else if _, ok := varNode.(*UnquotedRegion); !ok {
 				varNode.BasePtr().Err = &ParsingError{UnspecifiedParsingError, PARAM_LIST_OF_FUNC_SHOULD_CONTAIN_PARAMETERS_SEP_BY_COMMAS}
-				additionalInvalidNodes = append(additionalInvalidNodes, varNode)
 
 				if typ != nil {
 					typ.BasePtr().Err = &ParsingError{UnspecifiedParsingError, PARAM_LIST_OF_FUNC_SHOULD_CONTAIN_PARAMETERS_SEP_BY_COMMAS}
-					additionalInvalidNodes = append(additionalInvalidNodes, typ)
 				}
 			}
+
+			parameters = append(parameters, &FunctionParameter{
+				NodeBase: NodeBase{
+					span,
+					paramErr,
+					false,
+				},
+				Var:        varNode,
+				Type:       typ,
+				IsVariadic: isVariadic,
+			})
 		}
 
 		p.eatSpaceNewlineComma()
@@ -7759,13 +7756,12 @@ func (p *parser) parseFunction(start int32) Node {
 			Span: NodeSpan{start, end},
 			Err:  parsingErr,
 		},
-		CaptureList:            capturedLocals,
-		Parameters:             parameters,
-		AdditionalInvalidNodes: additionalInvalidNodes,
-		ReturnType:             returnType,
-		IsVariadic:             isVariadic,
-		Body:                   body,
-		IsBodyExpression:       isBodyExpression,
+		CaptureList:      capturedLocals,
+		Parameters:       parameters,
+		ReturnType:       returnType,
+		IsVariadic:       isVariadic,
+		Body:             body,
+		IsBodyExpression: isBodyExpression,
 	}
 
 	if funcName != nil {
@@ -7801,9 +7797,8 @@ func (p *parser) parseFunctionPattern(start int32, percentPrefixed bool) Node {
 	p.eatSpace()
 
 	var (
-		parsingErr             *ParsingError
-		additionalInvalidNodes []Node
-		capturedLocals         []Node
+		parsingErr     *ParsingError
+		capturedLocals []Node
 	)
 
 	createNodeWithError := func() Node {
@@ -7858,7 +7853,7 @@ func (p *parser) parseFunctionPattern(start int32, percentPrefixed bool) Node {
 			p.i++
 			p.tokens = append(p.tokens, Token{Type: UNEXPECTED_CHAR, Span: NodeSpan{p.i - 1, p.i}, Raw: string(r)})
 
-			additionalInvalidNodes = append(additionalInvalidNodes, &UnknownNode{
+			parameters = append(parameters, &FunctionParameter{
 				NodeBase: NodeBase{
 					NodeSpan{p.i - 1, p.i},
 					&ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInParameters(r)},
@@ -7869,7 +7864,7 @@ func (p *parser) parseFunctionPattern(start int32, percentPrefixed bool) Node {
 		} else {
 			switch firstNodeInParam := firstNodeInParam.(type) {
 			case *IdentifierLiteral: //keyword
-				var varNode *IdentifierLiteral = firstNodeInParam
+				var varNode Node = firstNodeInParam
 
 				p.eatSpace()
 				typ, isMissingExpr = p.parseExpression()
@@ -7897,7 +7892,7 @@ func (p *parser) parseFunctionPattern(start int32, percentPrefixed bool) Node {
 				p.eatSpace()
 
 				typ, isMissingExpr = p.parseExpression()
-				var varNode *IdentifierLiteral
+				var varNode Node
 
 				if !isMissingExpr {
 					//If there is someting after the first node is the name of the paramter.
@@ -7943,12 +7938,16 @@ func (p *parser) parseFunctionPattern(start int32, percentPrefixed bool) Node {
 
 			default:
 				firstNodeInParam.BasePtr().Err = &ParsingError{UnspecifiedParsingError, PARAM_LIST_OF_FUNC_PATT_SHOULD_CONTAIN_PARAMETERS_SEP_BY_COMMAS}
-				additionalInvalidNodes = append(additionalInvalidNodes, firstNodeInParam)
 
-				// if typ != nil {
-				// 	typ.BasePtr().Err = &ParsingError{UnspecifiedParsingError, PARAM_LIST_OF_FUNC_SHOULD_CONTAIN_PARAMETERS_SEP_BY_COMMAS}
-				// 	additionalInvalidNodes = append(additionalInvalidNodes, typ)
-				// }
+				parameters = append(parameters, &FunctionParameter{
+					NodeBase: NodeBase{
+						firstNodeInParam.Base().Span,
+						paramErr,
+						false,
+					},
+					Var:        firstNodeInParam,
+					IsVariadic: isVariadic,
+				})
 			}
 
 		}
@@ -7994,10 +7993,9 @@ func (p *parser) parseFunctionPattern(start int32, percentPrefixed bool) Node {
 			Span: NodeSpan{start, end},
 			Err:  parsingErr,
 		},
-		Parameters:             parameters,
-		AdditionalInvalidNodes: additionalInvalidNodes,
-		ReturnType:             returnType,
-		IsVariadic:             isVariadic,
+		Parameters: parameters,
+		ReturnType: returnType,
+		IsVariadic: isVariadic,
 	}
 
 	return &fn
