@@ -82,7 +82,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		for _, decl := range decls {
 			_, err := TreeWalkEval(decl, state)
 			if err != nil {
-				return nil, fmt.Errorf("failed to declare function %s: %w", decl.Name.Name, err)
+				return nil, fmt.Errorf("failed to declare function %s: %w", decl.Name.(*parse.IdentifierLiteral).Name, err)
 			}
 		}
 	}
@@ -1686,7 +1686,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			capturedGlobals:        capturedGlobals,
 		}, nil
 	case *parse.FunctionDeclaration:
-		funcName := n.Name.Name
+		funcName := n.Name.(*parse.IdentifierLiteral).Name
 		if val, ok := state.GetGlobal(funcName); ok { //Function pre-eclared before this statement or re-declaration in shell.
 
 			if !state.currentChunk().Node.IsShellChunk {

@@ -82,7 +82,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 			return ANY, fmt.Errorf("error while evaluating the function declaration: %w", err)
 		}
 
-		varInfo, ok := state.getGlobal(inoxFunctionToBeDeclared.decl.Name.Name)
+		varInfo, ok := state.getGlobal(inoxFunctionToBeDeclared.decl.Name.(*parse.IdentifierLiteral).Name)
 		if !ok {
 			return ANY, fmt.Errorf("error while evaluating the function declaration: %w", err)
 		}

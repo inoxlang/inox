@@ -1822,7 +1822,7 @@ func (FunctionExpression) Kind() NodeKind {
 type FunctionDeclaration struct {
 	NodeBase
 	Function *FunctionExpression
-	Name     *IdentifierLiteral
+	Name     Node //*IdentifierLiteral | *UnquotedRegion
 }
 
 func (FunctionDeclaration) Kind() NodeKind {

@@ -1042,7 +1042,11 @@ func evalChunk(n *parse.Chunk, state *State) (_ Value, finalErr error) {
 	for _, stmt := range n.Statements {
 		decl, ok := stmt.(*parse.FunctionDeclaration)
 		if ok && decl.Function != nil && len(decl.Function.CaptureList) == 0 {
-			state.setGlobal(decl.Name.Name, &inoxFunctionToBeDeclared{decl: decl}, GlobalConst, decl.Name)
+			funcName, ok := decl.Name.(*parse.IdentifierLiteral)
+			if !ok {
+				continue //unquoted name
+			}
+			state.setGlobal(funcName.Name, &inoxFunctionToBeDeclared{decl: decl}, GlobalConst, funcName)
 		}
 	}
 
@@ -3532,7 +3536,11 @@ return_function:
 }
 
 func evalFunctionDeclaration(n *parse.FunctionDeclaration, state *State, options evalOptions) (_ Value, finalErr error) {
-	funcName := n.Name.Name
+	nameIdent, ok := n.Name.(*parse.IdentifierLiteral)
+	if !ok {
+		return nil, nil
+	}
+	funcName := nameIdent.Name
 
 	info, preDeclared := state.getGlobal(funcName)
 	if preDeclared && !utils.Implements[*inoxFunctionToBeDeclared](info.value) { //properly declared

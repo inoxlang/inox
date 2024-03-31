@@ -19742,6 +19742,134 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("assignment with an unquoted LHS", func(t *testing.T) {
+			n := mustparseChunk(t, "@{ <{name}> = 1 }")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
+				Statements: []Node{
+					&QuotedStatements{
+						NodeBase: NodeBase{Span: NodeSpan{0, 17}},
+						Statements: []Node{
+							&Assignment{
+								NodeBase: NodeBase{Span: NodeSpan{3, 15}},
+								Left: &UnquotedRegion{
+									NodeBase: NodeBase{Span: NodeSpan{3, 11}},
+									Expression: &IdentifierLiteral{
+										NodeBase: NodeBase{Span: NodeSpan{5, 9}},
+										Name:     "name",
+									},
+								},
+								Right: &IntLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{14, 15}},
+									Raw:      "1",
+									Value:    1,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("multi-assignment with an unquoted LHS", func(t *testing.T) {
+			n := mustparseChunk(t, "@{ assign <{name}> = 1 }")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 24}, nil, false},
+				Statements: []Node{
+					&QuotedStatements{
+						NodeBase: NodeBase{Span: NodeSpan{0, 24}},
+						Statements: []Node{
+							&MultiAssignment{
+								NodeBase: NodeBase{Span: NodeSpan{3, 22}},
+								Variables: []Node{
+									&UnquotedRegion{
+										NodeBase: NodeBase{Span: NodeSpan{10, 18}},
+										Expression: &IdentifierLiteral{
+											NodeBase: NodeBase{Span: NodeSpan{12, 16}},
+											Name:     "name",
+										},
+									},
+								},
+								Right: &IntLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{21, 22}},
+									Raw:      "1",
+									Value:    1,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("multi-assignment with two unquoted LHS", func(t *testing.T) {
+			n := mustparseChunk(t, "@{ assign <{name}> <{name}> = 1 }")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 33}, nil, false},
+				Statements: []Node{
+					&QuotedStatements{
+						NodeBase: NodeBase{Span: NodeSpan{0, 33}},
+						Statements: []Node{
+							&MultiAssignment{
+								NodeBase: NodeBase{Span: NodeSpan{3, 31}},
+								Variables: []Node{
+									&UnquotedRegion{
+										NodeBase: NodeBase{Span: NodeSpan{10, 18}},
+										Expression: &IdentifierLiteral{
+											NodeBase: NodeBase{Span: NodeSpan{12, 16}},
+											Name:     "name",
+										},
+									},
+									&UnquotedRegion{
+										NodeBase: NodeBase{Span: NodeSpan{19, 27}},
+										Expression: &IdentifierLiteral{
+											NodeBase: NodeBase{Span: NodeSpan{21, 25}},
+											Name:     "name",
+										},
+									},
+								},
+								Right: &IntLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{30, 31}},
+									Raw:      "1",
+									Value:    1,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("function declaration with an unquoted name", func(t *testing.T) {
+			n := mustparseChunk(t, "@{ fn <{name}>(){} }")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
+				Statements: []Node{
+					&QuotedStatements{
+						NodeBase: NodeBase{Span: NodeSpan{0, 20}},
+						Statements: []Node{
+							&FunctionDeclaration{
+								NodeBase: NodeBase{Span: NodeSpan{3, 18}},
+								Name: &UnquotedRegion{
+									NodeBase: NodeBase{Span: NodeSpan{6, 14}},
+									Expression: &IdentifierLiteral{
+										NodeBase: NodeBase{Span: NodeSpan{8, 12}},
+										Name:     "name",
+									},
+								},
+								Function: &FunctionExpression{
+									NodeBase: NodeBase{Span: NodeSpan{3, 18}},
+									Body: &Block{
+										NodeBase: NodeBase{Span: NodeSpan{16, 18}},
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("missing closing brace", func(t *testing.T) {
 			n, err := parseChunk(t, "@{", "")
 			assert.Error(t, err)
@@ -19784,7 +19912,7 @@ func testParse(
 
 	t.Run("unquoted region", func(t *testing.T) {
 
-		t.Run("base case", func(t *testing.T) {
+		t.Run("base case: in quoted statements", func(t *testing.T) {
 			n := mustparseChunk(t, "@{<{1}>}")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
@@ -19799,6 +19927,26 @@ func testParse(
 									Raw:      "1",
 									Value:    1,
 								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("base case: in quoted expression", func(t *testing.T) {
+			n := mustparseChunk(t, "@(<{1}>)")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
+				Statements: []Node{
+					&QuotedExpression{
+						NodeBase: NodeBase{Span: NodeSpan{0, 8}},
+						Expression: &UnquotedRegion{
+							NodeBase: NodeBase{Span: NodeSpan{2, 7}, IsParenthesized: true},
+							Expression: &IntLiteral{
+								NodeBase: NodeBase{Span: NodeSpan{4, 5}},
+								Raw:      "1",
+								Value:    1,
 							},
 						},
 					},

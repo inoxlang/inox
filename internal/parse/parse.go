@@ -7482,7 +7482,8 @@ func (p *parser) parseFunction(start int32) Node {
 	p.eatSpace()
 
 	var (
-		ident                  *IdentifierLiteral
+		funcName               Node
+		funcNameIdent          *IdentifierLiteral
 		parsingErr             *ParsingError
 		additionalInvalidNodes []Node
 		capturedLocals         []Node
@@ -7497,8 +7498,8 @@ func (p *parser) parseFunction(start int32) Node {
 			CaptureList: capturedLocals,
 		}
 
-		if ident != nil {
-			if parsingErr == nil && isKeyword(ident.Name) {
+		if funcName != nil {
+			if parsingErr == nil && funcNameIdent != nil && isKeyword(funcNameIdent.Name) {
 				parsingErr = &ParsingError{UnspecifiedParsingError, KEYWORDS_SHOULD_NOT_BE_USED_AS_FN_NAMES}
 			}
 			return &FunctionDeclaration{
@@ -7507,7 +7508,7 @@ func (p *parser) parseFunction(start int32) Node {
 					Err:  parsingErr,
 				},
 				Function: &fn,
-				Name:     ident,
+				Name:     funcName,
 			}
 		}
 		fn.Err = parsingErr
@@ -7560,23 +7561,33 @@ func (p *parser) parseFunction(start int32) Node {
 		p.eatSpace()
 	}
 
-	if p.i < p.len && isAlpha(p.s[p.i]) {
-		identLike := p.parseIdentStartingExpression(false)
-		var ok bool
-		if ident, ok = identLike.(*IdentifierLiteral); !ok {
-			return &FunctionDeclaration{
-				NodeBase: NodeBase{
-					Span: NodeSpan{start, p.i},
-					Err:  &ParsingError{UnspecifiedParsingError, fmtFuncNameShouldBeAnIdentNot(identLike)},
-				},
-				Function: nil,
-				Name:     nil,
+	//Detect and parse the function's name.
+
+	if p.i < p.len {
+
+		if isAlpha(p.s[p.i]) {
+			identLike := p.parseIdentStartingExpression(false)
+			var ok bool
+			funcNameIdent, ok = identLike.(*IdentifierLiteral)
+
+			if !ok {
+				return &FunctionDeclaration{
+					NodeBase: NodeBase{
+						Span: NodeSpan{start, p.i},
+						Err:  &ParsingError{UnspecifiedParsingError, fmtFuncNameShouldBeAnIdentNot(identLike)},
+					},
+					Function: nil,
+					Name:     nil,
+				}
 			}
+			funcName = funcNameIdent
+		} else if p.s[p.i] == '<' && p.i < p.len-1 && p.s[p.i+1] == '{' {
+			funcName = p.parseUnquotedRegion()
 		}
 	}
 
 	if p.i >= p.len || p.s[p.i] != '(' {
-		if hasCaptureList && ident == nil {
+		if hasCaptureList && funcName == nil {
 			parsingErr = &ParsingError{InvalidNext, CAPTURE_LIST_SHOULD_BE_FOLLOWED_BY_PARAMS}
 		} else {
 			parsingErr = &ParsingError{InvalidNext, FN_KEYWORD_OR_FUNC_NAME_SHOULD_BE_FOLLOWED_BY_PARAMS}
@@ -7757,10 +7768,10 @@ func (p *parser) parseFunction(start int32) Node {
 		IsBodyExpression:       isBodyExpression,
 	}
 
-	if ident != nil {
+	if funcName != nil {
 		fn.Err = nil
 
-		if parsingErr == nil && isKeyword(ident.Name) {
+		if parsingErr == nil && funcNameIdent != nil && isKeyword(funcNameIdent.Name) {
 			parsingErr = &ParsingError{UnspecifiedParsingError, KEYWORDS_SHOULD_NOT_BE_USED_AS_FN_NAMES}
 		}
 
@@ -7770,7 +7781,7 @@ func (p *parser) parseFunction(start int32) Node {
 				Err:  parsingErr,
 			},
 			Function: &fn,
-			Name:     ident,
+			Name:     funcName,
 		}
 	}
 
@@ -9551,8 +9562,15 @@ func (p *parser) parseMultiAssignmentStatement(assignIdent *IdentifierLiteral) *
 	for p.i < p.len && p.s[p.i] != '=' {
 		p.eatSpace()
 		e, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
-		ident, ok := e.(*IdentifierLiteral)
-		if !ok {
+
+		switch nameNode := e.(type) {
+		case *IdentifierLiteral:
+			if isKeyword(nameNode.Name) {
+				keywordLHSError = &ParsingError{UnspecifiedParsingError, KEYWORDS_SHOULD_NOT_BE_USED_IN_ASSIGNMENT_LHS}
+			}
+		case *UnquotedRegion:
+			//ok
+		default:
 			return &MultiAssignment{
 				NodeBase: NodeBase{
 					Span: NodeSpan{assignIdent.Span.Start, p.i},
@@ -9561,9 +9579,7 @@ func (p *parser) parseMultiAssignmentStatement(assignIdent *IdentifierLiteral) *
 				Variables: vars,
 			}
 		}
-		if isKeyword(ident.Name) {
-			keywordLHSError = &ParsingError{UnspecifiedParsingError, KEYWORDS_SHOULD_NOT_BE_USED_IN_ASSIGNMENT_LHS}
-		}
+
 		vars = append(vars, e)
 		p.eatSpace()
 	}
@@ -9676,7 +9692,8 @@ func (p *parser) parseAssignment(left Node) (result Node) {
 	var keywordLHSError *ParsingError
 
 	switch l := left.(type) {
-	case *Variable, *MemberExpression, *IndexExpression, *SliceExpression, *IdentifierMemberExpression:
+	case *Variable, *MemberExpression, *IndexExpression, *SliceExpression, *IdentifierMemberExpression,
+		*UnquotedRegion:
 	case *IdentifierLiteral:
 		if isKeyword(l.Name) {
 			keywordLHSError = &ParsingError{UnspecifiedParsingError, KEYWORDS_SHOULD_NOT_BE_USED_IN_ASSIGNMENT_LHS}

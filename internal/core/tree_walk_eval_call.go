@@ -142,7 +142,7 @@ func TreeWalkCallFunc(call TreeWalkCall) (Value, error) {
 			fn = node
 		case *parse.FunctionDeclaration:
 			fn = node.Function
-			functionName = node.Name.Name
+			functionName = node.Name.(*parse.IdentifierLiteral).Name
 		default:
 			panic(fmt.Errorf("cannot call node of type %T", node))
 		}

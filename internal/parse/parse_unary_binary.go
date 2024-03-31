@@ -28,7 +28,7 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(openingParenIndex in
 		isMissingExpr bool
 	)
 
-	if !hasPreviousOperator && p.i < p.len && p.s[p.i] == '<' {
+	if !hasPreviousOperator && p.i < p.len && p.s[p.i] == '<' && (p.i == p.len-1 || p.s[p.i+1] != '{') {
 		//XML expression without namespace.
 		left = p.parseXMLExpression(nil, p.i)
 

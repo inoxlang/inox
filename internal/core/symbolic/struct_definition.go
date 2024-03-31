@@ -44,7 +44,11 @@ func defineStructs(chunk *parse.ParsedChunkSource, statements []parse.Node, stat
 					return err
 				}
 			case *parse.FunctionDeclaration:
-				methodName := def.Name.Name
+				nameIdent, ok := def.Name.(*parse.IdentifierLiteral)
+				if !ok {
+					continue
+				}
+				methodName := nameIdent.Name
 				if slices.Contains(memberNames, methodName) {
 					//ignore duplicate member definitions.
 					continue
@@ -262,7 +266,12 @@ func handleStructMethodDefinition(
 		return nil
 	}
 
-	name := def.Name.Name
+	nameIdent, ok := def.Name.(*parse.IdentifierLiteral)
+	if !ok {
+		return nil //unquoted name
+	}
+
+	name := nameIdent.Name
 
 	//TODO: support recursive methods and
 

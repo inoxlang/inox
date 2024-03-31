@@ -273,7 +273,11 @@ func (c *checker) defineStructs(closestModule parse.Node, statements []parse.Nod
 				name = def.Name.Name
 				nameNode = def.Name
 			case *parse.FunctionDeclaration:
-				name = def.Name.Name
+				funcName, ok := def.Name.(*parse.IdentifierLiteral)
+				if !ok {
+					continue //unquoted name
+				}
+				name = funcName.Name
 				nameNode = def.Name
 			default:
 				continue
@@ -1785,15 +1789,20 @@ func (c *checker) precheckTopLevelFuncDecl(stmt *parse.FunctionDeclaration, modu
 	globalVars := c.getModGlobalVars(module)
 	fnDecls := c.getModFunctionDecls(module)
 
-	_, alreadyDeclared := fnDecls[stmt.Name.Name]
+	funcName, ok := stmt.Name.(*parse.IdentifierLiteral)
+	if !ok {
+		return
+	}
+
+	_, alreadyDeclared := fnDecls[funcName.Name]
 	if alreadyDeclared {
-		c.addError(stmt, text.FmtInvalidFnDeclAlreadyDeclared(stmt.Name.Name))
+		c.addError(stmt, text.FmtInvalidFnDeclAlreadyDeclared(funcName.Name))
 		return
 	}
 
 	//Pre-declare the functions that don't capture locals.
 	if len(stmt.Function.CaptureList) == 0 {
-		globalVars[stmt.Name.Name] = globalVarInfo{isConst: true, fnExpr: stmt.Function}
+		globalVars[funcName.Name] = globalVarInfo{isConst: true, fnExpr: stmt.Function}
 
 		fns := c.data.functionsToDeclareEarly[module]
 		if fns == nil {
@@ -1803,7 +1812,7 @@ func (c *checker) precheckTopLevelFuncDecl(stmt *parse.FunctionDeclaration, modu
 		*fns = append(*fns, stmt)
 
 		info := &fnDeclInfo{node: stmt, module: module}
-		fnDecls[stmt.Name.Name] = info
+		fnDecls[funcName.Name] = info
 	}
 }
 
@@ -1813,6 +1822,11 @@ func (c *checker) checkCallExpression(node *parse.CallExpression, scopeNode, clo
 }
 
 func (c *checker) checkFuncDecl(node *parse.FunctionDeclaration, parent, closestModule parse.Node) parse.TraversalAction {
+	funcName, ok := node.Name.(*parse.IdentifierLiteral)
+	if !ok {
+		return parse.Prune
+	}
+
 	switch parent.(type) {
 	case *parse.Chunk, *parse.EmbeddedModule: //valid location
 		fnDecls := c.getModFunctionDecls(closestModule)
@@ -1820,7 +1834,7 @@ func (c *checker) checkFuncDecl(node *parse.FunctionDeclaration, parent, closest
 		localVars := c.getLocalVarsInScope(closestModule)
 
 		if len(node.Function.CaptureList) == 0 {
-			_, ok := fnDecls[node.Name.Name]
+			_, ok := fnDecls[funcName.Name]
 			if !ok {
 				c.addError(node, "function has no been pre-checked by the static checker")
 				return parse.ContinueTraversal
@@ -1846,8 +1860,8 @@ func (c *checker) checkFuncDecl(node *parse.FunctionDeclaration, parent, closest
 				}
 			}
 
-			fnDecls[node.Name.Name] = declInfo
-			globalVars[node.Name.Name] = globalVarInfo{isConst: true, fnExpr: node.Function}
+			fnDecls[funcName.Name] = declInfo
+			globalVars[funcName.Name] = globalVarInfo{isConst: true, fnExpr: node.Function}
 		}
 
 	case *parse.StructBody:
