@@ -8,11 +8,13 @@ import (
 // A parser parses a single Inox chunk, it can recover from errors.
 // Note that there is no lexer.
 type parser struct {
-	s              []rune //chunk's code
-	i              int32  //rune index
-	len            int32
-	inPattern      bool
-	onlyChunkStart bool
+	s                []rune //chunk's code
+	i                int32  //rune index
+	len              int32
+	inPattern        bool
+	inQuotedRegion   bool
+	inUnquotedRegion bool //unquoted inside quoted
+	onlyChunkStart   bool
 
 	//mostly valueless tokens, the slice may be not perfectly ordered.
 	tokens []Token

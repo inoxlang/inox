@@ -200,9 +200,14 @@ func (p *parser) parseExpression(config ...exprParsingConfig) (expr Node, isMiss
 	case '@':
 		return p.parseQuotedAndMetaStuff(), false
 	case '<':
-		//XML expression without namespace.
-		if p.i < p.len && isAlpha(p.s[p.i+1]) {
-			return p.parseXMLExpression(nil, p.i), false
+		if p.i < p.len {
+
+			switch {
+			case isAlpha(p.s[p.i+1]): //XML expression without namespace.
+				return p.parseXMLExpression(nil, p.i), false
+			case p.s[p.i+1] == '{':
+				return p.parseUnquotedRegion(), false
+			}
 		}
 	case '*':
 		start := p.i

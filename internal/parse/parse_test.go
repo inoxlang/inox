@@ -19583,20 +19583,12 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, false},
 				Statements: []Node{
 					&QuotedExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 4},
-							nil,
-							false,
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 4}},
 						Expression: &IntLiteral{
 							NodeBase: NodeBase{
 								NodeSpan{2, 3},
 								nil,
 								true,
-								/*[]Token{
-									{Type: OPENING_PARENTHESIS, Span: NodeSpan{1, 2}},
-									{Type: CLOSING_PARENTHESIS, Span: NodeSpan{3, 4}},
-								},*/
 							},
 							Raw:   "1",
 							Value: 1,
@@ -19611,6 +19603,30 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("nesting is not allowed", func(t *testing.T) {
+			n, err := parseChunk(t, "@(@(1))", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 7}, nil, false},
+				Statements: []Node{
+					&QuotedExpression{
+						NodeBase: NodeBase{Span: NodeSpan{0, 7}, IsParenthesized: false},
+						Expression: &QuotedExpression{
+							NodeBase: NodeBase{
+								NodeSpan{2, 6},
+								&ParsingError{UnspecifiedParsingError, NESTED_QUOTED_REGIONS_NOT_ALLOWED},
+								true,
+							},
+							Expression: &IntLiteral{
+								NodeBase: NodeBase{NodeSpan{4, 5}, nil, true},
+								Raw:      "1",
+								Value:    1,
+							},
+						},
+					},
+				},
+			}, n)
+		})
 	})
 
 	t.Run("quoted statements", func(t *testing.T) {
@@ -19735,13 +19751,192 @@ func testParse(
 					&QuotedStatements{
 						NodeBase: NodeBase{
 							NodeSpan{0, 2},
-							&ParsingError{UnspecifiedParsingError, UNTERMINATED_QUOTED_STATEMENTS_REGION_MISSING_CLOSING_BRACE},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_QUOTED_STATEMENTS_REGION_MISSING_CLOSING_DELIM},
 							false,
 						},
 					},
 				},
 			}, n)
 		})
+
+		t.Run("nesting is not allowed", func(t *testing.T) {
+			n, err := parseChunk(t, "@{@{}}", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 6}, nil, false},
+				Statements: []Node{
+					&QuotedStatements{
+						NodeBase: NodeBase{Span: NodeSpan{0, 6}},
+						Statements: []Node{
+							&QuotedStatements{
+								NodeBase: NodeBase{
+									NodeSpan{2, 5},
+									&ParsingError{UnspecifiedParsingError, NESTED_QUOTED_REGIONS_NOT_ALLOWED},
+									false,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+	})
+
+	t.Run("unquoted region", func(t *testing.T) {
+
+		t.Run("base case", func(t *testing.T) {
+			n := mustparseChunk(t, "@{<{1}>}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
+				Statements: []Node{
+					&QuotedStatements{
+						NodeBase: NodeBase{Span: NodeSpan{0, 8}},
+						Statements: []Node{
+							&UnquotedRegion{
+								NodeBase: NodeBase{Span: NodeSpan{2, 7}},
+								Expression: &IntLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{4, 5}},
+									Raw:      "1",
+									Value:    1,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("multi-line", func(t *testing.T) {
+			n := mustparseChunk(t, "@{<{\n1\n}>}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 10}, nil, false},
+				Statements: []Node{
+					&QuotedStatements{
+						NodeBase: NodeBase{Span: NodeSpan{0, 10}},
+						Statements: []Node{
+							&UnquotedRegion{
+								NodeBase: NodeBase{Span: NodeSpan{2, 9}},
+								Expression: &IntLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{5, 6}},
+									Raw:      "1",
+									Value:    1,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("followed by another expression in a quoted region", func(t *testing.T) {
+			n := mustparseChunk(t, "@{<{1}> 2}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 10}, nil, false},
+				Statements: []Node{
+					&QuotedStatements{
+						NodeBase: NodeBase{Span: NodeSpan{0, 10}},
+						Statements: []Node{
+							&UnquotedRegion{
+								NodeBase: NodeBase{Span: NodeSpan{2, 7}},
+								Expression: &IntLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{4, 5}},
+									Raw:      "1",
+									Value:    1,
+								},
+							},
+							&IntLiteral{
+								NodeBase: NodeBase{NodeSpan{8, 9}, nil, false},
+								Raw:      "2",
+								Value:    2,
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("empty", func(t *testing.T) {
+			n, err := parseChunk(t, "@{<{}>}", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 7}, nil, false},
+				Statements: []Node{
+					&QuotedStatements{
+						NodeBase: NodeBase{Span: NodeSpan{0, 7}},
+						Statements: []Node{
+							&UnquotedRegion{
+								NodeBase: NodeBase{Span: NodeSpan{2, 6}},
+								Expression: &MissingExpression{
+									NodeBase: NodeBase{
+										NodeSpan{4, 5},
+										&ParsingError{MissingExpr, fmtExprExpectedHere([]rune("@{<{}>}"), 4, true)},
+										false,
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("unexpected extra expression", func(t *testing.T) {
+			n, err := parseChunk(t, "@{<{1 2}>}", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 10}, nil, false},
+				Statements: []Node{
+					&QuotedStatements{
+						NodeBase: NodeBase{Span: NodeSpan{0, 10}},
+						Statements: []Node{
+							&UnquotedRegion{
+								NodeBase: NodeBase{
+									NodeSpan{2, 9},
+									&ParsingError{UnspecifiedParsingError, UNQUOTED_REGION_SHOULD_CONTAIN_A_SINGLE_EXPR},
+									false,
+								},
+								Expression: &IntLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{4, 5}},
+									Raw:      "1",
+									Value:    1,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("nesting is not allowed", func(t *testing.T) {
+			n, err := parseChunk(t, "@{<{<{1}>}>}", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
+				Statements: []Node{
+					&QuotedStatements{
+						NodeBase: NodeBase{Span: NodeSpan{0, 12}},
+						Statements: []Node{
+							&UnquotedRegion{
+								NodeBase: NodeBase{Span: NodeSpan{2, 11}},
+								Expression: &UnquotedRegion{
+									NodeBase: NodeBase{
+										NodeSpan{4, 9},
+										&ParsingError{UnspecifiedParsingError, NESTED_UNQUOTED_REGIONS_NOT_ALLOWED},
+										false,
+									},
+									Expression: &IntLiteral{
+										NodeBase: NodeBase{Span: NodeSpan{6, 7}},
+										Raw:      "1",
+										Value:    1,
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
 	})
 
 	t.Run("switch statement", func(t *testing.T) {

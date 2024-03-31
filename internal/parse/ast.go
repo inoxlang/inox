@@ -2030,6 +2030,16 @@ func (QuotedStatements) Kind() NodeKind {
 	return Expr
 }
 
+type UnquotedRegion struct {
+	NodeBase
+	Spread     bool
+	Expression Node
+}
+
+func (UnquotedRegion) Kind() NodeKind {
+	return Expr
+}
+
 type DynamicMemberExpression struct {
 	NodeBase
 	Left         Node
@@ -3004,6 +3014,8 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 		for _, stmt := range n.Statements {
 			walk(stmt, node, ancestorChain, fn, afterFn)
 		}
+	case *UnquotedRegion:
+		walk(n.Expression, node, ancestorChain, fn, afterFn)
 	case *DynamicMemberExpression:
 		walk(n.Left, node, ancestorChain, fn, afterFn)
 		walk(n.PropertyName, node, ancestorChain, fn, afterFn)

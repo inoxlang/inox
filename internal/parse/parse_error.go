@@ -35,6 +35,8 @@ const (
 
 	UnterminatedArrow
 
+	UnterminatedUnquotedRegion
+
 	MissingFnBody
 	MissingEqualsSignInDeclaration
 	MissingObjectPropertyValue
@@ -553,8 +555,15 @@ const (
 	//value path literals
 	UNTERMINATED_VALUE_PATH_LITERAL = "unterminated value path literal"
 
-	//quoted statements
-	UNTERMINATED_QUOTED_STATEMENTS_REGION_MISSING_CLOSING_BRACE = "unterminated quoted statements region, missing closing brace '}'"
+	//quoted expression and statements
+	NESTED_QUOTED_REGIONS_NOT_ALLOWED                           = "nested quoted regions are not allowed"
+	UNTERMINATED_QUOTED_STATEMENTS_REGION_MISSING_CLOSING_DELIM = "unterminated quoted statements region, missing closing delimiter '}>'"
+
+	//unquoted region
+	NESTED_UNQUOTED_REGIONS_NOT_ALLOWED                 = "nested unquoted regions are not allowed"
+	UNQUOTED_REGIONS_ONLY_ALLOWED_INSIDE_QUOTED_REGIONS = "unquoted regions are only allowed inside a quoted region (quoted expression, statements, ...)"
+	UNTERMINATED_UNQUOTED_REGION_MISSING_CLOSING_DELIM  = "unterminated unquoted region missing closing brace"
+	UNQUOTED_REGION_SHOULD_CONTAIN_A_SINGLE_EXPR        = "an unquoted region should contain a single expression"
 )
 
 func fmtInvalidRegexLiteral(err string) string {

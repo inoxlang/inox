@@ -19,16 +19,28 @@ func (p *parser) parseQuotedAndMetaStuff() Node {
 	}
 
 	switch p.s[p.i] {
-	case '(': //lazy expression
+	case '(': //quoted expression
 		p.tokens = append(p.tokens, Token{Type: AT_SIGN, Span: NodeSpan{start, start + 1}})
 
 		// The opening parenthesis is not eaten because the expression is parsed as a parenthesized expression.
+
+		var parsingErr *ParsingError
+
+		if p.inQuotedRegion {
+			parsingErr = &ParsingError{UnspecifiedParsingError, NESTED_QUOTED_REGIONS_NOT_ALLOWED}
+		} else {
+			p.inQuotedRegion = true
+			defer func() {
+				p.inQuotedRegion = false
+			}()
+		}
 
 		e, _ := p.parseExpression()
 
 		return &QuotedExpression{
 			NodeBase: NodeBase{
 				Span: NodeSpan{start, p.i},
+				Err:  parsingErr,
 			},
 			Expression: e,
 		}
@@ -80,6 +92,17 @@ func (p *parser) parseQuotedStatements() *QuotedStatements {
 		stmts      []Node
 	)
 
+	if p.inQuotedRegion {
+		parsingErr = &ParsingError{UnspecifiedParsingError, NESTED_QUOTED_REGIONS_NOT_ALLOWED}
+	} else {
+		p.inQuotedRegion = true
+		defer func() {
+			p.inQuotedRegion = false
+		}()
+	}
+
+	//Parse statements.
+
 	p.eatSpaceNewlineSemicolonComment()
 
 	for p.i < p.len && p.s[p.i] != '}' && !isClosingDelim(p.s[p.i]) {
@@ -123,6 +146,8 @@ func (p *parser) parseQuotedStatements() *QuotedStatements {
 		p.eatSpaceNewlineSemicolonComment()
 	}
 
+	//Parse closing delimiter.
+
 	closingBraceIndex := p.i
 
 	if p.i < p.len && p.s[p.i] == '}' {
@@ -133,7 +158,7 @@ func (p *parser) parseQuotedStatements() *QuotedStatements {
 		})
 		p.i++
 	} else {
-		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_QUOTED_STATEMENTS_REGION_MISSING_CLOSING_BRACE}
+		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_QUOTED_STATEMENTS_REGION_MISSING_CLOSING_DELIM}
 	}
 
 	end := p.i
@@ -146,4 +171,89 @@ func (p *parser) parseQuotedStatements() *QuotedStatements {
 		Statements: stmts,
 	}
 
+}
+
+func (p *parser) parseUnquotedRegion() *UnquotedRegion {
+	p.panicIfContextDone()
+
+	startIndex := p.i
+	var parsingErr *ParsingError
+
+	p.tokens = append(p.tokens, Token{
+		Type: UNQUOTED_REGION_OPENING_DELIM,
+		Span: NodeSpan{startIndex, p.i + 2},
+	})
+
+	p.i += 2
+
+	//Eat '...' if present.
+
+	spread := p.i < p.len-2 && p.s[p.i] == '.' && p.s[p.i+1] == '.' && p.s[p.i+2] == '.'
+
+	if spread {
+		p.tokens = append(p.tokens, Token{Type: THREE_DOTS, Span: NodeSpan{p.i, p.i + 3}})
+		p.i += 3
+	}
+
+	if p.inQuotedRegion {
+		if p.inUnquotedRegion {
+			parsingErr = &ParsingError{UnspecifiedParsingError, NESTED_UNQUOTED_REGIONS_NOT_ALLOWED}
+		} else {
+			p.inUnquotedRegion = true
+			defer func() {
+				p.inUnquotedRegion = false
+			}()
+		}
+	} else {
+		parsingErr = &ParsingError{UnspecifiedParsingError, UNQUOTED_REGIONS_ONLY_ALLOWED_INSIDE_QUOTED_REGIONS}
+
+	}
+
+	//Parse the expression.
+
+	p.eatSpaceNewlineComment()
+
+	e, _ := p.parseExpression()
+
+	p.eatSpaceNewlineComment()
+
+	switch {
+	case p.i < p.len-1 && p.s[p.i] == '}' && p.s[p.i+1] == '>':
+		p.tokens = append(p.tokens, Token{
+			Type: UNQUOTED_REGION_CLOSING_DELIM,
+			Span: NodeSpan{p.i, p.i + 2},
+		})
+		p.i += 2
+	case p.i >= p.len:
+		parsingErr = &ParsingError{UnterminatedUnquotedRegion, UNTERMINATED_UNQUOTED_REGION_MISSING_CLOSING_DELIM}
+	default:
+		parsingErr = &ParsingError{UnspecifiedParsingError, UNQUOTED_REGION_SHOULD_CONTAIN_A_SINGLE_EXPR}
+
+		//Eat until EOF or '}>'
+		extraStartIndex := p.i
+		for p.i < p.len && (p.s[p.i] != '}' || (p.i < p.len-1 && p.s[p.i+1] != '>')) {
+			p.i++
+		}
+		p.tokens = append(p.tokens, Token{
+			Type: UNQUOTED_REGION_CLOSING_DELIM,
+			Span: NodeSpan{extraStartIndex, p.i},
+		})
+
+		if p.i < p.len-1 && p.s[p.i] == '}' && p.s[p.i+1] == '>' {
+			p.tokens = append(p.tokens, Token{
+				Type: UNQUOTED_REGION_CLOSING_DELIM,
+				Span: NodeSpan{p.i, p.i + 2},
+			})
+			p.i += 2
+		}
+	}
+
+	return &UnquotedRegion{
+		NodeBase: NodeBase{
+			Span: NodeSpan{startIndex, p.i},
+			Err:  parsingErr,
+		},
+		Spread:     spread,
+		Expression: e,
+	}
 }
