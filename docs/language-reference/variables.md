@@ -4,15 +4,15 @@
 
 # Variables
 
-- [Locals](#locals)
-- [Globals](#globals)
+- [Local variables](#local-variables)
+- [Global variables](#global-variables)
 - [Multi Assignment](#multi-assignment)
 
 
-There are two kinds of variables: globals & locals, local variables are declared
+There are two kinds of variables: global and local, local variables are declared
 with the `var` keyword or with an assignment.
 
-## Locals
+## Local Variables
 
 ```
 var local1 = 1
@@ -60,9 +60,9 @@ var object {a: int} = {}
 
 </details>
 
-## Globals
+## Global Variables
 
-Globals are variables or constants that are global to a **module**.\
+Global variables or constants are global to a **module**.\
 In other terms the global scope of a module is not shared with other modules.
 
 **Declaration of global variables**:

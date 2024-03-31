@@ -259,12 +259,12 @@ user1_posts = filter_iterable!(posts, %{userId: 1.0})
 
 **%{userId: 1.0}** is a pattern that matches any object with the shape: **{userId: 1.0, ...}**.
 
-Alternatively you can use a **lazy expression** to filter posts:
+Alternatively you can use a **quoted expression** to filter posts:
 ```
 user1_posts = filter_iterable!(posts, @($.userId == 1.0))
 ```
 
-ℹ️ Surrounding an expression with @(...) creates a lazy expression that is evaluated for each post.
+ℹ️ Surrounding an expression with @(...) creates a quoted expression that is evaluated for each post.
 
 ### Extract
 
@@ -281,7 +281,7 @@ We can extract several fields of the post by using a **key list**:
 post_data = map_iterable(user1_posts, .{id, body, title})
 ```
 
-Lazy expressions are another alternative here:
+Quoted expressions are another alternative here:
 ```
 post_data = map_iterable(user1_posts, @({ 
     id: $.id
@@ -290,7 +290,7 @@ post_data = map_iterable(user1_posts, @({
 }))
 ```
 
-⚠️ Lazy expressions are more flexible but are slower and less secure, try to only use them when necessary.
+⚠️ Quoted expressions are more flexible but are slower and less secure, try to only use them when necessary.
 
 ### Parallel Data Retrieval
 

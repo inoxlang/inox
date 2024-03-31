@@ -128,7 +128,40 @@ pattern other_pattern = {
 }
 ```
 
-⚠️ By default object patterns are **inexact**: they accept additional properties.
+### Property Spread
+
+```
+pattern product = {
+  id: str
+  name: str
+}
+
+pattern book = {
+  ...product
+  author: str
+}
+```
+
+Multiple spreads are allowed.
+
+```
+pattern a = {
+  a: int
+}
+
+pattern b = {
+  b: int
+}
+
+pattern c = {
+  ...a
+  ...b
+}
+```
+
+### Exactness
+
+Object patterns are **inexact** by default: they accept additional properties.
 
 ```
 # true

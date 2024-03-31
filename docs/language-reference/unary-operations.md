@@ -11,8 +11,11 @@
 ## Number Negation
 
 ```
-- int     # integer negation: -1
-- float   # float negation: -1.0
+int = -1
+float = -1.0
+
+- int     # integer negation
+- float   # float negation
 - 1.0     # float negation
 - 1       # integer negation
 ```

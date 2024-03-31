@@ -65,7 +65,7 @@ The last call syntax is named a **command-like** call.
 ### Variables
 
 When you reference a variable in the shell (or in an Inox script) you can directly use its name
-or prefix it with a dollar (two dollars for globals, but you will rarely use them this way).
+or prefix it with a dollar.
 
 ```
 a = 1; b = 2
@@ -333,11 +333,11 @@ Here is an example of prompt configuration:
 
 - each part is described by a value or a list; allowed values include:
   - strings & values similar to strings (paths, urls, ...) 
-  - lazy expressions
+  - quoted expressions
 - lists describe the part followed by 2 colors
   - the first color is used when the terminal's background is dark
   - the second color is used when the terminal's background is light
-- lazy expressions such as @(whoami()) are evaluated each time the prompt is printed
+- quoted expressions such as @(whoami()) are evaluated each time the prompt is printed
   - they must be calls
   - only the whoami, hostname & pwd functions are allowed
 

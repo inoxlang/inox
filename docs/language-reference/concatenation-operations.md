@@ -8,18 +8,18 @@ Concatenation of strings, byte slices and tuples is performed with a
 concatenation expression.
 
 ```
-# result: "ab"
 concat "a" "b"
+# result: "ab"
 
 list = ["b", "c"]
-# result: "abc"
 concat "a" ...list
+# result: "abc"
 
-# result: 0x[00 11 22]
 concat 0x[00] 0x[11 22]
+# result: 0x[00 11 22]
 
-# result: #[1, 2]
 concat #[1] #[2]
+# result: #[1, 2]
 ```
 
 **Parenthesized** concatenation expressions can span several lines:
