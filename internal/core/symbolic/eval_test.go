@@ -13521,6 +13521,22 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, ANY_URL, res)
 		})
 
+		t.Run("invalid value for the network host interpolation", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				a = 1
+				return https://{$a}/index.html
+			`)
+
+			variable := parse.FindNode(n, (*parse.Variable)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(variable, state, fmtTypeOfNetworkHostInterpolationIsAnXButYWasExpected(INT_1, ANY_STR_LIKE)),
+			}, state.errors())
+			assert.Equal(t, ANY_URL, res)
+		})
+
 		t.Run("invalid query parameter value", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				param_value = {}

@@ -352,7 +352,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 	case *parse.URLPatternLiteral:
 		return NewUrlPattern(n.Value), nil
 	case *parse.URLExpression:
-		return evalURLExpression(n, state)
+		return evalURLExpression(n, state, options)
 	case *parse.NilLiteral:
 		return &NilT{}, nil
 	case *parse.SelfExpression:
@@ -1089,16 +1089,47 @@ func evalChunk(n *parse.Chunk, state *State) (_ Value, finalErr error) {
 	return returnValue, nil
 }
 
-func evalURLExpression(n *parse.URLExpression, state *State) (_ Value, finalErr error) {
+func evalURLExpression(n *parse.URLExpression, state *State, options evalOptions) (_ Value, finalErr error) {
 
-	host, err := _symbolicEval(n.HostPart, state, evalOptions{ignoreNodeValue: true})
-	if err != nil {
-		return nil, err
+	var (
+		host Value
+		err  error
+	)
+
+	if parse.HasErrorAtAnyDepth(n) {
+		return ANY_URL, nil
+	}
+
+	if hostExpr, ok := n.HostPart.(*parse.HostExpression); ok {
+		scheme, err := symbolicEval(hostExpr.Scheme, state)
+		if err != nil {
+			return nil, err
+		}
+
+		networkHost, err := symbolicEval(hostExpr.Host, state)
+		if err != nil {
+			return nil, err
+		}
+
+		host = ANY_HOST
+
+		if strLike, ok := networkHost.(StringLike); !ok {
+			state.addError(makeSymbolicEvalError(hostExpr.Host, state, fmtTypeOfNetworkHostInterpolationIsAnXButYWasExpected(networkHost, ANY_STR_LIKE)))
+			options.setHasShallowErrors()
+		} else if s := strLike.GetOrBuildString(); s.IsConcretizable() {
+			host = NewHost(scheme.(*Scheme).value + "://" + s.Value())
+		}
+	} else {
+		host, err = _symbolicEval(n.HostPart, state, evalOptions{ignoreNodeValue: true})
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if !ImplementsOrIsMultivalueWithAllValuesImplementing[*Host](host) {
 		state.addError(makeSymbolicEvalError(n.HostPart, state, HOST_PART_SHOULD_HAVE_A_HOST_VALUE))
 		state.SetMostSpecificNodeValue(n.HostPart, ANY_HOST)
+		options.setHasShallowErrors()
 	} else {
 		state.SetMostSpecificNodeValue(n.HostPart, host)
 	}
@@ -1133,6 +1164,7 @@ func evalURLExpression(n *parse.URLExpression, state *State) (_ Value, finalErr 
 			case StringLike, *Int, *Bool:
 			default:
 				state.addError(makeSymbolicEvalError(p, state, fmtValueNotStringifiableToQueryParamValue(val)))
+				options.setHasShallowErrors()
 			}
 		}
 	}

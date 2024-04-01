@@ -285,6 +285,10 @@ func fmtValueIsAnXButYWasExpected(a Value, b Value) string {
 	return fmt.Sprintf("value is a(n) %s but a(n) %s was expected", Stringify(a), Stringify(b))
 }
 
+func fmtTypeOfNetworkHostInterpolationIsAnXButYWasExpected(a Value, b Value) string {
+	return fmt.Sprintf("type of the network host interpolation is %s but a(n) %s was expected", Stringify(a), Stringify(b))
+}
+
 func fmtNotAssignableToVarOftype(a Value, b Pattern) string {
 	return fmt.Sprintf("a(n) %s is not assignable to a variable of type %s", Stringify(a), Stringify(b.SymbolicValue()))
 }
