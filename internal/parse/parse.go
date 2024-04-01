@@ -38,9 +38,10 @@ const (
 		/* host is a variable */ "[$][a-zA-Z0-9_-]+|" +
 		/* regular host, scheme:  */ "([a-z][a-z0-9+]*:\\/{2}" +
 		/*     					  */ URL_CREDENTIALS_PATTERN +
-		/*     host: */ "([-\\w]+|[-a-zA-Z0-9.]{1,64}\\.[a-zA-Z0-9]{1,6}\\b|\\{[$]{0,1}[-\\w]+\\}))" +
+		/*     hostname: */ "([-\\w]+|[-a-zA-Z0-9.]{1,64}\\.[a-zA-Z0-9]{1,6}\\b|\\{[$]{0,1}[-\\w]+\\}))" +
+		/*     port:     */ "(:[0-9]+)?" +
 		")" +
-		//path, query and fragment
+		//path, query and fragment and interpolations
 		"([{?#/][-a-zA-Z0-9@:%_+.~#?&//=${}]*)$"
 
 	LOOSE_HOST_PATTERN_PATTERN = "^([a-z][a-z0-9+]*)?:\\/\\/" + //scheme
@@ -51,11 +52,14 @@ const (
 	LOOSE_HOST_PATTERN = "^([a-z][a-z0-9+]*)?:\\/\\/" + //scheme
 		URL_CREDENTIALS_PATTERN +
 		"([-\\w]+|[-a-zA-Z0-9.]{1,64}\\.[a-zA-Z0-9]{1,6})" + //hostname
-		"(:[0-9]+)?$"
+		"(:[0-9]+)?$" //port
 
-	LOOSE_URL_PATTERN = "^([a-z][a-z0-9+]*):\\/\\/([-\\w]+|[-a-zA-Z0-9@:%._+~#=]{1,64}\\.[a-zA-Z0-9]{1,6})\\b([-a-zA-Z0-9@:%_*+.~#?&//=]*)$"
+	LOOSE_URL_PATTERN = "^([a-z][a-z0-9+]*):\\/\\/" + //scheme
+		"([-\\w]+|[-a-zA-Z0-9@:%._+~#=]{1,64}\\.[a-zA-Z0-9]{1,6})\\b" + //hostname
+		"(:[0-9]+)?" + //port
+		"([?#/][-a-zA-Z0-9@:%_*+.~#?&//=]*)$" //path, query and fragment
 
-	//date like
+	//date-like
 
 	NO_LOCATION_DATELIKE_LITERAL_PATTERN  = "^(\\d+y)(?:|(-\\d{1,2}mt)(-\\d{1,2}d)(-\\d{1,2}h)?(-\\d{1,2}m)?(-\\d{1,2}s)?(-\\d{1,3}ms)?(-\\d{1,3}us)?)"
 	_NO_LOCATION_DATELIKE_LITERAL_PATTERN = NO_LOCATION_DATELIKE_LITERAL_PATTERN + "$"

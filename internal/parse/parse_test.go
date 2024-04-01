@@ -6475,6 +6475,34 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("no query, single trailing path interpolation preceded by a port, no '/'", func(t *testing.T) {
+			n := mustparseChunk(t, `https://example.com:80{$path}`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 29}, nil, false},
+				Statements: []Node{
+					&URLExpression{
+						NodeBase: NodeBase{Span: NodeSpan{0, 29}},
+						Raw:      "https://example.com:80{$path}",
+						HostPart: &HostLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 22}, nil, false},
+							Value:    "https://example.com:80",
+						},
+						Path: []Node{
+							&PathSlice{
+								NodeBase: NodeBase{NodeSpan{22, 22}, nil, false},
+								Value:    "",
+							},
+							&Variable{
+								NodeBase: NodeBase{NodeSpan{23, 28}, nil, false},
+								Name:     "path",
+							},
+						},
+						QueryParams: []Node{},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("no query, host interpolation & path interpolation, no '/'", func(t *testing.T) {
 			n := mustparseChunk(t, `https://{$host}{$path}`)
 			assert.EqualValues(t, &Chunk{
