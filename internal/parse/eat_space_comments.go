@@ -112,6 +112,23 @@ loop:
 	return index < p.len && p.s[index] == r
 }
 
+func (p *parser) areNextSpacesFollowedBy(r rune) bool {
+	p.panicIfContextDone()
+
+	index := p.i
+loop:
+	for index < p.len {
+		switch p.s[index] {
+		case ' ', '\t', '\r':
+		default:
+			break loop
+		}
+		index++
+	}
+
+	return index < p.len && p.s[index] == r
+}
+
 func (p *parser) eatSpaceNewlineCommaComment() {
 	p.panicIfContextDone()
 

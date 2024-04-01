@@ -474,15 +474,15 @@ const (
 	UNTERMINATED_SYNCHRONIZED_MISSING_BLOCK                = "unterminated synchronized block: missing block"
 
 	//object literals
-	INVALID_OBJ_REC_ENTRY_ENTRY_SEPARATION  = "invalid object or record entry, each entry should be followed by '}', newline, or ','."
-	INVALID_OBJ_REC_LIT_SPREAD_SEPARATION   = "invalid object or record literal, a spread should be followed by '}', newline or ','."
-	MISSING_PROPERTY_VALUE                  = "missing property value"
-	MISSING_PROPERTY_PATTERN                = "missing property pattern"
-	UNEXPECTED_NEWLINE_AFTER_COLON          = "unexpected newline after colon"
-	ONLY_EXPLICIT_KEY_CAN_HAVE_A_TYPE_ANNOT = "only explicit keys can have a type annotation"
-	METAPROP_KEY_CANNOT_HAVE_A_TYPE_ANNOT   = "metaproperty keys cannot have a type annotation"
-	UNTERMINATED_OBJ_MISSING_CLOSING_BRACE  = "unterminated object literal, missing closing brace '}'"
-	UNTERMINATED_REC_MISSING_CLOSING_BRACE  = "unterminated record literal, missing closing brace '}'"
+	INVALID_OBJ_REC_ENTRY_ENTRY_SEPARATION = "invalid object or record entry, each entry should be followed by '}', newline, or ','."
+	INVALID_OBJ_REC_LIT_SPREAD_SEPARATION  = "invalid object or record literal, a spread should be followed by '}', newline or ','."
+	MISSING_PROPERTY_VALUE                 = "missing property value"
+	MISSING_PROPERTY_PATTERN               = "missing property pattern"
+	UNEXPECTED_NEWLINE_AFTER_COLON         = "unexpected newline after colon"
+	ONLY_KEYS_CAN_HAVE_A_TYPE_ANNOT        = "only keys can have a type annotation"
+	METAPROP_KEY_CANNOT_HAVE_A_TYPE_ANNOT  = "metaproperty keys cannot have a type annotation"
+	UNTERMINATED_OBJ_MISSING_CLOSING_BRACE = "unterminated object literal, missing closing brace '}'"
+	UNTERMINATED_REC_MISSING_CLOSING_BRACE = "unterminated record literal, missing closing brace '}'"
 
 	//object pattern literals
 	INVALID_OBJ_PATT_LIT_ENTRY_SEPARATION                = "invalid object/record pattern literal, each entry should be followed by '}', newline, or ','."
