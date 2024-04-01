@@ -6018,6 +6018,21 @@ func testParse(
 					},
 				},
 			},
+			`https://user@example.com`: {
+				err: true,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 24}, nil, false},
+					Statements: []Node{
+						&HostLiteral{
+							NodeBase: NodeBase{
+								Span: NodeSpan{0, 24},
+								Err:  &ParsingError{UnspecifiedParsingError, CREDENTIALS_NOT_ALLOWED_IN_HOST_LITERALS},
+							},
+							Value: "https://user@example.com",
+						},
+					},
+				},
+			},
 			`https://*.com`: {
 				err: true,
 				result: &Chunk{
@@ -6250,6 +6265,25 @@ func testParse(
 						},
 						Value: "https://example..com",
 						Raw:   "%https://example..com",
+					},
+				},
+			}, n)
+		})
+
+		t.Run("credentials are not allowed", func(t *testing.T) {
+			n, err := parseChunk(t, `%https://user@example.com`, "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 25}, nil, false},
+				Statements: []Node{
+					&HostPatternLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 25},
+							&ParsingError{UnspecifiedParsingError, CREDENTIALS_NOT_ALLOWED_IN_HOST_PATTERN_LITERALS},
+							false,
+						},
+						Value: "https://user@example.com",
+						Raw:   "%https://user@example.com",
 					},
 				},
 			}, n)

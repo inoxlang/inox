@@ -30,10 +30,30 @@ const (
 
 	//URL & host
 
-	LOOSE_URL_EXPR_PATTERN     = "^([$][a-zA-Z0-9_-]+|https?:\\/\\/([-\\w]+|(www\\.)?[-a-zA-Z0-9@:%._+~#=]{1,64}\\.[a-zA-Z0-9]{1,6}\\b|\\{[$]{0,2}[-\\w]+\\}))([{?#/][-a-zA-Z0-9@:%_+.~#?&//=${}]*)$"
-	LOOSE_HOST_PATTERN_PATTERN = "^([a-z0-9+]+)?:\\/\\/([-\\w]+|[*]+|(www\\.)?[-a-zA-Z0-9.*]{1,64}\\.[a-zA-Z0-9*]{1,6})(:[0-9]+)?$"
-	LOOSE_HOST_PATTERN         = "^([a-z0-9+]+)?:\\/\\/([-\\w]+|(www\\.)?[-a-zA-Z0-9.]{1,64}\\.[a-zA-Z0-9]{1,6})(:[0-9]+)?$"
-	LOOSE_URL_PATTERN          = "^([a-z0-9+]+):\\/\\/([-\\w]+|(www\\.)?[-a-zA-Z0-9@:%._+~#=]{1,64}\\.[a-zA-Z0-9]{1,6})\\b([-a-zA-Z0-9@:%_*+.~#?&//=]*)$"
+	URL_CREDENTIALS_PATTERN = "([-a-zA-Z0-9@:%._+~#=]*@)?"
+
+	LOOSE_URL_EXPR_PATTERN = "^" +
+		//host and credentials
+		"(" +
+		/* host is a variable */ "[$][a-zA-Z0-9_-]+|" +
+		/* regular host, scheme:  */ "([a-z][a-z0-9+]*:\\/{2}" +
+		/*     					  */ URL_CREDENTIALS_PATTERN +
+		/*     host: */ "([-\\w]+|[-a-zA-Z0-9.]{1,64}\\.[a-zA-Z0-9]{1,6}\\b|\\{[$]{0,1}[-\\w]+\\}))" +
+		")" +
+		//path, query and fragment
+		"([{?#/][-a-zA-Z0-9@:%_+.~#?&//=${}]*)$"
+
+	LOOSE_HOST_PATTERN_PATTERN = "^([a-z][a-z0-9+]*)?:\\/\\/" + //scheme
+		URL_CREDENTIALS_PATTERN +
+		"([-\\w]+|[*]+|[-a-zA-Z0-9.*]{1,64}\\.[a-zA-Z0-9*]{1,6})" + //hostname
+		"(:[0-9]+)?$" //port
+
+	LOOSE_HOST_PATTERN = "^([a-z][a-z0-9+]*)?:\\/\\/" + //scheme
+		URL_CREDENTIALS_PATTERN +
+		"([-\\w]+|[-a-zA-Z0-9.]{1,64}\\.[a-zA-Z0-9]{1,6})" + //hostname
+		"(:[0-9]+)?$"
+
+	LOOSE_URL_PATTERN = "^([a-z][a-z0-9+]*):\\/\\/([-\\w]+|[-a-zA-Z0-9@:%._+~#=]{1,64}\\.[a-zA-Z0-9]{1,6})\\b([-a-zA-Z0-9@:%_*+.~#?&//=]*)$"
 
 	//date like
 
@@ -1348,6 +1368,10 @@ func CheckHost(u string) *ParsingError {
 
 	parsed, err := url.Parse(testedUrl)
 
+	if parsed != nil && parsed.User.String() != "" {
+		return &ParsingError{UnspecifiedParsingError, CREDENTIALS_NOT_ALLOWED_IN_HOST_LITERALS}
+	}
+
 	if err != nil ||
 		parsed.Host != hostPart || /* too strict ? */
 		parsed.User.String() != "" ||
@@ -1418,6 +1442,10 @@ func CheckHostPattern(u string) (parsingErr *ParsingError) {
 			_, err = CheckGetEffectivePort(parsed.Scheme, parsed.Port())
 			if err != nil {
 				parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_HOST_PATT + ": " + err.Error()}
+			}
+
+			if parsed.User.String() != "" {
+				return &ParsingError{UnspecifiedParsingError, CREDENTIALS_NOT_ALLOWED_IN_HOST_PATTERN_LITERALS}
 			}
 		}
 
