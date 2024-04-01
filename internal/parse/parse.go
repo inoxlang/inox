@@ -1357,6 +1357,10 @@ func CheckHost(u string) *ParsingError {
 		return &ParsingError{UnspecifiedParsingError, INVALID_HOST_LIT}
 	}
 
+	if strings.Contains(parsed.Hostname(), "..") {
+		return &ParsingError{UnspecifiedParsingError, INVALID_HOST_LIT}
+	}
+
 	if hasScheme {
 		_, err = CheckGetEffectivePort(scheme, parsed.Port())
 		if err != nil {
@@ -1416,6 +1420,11 @@ func CheckHostPattern(u string) (parsingErr *ParsingError) {
 				parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_HOST_PATT + ": " + err.Error()}
 			}
 		}
+
+		if parsingErr == nil && strings.Contains(parsed.Hostname(), "..") {
+			return &ParsingError{UnspecifiedParsingError, INVALID_HOST_PATT}
+		}
+
 	}
 
 	return
@@ -1444,12 +1453,16 @@ func CheckURLPattern(u string) *ParsingError {
 
 	parsed, err := url.ParseRequestURI(replaced)
 	if err != nil {
-		return &ParsingError{UnspecifiedParsingError, INVALID_HOST_PATT}
+		return &ParsingError{UnspecifiedParsingError, INVALID_URL_PATT}
 	} else {
 		_, err = CheckGetEffectivePort(parsed.Scheme, parsed.Port())
 		if err != nil {
 			return &ParsingError{UnspecifiedParsingError, INVALID_URL_PATT + ": " + err.Error()}
 		}
+	}
+
+	if strings.Contains(parsed.Hostname(), "..") {
+		return &ParsingError{UnspecifiedParsingError, INVALID_URL_PATT}
 	}
 
 	return nil
@@ -1663,6 +1676,11 @@ loop:
 				parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_HOST_INTERPOLATION}
 			}
 		} else if strings.Contains(hostPartString, "://") {
+
+			if hostPartBase.Err == nil {
+				hostPartBase.Err = CheckHost(hostPartString)
+			}
+
 			hostPart = &HostLiteral{
 				NodeBase: hostPartBase,
 				Value:    hostPartString,
@@ -1696,6 +1714,10 @@ loop:
 		_, err = CheckGetEffectivePort(parsed.Scheme, parsed.Port())
 		if err != nil {
 			parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_URL + ": " + err.Error()}
+		}
+
+		if strings.Contains(parsed.Hostname(), "..") {
+			parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_URL}
 		}
 
 		if strings.Contains(parsed.Path, "/") {

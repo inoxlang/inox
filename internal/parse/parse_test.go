@@ -5581,6 +5581,24 @@ func testParse(
 			}, n)
 		})
 
+		t.Run(".. in hostname", func(t *testing.T) {
+			n, err := parseChunk(t, `https://example..com/`, "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
+				Statements: []Node{
+					&URLLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 21},
+							&ParsingError{UnspecifiedParsingError, INVALID_URL},
+							false,
+						},
+						Value: "https://example..com/",
+					},
+				},
+			}, n)
+		})
+
 		t.Run("subdomain", func(t *testing.T) {
 			n := mustparseChunk(t, `https://sub.example.com/`)
 			assert.EqualValues(t, &Chunk{
@@ -5901,6 +5919,25 @@ func testParse(
 			}, n)
 		})
 
+		t.Run(".. in hostname", func(t *testing.T) {
+			n, err := parseChunk(t, `%https://example..com/`, "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 22}, nil, false},
+				Statements: []Node{
+					&URLPatternLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 22},
+							&ParsingError{UnspecifiedParsingError, INVALID_URL_PATT},
+							false,
+						},
+						Raw:   "%https://example..com/",
+						Value: "https://example..com/",
+					},
+				},
+			}, n)
+		})
+
 		t.Run("unprefixed", func(t *testing.T) {
 			n := mustparseChunk(t, "pattern p = https://example.com/")
 			assert.EqualValues(t, &Chunk{
@@ -5962,6 +5999,21 @@ func testParse(
 						&HostLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
 							Value:    "://example.com",
+						},
+					},
+				},
+			},
+			`https://example..com`: {
+				err: true,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
+					Statements: []Node{
+						&HostLiteral{
+							NodeBase: NodeBase{
+								Span: NodeSpan{0, 20},
+								Err:  &ParsingError{UnspecifiedParsingError, INVALID_HOST_LIT},
+							},
+							Value: "https://example..com",
 						},
 					},
 				},
@@ -6090,49 +6142,49 @@ func testParse(
 	})
 
 	t.Run("host pattern", func(t *testing.T) {
+		t.Run("%https://**:443", func(t *testing.T) {
+			n := mustparseChunk(t, `%https://**:443`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
+				Statements: []Node{
+					&HostPatternLiteral{
+						NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
+						Value:    "https://**:443",
+						Raw:      "%https://**:443",
+					},
+				},
+			}, n)
+		})
+
+		t.Run("%https://*.<tld>", func(t *testing.T) {
+			n := mustparseChunk(t, `%https://*.com`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
+				Statements: []Node{
+					&HostPatternLiteral{
+						NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
+						Value:    "https://*.com",
+						Raw:      "%https://*.com",
+					},
+				},
+			}, n)
+		})
+
+		t.Run("%https://a*.<tld>", func(t *testing.T) {
+			n := mustparseChunk(t, `%https://a*.com`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
+				Statements: []Node{
+					&HostPatternLiteral{
+						NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
+						Value:    "https://a*.com",
+						Raw:      "%https://a*.com",
+					},
+				},
+			}, n)
+		})
+
 		t.Run("%https://* (invalid)", func(t *testing.T) {
-			t.Run("%https://**:443", func(t *testing.T) {
-				n := mustparseChunk(t, `%https://**:443`)
-				assert.EqualValues(t, &Chunk{
-					NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
-					Statements: []Node{
-						&HostPatternLiteral{
-							NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
-							Value:    "https://**:443",
-							Raw:      "%https://**:443",
-						},
-					},
-				}, n)
-			})
-
-			t.Run("%https://*.<tld>", func(t *testing.T) {
-				n := mustparseChunk(t, `%https://*.com`)
-				assert.EqualValues(t, &Chunk{
-					NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
-					Statements: []Node{
-						&HostPatternLiteral{
-							NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
-							Value:    "https://*.com",
-							Raw:      "%https://*.com",
-						},
-					},
-				}, n)
-			})
-
-			t.Run("%https://a*.<tld>", func(t *testing.T) {
-				n := mustparseChunk(t, `%https://a*.com`)
-				assert.EqualValues(t, &Chunk{
-					NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
-					Statements: []Node{
-						&HostPatternLiteral{
-							NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
-							Value:    "https://a*.com",
-							Raw:      "%https://a*.com",
-						},
-					},
-				}, n)
-			})
-
 			n, err := parseChunk(t, `%https://*`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
@@ -6179,6 +6231,25 @@ func testParse(
 						},
 						Value: "https://*.*",
 						Raw:   "%https://*.*",
+					},
+				},
+			}, n)
+		})
+
+		t.Run("%https://example..com (invalid)", func(t *testing.T) {
+			n, err := parseChunk(t, `%https://example..com`, "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
+				Statements: []Node{
+					&HostPatternLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 21},
+							&ParsingError{UnspecifiedParsingError, INVALID_HOST_PATT},
+							false,
+						},
+						Value: "https://example..com",
+						Raw:   "%https://example..com",
 					},
 				},
 			}, n)
@@ -6268,16 +6339,8 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
 				Statements: []Node{
 					&URLExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 16},
-							nil,
-							false,
-							/*[]Token{
-								{Type: SINGLE_INTERP_OPENING_BRACE, Span: NodeSpan{8, 9}},
-								{Type: SINGLE_INTERP_CLOSING_BRACE, Span: NodeSpan{14, 15}},
-							},*/
-						},
-						Raw: "https://{$host}/",
+						NodeBase: NodeBase{Span: NodeSpan{0, 16}},
+						Raw:      "https://{$host}/",
 						HostPart: &HostExpression{
 							NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
 							Scheme: &SchemeLiteral{
@@ -6356,16 +6419,8 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 26}, nil, false},
 				Statements: []Node{
 					&URLExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 26},
-							nil,
-							false,
-							/*[]Token{
-								{Type: SINGLE_INTERP_OPENING_BRACE, Span: NodeSpan{19, 20}},
-								{Type: SINGLE_INTERP_CLOSING_BRACE, Span: NodeSpan{25, 26}},
-							},*/
-						},
-						Raw: "https://example.com{$path}",
+						NodeBase: NodeBase{Span: NodeSpan{0, 26}},
+						Raw:      "https://example.com{$path}",
 						HostPart: &HostLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
 							Value:    "https://example.com",
@@ -6392,18 +6447,8 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 22}, nil, false},
 				Statements: []Node{
 					&URLExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 22},
-							nil,
-							false,
-							/*[]Token{
-								{Type: SINGLE_INTERP_OPENING_BRACE, Span: NodeSpan{8, 9}},
-								{Type: SINGLE_INTERP_CLOSING_BRACE, Span: NodeSpan{14, 15}},
-								{Type: SINGLE_INTERP_OPENING_BRACE, Span: NodeSpan{15, 16}},
-								{Type: SINGLE_INTERP_CLOSING_BRACE, Span: NodeSpan{21, 22}},
-							},*/
-						},
-						Raw: "https://{$host}{$path}",
+						NodeBase: NodeBase{Span: NodeSpan{0, 22}},
+						Raw:      "https://{$host}{$path}",
 						HostPart: &HostExpression{
 							NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
 
@@ -6439,16 +6484,8 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 27}, nil, false},
 				Statements: []Node{
 					&URLExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 27},
-							nil,
-							false,
-							/*[]Token{
-								{Type: SINGLE_INTERP_OPENING_BRACE, Span: NodeSpan{20, 21}},
-								{Type: SINGLE_INTERP_CLOSING_BRACE, Span: NodeSpan{26, 27}},
-							},*/
-						},
-						Raw: "https://example.com/{$path}",
+						NodeBase: NodeBase{Span: NodeSpan{0, 27}},
+						Raw:      "https://example.com/{$path}",
 						HostPart: &HostLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
 							Value:    "https://example.com",
@@ -6469,24 +6506,47 @@ func testParse(
 			}, n)
 		})
 
+		t.Run(".. in hostname", func(t *testing.T) {
+			n, err := parseChunk(t, `https://example..com{$path}`, "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 27}, nil, false},
+				Statements: []Node{
+					&URLExpression{
+						NodeBase: NodeBase{Span: NodeSpan{0, 27}},
+						Raw:      "https://example..com{$path}",
+						HostPart: &HostLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{0, 20},
+								&ParsingError{UnspecifiedParsingError, INVALID_HOST_LIT},
+								false,
+							},
+							Value: "https://example..com",
+						},
+						Path: []Node{
+							&PathSlice{
+								NodeBase: NodeBase{NodeSpan{20, 20}, nil, false},
+								Value:    "",
+							},
+							&Variable{
+								NodeBase: NodeBase{NodeSpan{21, 26}, nil, false},
+								Name:     "path",
+							},
+						},
+						QueryParams: []Node{},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("two path interpolations", func(t *testing.T) {
 			n := mustparseChunk(t, `https://example.com/{$a}{$b}`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 28}, nil, false},
 				Statements: []Node{
 					&URLExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 28},
-							nil,
-							false,
-							/*[]Token{
-								{Type: SINGLE_INTERP_OPENING_BRACE, Span: NodeSpan{20, 21}},
-								{Type: SINGLE_INTERP_CLOSING_BRACE, Span: NodeSpan{23, 24}},
-								{Type: SINGLE_INTERP_OPENING_BRACE, Span: NodeSpan{24, 25}},
-								{Type: SINGLE_INTERP_CLOSING_BRACE, Span: NodeSpan{27, 28}},
-							},*/
-						},
-						Raw: "https://example.com/{$a}{$b}",
+						NodeBase: NodeBase{Span: NodeSpan{0, 28}},
+						Raw:      "https://example.com/{$a}{$b}",
 						HostPart: &HostLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
 							Value:    "https://example.com",
@@ -6522,12 +6582,8 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
 				Statements: []Node{
 					&URLExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 21},
-							nil,
-							false,
-						},
-						Raw: "https://example.com/{",
+						NodeBase: NodeBase{Span: NodeSpan{0, 21}},
+						Raw:      "https://example.com/{",
 						HostPart: &HostLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
 							Value:    "https://example.com",
@@ -6559,12 +6615,8 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 22}, nil, false},
 				Statements: []Node{
 					&URLExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 21},
-							nil,
-							false,
-						},
-						Raw: "https://example.com/{",
+						NodeBase: NodeBase{Span: NodeSpan{0, 21}},
+						Raw:      "https://example.com/{",
 						HostPart: &HostLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
 							Value:    "https://example.com",
@@ -6596,12 +6648,8 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 22}, nil, false},
 				Statements: []Node{
 					&URLExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 22},
-							nil,
-							false,
-						},
-						Raw: "https://example.com/{1",
+						NodeBase: NodeBase{Span: NodeSpan{0, 22}},
+						Raw:      "https://example.com/{1",
 						HostPart: &HostLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
 							Value:    "https://example.com",
@@ -6638,16 +6686,8 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 22}, nil, false},
 				Statements: []Node{
 					&URLExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 22},
-							nil,
-							false,
-							/*[]Token{
-								{Type: SINGLE_INTERP_OPENING_BRACE, Span: NodeSpan{20, 21}},
-								{Type: SINGLE_INTERP_CLOSING_BRACE, Span: NodeSpan{21, 22}},
-							},*/
-						},
-						Raw: "https://example.com/{}",
+						NodeBase: NodeBase{Span: NodeSpan{0, 22}},
+						Raw:      "https://example.com/{}",
 						HostPart: &HostLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
 							Value:    "https://example.com",
@@ -6678,16 +6718,8 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
 				Statements: []Node{
 					&URLExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 23},
-							nil,
-							false,
-							/*[]Token{
-								{Type: SINGLE_INTERP_OPENING_BRACE, Span: NodeSpan{20, 21}},
-								{Type: SINGLE_INTERP_CLOSING_BRACE, Span: NodeSpan{22, 23}},
-							},*/
-						},
-						Raw: "https://example.com/{.}",
+						NodeBase: NodeBase{Span: NodeSpan{0, 23}},
+						Raw:      "https://example.com/{.}",
 						HostPart: &HostLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
 							Value:    "https://example.com",
@@ -6718,16 +6750,8 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 24}, nil, false},
 				Statements: []Node{
 					&URLExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 24},
-							nil,
-							false,
-							/*[]Token{
-								{Type: SINGLE_INTERP_OPENING_BRACE, Span: NodeSpan{20, 21}},
-								{Type: SINGLE_INTERP_CLOSING_BRACE, Span: NodeSpan{22, 23}},
-							},*/
-						},
-						Raw: "https://example.com/{.}/",
+						NodeBase: NodeBase{Span: NodeSpan{0, 24}},
+						Raw:      "https://example.com/{.}/",
 						HostPart: &HostLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
 							Value:    "https://example.com",
@@ -6762,16 +6786,8 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
 				Statements: []Node{
 					&URLExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 23},
-							nil,
-							false,
-							/*[]Token{
-								{Type: SINGLE_INTERP_OPENING_BRACE, Span: NodeSpan{20, 21}},
-								{Type: SINGLE_INTERP_CLOSING_BRACE, Span: NodeSpan{22, 23}},
-							},*/
-						},
-						Raw: "https://example.com/{@}",
+						NodeBase: NodeBase{Span: NodeSpan{0, 23}},
+						Raw:      "https://example.com/{@}",
 						HostPart: &HostLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
 							Value:    "https://example.com",
@@ -6802,16 +6818,8 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 24}, nil, false},
 				Statements: []Node{
 					&URLExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 24},
-							nil,
-							false,
-							/*[]Token{
-								{Type: SINGLE_INTERP_OPENING_BRACE, Span: NodeSpan{20, 21}},
-								{Type: SINGLE_INTERP_CLOSING_BRACE, Span: NodeSpan{22, 23}},
-							},*/
-						},
-						Raw: "https://example.com/{@}/",
+						NodeBase: NodeBase{Span: NodeSpan{0, 24}},
+						Raw:      "https://example.com/{@}/",
 						HostPart: &HostLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
 							Value:    "https://example.com",
@@ -6845,16 +6853,8 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 27}, nil, false},
 				Statements: []Node{
 					&URLExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 27},
-							nil,
-							false,
-							/*[]Token{
-								{Type: SINGLE_INTERP_OPENING_BRACE, Span: NodeSpan{23, 24}},
-								{Type: SINGLE_INTERP_CLOSING_BRACE, Span: NodeSpan{26, 27}},
-							},*/
-						},
-						Raw: "https://example.com/?v={$x}",
+						NodeBase: NodeBase{Span: NodeSpan{0, 27}},
+						Raw:      "https://example.com/?v={$x}",
 						HostPart: &HostLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
 							Value:    "https://example.com",
@@ -6892,16 +6892,8 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 26}, nil, false},
 				Statements: []Node{
 					&URLExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 26},
-							nil,
-							false,
-							/*[]Token{
-								{Type: SINGLE_INTERP_OPENING_BRACE, Span: NodeSpan{22, 23}},
-								{Type: SINGLE_INTERP_CLOSING_BRACE, Span: NodeSpan{25, 26}},
-							},*/
-						},
-						Raw: "https://example.com?v={$x}",
+						NodeBase: NodeBase{Span: NodeSpan{0, 26}},
+						Raw:      "https://example.com?v={$x}",
 						HostPart: &HostLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
 							Value:    "https://example.com",
@@ -6934,16 +6926,8 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 28}, nil, false},
 				Statements: []Node{
 					&URLExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 28},
-							nil,
-							false,
-							/*[]Token{
-								{Type: SINGLE_INTERP_OPENING_BRACE, Span: NodeSpan{23, 24}},
-								{Type: SINGLE_INTERP_CLOSING_BRACE, Span: NodeSpan{26, 27}},
-							},*/
-						},
-						Raw: "https://example.com/?v={$x}&",
+						NodeBase: NodeBase{Span: NodeSpan{0, 28}},
+						Raw:      "https://example.com/?v={$x}&",
 						HostPart: &HostLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
 							Value:    "https://example.com",
@@ -6981,16 +6965,8 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 29}, nil, false},
 				Statements: []Node{
 					&URLExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 29},
-							nil,
-							false,
-							/*[]Token{
-								{Type: SINGLE_INTERP_OPENING_BRACE, Span: NodeSpan{23, 24}},
-								{Type: SINGLE_INTERP_CLOSING_BRACE, Span: NodeSpan{26, 27}},
-							},*/
-						},
-						Raw: "https://example.com/?v={$x}&&",
+						NodeBase: NodeBase{Span: NodeSpan{0, 29}},
+						Raw:      "https://example.com/?v={$x}&&",
 						HostPart: &HostLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
 							Value:    "https://example.com",
@@ -7028,16 +7004,8 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 30}, nil, false},
 				Statements: []Node{
 					&URLExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 30},
-							nil,
-							false,
-							/*[]Token{
-								{Type: SINGLE_INTERP_OPENING_BRACE, Span: NodeSpan{23, 24}},
-								{Type: SINGLE_INTERP_CLOSING_BRACE, Span: NodeSpan{26, 27}},
-							},*/
-						},
-						Raw: "https://example.com/?v={$x}&=3",
+						NodeBase: NodeBase{Span: NodeSpan{0, 30}},
+						Raw:      "https://example.com/?v={$x}&=3",
 						HostPart: &HostLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
 							Value:    "https://example.com",
@@ -7085,18 +7053,8 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 34}, nil, false},
 				Statements: []Node{
 					&URLExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 34},
-							nil,
-							false,
-							/*[]Token{
-								{Type: SINGLE_INTERP_OPENING_BRACE, Span: NodeSpan{23, 24}},
-								{Type: SINGLE_INTERP_CLOSING_BRACE, Span: NodeSpan{26, 27}},
-								{Type: SINGLE_INTERP_OPENING_BRACE, Span: NodeSpan{30, 31}},
-								{Type: SINGLE_INTERP_CLOSING_BRACE, Span: NodeSpan{33, 34}},
-							},*/
-						},
-						Raw: "https://example.com/?v={$x}&w={$y}",
+						NodeBase: NodeBase{Span: NodeSpan{0, 34}},
+						Raw:      "https://example.com/?v={$x}&w={$y}",
 						HostPart: &HostLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
 							Value:    "https://example.com",
@@ -7250,16 +7208,8 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 25}, nil, false},
 				Statements: []Node{
 					&URLExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 25},
-							nil,
-							false,
-							/*[]Token{
-								{Type: SINGLE_INTERP_OPENING_BRACE, Span: NodeSpan{23, 24}},
-								{Type: SINGLE_INTERP_CLOSING_BRACE, Span: NodeSpan{24, 25}},
-							},*/
-						},
-						Raw: "https://example.com/?v={}",
+						NodeBase: NodeBase{Span: NodeSpan{0, 25}},
+						Raw:      "https://example.com/?v={}",
 						HostPart: &HostLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
 							Value:    "https://example.com",
@@ -7301,16 +7251,8 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 26}, nil, false},
 				Statements: []Node{
 					&URLExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 26},
-							nil,
-							false,
-							/*[]Token{
-								{Type: SINGLE_INTERP_OPENING_BRACE, Span: NodeSpan{23, 24}},
-								{Type: SINGLE_INTERP_CLOSING_BRACE, Span: NodeSpan{25, 26}},
-							},*/
-						},
-						Raw: "https://example.com/?v={:}",
+						NodeBase: NodeBase{Span: NodeSpan{0, 26}},
+						Raw:      "https://example.com/?v={:}",
 						HostPart: &HostLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
 							Value:    "https://example.com",
@@ -7352,16 +7294,8 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 30}, nil, false},
 				Statements: []Node{
 					&URLExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 30},
-							nil,
-							false,
-							/*[]Token{
-								{Type: SINGLE_INTERP_OPENING_BRACE, Span: NodeSpan{23, 24}},
-								{Type: SINGLE_INTERP_CLOSING_BRACE, Span: NodeSpan{25, 26}},
-							},*/
-						},
-						Raw: "https://example.com/?v={:}&w=3",
+						NodeBase: NodeBase{Span: NodeSpan{0, 30}},
+						Raw:      "https://example.com/?v={:}&w=3",
 						HostPart: &HostLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
 							Value:    "https://example.com",
@@ -7413,16 +7347,8 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 26}, nil, false},
 				Statements: []Node{
 					&URLExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 26},
-							nil,
-							false,
-							/*[]Token{
-								{Type: SINGLE_INTERP_OPENING_BRACE, Span: NodeSpan{23, 24}},
-								{Type: SINGLE_INTERP_CLOSING_BRACE, Span: NodeSpan{25, 26}},
-							},*/
-						},
-						Raw: "https://example.com/?v={?}",
+						NodeBase: NodeBase{Span: NodeSpan{0, 26}},
+						Raw:      "https://example.com/?v={?}",
 						HostPart: &HostLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
 							Value:    "https://example.com",
@@ -7465,16 +7391,8 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 30}, nil, false},
 				Statements: []Node{
 					&URLExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 30},
-							nil,
-							false,
-							/*[]Token{
-								{Type: SINGLE_INTERP_OPENING_BRACE, Span: NodeSpan{23, 24}},
-								{Type: SINGLE_INTERP_CLOSING_BRACE, Span: NodeSpan{25, 26}},
-							},*/
-						},
-						Raw: "https://example.com/?v={?}&w=3",
+						NodeBase: NodeBase{Span: NodeSpan{0, 30}},
+						Raw:      "https://example.com/?v={?}&w=3",
 						HostPart: &HostLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
 							Value:    "https://example.com",
