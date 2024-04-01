@@ -574,7 +574,7 @@ loop:
 
 	var parsingErr *ParsingError
 
-	if !URL_REGEX.MatchString(u) {
+	if !LOOSE_URL_REGEX.MatchString(u) {
 		parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_URL_PATT}
 	} else {
 		parsingErr = CheckURLPattern(u)

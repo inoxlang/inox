@@ -5545,6 +5545,42 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("port out of range: max char count", func(t *testing.T) {
+			n, err := parseChunk(t, `https://example.com:9999999/`, "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 28}, nil, false},
+				Statements: []Node{
+					&URLLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 28},
+							&ParsingError{UnspecifiedParsingError, INVALID_URL + ": " + NET_PORT_INVALID_OR_OUT_OR_RANGE},
+							false,
+						},
+						Value: "https://example.com:9999999/",
+					},
+				},
+			}, n)
+		})
+
+		t.Run("port out of range", func(t *testing.T) {
+			n, err := parseChunk(t, `https://example.com:999999999/`, "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 30}, nil, false},
+				Statements: []Node{
+					&URLLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 30},
+							&ParsingError{UnspecifiedParsingError, INVALID_URL + ": " + NET_PORT_INVALID_OR_OUT_OR_RANGE},
+							false,
+						},
+						Value: "https://example.com:999999999/",
+					},
+				},
+			}, n)
+		})
+
 		t.Run("subdomain", func(t *testing.T) {
 			n := mustparseChunk(t, `https://sub.example.com/`)
 			assert.EqualValues(t, &Chunk{
@@ -5827,6 +5863,44 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("port out of range: max char count", func(t *testing.T) {
+			n, err := parseChunk(t, `%https://example.com:9999999/`, "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 29}, nil, false},
+				Statements: []Node{
+					&URLPatternLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 29},
+							&ParsingError{UnspecifiedParsingError, INVALID_URL_PATT + ": " + NET_PORT_INVALID_OR_OUT_OR_RANGE},
+							false,
+						},
+						Raw:   "%https://example.com:9999999/",
+						Value: "https://example.com:9999999/",
+					},
+				},
+			}, n)
+		})
+
+		t.Run("port out of range", func(t *testing.T) {
+			n, err := parseChunk(t, `%https://example.com:999999999/`, "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 31}, nil, false},
+				Statements: []Node{
+					&URLPatternLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 31},
+							&ParsingError{UnspecifiedParsingError, INVALID_URL_PATT + ": " + NET_PORT_INVALID_OR_OUT_OR_RANGE},
+							false,
+						},
+						Raw:   "%https://example.com:999999999/",
+						Value: "https://example.com:999999999/",
+					},
+				},
+			}, n)
+		})
+
 		t.Run("unprefixed", func(t *testing.T) {
 			n := mustparseChunk(t, "pattern p = https://example.com/")
 			assert.EqualValues(t, &Chunk{
@@ -5922,6 +5996,36 @@ func testParse(
 					},
 				},
 			},
+			`https://example.com:99999`: {
+				err: true,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 25}, nil, false},
+					Statements: []Node{
+						&HostLiteral{
+							NodeBase: NodeBase{
+								Span: NodeSpan{0, 25},
+								Err:  &ParsingError{UnspecifiedParsingError, INVALID_HOST_LIT + ": " + NET_PORT_INVALID_OR_OUT_OR_RANGE},
+							},
+							Value: "https://example.com:99999",
+						},
+					},
+				},
+			},
+			`https://example.com:9999999`: {
+				err: true,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 27}, nil, false},
+					Statements: []Node{
+						&HostLiteral{
+							NodeBase: NodeBase{
+								Span: NodeSpan{0, 27},
+								Err:  &ParsingError{UnspecifiedParsingError, INVALID_HOST_LIT + ": " + NET_PORT_INVALID_OR_OUT_OR_RANGE},
+							},
+							Value: "https://example.com:9999999",
+						},
+					},
+				},
+			},
 		}
 
 		for name, testCase := range testCases {
@@ -5987,6 +6091,48 @@ func testParse(
 
 	t.Run("host pattern", func(t *testing.T) {
 		t.Run("%https://* (invalid)", func(t *testing.T) {
+			t.Run("%https://**:443", func(t *testing.T) {
+				n := mustparseChunk(t, `%https://**:443`)
+				assert.EqualValues(t, &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
+					Statements: []Node{
+						&HostPatternLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
+							Value:    "https://**:443",
+							Raw:      "%https://**:443",
+						},
+					},
+				}, n)
+			})
+
+			t.Run("%https://*.<tld>", func(t *testing.T) {
+				n := mustparseChunk(t, `%https://*.com`)
+				assert.EqualValues(t, &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
+					Statements: []Node{
+						&HostPatternLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
+							Value:    "https://*.com",
+							Raw:      "%https://*.com",
+						},
+					},
+				}, n)
+			})
+
+			t.Run("%https://a*.<tld>", func(t *testing.T) {
+				n := mustparseChunk(t, `%https://a*.com`)
+				assert.EqualValues(t, &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
+					Statements: []Node{
+						&HostPatternLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
+							Value:    "https://a*.com",
+							Raw:      "%https://a*.com",
+						},
+					},
+				}, n)
+			})
+
 			n, err := parseChunk(t, `%https://*`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
@@ -6052,6 +6198,44 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("port out of range: max char count", func(t *testing.T) {
+			n, err := parseChunk(t, `%https://**:99999`, "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
+				Statements: []Node{
+					&HostPatternLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 17},
+							&ParsingError{UnspecifiedParsingError, INVALID_HOST_PATT + ": " + NET_PORT_INVALID_OR_OUT_OR_RANGE},
+							false,
+						},
+						Value: "https://**:99999",
+						Raw:   "%https://**:99999",
+					},
+				},
+			}, n)
+		})
+
+		t.Run("port out of range", func(t *testing.T) {
+			n, err := parseChunk(t, `%https://**:9999999`, "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
+				Statements: []Node{
+					&HostPatternLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 19},
+							&ParsingError{UnspecifiedParsingError, INVALID_HOST_PATT + ": " + NET_PORT_INVALID_OR_OUT_OR_RANGE},
+							false,
+						},
+						Value: "https://**:9999999",
+						Raw:   "%https://**:9999999",
+					},
+				},
+			}, n)
+		})
+
 		t.Run("unprefixed", func(t *testing.T) {
 			n := mustparseChunk(t, "pattern p = https://**")
 			assert.EqualValues(t, &Chunk{
@@ -6074,68 +6258,7 @@ func testParse(
 				},
 			}, n)
 		})
-	})
 
-	t.Run("host pattern", func(t *testing.T) {
-
-		t.Run("HTTP host pattern : %https://**:443", func(t *testing.T) {
-			n := mustparseChunk(t, `%https://**:443`)
-			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
-				Statements: []Node{
-					&HostPatternLiteral{
-						NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
-						Value:    "https://**:443",
-						Raw:      "%https://**:443",
-					},
-				},
-			}, n)
-		})
-
-		t.Run("HTTP host pattern : %https://*.<tld>", func(t *testing.T) {
-			n := mustparseChunk(t, `%https://*.com`)
-			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
-				Statements: []Node{
-					&HostPatternLiteral{
-						NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
-						Value:    "https://*.com",
-						Raw:      "%https://*.com",
-					},
-				},
-			}, n)
-		})
-
-		t.Run("HTTP host pattern : %https://a*.<tld>", func(t *testing.T) {
-			n := mustparseChunk(t, `%https://a*.com`)
-			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
-				Statements: []Node{
-					&HostPatternLiteral{
-						NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
-						Value:    "https://a*.com",
-						Raw:      "%https://a*.com",
-					},
-				},
-			}, n)
-		})
-
-		// t.Run("invalid HTTP host pattern : TLD is a number", func(t *testing.T) {
-		// })
-
-		t.Run("Websocket host pattern : %wss://*", func(t *testing.T) {
-			n := mustparseChunk(t, `%wss://**`)
-			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 9}, nil, false},
-				Statements: []Node{
-					&HostPatternLiteral{
-						NodeBase: NodeBase{NodeSpan{0, 9}, nil, false},
-						Value:    "wss://**",
-						Raw:      "%wss://**",
-					},
-				},
-			}, n)
-		})
 	})
 
 	t.Run("url expressions", func(t *testing.T) {

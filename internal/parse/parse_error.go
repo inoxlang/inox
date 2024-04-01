@@ -152,6 +152,7 @@ const (
 	INVALID_URL                                                = "invalid URL"
 	INVALID_URL_OR_HOST                                        = "invalid URL or Host"
 	INVALID_HOST_INTERPOLATION                                 = "invalid host interpolation"
+	NET_PORT_INVALID_OR_OUT_OR_RANGE                           = "network port is invalid or out of range"
 	URL_EXPR_CANNOT_CONTAIN_INTERP_NEXT_TO_EACH_OTHER          = "an URL expression cannot contain interpolations next to each others"
 	URL_EXPR_CANNOT_END_WITH_SLASH_3DOTS                       = "an URL expression cannot end with /..."
 	INVALID_HOST_PATT                                          = "invalid host pattern"
@@ -840,4 +841,8 @@ func fmtInvalidAssignmentInvalidLHS(expr Node) string {
 
 func fmtExpectedClosingTag(name string) string {
 	return fmt.Sprintf("expected closing '%s' tag", name)
+}
+
+func fmtProtocolOrPseudoProtocolDoesNotUseNetworkPorts(scheme string) string {
+	return fmt.Sprintf("protocol or pseudo-protocol '%s' does not use network ports", scheme)
 }

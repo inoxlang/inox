@@ -31,9 +31,9 @@ const (
 	//URL & host
 
 	LOOSE_URL_EXPR_PATTERN     = "^([$][a-zA-Z0-9_-]+|https?:\\/\\/([-\\w]+|(www\\.)?[-a-zA-Z0-9@:%._+~#=]{1,64}\\.[a-zA-Z0-9]{1,6}\\b|\\{[$]{0,2}[-\\w]+\\}))([{?#/][-a-zA-Z0-9@:%_+.~#?&//=${}]*)$"
-	LOOSE_HOST_PATTERN_PATTERN = "^([a-z0-9+]+)?:\\/\\/([-\\w]+|[*]+|(www\\.)?[-a-zA-Z0-9.*]{1,64}\\.[a-zA-Z0-9*]{1,6})(:[0-9]{1,5})?$"
-	LOOSE_HOST_PATTERN         = "^([a-z0-9+]+)?:\\/\\/([-\\w]+|(www\\.)?[-a-zA-Z0-9.]{1,64}\\.[a-zA-Z0-9]{1,6})(:[0-9]{1,5})?$"
-	URL_PATTERN                = "^([a-z0-9+]+):\\/\\/([-\\w]+|(www\\.)?[-a-zA-Z0-9@:%._+~#=]{1,64}\\.[a-zA-Z0-9]{1,6})\\b([-a-zA-Z0-9@:%_*+.~#?&//=]*)$"
+	LOOSE_HOST_PATTERN_PATTERN = "^([a-z0-9+]+)?:\\/\\/([-\\w]+|[*]+|(www\\.)?[-a-zA-Z0-9.*]{1,64}\\.[a-zA-Z0-9*]{1,6})(:[0-9]+)?$"
+	LOOSE_HOST_PATTERN         = "^([a-z0-9+]+)?:\\/\\/([-\\w]+|(www\\.)?[-a-zA-Z0-9.]{1,64}\\.[a-zA-Z0-9]{1,6})(:[0-9]+)?$"
+	LOOSE_URL_PATTERN          = "^([a-z0-9+]+):\\/\\/([-\\w]+|(www\\.)?[-a-zA-Z0-9@:%._+~#=]{1,64}\\.[a-zA-Z0-9]{1,6})\\b([-a-zA-Z0-9@:%_*+.~#?&//=]*)$"
 
 	//date like
 
@@ -63,7 +63,7 @@ var (
 
 	//URL & host regexes
 
-	URL_REGEX                = regexp.MustCompile(URL_PATTERN)
+	LOOSE_URL_REGEX          = regexp.MustCompile(LOOSE_URL_PATTERN)
 	LOOSE_HOST_REGEX         = regexp.MustCompile(LOOSE_HOST_PATTERN)
 	LOOSE_HOST_PATTERN_REGEX = regexp.MustCompile(LOOSE_HOST_PATTERN_PATTERN)
 	LOOSE_URL_EXPR_REGEX     = regexp.MustCompile(LOOSE_URL_EXPR_PATTERN)
@@ -1337,20 +1337,31 @@ func (p *parser) newNamedSegmentPathPatternLiteral(base NodeBase, isQuoted bool,
 func CheckHost(u string) *ParsingError {
 	hasScheme := u[0] != ':'
 
-	_, hostPart, _ := strings.Cut(u, "://")
+	scheme, hostPart, _ := strings.Cut(u, "://")
 
 	var testedUrl = u
+
 	if !hasScheme {
-		testedUrl = "https" + u
+		scheme = inoxconsts.NO_SCHEME_SCHEME_NAME
+		testedUrl = scheme + u
 	}
 
-	if parsed, err := url.Parse(testedUrl); err != nil ||
+	parsed, err := url.Parse(testedUrl)
+
+	if err != nil ||
 		parsed.Host != hostPart || /* too strict ? */
 		parsed.User.String() != "" ||
 		parsed.RawPath != "" ||
 		parsed.RawQuery != "" ||
 		parsed.RawFragment != "" {
 		return &ParsingError{UnspecifiedParsingError, INVALID_HOST_LIT}
+	}
+
+	if hasScheme {
+		_, err = CheckGetEffectivePort(scheme, parsed.Port())
+		if err != nil {
+			return &ParsingError{UnspecifiedParsingError, INVALID_HOST_LIT + ": " + err.Error()}
+		}
 	}
 
 	return nil
@@ -1386,16 +1397,23 @@ func CheckHostPattern(u string) (parsingErr *ParsingError) {
 
 		if areAllStars {
 			parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_HOST_PATT}
-		} else {
+		}
+	}
 
-			var testedUrl = u
-			if !hasScheme {
-				testedUrl = "https" + u
-			}
+	if parsingErr == nil {
+		var testedUrl = u
+		if !hasScheme {
+			testedUrl = inoxconsts.NO_SCHEME_SCHEME_NAME + u
+		}
 
-			replaced := strings.ReplaceAll(testedUrl, "*", "com")
-			if _, err := url.ParseRequestURI(replaced); err != nil {
-				parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_HOST_PATT}
+		replaced := strings.ReplaceAll(testedUrl, "*", "com")
+		parsed, err := url.ParseRequestURI(replaced)
+		if err != nil {
+			parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_HOST_PATT}
+		} else if hasScheme {
+			_, err = CheckGetEffectivePort(parsed.Scheme, parsed.Port())
+			if err != nil {
+				parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_HOST_PATT + ": " + err.Error()}
 			}
 		}
 	}
@@ -1420,6 +1438,18 @@ func CheckURLPattern(u string) *ParsingError {
 		}
 
 		return &ParsingError{UnspecifiedParsingError, URL_PATTERN_SUBSEQUENT_DOT_EXPLANATION}
+	}
+
+	replaced := strings.ReplaceAll(u, "*", "com")
+
+	parsed, err := url.ParseRequestURI(replaced)
+	if err != nil {
+		return &ParsingError{UnspecifiedParsingError, INVALID_HOST_PATT}
+	} else {
+		_, err = CheckGetEffectivePort(parsed.Scheme, parsed.Port())
+		if err != nil {
+			return &ParsingError{UnspecifiedParsingError, INVALID_URL_PATT + ": " + err.Error()}
+		}
 	}
 
 	return nil
@@ -1648,8 +1678,9 @@ loop:
 			Path:        slices,
 			QueryParams: queryParams,
 		}
-	case URL_REGEX.MatchString(u): //urls & url patterns
+	case LOOSE_URL_REGEX.MatchString(u): //urls & url patterns
 		parsed, err := url.Parse(u)
+
 		if err != nil {
 			return &InvalidURL{
 				NodeBase: NodeBase{
@@ -1660,15 +1691,22 @@ loop:
 			}
 		}
 
+		var parsingErr *ParsingError
+
+		_, err = CheckGetEffectivePort(parsed.Scheme, parsed.Port())
+		if err != nil {
+			parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_URL + ": " + err.Error()}
+		}
+
 		if strings.Contains(parsed.Path, "/") {
 			return &URLLiteral{
 				NodeBase: NodeBase{
 					Span: span,
+					Err:  parsingErr,
 				},
 				Value: u,
 			}
 		}
-
 	}
 
 	return &InvalidURL{
@@ -8557,4 +8595,35 @@ func isAllowedMatchCase(node Node) (result bool) {
 
 func len32[T any](arg []T) int32 {
 	return int32(len(arg))
+}
+
+// CheckGetEffectivePort("https", "") -> 443
+// CheckGetEffectivePort("https", 9000) -> 9000
+// CheckGetEffectivePort("https", 9999) -> error !
+// CheckGetEffectivePort("https", -1) -> error !
+// CheckGetEffectivePort("s3", 9000) -> error ! pseudo protocol does not use network ports
+// CheckGetEffectivePort("mem", 9000) -> error ! pseudo protocol does not use network ports
+func CheckGetEffectivePort(scheme string, port string) (string, error) {
+	switch scheme {
+	case "https", "wss":
+		if port == "" {
+			port = "443"
+		}
+	case "http", "ws":
+		if port == "" {
+			port = "80"
+		}
+	default:
+		if port == "" {
+			return "", nil
+		}
+		return "", errors.New(fmtProtocolOrPseudoProtocolDoesNotUseNetworkPorts(scheme))
+	}
+
+	n, err := strconv.Atoi(port)
+	if err != nil || n < 0 || n > 65_535 {
+		return "", errors.New(NET_PORT_INVALID_OR_OUT_OR_RANGE)
+	}
+
+	return port, nil
 }
