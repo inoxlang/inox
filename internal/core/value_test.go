@@ -342,16 +342,25 @@ func TestHostPatternTest(t *testing.T) {
 		assert.True(t, HostPattern("https://*.com").Test(nil, Host("https://a.com")))
 		assert.False(t, HostPattern("https://*.com").Test(nil, Host("://a.com")))
 		assert.False(t, HostPattern("https://*.com").Test(nil, Host("ws://a.com")))
+		assert.False(t, HostPattern("https://*.com").Test(nil, Host("https://sub.a.com")))
+
 		assert.True(t, HostPattern("https://a*.com").Test(nil, Host("https://a.com")))
 		assert.True(t, HostPattern("https://a*.com").Test(nil, Host("https://ab.com")))
-		assert.False(t, HostPattern("https://*.com").Test(nil, Host("https://sub.a.com")))
+
+		assert.True(t, HostPattern("https://**.com").Test(nil, Host("https://sub.sub.a.com")))
 		assert.True(t, HostPattern("https://**.com").Test(nil, Host("https://sub.a.com")))
+		assert.True(t, HostPattern("https://**.com").Test(nil, Host("https://a.com")))
+
 		assert.True(t, HostPattern("https://a.*").Test(nil, Host("https://a.com")))
+
 		assert.False(t, HostPattern("https://sub.*").Test(nil, Host("https://sub.a.com")))
+
 		assert.True(t, HostPattern("https://sub.**").Test(nil, Host("https://sub.a.com")))
+
 		assert.False(t, HostPattern("://*.com").Test(nil, Host("https://a.com")))
-		assert.False(t, HostPattern("://*.com:8080").Test(nil, Host("https://a.com")))
 		assert.True(t, HostPattern("://*.com").Test(nil, Host("://a.com")))
+
+		assert.False(t, HostPattern("://*.com:8080").Test(nil, Host("https://a.com")))
 		assert.True(t, HostPattern("ws://*.com").Test(nil, Host("ws://a.com")))
 	})
 

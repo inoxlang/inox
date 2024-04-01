@@ -29,7 +29,7 @@ import (
 
 const (
 	ANY_HTTPS_HOST_PATTERN = HostPattern("https://**")
-	NO_SCHEME_SCHEME_NAME  = Scheme("noscheme")
+	NO_SCHEME_SCHEME_NAME  = Scheme(inoxconsts.NO_SCHEME_SCHEME_NAME)
 	NO_SCHEME_SCHEME       = string(NO_SCHEME_SCHEME_NAME + "://")
 
 	LDB_SCHEME = Scheme(inoxconsts.LDB_SCHEME_NAME)
@@ -67,6 +67,10 @@ var (
 	ErrTestedURLTooLarge         = errors.New("tested URL is too large")
 
 	ErrInvalidURLPattern = errors.New("invalid URL pattern")
+
+	ErrEmptyHostPattern                       = errors.New("empty host pattern")
+	ErrTooManyDoubeStarSequencesInHostPattern = errors.New("too many '**' sequences in host pattern, a single sequence is allowed")
+	ErrInvalidHostPattern                     = errors.New("invalid host pattern")
 
 	ErrTestedHostPatternTooLarge = errors.New("tested host pattern is too large")
 
@@ -1197,6 +1201,9 @@ func (host Host) URLWithPath(absPath Path) URL {
 	if !absPath.IsAbsolute() {
 		panic(errors.New("path argument is not absolute"))
 	}
+	if !host.HasScheme() {
+		panic(errors.New("host does noit have a scheme"))
+	}
 
 	return URL(string(host) + string(absPath))
 }
@@ -1230,6 +1237,9 @@ func (Host) SetProp(ctx *Context, name string, value Value) error {
 	return ErrCannotSetProp
 }
 
+// [scheme] '://' <hostname pattern> [':' <port>].
+// '*' matches one or more character except '.'
+// '**' matches one or more characters. A single '**' sequence is allowed.
 type HostPattern string
 
 func (patt HostPattern) UnderlyingString() string {
@@ -1299,9 +1309,13 @@ func (patt HostPattern) Test(ctx *Context, v Value) bool {
 func (patt HostPattern) Includes(ctx *Context, v Value) bool {
 	//TODO: cache built regex
 
-	if !patt.HasScheme() {
+	patternScheme, hasPatternScheme := patt.trueScheme()
+
+	if !hasPatternScheme {
 		patt = HostPattern(NO_SCHEME_SCHEME_NAME) + patt
+		patternScheme = string(NO_SCHEME_SCHEME_NAME)
 	}
+
 	var urlString string
 
 	switch other := v.(type) {
@@ -1309,6 +1323,9 @@ func (patt HostPattern) Includes(ctx *Context, v Value) bool {
 		return patt.includesPattern(other)
 	case Host:
 		urlString = string(other)
+		if !other.HasScheme() {
+			urlString = string(NO_SCHEME_SCHEME_NAME) + urlString
+		}
 	case URL:
 		urlString = string(other)
 	case URLPattern:
@@ -1319,34 +1336,137 @@ func (patt HostPattern) Includes(ctx *Context, v Value) bool {
 		urlString = string(NO_SCHEME_SCHEME_NAME) + urlString
 	}
 
-	otherURL, err := url.Parse(urlString)
+	_url, err := url.Parse(urlString)
 	if err != nil {
 		return false
 	}
 
-	//we escape the dots so that they are properly matched
-	regex := strings.ReplaceAll(string(patt), ".", "\\.")
+	//Check the scheme.
 
-	scheme, _ := patt.trueScheme()
-	if scheme == "https" {
-		regex = strings.ReplaceAll(regex, ":443", "")
-	} else if scheme == "http" {
-		regex = strings.ReplaceAll(regex, ":80", "")
+	if _url.Scheme != string(patternScheme) {
+		return false
 	}
 
-	regex = strings.ReplaceAll(regex, "/", "\\/")
-	regex = strings.ReplaceAll(regex, "**", "[-a-zA-Z0-9.]{0,}")
-	regex = "^" + strings.ReplaceAll(regex, "*", "[-a-zA-Z0-9]{0,}") + "$"
+	//Check the hostname.
 
-	host := otherURL.Scheme + "://" + otherURL.Host
-	if otherURL.Scheme == "https" {
-		host = strings.ReplaceAll(host, ":443", "")
-	} else if otherURL.Scheme == "http" {
-		host = strings.ReplaceAll(host, ":80", "")
+	hostname := _url.Hostname()
+	hasPort := strings.Contains(string(patt), ":")
+
+	_, hostnamePattern, _ := strings.Cut(string(patt), "://")
+
+	var patternPort string
+
+	if hasPort {
+		hostnamePattern, patternPort, _ = strings.Cut(hostnamePattern, ":")
 	}
 
-	ok, err := regexp.Match(regex, []byte(host))
-	return err == nil && ok
+	hasDoubleStarSequence := strings.Contains(string(patt), "**")
+	dotCountInHostname := strings.Count(hostname, ".")
+	dotCountInPattern := strings.Count(hostnamePattern, ".")
+
+	if !hasDoubleStarSequence {
+		if dotCountInHostname != dotCountInPattern {
+			return false
+		}
+	} else if dotCountInHostname < dotCountInPattern {
+		return false
+	}
+
+	hostRunes := []rune(hostname)
+	patternRunes := []rune(hostnamePattern)
+
+	hostnameIndex := 0
+	patternIndex := 0
+
+	remainingDotsInHost := dotCountInHostname
+	remainingDotsInPattern := dotCountInPattern
+
+	for patternIndex < len(patternRunes) {
+		if hostnameIndex >= len(hostRunes) {
+			return false
+		}
+
+		r := patternRunes[patternIndex]
+
+		switch r {
+		case '.':
+			if hostRunes[hostnameIndex] != '.' {
+				return false
+			}
+
+			patternIndex++
+			hostnameIndex++
+
+			remainingDotsInHost--
+			remainingDotsInPattern--
+
+			if remainingDotsInHost < remainingDotsInPattern {
+				return false
+			}
+		case '*':
+			if patternIndex < len(patternRunes)-1 && patternRunes[patternIndex+1] == '*' { //**
+				patternIndex += 2 //move past '**'
+
+				if remainingDotsInHost == remainingDotsInPattern {
+					//Move forward until the next '.' or the end.
+					for hostnameIndex < len(hostRunes) && hostRunes[hostnameIndex] != '.' {
+						hostnameIndex++
+					}
+				} else {
+					//Note: At most one '**' sequence is present in a host pattern.
+
+					//Move forward until the number of remaining dots is the same in the host and the pattern.
+					//Here are before/after examples for the pattern **.com:
+					// >example.com			example>.com
+					// >sub.example.com		sub.example>.com
+					for remainingDotsInHost > remainingDotsInPattern && hostnameIndex < len(hostname) {
+						if hostname[hostnameIndex] == '.' {
+							remainingDotsInHost--
+							hostnameIndex++
+
+							//Move forward until the next '.' or the end.
+							for hostnameIndex < len(hostRunes) && hostRunes[hostnameIndex] != '.' {
+								hostnameIndex++
+							}
+							continue
+						}
+						hostnameIndex++
+					}
+				}
+
+				if remainingDotsInHost < remainingDotsInPattern {
+					return false
+				}
+			} else {
+				patternIndex++ //move past '*'
+
+				//Move forward until the next '.' or the end.
+				for hostnameIndex < len(hostRunes) && hostRunes[hostnameIndex] != '.' {
+					hostnameIndex++
+				}
+			}
+		default:
+			if hostRunes[hostnameIndex] != r {
+				return false
+			}
+			patternIndex++
+			hostnameIndex++
+		}
+	}
+
+	//Check the port.
+
+	effectivePort, err := parse.CheckGetEffectivePort(_url.Scheme, _url.Port())
+	if err != nil {
+		return false
+	}
+
+	effectivePatternPort, err := parse.CheckGetEffectivePort(patternScheme, patternPort)
+	if err != nil {
+		return false
+	}
+
+	return effectivePort == effectivePatternPort
 }
 
 func (HostPattern) Call(ctx *Context, values []Serializable) (Pattern, error) {
