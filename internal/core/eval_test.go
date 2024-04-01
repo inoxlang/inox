@@ -587,8 +587,43 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		assert.Equal(t, core.HostPattern("https://**.example.com"), res)
 	})
 
-	t.Run("core.URL expression", func(t *testing.T) {
+	t.Run("URL expression", func(t *testing.T) {
 		testconfig.AllowParallelization(t)
+
+		t.Run("network host interpolation: base case", func(t *testing.T) {
+			code := `https://{host}/`
+			ctx := NewDefaultTestContext()
+			defer ctx.CancelGracefully()
+
+			res, err := Eval(code, core.NewGlobalState(ctx, map[string]core.Value{
+				"host": core.String("localhost"),
+			}), false)
+			assert.NoError(t, err)
+			assert.Equal(t, core.URL("https://localhost/"), res)
+		})
+
+		t.Run("network host interpolation: missing port after colon", func(t *testing.T) {
+			code := `https://{host}/`
+			ctx := NewDefaultTestContext()
+			defer ctx.CancelGracefully()
+
+			_, err := Eval(code, core.NewGlobalState(ctx, map[string]core.Value{
+				"host": core.String("localhost:"),
+			}), false)
+			assert.Error(t, err)
+		})
+
+		t.Run("host interpolation", func(t *testing.T) {
+			code := `$host/`
+			ctx := NewDefaultTestContext()
+			defer ctx.CancelGracefully()
+
+			res, err := Eval(code, core.NewGlobalState(ctx, map[string]core.Value{
+				"host": core.Host("https://localhost"),
+			}), false)
+			assert.NoError(t, err)
+			assert.Equal(t, core.URL("https://localhost/"), res)
+		})
 
 		t.Run("host interpolation", func(t *testing.T) {
 			code := `https://{host}/`

@@ -236,7 +236,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		if err != nil {
 			return nil, err
 		}
-		return NewHost(hostnamePort, n.Scheme.Name)
+		return NewHost(hostnamePort.(StringLike), n.Scheme.Name)
 	case *parse.Variable:
 
 		if val, ok := state.Global.Globals.CheckedGet(n.Name); ok {

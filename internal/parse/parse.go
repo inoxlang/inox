@@ -1358,7 +1358,7 @@ func (p *parser) newNamedSegmentPathPatternLiteral(base NodeBase, isQuoted bool,
 	}
 }
 
-func CheckHost(u string) *ParsingError {
+func CheckHost(u string) error {
 	hasScheme := u[0] != ':'
 
 	scheme, hostPart, _ := strings.Cut(u, "://")
@@ -1373,7 +1373,7 @@ func CheckHost(u string) *ParsingError {
 	parsed, err := url.Parse(testedUrl)
 
 	if parsed != nil && parsed.User.String() != "" {
-		return &ParsingError{UnspecifiedParsingError, CREDENTIALS_NOT_ALLOWED_IN_HOST_LITERALS}
+		return errors.New(CREDENTIALS_NOT_ALLOWED_IN_HOST_LITERALS)
 	}
 
 	if err != nil ||
@@ -1389,10 +1389,14 @@ func CheckHost(u string) *ParsingError {
 		return &ParsingError{UnspecifiedParsingError, INVALID_HOST_LIT}
 	}
 
+	if u[len(u)-1] == ':' {
+		return errors.New(INVALID_HOST_LIT_MISSING_NUMBER_AFTER_COLON)
+	}
+
 	if hasScheme {
 		_, err = CheckGetEffectivePort(scheme, parsed.Port())
 		if err != nil {
-			return &ParsingError{UnspecifiedParsingError, INVALID_HOST_LIT + ": " + err.Error()}
+			return fmt.Errorf(INVALID_HOST_LIT+": %w", err)
 		}
 	}
 
@@ -1563,7 +1567,11 @@ loop:
 	switch {
 	case LOOSE_HOST_REGEX.MatchString(u):
 
-		parsingErr := CheckHost(u)
+		err := CheckHost(u)
+		var parsingErr *ParsingError
+		if err != nil {
+			parsingErr = &ParsingError{UnspecifiedParsingError, err.Error()}
+		}
 
 		return &HostLiteral{
 			NodeBase: NodeBase{
@@ -1710,7 +1718,12 @@ loop:
 		} else if strings.Contains(hostPartString, "://") {
 
 			if hostPartBase.Err == nil {
-				hostPartBase.Err = CheckHost(hostPartString)
+				err := CheckHost(hostPartString)
+				var parsingErr *ParsingError
+				if err != nil {
+					parsingErr = &ParsingError{UnspecifiedParsingError, err.Error()}
+				}
+				hostPartBase.Err = parsingErr
 			}
 
 			hostPart = &HostLiteral{

@@ -149,6 +149,7 @@ const (
 	KEY_LIST_CAN_ONLY_CONTAIN_IDENTS                           = "a key list can only contain identifiers"
 	INVALID_SCHEME_LIT_MISSING_SCHEME                          = "invalid scheme literal: '://' should be preceded by a scheme"
 	INVALID_HOST_LIT                                           = "invalid host literal"
+	INVALID_HOST_LIT_MISSING_NUMBER_AFTER_COLON                = "invalid host literal: missing number after ':'"
 	CREDENTIALS_NOT_ALLOWED_IN_HOST_LITERALS                   = "credentials (user:password) are not allowed in host literals"
 	INVALID_URL                                                = "invalid URL"
 	INVALID_URL_OR_HOST                                        = "invalid URL or Host"

@@ -1092,8 +1092,8 @@ func (s Scheme) IsDatabaseScheme() bool {
 // A Host is composed of the following parts: [<scheme>] '://' <hostname> [':' <port>].
 type Host string
 
-func NewHost(hostnamePort Value, scheme string) (Value, error) {
-	host := scheme + "://" + string(hostnamePort.(String))
+func NewHost(hostnamePort StringLike, scheme string) (Value, error) {
+	host := scheme + "://" + hostnamePort.GetOrBuildString()
 
 	if parse.CheckHost(host) != nil {
 		return nil, errors.New("host expression: invalid host")
