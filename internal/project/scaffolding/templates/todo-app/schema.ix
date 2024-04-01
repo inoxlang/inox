@@ -18,7 +18,7 @@ pattern user = {
 pattern session = {
     id: string
     # example URL: ldb://main/users/01HG3BE
-    user-url: %ldb://main/users/*
+    user-url: ldb://main/users/*
 }
 
 pattern db-schema = {
