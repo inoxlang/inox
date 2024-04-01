@@ -1023,7 +1023,16 @@ func parseHostPatternJSONRepresentation(ctx *Context, it *jsoniter.Iterator, try
 		return "", ErrJsonNotMatchingSchema
 	}
 
-	return HostPattern(it.ReadString()), nil
+	p := HostPattern(it.ReadString())
+
+	if err := p.Validate(); err != nil {
+		if try {
+			return "", ErrTriedToParseJSONRepr
+		}
+		return "", err
+	}
+
+	return p, nil
 }
 
 func parseURLPatternJSONRepresentation(ctx *Context, it *jsoniter.Iterator, try bool) (_ URLPattern, finalErr error) {

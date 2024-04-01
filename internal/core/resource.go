@@ -1246,6 +1246,19 @@ func (patt HostPattern) UnderlyingString() string {
 	return string(patt)
 }
 
+func (patt HostPattern) Validate() error {
+	if patt == "" {
+		return ErrEmptyHostPattern
+	}
+	if strings.Count(string(patt), "**") > 1 {
+		return ErrTooManyDoubeStarSequencesInHostPattern
+	}
+	if err := parse.CheckHostPattern(string(patt)); err != nil {
+		return ErrInvalidHostPattern
+	}
+	return nil
+}
+
 func (patt HostPattern) PropertyNames(ctx *Context) []string {
 	return symbolic.HOST_PATTERN_PROPNAMES
 }
