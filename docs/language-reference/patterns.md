@@ -342,7 +342,13 @@ fn f(){}
 
 ## Path Patterns
 
-- Alway start with either `%/`, `%./` or `%../`
+```
+var path_pattern = %/*   
+
+pattern p = /*  # The '%' prefix is not needed here.
+```
+
+- Always starts with `%/`, `%./` or `%../`, the `%` prefix is not needed in pattern regions.
 - Path patterns that end with `/...` are **prefix patterns**, all the other
   patterns are **glob patterns**.
 - If a pattern contains special characters such as `'['` or `'{'`, it should be
@@ -424,6 +430,14 @@ https://en.wikipedia.org/wiki/Glob_(programming)
 
 Supported schemes are: `http, https, ws, wss, ldb, odb, file, mem, s3`.
 
+```
+host_pattern = %https://**.example.com
+
+url_pattern = %https://example.com/...
+
+pattern subdomain = https://**.example.com # The '%' prefix is not needed here.
+```
+
 <details>
 
 **<summary>URL patterns</summary>**
@@ -444,6 +458,7 @@ URL patterns always have at least a path, a query or a fragment.
     empty one
   - The tested URL's query must match the pattern's query and additional
     parameters are not allowed
+- The `%` prefix is not needed in pattern regions.
 
 | pattern                           | value                                    | match ?                            |
 | --------------------------------- | ---------------------------------------- | ---------------------------------- |
