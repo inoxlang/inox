@@ -7716,7 +7716,7 @@ func (p *parser) parseFunction(start int32) Node {
 
 		p.eatSpace()
 
-		var error = &ParsingError{InvalidNext, PARAM_LIST_OF_FUNC_SHOULD_BE_FOLLOWED_BY_BLOCK_OR_ARROW}
+		var error = &ParsingError{InvalidNext, PARAM_LIST_OF_FUNC_SHOULD_BE_FOLLOWED_BY_BLOCK_OR_ARROW_OR_TYPE}
 		if returnType != nil {
 			error = &ParsingError{UnspecifiedParsingError, RETURN_TYPE_OF_FUNC_SHOULD_BE_FOLLOWED_BY_BLOCK_OR_ARROW}
 		}

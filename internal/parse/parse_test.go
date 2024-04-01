@@ -18669,6 +18669,42 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("unquoted return type, body is an expression", func(t *testing.T) {
+			n := mustparseChunk(t, "@(fn(x) <{a}> => x)")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
+				Statements: []Node{
+					&QuotedExpression{
+						NodeBase: NodeBase{Span: NodeSpan{0, 19}},
+						Expression: &FunctionExpression{
+							NodeBase: NodeBase{Span: NodeSpan{2, 18}, IsParenthesized: true},
+							Parameters: []*FunctionParameter{
+								{
+									NodeBase: NodeBase{NodeSpan{5, 6}, nil, false},
+									Var: &IdentifierLiteral{
+										NodeBase: NodeBase{NodeSpan{5, 6}, nil, false},
+										Name:     "x",
+									},
+								},
+							},
+							ReturnType: &UnquotedRegion{
+								NodeBase: NodeBase{NodeSpan{8, 13}, nil, false},
+								Expression: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{10, 11}, nil, false},
+									Name:     "a",
+								},
+							},
+							IsBodyExpression: true,
+							Body: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{17, 18}, nil, false},
+								Name:     "x",
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("only fn keyword", func(t *testing.T) {
 			n, err := parseChunk(t, "fn", "")
 			assert.Error(t, err)
@@ -18834,7 +18870,7 @@ func testParse(
 					&FunctionExpression{
 						NodeBase: NodeBase{
 							NodeSpan{0, 4},
-							&ParsingError{InvalidNext, PARAM_LIST_OF_FUNC_SHOULD_BE_FOLLOWED_BY_BLOCK_OR_ARROW},
+							&ParsingError{InvalidNext, PARAM_LIST_OF_FUNC_SHOULD_BE_FOLLOWED_BY_BLOCK_OR_ARROW_OR_TYPE},
 							false,
 						},
 						Parameters: nil,
