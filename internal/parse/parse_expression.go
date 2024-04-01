@@ -397,6 +397,7 @@ func (p *parser) parseUnderscoreAlphaStartingExpression(precededByOpeningParen b
 			node = v
 			return
 		}
+
 		if p.inPattern {
 			result := &PatternIdentifierLiteral{
 				NodeBase:   v.NodeBase,

@@ -5826,6 +5826,29 @@ func testParse(
 				},
 			}, n)
 		})
+
+		t.Run("unprefixed", func(t *testing.T) {
+			n := mustparseChunk(t, "pattern p = https://example.com/")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 32}, nil, false},
+				Statements: []Node{
+					&PatternDefinition{
+						NodeBase: NodeBase{NodeSpan{0, 32}, nil, false},
+						Left: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+							Name:       "p",
+							Unprefixed: true,
+						},
+						Right: &URLPatternLiteral{
+							NodeBase:   NodeBase{NodeSpan{12, 32}, nil, false},
+							Raw:        "https://example.com/",
+							Value:      "https://example.com/",
+							Unprefixed: true,
+						},
+					},
+				},
+			}, n)
+		})
 	})
 
 	t.Run("host literal", func(t *testing.T) {
@@ -6024,6 +6047,29 @@ func testParse(
 						NodeBase: NodeBase{Span: NodeSpan{0, 18}},
 						Value:    "https://localhost",
 						Raw:      "%https://localhost",
+					},
+				},
+			}, n)
+		})
+
+		t.Run("unprefixed", func(t *testing.T) {
+			n := mustparseChunk(t, "pattern p = https://**")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 22}, nil, false},
+				Statements: []Node{
+					&PatternDefinition{
+						NodeBase: NodeBase{NodeSpan{0, 22}, nil, false},
+						Left: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+							Name:       "p",
+							Unprefixed: true,
+						},
+						Right: &HostPatternLiteral{
+							NodeBase:   NodeBase{NodeSpan{12, 22}, nil, false},
+							Raw:        "https://**",
+							Value:      "https://**",
+							Unprefixed: true,
+						},
 					},
 				},
 			}, n)
@@ -18073,8 +18119,8 @@ func testParse(
 						Parameters: nil,
 						ReturnType: &RegularExpressionLiteral{
 							NodeBase:   NodeBase{NodeSpan{5, 9}, nil, false},
-							Raw: "`a+`",
-							Value: "a+",
+							Raw:        "`a+`",
+							Value:      "a+",
 							Unprefixed: true,
 						},
 						Body: &Block{

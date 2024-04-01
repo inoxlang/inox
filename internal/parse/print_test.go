@@ -461,8 +461,11 @@ func TestPrint(t *testing.T) {
 		"pattern p = /",
 		"pattern p = ./",
 		"pattern p = ../",
-		//URL-like patterns
+		//host patterns
 		"%https://**",
+		//unprefixed host patterns
+		"pattern p = https://example.com",
+		//URL patterns
 		"%https://example.com/...",
 		"%https://example.com/",
 		"%https://example.com/a",
@@ -470,6 +473,8 @@ func TestPrint(t *testing.T) {
 		"%https://example.com/a?",
 		"%https://example.com/a?x=1",
 		"%https://**.example.com",
+		//unprefixed URL patterns
+		"pattern p = https://example.com/",
 		//option patterns
 		"%-x=1",
 		"%--x=1",

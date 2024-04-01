@@ -1909,6 +1909,12 @@ func (p *parser) parseIdentStartingExpression(allowUnprefixedPatternNamespaceIde
 
 	if isProtocol {
 		if utils.SliceContains(SCHEMES, name) {
+			if p.inPattern {
+				p.i++ //eat ':'
+				percentPrefixed := false
+				return p.parseURLLikePattern(start, percentPrefixed)
+			}
+
 			return p.parseURLLike(start, nil)
 		}
 		base := firstIdent.NodeBase
@@ -1995,105 +2001,6 @@ func (p *parser) parseKeyList() *KeyListExpression {
 		},
 		Keys: idents,
 	}
-}
-
-func (p *parser) parsePercentAlphaStartingExpr() Node {
-	p.panicIfContextDone()
-
-	start := p.i
-	p.i++
-
-	for p.i < p.len && IsIdentChar(p.s[p.i]) {
-		p.i++
-	}
-
-	ident := &PatternIdentifierLiteral{
-		NodeBase: NodeBase{
-			NodeSpan{start, p.i},
-			nil,
-			false,
-		},
-		Name: string(p.s[start+1 : p.i]),
-	}
-
-	var left Node = ident
-
-	if p.i < p.len && p.s[p.i] == '.' { //pattern namespace or pattern namespace member expression
-		p.i++
-		namespaceIdent := &PatternNamespaceIdentifierLiteral{
-			NodeBase: NodeBase{
-				NodeSpan{start, p.i},
-				nil,
-				false,
-			},
-			Name: ident.Name,
-		}
-
-		if p.i >= p.len || IsDelim(p.s[p.i]) || isSpaceNotLF(p.s[p.i]) {
-			return namespaceIdent
-		}
-
-		memberNameStart := p.i
-
-		if !isAlpha(p.s[p.i]) && p.s[p.i] != '_' {
-			return &PatternNamespaceMemberExpression{
-				NodeBase: NodeBase{
-					NodeSpan{start, p.i},
-					&ParsingError{UnspecifiedParsingError, fmtPatternNamespaceMemberShouldStartWithAletterNot(p.s[p.i])},
-					false,
-				},
-				Namespace: namespaceIdent,
-			}
-		}
-
-		for p.i < p.len && IsIdentChar(p.s[p.i]) {
-			p.i++
-		}
-
-		left = &PatternNamespaceMemberExpression{
-			NodeBase: NodeBase{
-				NodeSpan{start, p.i},
-				nil,
-				false,
-			},
-			Namespace: namespaceIdent,
-			MemberName: &IdentifierLiteral{
-				NodeBase: NodeBase{
-					Span: NodeSpan{memberNameStart, p.i},
-				},
-				Name: string(p.s[memberNameStart:p.i]),
-			},
-		}
-	}
-
-	if p.i < p.len {
-
-		if left == ident && ident.Name == "fn" {
-			return p.parseFunctionPattern(ident.Span.Start, true)
-		}
-
-		switch {
-		case p.s[p.i] == '(' || p.s[p.i] == '{':
-			if left == ident && ident.Name == "str" && p.s[p.i] == '(' {
-				p.i++
-				return p.parseComplexStringPatternPiece(ident.Span.Start, rootSequencePatternPiece, ident)
-			}
-			return p.parsePatternCall(left)
-		case p.s[p.i] == '?':
-			p.i++
-			return &OptionalPatternExpression{
-				NodeBase: NodeBase{
-					Span: NodeSpan{left.Base().Span.Start, p.i},
-				},
-				Pattern: left,
-			}
-		case left == ident && p.s[p.i] == ':' && (utils.SliceContains(SCHEMES, ident.Name)):
-			p.i++
-			return p.parseURLLikePattern(start)
-		}
-	}
-
-	return left
 }
 
 func (p *parser) parseListOrTupleLiteral(isTuple bool) Node {

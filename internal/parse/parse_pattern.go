@@ -44,9 +44,10 @@ func (p *parser) parsePercentPrefixedPattern(precededByOpeningParen bool) Node {
 	case '.', '/':
 		p.i--
 		return p.parsePathLikeExpression(true)
-	case ':':
+	case ':': //scheme-less host pattern
 		p.i++
-		return p.parseURLLikePattern(start)
+		percentPrefixed := true
+		return p.parseURLLikePattern(start, percentPrefixed)
 	case '{':
 		prev := p.inPattern
 		defer func() {
@@ -503,7 +504,7 @@ func (p *parser) parseNamedPatternSegment(interpolation string, startIndex, endI
 }
 
 // parseURLLike parses URLs pattenrs and host patterns
-func (p *parser) parseURLLikePattern(start int32) Node {
+func (p *parser) parseURLLikePattern(start int32, percentPrefixed bool) Node {
 	p.panicIfContextDone()
 
 	c := int32(0)
@@ -550,7 +551,10 @@ loop:
 	}
 
 	raw := string(p.s[start:p.i])
-	u := raw[1:]
+	u := raw
+	if percentPrefixed {
+		u = u[1:]
+	}
 	span := NodeSpan{start, p.i}
 
 	if LOOSE_HOST_PATTERN_REGEX.MatchString(u) {
@@ -562,8 +566,9 @@ loop:
 				Span: span,
 				Err:  parsingErr,
 			},
-			Value: u,
-			Raw:   raw,
+			Value:      u,
+			Raw:        raw,
+			Unprefixed: !percentPrefixed,
 		}
 	}
 
@@ -580,10 +585,10 @@ loop:
 			Span: span,
 			Err:  parsingErr,
 		},
-		Value: u,
-		Raw:   raw,
+		Value:      u,
+		Raw:        raw,
+		Unprefixed: !percentPrefixed,
 	}
-
 }
 
 func (p *parser) tryParsePatternUnionWithoutLeadingPipe(firstCase Node, precededByOpeningParen bool) (*PatternUnion, bool) {
@@ -872,6 +877,107 @@ func (p *parser) parsePatternUnion(
 		},
 		Cases: cases,
 	}
+}
+
+func (p *parser) parsePercentAlphaStartingExpr() Node {
+	p.panicIfContextDone()
+
+	start := p.i
+	p.i++
+
+	for p.i < p.len && IsIdentChar(p.s[p.i]) {
+		p.i++
+	}
+
+	ident := &PatternIdentifierLiteral{
+		NodeBase: NodeBase{
+			NodeSpan{start, p.i},
+			nil,
+			false,
+		},
+		Name: string(p.s[start+1 : p.i]),
+	}
+
+	var left Node = ident
+
+	if p.i < p.len && p.s[p.i] == '.' { //pattern namespace or pattern namespace member expression
+		p.i++
+		namespaceIdent := &PatternNamespaceIdentifierLiteral{
+			NodeBase: NodeBase{
+				NodeSpan{start, p.i},
+				nil,
+				false,
+			},
+			Name: ident.Name,
+		}
+
+		if p.i >= p.len || IsDelim(p.s[p.i]) || isSpaceNotLF(p.s[p.i]) {
+			return namespaceIdent
+		}
+
+		memberNameStart := p.i
+
+		if !isAlpha(p.s[p.i]) && p.s[p.i] != '_' {
+			return &PatternNamespaceMemberExpression{
+				NodeBase: NodeBase{
+					NodeSpan{start, p.i},
+					&ParsingError{UnspecifiedParsingError, fmtPatternNamespaceMemberShouldStartWithAletterNot(p.s[p.i])},
+					false,
+				},
+				Namespace: namespaceIdent,
+			}
+		}
+
+		for p.i < p.len && IsIdentChar(p.s[p.i]) {
+			p.i++
+		}
+
+		left = &PatternNamespaceMemberExpression{
+			NodeBase: NodeBase{
+				NodeSpan{start, p.i},
+				nil,
+				false,
+			},
+			Namespace: namespaceIdent,
+			MemberName: &IdentifierLiteral{
+				NodeBase: NodeBase{
+					Span: NodeSpan{memberNameStart, p.i},
+				},
+				Name: string(p.s[memberNameStart:p.i]),
+			},
+		}
+	}
+
+	if p.i < p.len {
+
+		if left == ident && ident.Name == "fn" {
+			return p.parseFunctionPattern(ident.Span.Start, true)
+		}
+
+		switch {
+		case p.s[p.i] == '(' || p.s[p.i] == '{':
+			if left == ident && ident.Name == "str" && p.s[p.i] == '(' {
+				p.i++
+				return p.parseComplexStringPatternPiece(ident.Span.Start, rootSequencePatternPiece, ident)
+			}
+			return p.parsePatternCall(left)
+		case p.s[p.i] == '?':
+			p.i++
+			return &OptionalPatternExpression{
+				NodeBase: NodeBase{
+					Span: NodeSpan{left.Base().Span.Start, p.i},
+				},
+				Pattern: left,
+			}
+		case left == ident && p.s[p.i] == ':' && (utils.SliceContains(SCHEMES, ident.Name)):
+			p.i++
+
+			percentPrefixed := true
+			return p.parseURLLikePattern(start, percentPrefixed)
+		}
+	}
+
+	return left
 }
 
 func (p *parser) parsePatternDefinition(patternIdent *IdentifierLiteral) *PatternDefinition {

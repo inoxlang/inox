@@ -636,8 +636,9 @@ func (HostLiteral) Kind() NodeKind {
 
 type HostPatternLiteral struct {
 	NodeBase
-	Value string
-	Raw   string
+	Value      string
+	Raw        string
+	Unprefixed bool
 }
 
 func (l HostPatternLiteral) ValueString() string {
@@ -650,8 +651,9 @@ func (HostPatternLiteral) Kind() NodeKind {
 
 type URLPatternLiteral struct {
 	NodeBase
-	Value string
-	Raw   string
+	Value      string
+	Raw        string
+	Unprefixed bool
 }
 
 func (l URLPatternLiteral) ValueString() string {
