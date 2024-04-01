@@ -549,8 +549,12 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 	case *parse.RateLiteral:
 		return c.checkRateLiteral(node)
 	case *parse.URLLiteral:
-		if strings.HasPrefix(node.Value, "mem://") && utils.Must(url.Parse(node.Value)).Host != MEM_HOSTNAME {
+		u := utils.Must(url.Parse(node.Value))
+
+		if strings.HasPrefix(node.Value, "mem://") && u.Host != MEM_HOSTNAME {
 			c.addError(node, text.INVALID_MEM_HOST_ONLY_VALID_VALUE)
+		} else if u.User.String() != "" {
+			c.addError(node, text.CREDENTIALS_NOT_ALLOWED_IN_URLS)
 		}
 	case *parse.HostLiteral:
 		if strings.HasPrefix(node.Value, "mem://") && utils.Must(url.Parse(node.Value)).Host != MEM_HOSTNAME {

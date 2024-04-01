@@ -95,7 +95,7 @@ const (
 
 	INVALID_FN_DECL_SHOULD_BE_TOP_LEVEL_STMT             = "invalid function declaration: a function declaration should be a top level statement in a module (embedded or not)"
 	CONTINUE_STMTS_ONLY_ALLOWED_IN_BODY_FOR_OR_WALK_STMT = "continue statements are only allowed in the body of a 'for' or 'walk' statement"
-	BREAK_STMTS_ONLY_ALLOWED_LOCATION    = "break statements are only allowed in the body of a switch or match statement, or of a 'for' or 'walk' statement"
+	BREAK_STMTS_ONLY_ALLOWED_LOCATION                    = "break statements are only allowed in the body of a switch or match statement, or of a 'for' or 'walk' statement"
 
 	YIELD_STMTS_ONLY_ALLOWED_IN_BODY_FOR_EXPR = "yield statements are only allowed in the body of a 'for' expression"
 	PRUNE_STMTS_ARE_ONLY_ALLOWED_IN_WALK_STMT = "prune statement are only allowed in 'walk' statements"
@@ -141,7 +141,9 @@ const (
 
 	GLOBAL_VARS_AND_CONSTS_CANNOT_BE_REASSIGNED = "global variables and constants cannot be re-assigned"
 
-	INVALID_MEM_HOST_ONLY_VALID_VALUE                                 = "invalid mem:// host, only valid value is " + inoxconsts.MEM_HOSTNAME
+	INVALID_MEM_HOST_ONLY_VALID_VALUE = "invalid mem:// host, only valid value is " + inoxconsts.MEM_HOSTNAME
+	CREDENTIALS_NOT_ALLOWED_IN_URLS   = "credentials are not allowed in URLs"
+
 	LOWER_BOUND_OF_INT_RANGE_LIT_SHOULD_BE_SMALLER_THAN_UPPER_BOUND   = "the lower bound of an integer range literal should be smaller than the upper bound"
 	LOWER_BOUND_OF_FLOAT_RANGE_LIT_SHOULD_BE_SMALLER_THAN_UPPER_BOUND = "the lower bound of a float range literal should be smaller than the upper bound"
 
