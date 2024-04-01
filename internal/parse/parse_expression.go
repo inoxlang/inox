@@ -149,6 +149,9 @@ func (p *parser) parseExpression(config ...exprParsingConfig) (expr Node, isMiss
 	case '"':
 		return p.parseQuotedStringLiteral(), false
 	case '`':
+		if p.inPattern {
+			return p.parseRegularExpressionLiteral(false), false
+		}
 		return p.parseStringTemplateLiteralOrMultilineStringLiteral(nil), false
 	case '+':
 		if p.i < p.len-1 && isDecDigit(p.s[p.i+1]) {

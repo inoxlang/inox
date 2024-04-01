@@ -3660,7 +3660,7 @@ func testParse(
 		})
 	})
 
-	t.Run("regex literal", func(t *testing.T) {
+	t.Run("regexp literal", func(t *testing.T) {
 		t.Run("empty", func(t *testing.T) {
 			n := mustparseChunk(t, "%``")
 			assert.EqualValues(t, &Chunk{
@@ -3707,6 +3707,30 @@ func testParse(
 				},
 			}, n)
 		})
+
+		t.Run("unprefixed", func(t *testing.T) {
+			n := mustparseChunk(t, "pattern p = ``")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
+				Statements: []Node{
+					&PatternDefinition{
+						NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
+						Left: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+							Name:       "p",
+							Unprefixed: true,
+						},
+						Right: &RegularExpressionLiteral{
+							NodeBase:   NodeBase{NodeSpan{12, 14}, nil, false},
+							Value:      "",
+							Raw:        "``",
+							Unprefixed: true,
+						},
+					},
+				},
+			}, n)
+		})
+
 	})
 
 	t.Run("nil literal", func(t *testing.T) {
@@ -18017,7 +18041,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("no parameters, no manifest, empty body, unprefixed return type", func(t *testing.T) {
+		t.Run("no parameters, no manifest, empty body, return type is an unprefixed pattern identifier", func(t *testing.T) {
 			n := mustparseChunk(t, "fn() int {}")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 11}, nil, false},
@@ -18032,6 +18056,29 @@ func testParse(
 						},
 						Body: &Block{
 							NodeBase:   NodeBase{Span: NodeSpan{9, 11}},
+							Statements: nil,
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("no parameters, no manifest, empty body, return type is an unprefixed regexp", func(t *testing.T) {
+			n := mustparseChunk(t, "fn() `a+` {}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
+				Statements: []Node{
+					&FunctionExpression{
+						NodeBase:   NodeBase{Span: NodeSpan{0, 12}},
+						Parameters: nil,
+						ReturnType: &RegularExpressionLiteral{
+							NodeBase:   NodeBase{NodeSpan{5, 9}, nil, false},
+							Raw: "`a+`",
+							Value: "a+",
+							Unprefixed: true,
+						},
+						Body: &Block{
+							NodeBase:   NodeBase{Span: NodeSpan{10, 12}},
 							Statements: nil,
 						},
 					},

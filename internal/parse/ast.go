@@ -775,8 +775,9 @@ func (AbsolutePathExpression) Kind() NodeKind {
 
 type RegularExpressionLiteral struct {
 	NodeBase
-	Value string
-	Raw   string
+	Value      string
+	Raw        string
+	Unprefixed bool
 }
 
 func (l RegularExpressionLiteral) ValueString() string {

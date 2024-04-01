@@ -66,7 +66,7 @@ func isNonIdentBinaryOperatorChar(r rune) bool {
 
 func isAcceptedReturnTypeStart(runes []rune, i int32) bool {
 	switch runes[i] {
-	case '%', '(', '[', '*', '<':
+	case '%', '(', '[', '*', '<', '`':
 		return true
 	case '#':
 		return i < len32(runes)-1 && (runes[i+1] == '{' || runes[i+1] == '[')
