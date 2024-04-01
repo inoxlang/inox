@@ -1547,7 +1547,7 @@ func (patt URLPattern) UnderlyingString() string {
 }
 
 func (patt URLPattern) Host() Host {
-	_, partAfterScheme := patt.cutScheme()
+	scheme, partAfterScheme := patt.cutScheme()
 	indexOfPartAfterScheme := strings.Index(string(patt), "://") + 3
 	hostEndIndex := strings.IndexAny(partAfterScheme, "/?#")
 
@@ -1557,7 +1557,13 @@ func (patt URLPattern) Host() Host {
 
 	hostEndIndex += indexOfPartAfterScheme
 
-	return Host(patt[:hostEndIndex])
+	host := patt[:hostEndIndex]
+
+	credentialsEndIndex := strings.Index(string(host), "@")
+	if credentialsEndIndex > 0 {
+		return Host(scheme + "://" + string(host[credentialsEndIndex+1:]))
+	}
+	return Host(host)
 }
 
 func (patt URLPattern) Scheme() Scheme {

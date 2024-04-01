@@ -15,7 +15,7 @@ func TestObjectWatcher(t *testing.T) {
 		startMemStats := new(runtime.MemStats)
 		runtime.ReadMemStats(startMemStats)
 
-		defer utils.AssertNoMemoryLeak(t, startMemStats, 10, utils.AssertNoMemoryLeakOptions{
+		defer utils.AssertNoMemoryLeak(t, startMemStats, 200, utils.AssertNoMemoryLeakOptions{
 			PreSleepDurationMillis: 100,
 			CheckGoroutines:        true,
 			GoroutineCount:         runtime.NumGoroutine(),

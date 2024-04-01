@@ -278,6 +278,7 @@ func TestURLPattern(t *testing.T) {
 
 	t.Run("Host", func(t *testing.T) {
 		assert.EqualValues(t, "https://localhost", URLPattern("https://localhost/").Host())
+		assert.EqualValues(t, "https://localhost", URLPattern("https://user@localhost/").Host())
 		assert.EqualValues(t, "https://localhost", URLPattern("https://localhost/...").Host())
 		assert.EqualValues(t, "https://localhost", URLPattern("https://localhost#fragment").Host())
 		assert.EqualValues(t, "https://localhost", URLPattern("https://localhost?q=a").Host())
