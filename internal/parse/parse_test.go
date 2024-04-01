@@ -3280,6 +3280,52 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("unprefixed: absolute", func(t *testing.T) {
+			n := mustparseChunk(t, "pattern p = /*")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
+				Statements: []Node{
+					&PatternDefinition{
+						NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
+						Left: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+							Unprefixed: true,
+							Name:       "p",
+						},
+						Right: &AbsolutePathPatternLiteral{
+							NodeBase:   NodeBase{NodeSpan{12, 14}, nil, false},
+							Raw:        "/*",
+							Value:      "/*",
+							Unprefixed: true,
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("unprefixed: relative", func(t *testing.T) {
+			n := mustparseChunk(t, "pattern p = ./*")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
+				Statements: []Node{
+					&PatternDefinition{
+						NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
+						Left: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+							Unprefixed: true,
+							Name:       "p",
+						},
+						Right: &RelativePathPatternLiteral{
+							NodeBase:   NodeBase{NodeSpan{12, 15}, nil, false},
+							Raw:        "./*",
+							Value:      "./*",
+							Unprefixed: true,
+						},
+					},
+				},
+			}, n)
+		})
+
 		//TODO: improve following tests
 
 		t.Run("invalid named-segment path pattern literals", func(t *testing.T) {

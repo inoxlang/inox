@@ -692,8 +692,9 @@ func (RelativePathLiteral) Kind() NodeKind {
 
 type AbsolutePathPatternLiteral struct {
 	NodeBase
-	Raw   string
-	Value string //unprefixed path pattern (e.g. /* for a `%/*` literal)
+	Raw        string
+	Value      string //unprefixed path pattern (e.g. /* for a `%/*` literal)
+	Unprefixed bool
 }
 
 func (l AbsolutePathPatternLiteral) ValueString() string {
@@ -706,8 +707,9 @@ func (AbsolutePathPatternLiteral) Kind() NodeKind {
 
 type RelativePathPatternLiteral struct {
 	NodeBase
-	Raw   string
-	Value string
+	Raw        string
+	Value      string
+	Unprefixed bool
 }
 
 func (l RelativePathPatternLiteral) ValueString() string {
@@ -2530,7 +2532,8 @@ func NodeIsPattern(node Node) bool {
 		*PatternUnion,
 		*PathPatternExpression, *AbsolutePathPatternLiteral, *RelativePathPatternLiteral,
 		*URLPatternLiteral, *HostPatternLiteral, *OptionalPatternExpression,
-		*OptionPatternLiteral, *FunctionPatternExpression, *NamedSegmentPathPatternLiteral, *ReadonlyPatternExpression:
+		*OptionPatternLiteral, *FunctionPatternExpression, *NamedSegmentPathPatternLiteral, *ReadonlyPatternExpression,
+		*RegularExpressionLiteral:
 		return true
 	}
 	return false

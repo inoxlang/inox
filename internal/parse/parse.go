@@ -1090,13 +1090,16 @@ func (p *parser) parseUnquotedStringLiteral(start int32) Node {
 }
 
 // parsePathLikeExpression parses paths, path expressions, simple path patterns and named segment path patterns
-func (p *parser) parsePathLikeExpression(isPattern bool) Node {
+func (p *parser) parsePathLikeExpression(percentPrefixed bool) Node {
 	p.panicIfContextDone()
 
 	start := p.i
-	if isPattern {
+	if percentPrefixed {
 		p.i++
 	}
+
+	isPattern := percentPrefixed || p.inPattern
+	isUnprefixedPattern := p.inPattern && !percentPrefixed
 
 	pathStart := p.i
 	isAbsolute := p.s[p.i] == '/'
@@ -1216,12 +1219,14 @@ search_for_glob_wildcard:
 					NodeBase: base,
 					Raw:      raw,
 					Value:    value,
+					Unprefixed: isUnprefixedPattern,
 				}
 			}
 			return &RelativePathPatternLiteral{
 				NodeBase: base,
 				Raw:      raw,
 				Value:    value,
+				Unprefixed: isUnprefixedPattern,
 			}
 		}
 
@@ -2387,7 +2392,6 @@ func (p *parser) parsePatternCall(callee Node) *PatternCallExpression {
 	}
 }
 
-
 func (p *parser) parseListTuplePatternLiteral(percentPrefixed, isTuplePattern bool) Node {
 	p.panicIfContextDone()
 
@@ -2476,7 +2480,6 @@ func (p *parser) parseListTuplePatternLiteral(percentPrefixed, isTuplePattern bo
 		GeneralElement: generalElement,
 	}
 }
-
 
 func (p *parser) parseListOrTupleLiteral(isTuple bool) Node {
 	p.panicIfContextDone()

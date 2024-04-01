@@ -450,6 +450,17 @@ func TestPrint(t *testing.T) {
 		"`a`",
 		"`",
 		"`a",
+		//path patterns
+		"%/",
+		"%./",
+		"%../",
+		"%/{:e}",
+		"%/{:",
+		"(%/{:)",
+		//unprefixed path patterns
+		"pattern p = /",
+		"pattern p = ./",
+		"pattern p = ../",
 		//URL-like patterns
 		"%https://**",
 		"%https://example.com/...",
