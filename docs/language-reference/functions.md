@@ -126,7 +126,7 @@ An Inox function is considered to have failed if it returns an error or an Array
 whose last element is an error.
 
 ```
-fn f() (| error | nil) {
+fn f() (error | nil) {
     ... some logic ...
     if issue {
         return Error("error")

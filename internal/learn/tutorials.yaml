@@ -97,7 +97,7 @@
       # bytes = unhex!("...")
 
       # Another example but with a user-defined function.
-      fn f(issue bool) (| error | nil) {
+      fn f(issue bool) (error | nil) {
           if issue {
               return Error("there is an issue !")
           }
