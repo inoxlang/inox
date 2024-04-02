@@ -2,27 +2,32 @@ package parse
 
 import "unicode"
 
-func (p *parser) parseQuotedAndMetaStuff() Node {
+func (p *parser) parseQuotedAndMetaStuff() (result Node, returnImmediately bool) {
 	p.panicIfContextDone()
 
 	start := p.i
 	p.i++
 
+	returnImmediately = true
+
 	if p.i >= p.len {
 		p.tokens = append(p.tokens, Token{Type: UNEXPECTED_CHAR, Span: NodeSpan{start, p.i}, Raw: "@"})
-		return &UnknownNode{
+		result = &UnknownNode{
 			NodeBase: NodeBase{
 				Span: NodeSpan{start, p.i},
 				Err:  &ParsingError{UnspecifiedParsingError, AT_SYMBOL_SHOULD_BE_FOLLOWED_BY},
 			},
 		}
+		return
 	}
 
 	switch p.s[p.i] {
 	case '(':
-		return p.parseQuotedExpression()
+		result = p.parseQuotedExpression()
+		return
 	case '{':
-		return p.parseQuotedStatements()
+		result = p.parseQuotedStatements()
+		return
 	default:
 		if IsFirstIdentChar(p.s[p.i]) {
 			for p.i < p.len && IsIdentChar(p.s[p.i]) {
@@ -38,17 +43,20 @@ func (p *parser) parseQuotedAndMetaStuff() Node {
 				metaIdent.Err = &ParsingError{UnspecifiedParsingError, META_IDENTIFIER_MUST_NO_END_WITH_A_HYPHEN}
 			}
 
-			return metaIdent
+			result = metaIdent
+			returnImmediately = false
+			return
 		}
 
 		p.tokens = append(p.tokens, Token{Type: UNEXPECTED_CHAR, Span: NodeSpan{start, p.i}, Raw: "@"})
 
-		return &UnknownNode{
+		result = &UnknownNode{
 			NodeBase: NodeBase{
 				Span: NodeSpan{start, p.i},
 				Err:  &ParsingError{UnspecifiedParsingError, AT_SYMBOL_SHOULD_BE_FOLLOWED_BY},
 			},
 		}
+		return
 	}
 }
 

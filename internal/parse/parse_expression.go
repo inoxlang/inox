@@ -201,7 +201,11 @@ func (p *parser) parseExpression(config ...exprParsingConfig) (expr Node, isMiss
 			Name: string(p.s[exprStartIndex+1 : p.i]),
 		}, false
 	case '@':
-		return p.parseQuotedAndMetaStuff(), false
+		e, returnNow := p.parseQuotedAndMetaStuff()
+		if returnNow {
+			return e, false
+		}
+		left = e
 	case '<':
 		if p.i < p.len {
 

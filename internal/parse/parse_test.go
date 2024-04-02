@@ -4091,16 +4091,32 @@ func testParse(
 							NodeSpan{1, 8},
 							nil,
 							true,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{8, 9}},
-							},*/
 						},
 						Left: &SelfExpression{
 							NodeBase: NodeBase{NodeSpan{1, 5}, nil, false},
 						},
 						PropertyName: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{6, 8}, nil, false},
+							Name:     "bc",
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("meta identifier '.' <two-letter propname> ", func(t *testing.T) {
+			n := mustparseChunk(t, "@a.bc")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 5}, nil, false},
+				Statements: []Node{
+					&MemberExpression{
+						NodeBase: NodeBase{Span: NodeSpan{0, 5}},
+						Left: &MetaIdentifier{
+							NodeBase: NodeBase{NodeSpan{0, 2}, nil, false},
+							Name:     "a",
+						},
+						PropertyName: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{3, 5}, nil, false},
 							Name:     "bc",
 						},
 					},
@@ -9411,15 +9427,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 7}, nil, false},
 				Statements: []Node{
 					&CallExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 7},
-							nil,
-							false,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{5, 6}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{6, 7}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 7}},
 						Callee: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 5}, nil, false},
 							Name:     "print",
@@ -9436,15 +9444,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
 				Statements: []Node{
 					&CallExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 8},
-							nil,
-							false,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{5, 6}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{7, 8}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 8}},
 						Callee: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 5}, nil, false},
 							Name:     "print",
@@ -9461,16 +9461,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
 				Statements: []Node{
 					&CallExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 8},
-							nil,
-							false,
-							/*[]Token{
-								{Type: EXCLAMATION_MARK, Span: NodeSpan{5, 6}},
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{6, 7}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{7, 8}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 8}},
 						Callee: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 5}, nil, false},
 							Name:     "print",
@@ -9488,15 +9479,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 9}, nil, false},
 				Statements: []Node{
 					&CallExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 9},
-							nil,
-							false,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{5, 6}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{8, 9}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 9}},
 						Callee: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 5}, nil, false},
 							Name:     "print",
@@ -9518,15 +9501,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
 				Statements: []Node{
 					&CallExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 12},
-							nil,
-							false,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{5, 6}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{11, 12}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 12}},
 						Callee: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 5}, nil, false},
 							Name:     "print",
@@ -9552,15 +9527,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
 				Statements: []Node{
 					&CallExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 12},
-							nil,
-							false,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{5, 6}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{11, 12}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 12}},
 						Callee: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 5}, nil, false},
 							Name:     "print",
@@ -9591,15 +9558,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 9}, nil, false},
 				Statements: []Node{
 					&CallExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 9},
-							nil,
-							false,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{5, 6}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{8, 9}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 9}},
 						Callee: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 5}, nil, false},
 							Name:     "print",
@@ -9629,15 +9588,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 10}, nil, false},
 				Statements: []Node{
 					&CallExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 10},
-							nil,
-							false,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{8, 9}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{9, 10}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 10}},
 						Callee: &IdentifierMemberExpression{
 							NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
 							Left: &IdentifierLiteral{
@@ -9663,15 +9614,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 9}, nil, false},
 				Statements: []Node{
 					&CallExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 9},
-							nil,
-							false,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{4, 5}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{8, 9}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 9}},
 						Callee: &MemberExpression{
 							NodeBase: NodeBase{NodeSpan{0, 4}, nil, false},
 							Left: &Variable{
@@ -9695,31 +9638,31 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("callee is a meta identifier", func(t *testing.T) {
+			n := mustparseChunk(t, `@a()`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 4}, nil, false},
+				Statements: []Node{
+					&CallExpression{
+						NodeBase: NodeBase{Span: NodeSpan{0, 4}},
+						Callee: &MetaIdentifier{
+							NodeBase: NodeBase{NodeSpan{0, 2}, nil, false},
+							Name:     "a",
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("double call", func(t *testing.T) {
 			n := mustparseChunk(t, "print()()")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 9}, nil, false},
 				Statements: []Node{
 					&CallExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 9},
-							nil,
-							false,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{7, 8}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{8, 9}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 9}},
 						Callee: &CallExpression{
-							NodeBase: NodeBase{
-								NodeSpan{0, 7},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_PARENTHESIS, Span: NodeSpan{5, 6}},
-									{Type: CLOSING_PARENTHESIS, Span: NodeSpan{6, 7}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{0, 7}},
 							Callee: &IdentifierLiteral{
 								NodeBase: NodeBase{NodeSpan{0, 5}, nil, false},
 								Name:     "print",
@@ -22018,21 +21961,13 @@ func testParse(
 	})
 
 	t.Run("spawn expression", func(t *testing.T) {
-		t.Run("call expression: called is an identifier literal", func(t *testing.T) {
+		t.Run("call expression: callee is an identifier literal", func(t *testing.T) {
 			n := mustparseChunk(t, `go nil do f()`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
 				Statements: []Node{
 					&SpawnExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 13},
-							nil,
-							false,
-							/*[]Token{
-								{Type: GO_KEYWORD, Span: NodeSpan{0, 2}},
-								{Type: DO_KEYWORD, Span: NodeSpan{7, 9}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 13}},
 						Meta: &NilLiteral{
 							NodeBase: NodeBase{NodeSpan{3, 6}, nil, false},
 						},
@@ -22041,15 +21976,7 @@ func testParse(
 							SingleCallExpr: true,
 							Statements: []Node{
 								&CallExpression{
-									NodeBase: NodeBase{
-										NodeSpan{10, 13},
-										nil,
-										false,
-										/*[]Token{
-											{Type: OPENING_PARENTHESIS, Span: NodeSpan{11, 12}},
-											{Type: CLOSING_PARENTHESIS, Span: NodeSpan{12, 13}},
-										},*/
-									},
+									NodeBase: NodeBase{Span: NodeSpan{10, 13}},
 									Callee: &IdentifierLiteral{
 										NodeBase: NodeBase{NodeSpan{10, 11}, nil, false},
 										Name:     "f",
@@ -22068,11 +21995,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
 				Statements: []Node{
 					&SpawnExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 21},
-							nil,
-							false,
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 21}},
 						Meta: &NilLiteral{
 							NodeBase: NodeBase{NodeSpan{3, 6}, nil, false},
 						},
@@ -22081,11 +22004,7 @@ func testParse(
 							SingleCallExpr: true,
 							Statements: []Node{
 								&CallExpression{
-									NodeBase: NodeBase{
-										NodeSpan{10, 21},
-										nil,
-										false,
-									},
+									NodeBase: NodeBase{Span: NodeSpan{10, 21}},
 									Callee: &IdentifierMemberExpression{
 										NodeBase: NodeBase{NodeSpan{10, 19}, nil, false},
 										Left: &IdentifierLiteral{
