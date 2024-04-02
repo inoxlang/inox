@@ -14,6 +14,9 @@ import (
 const (
 	MIN_TOKEN_CACHING_COUNT = 2
 
+	AND_LEN = int32(len("and"))
+	OR_LEN  = int32(len("or"))
+
 	OTHERPROPS_KEYWORD_STRING      = "otherprops"
 	ASSERT_KEYWORD_STRING          = "assert"
 	IF_KEYWORD_STRING              = "if"

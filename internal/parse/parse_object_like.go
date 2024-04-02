@@ -2,6 +2,10 @@ package parse
 
 import "strconv"
 
+const (
+	NO_OTHERPROPS_PATTERN_NAME = "no"
+)
+
 func (p *parser) parseObjectOrRecordLiteral(isRecord bool) Node {
 	p.panicIfContextDone()
 

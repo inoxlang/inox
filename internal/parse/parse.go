@@ -31,14 +31,6 @@ const (
 	NO_LOCATION_DATELIKE_LITERAL_PATTERN  = "^(\\d+y)(?:|(-\\d{1,2}mt)(-\\d{1,2}d)(-\\d{1,2}h)?(-\\d{1,2}m)?(-\\d{1,2}s)?(-\\d{1,3}ms)?(-\\d{1,3}us)?)"
 	_NO_LOCATION_DATELIKE_LITERAL_PATTERN = NO_LOCATION_DATELIKE_LITERAL_PATTERN + "$"
 	DATELIKE_LITERAL_PATTERN              = NO_LOCATION_DATELIKE_LITERAL_PATTERN + "(-[a-zA-Z_/]+[a-zA-Z_])$"
-
-	NO_OTHERPROPS_PATTERN_NAME = "no"
-
-	SCRIPT_TAG_NAME = "script"
-	STYLE_TAG_NAME  = "style"
-
-	AND_LEN = int32(len("and"))
-	OR_LEN  = int32(len("or"))
 )
 
 var (

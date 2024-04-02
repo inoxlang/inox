@@ -7,6 +7,11 @@ import (
 	"github.com/inoxlang/inox/internal/mimeconsts"
 )
 
+const (
+	SCRIPT_TAG_NAME = "script"
+	STYLE_TAG_NAME  = "style"
+)
+
 func (p *parser) parseXMLExpression(namespaceIdent *IdentifierLiteral /* can be nil */, start int32) *XMLExpression {
 	p.panicIfContextDone()
 
