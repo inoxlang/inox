@@ -628,9 +628,9 @@ children_parsing_loop:
 				Expr: expr,
 			}
 			children = append(children, interpolationNode)
-		case !inInterpolation && p.s[p.i] == '<': //child element
+		case !inInterpolation && p.s[p.i] == '<': //child element or unquoted region
 
-			// add previous slice
+			// Add previous slice
 			raw := string(p.s[childStart:p.i])
 			value, sliceErr := p.getValueOfMultilineStringSliceOrLiteral([]byte(raw), false)
 			children = append(children, &XMLText{
@@ -642,6 +642,16 @@ children_parsing_loop:
 				Raw:   raw,
 				Value: value,
 			})
+
+			if p.i < p.len-1 && p.s[p.i+1] == '{' {
+				unquotedRegion := p.parseUnquotedRegion()
+				children = append(children, unquotedRegion)
+				childStart = p.i
+
+				continue children_parsing_loop
+			}
+
+			//Child element
 
 			child, noOrExpectedClosingTag := p.parseXMLElement(p.i)
 			children = append(children, child)

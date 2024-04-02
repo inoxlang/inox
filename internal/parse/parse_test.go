@@ -30996,15 +30996,7 @@ func testParse(
 						Element: &XMLElement{
 							NodeBase: NodeBase{NodeSpan{1, 13}, nil, false},
 							Opening: &XMLOpeningElement{
-								NodeBase: NodeBase{
-									NodeSpan{1, 6},
-									nil,
-									false,
-									/*[]Token{
-										{Type: LESS_THAN, Span: NodeSpan{1, 2}},
-										{Type: GREATER_THAN, Span: NodeSpan{5, 6}},
-									},*/
-								},
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
 									Name:     "div",
@@ -31018,15 +31010,7 @@ func testParse(
 								},
 							},
 							Closing: &XMLClosingElement{
-								NodeBase: NodeBase{
-									NodeSpan{7, 13},
-									nil,
-									false,
-									/*[]Token{
-										{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{7, 9}},
-										{Type: GREATER_THAN, Span: NodeSpan{12, 13}},
-									},*/
-								},
+								NodeBase: NodeBase{Span: NodeSpan{7, 13}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{9, 12}, nil, false},
 									Name:     "div",
@@ -31050,25 +31034,9 @@ func testParse(
 							Name:     "h",
 						},
 						Element: &XMLElement{
-							NodeBase: NodeBase{
-								NodeSpan{1, 16},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{6, 7}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{8, 9}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{1, 16}},
 							Opening: &XMLOpeningElement{
-								NodeBase: NodeBase{
-									NodeSpan{1, 6},
-									nil,
-									false,
-									/*[]Token{
-										{Type: LESS_THAN, Span: NodeSpan{1, 2}},
-										{Type: GREATER_THAN, Span: NodeSpan{5, 6}},
-									},*/
-								},
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
 									Name:     "div",
@@ -31095,18 +31063,66 @@ func testParse(
 								},
 							},
 							Closing: &XMLClosingElement{
-								NodeBase: NodeBase{
-									NodeSpan{10, 16},
-									nil,
-									false,
-									/*[]Token{
-										{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{10, 12}},
-										{Type: GREATER_THAN, Span: NodeSpan{15, 16}},
-									},*/
-								},
+								NodeBase: NodeBase{Span: NodeSpan{10, 16}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{12, 15}, nil, false},
 									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("leading unquoted region as child", func(t *testing.T) {
+			n := mustparseChunk(t, "@(h<div><{1}>2</div>)")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
+				Statements: []Node{
+					&QuotedExpression{
+						NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
+						Expression: &XMLExpression{
+							NodeBase: NodeBase{NodeSpan{2, 20}, nil, true},
+							Namespace: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{2, 3}, nil, false},
+								Name:     "h",
+							},
+							Element: &XMLElement{
+								NodeBase: NodeBase{Span: NodeSpan{3, 20}},
+								Opening: &XMLOpeningElement{
+									NodeBase: NodeBase{Span: NodeSpan{3, 8}},
+									Name: &IdentifierLiteral{
+										NodeBase: NodeBase{NodeSpan{4, 7}, nil, false},
+										Name:     "div",
+									},
+								},
+								Children: []Node{
+									&XMLText{
+										NodeBase: NodeBase{NodeSpan{8, 8}, nil, false},
+										Raw:      "",
+										Value:    "",
+									},
+									&UnquotedRegion{
+										NodeBase: NodeBase{NodeSpan{8, 13}, nil, false},
+										Expression: &IntLiteral{
+											NodeBase: NodeBase{NodeSpan{10, 11}, nil, false},
+											Raw:      "1",
+											Value:    1,
+										},
+									},
+									&XMLText{
+										NodeBase: NodeBase{NodeSpan{13, 14}, nil, false},
+										Raw:      "2",
+										Value:    "2",
+									},
+								},
+								Closing: &XMLClosingElement{
+									NodeBase: NodeBase{Span: NodeSpan{14, 20}},
+									Name: &IdentifierLiteral{
+										NodeBase: NodeBase{NodeSpan{16, 19}, nil, false},
+										Name:     "div",
+									},
 								},
 							},
 						},
@@ -31127,25 +31143,9 @@ func testParse(
 							Name:     "h",
 						},
 						Element: &XMLElement{
-							NodeBase: NodeBase{
-								NodeSpan{1, 16},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{7, 8}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{1, 16}},
 							Opening: &XMLOpeningElement{
-								NodeBase: NodeBase{
-									NodeSpan{1, 6},
-									nil,
-									false,
-									/*[]Token{
-										{Type: LESS_THAN, Span: NodeSpan{1, 2}},
-										{Type: GREATER_THAN, Span: NodeSpan{5, 6}},
-									},*/
-								},
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
 									Name:     "div",
@@ -31172,18 +31172,66 @@ func testParse(
 								},
 							},
 							Closing: &XMLClosingElement{
-								NodeBase: NodeBase{
-									NodeSpan{10, 16},
-									nil,
-									false,
-									/*[]Token{
-										{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{10, 12}},
-										{Type: GREATER_THAN, Span: NodeSpan{15, 16}},
-									},*/
-								},
+								NodeBase: NodeBase{Span: NodeSpan{10, 16}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{12, 15}, nil, false},
 									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("trailing unquoted region as child", func(t *testing.T) {
+			n := mustparseChunk(t, "@(h<div>1<{2}></div>)")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
+				Statements: []Node{
+					&QuotedExpression{
+						NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
+						Expression: &XMLExpression{
+							NodeBase: NodeBase{NodeSpan{2, 20}, nil, true},
+							Namespace: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{2, 3}, nil, false},
+								Name:     "h",
+							},
+							Element: &XMLElement{
+								NodeBase: NodeBase{Span: NodeSpan{3, 20}},
+								Opening: &XMLOpeningElement{
+									NodeBase: NodeBase{Span: NodeSpan{3, 8}},
+									Name: &IdentifierLiteral{
+										NodeBase: NodeBase{NodeSpan{4, 7}, nil, false},
+										Name:     "div",
+									},
+								},
+								Children: []Node{
+									&XMLText{
+										NodeBase: NodeBase{NodeSpan{8, 9}, nil, false},
+										Raw:      "1",
+										Value:    "1",
+									},
+									&UnquotedRegion{
+										NodeBase: NodeBase{NodeSpan{9, 14}, nil, false},
+										Expression: &IntLiteral{
+											NodeBase: NodeBase{NodeSpan{11, 12}, nil, false},
+											Raw:      "2",
+											Value:    2,
+										},
+									},
+									&XMLText{
+										NodeBase: NodeBase{NodeSpan{14, 14}, nil, false},
+										Raw:      "",
+										Value:    "",
+									},
+								},
+								Closing: &XMLClosingElement{
+									NodeBase: NodeBase{Span: NodeSpan{14, 20}},
+									Name: &IdentifierLiteral{
+										NodeBase: NodeBase{NodeSpan{16, 19}, nil, false},
+										Name:     "div",
+									},
 								},
 							},
 						},
