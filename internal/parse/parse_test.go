@@ -29306,15 +29306,7 @@ func testParse(
 								},
 							},
 							Closing: &XMLClosingElement{
-								NodeBase: NodeBase{
-									NodeSpan{6, 12},
-									nil,
-									false,
-									/*[]Token{
-										{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{6, 8}},
-										{Type: GREATER_THAN, Span: NodeSpan{11, 12}},
-									},*/
-								},
+								NodeBase: NodeBase{Span: NodeSpan{6, 12}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{8, 11}, nil, false},
 									Name:     "div",
@@ -29715,13 +29707,7 @@ func testParse(
 							NodeBase: NodeBase{NodeSpan{1, 18}, nil, false},
 							Opening: &XMLOpeningElement{
 								NodeBase: NodeBase{
-									NodeSpan{1, 12},
-									nil,
-									false,
-									/*[]Token{
-										{Type: LESS_THAN, Span: NodeSpan{1, 2}},
-										{Type: GREATER_THAN, Span: NodeSpan{11, 12}},
-									},*/
+									Span: NodeSpan{1, 12},
 								},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
@@ -29774,6 +29760,125 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("attribute with value and unquoted region as name", func(t *testing.T) {
+			n := mustparseChunk(t, `@(h<div <{a}>="b"></div>)`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 25}, nil, false},
+				Statements: []Node{
+					&QuotedExpression{
+						NodeBase: NodeBase{NodeSpan{0, 25}, nil, false},
+						Expression: &XMLExpression{
+							NodeBase: NodeBase{NodeSpan{2, 24}, nil, true},
+							Namespace: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{2, 3}, nil, false},
+								Name:     "h",
+							},
+							Element: &XMLElement{
+								NodeBase: NodeBase{NodeSpan{3, 24}, nil, false},
+								Opening: &XMLOpeningElement{
+									NodeBase: NodeBase{Span: NodeSpan{3, 18}},
+									Name: &IdentifierLiteral{
+										NodeBase: NodeBase{NodeSpan{4, 7}, nil, false},
+										Name:     "div",
+									},
+									Attributes: []Node{
+										&XMLAttribute{
+											NodeBase: NodeBase{Span: NodeSpan{8, 17}},
+											Name: &UnquotedRegion{
+												NodeBase: NodeBase{Span: NodeSpan{8, 13}},
+												Expression: &IdentifierLiteral{
+													NodeBase: NodeBase{NodeSpan{10, 11}, nil, false},
+													Name:     "a",
+												},
+											},
+											Value: &DoubleQuotedStringLiteral{
+												NodeBase: NodeBase{NodeSpan{14, 17}, nil, false},
+												Raw:      `"b"`,
+												Value:    "b",
+											},
+										},
+									},
+								},
+								Children: []Node{
+									&XMLText{
+										NodeBase: NodeBase{NodeSpan{18, 18}, nil, false},
+										Raw:      "",
+										Value:    "",
+									},
+								},
+								Closing: &XMLClosingElement{
+									NodeBase: NodeBase{Span: NodeSpan{18, 24}},
+									Name: &IdentifierLiteral{
+										NodeBase: NodeBase{NodeSpan{20, 23}, nil, false},
+										Name:     "div",
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("attribute with unquoted region as value", func(t *testing.T) {
+			n := mustparseChunk(t, `@(h<div a=<{b}>></div>)`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
+				Statements: []Node{
+					&QuotedExpression{
+						NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
+						Expression: &XMLExpression{
+							NodeBase: NodeBase{NodeSpan{2, 22}, nil, true},
+							Namespace: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{2, 3}, nil, false},
+								Name:     "h",
+							},
+							Element: &XMLElement{
+								NodeBase: NodeBase{NodeSpan{3, 22}, nil, false},
+								Opening: &XMLOpeningElement{
+									NodeBase: NodeBase{Span: NodeSpan{3, 16}},
+									Name: &IdentifierLiteral{
+										NodeBase: NodeBase{NodeSpan{4, 7}, nil, false},
+										Name:     "div",
+									},
+									Attributes: []Node{
+										&XMLAttribute{
+											NodeBase: NodeBase{Span: NodeSpan{8, 15}},
+											Name: &IdentifierLiteral{
+												NodeBase: NodeBase{NodeSpan{8, 9}, nil, false},
+												Name:     "a",
+											},
+											Value: &UnquotedRegion{
+												NodeBase: NodeBase{Span: NodeSpan{10, 15}},
+												Expression: &IdentifierLiteral{
+													NodeBase: NodeBase{NodeSpan{12, 13}, nil, false},
+													Name:     "b",
+												},
+											},
+										},
+									},
+								},
+								Children: []Node{
+									&XMLText{
+										NodeBase: NodeBase{NodeSpan{16, 16}, nil, false},
+										Raw:      "",
+										Value:    "",
+									},
+								},
+								Closing: &XMLClosingElement{
+									NodeBase: NodeBase{Span: NodeSpan{16, 22}},
+									Name: &IdentifierLiteral{
+										NodeBase: NodeBase{NodeSpan{18, 21}, nil, false},
+										Name:     "div",
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("attribute without value on next line", func(t *testing.T) {
 			n := mustparseChunk(t, "h<div\na></div>")
 			assert.EqualValues(t, &Chunk{
@@ -29788,26 +29893,14 @@ func testParse(
 						Element: &XMLElement{
 							NodeBase: NodeBase{NodeSpan{1, 14}, nil, false},
 							Opening: &XMLOpeningElement{
-								NodeBase: NodeBase{
-									NodeSpan{1, 8},
-									nil,
-									false,
-									/*[]Token{
-										{Type: LESS_THAN, Span: NodeSpan{1, 2}},
-										{Type: GREATER_THAN, Span: NodeSpan{11, 12}},
-									},*/
-								},
+								NodeBase: NodeBase{Span: NodeSpan{1, 8}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
 									Name:     "div",
 								},
 								Attributes: []Node{
 									&XMLAttribute{
-										NodeBase: NodeBase{
-											NodeSpan{6, 7},
-											nil,
-											false,
-										},
+										NodeBase: NodeBase{Span: NodeSpan{6, 7}},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 											Name:     "a",
@@ -29823,15 +29916,7 @@ func testParse(
 								},
 							},
 							Closing: &XMLClosingElement{
-								NodeBase: NodeBase{
-									NodeSpan{8, 14},
-									nil,
-									false,
-									/*[]Token{
-										{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{12, 14}},
-										{Type: GREATER_THAN, Span: NodeSpan{17, 18}},
-									},*/
-								},
+								NodeBase: NodeBase{Span: NodeSpan{8, 14}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{10, 13}, nil, false},
 									Name:     "div",

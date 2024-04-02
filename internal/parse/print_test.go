@@ -635,6 +635,8 @@ func TestPrint(t *testing.T) {
 		`h<div a="b"/>`,
 		`h<div a=/>`,
 		`h<div "a"="b"/>`,
+		`h<div <{a}>="b"></div>`,
+		`h<div a=<{b}></div>`,
 		"h<div></span></span></div>",
 		"h<div></span>1</span>2</div>",
 		"h<div {}></div>",
