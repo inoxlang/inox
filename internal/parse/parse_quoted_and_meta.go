@@ -24,20 +24,24 @@ func (p *parser) parseQuotedAndMetaStuff() Node {
 	case '{':
 		return p.parseQuotedStatements()
 	default:
-		// if IsFirstIdentChar(p.s[p.i]) {
-		// 	j := p.i
-		// 	p.i--
+		if IsFirstIdentChar(p.s[p.i]) {
+			for p.i < p.len && IsIdentChar(p.s[p.i]) {
+				p.i++
+			}
 
-		// 	for j < p.len && IsIdentChar(p.s[j]) {
-		// 		j++
-		// 	}
+			metaIdent := &MetaIdentifier{
+				NodeBase: NodeBase{Span: NodeSpan{start, p.i}},
+				Name:     string(p.s[start+1 : p.i]),
+			}
 
-		// 	for j < p.len && isSpaceNotLF(p.s[j]) {
-		// 		j++
-		// 	}
-		// }
+			if metaIdent.Name[len(metaIdent.Name)-1] == '-' {
+				metaIdent.Err = &ParsingError{UnspecifiedParsingError, META_IDENTIFIER_MUST_NO_END_WITH_A_HYPHEN}
+			}
 
-		// p.tokens = append(p.tokens, Token{Type: UNEXPECTED_CHAR, Span: NodeSpan{start, p.i}, Raw: "@"})
+			return metaIdent
+		}
+
+		p.tokens = append(p.tokens, Token{Type: UNEXPECTED_CHAR, Span: NodeSpan{start, p.i}, Raw: "@"})
 
 		return &UnknownNode{
 			NodeBase: NodeBase{

@@ -87,13 +87,18 @@ func TestPrint(t *testing.T) {
 		"2020y-5mt-06d-UTC",
 		"2020y-5mt",
 		"#a",
-		//option expression
+		//option expressions
 		"-x=1",
 		"--x=1",
-		//variable
+		//variables
 		"(f)",
 		"a",
 		"a?",
+		"$a",
+		"$a?",
+		//meta identifiers
+		"@a",
+		"@a-",
 		//local variable declaration
 		"var",
 		"var ()",

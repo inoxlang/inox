@@ -2547,6 +2547,53 @@ func testParse(
 		})
 	})
 
+	t.Run("meta identifier", func(t *testing.T) {
+
+		t.Run("single letter", func(t *testing.T) {
+			n := mustparseChunk(t, "@a")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 2}, nil, false},
+				Statements: []Node{
+					&MetaIdentifier{
+						NodeBase: NodeBase{NodeSpan{0, 2}, nil, false},
+						Name:     "a",
+					},
+				},
+			}, n)
+		})
+
+		t.Run("ending with a hyphen", func(t *testing.T) {
+			n, err := parseChunk(t, "@a-", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 3}, nil, false},
+				Statements: []Node{
+					&MetaIdentifier{
+						NodeBase: NodeBase{
+							NodeSpan{0, 3},
+							&ParsingError{UnspecifiedParsingError, META_IDENTIFIER_MUST_NO_END_WITH_A_HYPHEN},
+							false,
+						},
+						Name: "a-",
+					},
+				},
+			}, n)
+		})
+
+		t.Run("followed by line feed", func(t *testing.T) {
+			n := mustparseChunk(t, "@a\n")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{Span: NodeSpan{0, 3}},
+				Statements: []Node{
+					&MetaIdentifier{
+						NodeBase: NodeBase{NodeSpan{0, 2}, nil, false},
+						Name:     "a",
+					},
+				},
+			}, n)
+		})
+	})
+
 	t.Run("boolean literals", func(t *testing.T) {
 		t.Run("true", func(t *testing.T) {
 			n := mustparseChunk(t, "true")

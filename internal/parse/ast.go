@@ -1106,6 +1106,15 @@ func (UnambiguousIdentifierLiteral) Kind() NodeKind {
 	return Expr
 }
 
+type MetaIdentifier struct {
+	NodeBase
+	Name string
+}
+
+func (MetaIdentifier) Kind() NodeKind {
+	return Expr
+}
+
 type PropertyNameLiteral struct {
 	NodeBase
 	Name string
@@ -2502,7 +2511,7 @@ type XMLInterpolation struct {
 type ExtendStatement struct {
 	NodeBase
 	ExtendedPattern Node
-	Extension       Node //*ObjectLiteral if coorecy
+	Extension       Node //*ObjectLiteral if correct
 }
 
 func (ExtendStatement) Kind() NodeKind {

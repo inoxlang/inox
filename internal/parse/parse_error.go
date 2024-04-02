@@ -76,6 +76,7 @@ const (
 	INVALID_MANIFEST_DESC_VALUE                             = "invalid manifest description value, an object is expected"
 	UNTERMINATED_IDENTIFIER_LIT                             = "unterminated identifier literal"
 	IDENTIFIER_LITERAL_MUST_NO_END_WITH_A_HYPHEN            = "identifier literal must not end with '-'"
+	META_IDENTIFIER_MUST_NO_END_WITH_A_HYPHEN       = "meta identifier must not end with '-'"
 	UNTERMINATED_REGEX_LIT                                  = "unterminated regex literal"
 	INVALID_REGEX_LIT                                       = "invalid regex literal"
 	INVALID_STRING_INTERPOLATION_SHOULD_NOT_BE_EMPTY        = "string interpolation should not be empty"
@@ -208,7 +209,7 @@ const (
 	UNTERMINATED_OPTION_EXPR_EQUAL_ASSIGN_SHOULD_BE_FOLLOWED_BY_EXPR  = "unterminated option expression, '=' should be followed by an expression"
 	UNTERMINATED_OPTION_PATT_EQUAL_ASSIGN_SHOULD_BE_FOLLOWED_BY_EXPR  = "unterminated option pattern, '=' should be followed by an expression"
 	UNTERMINATED_OPTION_PATTERN_A_VALUE_IS_EXPECTED_AFTER_EQUAKL_SIGN = "unterminated option pattern, a value is expected after '='"
-	AT_SYMBOL_SHOULD_BE_FOLLOWED_BY                                   = "'@' should be followed by '(' <expr> ')' or by the name of variable (@host/path)"
+	AT_SYMBOL_SHOULD_BE_FOLLOWED_BY                                   = "'@' should be followed by '(' (quoted expression), '{' (quoted statements), or a letter (meta identifier)"
 	UNTERMINATED_URL_EXPRESSION                                       = "unterminated url expression"
 	INVALID_HOST_ALIAS_DEF_MISSING_VALUE_AFTER_EQL_SIGN               = "unterminated HostAliasDefinition, missing value after '='"
 
