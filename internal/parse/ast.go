@@ -134,6 +134,11 @@ type MissingExpression struct {
 	NodeBase `json:"base:missing-expr"`
 }
 
+type MissingStatement struct {
+	NodeBase    `json:"base:missing-statement"`
+	Annotations *MetadataAnnotations `json:"annotations,omitempty"`
+}
+
 type InvalidCSSselectorNode struct {
 	NodeBase `json:"base:invalid-css-selector-node"`
 }
@@ -152,6 +157,7 @@ func IsScopeContainerNode(node Node) bool {
 	case *Chunk, *EmbeddedModule, *FunctionExpression, *FunctionPatternExpression, *QuotedExpression,
 		*InitializationBlock, *MappingExpression, *StaticMappingEntry, *DynamicMappingEntry, *TestSuiteExpression, *TestCaseExpression,
 		*ExtendStatement,       //ExtendStatement being a scope container is not 100% incorrect
+		*MetadataAnnotations,   //MetadataAnnotation being a scope container is not 100% incorrect
 		*StructDefinition,      //same
 		*LifetimejobExpression: // <-- remove ?
 		return true
@@ -1384,6 +1390,17 @@ func (e CallExpression) IsCalleeNamed(name string) bool {
 	}
 }
 
+func (e CallExpression) IsMetaCallee() bool {
+	switch callee := e.Callee.(type) {
+	case *MetaIdentifier:
+		return true
+	case *MemberExpression:
+		return utils.Implements[*MetaIdentifier](callee.Left)
+	default:
+		return false
+	}
+}
+
 type SpreadArgument struct {
 	NodeBase
 	Expr Node
@@ -1834,8 +1851,9 @@ func (FunctionExpression) Kind() NodeKind {
 
 type FunctionDeclaration struct {
 	NodeBase
-	Function *FunctionExpression
-	Name     Node //*IdentifierLiteral | *UnquotedRegion
+	Annotations *MetadataAnnotations //can be nil
+	Function    *FunctionExpression
+	Name        Node //*IdentifierLiteral | *UnquotedRegion
 }
 
 func (FunctionDeclaration) Kind() NodeKind {
@@ -2518,6 +2536,11 @@ func (ExtendStatement) Kind() NodeKind {
 	return Stmt
 }
 
+type MetadataAnnotations struct {
+	NodeBase
+	Expressions []Node
+}
+
 // NodeIsStringLiteral returns true if and only if node is of one of the following types:
 // *QuotedStringLiteral, *UnquotedStringLiteral, *StringTemplateLiteral, *MultilineStringLiteral
 func NodeIsStringLiteral(node Node) bool {
@@ -2729,6 +2752,7 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 			walk(stmt, node, ancestorChain, fn, afterFn)
 		}
 	case *FunctionDeclaration:
+		walk(n.Annotations, node, ancestorChain, fn, afterFn)
 		walk(n.Name, node, ancestorChain, fn, afterFn)
 		walk(n.Function, node, ancestorChain, fn, afterFn)
 	case *FunctionExpression:
@@ -3171,10 +3195,16 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 	case *ExtendStatement:
 		walk(n.ExtendedPattern, node, ancestorChain, fn, afterFn)
 		walk(n.Extension, node, ancestorChain, fn, afterFn)
+	case *MetadataAnnotations:
+		for _, expr := range n.Expressions {
+			walk(expr, node, ancestorChain, fn, afterFn)
+		}
 	case *LongValuePathLiteral:
 		for _, segment := range n.Segments {
 			walk(segment, node, ancestorChain, fn, afterFn)
 		}
+	case *MissingStatement:
+		walk(n.Annotations, node, ancestorChain, fn, afterFn)
 	}
 
 	if afterFn != nil {

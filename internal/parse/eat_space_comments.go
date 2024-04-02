@@ -25,7 +25,7 @@ func (p *parser) eatSpace() {
 	}
 }
 
-func (p *parser) eatSpaceNewline() {
+func (p *parser) eatSpaceNewline() (linefeedCount int) {
 	p.panicIfContextDone()
 
 loop:
@@ -34,12 +34,13 @@ loop:
 		case ' ', '\t', '\r':
 		case '\n':
 			p.tokens = append(p.tokens, Token{Type: NEWLINE, Span: NodeSpan{p.i, p.i + 1}})
+			linefeedCount++
 		default:
 			break loop
 		}
 		p.i++
 	}
-
+	return
 }
 
 func (p *parser) eatSpaceComments() {

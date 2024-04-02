@@ -162,6 +162,12 @@ func (p *parser) parseQuotedStatements() *QuotedStatements {
 			stmtErr = &ParsingError{UnspecifiedParsingError, STMTS_SHOULD_BE_SEPARATED_BY}
 		}
 
+		annotations, moveForward := p.parseMetadaAnnotationsBeforeStatement(&stmts)
+
+		if !moveForward {
+			break
+		}
+
 		stmt := p.parseStatement()
 
 		prevStmtEndIndex = p.i
@@ -173,7 +179,9 @@ func (p *parser) parseQuotedStatements() *QuotedStatements {
 			stmt.BasePtr().Err = stmtErr
 		}
 
+		p.addAnnotationsToNodeIfPossible(annotations, stmt)
 		stmts = append(stmts, stmt)
+
 		p.eatSpaceNewlineSemicolonComment()
 	}
 
@@ -293,4 +301,29 @@ func (p *parser) parseUnquotedRegion() *UnquotedRegion {
 		Spread:     spread,
 		Expression: e,
 	}
+}
+
+// addAnnotationsToNodeIfPossible adds $annotations to $node if it supports them, a non-nil *MissingStatement is returned otherwise.
+// If $annotations is nil addAnnotationsToNodeIfPossible dos nothing and returns nil.
+func (p *parser) addAnnotationsToNodeIfPossible(annotations *MetadataAnnotations, stmt Node) *MissingStatement {
+
+	if annotations == nil {
+		return nil
+	}
+
+	switch stmt := stmt.(type) {
+	case *FunctionDeclaration:
+		stmt.Annotations = annotations
+		stmt.Span.Start = annotations.Span.Start
+	default:
+		return &MissingStatement{
+			NodeBase: NodeBase{
+				Span: NodeSpan{annotations.Span.End - 1, annotations.Span.End},
+				Err:  &ParsingError{UnspecifiedParsingError, METADATA_ANNOTATIONS_SHOULD_BE_FOLLOWED_BY_STMT_SUPPORTING_THEM},
+			},
+			Annotations: annotations,
+		}
+	}
+
+	return nil
 }

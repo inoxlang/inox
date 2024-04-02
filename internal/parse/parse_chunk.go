@@ -241,8 +241,16 @@ func (p *parser) parseChunk() (*Chunk, error) {
 			stmtErr = &ParsingError{UnspecifiedParsingError, STMTS_SHOULD_BE_SEPARATED_BY}
 		}
 
+		annotations, moveForward := p.parseMetadaAnnotationsBeforeStatement(&stmts)
+
+		if !moveForward {
+			break
+		}
+
 		stmt := p.parseStatement()
 		prevStmtEndIndex = p.i
+
+		p.addAnnotationsToNodeIfPossible(annotations, stmt)
 
 		if _, isMissingExpr := stmt.(*MissingExpression); isMissingExpr {
 			stmts = append(stmts, stmt)

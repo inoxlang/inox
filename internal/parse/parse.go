@@ -463,9 +463,15 @@ func (p *parser) parseBlock() *Block {
 			stmtErr = &ParsingError{UnspecifiedParsingError, STMTS_SHOULD_BE_SEPARATED_BY}
 		}
 
+		annotations, moveForward := p.parseMetadaAnnotationsBeforeStatement(&stmts)
+		if !moveForward {
+			break
+		}
+
 		stmt := p.parseStatement()
 
 		prevStmtEndIndex = p.i
+
 		if stmt.Base().Err != nil {
 			prevStmtErrKind = stmt.Base().Err.Kind
 		}
@@ -474,7 +480,9 @@ func (p *parser) parseBlock() *Block {
 			stmt.BasePtr().Err = stmtErr
 		}
 
+		p.addAnnotationsToNodeIfPossible(annotations, stmt)
 		stmts = append(stmts, stmt)
+
 		p.eatSpaceNewlineSemicolonComment()
 	}
 
@@ -4478,11 +4486,20 @@ func (p *parser) parseEmbeddedModule() *EmbeddedModule {
 			stmtErr = &ParsingError{UnspecifiedParsingError, STMTS_SHOULD_BE_SEPARATED_BY}
 		}
 
+		annotations, moveForward := p.parseMetadaAnnotationsBeforeStatement(&stmts)
+
+		if !moveForward {
+			break
+		}
+
 		stmt := p.parseStatement()
 		prevStmtEndIndex = p.i
+
 		if stmt.Base().Err != nil {
 			prevStmtErrKind = stmt.Base().Err.Kind
 		}
+
+		p.addAnnotationsToNodeIfPossible(annotations, stmt)
 
 		if _, isMissingExpr := stmt.(*MissingExpression); isMissingExpr {
 			if isMissingExpr {

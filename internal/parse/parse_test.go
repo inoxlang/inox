@@ -18,234 +18,6 @@ func TestParseNoContext(t *testing.T) {
 	})
 }
 
-func TestParseSystematicCheckAndAlreadyDoneContext(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
-
-	mustParseChunk := func(t *testing.T, str string) (result *Chunk) {
-		err := (func() (err error) {
-			defer func() {
-				e := recover()
-				if er, ok := e.(error); ok {
-					err = er
-				}
-			}()
-			mustParseChunkForgetTokens(str, ParserOptions{
-				NoCheckFuel:   1, //check context every major function call during parsing.
-				ParentContext: ctx,
-			})
-			return
-		})()
-
-		assert.ErrorContains(t, err, context.Canceled.Error())
-
-		return mustParseChunkForgetTokens(str)
-	}
-
-	parseChunk := func(t *testing.T, str, name string) (result *Chunk, e error) {
-		_, err := ParseChunk(str, name, ParserOptions{
-			NoCheckFuel:   1, //check context every major function call during parsing.
-			ParentContext: ctx,
-		})
-
-		assert.ErrorContains(t, err, context.Canceled.Error())
-
-		return parseChunkForgetTokens(str, name)
-	}
-
-	testParse(t, mustParseChunk, parseChunk)
-}
-
-func TestParseNonSystematicCheckAndAlreadyDoneContext(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
-
-	mustParseChunk := func(t *testing.T, str string) (result *Chunk) {
-		err := (func() (err error) {
-			defer func() {
-				e := recover()
-				if er, ok := e.(error); ok {
-					err = er
-				}
-			}()
-			mustParseChunkForgetTokens(str, ParserOptions{
-				NoCheckFuel:   2, //check context every 2 major function calls during parsing.
-				ParentContext: ctx,
-			})
-			return
-		})()
-
-		assert.ErrorContains(t, err, context.Canceled.Error())
-
-		return mustParseChunkForgetTokens(str)
-	}
-
-	parseChunk := func(t *testing.T, str, name string) (result *Chunk, e error) {
-		_, err := parseChunkForgetTokens(str, name, ParserOptions{
-			NoCheckFuel:   2, //check context every 2 major function calls during parsing.
-			ParentContext: ctx,
-		})
-
-		assert.ErrorContains(t, err, context.Canceled.Error())
-
-		return parseChunkForgetTokens(str, name)
-	}
-
-	testParse(t, mustParseChunk, parseChunk)
-}
-
-func TestParseNonSystematicCheckAndAlreadyDoneContext2(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
-
-	const MIN_CONTEXT_CHECK_TEST_NODE_COUNT = 6
-
-	mustParseChunk := func(t *testing.T, str string) (result *Chunk) {
-		n := mustParseChunkForgetTokens(str)
-		nodeCount := CountNodes(n)
-
-		if nodeCount < MIN_CONTEXT_CHECK_TEST_NODE_COUNT { //ignore context check test.
-			return n
-		}
-
-		err := (func() (err error) {
-			defer func() {
-				e := recover()
-				if er, ok := e.(error); ok {
-					err = er
-				}
-			}()
-			mustParseChunkForgetTokens(str, ParserOptions{
-				NoCheckFuel:   nodeCount / 2, //check context somewhere during the parsing.
-				ParentContext: ctx,
-			})
-			return
-		})()
-
-		assert.ErrorContains(t, err, context.Canceled.Error())
-
-		return n
-	}
-
-	parseChunk := func(t *testing.T, str, name string) (result *Chunk, e error) {
-		n, err := parseChunkForgetTokens(str, name)
-		nodeCount := CountNodes(n)
-
-		if nodeCount < MIN_CONTEXT_CHECK_TEST_NODE_COUNT { //ignore context check test.
-			return n, err
-		}
-
-		_, err = parseChunkForgetTokens(str, name, ParserOptions{
-			NoCheckFuel:   nodeCount / 2, //check context somewhere during the parsing.
-			ParentContext: ctx,
-		})
-
-		assert.ErrorContains(t, err, context.Canceled.Error())
-
-		return parseChunkForgetTokens(str, name)
-	}
-
-	testParse(t, mustParseChunk, parseChunk)
-}
-
-func TestParseSystematicCheckAndVeryShortTimeout(t *testing.T) {
-	code := "[" + strings.Repeat("111,", 20_000) + "]"
-
-	_, err := ParseChunk(code, "test", ParserOptions{
-		NoCheckFuel:   1, //check context every major function call during parsing.
-		ParentContext: context.Background(),
-		Timeout:       time.Millisecond,
-	})
-
-	assert.ErrorIs(t, err, context.DeadlineExceeded)
-}
-
-func TestParseSystematicCheckAndDefaultTimeout(t *testing.T) {
-	code := "[" + strings.Repeat("111,", 200_000) + "]"
-
-	_, err := ParseChunk(code, "test", ParserOptions{})
-
-	assert.ErrorIs(t, err, context.DeadlineExceeded)
-}
-
-func TestCheckEmbddedModuleTokens(t *testing.T) {
-	t.Run("empty: no tokens", func(t *testing.T) {
-		chunk := MustParseChunk(`go do {}`)
-
-		embeddedMod := FindNode(chunk, (*EmbeddedModule)(nil), nil)
-		assert.Empty(t, embeddedMod.Tokens)
-	})
-
-	t.Run("empty: no tokens, missing closing bracket", func(t *testing.T) {
-		chunk, _ := ParseChunk(`go do {`, "test")
-
-		embeddedMod := FindNode(chunk, (*EmbeddedModule)(nil), nil)
-		assert.Empty(t, embeddedMod.Tokens)
-	})
-
-	t.Run("empty: single non-stored token", func(t *testing.T) {
-		chunk := MustParseChunk(`go do {1}`)
-
-		embeddedMod := FindNode(chunk, (*EmbeddedModule)(nil), nil)
-		assert.Empty(t, embeddedMod.Tokens)
-	})
-
-	t.Run("empty: single non-stored token, missing closing bracket", func(t *testing.T) {
-		chunk, _ := ParseChunk(`go do {1`, "test")
-
-		embeddedMod := FindNode(chunk, (*EmbeddedModule)(nil), nil)
-		assert.Empty(t, embeddedMod.Tokens)
-	})
-
-	t.Run("empty: single stored token", func(t *testing.T) {
-		chunk, _ := ParseChunk(`go do {?}`, "test")
-
-		embeddedMod := FindNode(chunk, (*EmbeddedModule)(nil), nil)
-		assert.Equal(t, []Token{{Type: UNEXPECTED_CHAR, Raw: "?", Span: NodeSpan{7, 8}}}, embeddedMod.Tokens)
-	})
-
-	t.Run("empty: single stored token, missing closing bracket", func(t *testing.T) {
-		chunk, _ := ParseChunk(`go do {?`, "test")
-
-		embeddedMod := FindNode(chunk, (*EmbeddedModule)(nil), nil)
-		assert.Equal(t, []Token{{Type: UNEXPECTED_CHAR, Raw: "?", Span: NodeSpan{7, 8}}}, embeddedMod.Tokens)
-	})
-}
-
-func TestParseChunkStart(t *testing.T) {
-	opts := ParserOptions{Start: true}
-	chunk := MustParseChunk("manifest {}", opts)
-	assert.NotNil(t, chunk.Manifest)
-	assert.Empty(t, chunk.Statements)
-
-	chunk = MustParseChunk("manifest {}\na = 1", opts)
-	assert.NotNil(t, chunk.Manifest)
-	assert.Empty(t, chunk.Statements)
-
-	chunk = MustParseChunk("manifest {};a = 1", opts)
-	assert.NotNil(t, chunk.Manifest)
-	assert.Empty(t, chunk.Statements)
-
-	chunk = MustParseChunk("const(C=1)\nmanifest {}; a = 1", opts)
-	assert.NotNil(t, chunk.Manifest)
-	assert.NotNil(t, chunk.GlobalConstantDeclarations)
-	assert.Empty(t, chunk.Statements)
-
-	chunk = MustParseChunk("includable-file", opts)
-	assert.NotNil(t, chunk.IncludableChunkDesc)
-	assert.Empty(t, chunk.Statements)
-
-	chunk = MustParseChunk("includable-file\nconst(A = 1)\na = 1", opts)
-	assert.NotNil(t, chunk.IncludableChunkDesc)
-	assert.NotNil(t, chunk.GlobalConstantDeclarations)
-	assert.Empty(t, chunk.Statements)
-
-	chunk = MustParseChunk("includable-file;const(A = 1)\na = 1", opts)
-	assert.NotNil(t, chunk.IncludableChunkDesc)
-	assert.NotNil(t, chunk.GlobalConstantDeclarations)
-	assert.Empty(t, chunk.Statements)
-}
-
 //TODO: add more specific tests for testing context checks.
 
 func testParse(
@@ -348,55 +120,28 @@ func testParse(
 		t.Run("two line feeds", func(t *testing.T) {
 			n := mustparseChunk(t, "\n\n")
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{
-					NodeSpan{0, 2},
-					nil,
-					false,
-					/*[]Token{
-						{Type: NEWLINE, Span: NodeSpan{0, 1}},
-						{Type: NEWLINE, Span: NodeSpan{1, 2}},
-					},*/
-				},
+				NodeBase: NodeBase{Span: NodeSpan{0, 2}},
 			}, n)
 		})
 
 		t.Run("carriage return + line feed", func(t *testing.T) {
 			n := mustparseChunk(t, "\r\n")
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{
-					NodeSpan{0, 2},
-					nil,
-					false,
-				},
+				NodeBase: NodeBase{Span: NodeSpan{0, 2}},
 			}, n)
 		})
 
 		t.Run("twice: carriage return + line feed", func(t *testing.T) {
 			n := mustparseChunk(t, "\r\n\r\n")
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{
-					NodeSpan{0, 4},
-					nil,
-					false,
-					/*[]Token{
-						{Type: NEWLINE, Span: NodeSpan{1, 2}},
-						{Type: NEWLINE, Span: NodeSpan{3, 4}},
-					},*/
-				},
+				NodeBase: NodeBase{Span: NodeSpan{0, 4}},
 			}, n)
 		})
 
 		t.Run("two lines with one statement per line", func(t *testing.T) {
 			n := mustparseChunk(t, "1\n2")
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{
-					NodeSpan{0, 3},
-					nil,
-					false,
-					/*[]Token{
-						{Type: NEWLINE, Span: NodeSpan{1, 2}},
-					},*/
-				},
+				NodeBase: NodeBase{Span: NodeSpan{0, 3}},
 				Statements: []Node{
 					&IntLiteral{
 						NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
@@ -415,15 +160,7 @@ func testParse(
 		t.Run("two lines with one statement per line, followed by line feed character", func(t *testing.T) {
 			n := mustparseChunk(t, "1\n2\n")
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{
-					NodeSpan{0, 4},
-					nil,
-					false,
-					/*[]Token{
-						{Type: NEWLINE, Span: NodeSpan{1, 2}},
-						{Type: NEWLINE, Span: NodeSpan{3, 4}},
-					},*/
-				},
+				NodeBase: NodeBase{Span: NodeSpan{0, 4}},
 				Statements: []Node{
 					&IntLiteral{
 						NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
@@ -471,20 +208,9 @@ func testParse(
 					NodeBase: NodeBase{
 						Span:            NodeSpan{0, 10},
 						IsParenthesized: false,
-						/*[]Token{
-							{Type: PREINIT_KEYWORD, Span: NodeSpan{0, 7}},
-						},*/
 					},
 					Block: &Block{
-						NodeBase: NodeBase{
-							NodeSpan{8, 10},
-							nil,
-							false,
-							/*[]Token{
-								{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{8, 9}},
-								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{8, 10}},
 					},
 				},
 			}, n)
@@ -493,30 +219,15 @@ func testParse(
 		t.Run("empty preinit after line feed", func(t *testing.T) {
 			n := mustparseChunk(t, "\npreinit {}")
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{
-					NodeSpan{0, 11},
-					nil,
-					false,
-				},
+				NodeBase:   NodeBase{Span: NodeSpan{0, 11}},
 				Statements: nil,
 				Preinit: &PreinitStatement{
 					NodeBase: NodeBase{
 						Span:            NodeSpan{1, 11},
 						IsParenthesized: false,
-						/*[]Token{
-							{Type: PREINIT_KEYWORD, Span: NodeSpan{1, 8}},
-						},*/
 					},
 					Block: &Block{
-						NodeBase: NodeBase{
-							NodeSpan{9, 11},
-							nil,
-							false,
-							/*[]Token{
-								{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
-								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{10, 11}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{9, 11}},
 					},
 				},
 			}, n)
@@ -533,9 +244,6 @@ func testParse(
 						Span:            NodeSpan{0, 7},
 						Err:             &ParsingError{UnspecifiedParsingError, PREINIT_KEYWORD_SHOULD_BE_FOLLOWED_BY_A_BLOCK},
 						IsParenthesized: false,
-						/*[]Token{
-							{Type: PREINIT_KEYWORD, Span: NodeSpan{0, 7}},
-						},*/
 					},
 				},
 			}, n)
@@ -550,20 +258,9 @@ func testParse(
 					NodeBase: NodeBase{
 						Span:            NodeSpan{0, 11},
 						IsParenthesized: false,
-						/*[]Token{
-							{Type: inoxconsts.MANIFEST_KEYWORD, Span: NodeSpan{0, 8}},
-						},*/
 					},
 					Object: &ObjectLiteral{
-						NodeBase: NodeBase{
-							NodeSpan{9, 11},
-							nil,
-							false,
-							/*[]Token{
-								{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
-								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{10, 11}},
-							},*/
-						},
+						NodeBase:   NodeBase{Span: NodeSpan{9, 11}},
 						Properties: nil,
 					},
 				},
@@ -573,33 +270,15 @@ func testParse(
 		t.Run("empty manifest after line feed", func(t *testing.T) {
 			n := mustparseChunk(t, "\nmanifest {}")
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{
-					NodeSpan{0, 12},
-					nil,
-					false,
-					/*[]Token{
-						{Type: NEWLINE, Span: NodeSpan{0, 1}},
-					},*/
-				},
+				NodeBase:   NodeBase{Span: NodeSpan{0, 12}},
 				Statements: nil,
 				Manifest: &Manifest{
 					NodeBase: NodeBase{
 						Span:            NodeSpan{1, 12},
 						IsParenthesized: false,
-						/*[]Token{
-							{Type: inoxconsts.MANIFEST_KEYWORD, Span: NodeSpan{1, 9}},
-						},*/
 					},
 					Object: &ObjectLiteral{
-						NodeBase: NodeBase{
-							NodeSpan{10, 12},
-							nil,
-							false,
-							/*[]Token{
-								{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{10, 11}},
-								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{11, 12}},
-							},*/
-						},
+						NodeBase:   NodeBase{Span: NodeSpan{10, 12}},
 						Properties: nil,
 					},
 				},
@@ -609,53 +288,24 @@ func testParse(
 		t.Run("empty manifest after preinit", func(t *testing.T) {
 			n := mustparseChunk(t, "preinit {}\nmanifest {}")
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{
-					NodeSpan{0, 22},
-					nil,
-					false,
-					/*[]Token{
-						{Type: NEWLINE, Span: NodeSpan{10, 11}},
-					},*/
-				},
+				NodeBase:   NodeBase{Span: NodeSpan{0, 22}},
 				Statements: nil,
 				Preinit: &PreinitStatement{
 					NodeBase: NodeBase{
 						Span:            NodeSpan{0, 10},
 						IsParenthesized: false,
-						/*[]Token{
-							{Type: PREINIT_KEYWORD, Span: NodeSpan{0, 7}},
-						},*/
 					},
 					Block: &Block{
-						NodeBase: NodeBase{
-							NodeSpan{8, 10},
-							nil,
-							false,
-							/*[]Token{
-								{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{8, 9}},
-								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{8, 10}},
 					},
 				},
 				Manifest: &Manifest{
 					NodeBase: NodeBase{
 						Span:            NodeSpan{11, 22},
 						IsParenthesized: false,
-						/*[]Token{
-							{Type: inoxconsts.MANIFEST_KEYWORD, Span: NodeSpan{11, 19}},
-						},*/
 					},
 					Object: &ObjectLiteral{
-						NodeBase: NodeBase{
-							NodeSpan{20, 22},
-							nil,
-							false,
-							/*[]Token{
-								{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{20, 21}},
-								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{21, 22}},
-							},*/
-						},
+						NodeBase:   NodeBase{Span: NodeSpan{20, 22}},
 						Properties: nil,
 					},
 				},
@@ -755,6 +405,187 @@ func testParse(
 					NodeBase: NodeBase{
 						Span:            NodeSpan{1, 16},
 						IsParenthesized: false,
+					},
+				},
+			}, n)
+		})
+
+		t.Run("annotated function declaration: linefeed after annotation", func(t *testing.T) {
+			n := mustparseChunk(t, "@a\nfn f(){}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{
+					Span: NodeSpan{0, 11},
+				},
+				Statements: []Node{
+					&FunctionDeclaration{
+						NodeBase: NodeBase{Span: NodeSpan{0, 11}},
+						Annotations: &MetadataAnnotations{
+							NodeBase: NodeBase{Span: NodeSpan{0, 3}},
+							Expressions: []Node{
+								&MetaIdentifier{
+									NodeBase: NodeBase{Span: NodeSpan{0, 2}},
+									Name:     "a",
+								},
+							},
+						},
+						Name: &IdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{6, 7}},
+							Name:     "f",
+						},
+						Function: &FunctionExpression{
+							NodeBase: NodeBase{Span: NodeSpan{3, 11}},
+							Body: &Block{
+								NodeBase: NodeBase{Span: NodeSpan{9, 11}},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("annotated function declaration: two annotations with a linefeed after each annotation", func(t *testing.T) {
+			n := mustparseChunk(t, "@a\n@b\nfn f(){}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{
+					Span: NodeSpan{0, 14},
+				},
+				Statements: []Node{
+					&FunctionDeclaration{
+						NodeBase: NodeBase{Span: NodeSpan{0, 14}},
+						Annotations: &MetadataAnnotations{
+							NodeBase: NodeBase{Span: NodeSpan{0, 6}},
+							Expressions: []Node{
+								&MetaIdentifier{
+									NodeBase: NodeBase{Span: NodeSpan{0, 2}},
+									Name:     "a",
+								},
+								&MetaIdentifier{
+									NodeBase: NodeBase{Span: NodeSpan{3, 5}},
+									Name:     "b",
+								},
+							},
+						},
+						Name: &IdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{9, 10}},
+							Name:     "f",
+						},
+						Function: &FunctionExpression{
+							NodeBase: NodeBase{Span: NodeSpan{6, 14}},
+							Body: &Block{
+								NodeBase: NodeBase{Span: NodeSpan{12, 14}},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("annotated function declaration: comment+linefeed after annotation", func(t *testing.T) {
+			n := mustparseChunk(t, "@a# x\nfn f(){}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{
+					Span: NodeSpan{0, 14},
+				},
+				Statements: []Node{
+					&FunctionDeclaration{
+						NodeBase: NodeBase{Span: NodeSpan{0, 14}},
+						Annotations: &MetadataAnnotations{
+							NodeBase: NodeBase{Span: NodeSpan{0, 6}},
+							Expressions: []Node{
+								&MetaIdentifier{
+									NodeBase: NodeBase{Span: NodeSpan{0, 2}},
+									Name:     "a",
+								},
+							},
+						},
+						Name: &IdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{9, 10}},
+							Name:     "f",
+						},
+						Function: &FunctionExpression{
+							NodeBase: NodeBase{Span: NodeSpan{6, 14}},
+							Body: &Block{
+								NodeBase: NodeBase{Span: NodeSpan{12, 14}},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("annotation followed by linefeed + comment ", func(t *testing.T) {
+			n, err := parseChunk(t, "@a\n# x", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{
+					Span: NodeSpan{0, 6},
+				},
+				Statements: []Node{
+					&MissingStatement{
+						NodeBase: NodeBase{
+							NodeSpan{0, 6},
+							&ParsingError{UnspecifiedParsingError, MISSING_STMT_AFTER_ANNOTATIONS_EXPR_EXPLANATION},
+							false,
+						},
+						Annotations: &MetadataAnnotations{
+							NodeBase: NodeBase{Span: NodeSpan{0, 6}},
+							Expressions: []Node{
+								&MetaIdentifier{
+									NodeBase: NodeBase{Span: NodeSpan{0, 2}},
+									Name:     "a",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("annotation followed by two linefeeds", func(t *testing.T) {
+			n, err := parseChunk(t, "@a\n\nfn f(){}", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{
+					Span: NodeSpan{0, 12},
+				},
+				Statements: []Node{
+					&MissingStatement{
+						NodeBase: NodeBase{
+							NodeSpan{0, 4},
+							&ParsingError{UnspecifiedParsingError, MISSING_STMT_AFTER_ANNOTATIONS_EXPR_EXPLANATION},
+							false,
+						},
+						Annotations: &MetadataAnnotations{
+							NodeBase: NodeBase{Span: NodeSpan{0, 4}},
+							Expressions: []Node{
+								&MetaIdentifier{
+									NodeBase: NodeBase{Span: NodeSpan{0, 2}},
+									Name:     "a",
+								},
+							},
+						},
+					},
+					&FunctionDeclaration{
+						NodeBase: NodeBase{Span: NodeSpan{0, 12}},
+						Annotations: &MetadataAnnotations{
+							NodeBase: NodeBase{Span: NodeSpan{0, 4}},
+							Expressions: []Node{
+								&MetaIdentifier{
+									NodeBase: NodeBase{Span: NodeSpan{0, 2}},
+									Name:     "a",
+								},
+							},
+						},
+						Name: &IdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{7, 8}},
+							Name:     "f",
+						},
+						Function: &FunctionExpression{
+							NodeBase: NodeBase{Span: NodeSpan{4, 12}},
+							Body: &Block{
+								NodeBase: NodeBase{Span: NodeSpan{10, 12}},
+							},
+						},
 					},
 				},
 			}, n)
@@ -2550,12 +2381,12 @@ func testParse(
 	t.Run("meta identifier", func(t *testing.T) {
 
 		t.Run("single letter", func(t *testing.T) {
-			n := mustparseChunk(t, "@a")
+			n := mustparseChunk(t, "(@a)")
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 2}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 4}, nil, false},
 				Statements: []Node{
 					&MetaIdentifier{
-						NodeBase: NodeBase{NodeSpan{0, 2}, nil, false},
+						NodeBase: NodeBase{NodeSpan{1, 3}, nil, true},
 						Name:     "a",
 					},
 				},
@@ -2563,16 +2394,16 @@ func testParse(
 		})
 
 		t.Run("ending with a hyphen", func(t *testing.T) {
-			n, err := parseChunk(t, "@a-", "")
+			n, err := parseChunk(t, "(@a-)", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 3}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 5}, nil, false},
 				Statements: []Node{
 					&MetaIdentifier{
 						NodeBase: NodeBase{
-							NodeSpan{0, 3},
+							NodeSpan{1, 4},
 							&ParsingError{UnspecifiedParsingError, META_IDENTIFIER_MUST_NO_END_WITH_A_HYPHEN},
-							false,
+							true,
 						},
 						Name: "a-",
 					},
@@ -2581,12 +2412,12 @@ func testParse(
 		})
 
 		t.Run("followed by line feed", func(t *testing.T) {
-			n := mustparseChunk(t, "@a\n")
+			n := mustparseChunk(t, "(@a\n)")
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{Span: NodeSpan{0, 3}},
+				NodeBase: NodeBase{Span: NodeSpan{0, 5}},
 				Statements: []Node{
 					&MetaIdentifier{
-						NodeBase: NodeBase{NodeSpan{0, 2}, nil, false},
+						NodeBase: NodeBase{NodeSpan{1, 3}, nil, true},
 						Name:     "a",
 					},
 				},
@@ -4105,18 +3936,18 @@ func testParse(
 		})
 
 		t.Run("meta identifier '.' <two-letter propname> ", func(t *testing.T) {
-			n := mustparseChunk(t, "@a.bc")
+			n := mustparseChunk(t, "(@a.bc)")
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 5}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 7}, nil, false},
 				Statements: []Node{
 					&MemberExpression{
-						NodeBase: NodeBase{Span: NodeSpan{0, 5}},
+						NodeBase: NodeBase{Span: NodeSpan{1, 6}, IsParenthesized: true},
 						Left: &MetaIdentifier{
-							NodeBase: NodeBase{NodeSpan{0, 2}, nil, false},
+							NodeBase: NodeBase{NodeSpan{1, 3}, nil, false},
 							Name:     "a",
 						},
 						PropertyName: &IdentifierLiteral{
-							NodeBase: NodeBase{NodeSpan{3, 5}, nil, false},
+							NodeBase: NodeBase{NodeSpan{4, 6}, nil, false},
 							Name:     "bc",
 						},
 					},
@@ -9639,14 +9470,14 @@ func testParse(
 		})
 
 		t.Run("callee is a meta identifier", func(t *testing.T) {
-			n := mustparseChunk(t, `@a()`)
+			n := mustparseChunk(t, `(@a())`)
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 4}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 6}, nil, false},
 				Statements: []Node{
 					&CallExpression{
-						NodeBase: NodeBase{Span: NodeSpan{0, 4}},
+						NodeBase: NodeBase{Span: NodeSpan{1, 5}, IsParenthesized: true},
 						Callee: &MetaIdentifier{
-							NodeBase: NodeBase{NodeSpan{0, 2}, nil, false},
+							NodeBase: NodeBase{NodeSpan{1, 3}, nil, false},
 							Name:     "a",
 						},
 					},
@@ -10267,20 +10098,20 @@ func testParse(
 		})
 
 		t.Run("callee is meta identier", func(t *testing.T) {
-			n := mustparseChunk(t, `@a""`)
+			n := mustparseChunk(t, `(@a"")`)
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 4}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 6}, nil, false},
 				Statements: []Node{
 					&CallExpression{
-						NodeBase: NodeBase{NodeSpan{0, 4}, nil, false},
+						NodeBase: NodeBase{NodeSpan{1, 5}, nil, true},
 						Must:     true,
 						Callee: &MetaIdentifier{
-							NodeBase: NodeBase{NodeSpan{0, 2}, nil, false},
+							NodeBase: NodeBase{NodeSpan{1, 3}, nil, false},
 							Name:     "a",
 						},
 						Arguments: []Node{
 							&DoubleQuotedStringLiteral{
-								NodeBase: NodeBase{Span: NodeSpan{2, 4}},
+								NodeBase: NodeBase{Span: NodeSpan{3, 5}},
 								Raw:      `""`,
 							},
 						},
@@ -10315,20 +10146,20 @@ func testParse(
 		})
 
 		t.Run("callee is meta identier", func(t *testing.T) {
-			n := mustparseChunk(t, `@a{}`)
+			n := mustparseChunk(t, `(@a{})`)
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 4}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 6}, nil, false},
 				Statements: []Node{
 					&CallExpression{
-						NodeBase: NodeBase{NodeSpan{0, 4}, nil, false},
+						NodeBase: NodeBase{NodeSpan{1, 5}, nil, true},
 						Must:     true,
 						Callee: &MetaIdentifier{
-							NodeBase: NodeBase{NodeSpan{0, 2}, nil, false},
+							NodeBase: NodeBase{NodeSpan{1, 3}, nil, false},
 							Name:     "a",
 						},
 						Arguments: []Node{
 							&ObjectLiteral{
-								NodeBase: NodeBase{Span: NodeSpan{2, 4}},
+								NodeBase: NodeBase{Span: NodeSpan{3, 5}},
 							},
 						},
 					},
@@ -33985,4 +33816,232 @@ func mustParseChunkForgetTokens(s string, opts ...ParserOptions) *Chunk {
 		return ContinueTraversal, nil
 	}, nil)
 	return c
+}
+
+func TestParseSystematicCheckAndAlreadyDoneContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	mustParseChunk := func(t *testing.T, str string) (result *Chunk) {
+		err := (func() (err error) {
+			defer func() {
+				e := recover()
+				if er, ok := e.(error); ok {
+					err = er
+				}
+			}()
+			mustParseChunkForgetTokens(str, ParserOptions{
+				NoCheckFuel:   1, //check context every major function call during parsing.
+				ParentContext: ctx,
+			})
+			return
+		})()
+
+		assert.ErrorContains(t, err, context.Canceled.Error())
+
+		return mustParseChunkForgetTokens(str)
+	}
+
+	parseChunk := func(t *testing.T, str, name string) (result *Chunk, e error) {
+		_, err := ParseChunk(str, name, ParserOptions{
+			NoCheckFuel:   1, //check context every major function call during parsing.
+			ParentContext: ctx,
+		})
+
+		assert.ErrorContains(t, err, context.Canceled.Error())
+
+		return parseChunkForgetTokens(str, name)
+	}
+
+	testParse(t, mustParseChunk, parseChunk)
+}
+
+func TestParseNonSystematicCheckAndAlreadyDoneContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	mustParseChunk := func(t *testing.T, str string) (result *Chunk) {
+		err := (func() (err error) {
+			defer func() {
+				e := recover()
+				if er, ok := e.(error); ok {
+					err = er
+				}
+			}()
+			mustParseChunkForgetTokens(str, ParserOptions{
+				NoCheckFuel:   2, //check context every 2 major function calls during parsing.
+				ParentContext: ctx,
+			})
+			return
+		})()
+
+		assert.ErrorContains(t, err, context.Canceled.Error())
+
+		return mustParseChunkForgetTokens(str)
+	}
+
+	parseChunk := func(t *testing.T, str, name string) (result *Chunk, e error) {
+		_, err := parseChunkForgetTokens(str, name, ParserOptions{
+			NoCheckFuel:   2, //check context every 2 major function calls during parsing.
+			ParentContext: ctx,
+		})
+
+		assert.ErrorContains(t, err, context.Canceled.Error())
+
+		return parseChunkForgetTokens(str, name)
+	}
+
+	testParse(t, mustParseChunk, parseChunk)
+}
+
+func TestParseNonSystematicCheckAndAlreadyDoneContext2(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	const MIN_CONTEXT_CHECK_TEST_NODE_COUNT = 6
+
+	mustParseChunk := func(t *testing.T, str string) (result *Chunk) {
+		n := mustParseChunkForgetTokens(str)
+		nodeCount := CountNodes(n)
+
+		if nodeCount < MIN_CONTEXT_CHECK_TEST_NODE_COUNT { //ignore context check test.
+			return n
+		}
+
+		err := (func() (err error) {
+			defer func() {
+				e := recover()
+				if er, ok := e.(error); ok {
+					err = er
+				}
+			}()
+			mustParseChunkForgetTokens(str, ParserOptions{
+				NoCheckFuel:   nodeCount / 2, //check context somewhere during the parsing.
+				ParentContext: ctx,
+			})
+			return
+		})()
+
+		assert.ErrorContains(t, err, context.Canceled.Error())
+
+		return n
+	}
+
+	parseChunk := func(t *testing.T, str, name string) (result *Chunk, e error) {
+		n, err := parseChunkForgetTokens(str, name)
+		nodeCount := CountNodes(n)
+
+		if nodeCount < MIN_CONTEXT_CHECK_TEST_NODE_COUNT { //ignore context check test.
+			return n, err
+		}
+
+		_, err = parseChunkForgetTokens(str, name, ParserOptions{
+			NoCheckFuel:   nodeCount / 2, //check context somewhere during the parsing.
+			ParentContext: ctx,
+		})
+
+		assert.ErrorContains(t, err, context.Canceled.Error())
+
+		return parseChunkForgetTokens(str, name)
+	}
+
+	testParse(t, mustParseChunk, parseChunk)
+}
+
+func TestParseSystematicCheckAndVeryShortTimeout(t *testing.T) {
+	code := "[" + strings.Repeat("111,", 20_000) + "]"
+
+	_, err := ParseChunk(code, "test", ParserOptions{
+		NoCheckFuel:   1, //check context every major function call during parsing.
+		ParentContext: context.Background(),
+		Timeout:       time.Millisecond,
+	})
+
+	assert.ErrorIs(t, err, context.DeadlineExceeded)
+}
+
+func TestParseSystematicCheckAndDefaultTimeout(t *testing.T) {
+	code := "[" + strings.Repeat("111,", 200_000) + "]"
+
+	_, err := ParseChunk(code, "test", ParserOptions{})
+
+	assert.ErrorIs(t, err, context.DeadlineExceeded)
+}
+
+func TestCheckEmbddedModuleTokens(t *testing.T) {
+	t.Run("empty: no tokens", func(t *testing.T) {
+		chunk := MustParseChunk(`go do {}`)
+
+		embeddedMod := FindNode(chunk, (*EmbeddedModule)(nil), nil)
+		assert.Empty(t, embeddedMod.Tokens)
+	})
+
+	t.Run("empty: no tokens, missing closing bracket", func(t *testing.T) {
+		chunk, _ := ParseChunk(`go do {`, "test")
+
+		embeddedMod := FindNode(chunk, (*EmbeddedModule)(nil), nil)
+		assert.Empty(t, embeddedMod.Tokens)
+	})
+
+	t.Run("empty: single non-stored token", func(t *testing.T) {
+		chunk := MustParseChunk(`go do {1}`)
+
+		embeddedMod := FindNode(chunk, (*EmbeddedModule)(nil), nil)
+		assert.Empty(t, embeddedMod.Tokens)
+	})
+
+	t.Run("empty: single non-stored token, missing closing bracket", func(t *testing.T) {
+		chunk, _ := ParseChunk(`go do {1`, "test")
+
+		embeddedMod := FindNode(chunk, (*EmbeddedModule)(nil), nil)
+		assert.Empty(t, embeddedMod.Tokens)
+	})
+
+	t.Run("empty: single stored token", func(t *testing.T) {
+		chunk, _ := ParseChunk(`go do {?}`, "test")
+
+		embeddedMod := FindNode(chunk, (*EmbeddedModule)(nil), nil)
+		assert.Equal(t, []Token{{Type: UNEXPECTED_CHAR, Raw: "?", Span: NodeSpan{7, 8}}}, embeddedMod.Tokens)
+	})
+
+	t.Run("empty: single stored token, missing closing bracket", func(t *testing.T) {
+		chunk, _ := ParseChunk(`go do {?`, "test")
+
+		embeddedMod := FindNode(chunk, (*EmbeddedModule)(nil), nil)
+		assert.Equal(t, []Token{{Type: UNEXPECTED_CHAR, Raw: "?", Span: NodeSpan{7, 8}}}, embeddedMod.Tokens)
+	})
+}
+
+func TestParseChunkStart(t *testing.T) {
+	opts := ParserOptions{Start: true}
+	chunk := MustParseChunk("manifest {}", opts)
+	assert.NotNil(t, chunk.Manifest)
+	assert.Empty(t, chunk.Statements)
+
+	chunk = MustParseChunk("manifest {}\na = 1", opts)
+	assert.NotNil(t, chunk.Manifest)
+	assert.Empty(t, chunk.Statements)
+
+	chunk = MustParseChunk("manifest {};a = 1", opts)
+	assert.NotNil(t, chunk.Manifest)
+	assert.Empty(t, chunk.Statements)
+
+	chunk = MustParseChunk("const(C=1)\nmanifest {}; a = 1", opts)
+	assert.NotNil(t, chunk.Manifest)
+	assert.NotNil(t, chunk.GlobalConstantDeclarations)
+	assert.Empty(t, chunk.Statements)
+
+	chunk = MustParseChunk("includable-file", opts)
+	assert.NotNil(t, chunk.IncludableChunkDesc)
+	assert.Empty(t, chunk.Statements)
+
+	chunk = MustParseChunk("includable-file\nconst(A = 1)\na = 1", opts)
+	assert.NotNil(t, chunk.IncludableChunkDesc)
+	assert.NotNil(t, chunk.GlobalConstantDeclarations)
+	assert.Empty(t, chunk.Statements)
+
+	chunk = MustParseChunk("includable-file;const(A = 1)\na = 1", opts)
+	assert.NotNil(t, chunk.IncludableChunkDesc)
+	assert.NotNil(t, chunk.GlobalConstantDeclarations)
+	assert.Empty(t, chunk.Statements)
 }

@@ -76,7 +76,7 @@ const (
 	INVALID_MANIFEST_DESC_VALUE                             = "invalid manifest description value, an object is expected"
 	UNTERMINATED_IDENTIFIER_LIT                             = "unterminated identifier literal"
 	IDENTIFIER_LITERAL_MUST_NO_END_WITH_A_HYPHEN            = "identifier literal must not end with '-'"
-	META_IDENTIFIER_MUST_NO_END_WITH_A_HYPHEN       = "meta identifier must not end with '-'"
+	META_IDENTIFIER_MUST_NO_END_WITH_A_HYPHEN               = "meta identifier must not end with '-'"
 	UNTERMINATED_REGEX_LIT                                  = "unterminated regex literal"
 	INVALID_REGEX_LIT                                       = "invalid regex literal"
 	INVALID_STRING_INTERPOLATION_SHOULD_NOT_BE_EMPTY        = "string interpolation should not be empty"
@@ -569,6 +569,13 @@ const (
 	UNQUOTED_REGIONS_ONLY_ALLOWED_INSIDE_QUOTED_REGIONS = "unquoted regions are only allowed inside a quoted region (quoted expression, statements, ...)"
 	UNTERMINATED_UNQUOTED_REGION_MISSING_CLOSING_DELIM  = "unterminated unquoted region missing closing brace"
 	UNQUOTED_REGION_SHOULD_CONTAIN_A_SINGLE_EXPR        = "an unquoted region should contain a single expression"
+
+	//metadata annotations
+	INVALID_METADATA_ANNOTATION                     = "invalid metadata annotation"
+	MISSING_STMT_AFTER_ANNOTATIONS                  = "missing statement after metadata annotation(s)"
+	MISSING_STMT_AFTER_ANNOTATIONS_EXPR_EXPLANATION = "missing statement after metadata annotation(s), " +
+		"if you meant to use the expression as an annotation you can store the result in a variable: myvar = @x, myvar = @x()"
+	METADATA_ANNOTATIONS_SHOULD_BE_FOLLOWED_BY_STMT_SUPPORTING_THEM = "metadata annotations should be followed by a statement supporting them"
 )
 
 func fmtInvalidRegexLiteral(err string) string {

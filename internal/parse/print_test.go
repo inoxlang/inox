@@ -595,6 +595,11 @@ func TestPrint(t *testing.T) {
 		"fn(<{param}> int){}",
 		"fn(<{param}> <{type}>){}",
 		"fn(<{param1}> <{type1}>, <{param2}> <{type2}>){}",
+		//function declarations
+		"fn f(){}",
+		"@a fn f(){}",
+		"@a\nfn f(){}",
+		"@a\n@b\nfn f(){}",
 		//XML expressions with an implicit namespace
 		"<div>",
 		"<div></div>",
