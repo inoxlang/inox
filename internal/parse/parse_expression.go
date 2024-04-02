@@ -206,6 +206,13 @@ func (p *parser) parseExpression(config ...exprParsingConfig) (expr Node, isMiss
 			return e, false
 		}
 		left = e
+
+		if p.i < p.len {
+			call := p.tryParseCall(left, "")
+			if call != nil {
+				left = call
+			}
+		}
 	case '<':
 		if p.i < p.len {
 

@@ -10241,57 +10241,101 @@ func testParse(
 	})
 
 	t.Run("call <string> shorthand", func(t *testing.T) {
-		n := mustparseChunk(t, `mime"json"`)
-		assert.EqualValues(t, &Chunk{
-			NodeBase: NodeBase{NodeSpan{0, 10}, nil, false},
-			Statements: []Node{
-				&CallExpression{
-					NodeBase: NodeBase{NodeSpan{0, 10}, nil, false},
-					Must:     true,
-					Callee: &IdentifierLiteral{
-						NodeBase: NodeBase{NodeSpan{0, 4}, nil, false},
-						Name:     "mime",
-					},
-					Arguments: []Node{
-						&DoubleQuotedStringLiteral{
-							NodeBase: NodeBase{NodeSpan{4, 10}, nil, false},
-							Raw:      `"json"`,
-							Value:    "json",
+		t.Run("callee is an identifier", func(t *testing.T) {
+			n := mustparseChunk(t, `mime"json"`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 10}, nil, false},
+				Statements: []Node{
+					&CallExpression{
+						NodeBase: NodeBase{NodeSpan{0, 10}, nil, false},
+						Must:     true,
+						Callee: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 4}, nil, false},
+							Name:     "mime",
 						},
-					},
-				},
-			},
-		}, n)
-	})
-
-	t.Run("call <object> shorthand", func(t *testing.T) {
-		n := mustparseChunk(t, `f{}`)
-		assert.EqualValues(t, &Chunk{
-			NodeBase: NodeBase{NodeSpan{0, 3}, nil, false},
-			Statements: []Node{
-				&CallExpression{
-					NodeBase: NodeBase{NodeSpan{0, 3}, nil, false},
-					Must:     true,
-					Callee: &IdentifierLiteral{
-						NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
-						Name:     "f",
-					},
-					Arguments: []Node{
-						&ObjectLiteral{
-							NodeBase: NodeBase{
-								NodeSpan{1, 3},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{1, 2}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{2, 3}},
-								},*/
+						Arguments: []Node{
+							&DoubleQuotedStringLiteral{
+								NodeBase: NodeBase{NodeSpan{4, 10}, nil, false},
+								Raw:      `"json"`,
+								Value:    "json",
 							},
 						},
 					},
 				},
-			},
-		}, n)
+			}, n)
+
+		})
+
+		t.Run("callee is meta identier", func(t *testing.T) {
+			n := mustparseChunk(t, `@a""`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 4}, nil, false},
+				Statements: []Node{
+					&CallExpression{
+						NodeBase: NodeBase{NodeSpan{0, 4}, nil, false},
+						Must:     true,
+						Callee: &MetaIdentifier{
+							NodeBase: NodeBase{NodeSpan{0, 2}, nil, false},
+							Name:     "a",
+						},
+						Arguments: []Node{
+							&DoubleQuotedStringLiteral{
+								NodeBase: NodeBase{Span: NodeSpan{2, 4}},
+								Raw:      `""`,
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+	})
+
+	t.Run("call <object> shorthand", func(t *testing.T) {
+		t.Run("base case", func(t *testing.T) {
+			n := mustparseChunk(t, `f{}`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 3}, nil, false},
+				Statements: []Node{
+					&CallExpression{
+						NodeBase: NodeBase{NodeSpan{0, 3}, nil, false},
+						Must:     true,
+						Callee: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "f",
+						},
+						Arguments: []Node{
+							&ObjectLiteral{
+								NodeBase: NodeBase{Span: NodeSpan{1, 3}},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("callee is meta identier", func(t *testing.T) {
+			n := mustparseChunk(t, `@a{}`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 4}, nil, false},
+				Statements: []Node{
+					&CallExpression{
+						NodeBase: NodeBase{NodeSpan{0, 4}, nil, false},
+						Must:     true,
+						Callee: &MetaIdentifier{
+							NodeBase: NodeBase{NodeSpan{0, 2}, nil, false},
+							Name:     "a",
+						},
+						Arguments: []Node{
+							&ObjectLiteral{
+								NodeBase: NodeBase{Span: NodeSpan{2, 4}},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
 	})
 
 	t.Run("object literal", func(t *testing.T) {

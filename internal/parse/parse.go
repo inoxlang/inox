@@ -5298,7 +5298,7 @@ func (p *parser) parseSendValueExpression(ident *IdentifierLiteral) *SendValueEx
 }
 
 // tryParseCall tries to parse a call or return nil (calls with parsing errors are returned)
-func (p *parser) tryParseCall(callee Node, firstName string) *CallExpression {
+func (p *parser) tryParseCall(callee Node, firstNameIfIdentOnTheLeft string) *CallExpression {
 	p.panicIfContextDone()
 
 	switch {
@@ -5330,7 +5330,7 @@ func (p *parser) tryParseCall(callee Node, firstName string) *CallExpression {
 		call.Arguments = append(call.Arguments, str)
 		call.NodeBase.Span.End = str.Base().Span.End
 		return call
-	case !isKeyword(firstName) && (p.s[p.i] == '(' || (p.s[p.i] == '!' && p.i < p.len-1 && p.s[p.i+1] == '(')): //func_name(...
+	case !isKeyword(firstNameIfIdentOnTheLeft) && (p.s[p.i] == '(' || (p.s[p.i] == '!' && p.i < p.len-1 && p.s[p.i+1] == '(')): //func_name(...
 
 		must := false
 		if p.s[p.i] == '!' {
