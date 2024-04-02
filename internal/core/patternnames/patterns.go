@@ -16,7 +16,7 @@ const (
 	URL                        = "url"
 	SCHEME                     = "scheme"
 	HOST                       = "host"
-	EMAILADDR                  = "emailaddr"
+	EMAILADDR                  = "email-address"
 	OBJECT                     = "object"
 	RECORD                     = "record"
 	LIST                       = "list"

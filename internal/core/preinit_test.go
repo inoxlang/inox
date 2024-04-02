@@ -492,7 +492,7 @@ func TestPreInit(t *testing.T) {
 		// 	name: "see email addresses",
 		// 	inputModule: `manifest {
 		// 			permissions: {
-		// 				see: { values: %emailaddr }
+		// 				see: { values: %email-address }
 		// 			}
 		// 		}`,
 		// 	//error: true,
@@ -501,7 +501,7 @@ func TestPreInit(t *testing.T) {
 		// 	name: "see email addresses & ints",
 		// 	inputModule: `manifest {
 		// 		permissions: {
-		// 			see: { values: [%emailaddr, %int] }
+		// 			see: { values: [%email-address, %int] }
 		// 		}
 		// 	}`,
 		// 	//error: true,

@@ -460,7 +460,7 @@ string-types:
   elements:
   - topic: EmailAddress
     text: > 
-      The `EmailAddress` function parses a RFC 5322 email address and returns a normalized `emailaddr` value.
+      The `EmailAddress` function parses a RFC 5322 email address and returns a normalized `email-address` value.
       The normalization algorithm depends on the email provider, for example: `john.doe@gmail.com` is normalized 
       to `johndoe@gmail.com`. The email is not normalized if the provider is not supported, supported providers are 
       listed here: https://github.com/dimuska139/go-email-normalizer?tab=readme-ov-file#supported-providers.
