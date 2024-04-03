@@ -33448,7 +33448,8 @@ func testParse(
 		})
 
 		t.Run("region headers: one header directly followed by the closing tag", func(t *testing.T) {
-			n := mustparseChunk(t, "h<div>\n@'a'</div>")
+			n, err := parseChunk(t, "h<div>\n@'a'</div>", "")
+			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
 				Statements: []Node{

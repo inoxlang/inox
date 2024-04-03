@@ -657,6 +657,9 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 		walk(n.Element, node, ancestorChain, fn, afterFn)
 	case *XMLElement:
 		walk(n.Opening, node, ancestorChain, fn, afterFn)
+		for _, header := range n.RegionHeaders {
+			walk(header, node, ancestorChain, fn, afterFn)
+		}
 		for _, child := range n.Children {
 			walk(child, node, ancestorChain, fn, afterFn)
 		}
