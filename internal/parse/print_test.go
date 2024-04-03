@@ -603,6 +603,15 @@ func TestPrint(t *testing.T) {
 		"@a fn f(){}",
 		"@a\nfn f(){}",
 		"@a\n@b\nfn f(){}",
+		//annotated region headers
+		"@''",
+		"@'a'",
+		"@'a' @a",
+		"@'a' @a @b",
+		"@'a' @a\n1",
+		"@'a' @a;1",
+		"@'a' @a# x\n1",
+		"@'a' @a 1",
 		//XML expressions with an implicit namespace
 		"<div>",
 		"<div></div>",

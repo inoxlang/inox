@@ -1,6 +1,71 @@
 package parse
 
-func (p *parser) parseMetadaAnnotationsBeforeStatement(statements *[]Node) (annotations *MetadataAnnotations, moveForward bool) {
+import (
+	"encoding/json"
+
+	"github.com/inoxlang/inox/internal/utils"
+)
+
+func (p *parser) parseMetadaAnnotationsBeforeStatement(
+	statements *[]Node,
+	regionHeaders *[]*AnnotatedRegionHeader,
+) (annotations *MetadataAnnotations, moveForward bool) {
+
+	//Parse region headers.
+
+	for p.i < p.len-1 && p.s[p.i] == '@' && p.s[p.i+1] == '\'' {
+		text := p.parseAnnotatedRegionHeaderText()
+
+		header := &AnnotatedRegionHeader{
+			NodeBase: NodeBase{Span: text.Span},
+			Text:     text,
+		}
+
+		p.eatSpace()
+
+		var headerAnnotations []Node
+		start := p.i
+
+		for p.i < p.len && p.s[p.i] == '@' {
+			e, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+
+			isAnnotation := isAnnotationExpression(e)
+
+			if !isAnnotation {
+				if e.Base().Err == nil {
+					e.BasePtr().Err = &ParsingError{UnspecifiedParsingError, INVALID_METADATA_ANNOTATION}
+				}
+			}
+
+			headerAnnotations = append(headerAnnotations, e)
+
+			p.eatSpace()
+		}
+
+		p.eatSpace()
+
+		if headerAnnotations != nil {
+			header.Annotations = &MetadataAnnotations{
+				NodeBase:    NodeBase{Span: NodeSpan{start, p.i}},
+				Expressions: headerAnnotations,
+			}
+			header.Span.End = header.Annotations.Span.End
+		}
+
+		*regionHeaders = append(*regionHeaders, header)
+
+		i := p.i
+		p.eatSpaceNewlineSemicolonComment()
+		if i < p.len && i == p.i { //Missing delimiter (no `\n`, `;`, nor comment)
+			header.Err = &ParsingError{UnspecifiedParsingError, MISSING_DELIMITER_AFTER_ANNOTATED_REGION_HEADER}
+		}
+	}
+
+	if p.i >= p.len || p.s[p.i] == '}' {
+		return
+	}
+
+	//Parse annotations.
 
 	moveForward = true
 
@@ -62,6 +127,48 @@ func (p *parser) parseMetadaAnnotationsBeforeStatement(statements *[]Node) (anno
 	}
 
 	return
+}
+
+func (p *parser) parseAnnotatedRegionHeaderText() *AnnotatedRegionHeaderText {
+	p.panicIfContextDone()
+
+	start := p.i
+	var parsingErr *ParsingError
+	var value string
+	var raw string
+
+	p.i += 2 //eat `@'`
+
+	for p.i < p.len && p.s[p.i] != '\n' && (p.s[p.i] != '\'' || utils.CountPrevBackslashes(p.s, p.i)%2 == 1) {
+		p.i++
+	}
+
+	if p.i >= p.len || (p.i < p.len && p.s[p.i] != '\'') {
+		raw = string(p.s[start:p.i])
+		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_REGION_HEADER_TEXT}
+	} else {
+		p.i++
+
+		raw = string(p.s[start:p.i])
+		rawUnquotedText := raw[2 : len(raw)-1]
+
+		decoded, ok := DecodeJsonStringBytesNoQuotes(utils.StringAsBytes(rawUnquotedText))
+		if ok {
+			value = string(decoded)
+		} else { //use json.Unmarshal to get the error
+			err := json.Unmarshal(utils.StringAsBytes(rawUnquotedText), &decoded)
+			parsingErr = &ParsingError{UnspecifiedParsingError, fmtInvalidStringLitJSON(err.Error())}
+		}
+	}
+
+	return &AnnotatedRegionHeaderText{
+		NodeBase: NodeBase{
+			Span: NodeSpan{start, p.i},
+			Err:  parsingErr,
+		},
+		Raw:   raw,
+		Value: value,
+	}
 }
 
 func (p *parser) tryParseMetadaAnnotationsAfterProperty() *MetadataAnnotations {

@@ -604,6 +604,224 @@ func testParse(
 				},
 			}, n)
 		})
+
+		t.Run("annotated region header: only text", func(t *testing.T) {
+			n := mustparseChunk(t, "@'a'")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{
+					Span: NodeSpan{0, 4},
+				},
+				RegionHeaders: []*AnnotatedRegionHeader{
+					{
+						NodeBase: NodeBase{Span: NodeSpan{0, 4}},
+						Text: &AnnotatedRegionHeaderText{
+							NodeBase: NodeBase{Span: NodeSpan{0, 4}},
+							Raw:      "@'a'",
+							Value:    "a",
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("annotated region header: text followed by a statement on the same line", func(t *testing.T) {
+			n, err := parseChunk(t, "@'a' 1", "") //missing delimiter at the end of the header
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{Span: NodeSpan{0, 6}},
+				RegionHeaders: []*AnnotatedRegionHeader{
+					{
+						NodeBase: NodeBase{
+							NodeSpan{0, 4},
+							&ParsingError{UnspecifiedParsingError, MISSING_DELIMITER_AFTER_ANNOTATED_REGION_HEADER},
+							false,
+						},
+						Text: &AnnotatedRegionHeaderText{
+							NodeBase: NodeBase{Span: NodeSpan{0, 4}},
+							Raw:      "@'a'",
+							Value:    "a",
+						},
+					},
+				},
+				Statements: []Node{
+					&IntLiteral{
+						NodeBase: NodeBase{Span: NodeSpan{5, 6}},
+						Raw:      "1",
+						Value:    1,
+					},
+				},
+			}, n)
+		})
+
+		t.Run("annotated region header: text followed by a semicolon and a statement on the same line", func(t *testing.T) {
+			n := mustparseChunk(t, "@'a';1")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{Span: NodeSpan{0, 6}},
+				RegionHeaders: []*AnnotatedRegionHeader{
+					{
+						NodeBase: NodeBase{Span: NodeSpan{0, 4}},
+						Text: &AnnotatedRegionHeaderText{
+							NodeBase: NodeBase{Span: NodeSpan{0, 4}},
+							Raw:      "@'a'",
+							Value:    "a",
+						},
+					},
+				},
+				Statements: []Node{
+					&IntLiteral{
+						NodeBase: NodeBase{Span: NodeSpan{5, 6}},
+						Raw:      "1",
+						Value:    1,
+					},
+				},
+			}, n)
+		})
+
+		t.Run("annotated region header: text followed by a statement on the next line", func(t *testing.T) {
+			n := mustparseChunk(t, "@'a'\n1")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{
+					Span: NodeSpan{0, 6},
+				},
+				RegionHeaders: []*AnnotatedRegionHeader{
+					{
+						NodeBase: NodeBase{Span: NodeSpan{0, 4}},
+						Text: &AnnotatedRegionHeaderText{
+							NodeBase: NodeBase{Span: NodeSpan{0, 4}},
+							Raw:      "@'a'",
+							Value:    "a",
+						},
+					},
+				},
+				Statements: []Node{
+					&IntLiteral{
+						NodeBase: NodeBase{Span: NodeSpan{5, 6}},
+						Raw:      "1",
+						Value:    1,
+					},
+				},
+			}, n)
+		})
+
+		t.Run("annotated region header: empty text", func(t *testing.T) {
+			n := mustparseChunk(t, "@''")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{
+					Span: NodeSpan{0, 3},
+				},
+				RegionHeaders: []*AnnotatedRegionHeader{
+					{
+						NodeBase: NodeBase{Span: NodeSpan{0, 3}},
+						Text: &AnnotatedRegionHeaderText{
+							NodeBase: NodeBase{Span: NodeSpan{0, 3}},
+							Raw:      "@''",
+							Value:    "",
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("annotated region header: one annotation", func(t *testing.T) {
+			n := mustparseChunk(t, "@'a' @a")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{
+					Span: NodeSpan{0, 7},
+				},
+				RegionHeaders: []*AnnotatedRegionHeader{
+					{
+						NodeBase: NodeBase{Span: NodeSpan{0, 7}},
+						Text: &AnnotatedRegionHeaderText{
+							NodeBase: NodeBase{Span: NodeSpan{0, 4}},
+							Raw:      "@'a'",
+							Value:    "a",
+						},
+						Annotations: &MetadataAnnotations{
+							NodeBase: NodeBase{Span: NodeSpan{5, 7}},
+							Expressions: []Node{
+								&MetaIdentifier{
+									NodeBase: NodeBase{Span: NodeSpan{5, 7}},
+									Name:     "a",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("annotated region header: one annotation followed by a statement on the same line", func(t *testing.T) {
+			n, err := parseChunk(t, "@'a' @a 1", "") //missing delimiter at the end of the header
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{
+					Span: NodeSpan{0, 9},
+				},
+				RegionHeaders: []*AnnotatedRegionHeader{
+					{
+						NodeBase: NodeBase{
+							NodeSpan{0, 8},
+							&ParsingError{UnspecifiedParsingError, MISSING_DELIMITER_AFTER_ANNOTATED_REGION_HEADER},
+							false,
+						},
+						Text: &AnnotatedRegionHeaderText{
+							NodeBase: NodeBase{Span: NodeSpan{0, 4}},
+							Raw:      "@'a'",
+							Value:    "a",
+						},
+						Annotations: &MetadataAnnotations{
+							NodeBase: NodeBase{Span: NodeSpan{5, 8}},
+							Expressions: []Node{
+								&MetaIdentifier{
+									NodeBase: NodeBase{Span: NodeSpan{5, 7}},
+									Name:     "a",
+								},
+							},
+						},
+					},
+				},
+				Statements: []Node{
+					&IntLiteral{
+						NodeBase: NodeBase{Span: NodeSpan{8, 9}},
+						Raw:      "1",
+						Value:    1,
+					},
+				},
+			}, n)
+		})
+
+		t.Run("annotated region header: two annotations", func(t *testing.T) {
+			n := mustparseChunk(t, "@'a' @a @b")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{
+					Span: NodeSpan{0, 10},
+				},
+				RegionHeaders: []*AnnotatedRegionHeader{
+					{
+						NodeBase: NodeBase{Span: NodeSpan{0, 10}},
+						Text: &AnnotatedRegionHeaderText{
+							NodeBase: NodeBase{Span: NodeSpan{0, 4}},
+							Raw:      "@'a'",
+							Value:    "a",
+						},
+						Annotations: &MetadataAnnotations{
+							NodeBase: NodeBase{Span: NodeSpan{5, 10}},
+							Expressions: []Node{
+								&MetaIdentifier{
+									NodeBase: NodeBase{Span: NodeSpan{5, 7}},
+									Name:     "a",
+								},
+								&MetaIdentifier{
+									NodeBase: NodeBase{Span: NodeSpan{8, 10}},
+									Name:     "b",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
 	})
 
 	t.Run("top level constant declarations", func(t *testing.T) {
@@ -614,16 +832,7 @@ func testParse(
 				Statements: nil,
 				Manifest:   nil,
 				GlobalConstantDeclarations: &GlobalConstantDeclarations{
-					NodeBase: NodeBase{
-						NodeSpan{0, 8},
-						nil,
-						false,
-						/*[]Token{
-							{Type: CONST_KEYWORD, Span: NodeSpan{0, 5}},
-							{Type: OPENING_PARENTHESIS, Span: NodeSpan{6, 7}},
-							{Type: CLOSING_PARENTHESIS, Span: NodeSpan{7, 8}},
-						},*/
-					},
+					NodeBase:     NodeBase{Span: NodeSpan{0, 8}},
 					Declarations: nil,
 				},
 			}, n)
@@ -652,16 +861,7 @@ func testParse(
 				Statements: nil,
 				Manifest:   nil,
 				GlobalConstantDeclarations: &GlobalConstantDeclarations{
-					NodeBase: NodeBase{
-						NodeSpan{0, 15},
-						nil,
-						false,
-						/*[]Token{
-							{Type: CONST_KEYWORD, Span: NodeSpan{0, 5}},
-							{Type: OPENING_PARENTHESIS, Span: NodeSpan{6, 7}},
-							{Type: CLOSING_PARENTHESIS, Span: NodeSpan{14, 15}},
-						},*/
-					},
+					NodeBase: NodeBase{Span: NodeSpan{0, 15}},
 					Declarations: []*GlobalConstantDeclaration{
 						{
 							NodeBase: NodeBase{
@@ -691,11 +891,7 @@ func testParse(
 				Statements: nil,
 				Manifest:   nil,
 				GlobalConstantDeclarations: &GlobalConstantDeclarations{
-					NodeBase: NodeBase{
-						NodeSpan{0, 11},
-						nil,
-						false,
-					},
+					NodeBase: NodeBase{Span: NodeSpan{0, 11}},
 					Declarations: []*GlobalConstantDeclaration{
 						{
 							NodeBase: NodeBase{

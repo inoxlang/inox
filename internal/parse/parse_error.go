@@ -187,14 +187,17 @@ const (
 	UNTERMINATED_TUPLE_LIT_MISSING_OPENING_BRACKET_AFTER_TYPE = "unterminated tuple literal, missing opening bracket '[' after type annotation"
 	UNTERMINATED_TUPLE_LIT_MISSING_CLOSING_BRACKET            = "unterminated tuple literal, missing closing bracket ']'"
 
-	UNTERMINATED_RUNE_LIT                                             = "unterminated rune literal"
-	INVALID_RUNE_LIT_NO_CHAR                                          = "invalid rune literal: no character"
-	INVALID_RUNE_LIT_INVALID_SINGLE_CHAR_ESCAPE                       = "invalid rune literal: invalid single character escape"
-	UNTERMINATED_RUNE_LIT_MISSING_QUOTE                               = "unterminated rune literal, missing ' at the end"
-	INVALID_RUNE_RANGE_EXPR                                           = "invalid rune range expression"
-	INVALID_UPPER_BOUND_RANGE_EXPR                                    = "invalid upper-bound range expression"
-	UNTERMINATED_QUOTED_STRING_LIT                                    = "unterminated quoted string literal"
-	UNTERMINATED_MULTILINE_STRING_LIT                                 = "unterminated multiline string literal"
+	UNTERMINATED_RUNE_LIT                       = "unterminated rune literal"
+	INVALID_RUNE_LIT_NO_CHAR                    = "invalid rune literal: no character"
+	INVALID_RUNE_LIT_INVALID_SINGLE_CHAR_ESCAPE = "invalid rune literal: invalid single character escape"
+	UNTERMINATED_RUNE_LIT_MISSING_QUOTE         = "unterminated rune literal, missing ' at the end"
+	INVALID_RUNE_RANGE_EXPR                     = "invalid rune range expression"
+	INVALID_UPPER_BOUND_RANGE_EXPR              = "invalid upper-bound range expression"
+
+	UNTERMINATED_QUOTED_STRING_LIT    = "unterminated quoted string literal"
+	UNTERMINATED_MULTILINE_STRING_LIT = "unterminated multiline string literal"
+	UNTERMINATED_REGION_HEADER_TEXT   = "unterminated region header text"
+
 	UNKNOWN_BYTE_SLICE_BASE                                           = "unknown byte slice base"
 	UNTERMINATED_HEX_BYTE_SICE_LIT_MISSING_BRACKETS                   = "unterminated hexadecimal byte slice literal: missing brackets"
 	UNTERMINATED_BIN_BYTE_SICE_LIT_MISSING_BRACKETS                   = "unterminated binary byte slice literal: missing brackets"
@@ -576,6 +579,7 @@ const (
 	MISSING_STMT_AFTER_ANNOTATIONS_EXPR_EXPLANATION = "missing statement after metadata annotation(s), " +
 		"if you meant to use the expression as an annotation you can store the result in a variable: myvar = @x, myvar = @x()"
 	METADATA_ANNOTATIONS_SHOULD_BE_FOLLOWED_BY_STMT_SUPPORTING_THEM = "metadata annotations should be followed by a statement supporting them"
+	MISSING_DELIMITER_AFTER_ANNOTATED_REGION_HEADER                 = "missing delimiter after annotated region header, try to add a linefeed or semicolon"
 )
 
 func fmtInvalidRegexLiteral(err string) string {

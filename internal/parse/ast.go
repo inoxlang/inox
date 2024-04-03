@@ -178,6 +178,7 @@ type Chunk struct {
 	Preinit                    *PreinitStatement           `json:"preinit,omitempty"`             //nil if no preinit block at the top of the module
 	Manifest                   *Manifest                   `json:"manifest,omitempty"`            //nil if no manifest at the top of the module
 	IncludableChunkDesc        *IncludableChunkDescription `json:"includableChunkDesc,omitempty"` //nil if no manifest at the top of the module
+	RegionHeaders              []*AnnotatedRegionHeader    `json:"regionHeaders,omitempty"`
 	Statements                 []Node                      `json:"statements,omitempty"`
 	IsShellChunk               bool
 
@@ -188,9 +189,10 @@ type Chunk struct {
 
 type EmbeddedModule struct {
 	NodeBase       `json:"base:embedded-module"`
-	Manifest       *Manifest `json:"manifest,omitempty"` //can be nil
-	Statements     []Node    `json:"statements,omitempty"`
-	SingleCallExpr bool      `json:"isSingleCallExpr"`
+	Manifest       *Manifest                `json:"manifest,omitempty"` //can be nil
+	RegionHeaders  []*AnnotatedRegionHeader `json:"regionHeaders,omitempty"`
+	Statements     []Node                   `json:"statements,omitempty"`
+	SingleCallExpr bool                     `json:"isSingleCallExpr"`
 	Tokens         []Token/*slice of the parent chunk .Tokens*/ `json:"tokens,omitempty"`
 }
 
@@ -1484,7 +1486,8 @@ func (PruneStatement) Kind() NodeKind {
 
 type Block struct {
 	NodeBase
-	Statements []Node
+	RegionHeaders []*AnnotatedRegionHeader
+	Statements    []Node
 }
 
 type SynchronizedBlockStatement struct {
@@ -2051,7 +2054,8 @@ func (QuotedExpression) Kind() NodeKind {
 
 type QuotedStatements struct {
 	NodeBase
-	Statements []Node
+	RegionHeaders []*AnnotatedRegionHeader
+	Statements    []Node
 }
 
 func (QuotedStatements) Kind() NodeKind {
@@ -2537,4 +2541,16 @@ func (ExtendStatement) Kind() NodeKind {
 type MetadataAnnotations struct {
 	NodeBase
 	Expressions []Node
+}
+
+type AnnotatedRegionHeader struct {
+	NodeBase
+	Text        *AnnotatedRegionHeaderText
+	Annotations *MetadataAnnotations
+}
+
+type AnnotatedRegionHeaderText struct {
+	NodeBase
+	Raw   string
+	Value string
 }

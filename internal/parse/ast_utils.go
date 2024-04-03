@@ -138,6 +138,9 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 		walk(n.Preinit, node, ancestorChain, fn, afterFn)
 		walk(n.Manifest, node, ancestorChain, fn, afterFn)
 
+		for _, stmt := range n.RegionHeaders {
+			walk(stmt, node, ancestorChain, fn, afterFn)
+		}
 		for _, stmt := range n.Statements {
 			walk(stmt, node, ancestorChain, fn, afterFn)
 		}
@@ -148,6 +151,9 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 	case *EmbeddedModule:
 		walk(n.Manifest, node, ancestorChain, fn, afterFn)
 
+		for _, stmt := range n.RegionHeaders {
+			walk(stmt, node, ancestorChain, fn, afterFn)
+		}
 		for _, stmt := range n.Statements {
 			walk(stmt, node, ancestorChain, fn, afterFn)
 		}
@@ -207,6 +213,9 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 	case *OptionPatternLiteral:
 		walk(n.Value, node, ancestorChain, fn, afterFn)
 	case *Block:
+		for _, stmt := range n.RegionHeaders {
+			walk(stmt, node, ancestorChain, fn, afterFn)
+		}
 		for _, stmt := range n.Statements {
 			walk(stmt, node, ancestorChain, fn, afterFn)
 		}
@@ -510,6 +519,9 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 	case *QuotedExpression:
 		walk(n.Expression, node, ancestorChain, fn, afterFn)
 	case *QuotedStatements:
+		for _, stmt := range n.RegionHeaders {
+			walk(stmt, node, ancestorChain, fn, afterFn)
+		}
 		for _, stmt := range n.Statements {
 			walk(stmt, node, ancestorChain, fn, afterFn)
 		}
@@ -668,6 +680,9 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 		for _, expr := range n.Expressions {
 			walk(expr, node, ancestorChain, fn, afterFn)
 		}
+	case *AnnotatedRegionHeader:
+		walk(n.Text, node, ancestorChain, fn, afterFn)
+		walk(n.Annotations, node, ancestorChain, fn, afterFn)
 	case *LongValuePathLiteral:
 		for _, segment := range n.Segments {
 			walk(segment, node, ancestorChain, fn, afterFn)

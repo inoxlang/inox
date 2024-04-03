@@ -183,7 +183,8 @@ func (p *parser) parseChunk() (*Chunk, error) {
 	}
 
 	var (
-		stmts []Node
+		stmts         []Node
+		regionHeaders []*AnnotatedRegionHeader
 	)
 
 	//shebang
@@ -241,7 +242,7 @@ func (p *parser) parseChunk() (*Chunk, error) {
 			stmtErr = &ParsingError{UnspecifiedParsingError, STMTS_SHOULD_BE_SEPARATED_BY}
 		}
 
-		annotations, moveForward := p.parseMetadaAnnotationsBeforeStatement(&stmts)
+		annotations, moveForward := p.parseMetadaAnnotationsBeforeStatement(&stmts, &regionHeaders)
 
 		if !moveForward {
 			break
@@ -274,6 +275,7 @@ finalize_chunk_node:
 	chunk.Preinit = preinit
 	chunk.Manifest = manifest
 	chunk.IncludableChunkDesc = includableChunkDesc
+	chunk.RegionHeaders = regionHeaders
 	chunk.Statements = stmts
 	chunk.GlobalConstantDeclarations = globalConstDecls
 	chunk.Tokens = p.tokens

@@ -205,8 +205,9 @@ const (
 	FLOAT_LITERAL
 	PORT_LITERAL
 	BOOLEAN_LITERAL
-	QUOTED_STRING_LITERAL
+	DOUBLE_QUOTED_STRING_LITERAL
 	UNQUOTED_STRING_LITERAL
+	ANNOTATED_REGION_HEADER_TEXT
 	REGEX_LITERAL
 	RATE_LITERAL
 	QUANTITY_LITERAL
@@ -455,8 +456,9 @@ var tokenStrings = [...]string{
 	FLOAT_LITERAL:                         "<?>",
 	PORT_LITERAL:                          "<?>",
 	BOOLEAN_LITERAL:                       "<?>",
-	QUOTED_STRING_LITERAL:                 "<?>",
+	DOUBLE_QUOTED_STRING_LITERAL:          "<?>",
 	UNQUOTED_STRING_LITERAL:               "<?>",
+	ANNOTATED_REGION_HEADER_TEXT:          "<?>",
 	REGEX_LITERAL:                         "<?>",
 	RATE_LITERAL:                          "<?>",
 	QUANTITY_LITERAL:                      "<?>",
@@ -627,8 +629,9 @@ var tokenTypenames = [...]string{
 	FLOAT_LITERAL:                         "FLOAT_LITERAL",
 	PORT_LITERAL:                          "PORT_LITERAL",
 	BOOLEAN_LITERAL:                       "BOOLEAN_LITERAL",
-	QUOTED_STRING_LITERAL:                 "QUOTED_STRING_LITERAL",
+	DOUBLE_QUOTED_STRING_LITERAL:          "DOUBLE_QUOTED_STRING_LITERAL",
 	UNQUOTED_STRING_LITERAL:               "UNQUOTED_STRING_LITERAL",
+	ANNOTATED_REGION_HEADER_TEXT:          "ANNOTATED_REGION_HEADER_TEXT",
 	REGEX_LITERAL:                         "REGEX_LITERAL",
 	RATE_LITERAL:                          "RATE_LITERAL",
 	QUANTITY_LITERAL:                      "QUANTITY_LITERAL",
@@ -904,7 +907,7 @@ func GetTokens(node Node, chunk *Chunk, addMeta bool) []Token {
 				raw = "false"
 			}
 		case *DoubleQuotedStringLiteral:
-			tokenType = QUOTED_STRING_LITERAL
+			tokenType = DOUBLE_QUOTED_STRING_LITERAL
 			raw = n.Raw
 		case *UnquotedStringLiteral:
 			tokenType = UNQUOTED_STRING_LITERAL
@@ -920,6 +923,9 @@ func GetTokens(node Node, chunk *Chunk, addMeta bool) []Token {
 			} else {
 				literalSpan.End = n.NodeBase.Span.End - 1
 			}
+		case *AnnotatedRegionHeaderText:
+			tokenType = ANNOTATED_REGION_HEADER_TEXT
+			raw = n.Raw
 		case *RegularExpressionLiteral:
 			tokenType = REGEX_LITERAL
 			raw = n.Raw

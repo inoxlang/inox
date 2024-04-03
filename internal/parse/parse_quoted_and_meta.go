@@ -112,8 +112,9 @@ func (p *parser) parseQuotedStatements() *QuotedStatements {
 		prevStmtEndIndex = int32(-1)
 		prevStmtErrKind  ParsingErrorKind
 
-		parsingErr *ParsingError
-		stmts      []Node
+		parsingErr    *ParsingError
+		stmts         []Node
+		regionHeaders []*AnnotatedRegionHeader
 	)
 
 	if p.inQuotedRegion {
@@ -162,7 +163,7 @@ func (p *parser) parseQuotedStatements() *QuotedStatements {
 			stmtErr = &ParsingError{UnspecifiedParsingError, STMTS_SHOULD_BE_SEPARATED_BY}
 		}
 
-		annotations, moveForward := p.parseMetadaAnnotationsBeforeStatement(&stmts)
+		annotations, moveForward := p.parseMetadaAnnotationsBeforeStatement(&stmts, &regionHeaders)
 
 		if !moveForward {
 			break
@@ -209,7 +210,8 @@ func (p *parser) parseQuotedStatements() *QuotedStatements {
 			Span: NodeSpan{startIndex, end},
 			Err:  parsingErr,
 		},
-		Statements: stmts,
+		RegionHeaders: regionHeaders,
+		Statements:    stmts,
 	}
 
 }
