@@ -250,7 +250,9 @@ func (p *parser) parseChunk() (*Chunk, error) {
 		stmt := p.parseStatement()
 		prevStmtEndIndex = p.i
 
-		p.addAnnotationsToNodeIfPossible(annotations, stmt)
+		if missingStmt := p.addAnnotationsToNodeIfPossible(annotations, stmt); missingStmt != nil {
+			stmts = append(stmts, missingStmt)
+		}
 
 		if _, isMissingExpr := stmt.(*MissingExpression); isMissingExpr {
 			stmts = append(stmts, stmt)

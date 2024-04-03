@@ -321,21 +321,9 @@ func testParse(
 					NodeBase: NodeBase{
 						Span:            NodeSpan{0, 18},
 						IsParenthesized: false,
-						/*[]Token{
-							{Type: inoxconsts.MANIFEST_KEYWORD, Span: NodeSpan{0, 8}},
-						},*/
 					},
 					Object: &ObjectLiteral{
-						NodeBase: NodeBase{
-							NodeSpan{9, 18},
-							nil,
-							false,
-							/*[]Token{
-								{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
-								{Type: NEWLINE, Span: NodeSpan{13, 14}},
-								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{17, 18}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{9, 18}},
 						Properties: []*ObjectProperty{
 							{
 								NodeBase: NodeBase{
@@ -392,14 +380,7 @@ func testParse(
 		t.Run("includable-file after line feed", func(t *testing.T) {
 			n := mustparseChunk(t, "\nincludable-file")
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{
-					NodeSpan{0, 16},
-					nil,
-					false,
-					/*[]Token{
-						{Type: NEWLINE, Span: NodeSpan{0, 1}},
-					},*/
-				},
+				NodeBase:   NodeBase{Span: NodeSpan{0, 16}},
 				Statements: nil,
 				IncludableChunkDesc: &IncludableChunkDescription{
 					NodeBase: NodeBase{
@@ -586,6 +567,39 @@ func testParse(
 								NodeBase: NodeBase{Span: NodeSpan{10, 12}},
 							},
 						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("annotation followed by statement that does not support annotations", func(t *testing.T) {
+			n, err := parseChunk(t, "@a\n1", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{
+					Span: NodeSpan{0, 4},
+				},
+				Statements: []Node{
+					&MissingStatement{
+						NodeBase: NodeBase{
+							NodeSpan{0, 3},
+							&ParsingError{UnspecifiedParsingError, METADATA_ANNOTATIONS_SHOULD_BE_FOLLOWED_BY_STMT_SUPPORTING_THEM},
+							false,
+						},
+						Annotations: &MetadataAnnotations{
+							NodeBase: NodeBase{Span: NodeSpan{0, 3}},
+							Expressions: []Node{
+								&MetaIdentifier{
+									NodeBase: NodeBase{Span: NodeSpan{0, 2}},
+									Name:     "a",
+								},
+							},
+						},
+					},
+					&IntLiteral{
+						NodeBase: NodeBase{Span: NodeSpan{3, 4}},
+						Raw:      "1",
+						Value:    1,
 					},
 				},
 			}, n)
@@ -837,20 +851,9 @@ func testParse(
 					NodeBase: NodeBase{
 						Span:            NodeSpan{6, 17},
 						IsParenthesized: false,
-						/*[]Token{
-							{Type: inoxconsts.MANIFEST_KEYWORD, Span: NodeSpan{6, 14}},
-						},*/
 					},
 					Object: &ObjectLiteral{
-						NodeBase: NodeBase{
-							NodeSpan{15, 17},
-							nil,
-							false,
-							/*[]Token{
-								{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{15, 16}},
-								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{16, 17}},
-							},*/
-						},
+						NodeBase:   NodeBase{Span: NodeSpan{15, 17}},
 						Properties: nil,
 					},
 				},
@@ -24124,6 +24127,240 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("property: annotation", func(t *testing.T) {
+			n := mustparseChunk(t, "%{ prop: int @public }")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 22}, nil, false},
+				Statements: []Node{
+					&ObjectPatternLiteral{
+						NodeBase: NodeBase{Span: NodeSpan{0, 22}},
+						Properties: []*ObjectPatternProperty{
+							{
+								NodeBase: NodeBase{Span: NodeSpan{3, 21}},
+								Key: &IdentifierLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{Start: 3, End: 7}},
+									Name:     "prop",
+								},
+								Value: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{Span: NodeSpan{9, 12}},
+									Name:       "int",
+									Unprefixed: true,
+								},
+								Annotations: &MetadataAnnotations{
+									NodeBase: NodeBase{Span: NodeSpan{13, 21}},
+									Expressions: []Node{
+										&MetaIdentifier{
+											NodeBase: NodeBase{Span: NodeSpan{13, 20}},
+											Name:     "public",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("property: annotation", func(t *testing.T) {
+			n := mustparseChunk(t, "%{ prop: int @public }")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 22}, nil, false},
+				Statements: []Node{
+					&ObjectPatternLiteral{
+						NodeBase: NodeBase{Span: NodeSpan{0, 22}},
+						Properties: []*ObjectPatternProperty{
+							{
+								NodeBase: NodeBase{Span: NodeSpan{3, 21}},
+								Key: &IdentifierLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{Start: 3, End: 7}},
+									Name:     "prop",
+								},
+								Value: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{Span: NodeSpan{9, 12}},
+									Name:       "int",
+									Unprefixed: true,
+								},
+								Annotations: &MetadataAnnotations{
+									NodeBase: NodeBase{Span: NodeSpan{13, 21}},
+									Expressions: []Node{
+										&MetaIdentifier{
+											NodeBase: NodeBase{Span: NodeSpan{13, 20}},
+											Name:     "public",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("property: two annotations separated by a space", func(t *testing.T) {
+			n := mustparseChunk(t, "%{ prop: int @public @readonly}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 31}, nil, false},
+				Statements: []Node{
+					&ObjectPatternLiteral{
+						NodeBase: NodeBase{Span: NodeSpan{0, 31}},
+						Properties: []*ObjectPatternProperty{
+							{
+								NodeBase: NodeBase{Span: NodeSpan{3, 30}},
+								Key: &IdentifierLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{Start: 3, End: 7}},
+									Name:     "prop",
+								},
+								Value: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{Span: NodeSpan{9, 12}},
+									Name:       "int",
+									Unprefixed: true,
+								},
+								Annotations: &MetadataAnnotations{
+									NodeBase: NodeBase{Span: NodeSpan{13, 30}},
+									Expressions: []Node{
+										&MetaIdentifier{
+											NodeBase: NodeBase{Span: NodeSpan{13, 20}},
+											Name:     "public",
+										},
+										&MetaIdentifier{
+											NodeBase: NodeBase{Span: NodeSpan{21, 30}},
+											Name:     "readonly",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("property: two annotations separated by a linefeed", func(t *testing.T) {
+			n := mustparseChunk(t, "%{ prop: int @public\n@readonly}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 31}, nil, false},
+				Statements: []Node{
+					&ObjectPatternLiteral{
+						NodeBase: NodeBase{Span: NodeSpan{0, 31}},
+						Properties: []*ObjectPatternProperty{
+							{
+								NodeBase: NodeBase{Span: NodeSpan{3, 30}},
+								Key: &IdentifierLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{Start: 3, End: 7}},
+									Name:     "prop",
+								},
+								Value: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{Span: NodeSpan{9, 12}},
+									Name:       "int",
+									Unprefixed: true,
+								},
+								Annotations: &MetadataAnnotations{
+									NodeBase: NodeBase{Span: NodeSpan{13, 30}},
+									Expressions: []Node{
+										&MetaIdentifier{
+											NodeBase: NodeBase{Span: NodeSpan{13, 20}},
+											Name:     "public",
+										},
+										&MetaIdentifier{
+											NodeBase: NodeBase{Span: NodeSpan{21, 30}},
+											Name:     "readonly",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("property: two annotations separated by a comment+linefeed", func(t *testing.T) {
+			n := mustparseChunk(t, "%{ prop: int @public# x\n@readonly}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 34}, nil, false},
+				Statements: []Node{
+					&ObjectPatternLiteral{
+						NodeBase: NodeBase{Span: NodeSpan{0, 34}},
+						Properties: []*ObjectPatternProperty{
+							{
+								NodeBase: NodeBase{Span: NodeSpan{3, 33}},
+								Key: &IdentifierLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{Start: 3, End: 7}},
+									Name:     "prop",
+								},
+								Value: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{Span: NodeSpan{9, 12}},
+									Name:       "int",
+									Unprefixed: true,
+								},
+								Annotations: &MetadataAnnotations{
+									NodeBase: NodeBase{Span: NodeSpan{13, 33}},
+									Expressions: []Node{
+										&MetaIdentifier{
+											NodeBase: NodeBase{Span: NodeSpan{13, 20}},
+											Name:     "public",
+										},
+										&MetaIdentifier{
+											NodeBase: NodeBase{Span: NodeSpan{24, 33}},
+											Name:     "readonly",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("two properties: first one has an annotation followed by a comma", func(t *testing.T) {
+			n := mustparseChunk(t, "%{ prop: int @public, other_prop: int }")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 39}, nil, false},
+				Statements: []Node{
+					&ObjectPatternLiteral{
+						NodeBase: NodeBase{Span: NodeSpan{0, 39}},
+						Properties: []*ObjectPatternProperty{
+							{
+								NodeBase: NodeBase{Span: NodeSpan{3, 20}},
+								Key: &IdentifierLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{Start: 3, End: 7}},
+									Name:     "prop",
+								},
+								Value: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{Span: NodeSpan{9, 12}},
+									Name:       "int",
+									Unprefixed: true,
+								},
+								Annotations: &MetadataAnnotations{
+									NodeBase: NodeBase{Span: NodeSpan{13, 20}},
+									Expressions: []Node{
+										&MetaIdentifier{
+											NodeBase: NodeBase{Span: NodeSpan{13, 20}},
+											Name:     "public",
+										},
+									},
+								},
+							},
+							{
+								NodeBase: NodeBase{Span: NodeSpan{22, 37}},
+								Key: &IdentifierLiteral{
+									NodeBase: NodeBase{Span: NodeSpan{Start: 22, End: 32}},
+									Name:     "other_prop",
+								},
+								Value: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{Span: NodeSpan{34, 37}},
+									Name:       "int",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
 		// t.Run("{ ... } ", func(t *testing.T) {
 		// 	n := mustparseChunk(t,"%{ ... }")
 		// 	assert.EqualValues(t, &Chunk{
@@ -24213,13 +24450,7 @@ func testParse(
 				Statements: []Node{
 					&ObjectPatternLiteral{
 						NodeBase: NodeBase{
-							NodeSpan{0, 13},
-							nil,
-							false,
-							/*[]Token{
-								{Type: OPENING_OBJECT_PATTERN_BRACKET, Span: NodeSpan{0, 2}},
-								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{12, 13}},
-							},*/
+							Span: NodeSpan{0, 13},
 						},
 
 						SpreadElements: []*PatternPropertySpreadElement{
@@ -24247,13 +24478,7 @@ func testParse(
 				Statements: []Node{
 					&ObjectPatternLiteral{
 						NodeBase: NodeBase{
-							NodeSpan{0, 12},
-							nil,
-							false,
-							/*[]Token{
-								{Type: OPENING_OBJECT_PATTERN_BRACKET, Span: NodeSpan{0, 2}},
-								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{11, 12}},
-							},*/
+							Span: NodeSpan{0, 12},
 						},
 
 						SpreadElements: []*PatternPropertySpreadElement{
@@ -24327,14 +24552,7 @@ func testParse(
 				Statements: []Node{
 					&ObjectPatternLiteral{
 						NodeBase: NodeBase{
-							NodeSpan{0, 25},
-							nil,
-							false,
-							/*[]Token{
-								{Type: OPENING_OBJECT_PATTERN_BRACKET, Span: NodeSpan{0, 2}},
-								{Type: COMMA, Span: NodeSpan{12, 13}},
-								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{24, 25}},
-							},*/
+							Span: NodeSpan{0, 25},
 						},
 
 						Properties: []*ObjectPatternProperty{
@@ -24466,27 +24684,11 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
 				Statements: []Node{
 					&ObjectPatternLiteral{
-						NodeBase: NodeBase{
-							NodeSpan{0, 16},
-							nil,
-							false,
-							/*[]Token{
-								{Type: OPENING_OBJECT_PATTERN_BRACKET, Span: NodeSpan{0, 2}},
-								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{15, 16}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 16}},
 
 						Properties: []*ObjectPatternProperty{
 							{
-								NodeBase: NodeBase{
-									NodeSpan{3, 14},
-									nil,
-									false,
-									/*[]Token{
-										{Type: QUESTION_MARK, Span: NodeSpan{7, 8}},
-										{Type: COLON, Span: NodeSpan{8, 9}},
-									},*/
-								},
+								NodeBase: NodeBase{Span: NodeSpan{3, 14}},
 								Key: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{3, 7}, nil, false},
 									Name:     "name",
@@ -24509,39 +24711,16 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
 				Statements: []Node{
 					&ObjectPatternLiteral{
-						NodeBase: NodeBase{
-							NodeSpan{0, 16},
-							nil,
-							false,
-							/*[]Token{
-								{Type: OPENING_OBJECT_PATTERN_BRACKET, Span: NodeSpan{0, 2}},
-								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{15, 16}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 16}},
 						Properties: []*ObjectPatternProperty{
 							{
-								NodeBase: NodeBase{
-									NodeSpan{3, 14},
-									nil,
-									false,
-									/*[]Token{
-										{Type: COLON, Span: NodeSpan{7, 8}},
-									},*/
-								},
+								NodeBase: NodeBase{Span: NodeSpan{3, 14}},
 								Key: &IdentifierLiteral{
 									NodeBase: NodeBase{Span: NodeSpan{Start: 3, End: 7}},
 									Name:     "list",
 								},
 								Value: &ListPatternLiteral{
-									NodeBase: NodeBase{
-										NodeSpan{9, 14},
-										nil,
-										false,
-										/*[]Token{
-											{Type: OPENING_BRACKET, Span: NodeSpan{9, 10}},
-											{Type: CLOSING_BRACKET, Span: NodeSpan{13, 14}},
-										},*/
-									},
+									NodeBase: NodeBase{Span: NodeSpan{9, 14}},
 									Elements: []Node{
 										&IntLiteral{
 											NodeBase: NodeBase{NodeSpan{11, 12}, nil, false},
@@ -24564,38 +24743,17 @@ func testParse(
 				Statements: []Node{
 					&ObjectPatternLiteral{
 						NodeBase: NodeBase{
-							NodeSpan{0, 18},
-							nil,
-							false,
-							/*[]Token{
-								{Type: OPENING_OBJECT_PATTERN_BRACKET, Span: NodeSpan{0, 2}},
-								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{17, 18}},
-							},*/
+							Span: NodeSpan{0, 18},
 						},
 						Properties: []*ObjectPatternProperty{
 							{
-								NodeBase: NodeBase{
-									NodeSpan{3, 17},
-									nil,
-									false,
-									/*[]Token{
-										{Type: COLON, Span: NodeSpan{7, 8}},
-									},*/
-								},
+								NodeBase: NodeBase{Span: NodeSpan{3, 17}},
 								Key: &IdentifierLiteral{
 									NodeBase: NodeBase{Span: NodeSpan{Start: 3, End: 7}},
 									Name:     "prop",
 								},
 								Value: &PatternUnion{
-									NodeBase: NodeBase{
-										NodeSpan{9, 17},
-										nil,
-										false,
-										/*[]Token{
-											{Type: PATTERN_UNION_PIPE, Span: NodeSpan{9, 10}},
-											{Type: PATTERN_UNION_PIPE, Span: NodeSpan{13, 14}},
-										},*/
-									},
+									NodeBase: NodeBase{Span: NodeSpan{9, 17}},
 									Cases: []Node{
 										&PatternIdentifierLiteral{
 											NodeBase:   NodeBase{NodeSpan{11, 12}, nil, false},
@@ -24653,15 +24811,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
 				Statements: []Node{
 					&ObjectPatternLiteral{
-						NodeBase: NodeBase{
-							NodeSpan{0, 17},
-							nil,
-							false,
-							/*[]Token{
-								{Type: OPENING_OBJECT_PATTERN_BRACKET, Span: NodeSpan{0, 2}},
-								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{16, 17}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 17}},
 						OtherProperties: []*OtherPropsExpr{
 							{
 								NodeBase: NodeBase{
@@ -24687,13 +24837,7 @@ func testParse(
 				Statements: []Node{
 					&ObjectPatternLiteral{
 						NodeBase: NodeBase{
-							NodeSpan{0, 16},
-							nil,
-							false,
-							/*[]Token{
-								{Type: OPENING_OBJECT_PATTERN_BRACKET, Span: NodeSpan{0, 2}},
-								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{15, 16}},
-							},*/
+							Span: NodeSpan{0, 16},
 						},
 						OtherProperties: []*OtherPropsExpr{
 							{

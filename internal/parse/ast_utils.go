@@ -319,6 +319,7 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 		walk(n.Key, node, ancestorChain, fn, afterFn)
 		walk(n.Type, node, ancestorChain, fn, afterFn)
 		walk(n.Value, node, ancestorChain, fn, afterFn)
+		walk(n.Annotations, node, ancestorChain, fn, afterFn)
 	case *ObjectMetaProperty:
 		walk(n.Key, node, ancestorChain, fn, afterFn)
 		walk(n.Initialization, node, ancestorChain, fn, afterFn)

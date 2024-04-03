@@ -5,7 +5,7 @@ func (p *parser) eatComment() bool {
 
 	start := p.i
 
-	if p.i < p.len-1 && IsCommentFirstSpace(p.s[p.i+1]) {
+	if p.i < p.len-1 && p.s[p.i] == '#' && IsCommentFirstSpace(p.s[p.i+1]) {
 		p.i += 2
 		for p.i < p.len && p.s[p.i] != '\n' {
 			p.i++

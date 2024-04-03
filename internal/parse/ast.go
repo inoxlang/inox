@@ -968,10 +968,11 @@ func (prop ObjectProperty) HasNameEqualTo(name string) bool {
 
 type ObjectPatternProperty struct {
 	NodeBase
-	Key      Node //can be nil (error)
-	Type     Node //can be nil
-	Value    Node
-	Optional bool
+	Key         Node //can be nil (error)
+	Type        Node //can be nil
+	Value       Node
+	Annotations *MetadataAnnotations //can be nil
+	Optional    bool
 }
 
 func (prop ObjectPatternProperty) Name() string {

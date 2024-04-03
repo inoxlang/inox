@@ -179,7 +179,9 @@ func (p *parser) parseQuotedStatements() *QuotedStatements {
 			stmt.BasePtr().Err = stmtErr
 		}
 
-		p.addAnnotationsToNodeIfPossible(annotations, stmt)
+		if missingStmt := p.addAnnotationsToNodeIfPossible(annotations, stmt); missingStmt != nil {
+			stmts = append(stmts, missingStmt)
+		}
 		stmts = append(stmts, stmt)
 
 		p.eatSpaceNewlineSemicolonComment()
@@ -301,29 +303,4 @@ func (p *parser) parseUnquotedRegion() *UnquotedRegion {
 		Spread:     spread,
 		Expression: e,
 	}
-}
-
-// addAnnotationsToNodeIfPossible adds $annotations to $node if it supports them, a non-nil *MissingStatement is returned otherwise.
-// If $annotations is nil addAnnotationsToNodeIfPossible dos nothing and returns nil.
-func (p *parser) addAnnotationsToNodeIfPossible(annotations *MetadataAnnotations, stmt Node) *MissingStatement {
-
-	if annotations == nil {
-		return nil
-	}
-
-	switch stmt := stmt.(type) {
-	case *FunctionDeclaration:
-		stmt.Annotations = annotations
-		stmt.Span.Start = annotations.Span.Start
-	default:
-		return &MissingStatement{
-			NodeBase: NodeBase{
-				Span: NodeSpan{annotations.Span.End - 1, annotations.Span.End},
-				Err:  &ParsingError{UnspecifiedParsingError, METADATA_ANNOTATIONS_SHOULD_BE_FOLLOWED_BY_STMT_SUPPORTING_THEM},
-			},
-			Annotations: annotations,
-		}
-	}
-
-	return nil
 }

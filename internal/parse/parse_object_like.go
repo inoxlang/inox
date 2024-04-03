@@ -738,6 +738,8 @@ object_pattern_top_loop:
 				v, isMissingExpr = p.parseExpression()
 				propSpanEnd = p.i
 
+				var annotations *MetadataAnnotations
+
 				if isMissingExpr {
 					if p.i < p.len {
 						propParsingErr = &ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInObjectPattern(p.s[p.i])}
@@ -746,12 +748,19 @@ object_pattern_top_loop:
 					} else {
 						v = nil
 					}
-				}
+				} else {
+					p.eatSpace()
 
-				p.eatSpace()
+					annotations = p.tryParseMetadaAnnotationsAfterProperty()
+					if annotations != nil {
+						propSpanEnd = p.i
+					}
 
-				if !isMissingExpr && p.i < p.len && !isValidEntryEnd(p.s, p.i) && !isClosingDelim(p.s[p.i]) {
-					propParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_OBJ_PATT_LIT_ENTRY_SEPARATION}
+					p.eatSpace()
+
+					if p.i < p.len && !isValidEntryEnd(p.s, p.i) && !isClosingDelim(p.s[p.i]) {
+						propParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_OBJ_PATT_LIT_ENTRY_SEPARATION}
+					}
 				}
 
 				properties = append(properties, &ObjectPatternProperty{
@@ -759,10 +768,11 @@ object_pattern_top_loop:
 						Span: NodeSpan{propSpanStart, propSpanEnd},
 						Err:  propParsingErr,
 					},
-					Key:      key,
-					Type:     type_,
-					Value:    v,
-					Optional: isOptional,
+					Key:         key,
+					Type:        type_,
+					Value:       v,
+					Annotations: annotations,
+					Optional:    isOptional,
 				})
 			}
 		}
