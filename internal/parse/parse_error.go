@@ -580,6 +580,7 @@ const (
 		"if you meant to use the expression as an annotation you can store the result in a variable: myvar = @x, myvar = @x()"
 	METADATA_ANNOTATIONS_SHOULD_BE_FOLLOWED_BY_STMT_SUPPORTING_THEM = "metadata annotations should be followed by a statement supporting them"
 	MISSING_DELIMITER_AFTER_ANNOTATED_REGION_HEADER                 = "missing delimiter after annotated region header, try to add a linefeed or semicolon"
+	MISSING_LINEFEED_AFTER_ANNOTATED_REGION_HEADER                  = "missing linefeed after annotated region header"
 )
 
 func fmtInvalidRegexLiteral(err string) string {

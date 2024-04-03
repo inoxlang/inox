@@ -211,7 +211,7 @@ func (p *parser) parseXMLElement(start int32) (_ *XMLElement, noOrExpectedClosin
 		}, noOrExpectedClosingTag
 	}
 
-	//Children of regular element, or end of self-closing tag.
+	//Check for end of self closing tag.
 
 	selfClosing := p.s[p.i] == '/'
 
@@ -258,8 +258,11 @@ func (p *parser) parseXMLElement(start int32) (_ *XMLElement, noOrExpectedClosin
 
 	//Children
 
-	var children []Node
-	allChildrenHaveMatchingClosingTag := true
+	var (
+		children                          []Node
+		regionHeaders                     []*AnnotatedRegionHeader
+		allChildrenHaveMatchingClosingTag = true
+	)
 
 	var rawElementText string
 	rawStart := int32(0)
@@ -278,7 +281,7 @@ func (p *parser) parseXMLElement(start int32) (_ *XMLElement, noOrExpectedClosin
 		rawElementText = string(p.s[rawStart:rawEnd])
 	} else {
 		var err *ParsingError
-		children, err, allChildrenHaveMatchingClosingTag = p.parseXMLChildren(singleBracketInterpolations)
+		children, regionHeaders, err, allChildrenHaveMatchingClosingTag = p.parseXMLChildren(singleBracketInterpolations)
 		parsingErr = err
 	}
 
@@ -296,6 +299,7 @@ func (p *parser) parseXMLElement(start int32) (_ *XMLElement, noOrExpectedClosin
 				false,
 			},
 			Opening:                 openingElement,
+			RegionHeaders:           regionHeaders,
 			Children:                children,
 			RawElementContent:       rawElementText,
 			RawElementContentStart:  rawStart,
@@ -339,6 +343,7 @@ func (p *parser) parseXMLElement(start int32) (_ *XMLElement, noOrExpectedClosin
 			},
 			Opening:                 openingElement,
 			Closing:                 closingElement,
+			RegionHeaders:           regionHeaders,
 			Children:                children,
 			RawElementContent:       rawElementText,
 			RawElementContentStart:  rawStart,
@@ -359,6 +364,7 @@ func (p *parser) parseXMLElement(start int32) (_ *XMLElement, noOrExpectedClosin
 		},
 		Opening:                 openingElement,
 		Closing:                 closingElement,
+		RegionHeaders:           regionHeaders,
 		Children:                children,
 		RawElementContent:       rawElementText,
 		RawElementContentStart:  rawStart,
@@ -463,7 +469,7 @@ func (p *parser) parseHyperscriptAttribute(start int32) (attr *HyperscriptAttrib
 	return
 }
 
-func (p *parser) parseXMLChildren(singleBracketInterpolations bool) (_ []Node, _ *ParsingError, allChildrenHaveMatchingClosingTag bool) {
+func (p *parser) parseXMLChildren(singleBracketInterpolations bool) (_ []Node, _ []*AnnotatedRegionHeader, _ *ParsingError, allChildrenHaveMatchingClosingTag bool) {
 	p.panicIfContextDone()
 
 	allChildrenHaveMatchingClosingTag = true
@@ -471,6 +477,7 @@ func (p *parser) parseXMLChildren(singleBracketInterpolations bool) (_ []Node, _
 	interpolationStart := int32(-1)
 	children := make([]Node, 0)
 	childStart := p.i
+	var regionHeaders []*AnnotatedRegionHeader
 
 	bracketPairDepthWithinInterpolation := 0
 
@@ -633,7 +640,7 @@ children_parsing_loop:
 				Expr: expr,
 			}
 			children = append(children, interpolationNode)
-		case !inInterpolation && p.s[p.i] == '<': //child element or unquoted region
+		case p.s[p.i] == '<' && !inInterpolation: //child element or unquoted region
 
 			// Add previous slice
 			raw := string(p.s[childStart:p.i])
@@ -666,6 +673,22 @@ children_parsing_loop:
 				allChildrenHaveMatchingClosingTag = false
 				continue children_parsing_loop
 			}
+		case p.s[p.i] == '@' && !inInterpolation && p.i < p.len-1 && p.s[p.i+1] == '\'' && isSpace(p.s[p.i-1]): //annotated region header
+			// Add previous slice
+			raw := string(p.s[childStart:p.i])
+			value, sliceErr := p.getValueOfMultilineStringSliceOrLiteral([]byte(raw), false)
+			children = append(children, &XMLText{
+				NodeBase: NodeBase{
+					NodeSpan{childStart, p.i},
+					sliceErr,
+					false,
+				},
+				Raw:   raw,
+				Value: value,
+			})
+
+			p.parseAnnotatedRegionHeadersInXML(&regionHeaders)
+			childStart = p.i
 		default:
 			p.i++
 		}
@@ -699,5 +722,5 @@ children_parsing_loop:
 		})
 	}
 
-	return children, parsingErr, allChildrenHaveMatchingClosingTag
+	return children, regionHeaders, parsingErr, allChildrenHaveMatchingClosingTag
 }

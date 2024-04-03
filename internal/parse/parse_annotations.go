@@ -208,6 +208,64 @@ func (p *parser) tryParseMetadaAnnotationsAfterProperty() *MetadataAnnotations {
 	}
 }
 
+func (p *parser) parseAnnotatedRegionHeadersInXML(
+	regionHeaders *[]*AnnotatedRegionHeader,
+) {
+
+	var lastHeader *AnnotatedRegionHeader
+
+	for p.i < p.len-1 && p.s[p.i] == '@' && p.s[p.i+1] == '\'' {
+		text := p.parseAnnotatedRegionHeaderText()
+
+		header := &AnnotatedRegionHeader{
+			NodeBase: NodeBase{Span: text.Span},
+			Text:     text,
+		}
+		lastHeader = header
+
+		p.eatSpace()
+
+		var headerAnnotations []Node
+		start := p.i
+
+		for p.i < p.len && p.s[p.i] == '@' {
+			e, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+
+			isAnnotation := isAnnotationExpression(e)
+
+			if !isAnnotation {
+				if e.Base().Err == nil {
+					e.BasePtr().Err = &ParsingError{UnspecifiedParsingError, INVALID_METADATA_ANNOTATION}
+				}
+			}
+
+			headerAnnotations = append(headerAnnotations, e)
+
+			p.eatSpace()
+		}
+
+		p.eatSpace()
+
+		if headerAnnotations != nil {
+			header.Annotations = &MetadataAnnotations{
+				NodeBase:    NodeBase{Span: NodeSpan{start, p.i}},
+				Expressions: headerAnnotations,
+			}
+			header.Span.End = header.Annotations.Span.End
+		}
+
+		*regionHeaders = append(*regionHeaders, header)
+	}
+
+	p.eatSpace()
+
+	if p.i < p.len && p.s[p.i] != '\n' && lastHeader != nil {
+		lastHeader.Err = &ParsingError{UnspecifiedParsingError, MISSING_LINEFEED_AFTER_ANNOTATED_REGION_HEADER}
+	}
+
+	return
+}
+
 func isAnnotationExpression(e Node) bool {
 	switch e := e.(type) {
 	case *MetaIdentifier:

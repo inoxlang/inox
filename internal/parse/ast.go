@@ -2447,13 +2447,14 @@ func (e XMLExpression) EffectiveNamespaceName() string {
 
 type XMLElement struct {
 	NodeBase                `json:"base:xml-elem"`
-	Opening                 *XMLOpeningElement `json:"opening,omitempty"`
-	Children                []Node             `json:"children,omitempty"`
-	Closing                 *XMLClosingElement `json:"closing,omitempty"`           //nil if self-closed
-	RawElementContent       string             `json:"rawElementContent,omitempty"` //set for script and style tags
-	RawElementContentStart  int32              `json:"rawElementContentStart,omitempty"`
-	RawElementContentEnd    int32              `json:"rawElementContentEnd,omitempty"`
-	EstimatedRawElementType RawElementType     `json:"estimatedRawElementType,omitempty"`
+	Opening                 *XMLOpeningElement       `json:"opening,omitempty"`
+	RegionHeaders           []*AnnotatedRegionHeader `json:"regionHeaders,omitempty"`
+	Children                []Node                   `json:"children,omitempty"`
+	Closing                 *XMLClosingElement       `json:"closing,omitempty"`           //nil if self-closed
+	RawElementContent       string                   `json:"rawElementContent,omitempty"` //set for script and style tags
+	RawElementContentStart  int32                    `json:"rawElementContentStart,omitempty"`
+	RawElementContentEnd    int32                    `json:"rawElementContentEnd,omitempty"`
+	EstimatedRawElementType RawElementType           `json:"estimatedRawElementType,omitempty"`
 
 	//The following field can be set only if parsing RawElementContent is supported (js, css, hyperscript).
 	RawElementParsingResult any `json:"-"` //example: *hscode.ParsingResult|*hscode.ParsingError

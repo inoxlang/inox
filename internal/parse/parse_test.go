@@ -33161,6 +33161,350 @@ func testParse(
 				},
 			}, n)
 		})
+
+		t.Run("region headers: one header followed by a linefeed + the closing tag", func(t *testing.T) {
+			n := mustparseChunk(t, "h<div>\n@'a'\n</div>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 18}, nil, false},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 18}, nil, false},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "h",
+						},
+						Element: &XMLElement{
+							NodeBase: NodeBase{NodeSpan{1, 18}, nil, false},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:     "div",
+								},
+							},
+							RegionHeaders: []*AnnotatedRegionHeader{
+								{
+									NodeBase: NodeBase{Span: NodeSpan{7, 11}},
+									Text: &AnnotatedRegionHeaderText{
+										NodeBase: NodeBase{Span: NodeSpan{7, 11}},
+										Raw:      "@'a'",
+										Value:    "a",
+									},
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
+									Raw:      "\n",
+									Value:    "\n",
+								},
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{11, 12}, nil, false},
+									Raw:      "\n",
+									Value:    "\n",
+								},
+							},
+							Closing: &XMLClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{12, 18}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{14, 17}, nil, false},
+									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("region headers: one header followed by EOF", func(t *testing.T) {
+			n, err := parseChunk(t, "h<div>\n@'a'", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 11}, nil, false},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 11}, nil, false},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "h",
+						},
+						Element: &XMLElement{
+							NodeBase: NodeBase{
+								NodeSpan{1, 11},
+								&ParsingError{UnspecifiedParsingError, fmtExpectedClosingTag("div")},
+								false,
+							},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:     "div",
+								},
+							},
+							RegionHeaders: []*AnnotatedRegionHeader{
+								{
+									NodeBase: NodeBase{Span: NodeSpan{7, 11}},
+									Text: &AnnotatedRegionHeaderText{
+										NodeBase: NodeBase{Span: NodeSpan{7, 11}},
+										Raw:      "@'a'",
+										Value:    "a",
+									},
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
+									Raw:      "\n",
+									Value:    "\n",
+								},
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{11, 11}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("region headers: one header followed by a linefeed + an opening tag", func(t *testing.T) {
+			n := mustparseChunk(t, "h<div>\n@'a'\n<a></a></div>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 25}, nil, false},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 25}, nil, false},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "h",
+						},
+						Element: &XMLElement{
+							NodeBase: NodeBase{NodeSpan{1, 25}, nil, false},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:     "div",
+								},
+							},
+							RegionHeaders: []*AnnotatedRegionHeader{
+								{
+									NodeBase: NodeBase{Span: NodeSpan{7, 11}},
+									Text: &AnnotatedRegionHeaderText{
+										NodeBase: NodeBase{Span: NodeSpan{7, 11}},
+										Raw:      "@'a'",
+										Value:    "a",
+									},
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
+									Raw:      "\n",
+									Value:    "\n",
+								},
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{11, 12}, nil, false},
+									Raw:      "\n",
+									Value:    "\n",
+								},
+								&XMLElement{
+									NodeBase: NodeBase{NodeSpan{12, 19}, nil, false},
+									Opening: &XMLOpeningElement{
+										NodeBase: NodeBase{NodeSpan{12, 15}, nil, false},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{13, 14}, nil, false},
+											Name:     "a",
+										},
+									},
+									Children: []Node{
+										&XMLText{
+											NodeBase: NodeBase{NodeSpan{15, 15}, nil, false},
+											Raw:      "",
+											Value:    "",
+										},
+									},
+									Closing: &XMLClosingElement{
+										NodeBase: NodeBase{NodeSpan{15, 19}, nil, false},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{17, 18}, nil, false},
+											Name:     "a",
+										},
+									},
+								},
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{19, 19}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &XMLClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{19, 25}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{21, 24}, nil, false},
+									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("region headers: one header with annotations followed by a linefeed + an opening tag", func(t *testing.T) {
+			n := mustparseChunk(t, "h<div>\n@'a' @a\n<a></a></div>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 28}, nil, false},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 28}, nil, false},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "h",
+						},
+						Element: &XMLElement{
+							NodeBase: NodeBase{NodeSpan{1, 28}, nil, false},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:     "div",
+								},
+							},
+							RegionHeaders: []*AnnotatedRegionHeader{
+								{
+									NodeBase: NodeBase{Span: NodeSpan{7, 14}},
+									Text: &AnnotatedRegionHeaderText{
+										NodeBase: NodeBase{Span: NodeSpan{7, 11}},
+										Raw:      "@'a'",
+										Value:    "a",
+									},
+									Annotations: &MetadataAnnotations{
+										NodeBase: NodeBase{Span: NodeSpan{12, 14}},
+										Expressions: []Node{
+											&MetaIdentifier{
+												NodeBase: NodeBase{Span: NodeSpan{12, 14}},
+												Name:     "a",
+											},
+										},
+									},
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
+									Raw:      "\n",
+									Value:    "\n",
+								},
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{14, 15}, nil, false},
+									Raw:      "\n",
+									Value:    "\n",
+								},
+								&XMLElement{
+									NodeBase: NodeBase{NodeSpan{15, 22}, nil, false},
+									Opening: &XMLOpeningElement{
+										NodeBase: NodeBase{NodeSpan{15, 18}, nil, false},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{16, 17}, nil, false},
+											Name:     "a",
+										},
+									},
+									Children: []Node{
+										&XMLText{
+											NodeBase: NodeBase{NodeSpan{18, 18}, nil, false},
+											Raw:      "",
+											Value:    "",
+										},
+									},
+									Closing: &XMLClosingElement{
+										NodeBase: NodeBase{NodeSpan{18, 22}, nil, false},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{20, 21}, nil, false},
+											Name:     "a",
+										},
+									},
+								},
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{22, 22}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &XMLClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{22, 28}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{24, 27}, nil, false},
+									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("region headers: one header directly followed by the closing tag", func(t *testing.T) {
+			n := mustparseChunk(t, "h<div>\n@'a'</div>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
+				Statements: []Node{
+					&XMLExpression{
+						NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "h",
+						},
+						Element: &XMLElement{
+							NodeBase: NodeBase{NodeSpan{1, 17}, nil, false},
+							Opening: &XMLOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:     "div",
+								},
+							},
+							RegionHeaders: []*AnnotatedRegionHeader{
+								{
+									NodeBase: NodeBase{
+										NodeSpan{7, 11},
+										&ParsingError{UnspecifiedParsingError, MISSING_LINEFEED_AFTER_ANNOTATED_REGION_HEADER},
+										false,
+									},
+									Text: &AnnotatedRegionHeaderText{
+										NodeBase: NodeBase{Span: NodeSpan{7, 11}},
+										Raw:      "@'a'",
+										Value:    "a",
+									},
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
+									Raw:      "\n",
+									Value:    "\n",
+								},
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{11, 11}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &XMLClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{11, 17}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{13, 16}, nil, false},
+									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
 	})
 
 	t.Run("extend statement", func(t *testing.T) {
