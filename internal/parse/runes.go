@@ -209,3 +209,13 @@ func isNonSpaceCSSCombinator(r rune) bool {
 		return false
 	}
 }
+
+func isXmlElementQuantifier(r rune) bool {
+	switch r {
+	case OPTIONAL_XML_ELEMENT_QUANTIFIER_RUNE,
+		ONE_OR_MORE_XML_ELEMENT_QUANTIFIER_RUNE,
+		ZERO_OR_MORE_XML_ELEMENT_QUANTIFIER_RUNE:
+		return true
+	}
+	return false
+}

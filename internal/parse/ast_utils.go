@@ -689,6 +689,7 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 		walk(n.Closing, node, ancestorChain, fn, afterFn)
 	case *XMLPatternOpeningElement:
 		walk(n.Name, node, ancestorChain, fn, afterFn)
+
 		for _, attr := range n.Attributes {
 			walk(attr, node, ancestorChain, fn, afterFn)
 		}

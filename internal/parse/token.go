@@ -29,6 +29,17 @@ const (
 
 	COYIELD_KEYWORD_STRING = "coyield"
 	YIELD_KEYWORD_STRING   = "yield"
+
+	OPTIONAL_XML_ELEMENT_QUANTIFIER      = "?"
+	OPTIONAL_XML_ELEMENT_QUANTIFIER_RUNE = '?'
+
+	ONE_OR_MORE_XML_ELEMENT_QUANTIFIER      = "+"
+	ONE_OR_MORE_XML_ELEMENT_QUANTIFIER_RUNE = '+'
+
+	ZERO_OR_MORE_XML_ELEMENT_QUANTIFIER      = "*"
+	ZERO_OR_MORE_XML_ELEMENT_QUANTIFIER_RUNE = '*'
+
+	XML_STAR_WILDCARD = "*"
 )
 
 var (
@@ -245,6 +256,8 @@ const (
 	QUERY_PARAM_SLICE
 	OPTION_NAME
 	XML_TEXT_SLICE
+	XML_ELEMENT_QUANTIFIER
+	XML_WILDCARD
 	HYPERSCRIPT_CODE_SLICE
 	OCCURRENCE_MODIFIER
 )
@@ -486,6 +499,8 @@ var tokenStrings = [...]string{
 	STR_TEMPLATE_INTERP_TYPE:       "<?>",
 	BYTE_SLICE_LITERAL:             "<?>",
 	XML_TEXT_SLICE:                 "<?>",
+	XML_ELEMENT_QUANTIFIER:         "<?>",
+	XML_WILDCARD:                   "<?>",
 	HYPERSCRIPT_CODE_SLICE:         "<?>",
 	NAMED_PATH_SEGMENT:             "<?>",
 }
@@ -668,6 +683,8 @@ var tokenTypenames = [...]string{
 	QUERY_PARAM_SLICE:              "QUERY_PARAM_SLICE",
 	OPTION_NAME:                    "OPTION_NAME",
 	XML_TEXT_SLICE:                 "XML_TEXT_SLICE",
+	XML_ELEMENT_QUANTIFIER:         "XML_ELEMENT_QUANTIFIER",
+	XML_WILDCARD:                   "XML_WILDCARD",
 	HYPERSCRIPT_CODE_SLICE:         "HYPERSCRIPT_CODE_SLICE",
 	OCCURRENCE_MODIFIER:            "OCCURRENCE_MODIFIER",
 }
@@ -873,6 +890,42 @@ func GetTokens(node Node, chunk *Chunk, addMeta bool) []Token {
 					Type: XML_TEXT_SLICE,
 					Span: NodeSpan{start, end},
 					Raw:  n.RawElementContent,
+				})
+			}
+		case *XMLPatternElement:
+			if n.RawElementContent != "" {
+				start := n.Opening.Span.End
+				end := n.Span.End
+				if n.Closing != nil {
+					end = n.Closing.Span.Start
+				}
+
+				tokens = append(tokens, Token{
+					Type: XML_TEXT_SLICE,
+					Span: NodeSpan{start, end},
+					Raw:  n.RawElementContent,
+				})
+			}
+		case *XMLPatternOpeningElement:
+			if n.Quantifier != 0 {
+				var raw string
+				switch n.Quantifier {
+				case OptionalXmlElement:
+					raw = OPTIONAL_XML_ELEMENT_QUANTIFIER
+				case ZeroOrMoreXmlElements:
+					raw = ZERO_OR_MORE_XML_ELEMENT_QUANTIFIER
+				case OneOrMoreXmlElements:
+					raw = ONE_OR_MORE_XML_ELEMENT_QUANTIFIER
+				default:
+					panic(ErrUnreachable)
+				}
+
+				nameSpan := n.Name.Base().Span
+
+				tokens = append(tokens, Token{
+					Type: XML_ELEMENT_QUANTIFIER,
+					Raw:  raw,
+					Span: NodeSpan{nameSpan.End, nameSpan.End + 1},
 				})
 			}
 		}
@@ -1091,6 +1144,9 @@ func GetTokens(node Node, chunk *Chunk, addMeta bool) []Token {
 			} else {
 				literalSpan.End = n.NodeBase.Span.End - 1
 			}
+		case *XMLPatternWildcard:
+			tokenType = HYPERSCRIPT_CODE_SLICE
+			raw = XML_STAR_WILDCARD
 		}
 
 		if tokenType > 0 {

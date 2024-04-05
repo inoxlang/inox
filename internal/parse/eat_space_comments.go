@@ -17,12 +17,14 @@ func (p *parser) eatComment() bool {
 	}
 }
 
-func (p *parser) eatSpace() {
+func (p *parser) eatSpace() (count int) {
 	p.panicIfContextDone()
 
 	for p.i < p.len && isSpaceNotLF(p.s[p.i]) {
+		count++
 		p.i++
 	}
+	return
 }
 
 func (p *parser) eatSpaceNewline() (linefeedCount int) {

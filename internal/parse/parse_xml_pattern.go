@@ -13,6 +13,10 @@ func (p *parser) parseXMLPatternExpression(prefixed bool) *XMLPatternExpression 
 	start := p.i
 	if prefixed {
 		start = p.i - 1
+		p.tokens = append(p.tokens, Token{
+			Type: PERCENT_SYMBOL,
+			Span: NodeSpan{p.i - 1, p.i},
+		})
 	}
 
 	if !p.inPattern {
@@ -78,8 +82,6 @@ func (p *parser) parseXMLPatternElement(start int32) (_ *XMLPatternElement, noOr
 	// 	parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_TAG_NAME}
 	// }
 
-	p.eatSpaceNewlineComment()
-
 	openingElement := &XMLPatternOpeningElement{
 		NodeBase: NodeBase{
 			Span: NodeSpan{start, p.i},
@@ -97,6 +99,30 @@ func (p *parser) parseXMLPatternElement(start int32) (_ *XMLPatternElement, noOr
 	}
 
 	isHyperscriptScript := false
+
+	//Quantifier
+
+	spaceCount := p.eatSpace()
+
+	if p.i < p.len && isXmlElementQuantifier(p.s[p.i]) {
+		if spaceCount == 0 {
+			switch p.s[p.i] {
+			case OPTIONAL_XML_ELEMENT_QUANTIFIER_RUNE:
+				openingElement.Quantifier = OptionalXmlElement
+			case ONE_OR_MORE_XML_ELEMENT_QUANTIFIER_RUNE:
+				openingElement.Quantifier = OneOrMoreXmlElements
+			case ZERO_OR_MORE_XML_ELEMENT_QUANTIFIER_RUNE:
+				openingElement.Quantifier = ZeroOrMoreXmlElements
+			}
+		} else {
+			p.tokens = append(p.tokens, Token{Type: UNEXPECTED_CHAR, Raw: string(p.s[p.i]), Span: NodeSpan{p.i, p.i + 1}})
+			openingElement.Err = &ParsingError{UnspecifiedParsingError, THERE_SHOULD_NOT_BE_SPACE_BETWEEN_THE_TAG_NAME_AND_THE_QUANTIFIER}
+		}
+		p.i++
+		openingElement.Span.End = p.i
+	}
+
+	p.eatSpaceNewlineComment()
 
 	//Attributes
 	for p.i < p.len && p.s[p.i] != '>' && p.s[p.i] != '/' &&
@@ -564,6 +590,27 @@ children_parsing_loop:
 			})
 
 			p.parseAnnotatedRegionHeadersInXML(&regionHeaders)
+			childStart = p.i
+		case p.s[p.i] == '*' && !inInterpolation:
+			// Add previous slice
+			raw := string(p.s[childStart:p.i])
+			value, sliceErr := p.getValueOfMultilineStringSliceOrLiteral([]byte(raw), false)
+			children = append(children,
+				&XMLText{
+					NodeBase: NodeBase{
+						NodeSpan{childStart, p.i},
+						sliceErr,
+						false,
+					},
+					Raw:   raw,
+					Value: value,
+				},
+				&XMLPatternWildcard{
+					NodeBase: NodeBase{Span: NodeSpan{p.i, p.i + 1}},
+					Wildcard: XmlStarWildcard,
+				},
+			)
+			p.i++ //eat '*'
 			childStart = p.i
 		default:
 			p.i++

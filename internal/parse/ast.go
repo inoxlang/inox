@@ -2550,11 +2550,10 @@ func (XMLPatternExpression) Kind() NodeKind {
 
 type XMLPatternElement struct {
 	NodeBase      `json:"base:xml-pattern-elem"`
-	Quantifier    XMLPatternElementQuantifier `json:"quantifier"`
-	Opening       *XMLPatternOpeningElement   `json:"opening,omitempty"`
-	RegionHeaders []*AnnotatedRegionHeader    `json:"regionHeaders,omitempty"`
-	Children      []Node                      `json:"children,omitempty"`
-	Closing       *XMLPatternClosingElement   `json:"closing,omitempty"` //nil if self-closed
+	Opening       *XMLPatternOpeningElement `json:"opening,omitempty"`
+	RegionHeaders []*AnnotatedRegionHeader  `json:"regionHeaders,omitempty"`
+	Children      []Node                    `json:"children,omitempty"`
+	Closing       *XMLPatternClosingElement `json:"closing,omitempty"` //nil if self-closed
 
 	RawElementContent       string         `json:"rawElementContent,omitempty"` //set for script and style tags
 	RawElementContentStart  int32          `json:"rawElementContentStart,omitempty"`
@@ -2573,9 +2572,10 @@ const (
 
 type XMLPatternOpeningElement struct {
 	NodeBase   `json:"base:xml-pattern-opening-elem"`
-	Name       Node   `json:"name"`
-	Attributes []Node `json:"attributes"` //*XMLPatternAttribute
-	SelfClosed bool   `json:"selfClosed"`
+	Name       Node                        `json:"name"`
+	Quantifier XMLPatternElementQuantifier `json:"quantifier"`
+	Attributes []Node                      `json:"attributes"` //*XMLPatternAttribute
+	SelfClosed bool                        `json:"selfClosed"`
 }
 
 func (attr XMLPatternOpeningElement) GetName() string {
@@ -2595,7 +2595,14 @@ type XMLPatternAttribute struct {
 
 type XMLPatternWildcard struct {
 	NodeBase `json:"base:xml-pattern-wildcard"`
+	Wildcard XmlWildcard
 }
+
+type XmlWildcard int
+
+const (
+	XmlStarWildcard XmlWildcard = iota
+)
 
 func (attr XMLPatternAttribute) GetName() string {
 	return attr.Name.(*IdentifierLiteral).Name
