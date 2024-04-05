@@ -2260,14 +2260,14 @@ func (p *ComplexStringPatternPiece) IsResolvableAtCheckTime() bool {
 	return yes
 }
 
-type OcurrenceCountModifier int
+type SequencePatternQuantifier int
 
 const (
-	ExactlyOneOcurrence OcurrenceCountModifier = iota
-	AtLeastOneOcurrence
-	ZeroOrMoreOcurrence
-	OptionalOcurrence
-	ExactOcurrence
+	ExactlyOneOccurrence SequencePatternQuantifier = iota
+	AtLeastOneOccurrence
+	ZeroOrMoreOccurrences
+	OptionalOccurrence
+	ExactOccurrenceCount
 )
 
 type PatternGroupName struct {
@@ -2277,7 +2277,7 @@ type PatternGroupName struct {
 
 type PatternPieceElement struct {
 	NodeBase
-	Ocurrence           OcurrenceCountModifier
+	Quantifier          SequencePatternQuantifier
 	ExactOcurrenceCount int
 	Expr                Node
 	GroupName           *PatternGroupName
@@ -2591,6 +2591,10 @@ type XMLPatternAttribute struct {
 	NodeBase `json:"base:xml-pattern-attr"`
 	Name     Node `json:"name"`
 	Value    Node `json:"value,omitempty"` //can be nil
+}
+
+type XMLPatternWildcard struct {
+	NodeBase `json:"base:xml-pattern-wildcard"`
 }
 
 func (attr XMLPatternAttribute) GetName() string {

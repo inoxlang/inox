@@ -1450,8 +1450,8 @@ func TestRepeatedStringPatternIteration(t *testing.T) {
 		NewGlobalState(ctx)
 
 		patt := &RepeatedPatternElement{
-			element:           &RuneRangeStringPattern{runes: RuneRange{'a', 'b'}},
-			ocurrenceModifier: internal.ZeroOrMoreOcurrence,
+			element:    &RuneRangeStringPattern{runes: RuneRange{'a', 'b'}},
+			quantifier: internal.ZeroOrMoreOccurrences,
 		}
 
 		it := patt.Iterator(ctx, IteratorConfiguration{})
@@ -1506,8 +1506,8 @@ func TestRepeatedStringPatternIteration(t *testing.T) {
 		NewGlobalState(ctx)
 
 		patt := &RepeatedPatternElement{
-			element:           &RuneRangeStringPattern{runes: RuneRange{'a', 'b'}},
-			ocurrenceModifier: internal.AtLeastOneOcurrence,
+			element:    &RuneRangeStringPattern{runes: RuneRange{'a', 'b'}},
+			quantifier: internal.AtLeastOneOccurrence,
 		}
 
 		it := patt.Iterator(ctx, IteratorConfiguration{})
@@ -1556,8 +1556,8 @@ func TestRepeatedStringPatternIteration(t *testing.T) {
 		NewGlobalState(ctx)
 
 		patt := &RepeatedPatternElement{
-			element:           &RuneRangeStringPattern{runes: RuneRange{'a', 'b'}},
-			ocurrenceModifier: internal.ExactlyOneOcurrence,
+			element:    &RuneRangeStringPattern{runes: RuneRange{'a', 'b'}},
+			quantifier: internal.ExactlyOneOccurrence,
 		}
 
 		it := patt.Iterator(ctx, IteratorConfiguration{})
@@ -1583,9 +1583,9 @@ func TestRepeatedStringPatternIteration(t *testing.T) {
 		NewGlobalState(ctx)
 
 		patt := &RepeatedPatternElement{
-			element:           &RuneRangeStringPattern{runes: RuneRange{'a', 'b'}},
-			ocurrenceModifier: internal.ExactOcurrence,
-			exactCount:        2,
+			element:    &RuneRangeStringPattern{runes: RuneRange{'a', 'b'}},
+			quantifier: internal.ExactOccurrenceCount,
+			exactCount: 2,
 		}
 
 		it := patt.Iterator(ctx, IteratorConfiguration{})

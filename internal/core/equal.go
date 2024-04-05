@@ -1152,7 +1152,7 @@ func (patt *RepeatedPatternElement) Equal(ctx *Context, other Value, alreadyComp
 	}
 
 	return patt.exactCount == otherPatt.exactCount &&
-		patt.ocurrenceModifier == otherPatt.ocurrenceModifier &&
+		patt.quantifier == otherPatt.quantifier &&
 		patt.element.Equal(ctx, otherPatt.element, alreadyCompared, depth+1)
 
 }

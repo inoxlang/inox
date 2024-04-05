@@ -1448,25 +1448,25 @@ func (patt DynamicStringPatternElement) EffectiveLengthRange() IntRange {
 
 type RepeatedPatternElement struct {
 	NotCallablePatternMixin
-	regexp            *regexp.Regexp
-	ocurrenceModifier parse.OcurrenceCountModifier
-	exactCount        int
-	element           StringPattern
-	fullyResolved     bool
+	regexp        *regexp.Regexp
+	quantifier    parse.SequencePatternQuantifier
+	exactCount    int
+	element       StringPattern
+	fullyResolved bool
 }
 
-func newRepeatedPatternElement(modifier parse.OcurrenceCountModifier, exactOcurrenceCount int, repeated StringPattern) *RepeatedPatternElement {
+func newRepeatedPatternElement(quantifier parse.SequencePatternQuantifier, exactOcurrenceCount int, repeated StringPattern) *RepeatedPatternElement {
 	patt := &RepeatedPatternElement{
 		//regexp:            regexp.MustCompile(subpatternRegex),
-		ocurrenceModifier: modifier,
-		exactCount:        exactOcurrenceCount,
-		element:           repeated,
+		quantifier: quantifier,
+		exactCount: exactOcurrenceCount,
+		element:    repeated,
 	}
 
 	if repeated.IsResolved() {
 		patt.fullyResolved = true
 		if repeated.HasRegex() {
-			patt.regexp = constructRegexForRepeatedPatternElement(modifier, exactOcurrenceCount, repeated)
+			patt.regexp = constructRegexForRepeatedPatternElement(quantifier, exactOcurrenceCount, repeated)
 		}
 	}
 
@@ -1474,7 +1474,7 @@ func newRepeatedPatternElement(modifier parse.OcurrenceCountModifier, exactOcurr
 }
 
 func constructRegexForRepeatedPatternElement(
-	ocurrenceModifier parse.OcurrenceCountModifier,
+	ocurrenceModifier parse.SequencePatternQuantifier,
 	exactCount int,
 	repeatedElement StringPattern,
 ) *regexp.Regexp {
@@ -1488,13 +1488,13 @@ func constructRegexForRepeatedPatternElement(
 	buf.WriteRune(')')
 
 	switch ocurrenceModifier {
-	case parse.AtLeastOneOcurrence:
+	case parse.AtLeastOneOccurrence:
 		buf.WriteRune('+')
-	case parse.ZeroOrMoreOcurrence:
+	case parse.ZeroOrMoreOccurrences:
 		buf.WriteRune('*')
-	case parse.OptionalOcurrence:
+	case parse.OptionalOccurrence:
 		buf.WriteRune('?')
-	case parse.ExactOcurrence:
+	case parse.ExactOccurrenceCount:
 		buf.WriteRune('{')
 		buf.WriteString(strconv.Itoa(exactCount))
 		buf.WriteRune('}')
@@ -1526,7 +1526,7 @@ func (patt *RepeatedPatternElement) Resolve() (StringPattern, error) {
 
 	patt.element = resolvedElement
 	if resolvedElement.PatternNestingDepth(0) < INFINITE_STRING_PATTERN_NESTING_DEPTH && resolvedElement.HasRegex() {
-		patt.regexp = constructRegexForRepeatedPatternElement(patt.ocurrenceModifier, patt.exactCount, resolvedElement)
+		patt.regexp = constructRegexForRepeatedPatternElement(patt.quantifier, patt.exactCount, resolvedElement)
 	}
 
 	patt.fullyResolved = true
@@ -1552,19 +1552,19 @@ func (patt *RepeatedPatternElement) validate(s string, i *int) bool {
 	ok := false
 
 	if !patt.element.validate(s, &j) {
-		ok = patt.ocurrenceModifier == parse.ZeroOrMoreOcurrence || patt.ocurrenceModifier == parse.OptionalOcurrence
+		ok = patt.quantifier == parse.ZeroOrMoreOccurrences || patt.quantifier == parse.OptionalOccurrence
 	} else {
 		count := 1
 		for patt.element.validate(s, &j) { //TODO: fix: stop if count == exact count
 			count++
 		}
 
-		switch patt.ocurrenceModifier {
-		case parse.ExactlyOneOcurrence:
+		switch patt.quantifier {
+		case parse.ExactlyOneOccurrence:
 			ok = count == 1
-		case parse.AtLeastOneOcurrence, parse.ZeroOrMoreOcurrence, parse.OptionalOcurrence:
+		case parse.AtLeastOneOccurrence, parse.ZeroOrMoreOccurrences, parse.OptionalOccurrence:
 			ok = true
-		case parse.ExactOcurrence:
+		case parse.ExactOccurrenceCount:
 			ok = count == patt.exactCount
 		}
 	}
@@ -1621,28 +1621,28 @@ func (patt *RepeatedPatternElement) lengthRange(effective bool) IntRange {
 		elemRange = patt.element.LengthRange()
 	}
 
-	switch patt.ocurrenceModifier {
-	case parse.ExactlyOneOcurrence:
+	switch patt.quantifier {
+	case parse.ExactlyOneOccurrence:
 		return elemRange
-	case parse.AtLeastOneOcurrence:
+	case parse.AtLeastOneOccurrence:
 		return IntRange{
 			start: elemRange.start, //elem range should always have a known start
 			end:   math.MaxInt64,
 			step:  1,
 		}
-	case parse.ZeroOrMoreOcurrence:
+	case parse.ZeroOrMoreOccurrences:
 		return IntRange{
 			start: 0,
 			end:   math.MaxInt64,
 			step:  1,
 		}
-	case parse.OptionalOcurrence:
+	case parse.OptionalOccurrence:
 		return IntRange{
 			start: 0,
 			end:   elemRange.end,
 			step:  1,
 		}
-	case parse.ExactOcurrence:
+	case parse.ExactOccurrenceCount:
 		return elemRange.times(int64(patt.exactCount), int64(patt.exactCount), true)
 
 	default:
@@ -1654,19 +1654,19 @@ func (patt *RepeatedPatternElement) MinMaxCounts(maxRandOcurrence int) (int, int
 	minCount := patt.exactCount
 	maxCount := patt.exactCount
 
-	switch patt.ocurrenceModifier {
-	case parse.ExactOcurrence:
+	switch patt.quantifier {
+	case parse.ExactOccurrenceCount:
 		//ok
-	case parse.ExactlyOneOcurrence:
+	case parse.ExactlyOneOccurrence:
 		minCount = 1
 		maxCount = 1
-	case parse.ZeroOrMoreOcurrence:
+	case parse.ZeroOrMoreOccurrences:
 		minCount = 0
 		maxCount = maxRandOcurrence
-	case parse.AtLeastOneOcurrence:
+	case parse.AtLeastOneOccurrence:
 		minCount = 1
 		maxCount = maxRandOcurrence
-	case parse.OptionalOcurrence:
+	case parse.OptionalOccurrence:
 		minCount = 0
 		maxCount = 1
 	}

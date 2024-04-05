@@ -24,8 +24,8 @@ func TestEvalStringPatternNode(t *testing.T) {
 		patt, err := evalStringPatternNode(&parse.ComplexStringPatternPiece{
 			Elements: []*parse.PatternPieceElement{
 				{
-					Ocurrence: parse.ExactlyOneOcurrence,
-					Expr:      &parse.DoubleQuotedStringLiteral{Value: "s"},
+					Quantifier: parse.ExactlyOneOccurrence,
+					Expr:       &parse.DoubleQuotedStringLiteral{Value: "s"},
 				},
 			},
 		}, state, false)
@@ -51,8 +51,8 @@ func TestEvalStringPatternNode(t *testing.T) {
 		patt, err := evalStringPatternNode(&parse.ComplexStringPatternPiece{
 			Elements: []*parse.PatternPieceElement{
 				{
-					Ocurrence: parse.ExactlyOneOcurrence,
-					Expr:      &parse.MultilineStringLiteral{Value: "s"},
+					Quantifier: parse.ExactlyOneOccurrence,
+					Expr:       &parse.MultilineStringLiteral{Value: "s"},
 				},
 			},
 		}, state, false)
@@ -78,8 +78,8 @@ func TestEvalStringPatternNode(t *testing.T) {
 		patt, err := evalStringPatternNode(&parse.ComplexStringPatternPiece{
 			Elements: []*parse.PatternPieceElement{
 				{
-					Ocurrence: parse.ExactlyOneOcurrence,
-					Expr:      &parse.DoubleQuotedStringLiteral{Value: "s"},
+					Quantifier: parse.ExactlyOneOccurrence,
+					Expr:       &parse.DoubleQuotedStringLiteral{Value: "s"},
 					GroupName: &parse.PatternGroupName{
 						Name: "g",
 					},
@@ -108,7 +108,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 		patt, err := evalStringPatternNode(&parse.ComplexStringPatternPiece{
 			Elements: []*parse.PatternPieceElement{
 				{
-					Ocurrence: parse.ExactlyOneOcurrence,
+					Quantifier: parse.ExactlyOneOccurrence,
 					Expr: &parse.RuneRangeExpression{
 						Lower: &parse.RuneLiteral{Value: 'a'},
 						Upper: &parse.RuneLiteral{Value: 'z'},
@@ -135,8 +135,8 @@ func TestEvalStringPatternNode(t *testing.T) {
 		patt, err := evalStringPatternNode(&parse.ComplexStringPatternPiece{
 			Elements: []*parse.PatternPieceElement{
 				{
-					Ocurrence: parse.ZeroOrMoreOcurrence,
-					Expr:      &parse.DoubleQuotedStringLiteral{Value: "s"},
+					Quantifier: parse.ZeroOrMoreOccurrences,
+					Expr:       &parse.DoubleQuotedStringLiteral{Value: "s"},
 				},
 			},
 		}, state, false)
@@ -161,8 +161,8 @@ func TestEvalStringPatternNode(t *testing.T) {
 		patt, err := evalStringPatternNode(&parse.ComplexStringPatternPiece{
 			Elements: []*parse.PatternPieceElement{
 				{
-					Ocurrence: parse.ZeroOrMoreOcurrence,
-					Expr:      &parse.DoubleQuotedStringLiteral{Value: "ab"},
+					Quantifier: parse.ZeroOrMoreOccurrences,
+					Expr:       &parse.DoubleQuotedStringLiteral{Value: "ab"},
 				},
 			},
 		}, state, false)
@@ -187,7 +187,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 		patt, err := evalStringPatternNode(&parse.ComplexStringPatternPiece{
 			Elements: []*parse.PatternPieceElement{
 				{
-					Ocurrence: parse.ExactlyOneOcurrence,
+					Quantifier: parse.ExactlyOneOccurrence,
 					Expr: &parse.PatternIdentifierLiteral{
 						Name: "p",
 					},
@@ -215,7 +215,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 		patt, err := evalStringPatternNode(&parse.ComplexStringPatternPiece{
 			Elements: []*parse.PatternPieceElement{
 				{
-					Ocurrence:           parse.ExactOcurrence,
+					Quantifier:          parse.ExactOccurrenceCount,
 					ExactOcurrenceCount: 2,
 					Expr:                &parse.DoubleQuotedStringLiteral{Value: "s"},
 				},
@@ -241,7 +241,7 @@ func TestEvalStringPatternNode(t *testing.T) {
 		patt, err := evalStringPatternNode(&parse.ComplexStringPatternPiece{
 			Elements: []*parse.PatternPieceElement{
 				{
-					Ocurrence:           parse.ExactOcurrence,
+					Quantifier:          parse.ExactOccurrenceCount,
 					ExactOcurrenceCount: 2,
 					Expr:                &parse.DoubleQuotedStringLiteral{Value: "ab"},
 				},
@@ -268,12 +268,12 @@ func TestEvalStringPatternNode(t *testing.T) {
 		patt, err := evalStringPatternNode(&parse.ComplexStringPatternPiece{
 			Elements: []*parse.PatternPieceElement{
 				{
-					Ocurrence: parse.ExactlyOneOcurrence,
-					Expr:      &parse.DoubleQuotedStringLiteral{Value: "a"},
+					Quantifier: parse.ExactlyOneOccurrence,
+					Expr:       &parse.DoubleQuotedStringLiteral{Value: "a"},
 				},
 				{
-					Ocurrence: parse.ExactlyOneOcurrence,
-					Expr:      &parse.PatternIdentifierLiteral{Name: "b"},
+					Quantifier: parse.ExactlyOneOccurrence,
+					Expr:       &parse.PatternIdentifierLiteral{Name: "b"},
 				},
 			},
 		}, state, false)
@@ -361,12 +361,12 @@ func TestEvalStringPatternNode(t *testing.T) {
 				&parse.ComplexStringPatternPiece{
 					Elements: []*parse.PatternPieceElement{
 						{
-							Ocurrence: parse.ExactlyOneOcurrence,
-							Expr:      &parse.DoubleQuotedStringLiteral{Value: "a"},
+							Quantifier: parse.ExactlyOneOccurrence,
+							Expr:       &parse.DoubleQuotedStringLiteral{Value: "a"},
 						},
 						{
-							Ocurrence: parse.ExactlyOneOcurrence,
-							Expr:      &parse.DoubleQuotedStringLiteral{Value: "b"},
+							Quantifier: parse.ExactlyOneOccurrence,
+							Expr:       &parse.DoubleQuotedStringLiteral{Value: "b"},
 						},
 					},
 				},
@@ -374,12 +374,12 @@ func TestEvalStringPatternNode(t *testing.T) {
 				&parse.ComplexStringPatternPiece{
 					Elements: []*parse.PatternPieceElement{
 						{
-							Ocurrence: parse.ExactlyOneOcurrence,
-							Expr:      &parse.DoubleQuotedStringLiteral{Value: "c"},
+							Quantifier: parse.ExactlyOneOccurrence,
+							Expr:       &parse.DoubleQuotedStringLiteral{Value: "c"},
 						},
 						{
-							Ocurrence: parse.ExactlyOneOcurrence,
-							Expr:      &parse.DoubleQuotedStringLiteral{Value: "d"},
+							Quantifier: parse.ExactlyOneOccurrence,
+							Expr:       &parse.DoubleQuotedStringLiteral{Value: "d"},
 						},
 					},
 				},
@@ -418,7 +418,7 @@ func TestComplexPatternParsing(t *testing.T) {
 		ctx.AddNamedPattern("subpatt", NewExactStringPattern(String("a")))
 
 		patt, err := NewSequenceStringPattern(nil, nil, []StringPattern{
-			newRepeatedPatternElement(parse.ZeroOrMoreOcurrence, -1, &DynamicStringPatternElement{"subpatt", ctx}),
+			newRepeatedPatternElement(parse.ZeroOrMoreOccurrences, -1, &DynamicStringPatternElement{"subpatt", ctx}),
 		}, []string{""})
 
 		if !assert.NoError(t, err) {
@@ -438,7 +438,7 @@ func TestComplexPatternParsing(t *testing.T) {
 		ctx.AddNamedPattern("subpatt", NewExactStringPattern(String("a")))
 
 		patt, err := NewSequenceStringPattern(nil, nil, []StringPattern{
-			newRepeatedPatternElement(parse.ZeroOrMoreOcurrence, -1, &DynamicStringPatternElement{"subpatt", ctx}),
+			newRepeatedPatternElement(parse.ZeroOrMoreOccurrences, -1, &DynamicStringPatternElement{"subpatt", ctx}),
 			NewExactStringPattern(String("b")),
 		}, []string{"", ""})
 
@@ -475,7 +475,7 @@ func TestComplexPatternParsing(t *testing.T) {
 		sequenceElements := []StringPattern{
 			NewExactStringPattern(String("[")),
 			newRepeatedPatternElement(
-				parse.ZeroOrMoreOcurrence,
+				parse.ZeroOrMoreOccurrences,
 				-1,
 				utils.Must(NewSequenceStringPattern(
 					nil,
@@ -532,7 +532,7 @@ func TestComplexPatternParsing(t *testing.T) {
 		sequenceElements := []StringPattern{
 			NewExactStringPattern(String("[")),
 			newRepeatedPatternElement(
-				parse.ZeroOrMoreOcurrence,
+				parse.ZeroOrMoreOccurrences,
 				-1,
 				utils.Must(NewSequenceStringPattern(
 					nil,
@@ -553,7 +553,7 @@ func TestComplexPatternParsing(t *testing.T) {
 		sequenceElements = []StringPattern{
 			NewExactStringPattern(String("{")),
 			newRepeatedPatternElement(
-				parse.ZeroOrMoreOcurrence,
+				parse.ZeroOrMoreOccurrences,
 				-1,
 				utils.Must(NewSequenceStringPattern(
 					nil,
@@ -640,7 +640,7 @@ func TestSequenceStringPattern(t *testing.T) {
 
 		t.Run("single element", func(t *testing.T) {
 			patt, err := NewSequenceStringPattern(nil, nil, []StringPattern{
-				newRepeatedPatternElement(parse.AtLeastOneOcurrence, -1, NewExactStringPattern(String("12"))),
+				newRepeatedPatternElement(parse.AtLeastOneOccurrence, -1, NewExactStringPattern(String("12"))),
 			}, KeyList{""})
 			if !assert.NoError(t, err) {
 				return
@@ -654,7 +654,7 @@ func TestSequenceStringPattern(t *testing.T) {
 
 		t.Run("two elements, first one has no maximum length", func(t *testing.T) {
 			patt, err := NewSequenceStringPattern(nil, nil, []StringPattern{
-				newRepeatedPatternElement(parse.AtLeastOneOcurrence, -1, NewExactStringPattern(String("12"))),
+				newRepeatedPatternElement(parse.AtLeastOneOccurrence, -1, NewExactStringPattern(String("12"))),
 				NewExactStringPattern(String("34")),
 			}, KeyList{"", ""})
 			if !assert.NoError(t, err) {
@@ -669,8 +669,8 @@ func TestSequenceStringPattern(t *testing.T) {
 
 		t.Run("two elements, both have no maximum length", func(t *testing.T) {
 			patt, err := NewSequenceStringPattern(nil, nil, []StringPattern{
-				newRepeatedPatternElement(parse.AtLeastOneOcurrence, -1, NewExactStringPattern(String("12"))),
-				newRepeatedPatternElement(parse.AtLeastOneOcurrence, -1, NewExactStringPattern(String("12"))),
+				newRepeatedPatternElement(parse.AtLeastOneOccurrence, -1, NewExactStringPattern(String("12"))),
+				newRepeatedPatternElement(parse.AtLeastOneOccurrence, -1, NewExactStringPattern(String("12"))),
 			}, KeyList{"", ""})
 			if !assert.NoError(t, err) {
 				return
@@ -704,7 +704,7 @@ func TestSequenceStringPattern(t *testing.T) {
 
 		t.Run("single repeated element", func(t *testing.T) {
 			patt, err := NewSequenceStringPattern(nil, nil, []StringPattern{
-				newRepeatedPatternElement(parse.AtLeastOneOcurrence, -1, NewExactStringPattern(String("12"))),
+				newRepeatedPatternElement(parse.AtLeastOneOccurrence, -1, NewExactStringPattern(String("12"))),
 			}, []string{"number"})
 
 			if !assert.NoError(t, err) {

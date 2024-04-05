@@ -49,15 +49,15 @@ func (p *parser) parseComplexStringPatternPiece(start int32, kind sequencePatter
 		if p.s[p.i] == '|' {
 			union := p.parseComplexStringPatternUnion(p.i, true)
 			elements = append(elements, &PatternPieceElement{
-				NodeBase:  union.NodeBase,
-				Ocurrence: ExactlyOneOcurrence,
-				Expr:      union,
+				NodeBase:   union.NodeBase,
+				Quantifier: ExactlyOneOccurrence,
+				Expr:       union,
 			})
 			break
 		}
 
 		elementStart := p.i
-		ocurrenceModifier := ExactlyOneOcurrence
+		ocurrenceModifier := ExactlyOneOccurrence
 		count := 0
 		elementEnd := int32(-1)
 		var groupName *PatternGroupName
@@ -103,19 +103,19 @@ func (p *parser) parseComplexStringPatternPiece(start int32, kind sequencePatter
 		if p.i < p.len && (p.s[p.i] == '+' || p.s[p.i] == '*' || p.s[p.i] == '?' || p.s[p.i] == '=') {
 			switch p.s[p.i] {
 			case '+':
-				ocurrenceModifier = AtLeastOneOcurrence
+				ocurrenceModifier = AtLeastOneOccurrence
 				elementEnd++
 				p.i++
 
 				p.tokens = append(p.tokens, Token{Type: OCCURRENCE_MODIFIER, Span: NodeSpan{p.i - 1, p.i}, Raw: "+"})
 			case '*':
-				ocurrenceModifier = ZeroOrMoreOcurrence
+				ocurrenceModifier = ZeroOrMoreOccurrences
 				elementEnd++
 				p.i++
 
 				p.tokens = append(p.tokens, Token{Type: OCCURRENCE_MODIFIER, Span: NodeSpan{p.i - 1, p.i}, Raw: "*"})
 			case '?':
-				ocurrenceModifier = OptionalOcurrence
+				ocurrenceModifier = OptionalOccurrence
 				elementEnd++
 				p.i++
 
@@ -138,7 +138,7 @@ func (p *parser) parseComplexStringPatternPiece(start int32, kind sequencePatter
 					elemParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_PATTERN_INVALID_OCCURENCE_COUNT}
 				}
 				count = int(_count)
-				ocurrenceModifier = ExactOcurrence
+				ocurrenceModifier = ExactOccurrenceCount
 				elementEnd = p.i
 
 				raw := string(p.s[numberStart-1 : p.i])
@@ -154,7 +154,7 @@ func (p *parser) parseComplexStringPatternPiece(start int32, kind sequencePatter
 				elemParsingErr,
 				false,
 			},
-			Ocurrence:           ocurrenceModifier,
+			Quantifier:          ocurrenceModifier,
 			ExactOcurrenceCount: int(count),
 			Expr:                element,
 			GroupName:           groupName,
@@ -337,7 +337,7 @@ func (p *parser) parseComplexStringPatternUnion(start int32, isShorthandUnion bo
 			//Simplify if the piece contains a single element that does not have a name and is not parenthesized.
 			if len(piece.Elements) == 1 && !piece.IsParenthesized {
 				elem := piece.Elements[0]
-				if elem.Ocurrence == ExactlyOneOcurrence && elem.GroupName == nil && !elem.IsParenthesized {
+				if elem.Quantifier == ExactlyOneOccurrence && elem.GroupName == nil && !elem.IsParenthesized {
 					case_ = elem.Expr
 				}
 			}

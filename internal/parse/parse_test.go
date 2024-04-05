@@ -26133,8 +26133,8 @@ func testParse(
 						},
 						Elements: []*PatternPieceElement{
 							{
-								NodeBase:  NodeBase{NodeSpan{5, 8}, nil, false},
-								Ocurrence: ExactlyOneOcurrence,
+								NodeBase:   NodeBase{NodeSpan{5, 8}, nil, false},
+								Quantifier: ExactlyOneOccurrence,
 								Expr: &DoubleQuotedStringLiteral{
 									NodeBase: NodeBase{NodeSpan{5, 8}, nil, false},
 									Raw:      "\"a\"",
@@ -26166,8 +26166,8 @@ func testParse(
 						},
 						Elements: []*PatternPieceElement{
 							{
-								NodeBase:  NodeBase{NodeSpan{5, 8}, nil, false},
-								Ocurrence: ExactlyOneOcurrence,
+								NodeBase:   NodeBase{NodeSpan{5, 8}, nil, false},
+								Quantifier: ExactlyOneOccurrence,
 								Expr: &DoubleQuotedStringLiteral{
 									NodeBase: NodeBase{NodeSpan{5, 8}, nil, false},
 									Raw:      "\"a\"",
@@ -26199,8 +26199,8 @@ func testParse(
 						},
 						Elements: []*PatternPieceElement{
 							{
-								NodeBase:  NodeBase{NodeSpan{5, 6}, nil, false},
-								Ocurrence: ExactlyOneOcurrence,
+								NodeBase:   NodeBase{NodeSpan{5, 6}, nil, false},
+								Quantifier: ExactlyOneOccurrence,
 								Expr: &InvalidComplexStringPatternElement{
 									NodeBase: NodeBase{
 										NodeSpan{5, 6},
@@ -26233,8 +26233,8 @@ func testParse(
 						},
 						Elements: []*PatternPieceElement{
 							{
-								NodeBase:  NodeBase{NodeSpan{5, 8}, nil, false},
-								Ocurrence: ExactlyOneOcurrence,
+								NodeBase:   NodeBase{NodeSpan{5, 8}, nil, false},
+								Quantifier: ExactlyOneOccurrence,
 								Expr: &RuneLiteral{
 									NodeBase: NodeBase{NodeSpan{5, 8}, nil, false},
 									Value:    'a',
@@ -26269,7 +26269,7 @@ func testParse(
 									nil,
 									false,
 								},
-								Ocurrence: ZeroOrMoreOcurrence,
+								Quantifier: ZeroOrMoreOccurrences,
 								Expr: &ComplexStringPatternPiece{
 									NodeBase: NodeBase{
 										NodeSpan{5, 10},
@@ -26282,8 +26282,8 @@ func testParse(
 									},
 									Elements: []*PatternPieceElement{
 										{
-											NodeBase:  NodeBase{NodeSpan{6, 9}, nil, false},
-											Ocurrence: ExactlyOneOcurrence,
+											NodeBase:   NodeBase{NodeSpan{6, 9}, nil, false},
+											Quantifier: ExactlyOneOccurrence,
 											Expr: &DoubleQuotedStringLiteral{
 												NodeBase: NodeBase{NodeSpan{6, 9}, nil, false},
 												Raw:      "\"a\"",
@@ -26322,7 +26322,7 @@ func testParse(
 									nil,
 									false,
 								},
-								Ocurrence:           ExactOcurrence,
+								Quantifier:          ExactOccurrenceCount,
 								ExactOcurrenceCount: 2,
 								Expr: &ComplexStringPatternPiece{
 									NodeBase: NodeBase{
@@ -26336,8 +26336,8 @@ func testParse(
 									},
 									Elements: []*PatternPieceElement{
 										{
-											NodeBase:  NodeBase{NodeSpan{6, 9}, nil, false},
-											Ocurrence: ExactlyOneOcurrence,
+											NodeBase:   NodeBase{NodeSpan{6, 9}, nil, false},
+											Quantifier: ExactlyOneOccurrence,
 											Expr: &DoubleQuotedStringLiteral{
 												NodeBase: NodeBase{NodeSpan{6, 9}, nil, false},
 												Raw:      "\"a\"",
@@ -26366,7 +26366,7 @@ func testParse(
 						},
 						Elements: []*PatternPieceElement{
 							{
-								Ocurrence:           ExactOcurrence,
+								Quantifier:          ExactOccurrenceCount,
 								ExactOcurrenceCount: 2,
 								NodeBase: NodeBase{
 									NodeSpan{5, 8},
@@ -26398,7 +26398,7 @@ func testParse(
 						},
 						Elements: []*PatternPieceElement{
 							{
-								Ocurrence:           ExactOcurrence,
+								Quantifier:          ExactOccurrenceCount,
 								ExactOcurrenceCount: 2,
 								NodeBase: NodeBase{
 									NodeSpan{5, 11},
@@ -26440,7 +26440,7 @@ func testParse(
 									nil,
 									false,
 								},
-								Ocurrence: ExactlyOneOcurrence,
+								Quantifier: ExactlyOneOccurrence,
 								Expr: &DoubleQuotedStringLiteral{
 									NodeBase: NodeBase{NodeSpan{7, 10}, nil, false},
 									Raw:      "\"a\"",
@@ -26466,8 +26466,8 @@ func testParse(
 						NodeBase: NodeBase{Span: NodeSpan{0, 12}},
 						Elements: []*PatternPieceElement{
 							{
-								NodeBase:  NodeBase{Span: NodeSpan{5, 11}},
-								Ocurrence: ExactlyOneOcurrence,
+								NodeBase:   NodeBase{Span: NodeSpan{5, 11}},
+								Quantifier: ExactlyOneOccurrence,
 								Expr: &DoubleQuotedStringLiteral{
 									NodeBase: NodeBase{NodeSpan{8, 11}, nil, false},
 									Raw:      "\"a\"",
@@ -26494,8 +26494,8 @@ func testParse(
 						NodeBase: NodeBase{Span: NodeSpan{0, 18}},
 						Elements: []*PatternPieceElement{
 							{
-								NodeBase:  NodeBase{Span: NodeSpan{5, 17}},
-								Ocurrence: ExactlyOneOcurrence,
+								NodeBase:   NodeBase{Span: NodeSpan{5, 17}},
+								Quantifier: ExactlyOneOccurrence,
 								Expr: &DoubleQuotedStringLiteral{
 									NodeBase: NodeBase{NodeSpan{14, 17}, nil, false},
 									Raw:      "\"a\"",
@@ -26531,7 +26531,7 @@ func testParse(
 									nil,
 									false,
 								},
-								Ocurrence: ExactlyOneOcurrence,
+								Quantifier: ExactlyOneOccurrence,
 								Expr: &InvalidComplexStringPatternElement{
 									NodeBase: NodeBase{
 										Span: NodeSpan{7, 7},
@@ -26663,7 +26663,7 @@ func testParse(
 														Raw:      `"a"`,
 														Value:    "a",
 													},
-													Ocurrence: ZeroOrMoreOcurrence,
+													Quantifier: ZeroOrMoreOccurrences,
 												},
 											},
 										},
@@ -26678,7 +26678,7 @@ func testParse(
 														Raw:      `"b"`,
 														Value:    "b",
 													},
-													Ocurrence: AtLeastOneOcurrence,
+													Quantifier: AtLeastOneOccurrence,
 												},
 											},
 										},
@@ -26712,7 +26712,7 @@ func testParse(
 												Raw:      `"a"`,
 												Value:    "a",
 											},
-											Ocurrence: ExactlyOneOcurrence,
+											Quantifier: ExactlyOneOccurrence,
 										},
 										{
 											NodeBase: NodeBase{Span: NodeSpan{13, 16}},
@@ -26721,7 +26721,7 @@ func testParse(
 												Raw:      `"b"`,
 												Value:    "b",
 											},
-											Ocurrence: ExactlyOneOcurrence,
+											Quantifier: ExactlyOneOccurrence,
 										},
 									},
 								},
@@ -26735,7 +26735,7 @@ func testParse(
 												Raw:      `"c"`,
 												Value:    "c",
 											},
-											Ocurrence: ExactlyOneOcurrence,
+											Quantifier: ExactlyOneOccurrence,
 										},
 										{
 											NodeBase: NodeBase{Span: NodeSpan{23, 26}},
@@ -26744,7 +26744,7 @@ func testParse(
 												Raw:      `"d"`,
 												Value:    "d",
 											},
-											Ocurrence: ExactlyOneOcurrence,
+											Quantifier: ExactlyOneOccurrence,
 										},
 									},
 								},
@@ -27019,8 +27019,8 @@ func testParse(
 							NodeBase: NodeBase{Span: NodeSpan{12, 21}},
 							Elements: []*PatternPieceElement{
 								{
-									NodeBase:  NodeBase{NodeSpan{17, 20}, nil, false},
-									Ocurrence: ExactlyOneOcurrence,
+									NodeBase:   NodeBase{NodeSpan{17, 20}, nil, false},
+									Quantifier: ExactlyOneOccurrence,
 									Expr: &DoubleQuotedStringLiteral{
 										NodeBase: NodeBase{NodeSpan{17, 20}, nil, false},
 										Raw:      "\"a\"",

@@ -485,14 +485,14 @@ func TestNamedSegmentPathPatternMatchGroups(t *testing.T) {
 }
 
 func TestRepeatedPatternElementRandom(t *testing.T) {
-	t.Run("2 ocurrences of constant string", func(t *testing.T) {
+	t.Run("2 cs of constant string", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 
 		patt := RepeatedPatternElement{
-			regexp:            nil,
-			ocurrenceModifier: parse.ExactOcurrence,
-			exactCount:        2,
-			element:           NewExactStringPattern(String("a")),
+			regexp:     nil,
+			quantifier: parse.ExactOccurrenceCount,
+			exactCount: 2,
+			element:    NewExactStringPattern(String("a")),
 		}
 
 		for i := 0; i < 5; i++ {
@@ -504,9 +504,9 @@ func TestRepeatedPatternElementRandom(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 
 		patt := RepeatedPatternElement{
-			regexp:            nil,
-			ocurrenceModifier: parse.OptionalOcurrence,
-			element:           NewExactStringPattern(String("a")),
+			regexp:     nil,
+			quantifier: parse.OptionalOccurrence,
+			element:    NewExactStringPattern(String("a")),
 		}
 
 		for i := 0; i < 5; i++ {
@@ -519,9 +519,9 @@ func TestRepeatedPatternElementRandom(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 
 		patt := RepeatedPatternElement{
-			regexp:            nil,
-			ocurrenceModifier: parse.ZeroOrMoreOcurrence,
-			element:           NewExactStringPattern(String("a")),
+			regexp:     nil,
+			quantifier: parse.ZeroOrMoreOccurrences,
+			element:    NewExactStringPattern(String("a")),
 		}
 
 		for i := 0; i < 5; i++ {
@@ -536,9 +536,9 @@ func TestRepeatedPatternElementRandom(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 
 		patt := RepeatedPatternElement{
-			regexp:            nil,
-			ocurrenceModifier: parse.ZeroOrMoreOcurrence,
-			element:           NewExactStringPattern(String("a")),
+			regexp:     nil,
+			quantifier: parse.ZeroOrMoreOccurrences,
+			element:    NewExactStringPattern(String("a")),
 		}
 
 		for i := 0; i < 5; i++ {
