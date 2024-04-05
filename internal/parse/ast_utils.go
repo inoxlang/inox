@@ -695,7 +695,7 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 		}
 	case *XMLPatternAttribute:
 		walk(n.Name, node, ancestorChain, fn, afterFn)
-		walk(n.Value, node, ancestorChain, fn, afterFn)
+		walk(n.Type, node, ancestorChain, fn, afterFn)
 	case *XMLPatternClosingElement:
 		walk(n.Name, node, ancestorChain, fn, afterFn)
 	case *XMLPatternInterpolation:

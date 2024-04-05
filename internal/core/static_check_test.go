@@ -5127,6 +5127,48 @@ func TestCheck(t *testing.T) {
 		})
 	})
 
+	t.Run("xml pattern", func(t *testing.T) {
+		t.Run("no quantifiers, attributes nor wildcards", func(t *testing.T) {
+			n, src := mustParseCode(`%<div></div>`)
+
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("quantifier", func(t *testing.T) {
+			n, src := mustParseCode(`%<div+></div>`)
+
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("wildcard", func(t *testing.T) {
+			n, src := mustParseCode(`%<div>*</div>`)
+
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("attribute", func(t *testing.T) {
+			n, src := mustParseCode(`%<div a=int>*</div>`)
+
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{
+				Node:     n,
+				Chunk:    src,
+				Patterns: map[string]Pattern{"int": INT_PATTERN, "bool": BOOL_PATTERN},
+			}))
+		})
+
+		t.Run("attribute without a type (no =)", func(t *testing.T) {
+			n, src := mustParseCode(`%<div a>*</div>`)
+
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("attribute with missing type after =", func(t *testing.T) {
+			n, src, _ := parseCode(`%<div a=>*</div>`)
+
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+	})
+
 	t.Run("extend statement", func(t *testing.T) {
 		t.Run("should be located at the top level: in function declaration", func(t *testing.T) {
 			n, src := mustParseCode(`

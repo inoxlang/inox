@@ -2590,7 +2590,7 @@ type XMLPatternClosingElement struct {
 type XMLPatternAttribute struct {
 	NodeBase `json:"base:xml-pattern-attr"`
 	Name     Node `json:"name"`
-	Value    Node `json:"value,omitempty"` //can be nil
+	Type     Node `json:"type,omitempty"` //can be nil
 }
 
 type XMLPatternWildcard struct {
@@ -2609,7 +2609,7 @@ func (attr XMLPatternAttribute) GetName() string {
 }
 
 func (attr XMLPatternAttribute) ValueIfStringLiteral() string {
-	switch val := attr.Value.(type) {
+	switch val := attr.Type.(type) {
 	case *DoubleQuotedStringLiteral:
 		return val.Value
 	case *MultilineStringLiteral:

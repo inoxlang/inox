@@ -2662,14 +2662,23 @@ func (c *checker) checkPatternNamespaceIdentifier(node *parse.PatternNamespaceId
 
 func (c *checker) checkPatternIdentifier(node *parse.PatternIdentifierLiteral, parent, closestModule parse.Node, ancestorChain []parse.Node) parse.TraversalAction {
 
-	if _, ok := parent.(*parse.OtherPropsExpr); ok && node.Name == parse.NO_OTHERPROPS_PATTERN_NAME {
-		return parse.ContinueTraversal
-
-	}
-
-	if def, ok := parent.(*parse.StructDefinition); ok && def.Name == node {
-		return parse.ContinueTraversal
-
+	switch parent := parent.(type) {
+	case *parse.OtherPropsExpr:
+		if node.Name == parse.NO_OTHERPROPS_PATTERN_NAME {
+			return parse.ContinueTraversal
+		}
+	case *parse.StructDefinition:
+		if parent.Name == node {
+			return parse.ContinueTraversal
+		}
+	case *parse.XMLPatternOpeningElement:
+		if parent.Name == node {
+			return parse.ContinueTraversal
+		}
+	case *parse.XMLPatternClosingElement:
+		if parent.Name == node {
+			return parse.ContinueTraversal
+		}
 	}
 
 	//Check if struct type.
