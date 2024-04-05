@@ -2539,6 +2539,80 @@ func (ExtendStatement) Kind() NodeKind {
 	return Stmt
 }
 
+type XMLPatternExpression struct {
+	NodeBase `json:"base:xml-pattern-expr"`
+	Element  *XMLPatternElement `json:"element"`
+}
+
+func (XMLPatternExpression) Kind() NodeKind {
+	return Expr
+}
+
+type XMLPatternElement struct {
+	NodeBase      `json:"base:xml-pattern-elem"`
+	Quantifier    XMLPatternElementQuantifier `json:"quantifier"`
+	Opening       *XMLPatternOpeningElement   `json:"opening,omitempty"`
+	RegionHeaders []*AnnotatedRegionHeader    `json:"regionHeaders,omitempty"`
+	Children      []Node                      `json:"children,omitempty"`
+	Closing       *XMLPatternClosingElement   `json:"closing,omitempty"` //nil if self-closed
+
+	RawElementContent       string         `json:"rawElementContent,omitempty"` //set for script and style tags
+	RawElementContentStart  int32          `json:"rawElementContentStart,omitempty"`
+	RawElementContentEnd    int32          `json:"rawElementContentEnd,omitempty"`
+	EstimatedRawElementType RawElementType `json:"estimatedRawElementType,omitempty"`
+}
+
+type XMLPatternElementQuantifier int
+
+const (
+	OneXmlElement XMLPatternElementQuantifier = iota
+	OptionalXmlElement
+	ZeroOrMoreXmlElements
+	OneOrMoreXmlElements
+)
+
+type XMLPatternOpeningElement struct {
+	NodeBase   `json:"base:xml-pattern-opening-elem"`
+	Name       Node   `json:"name"`
+	Attributes []Node `json:"attributes"` //*XMLPatternAttribute
+	SelfClosed bool   `json:"selfClosed"`
+}
+
+func (attr XMLPatternOpeningElement) GetName() string {
+	return attr.Name.(*IdentifierLiteral).Name
+}
+
+type XMLPatternClosingElement struct {
+	NodeBase `json:"base:xml-pattern-closing-elem"`
+	Name     Node `json:"name"`
+}
+
+type XMLPatternAttribute struct {
+	NodeBase `json:"base:xml-pattern-attr"`
+	Name     Node `json:"name"`
+	Value    Node `json:"value,omitempty"` //can be nil
+}
+
+func (attr XMLPatternAttribute) GetName() string {
+	return attr.Name.(*IdentifierLiteral).Name
+}
+
+func (attr XMLPatternAttribute) ValueIfStringLiteral() string {
+	switch val := attr.Value.(type) {
+	case *DoubleQuotedStringLiteral:
+		return val.Value
+	case *MultilineStringLiteral:
+		return val.Value
+	default:
+		return ""
+	}
+}
+
+type XMLPatternInterpolation struct {
+	NodeBase `json:"base:xml-pattern-interpolation"`
+	Expr     Node `json:"expr"`
+}
+
 type MetadataAnnotations struct {
 	NodeBase
 	Expressions []Node

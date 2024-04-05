@@ -29458,6 +29458,7 @@ func testParse(
 	})
 
 	t.Run("XML expression", func(t *testing.T) {
+		//Future parsing modifications should be reflected and tested for XML pattern expressions.
 
 		t.Run("no children: 0 characters", func(t *testing.T) {
 			n := mustparseChunk(t, "h<div></div>")
@@ -33499,6 +33500,2975 @@ func testParse(
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{13, 16}, nil, false},
 									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+	})
+
+	t.Run("XML pattern expression", func(t *testing.T) {
+
+		t.Run("no children: 0 characters", func(t *testing.T) {
+			n := mustparseChunk(t, "%<div></div>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{NodeSpan{1, 12}, nil, false},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &XMLPatternClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{6, 12}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{8, 11}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("unprefixed", func(t *testing.T) {
+			n := mustparseChunk(t, "pattern p = <div></div>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
+				Statements: []Node{
+					&PatternDefinition{
+						NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
+						Left: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+							Name:       "p",
+							Unprefixed: true,
+						},
+						Right: &XMLPatternExpression{
+							NodeBase: NodeBase{NodeSpan{12, 23}, nil, false},
+							Element: &XMLPatternElement{
+								NodeBase: NodeBase{NodeSpan{12, 23}, nil, false},
+								Opening: &XMLPatternOpeningElement{
+									NodeBase: NodeBase{Span: NodeSpan{12, 17}},
+									Name: &PatternIdentifierLiteral{
+										NodeBase:   NodeBase{NodeSpan{13, 16}, nil, false},
+										Name:       "div",
+										Unprefixed: true,
+									},
+								},
+								Children: []Node{
+									&XMLText{
+										NodeBase: NodeBase{NodeSpan{17, 17}, nil, false},
+										Raw:      "",
+										Value:    "",
+									},
+								},
+								Closing: &XMLPatternClosingElement{
+									NodeBase: NodeBase{Span: NodeSpan{17, 23}},
+									Name: &PatternIdentifierLiteral{
+										NodeBase:   NodeBase{NodeSpan{19, 22}, nil, false},
+										Name:       "div",
+										Unprefixed: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("parenthesized, implicit namespace", func(t *testing.T) {
+			n := mustparseChunk(t, "pattern p = (<div></div>)")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 25}, nil, false},
+				Statements: []Node{
+					&PatternDefinition{
+						NodeBase: NodeBase{NodeSpan{0, 25}, nil, false},
+						Left: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+							Name:       "p",
+							Unprefixed: true,
+						},
+						Right: &XMLPatternExpression{
+							NodeBase: NodeBase{NodeSpan{13, 24}, nil, true},
+							Element: &XMLPatternElement{
+								NodeBase: NodeBase{NodeSpan{13, 24}, nil, false},
+								Opening: &XMLPatternOpeningElement{
+									NodeBase: NodeBase{Span: NodeSpan{13, 18}},
+									Name: &PatternIdentifierLiteral{
+										NodeBase:   NodeBase{NodeSpan{14, 17}, nil, false},
+										Name:       "div",
+										Unprefixed: true,
+									},
+								},
+								Children: []Node{
+									&XMLText{
+										NodeBase: NodeBase{NodeSpan{18, 18}, nil, false},
+										Raw:      "",
+										Value:    "",
+									},
+								},
+								Closing: &XMLPatternClosingElement{
+									NodeBase: NodeBase{Span: NodeSpan{18, 24}},
+									Name: &PatternIdentifierLiteral{
+										NodeBase:   NodeBase{NodeSpan{20, 23}, nil, false},
+										Name:       "div",
+										Unprefixed: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("unterminated opening tag", func(t *testing.T) {
+			n, err := parseChunk(t, "%<div", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 5}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 5}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{NodeSpan{1, 5}, nil, false},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{
+									NodeSpan{1, 5},
+									&ParsingError{UnspecifiedParsingError, UNTERMINATED_OPENING_XML_TAG_MISSING_CLOSING},
+									false,
+								},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("unterminated opening tag of child element", func(t *testing.T) {
+			n, err := parseChunk(t, "%<div><span</div>", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{NodeSpan{1, 17}, nil, false},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{
+										Span: NodeSpan{6, 6},
+									},
+								},
+								&XMLPatternElement{
+									NodeBase: NodeBase{NodeSpan{6, 11}, nil, false},
+									Opening: &XMLPatternOpeningElement{
+										NodeBase: NodeBase{
+											NodeSpan{6, 11},
+											&ParsingError{UnspecifiedParsingError, UNTERMINATED_OPENING_XML_TAG_MISSING_CLOSING},
+											false,
+										},
+										Name: &PatternIdentifierLiteral{
+											NodeBase:   NodeBase{NodeSpan{7, 11}, nil, false},
+											Name:       "span",
+											Unprefixed: true,
+										},
+									},
+								},
+								&XMLText{
+									NodeBase: NodeBase{
+										Span: NodeSpan{11, 11},
+									},
+								},
+							},
+							Closing: &XMLPatternClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{11, 17}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{13, 16}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("unterminated opening tag of nested child element", func(t *testing.T) {
+			n, err := parseChunk(t, "%<div><div><span</div></div>", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 28}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 28}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{NodeSpan{1, 28}, nil, false},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{
+										Span: NodeSpan{6, 6},
+									},
+								},
+								&XMLPatternElement{
+									NodeBase: NodeBase{NodeSpan{6, 22}, nil, false},
+									Opening: &XMLPatternOpeningElement{
+										NodeBase: NodeBase{Span: NodeSpan{6, 11}},
+										Name: &PatternIdentifierLiteral{
+											NodeBase:   NodeBase{NodeSpan{7, 10}, nil, false},
+											Name:       "div",
+											Unprefixed: true,
+										},
+									},
+									Children: []Node{
+										&XMLText{
+											NodeBase: NodeBase{
+												Span: NodeSpan{11, 11},
+											},
+										},
+										&XMLPatternElement{
+											NodeBase: NodeBase{NodeSpan{11, 16}, nil, false},
+											Opening: &XMLPatternOpeningElement{
+												NodeBase: NodeBase{
+													NodeSpan{11, 16},
+													&ParsingError{UnspecifiedParsingError, UNTERMINATED_OPENING_XML_TAG_MISSING_CLOSING},
+													false,
+												},
+												Name: &PatternIdentifierLiteral{
+													NodeBase:   NodeBase{NodeSpan{12, 16}, nil, false},
+													Name:       "span",
+													Unprefixed: true,
+												},
+											},
+										},
+										&XMLText{
+											NodeBase: NodeBase{
+												Span: NodeSpan{16, 16},
+											},
+										},
+									},
+									Closing: &XMLPatternClosingElement{
+										NodeBase: NodeBase{Span: NodeSpan{16, 22}},
+										Name: &PatternIdentifierLiteral{
+											NodeBase:   NodeBase{NodeSpan{18, 21}, nil, false},
+											Name:       "div",
+											Unprefixed: true,
+										},
+									},
+								},
+								&XMLText{
+									NodeBase: NodeBase{
+										Span: NodeSpan{22, 22},
+									},
+								},
+							},
+							Closing: &XMLPatternClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{22, 28}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{24, 27}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("closing bracket of opening tag is on the next line", func(t *testing.T) {
+			n := mustparseChunk(t, "%<div\n></div>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{NodeSpan{1, 13}, nil, false},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 7}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{7, 7}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &XMLPatternClosingElement{
+								NodeBase: NodeBase{
+									NodeSpan{7, 13},
+									nil,
+									false,
+									/*[]Token{
+										{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{12, 14}},
+										{Type: GREATER_THAN, Span: NodeSpan{17, 18}},
+									},*/
+								},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{9, 12}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("attribute with value", func(t *testing.T) {
+			n := mustparseChunk(t, `%<div a="b"></div>`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 18}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 18}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{NodeSpan{1, 18}, nil, false},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 12}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+								Attributes: []Node{
+									&XMLAttribute{
+										NodeBase: NodeBase{Span: NodeSpan{6, 11}},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
+											Name:     "a",
+										},
+										Value: &DoubleQuotedStringLiteral{
+											NodeBase: NodeBase{NodeSpan{8, 11}, nil, false},
+											Raw:      `"b"`,
+											Value:    "b",
+										},
+									},
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{12, 12}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &XMLPatternClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{12, 18}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{14, 17}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("attribute with value on next line", func(t *testing.T) {
+			n := mustparseChunk(t, "%<div\na=\"b\"></div>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 18}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 18}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{NodeSpan{1, 18}, nil, false},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{
+									Span: NodeSpan{1, 12},
+								},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+								Attributes: []Node{
+									&XMLAttribute{
+										NodeBase: NodeBase{Span: NodeSpan{6, 11}},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
+											Name:     "a",
+										},
+										Value: &DoubleQuotedStringLiteral{
+											NodeBase: NodeBase{NodeSpan{8, 11}, nil, false},
+											Raw:      `"b"`,
+											Value:    "b",
+										},
+									},
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{12, 12}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &XMLPatternClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{12, 18}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{14, 17}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("attribute with value and unquoted region as name", func(t *testing.T) {
+			n := mustparseChunk(t, `@(%<div <{a}>="b"></div>)`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 25}, nil, false},
+				Statements: []Node{
+					&QuotedExpression{
+						NodeBase: NodeBase{NodeSpan{0, 25}, nil, false},
+						Expression: &XMLPatternExpression{
+							NodeBase: NodeBase{NodeSpan{2, 24}, nil, true},
+							Element: &XMLPatternElement{
+								NodeBase: NodeBase{NodeSpan{3, 24}, nil, false},
+								Opening: &XMLPatternOpeningElement{
+									NodeBase: NodeBase{Span: NodeSpan{3, 18}},
+									Name: &PatternIdentifierLiteral{
+										NodeBase:   NodeBase{NodeSpan{4, 7}, nil, false},
+										Name:       "div",
+										Unprefixed: true,
+									},
+									Attributes: []Node{
+										&XMLAttribute{
+											NodeBase: NodeBase{Span: NodeSpan{8, 17}},
+											Name: &UnquotedRegion{
+												NodeBase: NodeBase{Span: NodeSpan{8, 13}},
+												Expression: &IdentifierLiteral{
+													NodeBase: NodeBase{NodeSpan{10, 11}, nil, false},
+													Name:     "a",
+												},
+											},
+											Value: &DoubleQuotedStringLiteral{
+												NodeBase: NodeBase{NodeSpan{14, 17}, nil, false},
+												Raw:      `"b"`,
+												Value:    "b",
+											},
+										},
+									},
+								},
+								Children: []Node{
+									&XMLText{
+										NodeBase: NodeBase{NodeSpan{18, 18}, nil, false},
+										Raw:      "",
+										Value:    "",
+									},
+								},
+								Closing: &XMLPatternClosingElement{
+									NodeBase: NodeBase{Span: NodeSpan{18, 24}},
+									Name: &PatternIdentifierLiteral{
+										NodeBase:   NodeBase{NodeSpan{20, 23}, nil, false},
+										Name:       "div",
+										Unprefixed: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("attribute with unquoted region as value", func(t *testing.T) {
+			n := mustparseChunk(t, `@(%<div a=<{b}>></div>)`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
+				Statements: []Node{
+					&QuotedExpression{
+						NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
+						Expression: &XMLPatternExpression{
+							NodeBase: NodeBase{NodeSpan{2, 22}, nil, true},
+							Element: &XMLPatternElement{
+								NodeBase: NodeBase{NodeSpan{3, 22}, nil, false},
+								Opening: &XMLPatternOpeningElement{
+									NodeBase: NodeBase{Span: NodeSpan{3, 16}},
+									Name: &PatternIdentifierLiteral{
+										NodeBase:   NodeBase{NodeSpan{4, 7}, nil, false},
+										Name:       "div",
+										Unprefixed: true,
+									},
+									Attributes: []Node{
+										&XMLAttribute{
+											NodeBase: NodeBase{Span: NodeSpan{8, 15}},
+											Name: &IdentifierLiteral{
+												NodeBase: NodeBase{NodeSpan{8, 9}, nil, false},
+												Name:     "a",
+											},
+											Value: &UnquotedRegion{
+												NodeBase: NodeBase{Span: NodeSpan{10, 15}},
+												Expression: &IdentifierLiteral{
+													NodeBase: NodeBase{NodeSpan{12, 13}, nil, false},
+													Name:     "b",
+												},
+											},
+										},
+									},
+								},
+								Children: []Node{
+									&XMLText{
+										NodeBase: NodeBase{NodeSpan{16, 16}, nil, false},
+										Raw:      "",
+										Value:    "",
+									},
+								},
+								Closing: &XMLPatternClosingElement{
+									NodeBase: NodeBase{Span: NodeSpan{16, 22}},
+									Name: &PatternIdentifierLiteral{
+										NodeBase:   NodeBase{NodeSpan{18, 21}, nil, false},
+										Name:       "div",
+										Unprefixed: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("attribute without value on next line", func(t *testing.T) {
+			n := mustparseChunk(t, "%<div\na></div>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{NodeSpan{1, 14}, nil, false},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 8}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+								Attributes: []Node{
+									&XMLAttribute{
+										NodeBase: NodeBase{Span: NodeSpan{6, 7}},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
+											Name:     "a",
+										},
+									},
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{8, 8}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &XMLPatternClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{8, 14}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{10, 13}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("self-closing: attribute with value", func(t *testing.T) {
+			n := mustparseChunk(t, `%<div a="b"/>`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{NodeSpan{1, 13}, nil, false},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 13}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+								Attributes: []Node{
+									&XMLAttribute{
+										NodeBase: NodeBase{
+											NodeSpan{6, 11},
+											nil,
+											false,
+										},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
+											Name:     "a",
+										},
+										Value: &DoubleQuotedStringLiteral{
+											NodeBase: NodeBase{NodeSpan{8, 11}, nil, false},
+											Raw:      `"b"`,
+											Value:    "b",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("attribute with value, followed by space", func(t *testing.T) {
+			n := mustparseChunk(t, `%<div a="b" ></div>`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{NodeSpan{1, 19}, nil, false},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 13}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+								Attributes: []Node{
+									&XMLAttribute{
+										NodeBase: NodeBase{Span: NodeSpan{6, 11}},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
+											Name:     "a",
+										},
+										Value: &DoubleQuotedStringLiteral{
+											NodeBase: NodeBase{NodeSpan{8, 11}, nil, false},
+											Raw:      `"b"`,
+											Value:    "b",
+										},
+									},
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{13, 13}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &XMLPatternClosingElement{
+								NodeBase: NodeBase{
+									NodeSpan{13, 19},
+									nil,
+									false,
+									/*[]Token{
+										{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{13, 15}},
+										{Type: GREATER_THAN, Span: NodeSpan{18, 19}},
+									},*/
+								},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{15, 18}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("attribute with invalid name with value", func(t *testing.T) {
+			n, err := parseChunk(t, `%<div "a"="b"></div>`, "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{NodeSpan{1, 20}, nil, false},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{
+									NodeSpan{1, 14},
+									nil,
+									false,
+									/*[]Token{
+										{Type: LESS_THAN, Span: NodeSpan{1, 2}},
+										{Type: GREATER_THAN, Span: NodeSpan{13, 14}},
+									},*/
+								},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+								Attributes: []Node{
+									&XMLAttribute{
+										NodeBase: NodeBase{
+											NodeSpan{6, 13},
+											nil,
+											false,
+										},
+										Name: &DoubleQuotedStringLiteral{
+											NodeBase: NodeBase{
+												NodeSpan{6, 9},
+												&ParsingError{UnspecifiedParsingError, XML_ATTRIBUTE_NAME_SHOULD_BE_IDENT},
+												false,
+											},
+											Raw:   `"a"`,
+											Value: "a",
+										},
+										Value: &DoubleQuotedStringLiteral{
+											NodeBase: NodeBase{NodeSpan{10, 13}, nil, false},
+											Raw:      `"b"`,
+											Value:    "b",
+										},
+									},
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{14, 14}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &XMLPatternClosingElement{
+								NodeBase: NodeBase{
+									NodeSpan{14, 20},
+									nil,
+									false,
+									/*[]Token{
+										{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{14, 16}},
+										{Type: GREATER_THAN, Span: NodeSpan{19, 20}},
+									},*/
+								},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{16, 19}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("attribute with missing value after '='", func(t *testing.T) {
+			n, err := parseChunk(t, `%<div a=></div>`, "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{NodeSpan{1, 15}, nil, false},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 9}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+								Attributes: []Node{
+									&XMLAttribute{
+										NodeBase: NodeBase{
+											NodeSpan{6, 8},
+											nil,
+											false,
+										},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
+											Name:     "a",
+										},
+										Value: &MissingExpression{
+											NodeBase: NodeBase{
+												NodeSpan{8, 9},
+												&ParsingError{MissingExpr, fmtExprExpectedHere([]rune("%<div a=></div>"), 8, true)},
+												false,
+											},
+										},
+									},
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{9, 9}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &XMLPatternClosingElement{
+								NodeBase: NodeBase{
+									NodeSpan{9, 15},
+									nil,
+									false,
+									/*[]Token{
+										{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{9, 11}},
+										{Type: GREATER_THAN, Span: NodeSpan{14, 15}},
+									},*/
+								},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{11, 14}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("attribute with missing value after '='", func(t *testing.T) {
+			n, err := parseChunk(t, `%<div a=></div>`, "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{NodeSpan{1, 15}, nil, false},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 9}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+								Attributes: []Node{
+									&XMLAttribute{
+										NodeBase: NodeBase{Span: NodeSpan{6, 8}},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
+											Name:     "a",
+										},
+										Value: &MissingExpression{
+											NodeBase: NodeBase{
+												NodeSpan{8, 9},
+												&ParsingError{MissingExpr, fmtExprExpectedHere([]rune("%<div a=></div>"), 8, true)},
+												false,
+											},
+										},
+									},
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{9, 9}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &XMLPatternClosingElement{
+								NodeBase: NodeBase{
+									NodeSpan{9, 15},
+									nil,
+									false,
+									/*[]Token{
+										{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{9, 11}},
+										{Type: GREATER_THAN, Span: NodeSpan{14, 15}},
+									},*/
+								},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{11, 14}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("attribute with only name", func(t *testing.T) {
+			n := mustparseChunk(t, `%<div a></div>`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{NodeSpan{1, 14}, nil, false},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 8}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+								Attributes: []Node{
+									&XMLAttribute{
+										NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
+											Name:     "a",
+										},
+									},
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{8, 8}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &XMLPatternClosingElement{
+								NodeBase: NodeBase{
+									NodeSpan{8, 14},
+									nil,
+									false,
+									/*[]Token{
+										{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{8, 10}},
+										{Type: GREATER_THAN, Span: NodeSpan{13, 14}},
+									},*/
+								},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{10, 13}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("attribute with only name: unterminated opening tag", func(t *testing.T) {
+			n, err := parseChunk(t, `%<div a`, "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 7}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 7}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{NodeSpan{1, 7}, nil, false},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{
+									NodeSpan{1, 7},
+									&ParsingError{UnspecifiedParsingError, UNTERMINATED_OPENING_XML_TAG_MISSING_CLOSING},
+									false,
+								},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+								Attributes: []Node{
+									&XMLAttribute{
+										NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
+											Name:     "a",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("two attributes with value", func(t *testing.T) {
+			n := mustparseChunk(t, `%<div a="b" c="d"></div>`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 24}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 24}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{NodeSpan{1, 24}, nil, false},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 18}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+								Attributes: []Node{
+									&XMLAttribute{
+										NodeBase: NodeBase{
+											NodeSpan{6, 11},
+											nil,
+											false,
+										},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
+											Name:     "a",
+										},
+										Value: &DoubleQuotedStringLiteral{
+											NodeBase: NodeBase{NodeSpan{8, 11}, nil, false},
+											Raw:      `"b"`,
+											Value:    "b",
+										},
+									},
+									&XMLAttribute{
+										NodeBase: NodeBase{
+											NodeSpan{12, 17},
+											nil,
+											false,
+										},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{12, 13}, nil, false},
+											Name:     "c",
+										},
+										Value: &DoubleQuotedStringLiteral{
+											NodeBase: NodeBase{NodeSpan{14, 17}, nil, false},
+											Raw:      `"d"`,
+											Value:    "d",
+										},
+									},
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{18, 18}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &XMLPatternClosingElement{
+								NodeBase: NodeBase{
+									NodeSpan{18, 24},
+									nil,
+									false,
+									/*[]Token{
+										{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{18, 20}},
+										{Type: GREATER_THAN, Span: NodeSpan{23, 24}},
+									},*/
+								},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{20, 23}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("hyperscript attribute shorthands are not supported", func(t *testing.T) {
+			//TODO
+		})
+
+		t.Run("self closing", func(t *testing.T) {
+			n := mustparseChunk(t, "%<div/>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 7}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 7}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{NodeSpan{1, 7}, nil, false},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{
+									NodeSpan{1, 7},
+									nil,
+									false,
+									/*[]Token{
+										{Type: LESS_THAN, Span: NodeSpan{1, 2}},
+										{Type: SELF_CLOSING_TAG_TERMINATOR, Span: NodeSpan{5, 7}},
+									},*/
+								},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("unterminated self closing", func(t *testing.T) {
+			n, err := parseChunk(t, "%<div/", "")
+			assert.Error(t, err)
+
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 6}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 6}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{NodeSpan{1, 6}, nil, false},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{
+									NodeSpan{1, 6},
+									&ParsingError{UnspecifiedParsingError, UNTERMINATED_SELF_CLOSING_XML_TAG_MISSING_CLOSING},
+									false,
+									/*[]Token{
+										{Type: LESS_THAN, Span: NodeSpan{1, 2}},
+										{Type: SLASH, Span: NodeSpan{5, 6}},
+									},*/
+								},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("single space", func(t *testing.T) {
+			n := mustparseChunk(t, "%<div> </div>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{NodeSpan{1, 13}, nil, false},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{
+									NodeSpan{1, 6},
+									nil,
+									false,
+									/*[]Token{
+										{Type: LESS_THAN, Span: NodeSpan{1, 2}},
+										{Type: GREATER_THAN, Span: NodeSpan{5, 6}},
+									},*/
+								},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
+									Raw:      " ",
+									Value:    " ",
+								},
+							},
+							Closing: &XMLPatternClosingElement{
+								NodeBase: NodeBase{
+									NodeSpan{7, 13},
+									nil,
+									false,
+									/*[]Token{
+										{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{7, 9}},
+										{Type: GREATER_THAN, Span: NodeSpan{12, 13}},
+									},*/
+								},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{9, 12}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("linefeed", func(t *testing.T) {
+			n := mustparseChunk(t, "%<div>\n</div>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{NodeSpan{1, 13}, nil, false},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
+									Raw:      "\n",
+									Value:    "\n",
+								},
+							},
+							Closing: &XMLPatternClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{7, 13}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{9, 12}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("leading interpolation", func(t *testing.T) {
+			n := mustparseChunk(t, "%<div>{1}2</div>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{Span: NodeSpan{1, 16}},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+								&XMLPatternInterpolation{
+									NodeBase: NodeBase{NodeSpan{7, 8}, nil, false},
+									Expr: &IntLiteral{
+										NodeBase: NodeBase{NodeSpan{7, 8}, nil, false},
+										Raw:      "1",
+										Value:    1,
+									},
+								},
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{9, 10}, nil, false},
+									Raw:      "2",
+									Value:    "2",
+								},
+							},
+							Closing: &XMLPatternClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{10, 16}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{12, 15}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("leading unquoted region as child", func(t *testing.T) {
+			n := mustparseChunk(t, "@(%<div><{1}>2</div>)")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
+				Statements: []Node{
+					&QuotedExpression{
+						NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
+						Expression: &XMLPatternExpression{
+							NodeBase: NodeBase{NodeSpan{2, 20}, nil, true},
+							Element: &XMLPatternElement{
+								NodeBase: NodeBase{Span: NodeSpan{3, 20}},
+								Opening: &XMLPatternOpeningElement{
+									NodeBase: NodeBase{Span: NodeSpan{3, 8}},
+									Name: &PatternIdentifierLiteral{
+										NodeBase:   NodeBase{NodeSpan{4, 7}, nil, false},
+										Name:       "div",
+										Unprefixed: true,
+									},
+								},
+								Children: []Node{
+									&XMLText{
+										NodeBase: NodeBase{NodeSpan{8, 8}, nil, false},
+										Raw:      "",
+										Value:    "",
+									},
+									&UnquotedRegion{
+										NodeBase: NodeBase{NodeSpan{8, 13}, nil, false},
+										Expression: &IntLiteral{
+											NodeBase: NodeBase{NodeSpan{10, 11}, nil, false},
+											Raw:      "1",
+											Value:    1,
+										},
+									},
+									&XMLText{
+										NodeBase: NodeBase{NodeSpan{13, 14}, nil, false},
+										Raw:      "2",
+										Value:    "2",
+									},
+								},
+								Closing: &XMLPatternClosingElement{
+									NodeBase: NodeBase{Span: NodeSpan{14, 20}},
+									Name: &PatternIdentifierLiteral{
+										NodeBase:   NodeBase{NodeSpan{16, 19}, nil, false},
+										Name:       "div",
+										Unprefixed: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("trailing interpolation", func(t *testing.T) {
+			n := mustparseChunk(t, "%<div>1{2}</div>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{Span: NodeSpan{1, 16}},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
+									Raw:      "1",
+									Value:    "1",
+								},
+								&XMLPatternInterpolation{
+									NodeBase: NodeBase{NodeSpan{8, 9}, nil, false},
+									Expr: &IntLiteral{
+										NodeBase: NodeBase{NodeSpan{8, 9}, nil, false},
+										Raw:      "2",
+										Value:    2,
+									},
+								},
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{10, 10}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &XMLPatternClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{10, 16}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{12, 15}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("trailing unquoted region as child", func(t *testing.T) {
+			n := mustparseChunk(t, "@(%<div>1<{2}></div>)")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
+				Statements: []Node{
+					&QuotedExpression{
+						NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
+						Expression: &XMLPatternExpression{
+							NodeBase: NodeBase{NodeSpan{2, 20}, nil, true},
+							Element: &XMLPatternElement{
+								NodeBase: NodeBase{Span: NodeSpan{3, 20}},
+								Opening: &XMLPatternOpeningElement{
+									NodeBase: NodeBase{Span: NodeSpan{3, 8}},
+									Name: &PatternIdentifierLiteral{
+										NodeBase:   NodeBase{NodeSpan{4, 7}, nil, false},
+										Name:       "div",
+										Unprefixed: true,
+									},
+								},
+								Children: []Node{
+									&XMLText{
+										NodeBase: NodeBase{NodeSpan{8, 9}, nil, false},
+										Raw:      "1",
+										Value:    "1",
+									},
+									&UnquotedRegion{
+										NodeBase: NodeBase{NodeSpan{9, 14}, nil, false},
+										Expression: &IntLiteral{
+											NodeBase: NodeBase{NodeSpan{11, 12}, nil, false},
+											Raw:      "2",
+											Value:    2,
+										},
+									},
+									&XMLText{
+										NodeBase: NodeBase{NodeSpan{14, 14}, nil, false},
+										Raw:      "",
+										Value:    "",
+									},
+								},
+								Closing: &XMLPatternClosingElement{
+									NodeBase: NodeBase{Span: NodeSpan{14, 20}},
+									Name: &PatternIdentifierLiteral{
+										NodeBase:   NodeBase{NodeSpan{16, 19}, nil, false},
+										Name:       "div",
+										Unprefixed: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("single curly bracket interpolations should not be parsed in script tags", func(t *testing.T) {
+			n := mustparseChunk(t, "%<script>{1}2</script>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 22}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 22}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{NodeSpan{1, 22}, nil, false},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 9}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 8}, nil, false},
+									Name:       "script",
+									Unprefixed: true,
+								},
+							},
+							RawElementContent:       "{1}2",
+							RawElementContentStart:  9,
+							RawElementContentEnd:    13,
+							EstimatedRawElementType: JsScript,
+							Closing: &XMLPatternClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{13, 22}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{15, 21}, nil, false},
+									Name:       "script",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("content in script tags should be parsed as raw text", func(t *testing.T) {
+			n := mustparseChunk(t, "%<script><a></script>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{NodeSpan{1, 21}, nil, false},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 9}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 8}, nil, false},
+									Name:       "script",
+									Unprefixed: true,
+								},
+							},
+							RawElementContent:       "<a>",
+							RawElementContentStart:  9,
+							RawElementContentEnd:    12,
+							EstimatedRawElementType: JsScript,
+							Closing: &XMLPatternClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{12, 21}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{14, 20}, nil, false},
+									Name:       "script",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("hyperscript script: h marker", func(t *testing.T) {
+			n := mustparseChunk(t, "%<script h><a></script>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{NodeSpan{1, 23}, nil, false},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 11}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 8}, nil, false},
+									Name:       "script",
+									Unprefixed: true,
+								},
+								Attributes: []Node{
+									&XMLAttribute{
+										NodeBase: NodeBase{NodeSpan{9, 10}, nil, false},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{9, 10}, nil, false},
+											Name:     "h",
+										},
+									},
+								},
+							},
+							RawElementContent:       "<a>",
+							RawElementContentStart:  11,
+							RawElementContentEnd:    14,
+							EstimatedRawElementType: HyperscriptScript,
+							Closing: &XMLPatternClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{14, 23}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{16, 22}, nil, false},
+									Name:       "script",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("hyperscript script: type=text/hyperscript", func(t *testing.T) {
+			n := mustparseChunk(t, "%<script type=\"text/hyperscript\"><a></script>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 45}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 45}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{NodeSpan{1, 45}, nil, false},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 33}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 8}, nil, false},
+									Name:       "script",
+									Unprefixed: true,
+								},
+								Attributes: []Node{
+									&XMLAttribute{
+										NodeBase: NodeBase{NodeSpan{9, 32}, nil, false},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{9, 13}, nil, false},
+											Name:     "type",
+										},
+										Value: &DoubleQuotedStringLiteral{
+											NodeBase: NodeBase{NodeSpan{14, 32}, nil, false},
+											Value:    "text/hyperscript",
+											Raw:      `"text/hyperscript"`,
+										},
+									},
+								},
+							},
+							RawElementContent:       "<a>",
+							RawElementContentStart:  33,
+							RawElementContentEnd:    36,
+							EstimatedRawElementType: HyperscriptScript,
+							Closing: &XMLPatternClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{36, 45}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{38, 44}, nil, false},
+									Name:       "script",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("hyperscript script: type=text/hyperscript followed by an attribute", func(t *testing.T) {
+			n := mustparseChunk(t, "%<script type=\"text/hyperscript\" n><a></script>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 47}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 47}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{NodeSpan{1, 47}, nil, false},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 35}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 8}, nil, false},
+									Name:       "script",
+									Unprefixed: true,
+								},
+								Attributes: []Node{
+									&XMLAttribute{
+										NodeBase: NodeBase{NodeSpan{9, 32}, nil, false},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{9, 13}, nil, false},
+											Name:     "type",
+										},
+										Value: &DoubleQuotedStringLiteral{
+											NodeBase: NodeBase{NodeSpan{14, 32}, nil, false},
+											Value:    "text/hyperscript",
+											Raw:      `"text/hyperscript"`,
+										},
+									},
+									&XMLAttribute{
+										NodeBase: NodeBase{NodeSpan{33, 34}, nil, false},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{33, 34}, nil, false},
+											Name:     "n",
+										},
+									},
+								},
+							},
+							RawElementContent:       "<a>",
+							RawElementContentStart:  35,
+							RawElementContentEnd:    38,
+							EstimatedRawElementType: HyperscriptScript,
+							Closing: &XMLPatternClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{38, 47}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{40, 46}, nil, false},
+									Name:       "script",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("single curly bracket interpolations should not be parsed in style tags", func(t *testing.T) {
+			n := mustparseChunk(t, "%<style>{1}2</style>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{NodeSpan{1, 20}, nil, false},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 8}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 7}, nil, false},
+									Name:       "style",
+									Unprefixed: true,
+								},
+							},
+							RawElementContent:       "{1}2",
+							RawElementContentStart:  8,
+							RawElementContentEnd:    12,
+							EstimatedRawElementType: CssStyleElem,
+							Closing: &XMLPatternClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{12, 20}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{14, 19}, nil, false},
+									Name:       "style",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("content in style tags should be parsed as raw text", func(t *testing.T) {
+			n := mustparseChunk(t, "%<style><a></style>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{NodeSpan{1, 19}, nil, false},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 8}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 7}, nil, false},
+									Name:       "style",
+									Unprefixed: true,
+								},
+							},
+							RawElementContent:       "<a>",
+							RawElementContentStart:  8,
+							RawElementContentEnd:    11,
+							EstimatedRawElementType: CssStyleElem,
+							Closing: &XMLPatternClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{11, 19}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{13, 18}, nil, false},
+									Name:       "style",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("XML expression within interpolation", func(t *testing.T) {
+			n := mustparseChunk(t, "%<div>{%<div></div>}2</div>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 27}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 27}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{Span: NodeSpan{1, 27}},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+								&XMLPatternInterpolation{
+									NodeBase: NodeBase{NodeSpan{7, 19}, nil, false},
+									Expr: &XMLPatternExpression{
+										NodeBase: NodeBase{NodeSpan{7, 19}, nil, false},
+										Element: &XMLPatternElement{
+											NodeBase: NodeBase{NodeSpan{8, 19}, nil, false},
+											Opening: &XMLPatternOpeningElement{
+												NodeBase: NodeBase{Span: NodeSpan{8, 13}},
+												Name: &PatternIdentifierLiteral{
+													NodeBase:   NodeBase{NodeSpan{9, 12}, nil, false},
+													Name:       "div",
+													Unprefixed: true,
+												},
+											},
+											Children: []Node{
+												&XMLText{
+													NodeBase: NodeBase{NodeSpan{13, 13}, nil, false},
+													Raw:      "",
+													Value:    "",
+												},
+											},
+											Closing: &XMLPatternClosingElement{
+												NodeBase: NodeBase{Span: NodeSpan{13, 19}},
+												Name: &PatternIdentifierLiteral{
+													NodeBase:   NodeBase{NodeSpan{15, 18}, nil, false},
+													Name:       "div",
+													Unprefixed: true,
+												},
+											},
+										},
+									},
+								},
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{20, 21}, nil, false},
+									Raw:      "2",
+									Value:    "2",
+								},
+							},
+							Closing: &XMLPatternClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{21, 27}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{23, 26}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("opening bracket within interpolation", func(t *testing.T) {
+			n := mustparseChunk(t, "%<div>{{}}2</div>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{Span: NodeSpan{1, 17}},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+								&XMLPatternInterpolation{
+									NodeBase: NodeBase{NodeSpan{7, 9}, nil, false},
+									Expr: &ObjectPatternLiteral{
+										NodeBase: NodeBase{NodeSpan{7, 9}, nil, false},
+									},
+								},
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{10, 11}, nil, false},
+									Raw:      "2",
+									Value:    "2",
+								},
+							},
+							Closing: &XMLPatternClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{11, 17}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{13, 16}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("empty interpolation", func(t *testing.T) {
+			n, err := parseChunk(t, "%<div>{}</div>", "")
+			assert.Error(t, err)
+
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{Span: NodeSpan{1, 14}},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+								&XMLPatternInterpolation{
+									NodeBase: NodeBase{
+										NodeSpan{7, 7},
+										&ParsingError{UnspecifiedParsingError, EMPTY_XML_INTERP},
+										false,
+									},
+								},
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{8, 8}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &XMLPatternClosingElement{
+								NodeBase: NodeBase{
+									Span: NodeSpan{8, 14},
+								},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{10, 13}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("empty interpolation: linefeed", func(t *testing.T) {
+			n, err := parseChunk(t, "%<div>{\n}</div>", "")
+			assert.Error(t, err)
+
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{Span: NodeSpan{1, 15}},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+								&XMLPatternInterpolation{
+									NodeBase: NodeBase{
+										NodeSpan{7, 8},
+										&ParsingError{UnspecifiedParsingError, EMPTY_XML_INTERP},
+										false,
+									},
+								},
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{9, 9}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &XMLPatternClosingElement{
+								NodeBase: NodeBase{
+									NodeSpan{9, 15},
+									nil,
+									false,
+									/*[]Token{
+										{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{9, 11}},
+										{Type: GREATER_THAN, Span: NodeSpan{14, 15}},
+									},*/
+								},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{11, 14}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("interpolation: literal preceded by a linefeed", func(t *testing.T) {
+			n := mustparseChunk(t, "%<div>{\n1}</div>")
+
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{Span: NodeSpan{1, 16}},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+								&XMLPatternInterpolation{
+									NodeBase: NodeBase{Span: NodeSpan{7, 9}},
+									Expr: &IntLiteral{
+										NodeBase: NodeBase{Span: NodeSpan{8, 9}},
+										Raw:      "1",
+										Value:    1,
+									},
+								},
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{10, 10}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &XMLPatternClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{10, 16}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{12, 15}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("interpolation: literal followed by a linefeed", func(t *testing.T) {
+			n := mustparseChunk(t, "%<div>{1\n}</div>")
+
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{Span: NodeSpan{1, 16}},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+								&XMLPatternInterpolation{
+									NodeBase: NodeBase{Span: NodeSpan{7, 9}},
+									Expr: &IntLiteral{
+										NodeBase: NodeBase{Span: NodeSpan{7, 8}},
+										Raw:      "1",
+										Value:    1,
+									},
+								},
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{10, 10}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &XMLPatternClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{10, 16}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{12, 15}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("interpolation: literal followed by a linefeed followed by a literal", func(t *testing.T) {
+			n, err := parseChunk(t, "%<div>{1\n2}</div>", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{Span: NodeSpan{1, 17}},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+								&XMLPatternInterpolation{
+									NodeBase: NodeBase{
+										NodeSpan{7, 10},
+										&ParsingError{UnspecifiedParsingError, XML_INTERP_SHOULD_CONTAIN_A_SINGLE_EXPR},
+										false,
+									},
+									Expr: &IntLiteral{
+										NodeBase: NodeBase{Span: NodeSpan{7, 8}},
+										Raw:      "1",
+										Value:    1,
+									},
+								},
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{11, 11}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &XMLPatternClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{11, 17}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{13, 16}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("error within interpolation", func(t *testing.T) {
+			n, err := parseChunk(t, "%<div>{?}2</div>", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{Span: NodeSpan{1, 16}},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+								&XMLPatternInterpolation{
+									NodeBase: NodeBase{NodeSpan{7, 8}, nil, false},
+									Expr: &MissingExpression{
+										NodeBase: NodeBase{
+											NodeSpan{7, 8},
+											&ParsingError{MissingExpr, fmtExprExpectedHere([]rune("...div>{?"), 8, true)},
+											false,
+										},
+									},
+								},
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{9, 10}, nil, false},
+									Raw:      "2",
+									Value:    "2",
+								},
+							},
+							Closing: &XMLPatternClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{10, 16}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{12, 15}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("leading child element", func(t *testing.T) {
+			n := mustparseChunk(t, "%<div><span>1</span>2</div>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 27}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 27}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{NodeSpan{1, 27}, nil, false},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+								&XMLPatternElement{
+									NodeBase: NodeBase{NodeSpan{6, 20}, nil, false},
+									Opening: &XMLPatternOpeningElement{
+										NodeBase: NodeBase{Span: NodeSpan{6, 12}},
+										Name: &PatternIdentifierLiteral{
+											NodeBase:   NodeBase{NodeSpan{7, 11}, nil, false},
+											Name:       "span",
+											Unprefixed: true,
+										},
+									},
+									Children: []Node{
+										&XMLText{
+											NodeBase: NodeBase{NodeSpan{12, 13}, nil, false},
+											Raw:      "1",
+											Value:    "1",
+										},
+									},
+									Closing: &XMLPatternClosingElement{
+										NodeBase: NodeBase{Span: NodeSpan{13, 20}},
+										Name: &PatternIdentifierLiteral{
+											NodeBase:   NodeBase{NodeSpan{15, 19}, nil, false},
+											Name:       "span",
+											Unprefixed: true,
+										},
+									},
+								},
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{20, 21}, nil, false},
+									Raw:      "2",
+									Value:    "2",
+								},
+							},
+							Closing: &XMLPatternClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{21, 27}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{23, 26}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("linefeed followed by child element", func(t *testing.T) {
+			n := mustparseChunk(t, "%<div>\n<span>1</span>2</div>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 28}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 28}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{NodeSpan{1, 28}, nil, false},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
+									Raw:      "\n",
+									Value:    "\n",
+								},
+								&XMLPatternElement{
+									NodeBase: NodeBase{NodeSpan{7, 21}, nil, false},
+									Opening: &XMLPatternOpeningElement{
+										NodeBase: NodeBase{Span: NodeSpan{7, 13}},
+										Name: &PatternIdentifierLiteral{
+											NodeBase:   NodeBase{NodeSpan{8, 12}, nil, false},
+											Name:       "span",
+											Unprefixed: true,
+										},
+									},
+									Children: []Node{
+										&XMLText{
+											NodeBase: NodeBase{NodeSpan{13, 14}, nil, false},
+											Raw:      "1",
+											Value:    "1",
+										},
+									},
+									Closing: &XMLPatternClosingElement{
+										NodeBase: NodeBase{Span: NodeSpan{14, 21}},
+										Name: &PatternIdentifierLiteral{
+											NodeBase:   NodeBase{NodeSpan{16, 20}, nil, false},
+											Name:       "span",
+											Unprefixed: true,
+										},
+									},
+								},
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{21, 22}, nil, false},
+									Raw:      "2",
+									Value:    "2",
+								},
+							},
+							Closing: &XMLPatternClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{22, 28}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{24, 27}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("parenthesized with unexpected closing tag followed by the closing tag of the outer element", func(t *testing.T) {
+			n, err := parseChunk(t, "pattern p = (<div><ul></ol></div>)", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 34}, nil, false},
+				Statements: []Node{
+					&PatternDefinition{
+						NodeBase: NodeBase{NodeSpan{0, 34}, nil, false},
+						Left: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+							Name:       "p",
+							Unprefixed: true,
+						},
+						Right: &XMLPatternExpression{
+							NodeBase: NodeBase{NodeSpan{13, 33}, nil, true},
+							Element: &XMLPatternElement{
+								NodeBase: NodeBase{NodeSpan{13, 33}, nil, false},
+								Opening: &XMLPatternOpeningElement{
+									NodeBase: NodeBase{Span: NodeSpan{13, 18}},
+									Name: &PatternIdentifierLiteral{
+										NodeBase:   NodeBase{NodeSpan{14, 17}, nil, false},
+										Name:       "div",
+										Unprefixed: true,
+									},
+								},
+								Children: []Node{
+									&XMLText{
+										NodeBase: NodeBase{NodeSpan{18, 18}, nil, false},
+										Raw:      "",
+										Value:    "",
+									},
+									&XMLPatternElement{
+										NodeBase: NodeBase{NodeSpan{18, 27}, nil, false},
+										Opening: &XMLPatternOpeningElement{
+											NodeBase: NodeBase{Span: NodeSpan{18, 22}},
+											Name: &PatternIdentifierLiteral{
+												NodeBase:   NodeBase{NodeSpan{19, 21}, nil, false},
+												Name:       "ul",
+												Unprefixed: true,
+											},
+										},
+										Children: []Node{
+											&XMLText{
+												NodeBase: NodeBase{NodeSpan{22, 22}, nil, false},
+												Raw:      "",
+												Value:    "",
+											},
+										},
+										Closing: &XMLPatternClosingElement{
+											NodeBase: NodeBase{
+												NodeSpan{22, 27},
+												&ParsingError{UnspecifiedParsingError, fmtExpectedClosingTag("ul")},
+												false,
+											},
+											Name: &PatternIdentifierLiteral{
+												NodeBase:   NodeBase{NodeSpan{24, 26}, nil, false},
+												Name:       "ol",
+												Unprefixed: true,
+											},
+										},
+									},
+									&XMLText{
+										NodeBase: NodeBase{NodeSpan{27, 27}, nil, false},
+										Raw:      "",
+										Value:    "",
+									},
+								},
+								Closing: &XMLPatternClosingElement{
+									NodeBase: NodeBase{Span: NodeSpan{27, 33}},
+									Name: &PatternIdentifierLiteral{
+										NodeBase:   NodeBase{NodeSpan{29, 32}, nil, false},
+										Name:       "div",
+										Unprefixed: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("parenthesized with unexpected closing tag followed by a space followed by the valid closing tag of the outer element", func(t *testing.T) {
+			n, err := parseChunk(t, "pattern p = (<div><ul></ol> </div>)", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 35}, nil, false},
+				Statements: []Node{
+					&PatternDefinition{
+						NodeBase: NodeBase{NodeSpan{0, 35}, nil, false},
+						Left: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+							Name:       "p",
+							Unprefixed: true,
+						},
+						Right: &XMLPatternExpression{
+							NodeBase: NodeBase{NodeSpan{13, 34}, nil, true},
+							Element: &XMLPatternElement{
+								NodeBase: NodeBase{NodeSpan{13, 34}, nil, false},
+								Opening: &XMLPatternOpeningElement{
+									NodeBase: NodeBase{Span: NodeSpan{13, 18}},
+									Name: &PatternIdentifierLiteral{
+										NodeBase:   NodeBase{NodeSpan{14, 17}, nil, false},
+										Name:       "div",
+										Unprefixed: true,
+									},
+								},
+								Children: []Node{
+									&XMLText{
+										NodeBase: NodeBase{NodeSpan{18, 18}, nil, false},
+										Raw:      "",
+										Value:    "",
+									},
+									&XMLPatternElement{
+										NodeBase: NodeBase{NodeSpan{18, 27}, nil, false},
+										Opening: &XMLPatternOpeningElement{
+											NodeBase: NodeBase{Span: NodeSpan{18, 22}},
+											Name: &PatternIdentifierLiteral{
+												NodeBase:   NodeBase{NodeSpan{19, 21}, nil, false},
+												Name:       "ul",
+												Unprefixed: true,
+											},
+										},
+										Children: []Node{
+											&XMLText{
+												NodeBase: NodeBase{NodeSpan{22, 22}, nil, false},
+												Raw:      "",
+												Value:    "",
+											},
+										},
+										Closing: &XMLPatternClosingElement{
+											NodeBase: NodeBase{
+												NodeSpan{22, 27},
+												&ParsingError{UnspecifiedParsingError, fmtExpectedClosingTag("ul")},
+												false,
+											},
+											Name: &PatternIdentifierLiteral{
+												NodeBase:   NodeBase{NodeSpan{24, 26}, nil, false},
+												Name:       "ol",
+												Unprefixed: true,
+											},
+										},
+									},
+									&XMLText{
+										NodeBase: NodeBase{NodeSpan{27, 28}, nil, false},
+										Raw:      " ",
+										Value:    " ",
+									},
+								},
+								Closing: &XMLPatternClosingElement{
+									NodeBase: NodeBase{Span: NodeSpan{28, 34}},
+									Name: &PatternIdentifierLiteral{
+										NodeBase:   NodeBase{NodeSpan{30, 33}, nil, false},
+										Name:       "div",
+										Unprefixed: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("parenthesized with unexpected closing tag followed by a sibling element", func(t *testing.T) {
+			n, err := parseChunk(t, "pattern p = (<div><ul></ol><a></a></div>)", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 41}, nil, false},
+				Statements: []Node{
+					&PatternDefinition{
+						NodeBase: NodeBase{NodeSpan{0, 41}, nil, false},
+						Left: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+							Name:       "p",
+							Unprefixed: true,
+						},
+						Right: &XMLPatternExpression{
+							NodeBase: NodeBase{NodeSpan{13, 40}, nil, true},
+							Element: &XMLPatternElement{
+								NodeBase: NodeBase{NodeSpan{13, 40}, nil, false},
+								Opening: &XMLPatternOpeningElement{
+									NodeBase: NodeBase{Span: NodeSpan{13, 18}},
+									Name: &PatternIdentifierLiteral{
+										NodeBase:   NodeBase{NodeSpan{14, 17}, nil, false},
+										Name:       "div",
+										Unprefixed: true,
+									},
+								},
+								Children: []Node{
+									&XMLText{
+										NodeBase: NodeBase{NodeSpan{18, 18}, nil, false},
+										Raw:      "",
+										Value:    "",
+									},
+									&XMLPatternElement{
+										NodeBase: NodeBase{NodeSpan{18, 27}, nil, false},
+										Opening: &XMLPatternOpeningElement{
+											NodeBase: NodeBase{Span: NodeSpan{18, 22}},
+											Name: &PatternIdentifierLiteral{
+												NodeBase:   NodeBase{NodeSpan{19, 21}, nil, false},
+												Name:       "ul",
+												Unprefixed: true,
+											},
+										},
+										Children: []Node{
+											&XMLText{
+												NodeBase: NodeBase{NodeSpan{22, 22}, nil, false},
+												Raw:      "",
+												Value:    "",
+											},
+										},
+										Closing: &XMLPatternClosingElement{
+											NodeBase: NodeBase{
+												NodeSpan{22, 27},
+												&ParsingError{UnspecifiedParsingError, fmtExpectedClosingTag("ul")},
+												false,
+											},
+											Name: &PatternIdentifierLiteral{
+												NodeBase:   NodeBase{NodeSpan{24, 26}, nil, false},
+												Name:       "ol",
+												Unprefixed: true,
+											},
+										},
+									},
+									&XMLText{
+										NodeBase: NodeBase{NodeSpan{27, 27}, nil, false},
+										Raw:      "",
+										Value:    "",
+									},
+									&XMLPatternElement{
+										NodeBase: NodeBase{NodeSpan{27, 34}, nil, false},
+										Opening: &XMLPatternOpeningElement{
+											NodeBase: NodeBase{Span: NodeSpan{27, 30}},
+											Name: &PatternIdentifierLiteral{
+												NodeBase:   NodeBase{NodeSpan{28, 29}, nil, false},
+												Name:       "a",
+												Unprefixed: true,
+											},
+										},
+										Children: []Node{
+											&XMLText{
+												NodeBase: NodeBase{NodeSpan{30, 30}, nil, false},
+												Raw:      "",
+												Value:    "",
+											},
+										},
+										Closing: &XMLPatternClosingElement{
+											NodeBase: NodeBase{Span: NodeSpan{30, 34}},
+											Name: &PatternIdentifierLiteral{
+												NodeBase:   NodeBase{NodeSpan{32, 33}, nil, false},
+												Name:       "a",
+												Unprefixed: true,
+											},
+										},
+									},
+									&XMLText{
+										NodeBase: NodeBase{NodeSpan{34, 34}, nil, false},
+										Raw:      "",
+										Value:    "",
+									},
+								},
+								Closing: &XMLPatternClosingElement{
+									NodeBase: NodeBase{Span: NodeSpan{34, 40}},
+									Name: &PatternIdentifierLiteral{
+										NodeBase:   NodeBase{NodeSpan{36, 39}, nil, false},
+										Name:       "div",
+										Unprefixed: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("region headers: one header followed by a linefeed + the closing tag", func(t *testing.T) {
+			n := mustparseChunk(t, "%<div>\n@'a'\n</div>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 18}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 18}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{NodeSpan{1, 18}, nil, false},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+							RegionHeaders: []*AnnotatedRegionHeader{
+								{
+									NodeBase: NodeBase{Span: NodeSpan{7, 11}},
+									Text: &AnnotatedRegionHeaderText{
+										NodeBase: NodeBase{Span: NodeSpan{7, 11}},
+										Raw:      "@'a'",
+										Value:    "a",
+									},
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
+									Raw:      "\n",
+									Value:    "\n",
+								},
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{11, 12}, nil, false},
+									Raw:      "\n",
+									Value:    "\n",
+								},
+							},
+							Closing: &XMLPatternClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{12, 18}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{14, 17}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("region headers: one header followed by EOF", func(t *testing.T) {
+			n, err := parseChunk(t, "%<div>\n@'a'", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 11}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 11}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{
+								NodeSpan{1, 11},
+								&ParsingError{UnspecifiedParsingError, fmtExpectedClosingTag("div")},
+								false,
+							},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+							RegionHeaders: []*AnnotatedRegionHeader{
+								{
+									NodeBase: NodeBase{Span: NodeSpan{7, 11}},
+									Text: &AnnotatedRegionHeaderText{
+										NodeBase: NodeBase{Span: NodeSpan{7, 11}},
+										Raw:      "@'a'",
+										Value:    "a",
+									},
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
+									Raw:      "\n",
+									Value:    "\n",
+								},
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{11, 11}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("region headers: one header followed by a linefeed + an opening tag", func(t *testing.T) {
+			n := mustparseChunk(t, "%<div>\n@'a'\n<a></a></div>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 25}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 25}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{NodeSpan{1, 25}, nil, false},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+							RegionHeaders: []*AnnotatedRegionHeader{
+								{
+									NodeBase: NodeBase{Span: NodeSpan{7, 11}},
+									Text: &AnnotatedRegionHeaderText{
+										NodeBase: NodeBase{Span: NodeSpan{7, 11}},
+										Raw:      "@'a'",
+										Value:    "a",
+									},
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
+									Raw:      "\n",
+									Value:    "\n",
+								},
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{11, 12}, nil, false},
+									Raw:      "\n",
+									Value:    "\n",
+								},
+								&XMLPatternElement{
+									NodeBase: NodeBase{NodeSpan{12, 19}, nil, false},
+									Opening: &XMLPatternOpeningElement{
+										NodeBase: NodeBase{NodeSpan{12, 15}, nil, false},
+										Name: &PatternIdentifierLiteral{
+											NodeBase:   NodeBase{NodeSpan{13, 14}, nil, false},
+											Name:       "a",
+											Unprefixed: true,
+										},
+									},
+									Children: []Node{
+										&XMLText{
+											NodeBase: NodeBase{NodeSpan{15, 15}, nil, false},
+											Raw:      "",
+											Value:    "",
+										},
+									},
+									Closing: &XMLPatternClosingElement{
+										NodeBase: NodeBase{NodeSpan{15, 19}, nil, false},
+										Name: &PatternIdentifierLiteral{
+											NodeBase:   NodeBase{NodeSpan{17, 18}, nil, false},
+											Name:       "a",
+											Unprefixed: true,
+										},
+									},
+								},
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{19, 19}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &XMLPatternClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{19, 25}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{21, 24}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("region headers: one header with annotations followed by a linefeed + an opening tag", func(t *testing.T) {
+			n := mustparseChunk(t, "%<div>\n@'a' @a\n<a></a></div>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 28}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 28}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{NodeSpan{1, 28}, nil, false},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+							RegionHeaders: []*AnnotatedRegionHeader{
+								{
+									NodeBase: NodeBase{Span: NodeSpan{7, 14}},
+									Text: &AnnotatedRegionHeaderText{
+										NodeBase: NodeBase{Span: NodeSpan{7, 11}},
+										Raw:      "@'a'",
+										Value:    "a",
+									},
+									Annotations: &MetadataAnnotations{
+										NodeBase: NodeBase{Span: NodeSpan{12, 14}},
+										Expressions: []Node{
+											&MetaIdentifier{
+												NodeBase: NodeBase{Span: NodeSpan{12, 14}},
+												Name:     "a",
+											},
+										},
+									},
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
+									Raw:      "\n",
+									Value:    "\n",
+								},
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{14, 15}, nil, false},
+									Raw:      "\n",
+									Value:    "\n",
+								},
+								&XMLPatternElement{
+									NodeBase: NodeBase{NodeSpan{15, 22}, nil, false},
+									Opening: &XMLPatternOpeningElement{
+										NodeBase: NodeBase{NodeSpan{15, 18}, nil, false},
+										Name: &PatternIdentifierLiteral{
+											NodeBase:   NodeBase{NodeSpan{16, 17}, nil, false},
+											Name:       "a",
+											Unprefixed: true,
+										},
+									},
+									Children: []Node{
+										&XMLText{
+											NodeBase: NodeBase{NodeSpan{18, 18}, nil, false},
+											Raw:      "",
+											Value:    "",
+										},
+									},
+									Closing: &XMLPatternClosingElement{
+										NodeBase: NodeBase{NodeSpan{18, 22}, nil, false},
+										Name: &PatternIdentifierLiteral{
+											NodeBase:   NodeBase{NodeSpan{20, 21}, nil, false},
+											Name:       "a",
+											Unprefixed: true,
+										},
+									},
+								},
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{22, 22}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &XMLPatternClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{22, 28}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{24, 27}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("region headers: one header directly followed by the closing tag", func(t *testing.T) {
+			n, err := parseChunk(t, "%<div>\n@'a'</div>", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
+				Statements: []Node{
+					&XMLPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
+						Element: &XMLPatternElement{
+							NodeBase: NodeBase{NodeSpan{1, 17}, nil, false},
+							Opening: &XMLPatternOpeningElement{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+							RegionHeaders: []*AnnotatedRegionHeader{
+								{
+									NodeBase: NodeBase{
+										NodeSpan{7, 11},
+										&ParsingError{UnspecifiedParsingError, MISSING_LINEFEED_AFTER_ANNOTATED_REGION_HEADER},
+										false,
+									},
+									Text: &AnnotatedRegionHeaderText{
+										NodeBase: NodeBase{Span: NodeSpan{7, 11}},
+										Raw:      "@'a'",
+										Value:    "a",
+									},
+								},
+							},
+							Children: []Node{
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
+									Raw:      "\n",
+									Value:    "\n",
+								},
+								&XMLText{
+									NodeBase: NodeBase{NodeSpan{11, 11}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &XMLPatternClosingElement{
+								NodeBase: NodeBase{Span: NodeSpan{11, 17}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{13, 16}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
 								},
 							},
 						},

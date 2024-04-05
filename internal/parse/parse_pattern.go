@@ -78,6 +78,9 @@ func (p *parser) parsePercentPrefixedPattern(precededByOpeningParen bool) Node {
 			},
 			Value: e,
 		}
+	case '<':
+		prefixed := true
+		return p.parseXMLPatternExpression(prefixed)
 	case '`':
 		return p.parseRegularExpressionLiteral(true)
 	case '-':
@@ -502,7 +505,6 @@ func (p *parser) parseNamedPatternSegment(interpolation string, startIndex, endI
 		Name: interpolation[1:],
 	}
 }
-
 
 func (p *parser) tryParsePatternUnionWithoutLeadingPipe(firstCase Node, precededByOpeningParen bool) (*PatternUnion, bool) {
 	startIndex := firstCase.Base().Span.Start

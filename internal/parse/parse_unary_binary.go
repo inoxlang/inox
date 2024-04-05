@@ -29,8 +29,13 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(openingParenIndex in
 	)
 
 	if !hasPreviousOperator && p.i < p.len && p.s[p.i] == '<' && (p.i == p.len-1 || p.s[p.i+1] != '{') {
-		//XML expression without namespace.
-		left = p.parseXMLExpression(nil, p.i)
+		if p.inPattern {
+			prefixed := false
+			left = p.parseXMLPatternExpression(prefixed)
+		} else {
+			// XML expression without namespace.
+			left = p.parseXMLExpression(nil, p.i)
+		}
 
 		if p.areNextSpacesNewlinesCommentsFollowedBy('<') {
 			//Potentially malformed XML expressions.

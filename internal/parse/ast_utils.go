@@ -676,6 +676,29 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 		walk(n.Name, node, ancestorChain, fn, afterFn)
 	case *XMLInterpolation:
 		walk(n.Expr, node, ancestorChain, fn, afterFn)
+	case *XMLPatternExpression:
+		walk(n.Element, node, ancestorChain, fn, afterFn)
+	case *XMLPatternElement:
+		walk(n.Opening, node, ancestorChain, fn, afterFn)
+		for _, header := range n.RegionHeaders {
+			walk(header, node, ancestorChain, fn, afterFn)
+		}
+		for _, child := range n.Children {
+			walk(child, node, ancestorChain, fn, afterFn)
+		}
+		walk(n.Closing, node, ancestorChain, fn, afterFn)
+	case *XMLPatternOpeningElement:
+		walk(n.Name, node, ancestorChain, fn, afterFn)
+		for _, attr := range n.Attributes {
+			walk(attr, node, ancestorChain, fn, afterFn)
+		}
+	case *XMLPatternAttribute:
+		walk(n.Name, node, ancestorChain, fn, afterFn)
+		walk(n.Value, node, ancestorChain, fn, afterFn)
+	case *XMLPatternClosingElement:
+		walk(n.Name, node, ancestorChain, fn, afterFn)
+	case *XMLPatternInterpolation:
+		walk(n.Expr, node, ancestorChain, fn, afterFn)
 	case *ExtendStatement:
 		walk(n.ExtendedPattern, node, ancestorChain, fn, afterFn)
 		walk(n.Extension, node, ancestorChain, fn, afterFn)
