@@ -17,7 +17,8 @@ import (
 
 	"github.com/go-git/go-billy/v5"
 	"github.com/inoxlang/inox/internal/afs"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/inoxmod"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/inoxconsts"
@@ -316,7 +317,7 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 		})
 		preparationLogger.Debug().Dur("preinit-dur", time.Since(preinitStart)).Send()
 
-		if (!args.DataExtractionMode && preinitErr != nil) || errors.Is(preinitErr, ErrParsingErrorInManifestOrPreinit) {
+		if (!args.DataExtractionMode && preinitErr != nil) || errors.Is(preinitErr, inoxmod.ErrParsingErrorInManifestOrPreinit) {
 			finalErr = preinitErr
 			return
 		}
@@ -328,15 +329,15 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 		//if testing is enabled and the file is a spec file we add some permissions.
 		if args.EnableTesting && strings.HasSuffix(args.Fpath, inoxconsts.INOXLANG_SPEC_FILE_SUFFIX) {
 			manifest.RequiredPermissions = append(manifest.RequiredPermissions,
-				FilesystemPermission{Kind_: permkind.Read, Entity: PathPattern("/...")},
-				FilesystemPermission{Kind_: permkind.Write, Entity: PathPattern("/...")},
-				FilesystemPermission{Kind_: permkind.Delete, Entity: PathPattern("/...")},
+				FilesystemPermission{Kind_: permbase.Read, Entity: PathPattern("/...")},
+				FilesystemPermission{Kind_: permbase.Write, Entity: PathPattern("/...")},
+				FilesystemPermission{Kind_: permbase.Delete, Entity: PathPattern("/...")},
 
-				DatabasePermission{Kind_: permkind.Read, Entity: LDB_MAIN_HOST},
-				DatabasePermission{Kind_: permkind.Write, Entity: LDB_MAIN_HOST},
-				DatabasePermission{Kind_: permkind.Delete, Entity: LDB_MAIN_HOST},
+				DatabasePermission{Kind_: permbase.Read, Entity: LDB_MAIN_HOST},
+				DatabasePermission{Kind_: permbase.Write, Entity: LDB_MAIN_HOST},
+				DatabasePermission{Kind_: permbase.Delete, Entity: LDB_MAIN_HOST},
 
-				LThreadPermission{Kind_: permkind.Create},
+				LThreadPermission{Kind_: permbase.Create},
 			)
 		}
 	} else {
@@ -665,8 +666,8 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 	}
 
 	if parsingErr != nil {
-		if len(mod.OriginalErrors) > 1 ||
-			(len(mod.OriginalErrors) == 1 && !utils.SliceContains(symbolic.SUPPORTED_PARSING_ERRORS, mod.OriginalErrors[0].Kind)) {
+		if len(mod.FileLevelParsingErrors) > 1 ||
+			(len(mod.FileLevelParsingErrors) == 1 && !utils.SliceContains(symbolic.SUPPORTED_PARSING_ERRORS, mod.FileLevelParsingErrors[0].Kind)) {
 			finalErr = parsingErr
 			return
 		}
@@ -836,15 +837,15 @@ func PrepareExtractionModeIncludableFile(args IncludableFilePreparationArgs) (st
 		ParsedFileCache: args.InoxChunkCache,
 	}))
 
-	mod := &Module{
+	mod := WrapLowerModule(&inoxmod.Module{
 		MainChunk:             parsedChunk,
 		TopLevelNode:          parsedChunk.Node,
 		InclusionStatementMap: make(map[*parse.InclusionImportStatement]*IncludedChunk),
 		IncludedChunkMap:      map[string]*IncludedChunk{},
-	}
+	})
 
 	criticalParsingError := ParseLocalIncludedFiles(args.ParsingContext, IncludedFilesParsingConfig{
-		Module:                              mod,
+		Module:                              mod.Module,
 		Filesystem:                          args.IncludedChunkContextFileSystem,
 		RecoverFromNonExistingIncludedFiles: true,
 
@@ -860,8 +861,8 @@ func PrepareExtractionModeIncludableFile(args IncludableFilePreparationArgs) (st
 	includedChunk := mod.IncludedChunkMap[absPath]
 
 	var parsingErr error
-	if len(mod.ParsingErrors) > 0 {
-		parsingErr = CombineParsingErrorValues(mod.ParsingErrors, mod.ParsingErrorPositions)
+	if len(mod.Errors) > 0 {
+		parsingErr = inoxmod.CombineErrors(mod.Errors)
 	}
 
 	//Create a context for the the fake module
@@ -926,8 +927,8 @@ func PrepareExtractionModeIncludableFile(args IncludableFilePreparationArgs) (st
 	}
 
 	if parsingErr != nil {
-		if len(mod.OriginalErrors) > 1 ||
-			(len(mod.OriginalErrors) == 1 && !utils.SliceContains(symbolic.SUPPORTED_PARSING_ERRORS, mod.OriginalErrors[0].Kind)) {
+		if len(mod.FileLevelParsingErrors) > 1 ||
+			(len(mod.FileLevelParsingErrors) == 1 && !utils.SliceContains(symbolic.SUPPORTED_PARSING_ERRORS, mod.FileLevelParsingErrors[0].Kind)) {
 			finalErr = parsingErr
 			return state, mod, includedChunk, finalErr
 		}

@@ -12,7 +12,7 @@ import (
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -62,7 +62,7 @@ func testEvents(t *testing.T, setup func(t *testing.T) (fls afs.Filesystem, temp
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: dirPatt},
+				core.FilesystemPermission{Kind_: permbase.Read, Entity: dirPatt},
 			},
 			Filesystem: fls,
 		})
@@ -165,7 +165,7 @@ func testEvents(t *testing.T, setup func(t *testing.T) (fls afs.Filesystem, temp
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: filepth},
+				core.FilesystemPermission{Kind_: permbase.Read, Entity: filepth},
 			},
 			Filesystem: fls,
 		})
@@ -220,7 +220,7 @@ func testEvents(t *testing.T, setup func(t *testing.T) (fls afs.Filesystem, temp
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: dirPatt},
+				core.FilesystemPermission{Kind_: permbase.Read, Entity: dirPatt},
 			},
 			Filesystem: fls,
 		})
@@ -310,7 +310,7 @@ func testEvents(t *testing.T, setup func(t *testing.T) (fls afs.Filesystem, temp
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: subdirPath},
+				core.FilesystemPermission{Kind_: permbase.Read, Entity: subdirPath},
 			},
 			Filesystem: fls,
 		})
@@ -333,7 +333,7 @@ func testEvents(t *testing.T, setup func(t *testing.T) (fls afs.Filesystem, temp
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: dirPatt},
+				core.FilesystemPermission{Kind_: permbase.Read, Entity: dirPatt},
 			},
 			Filesystem: fls,
 		})
@@ -357,7 +357,7 @@ func testEvents(t *testing.T, setup func(t *testing.T) (fls afs.Filesystem, temp
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
+				core.FilesystemPermission{Kind_: permbase.Read, Entity: core.PathPattern("/...")},
 			},
 			Filesystem: fls,
 		})
@@ -436,7 +436,7 @@ func testEvents(t *testing.T, setup func(t *testing.T) (fls afs.Filesystem, temp
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: filepth},
+				core.FilesystemPermission{Kind_: permbase.Read, Entity: filepth},
 			},
 			Filesystem: fls,
 		})
@@ -516,7 +516,7 @@ func testEvents(t *testing.T, setup func(t *testing.T) (fls afs.Filesystem, temp
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: dirPatt},
+				core.FilesystemPermission{Kind_: permbase.Read, Entity: dirPatt},
 			},
 			Filesystem: fls,
 		})
@@ -622,7 +622,7 @@ func testEvents(t *testing.T, setup func(t *testing.T) (fls afs.Filesystem, temp
 
 		ctx := core.NewContextWithEmptyState(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: filepth},
+				core.FilesystemPermission{Kind_: permbase.Read, Entity: filepth},
 			},
 			Filesystem: fls,
 		}, nil)
@@ -689,7 +689,7 @@ func testEvents(t *testing.T, setup func(t *testing.T) (fls afs.Filesystem, temp
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: filepth},
+				core.FilesystemPermission{Kind_: permbase.Read, Entity: filepth},
 			},
 			Filesystem: fls,
 		})
@@ -740,7 +740,7 @@ func testEvents(t *testing.T, setup func(t *testing.T) (fls afs.Filesystem, temp
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: dirPatt},
+				core.FilesystemPermission{Kind_: permbase.Read, Entity: dirPatt},
 			},
 			Filesystem: fls,
 		})
@@ -791,7 +791,7 @@ func testEvents(t *testing.T, setup func(t *testing.T) (fls afs.Filesystem, temp
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: dirPatt},
+				core.FilesystemPermission{Kind_: permbase.Read, Entity: dirPatt},
 			},
 			Filesystem: fls,
 		})

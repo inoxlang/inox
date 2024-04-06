@@ -14,7 +14,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/css"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
@@ -58,7 +58,7 @@ func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) e
 	}
 	excludeRootDotDev := len(topDirs) == 1 && topDirs[0] == "/"
 
-	if err := ctx.CheckHasPermission(core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")}); err != nil {
+	if err := ctx.CheckHasPermission(core.FilesystemPermission{Kind_: permbase.Read, Entity: core.PathPattern("/...")}); err != nil {
 		return err
 	}
 

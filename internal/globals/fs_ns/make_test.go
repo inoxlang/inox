@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -78,7 +78,7 @@ func TestCreateFile(t *testing.T) {
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: []core.Permission{
-					core.FilesystemPermission{Kind_: permkind.Create, Entity: fpath},
+					core.FilesystemPermission{Kind_: permbase.Create, Entity: fpath},
 				},
 				Limits:     []core.Limit{testCase.limit, permissiveNewFileRateLimit, permissiveTotalLimit},
 				Filesystem: GetOsFilesystem(),
@@ -100,7 +100,7 @@ func TestMkdir(t *testing.T) {
 		tmpDir := t.TempDir()
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern(tmpDir + "/...")},
+				core.FilesystemPermission{Kind_: permbase.Read, Entity: core.PathPattern(tmpDir + "/...")},
 			},
 			Filesystem: GetOsFilesystem(),
 		})
@@ -110,7 +110,7 @@ func TestMkdir(t *testing.T) {
 		err := Mkdir(ctx, core.Path(pth), nil)
 		assert.IsType(t, &core.NotAllowedError{}, err)
 		assert.Equal(t, core.FilesystemPermission{
-			Kind_:  permkind.Create,
+			Kind_:  permbase.Create,
 			Entity: core.Path(pth),
 		}, err.(*core.NotAllowedError).Permission)
 
@@ -128,7 +128,7 @@ func TestMkdir(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: permkind.Create, Entity: core.PathPattern(tmpDir + "/...")},
+				core.FilesystemPermission{Kind_: permbase.Create, Entity: core.PathPattern(tmpDir + "/...")},
 			},
 			Limits: []core.Limit{
 				permissiveTotalLimit,
@@ -181,8 +181,8 @@ func TestCopy(t *testing.T) {
 	makeCtx := func(tmpDir string) *core.Context {
 		return core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern(tmpDir + "/...")},
-				core.FilesystemPermission{Kind_: permkind.Create, Entity: core.PathPattern(tmpDir + "/...")},
+				core.FilesystemPermission{Kind_: permbase.Read, Entity: core.PathPattern(tmpDir + "/...")},
+				core.FilesystemPermission{Kind_: permbase.Create, Entity: core.PathPattern(tmpDir + "/...")},
 			},
 			Limits: []core.Limit{
 				{Name: FS_READ_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 1 << 32},
@@ -289,7 +289,7 @@ func TestFsMkfile(t *testing.T) {
 		tmpDir := t.TempDir()
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern(tmpDir + "/...")},
+				core.FilesystemPermission{Kind_: permbase.Read, Entity: core.PathPattern(tmpDir + "/...")},
 			},
 			Filesystem: GetOsFilesystem(),
 		})
@@ -299,7 +299,7 @@ func TestFsMkfile(t *testing.T) {
 		err := Mkfile(ctx, core.Path(pth))
 		assert.IsType(t, &core.NotAllowedError{}, err)
 		assert.Equal(t, core.FilesystemPermission{
-			Kind_:  permkind.Create,
+			Kind_:  permbase.Create,
 			Entity: core.Path(pth),
 		}, err.(*core.NotAllowedError).Permission)
 		assert.NoFileExists(t, pth)
@@ -314,7 +314,7 @@ func TestFsMkfile(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: permkind.Create, Entity: core.PathPattern(tmpDir + "/...")},
+				core.FilesystemPermission{Kind_: permbase.Create, Entity: core.PathPattern(tmpDir + "/...")},
 			},
 			Limits: []core.Limit{
 				permissiveTotalLimit,

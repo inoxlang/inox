@@ -10,7 +10,8 @@ import (
 
 	"slices"
 
-	permkind "github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/inoxmod"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/core/text"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"golang.org/x/exp/maps"
@@ -653,7 +654,7 @@ func EvaluatePermissionListingObjectNode(n *parse.ObjectLiteral, config PreinitA
 
 	//we create a temporary state to evaluate some parts of the permissions
 	if config.RunningState == nil {
-		ctx := NewContext(ContextConfig{Permissions: []Permission{GlobalVarPermission{permkind.Read, "*"}}})
+		ctx := NewContext(ContextConfig{Permissions: []Permission{GlobalVarPermission{permbase.Read, "*"}}})
 		state = NewTreeWalkState(ctx)
 
 		if config.GlobalConsts != nil {
@@ -703,7 +704,7 @@ func (m *Module) createManifest(ctx *Context, object *Object, config manifestObj
 	limits := make(map[string]Limit, 0)
 	hostDefinitions := make(map[Host]Value, 0)
 	specifiedGlobalPermKinds := map[PermissionKind]bool{}
-	actualModuleKind := m.ModuleKind
+	actualModuleKind := m.Kind
 	manifestModuleKind := UnspecifiedModuleKind
 
 	err := object.ForEachEntry(func(k string, v Serializable) error {
@@ -715,7 +716,7 @@ func (m *Module) createManifest(ctx *Context, object *Object, config manifestObj
 			}
 
 			var err error
-			parsedKind, err := ParseModuleKind(kindName.GetOrBuildString())
+			parsedKind, err := inoxmod.ParseModuleKind(kindName.GetOrBuildString())
 			if err != nil {
 				return err
 			}
@@ -828,11 +829,11 @@ func (m *Module) createManifest(ctx *Context, object *Object, config manifestObj
 		if db.Owned {
 			ownerDBPermissions = append(ownerDBPermissions,
 				DatabasePermission{
-					Kind_:  permkind.Read,
+					Kind_:  permbase.Read,
 					Entity: db.Resource,
 				},
 				DatabasePermission{
-					Kind_:  permkind.Write,
+					Kind_:  permbase.Write,
 					Entity: db.Resource,
 				})
 		}
@@ -935,7 +936,7 @@ func getPermissionsFromListing(
 
 	if permDescriptions != nil {
 		err := permDescriptions.ForEachEntry(func(propName string, propValue Serializable) error {
-			permKind, ok := permkind.PermissionKindFromString(propName)
+			permKind, ok := permbase.PermissionKindFromString(propName)
 
 			if ok {
 				p, err := getSingleKindPermissions(permKind, propValue, specifiedGlobalPermKinds, handleCustomType)
@@ -956,7 +957,7 @@ func getPermissionsFromListing(
 
 	if addDefaultPermissions {
 		// for some permission kinds if no permissions are specified for globals we add a default lax permission
-		for _, kind := range []PermissionKind{permkind.Read, permkind.Use, permkind.Create} {
+		for _, kind := range []PermissionKind{permbase.Read, permbase.Use, permbase.Create} {
 			if !specifiedGlobalPermKinds[kind] {
 				perms = append(perms, GlobalVarPermission{kind, "*"})
 			}
@@ -979,14 +980,14 @@ func estimatePermissionsFromListingNode(permDescriptions *parse.ObjectLiteral) (
 			continue
 		}
 		propName := propNode.Name()
-		permKind, ok := permkind.PermissionKindFromString(propName)
+		permKind, ok := permbase.PermissionKindFromString(propName)
 		if !ok {
 			continue
 		}
 
 		propValue, ok := estimatePartialPermissionNodeValue(propNode.Value)
 		if ok {
-			p, err := getSingleKindPermissions(permKind, propValue, map[permkind.PermissionKind]bool{}, handleCustomType)
+			p, err := getSingleKindPermissions(permKind, propValue, map[permbase.PermissionKind]bool{}, handleCustomType)
 			if err != nil {
 				return nil, err
 			}
@@ -1037,7 +1038,7 @@ func estimatePartialPermissionNodeValue(n parse.Node) (Serializable, bool) {
 }
 
 func GetDefaultGlobalVarPermissions() (perms []Permission) {
-	for _, kind := range []PermissionKind{permkind.Read, permkind.Use, permkind.Create} {
+	for _, kind := range []PermissionKind{permbase.Read, permbase.Use, permbase.Create} {
 		perms = append(perms, GlobalVarPermission{kind, "*"})
 	}
 	return
@@ -1194,7 +1195,7 @@ func getSingleKindNamedPermPermissions(
 			return nil, errors.New("invalid permission, 'system-graph' should be followed by an object literal")
 		}
 	case "commands":
-		if permKind != permkind.Use {
+		if permKind != permbase.Use {
 			return nil, errors.New("permission 'commands' should be required in the 'use' section of permission")
 		}
 
@@ -1204,8 +1205,8 @@ func getSingleKindNamedPermPermissions(
 		}
 		p = newPerms
 	case "values":
-		if permKind != permkind.See {
-			if permKind != permkind.Read {
+		if permKind != permbase.See {
+			if permKind != permbase.Read {
 				return nil, fmt.Errorf("invalid permissions: 'values' is only defined for 'see'")
 			}
 		}
@@ -1560,7 +1561,7 @@ func getDatabaseConfigurations(v Value, parentState *GlobalState) (DatabaseConfi
 func getDnsPermissions(permKind PermissionKind, desc Value) ([]Permission, error) {
 	var perms []Permission
 
-	if permKind != permkind.Read {
+	if permKind != permbase.Read {
 		return nil, fmt.Errorf("invalid manifest, 'dns' is only defined for 'read'")
 	}
 	dnsReqNodes := make([]Serializable, 0)

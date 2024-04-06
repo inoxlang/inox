@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/oklog/ulid/v2"
@@ -23,10 +23,10 @@ func TestCreation(t *testing.T) {
 	fls := fs_ns.NewMemFilesystem(1_000_000)
 	ctx := core.NewContextWithEmptyState(core.ContextConfig{
 		Permissions: []core.Permission{
-			core.HttpPermission{Kind_: permkind.Read, AnyEntity: true},
-			core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
-			core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")},
-			core.FilesystemPermission{Kind_: permkind.Delete, Entity: core.PathPattern("/...")},
+			core.HttpPermission{Kind_: permbase.Read, AnyEntity: true},
+			core.FilesystemPermission{Kind_: permbase.Read, Entity: core.PathPattern("/...")},
+			core.FilesystemPermission{Kind_: permbase.Write, Entity: core.PathPattern("/...")},
+			core.FilesystemPermission{Kind_: permbase.Delete, Entity: core.PathPattern("/...")},
 		},
 		Filesystem: fls,
 	}, nil)

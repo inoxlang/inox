@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	_ "github.com/inoxlang/inox/internal/globals/containers"
 	"github.com/inoxlang/inox/internal/globals/containers/common"
 	"github.com/inoxlang/inox/internal/globals/containers/setcoll"
@@ -541,12 +541,12 @@ func TestUpdateSchema(t *testing.T) {
 
 		ctxConfig := core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: pattern},
-				core.FilesystemPermission{Kind_: permkind.Create, Entity: pattern},
-				core.FilesystemPermission{Kind_: permkind.WriteStream, Entity: pattern},
+				core.FilesystemPermission{Kind_: permbase.Read, Entity: pattern},
+				core.FilesystemPermission{Kind_: permbase.Create, Entity: pattern},
+				core.FilesystemPermission{Kind_: permbase.WriteStream, Entity: pattern},
 
-				core.DatabasePermission{Kind_: permkind.Read, Entity: HOST},
-				core.DatabasePermission{Kind_: permkind.Write, Entity: HOST},
+				core.DatabasePermission{Kind_: permbase.Read, Entity: HOST},
+				core.DatabasePermission{Kind_: permbase.Write, Entity: HOST},
 			},
 			HostDefinitions: map[core.Host]core.Value{
 				HOST: HOST,

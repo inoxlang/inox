@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	permkind "github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
@@ -192,7 +192,7 @@ var (
 )
 
 func FmtNotValidPermissionKindName(name string) string {
-	return fmt.Sprintf("'%s' is not a valid permission kind, valid permissions are %s", name, strings.Join(permkind.PERMISSION_KIND_NAMES, ", "))
+	return fmt.Sprintf("'%s' is not a valid permission kind, valid permissions are %s", name, strings.Join(permbase.PERMISSION_KIND_NAMES, ", "))
 }
 
 func FmtUnknownSectionOfManifest(name string) string {

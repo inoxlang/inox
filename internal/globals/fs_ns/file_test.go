@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -25,7 +25,7 @@ func TestFile(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern(tmpDir + "/...")},
+				core.FilesystemPermission{Kind_: permbase.Read, Entity: core.PathPattern(tmpDir + "/...")},
 			},
 			Filesystem: GetOsFilesystem(),
 		})
@@ -36,7 +36,7 @@ func TestFile(t *testing.T) {
 		err := f.write(ctx, core.String("hello"))
 		assert.IsType(t, &core.NotAllowedError{}, err)
 		assert.Equal(t, core.FilesystemPermission{
-			Kind_:  permkind.WriteStream,
+			Kind_:  permbase.WriteStream,
 			Entity: utils.Must(pth.ToAbs(ctx.GetFileSystem())),
 		}, err.(*core.NotAllowedError).Permission)
 	})
@@ -52,8 +52,8 @@ func TestFile(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern(tmpDir + "/...")},
-				core.FilesystemPermission{Kind_: permkind.WriteStream, Entity: core.PathPattern(tmpDir + "/...")},
+				core.FilesystemPermission{Kind_: permbase.Read, Entity: core.PathPattern(tmpDir + "/...")},
+				core.FilesystemPermission{Kind_: permbase.WriteStream, Entity: core.PathPattern(tmpDir + "/...")},
 			},
 			Limits: []core.Limit{
 				{Name: FS_WRITE_LIMIT_NAME, Kind: core.ByteRateLimit, Value: rate},
@@ -93,7 +93,7 @@ func TestFile(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern(tmpDir + "/...")},
+				core.FilesystemPermission{Kind_: permbase.Read, Entity: core.PathPattern(tmpDir + "/...")},
 			},
 			Limits: []core.Limit{
 				{Name: FS_READ_LIMIT_NAME, Kind: core.ByteRateLimit, Value: rate},

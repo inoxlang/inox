@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/stretchr/testify/assert"
 
@@ -19,7 +19,7 @@ func TestFileServer(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
+				core.FilesystemPermission{Kind_: permbase.Read, Entity: core.PathPattern("/...")},
 			},
 		})
 		defer ctx.CancelGracefully()
@@ -43,7 +43,7 @@ func TestFileServer(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.HttpPermission{Kind_: permkind.Provide, Entity: core.Host("https://localhost:9090")},
+				core.HttpPermission{Kind_: permbase.Provide, Entity: core.Host("https://localhost:9090")},
 			},
 			Filesystem: fs_ns.GetOsFilesystem(),
 		})

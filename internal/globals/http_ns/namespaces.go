@@ -5,7 +5,7 @@ import (
 	"reflect"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/http_ns/spec"
 	http_symbolic "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
@@ -86,44 +86,44 @@ func init() {
 	// register symbolic version of Go functions
 	core.RegisterSymbolicGoFunctions([]any{
 		httpExists, func(ctx *symbolic.Context, arg symbolic.Value) *symbolic.Bool {
-			if !ctx.HasAPermissionWithKindAndType(permkind.Read, permkind.HTTP_PERM_TYPENAME) {
+			if !ctx.HasAPermissionWithKindAndType(permbase.Read, permbase.HTTP_PERM_TYPENAME) {
 				ctx.AddSymbolicGoFunctionWarning(HTTP_READ_PERM_MIGHT_BE_MISSING)
 			}
 			return symbolic.ANY_BOOL
 		},
 		HttpGet, func(ctx *symbolic.Context, u *symbolic.URL, args ...symbolic.Value) (*http_symbolic.Response, *symbolic.Error) {
-			if !ctx.HasAPermissionWithKindAndType(permkind.Read, permkind.HTTP_PERM_TYPENAME) {
+			if !ctx.HasAPermissionWithKindAndType(permbase.Read, permbase.HTTP_PERM_TYPENAME) {
 				ctx.AddSymbolicGoFunctionWarning(HTTP_READ_PERM_MIGHT_BE_MISSING)
 			}
 			return http_symbolic.ANY_RESP, nil
 		},
 		HttpRead, func(ctx *symbolic.Context, u *symbolic.URL, args ...symbolic.Value) (symbolic.Value, *symbolic.Error) {
-			if !ctx.HasAPermissionWithKindAndType(permkind.Read, permkind.HTTP_PERM_TYPENAME) {
+			if !ctx.HasAPermissionWithKindAndType(permbase.Read, permbase.HTTP_PERM_TYPENAME) {
 				ctx.AddSymbolicGoFunctionWarning(HTTP_READ_PERM_MIGHT_BE_MISSING)
 			}
 			return symbolic.ANY, nil
 		},
 		HttpPost, func(ctx *symbolic.Context, args ...symbolic.Value) (*http_symbolic.Response, *symbolic.Error) {
-			if !ctx.HasAPermissionWithKindAndType(permkind.Write, permkind.HTTP_PERM_TYPENAME) {
+			if !ctx.HasAPermissionWithKindAndType(permbase.Write, permbase.HTTP_PERM_TYPENAME) {
 				ctx.AddSymbolicGoFunctionWarning(HTTP_WRITE_PERM_MIGHT_BE_MISSING)
 			}
 			return http_symbolic.ANY_RESP, nil
 		},
 		HttpPatch, func(ctx *symbolic.Context, args ...symbolic.Value) (*http_symbolic.Response, *symbolic.Error) {
-			if !ctx.HasAPermissionWithKindAndType(permkind.Write, permkind.HTTP_PERM_TYPENAME) {
+			if !ctx.HasAPermissionWithKindAndType(permbase.Write, permbase.HTTP_PERM_TYPENAME) {
 				ctx.AddSymbolicGoFunctionWarning(HTTP_WRITE_PERM_MIGHT_BE_MISSING)
 			}
 			return http_symbolic.ANY_RESP, nil
 		},
 		HttpDelete, func(ctx *symbolic.Context, args ...symbolic.Value) (*http_symbolic.Response, *symbolic.Error) {
-			if !ctx.HasAPermissionWithKindAndType(permkind.Delete, permkind.HTTP_PERM_TYPENAME) {
+			if !ctx.HasAPermissionWithKindAndType(permbase.Delete, permbase.HTTP_PERM_TYPENAME) {
 				ctx.AddSymbolicGoFunctionWarning(HTTP_DELETE_PERM_MIGHT_BE_MISSING)
 			}
 			return http_symbolic.ANY_RESP, nil
 		},
 		NewHttpsServer, newSymbolicHttpsServer,
 		NewFileServer, func(ctx *symbolic.Context, args ...symbolic.Value) (*http_symbolic.HttpsServer, *symbolic.Error) {
-			if !ctx.HasAPermissionWithKindAndType(permkind.Provide, permkind.HTTP_PERM_TYPENAME) {
+			if !ctx.HasAPermissionWithKindAndType(permbase.Provide, permbase.HTTP_PERM_TYPENAME) {
 				ctx.AddSymbolicGoFunctionWarning(HTTP_PROVIDE_PERM_MIGHT_BE_MISSING)
 			}
 			return &http_symbolic.HttpsServer{}, nil

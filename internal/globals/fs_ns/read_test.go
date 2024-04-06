@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -82,7 +82,7 @@ func TestReadEntireFile(t *testing.T) {
 			//read it
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: []core.Permission{
-					core.FilesystemPermission{Kind_: permkind.Read, Entity: core.Path(fpath)},
+					core.FilesystemPermission{Kind_: permbase.Read, Entity: core.Path(fpath)},
 				},
 				Limits:     []core.Limit{testCase.limits},
 				Filesystem: GetOsFilesystem(),
@@ -112,7 +112,7 @@ func TestOpenExisting(t *testing.T) {
 
 		assert.IsType(t, &core.NotAllowedError{}, err)
 		assert.Equal(t, core.FilesystemPermission{
-			Kind_:  permkind.Read,
+			Kind_:  permbase.Read,
 			Entity: utils.Must(pth.ToAbs(ctx.GetFileSystem())),
 		}, err.(*core.NotAllowedError).Permission)
 		assert.Nil(t, f)
@@ -122,7 +122,7 @@ func TestOpenExisting(t *testing.T) {
 		tmpDir := t.TempDir()
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern(tmpDir + "/...")},
+				core.FilesystemPermission{Kind_: permbase.Read, Entity: core.PathPattern(tmpDir + "/...")},
 			},
 			Filesystem: GetOsFilesystem(),
 		})
@@ -149,7 +149,7 @@ func TestFind(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern(tmpDir + "/...")},
+				core.FilesystemPermission{Kind_: permbase.Read, Entity: core.PathPattern(tmpDir + "/...")},
 			},
 			Limits: []core.Limit{
 				{Name: FS_READ_LIMIT_NAME, Kind: core.ByteRateLimit, Value: FS_READ_MIN_CHUNK_SIZE},

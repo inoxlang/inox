@@ -13,7 +13,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/shoenig/go-landlock"
@@ -71,8 +71,8 @@ func restrictProcessAccess(grantedPerms, forbiddenPerms []core.Permission, fls *
 	var allowDNS, allowCerts bool
 
 	executablePaths := map[string]struct{}{}
-	dirPaths := map[string]map[permkind.PermissionKind]struct{}{}
-	filePaths := map[string]map[permkind.PermissionKind]struct{}{}
+	dirPaths := map[string]map[permbase.PermissionKind]struct{}{}
+	filePaths := map[string]map[permbase.PermissionKind]struct{}{}
 
 	for _, perm := range grantedPerms {
 		switch p := perm.(type) {
@@ -100,12 +100,12 @@ func restrictProcessAccess(grantedPerms, forbiddenPerms []core.Permission, fls *
 
 		for kind := range kinds {
 			switch kind {
-			case permkind.Read:
+			case permbase.Read:
 				read = true
-			case permkind.Write:
+			case permbase.Write:
 				write = true
 				create = true
-			case permkind.Delete:
+			case permbase.Delete:
 				write = true
 			}
 		}
@@ -279,7 +279,7 @@ func updateFileAndDirLandlockPaths(
 	if dir {
 		opsAllowedOnDirTree, ok := dirPaths[allowedPathString]
 		if !ok {
-			opsAllowedOnDirTree = map[permkind.PermissionKind]struct{}{}
+			opsAllowedOnDirTree = map[permbase.PermissionKind]struct{}{}
 			dirPaths[allowedPathString] = opsAllowedOnDirTree
 		}
 
@@ -287,7 +287,7 @@ func updateFileAndDirLandlockPaths(
 	} else {
 		opsAllowedOnFile, ok := filePaths[allowedPathString]
 		if !ok {
-			opsAllowedOnFile = map[permkind.PermissionKind]struct{}{}
+			opsAllowedOnFile = map[permbase.PermissionKind]struct{}{}
 			filePaths[allowedPathString] = opsAllowedOnFile
 		}
 

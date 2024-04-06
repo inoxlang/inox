@@ -3,7 +3,7 @@ package core
 import (
 	"testing"
 
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,11 +15,11 @@ func TestLoadObject(t *testing.T) {
 
 	perms := []Permission{
 		DatabasePermission{
-			Kind_:  permkind.Read,
+			Kind_:  permbase.Read,
 			Entity: URLPattern("ldb://main/..."),
 		},
 		DatabasePermission{
-			Kind_:  permkind.Write,
+			Kind_:  permbase.Write,
 			Entity: URLPattern("ldb://main/..."),
 		},
 	}

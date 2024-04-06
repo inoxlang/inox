@@ -10,7 +10,8 @@ import (
 
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/inoxmod"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
@@ -32,7 +33,7 @@ func TestExecutionTimeLimitIntegration(t *testing.T) {
 		ctx := core.NewContextWithEmptyState(core.ContextConfig{
 			Permissions: []core.Permission{
 				core.LThreadPermission{
-					Kind_: permkind.Create,
+					Kind_: permbase.Create,
 				},
 			},
 			Limits: []core.Limit{execLimit, permissiveLthreadLimit},
@@ -194,10 +195,10 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 
 		state := core.NewGlobalState(core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.GlobalVarPermission{Kind_: permkind.Read, Name: "*"},
-				core.GlobalVarPermission{Kind_: permkind.Use, Name: "*"},
-				core.GlobalVarPermission{Kind_: permkind.Create, Name: "*"},
-				core.LThreadPermission{permkind.Create},
+				core.GlobalVarPermission{Kind_: permbase.Read, Name: "*"},
+				core.GlobalVarPermission{Kind_: permbase.Use, Name: "*"},
+				core.GlobalVarPermission{Kind_: permbase.Create, Name: "*"},
+				core.LThreadPermission{permbase.Create},
 			},
 			Limits: []core.Limit{permissiveLthreadLimit},
 		}))
@@ -217,11 +218,11 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 		lthread, err := core.SpawnLThread(core.LthreadSpawnArgs{
 			SpawnerState: state,
 			Globals:      core.GlobalVariablesFromMap(map[string]core.Value{}, nil),
-			Module: &core.Module{
+			Module: core.WrapLowerModule(&inoxmod.Module{
 				MainChunk:    chunk,
 				TopLevelNode: chunk.Node,
-				ModuleKind:   core.UserLThreadModule,
-			},
+				Kind:         core.UserLThreadModule,
+			}),
 			//prevent the lthread to continue after yielding
 			PauseAfterYield: true,
 			LthreadCtx:      lthreadCtx,
@@ -313,7 +314,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 		ctx := core.NewContextWithEmptyState(core.ContextConfig{
 			Permissions: []core.Permission{
 				core.LThreadPermission{
-					Kind_: permkind.Create,
+					Kind_: permbase.Create,
 				},
 			},
 			Limits: []core.Limit{cpuLimit, permissiveLthreadLimit},
@@ -374,7 +375,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 		ctx := core.NewContextWithEmptyState(core.ContextConfig{
 			Permissions: []core.Permission{
 				core.LThreadPermission{
-					Kind_: permkind.Create,
+					Kind_: permbase.Create,
 				},
 			},
 			Limits: []core.Limit{cpuLimit, permissiveLthreadLimit},
@@ -413,7 +414,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 		ctx := core.NewContextWithEmptyState(core.ContextConfig{
 			Permissions: []core.Permission{
 				core.LThreadPermission{
-					Kind_: permkind.Create,
+					Kind_: permbase.Create,
 				},
 			},
 			Limits: []core.Limit{cpuLimit, permissiveLthreadLimit},
@@ -456,7 +457,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 		ctx := core.NewContextWithEmptyState(core.ContextConfig{
 			Permissions: []core.Permission{
 				core.LThreadPermission{
-					Kind_: permkind.Create,
+					Kind_: permbase.Create,
 				},
 			},
 			Limits: []core.Limit{cpuLimit, permissiveLthreadLimit},
@@ -493,7 +494,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 		ctx := core.NewContextWithEmptyState(core.ContextConfig{
 			Permissions: []core.Permission{
 				core.LThreadPermission{
-					Kind_: permkind.Create,
+					Kind_: permbase.Create,
 				},
 			},
 			Limits: []core.Limit{cpuLimit, permissiveLthreadLimit},
@@ -539,7 +540,7 @@ func TestThreadSimultaneousInstancesLimitIntegration(t *testing.T) {
 
 		ctx := core.NewContextWithEmptyState(core.ContextConfig{
 			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.LThreadPermission{
-				Kind_: permkind.Create,
+				Kind_: permbase.Create,
 			}),
 			Limits: []core.Limit{threadCountLimit},
 		}, nil)
@@ -599,7 +600,7 @@ func TestThreadSimultaneousInstancesLimitIntegration(t *testing.T) {
 
 		ctx := core.NewContextWithEmptyState(core.ContextConfig{
 			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.LThreadPermission{
-				Kind_: permkind.Create,
+				Kind_: permbase.Create,
 			}),
 			Limits: []core.Limit{threadCountLimit},
 		}, nil)
@@ -678,7 +679,7 @@ func TestThreadSimultaneousInstancesLimitIntegration(t *testing.T) {
 			Permissions: append(
 				core.GetDefaultGlobalVarPermissions(),
 				core.LThreadPermission{
-					Kind_: permkind.Create,
+					Kind_: permbase.Create,
 				},
 				core.CreateFsReadPerm(core.PathPattern("/...")),
 				core.CreateHttpReadPerm(core.ANY_HTTPS_HOST_PATTERN),

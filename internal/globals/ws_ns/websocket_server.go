@@ -11,7 +11,7 @@ import (
 	"github.com/gorilla/websocket"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	netaddr "github.com/inoxlang/inox/internal/netaddr"
 	"github.com/inoxlang/inox/internal/utils"
@@ -59,7 +59,7 @@ func NewWebsocketServer(ctx *core.Context) (*WebsocketServer, error) {
 
 func newWebsocketServer(ctx *core.Context, messageTimeout time.Duration) (*WebsocketServer, error) {
 
-	perm := core.WebsocketPermission{Kind_: permkind.Provide}
+	perm := core.WebsocketPermission{Kind_: permbase.Provide}
 
 	if err := ctx.CheckHasPermission(perm); err != nil {
 		return nil, err

@@ -12,7 +12,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/inoxprocess"
 	"github.com/inoxlang/inox/internal/utils"
 
@@ -161,7 +161,7 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 func createCompilationCtx(dir string) *core.Context {
 	compilationCtx := core.NewContext(core.ContextConfig{
 		Permissions: []core.Permission{
-			core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern(dir + "...")},
+			core.FilesystemPermission{Kind_: permbase.Read, Entity: core.PathPattern(dir + "...")},
 		},
 		Filesystem: fs_ns.GetOsFilesystem(),
 	})

@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/utils"
@@ -110,11 +110,11 @@ func writeAndPrepareInoxFiles(t *testing.T, files map[string]string) (*core.Cont
 		Filesystem: fls,
 		Permissions: append(core.GetDefaultGlobalVarPermissions(),
 			core.FilesystemPermission{
-				Kind_:  permkind.Read,
+				Kind_:  permbase.Read,
 				Entity: core.ROOT_PREFIX_PATH_PATTERN,
 			},
 			core.FilesystemPermission{
-				Kind_:  permkind.Write,
+				Kind_:  permbase.Write,
 				Entity: core.ROOT_PREFIX_PATH_PATTERN,
 			},
 		),

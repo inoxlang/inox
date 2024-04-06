@@ -8,7 +8,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 )
 
 // this file contains functions to update files.
@@ -132,7 +132,7 @@ func ReplaceFileContent(ctx *core.Context, args ...core.Value) error {
 	//TODO: use an effect
 
 	perm := core.FilesystemPermission{
-		Kind_:  permkind.Update,
+		Kind_:  permbase.Update,
 		Entity: fpath,
 	}
 

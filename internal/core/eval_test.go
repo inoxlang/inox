@@ -25,7 +25,8 @@ import (
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
-	permkind "github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/inoxmod"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/parse"
@@ -52,11 +53,11 @@ var (
 )
 
 func init() {
-	core.UpdateModuleImportCache(RETURN_1_MODULE_HASH, "manifest{}; return 1")
-	core.UpdateModuleImportCache(RETURN_NON_POS_ARG_A_MODULE_HASH, "manifest {parameters: {a: %int}}\nreturn mod-args.a")
-	core.UpdateModuleImportCache(RETURN_POS_ARG_A_MODULE_HASH, "manifest {parameters: {{name: #a, pattern: %int}}}\nreturn mod-args.a")
-	core.UpdateModuleImportCache(RETURN_PATTERN_INT_TWO_MODULE_HASH, "manifest {}\npattern two = 2; return %two")
-	core.UpdateModuleImportCache(RETURN_INT_PATTERN_MODULE_HASH, "manifest {}; return %int")
+	inoxmod.UpdateModuleImportCache(RETURN_1_MODULE_HASH, "manifest{}; return 1")
+	inoxmod.UpdateModuleImportCache(RETURN_NON_POS_ARG_A_MODULE_HASH, "manifest {parameters: {a: %int}}\nreturn mod-args.a")
+	inoxmod.UpdateModuleImportCache(RETURN_POS_ARG_A_MODULE_HASH, "manifest {parameters: {{name: #a, pattern: %int}}}\nreturn mod-args.a")
+	inoxmod.UpdateModuleImportCache(RETURN_PATTERN_INT_TWO_MODULE_HASH, "manifest {}\npattern two = 2; return %two")
+	inoxmod.UpdateModuleImportCache(RETURN_INT_PATTERN_MODULE_HASH, "manifest {}; return %int")
 
 	core.RegisterSymbolicGoFunction(toByte, func(ctx *symbolic.Context, i *symbolic.Int) *symbolic.Byte {
 		return symbolic.ANY_BYTE
@@ -92,7 +93,7 @@ func bytecodeTest(t *testing.T, optimize bool) {
 		case parse.SourceFile:
 			chunk := utils.Must(parse.ParseChunkSource(val))
 
-			mod = &core.Module{MainChunk: chunk, TopLevelNode: chunk.Node}
+			mod = core.WrapLowerModule(&inoxmod.Module{MainChunk: chunk, TopLevelNode: chunk.Node})
 
 			//if the test case provide a module we reuse the source
 			if s.Module != nil {
@@ -108,7 +109,7 @@ func bytecodeTest(t *testing.T, optimize bool) {
 				CodeString: val,
 			}))
 
-			mod = &core.Module{MainChunk: chunk, TopLevelNode: chunk.Node}
+			mod = core.WrapLowerModule(&inoxmod.Module{MainChunk: chunk, TopLevelNode: chunk.Node})
 
 			//if the test case provide a module we reuse the source
 			if s.Module != nil {
@@ -713,7 +714,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			code := `$api/index.html`
 
 			ctx := core.NewContext(core.ContextConfig{
-				Permissions: []core.Permission{core.GlobalVarPermission{Kind_: permkind.Read, Name: "*"}},
+				Permissions: []core.Permission{core.GlobalVarPermission{Kind_: permbase.Read, Name: "*"}},
 			})
 			state := core.NewGlobalState(ctx)
 			defer ctx.CancelGracefully()
@@ -2302,13 +2303,13 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}`
 
 			state := core.NewGlobalState(core.NewContext(core.ContextConfig{
-				Permissions: []core.Permission{core.LThreadPermission{Kind_: permkind.Create}},
+				Permissions: []core.Permission{core.LThreadPermission{Kind_: permbase.Create}},
 			}))
 			res, err := Eval(code, state, false)
 
 			assert.Error(t, err)
 			assert.ErrorIs(t, err, core.NewNotAllowedError(core.HttpPermission{
-				Kind_:  permkind.Read,
+				Kind_:  permbase.Read,
 				Entity: core.URL("https://example.com/index.html"),
 			}))
 			assert.Nil(t, res)
@@ -3600,11 +3601,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 				ctx := core.NewContext(core.ContextConfig{
 					Permissions: []core.Permission{
-						core.GlobalVarPermission{permkind.Read, "*"},
-						core.GlobalVarPermission{permkind.Update, "*"},
-						core.GlobalVarPermission{permkind.Create, "*"},
-						core.GlobalVarPermission{permkind.Use, "*"},
-						core.FilesystemPermission{permkind.Read, core.PathPattern(tempDirPath + "...")},
+						core.GlobalVarPermission{permbase.Read, "*"},
+						core.GlobalVarPermission{permbase.Update, "*"},
+						core.GlobalVarPermission{permbase.Create, "*"},
+						core.GlobalVarPermission{permbase.Use, "*"},
+						core.FilesystemPermission{permbase.Read, core.PathPattern(tempDirPath + "...")},
 					},
 					Filesystem: newOsFilesystem(),
 				})
@@ -6632,8 +6633,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: append(
 					core.GetDefaultGlobalVarPermissions(),
-					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
-					core.LThreadPermission{permkind.Create},
+					core.FilesystemPermission{permbase.Read, core.PathPattern("/...")},
+					core.LThreadPermission{permbase.Create},
 				),
 				Filesystem: newOsFilesystem(),
 				Limits:     []core.Limit{permissiveLthreadLimit},
@@ -6696,8 +6697,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: append(
 					core.GetDefaultGlobalVarPermissions(),
-					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
-					core.LThreadPermission{permkind.Create},
+					core.FilesystemPermission{permbase.Read, core.PathPattern("/...")},
+					core.LThreadPermission{permbase.Create},
 				),
 				Filesystem: newOsFilesystem(),
 				Limits:     []core.Limit{permissiveLthreadLimit},
@@ -6774,8 +6775,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: append(
 					core.GetDefaultGlobalVarPermissions(),
-					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
-					core.LThreadPermission{permkind.Create},
+					core.FilesystemPermission{permbase.Read, core.PathPattern("/...")},
+					core.LThreadPermission{permbase.Create},
 				),
 				Filesystem: newOsFilesystem(),
 				Limits:     []core.Limit{permissiveLthreadLimit},
@@ -8063,8 +8064,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		defer state.Ctx.CancelGracefully()
 		_, err := Eval(code, state, false)
 
-		assert.True(t, state.Ctx.HasPermission(core.GlobalVarPermission{Kind_: permkind.Use, Name: "*"}))
-		assert.False(t, state.Ctx.HasPermission(core.GlobalVarPermission{Kind_: permkind.Read, Name: "*"}))
+		assert.True(t, state.Ctx.HasPermission(core.GlobalVarPermission{Kind_: permbase.Use, Name: "*"}))
+		assert.False(t, state.Ctx.HasPermission(core.GlobalVarPermission{Kind_: permbase.Read, Name: "*"}))
 
 		assert.NoError(t, err)
 	})
@@ -9496,8 +9497,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: append(core.GetDefaultGlobalVarPermissions(),
-					core.LThreadPermission{permkind.Create},
-					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
+					core.LThreadPermission{permbase.Create},
+					core.FilesystemPermission{permbase.Read, core.PathPattern("/...")},
 				),
 				Filesystem: fls,
 				Limits:     []core.Limit{permissiveLthreadLimit},
@@ -9544,8 +9545,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: append(core.GetDefaultGlobalVarPermissions(),
-					core.LThreadPermission{permkind.Create},
-					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
+					core.LThreadPermission{permbase.Create},
+					core.FilesystemPermission{permbase.Read, core.PathPattern("/...")},
 				),
 				Filesystem: fls,
 				Limits:     []core.Limit{permissiveLthreadLimit},
@@ -9583,8 +9584,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: append(core.GetDefaultGlobalVarPermissions(),
-					core.LThreadPermission{permkind.Create},
-					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
+					core.LThreadPermission{permbase.Create},
+					core.FilesystemPermission{permbase.Read, core.PathPattern("/...")},
 				),
 				Filesystem: fls,
 				Limits:     []core.Limit{permissiveLthreadLimit},
@@ -9625,8 +9626,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: append(core.GetDefaultGlobalVarPermissions(),
-					core.LThreadPermission{permkind.Create},
-					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
+					core.LThreadPermission{permbase.Create},
+					core.FilesystemPermission{permbase.Read, core.PathPattern("/...")},
 				),
 				Filesystem: fls,
 				Limits:     []core.Limit{permissiveLthreadLimit},
@@ -9669,8 +9670,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: append(core.GetDefaultGlobalVarPermissions(),
-					core.LThreadPermission{permkind.Create},
-					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
+					core.LThreadPermission{permbase.Create},
+					core.FilesystemPermission{permbase.Read, core.PathPattern("/...")},
 				),
 				Filesystem: fls,
 				Limits:     []core.Limit{permissiveLthreadLimit},
@@ -9716,8 +9717,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: append(core.GetDefaultGlobalVarPermissions(),
-					core.LThreadPermission{permkind.Create},
-					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
+					core.LThreadPermission{permbase.Create},
+					core.FilesystemPermission{permbase.Read, core.PathPattern("/...")},
 				),
 				Filesystem: fls,
 				Limits:     []core.Limit{permissiveLthreadLimit},
@@ -9821,8 +9822,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: append(core.GetDefaultGlobalVarPermissions(),
-					core.LThreadPermission{permkind.Create},
-					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
+					core.LThreadPermission{permbase.Create},
+					core.FilesystemPermission{permbase.Read, core.PathPattern("/...")},
 				),
 				Filesystem: fls,
 				Limits:     []core.Limit{permissiveLthreadLimit},
@@ -9866,8 +9867,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: append(core.GetDefaultGlobalVarPermissions(),
-					core.LThreadPermission{permkind.Create},
-					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
+					core.LThreadPermission{permbase.Create},
+					core.FilesystemPermission{permbase.Read, core.PathPattern("/...")},
 				),
 				Filesystem: fls,
 				Limits:     []core.Limit{permissiveLthreadLimit},
@@ -10018,7 +10019,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			}`)
 
 			state := core.NewGlobalState(core.NewContext(core.ContextConfig{
-				Permissions: []core.Permission{core.LThreadPermission{Kind_: permkind.Create}},
+				Permissions: []core.Permission{core.LThreadPermission{Kind_: permbase.Create}},
 				Limits:      []core.Limit{permissiveLthreadLimit},
 			}))
 			state.TestingState.IsTestingEnabled = true
@@ -10029,7 +10030,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			assert.Error(t, err)
 			assert.ErrorIs(t, err, core.NewNotAllowedError(core.HttpPermission{
-				Kind_:  permkind.Read,
+				Kind_:  permbase.Read,
 				Entity: core.URL("https://example.com/index.html"),
 			}))
 			assert.Nil(t, res)
@@ -10719,8 +10720,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: append(core.GetDefaultGlobalVarPermissions(),
-					core.LThreadPermission{permkind.Create},
-					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
+					core.LThreadPermission{permbase.Create},
+					core.FilesystemPermission{permbase.Read, core.PathPattern("/...")},
 				),
 				Filesystem: fls,
 				Limits:     []core.Limit{permissiveLthreadLimit},
@@ -10778,8 +10779,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: append(core.GetDefaultGlobalVarPermissions(),
-					core.LThreadPermission{permkind.Create},
-					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
+					core.LThreadPermission{permbase.Create},
+					core.FilesystemPermission{permbase.Read, core.PathPattern("/...")},
 				),
 				Filesystem: fls,
 				Limits:     []core.Limit{permissiveLthreadLimit},
@@ -11053,8 +11054,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: append(core.GetDefaultGlobalVarPermissions(),
-					core.LThreadPermission{permkind.Create},
-					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
+					core.LThreadPermission{permbase.Create},
+					core.FilesystemPermission{permbase.Read, core.PathPattern("/...")},
 				),
 				Filesystem: fls,
 				Limits:     []core.Limit{permissiveLthreadLimit},
@@ -11115,8 +11116,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: append(core.GetDefaultGlobalVarPermissions(),
-					core.LThreadPermission{permkind.Create},
-					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
+					core.LThreadPermission{permbase.Create},
+					core.FilesystemPermission{permbase.Read, core.PathPattern("/...")},
 				),
 				Filesystem: fls,
 				Limits:     []core.Limit{permissiveLthreadLimit},
@@ -11179,8 +11180,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: append(core.GetDefaultGlobalVarPermissions(),
-					core.LThreadPermission{permkind.Create},
-					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
+					core.LThreadPermission{permbase.Create},
+					core.FilesystemPermission{permbase.Read, core.PathPattern("/...")},
 				),
 				Filesystem: fls,
 				Limits:     []core.Limit{permissiveLthreadLimit},
@@ -11258,8 +11259,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: append(core.GetDefaultGlobalVarPermissions(),
-					core.LThreadPermission{permkind.Create},
-					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
+					core.LThreadPermission{permbase.Create},
+					core.FilesystemPermission{permbase.Read, core.PathPattern("/...")},
 				),
 				Filesystem: fls,
 				Limits:     []core.Limit{permissiveLthreadLimit},
@@ -11340,9 +11341,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: append(core.GetDefaultGlobalVarPermissions(),
-					core.LThreadPermission{permkind.Create},
-					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
-					core.FilesystemPermission{permkind.Write, core.PathPattern("/...")},
+					core.LThreadPermission{permbase.Create},
+					core.FilesystemPermission{permbase.Read, core.PathPattern("/...")},
+					core.FilesystemPermission{permbase.Write, core.PathPattern("/...")},
 				),
 				Filesystem: fls,
 				Limits:     []core.Limit{permissiveLthreadLimit},
@@ -11434,9 +11435,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: append(core.GetDefaultGlobalVarPermissions(),
-					core.LThreadPermission{permkind.Create},
-					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
-					core.FilesystemPermission{permkind.Write, core.PathPattern("/...")},
+					core.LThreadPermission{permbase.Create},
+					core.FilesystemPermission{permbase.Read, core.PathPattern("/...")},
+					core.FilesystemPermission{permbase.Write, core.PathPattern("/...")},
 				),
 				Filesystem: fls,
 				Limits:     []core.Limit{permissiveLthreadLimit},
@@ -11540,12 +11541,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: append(core.GetDefaultGlobalVarPermissions(),
-					core.LThreadPermission{permkind.Create},
-					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
-					core.FilesystemPermission{permkind.Write, core.PathPattern("/...")},
-					core.DatabasePermission{permkind.Read, core.Host("ldb://main")},
-					core.DatabasePermission{permkind.Write, core.Host("ldb://main")},
-					core.DatabasePermission{permkind.Delete, core.Host("ldb://main")},
+					core.LThreadPermission{permbase.Create},
+					core.FilesystemPermission{permbase.Read, core.PathPattern("/...")},
+					core.FilesystemPermission{permbase.Write, core.PathPattern("/...")},
+					core.DatabasePermission{permbase.Read, core.Host("ldb://main")},
+					core.DatabasePermission{permbase.Write, core.Host("ldb://main")},
+					core.DatabasePermission{permbase.Delete, core.Host("ldb://main")},
 				),
 				Filesystem: fls,
 				Limits:     []core.Limit{permissiveLthreadLimit},
@@ -11658,12 +11659,12 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: append(core.GetDefaultGlobalVarPermissions(),
-					core.LThreadPermission{permkind.Create},
-					core.FilesystemPermission{permkind.Read, core.PathPattern("/...")},
-					core.FilesystemPermission{permkind.Write, core.PathPattern("/...")},
-					core.DatabasePermission{permkind.Read, core.Host("ldb://main")},
-					core.DatabasePermission{permkind.Write, core.Host("ldb://main")},
-					core.DatabasePermission{permkind.Delete, core.Host("ldb://main")},
+					core.LThreadPermission{permbase.Create},
+					core.FilesystemPermission{permbase.Read, core.PathPattern("/...")},
+					core.FilesystemPermission{permbase.Write, core.PathPattern("/...")},
+					core.DatabasePermission{permbase.Read, core.Host("ldb://main")},
+					core.DatabasePermission{permbase.Write, core.Host("ldb://main")},
+					core.DatabasePermission{permbase.Delete, core.Host("ldb://main")},
 				),
 				Filesystem: fls,
 				Limits:     []core.Limit{permissiveLthreadLimit},
@@ -11777,7 +11778,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			`)
 
 			state := core.NewGlobalState(core.NewContext(core.ContextConfig{
-				Permissions: append(core.GetDefaultGlobalVarPermissions(), core.LThreadPermission{Kind_: permkind.Create}),
+				Permissions: append(core.GetDefaultGlobalVarPermissions(), core.LThreadPermission{Kind_: permbase.Create}),
 				Limits:      []core.Limit{permissiveLthreadLimit},
 			}))
 			state.TestingState.IsTestingEnabled = true
@@ -11788,7 +11789,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			assert.Error(t, err)
 			assert.ErrorIs(t, err, core.NewNotAllowedError(core.HttpPermission{
-				Kind_:  permkind.Read,
+				Kind_:  permbase.Read,
 				Entity: core.URL("https://example.com/index.html"),
 			}))
 			assert.Nil(t, res)
@@ -12887,7 +12888,7 @@ func (e *reversibleEffect) Resources() []core.ResourceName {
 }
 
 func (e *reversibleEffect) PermissionKind() core.PermissionKind {
-	return permkind.Create
+	return permbase.Create
 }
 func (e *reversibleEffect) Reversability(*core.Context) core.Reversability {
 	return core.Reversible
@@ -12922,7 +12923,7 @@ func (e *irreversibleEffect) Resources() []core.ResourceName {
 }
 
 func (e *irreversibleEffect) PermissionKind() core.PermissionKind {
-	return permkind.Create
+	return permbase.Create
 }
 func (e *irreversibleEffect) Reversability(*core.Context) core.Reversability {
 	return core.Irreversible
@@ -12971,7 +12972,7 @@ func _makeTreeWalkEvalFunc(t *testing.T, recycle bool) func(c any, s *core.Globa
 		case parse.SourceFile:
 			chunk := utils.Must(parse.ParseChunkSource(val))
 
-			mod = &core.Module{MainChunk: chunk}
+			mod = core.WrapLowerModule(&inoxmod.Module{MainChunk: chunk})
 
 			//if the test case provide a module we reuse the source
 			if s.Module != nil {
@@ -12987,7 +12988,7 @@ func _makeTreeWalkEvalFunc(t *testing.T, recycle bool) func(c any, s *core.Globa
 				CodeString: val,
 			}))
 
-			mod = &core.Module{MainChunk: chunk}
+			mod = core.WrapLowerModule(&inoxmod.Module{MainChunk: chunk})
 
 			//if the test case provide a module we reuse the source
 			if s.Module != nil {

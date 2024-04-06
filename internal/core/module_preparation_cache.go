@@ -152,7 +152,11 @@ func (c *PreparationCacheEntry) ModuleAbsoluteSource() (ResourceName, bool) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	return c.module.AbsoluteSource()
+	name, ok := c.module.AbsoluteSource()
+	if !ok {
+		return nil, false
+	}
+	return name.(ResourceName), true
 }
 
 func (c *PreparationCacheEntry) MainChunkTopLevelNodeIs(chunk *parse.Chunk) bool {

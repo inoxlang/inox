@@ -3,7 +3,8 @@ package core
 import (
 	"testing"
 
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/inoxmod"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
@@ -22,7 +23,7 @@ func TestSymbolicEvalCheck(t *testing.T) {
 			CodeString: code,
 		}))
 
-		mod := &Module{MainChunk: chunk, TopLevelNode: chunk.Node}
+		mod := WrapLowerModule(&inoxmod.Module{MainChunk: chunk, TopLevelNode: chunk.Node})
 
 		_, err := symbolic.EvalCheck(symbolic.EvalCheckInput{
 			Node:   chunk.Node,
@@ -43,7 +44,7 @@ func TestSymbolicEvalCheck(t *testing.T) {
 			CodeString: code,
 		}))
 
-		mod := &Module{MainChunk: chunk, TopLevelNode: chunk.Node}
+		mod := WrapLowerModule(&inoxmod.Module{MainChunk: chunk, TopLevelNode: chunk.Node})
 
 		_, err := symbolic.EvalCheck(symbolic.EvalCheckInput{
 			Node:   chunk.Node,
@@ -64,10 +65,10 @@ func TestSymbolicEvalCheck(t *testing.T) {
 			CodeString: code,
 		}))
 
-		mod := &Module{MainChunk: chunk, TopLevelNode: chunk.Node}
+		mod := WrapLowerModule(&inoxmod.Module{MainChunk: chunk, TopLevelNode: chunk.Node})
 
 		ctx := NewContext(ContextConfig{
-			Permissions: []Permission{LThreadPermission{Kind_: permkind.Create}},
+			Permissions: []Permission{LThreadPermission{Kind_: permbase.Create}},
 		})
 		defer ctx.CancelGracefully()
 
@@ -92,7 +93,7 @@ func TestSymbolicEvalCheck(t *testing.T) {
 			CodeString: code,
 		}))
 
-		mod := &Module{MainChunk: chunk, TopLevelNode: chunk.Node}
+		mod := WrapLowerModule(&inoxmod.Module{MainChunk: chunk, TopLevelNode: chunk.Node})
 
 		data, err := symbolic.EvalCheck(symbolic.EvalCheckInput{
 			Node:   chunk.Node,
@@ -120,10 +121,10 @@ func TestSymbolicEvalCheck(t *testing.T) {
 			CodeString: code,
 		}))
 
-		mod := &Module{MainChunk: chunk, TopLevelNode: chunk.Node}
+		mod := WrapLowerModule(&inoxmod.Module{MainChunk: chunk, TopLevelNode: chunk.Node})
 
 		ctx := NewContext(ContextConfig{
-			Permissions: []Permission{LThreadPermission{Kind_: permkind.Create}},
+			Permissions: []Permission{LThreadPermission{Kind_: permbase.Create}},
 		})
 		defer ctx.CancelGracefully()
 

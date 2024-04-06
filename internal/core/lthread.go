@@ -10,7 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	permkind "github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
@@ -87,7 +87,7 @@ type LthreadSpawnArgs struct {
 func SpawnLThread(args LthreadSpawnArgs) (*LThread, error) {
 
 	if !args.IgnoreCreateLThreadPermCheck {
-		perm := LThreadPermission{Kind_: permkind.Create}
+		perm := LThreadPermission{Kind_: permbase.Create}
 
 		if err := args.SpawnerState.Ctx.CheckHasPermission(perm); err != nil {
 			return nil, fmt.Errorf("cannot spawn lthread: %s", err.Error())
@@ -97,9 +97,9 @@ func SpawnLThread(args LthreadSpawnArgs) (*LThread, error) {
 	if args.LthreadCtx == nil {
 		args.LthreadCtx = NewContext(ContextConfig{
 			Permissions: []Permission{
-				GlobalVarPermission{Kind_: permkind.Read, Name: "*"},
-				GlobalVarPermission{Kind_: permkind.Use, Name: "*"},
-				GlobalVarPermission{Kind_: permkind.Create, Name: "*"},
+				GlobalVarPermission{Kind_: permbase.Read, Name: "*"},
+				GlobalVarPermission{Kind_: permbase.Use, Name: "*"},
+				GlobalVarPermission{Kind_: permbase.Create, Name: "*"},
 			},
 			ParentContext: args.SpawnerState.Ctx,
 		})

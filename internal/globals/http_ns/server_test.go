@@ -21,7 +21,8 @@ import (
 
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/inoxmod"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/html_ns"
 	"github.com/inoxlang/inox/internal/globals/http_ns/spec"
@@ -79,7 +80,7 @@ func TestHttpServerMissingProvidePermission(t *testing.T) {
 	server, err := NewHttpsServer(ctx, host)
 
 	assert.IsType(t, &core.NotAllowedError{}, err)
-	assert.Equal(t, core.HttpPermission{Kind_: permkind.Provide, Entity: host}, err.(*core.NotAllowedError).Permission)
+	assert.Equal(t, core.HttpPermission{Kind_: permbase.Provide, Entity: host}, err.(*core.NotAllowedError).Permission)
 	assert.Nil(t, server)
 }
 
@@ -104,7 +105,7 @@ func TestHttpServerWithoutHandler(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.HttpPermission{Kind_: permkind.Provide, Entity: host},
+				core.HttpPermission{Kind_: permbase.Provide, Entity: host},
 			},
 			Filesystem: fs_ns.GetOsFilesystem(),
 		})
@@ -143,7 +144,7 @@ func TestHttpServerWithoutHandler(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.HttpPermission{Kind_: permkind.Provide, Entity: host},
+				core.HttpPermission{Kind_: permbase.Provide, Entity: host},
 			},
 			Filesystem: fs_ns.GetOsFilesystem(),
 		})
@@ -198,7 +199,7 @@ func TestHttpServerWithoutHandler(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.HttpPermission{Kind_: permkind.Provide, Entity: host},
+				core.HttpPermission{Kind_: permbase.Provide, Entity: host},
 			},
 			Filesystem: fs_ns.GetOsFilesystem(),
 		})
@@ -256,7 +257,7 @@ func TestHttpServerWithoutHandler(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.HttpPermission{Kind_: permkind.Provide, Entity: host},
+				core.HttpPermission{Kind_: permbase.Provide, Entity: host},
 			},
 			Filesystem: fs_ns.GetOsFilesystem(),
 		})
@@ -342,7 +343,7 @@ func TestHttpServerUserHandler(t *testing.T) {
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: []core.Permission{
-					core.HttpPermission{Kind_: permkind.Provide, Entity: host},
+					core.HttpPermission{Kind_: permbase.Provide, Entity: host},
 				},
 				Filesystem: fs_ns.GetOsFilesystem(),
 			})
@@ -754,20 +755,20 @@ func setupTestCase(t *testing.T, testCase serverTestCase) (*core.GlobalState, *c
 	}
 
 	perms := []core.Permission{
-		core.HttpPermission{Kind_: permkind.Provide, Entity: host},
-		core.GlobalVarPermission{Kind_: permkind.Use, Name: "*"},
-		core.GlobalVarPermission{Kind_: permkind.Create, Name: "*"},
-		core.GlobalVarPermission{Kind_: permkind.Read, Name: "*"},
-		core.LThreadPermission{Kind_: permkind.Create},
-		core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
-		core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")},
+		core.HttpPermission{Kind_: permbase.Provide, Entity: host},
+		core.GlobalVarPermission{Kind_: permbase.Use, Name: "*"},
+		core.GlobalVarPermission{Kind_: permbase.Create, Name: "*"},
+		core.GlobalVarPermission{Kind_: permbase.Read, Name: "*"},
+		core.LThreadPermission{Kind_: permbase.Create},
+		core.FilesystemPermission{Kind_: permbase.Read, Entity: core.PathPattern("/...")},
+		core.FilesystemPermission{Kind_: permbase.Write, Entity: core.PathPattern("/...")},
 	}
 
 	utils.PanicIfErr(util.WriteFile(fls, "/main.ix", []byte(testCase.input), 0700))
 
 	// create module
 	chunk := parse.MustParseChunk(testCase.input)
-	module := &core.Module{
+	module := core.WrapLowerModule(&inoxmod.Module{
 		MainChunk: parse.NewParsedChunkSource(chunk, parse.SourceFile{
 			NameString:  "/main.ix",
 			Resource:    "/main.ix",
@@ -776,8 +777,7 @@ func setupTestCase(t *testing.T, testCase serverTestCase) (*core.GlobalState, *c
 		}),
 		TopLevelNode:     chunk,
 		ManifestTemplate: chunk.Manifest,
-	}
-
+	})
 	manifest, _, _, err := module.PreInit(core.PreinitArgs{
 		AddDefaultPermissions: true,
 	})
@@ -1198,10 +1198,10 @@ func createHandlers(t *testing.T, code string) (*core.InoxFunction, any, *core.M
 		NameString: "server-test",
 		CodeString: code,
 	}))
-	module := &core.Module{
+	module := core.WrapLowerModule(&inoxmod.Module{
 		MainChunk:    chunk,
 		TopLevelNode: chunk.Node,
-	}
+	})
 
 	// staticCheckData, err := core.StaticCheck(core.StaticCheckInput{
 	// 	State:  core.NewGlobalState(core.NewContext(core.ContextConfig{})),
@@ -1315,7 +1315,7 @@ func (*dummyEffect) IsApplying() bool {
 	panic("unimplemented")
 }
 
-func (*dummyEffect) PermissionKind() permkind.PermissionKind {
+func (*dummyEffect) PermissionKind() permbase.PermissionKind {
 	panic("unimplemented")
 }
 

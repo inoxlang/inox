@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	parse "github.com/inoxlang/inox/internal/parse"
@@ -168,7 +168,7 @@ func findObjectPropertyNameCompletions(
 		ancestors[ancestorCount-3].(*parse.ObjectProperty).HasNameEqualTo(inoxconsts.MANIFEST_PERMS_SECTION_NAME) &&
 		utils.Implements[*parse.Manifest](ancestors[ancestorCount-5]) {
 
-		for _, info := range permkind.PERMISSION_KINDS {
+		for _, info := range permbase.PERMISSION_KINDS {
 			if !hasPrefixCaseInsensitive(info.Name, ident.Name) {
 				continue
 			}
@@ -196,7 +196,7 @@ func findObjectPropertyNameCompletions(
 		ancestors[ancestorCount-3].(*parse.ObjectProperty).HasNameEqualTo(core.IMPORT_CONFIG__ALLOW_PROPNAME) &&
 		utils.Implements[*parse.ImportStatement](ancestors[ancestorCount-5]) {
 
-		for _, info := range permkind.PERMISSION_KINDS {
+		for _, info := range permbase.PERMISSION_KINDS {
 			if !hasPrefixCaseInsensitive(info.Name, ident.Name) {
 				continue
 			}

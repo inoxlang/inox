@@ -17,7 +17,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/globals/ws_ns"
 	netaddr "github.com/inoxlang/inox/internal/netaddr"
@@ -179,8 +179,8 @@ func (s *ControlServer) CreateControlledProcess(grantedPerms, forbiddenPerms []c
 
 	grantedPerms = slices.Clone(grantedPerms)
 	grantedPerms = append(grantedPerms,
-		core.WebsocketPermission{Kind_: permkind.Read, Endpoint: core.Host(s.host())},
-		core.WebsocketPermission{Kind_: permkind.Write, Endpoint: core.Host(s.host())},
+		core.WebsocketPermission{Kind_: permbase.Read, Endpoint: core.Host(s.host())},
+		core.WebsocketPermission{Kind_: permbase.Write, Endpoint: core.Host(s.host())},
 	)
 
 	token := MakeControlledProcessToken()

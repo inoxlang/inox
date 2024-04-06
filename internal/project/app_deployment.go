@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/inoxd/node"
 )
@@ -44,7 +44,7 @@ func (p *Project) PrepareApplicationDeployment(ctx *core.Context, args Applicati
 
 	parsingCtx := core.NewContextWithEmptyState(core.ContextConfig{
 		Permissions: []core.Permission{
-			core.FilesystemPermission{Kind_: permkind.Read, Entity: core.ROOT_PREFIX_PATH_PATTERN},
+			core.FilesystemPermission{Kind_: permbase.Read, Entity: core.ROOT_PREFIX_PATH_PATTERN},
 		},
 		DoNotSpawnDoneGoroutine:   true,
 		DoNotSetFilesystemContext: true,
@@ -58,12 +58,12 @@ func (p *Project) PrepareApplicationDeployment(ctx *core.Context, args Applicati
 		return nil, err
 	}
 
-	if mod.ModuleKind != core.ApplicationModule {
-		if mod.ModuleKind == core.UnspecifiedModuleKind {
+	if mod.Kind != core.ApplicationModule {
+		if mod.Kind == core.UnspecifiedModuleKind {
 			return nil,
 				fmt.Errorf("module %s is not of kind 'application': make sure to add a section `kind: \"application\"` in its manifest", modulePath)
 		}
-		return nil, fmt.Errorf("module %s is of kind '%s' not 'application'", modulePath, mod.ModuleKind)
+		return nil, fmt.Errorf("module %s is of kind '%s' not 'application'", modulePath, mod.Kind)
 	}
 
 	agent := node.GetAgent()

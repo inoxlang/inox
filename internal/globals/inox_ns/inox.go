@@ -13,6 +13,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/utils"
 
+	"github.com/inoxlang/inox/internal/core/inoxmod"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
 
@@ -118,7 +119,7 @@ func _parse_local_script(ctx *core.Context, src core.Path) (*core.Module, error)
 }
 
 func _parse_in_memory_module(ctx *core.Context, name core.String, code core.String) (*core.Module, error) {
-	mod, err := core.ParseInMemoryModule(code, core.InMemoryModuleParsingConfig{
+	mod, err := core.ParseInMemoryModule(code.UnderlyingString(), core.InMemoryModuleParsingConfig{
 		Name:    string(name),
 		Context: ctx,
 	})
@@ -264,12 +265,12 @@ func GetCheckData(fpath string, compilationCtx *core.Context, out io.Writer) map
 	{
 		i := -1
 
-		fmt.Fprintln(os.Stderr, len(mod.ParsingErrors), len(mod.ParsingErrorPositions))
-		data["parsingErrors"] = utils.MapSlice(mod.ParsingErrors, func(err core.Error) any {
+		fmt.Fprintln(os.Stderr, len(mod.Errors), len(mod.Errors))
+		data["parsingErrors"] = utils.MapSlice(mod.Errors, func(err inoxmod.Error) any {
 			i++
 			return map[string]any{
-				"text":     err.Text(),
-				"location": mod.ParsingErrorPositions[i],
+				"text":     err.BaseError.Error(),
+				"location": err.Position.String(),
 			}
 		})
 	}

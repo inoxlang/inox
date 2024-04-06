@@ -1,10 +1,14 @@
 package core
 
 import (
+	"path/filepath"
 	"strings"
 	"testing"
 
-	permkind "github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/go-git/go-billy/v5/helper/polyfill"
+	"github.com/go-git/go-billy/v5/osfs"
+	"github.com/inoxlang/inox/internal/afs"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
@@ -609,15 +613,23 @@ func parseEval(t *testing.T, s string) Value {
 func NewDefaultTestContext() *Context {
 	return NewContext(ContextConfig{
 		Permissions: []Permission{
-			GlobalVarPermission{permkind.Read, "*"},
-			GlobalVarPermission{permkind.Update, "*"},
-			GlobalVarPermission{permkind.Create, "*"},
-			GlobalVarPermission{permkind.Use, "*"},
+			GlobalVarPermission{permbase.Read, "*"},
+			GlobalVarPermission{permbase.Update, "*"},
+			GlobalVarPermission{permbase.Create, "*"},
+			GlobalVarPermission{permbase.Use, "*"},
 
-			HttpPermission{Kind_: permkind.Read, Entity: HostPattern("https://**")},
-			LThreadPermission{permkind.Create},
+			HttpPermission{Kind_: permbase.Read, Entity: HostPattern("https://**")},
+			LThreadPermission{permbase.Create},
 		},
 		Filesystem: newOsFilesystem(),
 		Limits:     []Limit{MustMakeNotAutoDepletingCountLimit(THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, 100_000)},
+	})
+}
+
+func newOsFilesystem() afs.Filesystem {
+	fs := polyfill.New(osfs.Default)
+
+	return afs.AddAbsoluteFeature(fs, func(path string) (string, error) {
+		return filepath.Abs(path)
 	})
 }

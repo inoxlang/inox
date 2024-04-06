@@ -10,7 +10,7 @@ import (
 
 	"github.com/elazarl/goproxy"
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/mimeconsts"
 	netaddr "github.com/inoxlang/inox/internal/netaddr"
 	"github.com/inoxlang/inox/internal/utils"
@@ -39,7 +39,7 @@ func MakeHTTPProxy(ctx *core.Context, params HTTPProxyParams) (*http.Server, err
 
 	addr := "127.0.0.1:" + strconv.Itoa(params.Port)
 
-	perm := core.HttpPermission{Kind_: permkind.Provide, Entity: core.Host("http://" + addr)}
+	perm := core.HttpPermission{Kind_: permbase.Provide, Entity: core.Host("http://" + addr)}
 
 	if err := ctx.CheckHasPermission(perm); err != nil {
 		return nil, err

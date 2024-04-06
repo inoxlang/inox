@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/shirou/gopsutil/v3/process"
@@ -29,7 +29,7 @@ func TestControlServer(t *testing.T) {
 
 		ctx := core.NewContextWithEmptyState(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.WebsocketPermission{Kind_: permkind.Provide},
+				core.WebsocketPermission{Kind_: permbase.Provide},
 			},
 			Filesystem: fs_ns.NewMemFilesystem(10_000),
 		}, /*os.Stdout*/ nil)
@@ -63,7 +63,7 @@ func TestControlServer(t *testing.T) {
 		time.Sleep(100 * time.Millisecond)
 
 		grantedPerms := []core.Permission{
-			core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
+			core.FilesystemPermission{Kind_: permbase.Read, Entity: core.PathPattern("/...")},
 		}
 
 		proc, err := server.CreateControlledProcess(grantedPerms, nil)
@@ -101,7 +101,7 @@ func TestControlServer(t *testing.T) {
 		time.Sleep(100 * time.Millisecond)
 
 		grantedPerms := []core.Permission{
-			core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
+			core.FilesystemPermission{Kind_: permbase.Read, Entity: core.PathPattern("/...")},
 		}
 
 		proc, err := server.CreateControlledProcess(grantedPerms, nil)

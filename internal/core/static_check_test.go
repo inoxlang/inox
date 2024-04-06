@@ -9,7 +9,8 @@ import (
 	"testing"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/inoxmod"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/core/text"
 	"github.com/inoxlang/inox/internal/inoxconsts"
@@ -2497,7 +2498,7 @@ func TestCheck(t *testing.T) {
 
 			ctx := NewContext(ContextConfig{
 				Permissions: []Permission{
-					FilesystemPermission{Kind_: permkind.Read, Entity: PathPattern("/...")},
+					FilesystemPermission{Kind_: permbase.Read, Entity: PathPattern("/...")},
 				},
 				Filesystem: newOsFilesystem(),
 			})
@@ -2995,11 +2996,11 @@ func TestCheck(t *testing.T) {
 				Node:  n,
 				Chunk: src,
 				//test suite module
-				Module: &Module{
+				Module: core.WrapLowerModule(&inoxmod.Module{
 					MainChunk:    src,
 					TopLevelNode: src.Node,
-					ModuleKind:   TestSuiteModule,
-				},
+					Kind:         TestSuiteModule,
+				}),
 			}))
 		})
 
@@ -3363,7 +3364,7 @@ func TestCheck(t *testing.T) {
 		createState := func(mod *Module) *GlobalState {
 			state := NewGlobalState(NewContext(ContextConfig{
 				Permissions: []Permission{
-					FilesystemPermission{Kind_: permkind.Read, Entity: PathPattern("/...")},
+					FilesystemPermission{Kind_: permbase.Read, Entity: PathPattern("/...")},
 				},
 				Filesystem: newOsFilesystem(),
 			}))

@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/globals/ws_ns"
@@ -45,9 +45,9 @@ func TestControlClient(t *testing.T) {
 
 		ctx := core.NewContextWithEmptyState(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.WebsocketPermission{Kind_: permkind.Provide},
-				core.WebsocketPermission{Kind_: permkind.Read, Endpoint: core.Host("wss://localhost:8310")},
-				core.WebsocketPermission{Kind_: permkind.Write, Endpoint: core.Host("wss://localhost:8310")},
+				core.WebsocketPermission{Kind_: permbase.Provide},
+				core.WebsocketPermission{Kind_: permbase.Read, Endpoint: core.Host("wss://localhost:8310")},
+				core.WebsocketPermission{Kind_: permbase.Write, Endpoint: core.Host("wss://localhost:8310")},
 			},
 			Filesystem: fs_ns.NewMemFilesystem(10_000),
 			Limits:     []core.Limit{permissiveSocketCountLimit},
@@ -243,8 +243,8 @@ func TestControlClient(t *testing.T) {
 
 		clientCtx := core.NewContextWithEmptyState(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.WebsocketPermission{Kind_: permkind.Read, Endpoint: core.Host("wss://localhost:8310")},
-				core.WebsocketPermission{Kind_: permkind.Write, Endpoint: core.Host("wss://localhost:8310")},
+				core.WebsocketPermission{Kind_: permbase.Read, Endpoint: core.Host("wss://localhost:8310")},
+				core.WebsocketPermission{Kind_: permbase.Write, Endpoint: core.Host("wss://localhost:8310")},
 			},
 			Filesystem: fs_ns.NewMemFilesystem(10_000),
 			Limits:     []core.Limit{permissiveSocketCountLimit},

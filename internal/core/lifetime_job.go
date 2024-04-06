@@ -8,7 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	permkind "github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -101,7 +101,7 @@ func (inst *LifetimeJobInstance) Thread() *LThread {
 func (j *LifetimeJob) Instantiate(ctx *Context, self Value) (*LifetimeJobInstance, error) {
 	spawnerState := ctx.MustGetClosestState()
 
-	createLThreadPerm := LThreadPermission{Kind_: permkind.Create}
+	createLThreadPerm := LThreadPermission{Kind_: permbase.Create}
 
 	if err := spawnerState.Ctx.CheckHasPermission(createLThreadPerm); err != nil {
 		return nil, fmt.Errorf("lifetime job: following permission is required for running the job: %w", err)
@@ -123,8 +123,8 @@ func (j *LifetimeJob) Instantiate(ctx *Context, self Value) (*LifetimeJobInstanc
 	permissions := slices.Clone(manifest.RequiredPermissions)
 	permissions = append(permissions, createLThreadPerm)
 
-	readGlobalPerm := GlobalVarPermission{Kind_: permkind.Read, Name: "*"}
-	useGlobalPerm := GlobalVarPermission{Kind_: permkind.Use, Name: "*"}
+	readGlobalPerm := GlobalVarPermission{Kind_: permbase.Read, Name: "*"}
+	useGlobalPerm := GlobalVarPermission{Kind_: permbase.Use, Name: "*"}
 
 	if !manifest.RequiresPermission(readGlobalPerm) {
 		permissions = append(permissions, readGlobalPerm)
@@ -196,7 +196,7 @@ func (*LifetimeJob) PropertyNames(ctx *Context) []string {
 }
 
 // func evaluateLifetimeJobManifest(chunk *parse.ParsedChunk, parentState *GlobalState) (*Manifest, error) {
-// 	createRoutinePerm := RoutinePermission{Kind_: permkind.Create}
+// 	createRoutinePerm := RoutinePermission{Kind_: permbase.Create}
 
 // 	if err := parentState.Ctx.CheckHasPermission(createRoutinePerm); err != nil {
 // 		return nil, fmt.Errorf("lifetime job: following permission is required for running the job: %w", err)

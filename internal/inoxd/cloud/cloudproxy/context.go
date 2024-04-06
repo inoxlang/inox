@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 )
 
 func createContexts(host core.Host, proxyArgs CloudProxyArgs) (ctx, topCtx *core.Context) {
@@ -13,21 +13,21 @@ func createContexts(host core.Host, proxyArgs CloudProxyArgs) (ctx, topCtx *core
 
 	perms := []core.Permission{
 		core.WebsocketPermission{
-			Kind_:    permkind.Provide,
+			Kind_:    permbase.Provide,
 			Endpoint: host,
 		},
 		core.WebsocketPermission{
-			Kind_: permkind.Read,
+			Kind_: permbase.Read,
 		},
 		core.WebsocketPermission{
-			Kind_: permkind.Write,
+			Kind_: permbase.Write,
 		},
 		core.FilesystemPermission{
-			Kind_:  permkind.Read,
+			Kind_:  permbase.Read,
 			Entity: databaseDirPattern,
 		},
 		core.FilesystemPermission{
-			Kind_:  permkind.Write,
+			Kind_:  permbase.Write,
 			Entity: databaseDirPattern,
 		},
 	}

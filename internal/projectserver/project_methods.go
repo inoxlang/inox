@@ -8,7 +8,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/codebase/gen"
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/css"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
@@ -300,9 +300,9 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 		ParentContext: sessionCtx,
 		Filesystem:    lspFilesystem,
 		Permissions: append(core.GetDefaultGlobalVarPermissions(),
-			core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
-			core.HttpPermission{Kind_: permkind.Provide, Entity: core.Host("https://localhost:" + toolsServerPort)},
-			core.LThreadPermission{Kind_: permkind.Create},
+			core.FilesystemPermission{Kind_: permbase.Read, Entity: core.PathPattern("/...")},
+			core.HttpPermission{Kind_: permbase.Provide, Entity: core.Host("https://localhost:" + toolsServerPort)},
+			core.LThreadPermission{Kind_: permbase.Create},
 		),
 	}, nil)
 

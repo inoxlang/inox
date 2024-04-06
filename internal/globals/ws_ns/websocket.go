@@ -10,7 +10,7 @@ import (
 	"github.com/gorilla/websocket"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	netaddr "github.com/inoxlang/inox/internal/netaddr"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -223,7 +223,7 @@ func (conn *WebsocketConnection) checkReadAndConfig(ctx *core.Context) error {
 	//if on client side
 	if conn.server == nil {
 		perm := core.WebsocketPermission{
-			Kind_:    permkind.Read,
+			Kind_:    permbase.Read,
 			Endpoint: conn.endpoint,
 		}
 
@@ -243,7 +243,7 @@ func (conn *WebsocketConnection) checkWriteAndConfig(ctx *core.Context) error {
 	//if on client side
 	if conn.server == nil {
 		perm := core.WebsocketPermission{
-			Kind_:    permkind.WriteStream,
+			Kind_:    permbase.WriteStream,
 			Endpoint: conn.endpoint,
 		}
 

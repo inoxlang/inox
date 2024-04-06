@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	permkind "github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -18,7 +18,7 @@ func TestHttpPermission(t *testing.T) {
 		HostPattern("https://**"),
 	}
 
-	for kind := permkind.Read; kind <= permkind.Provide; kind++ {
+	for kind := permbase.Read; kind <= permbase.Provide; kind++ {
 		for _, entity := range ENTITIES {
 			t.Run(kind.String()+"_"+fmt.Sprint(entity)+"_includes_itself", func(t *testing.T) {
 				perm := HttpPermission{Kind_: kind, Entity: entity.(GoString)}
@@ -27,7 +27,7 @@ func TestHttpPermission(t *testing.T) {
 		}
 	}
 
-	for kind := permkind.Read; kind <= permkind.Provide; kind++ {
+	for kind := permbase.Read; kind <= permbase.Provide; kind++ {
 		for i, entity := range ENTITIES {
 			for _, prevEntity := range ENTITIES[:i] {
 				t.Run(fmt.Sprintf("%s_%s_includes_%s", kind, entity, prevEntity), func(t *testing.T) {
@@ -41,12 +41,12 @@ func TestHttpPermission(t *testing.T) {
 	}
 
 	t.Run("https://**:<port>", func(t *testing.T) {
-		anyHttps8080Host := HttpPermission{Kind_: permkind.Write, Entity: HostPattern("https://**:8080")}
-		localhost8080 := HttpPermission{Kind_: permkind.Write, Entity: Host("https://localhost:8080")}
-		exampleCom8080 := HttpPermission{Kind_: permkind.Write, Entity: Host("https://example.com:8080")}
-		exampleComSudomain8080 := HttpPermission{Kind_: permkind.Write, Entity: Host("https://sub.example.com:8080")}
-		localhost := HttpPermission{Kind_: permkind.Write, Entity: Host("https://localhost")}
-		exampleCom := HttpPermission{Kind_: permkind.Write, Entity: Host("https://example.com")}
+		anyHttps8080Host := HttpPermission{Kind_: permbase.Write, Entity: HostPattern("https://**:8080")}
+		localhost8080 := HttpPermission{Kind_: permbase.Write, Entity: Host("https://localhost:8080")}
+		exampleCom8080 := HttpPermission{Kind_: permbase.Write, Entity: Host("https://example.com:8080")}
+		exampleComSudomain8080 := HttpPermission{Kind_: permbase.Write, Entity: Host("https://sub.example.com:8080")}
+		localhost := HttpPermission{Kind_: permbase.Write, Entity: Host("https://localhost")}
+		exampleCom := HttpPermission{Kind_: permbase.Write, Entity: Host("https://example.com")}
 
 		assert.True(t, anyHttps8080Host.Includes(localhost8080))
 		assert.True(t, anyHttps8080Host.Includes(exampleCom8080))
@@ -56,23 +56,23 @@ func TestHttpPermission(t *testing.T) {
 	})
 
 	t.Run("a permission with a prefix pattern should include a permission with a longer prefix pattern", func(t *testing.T) {
-		perm := HttpPermission{Kind_: permkind.Read, Entity: URLPattern("https://localhost:443/...")}
-		otherPerm := HttpPermission{Kind_: permkind.Read, Entity: URL("https://localhost:443/abc/...")}
+		perm := HttpPermission{Kind_: permbase.Read, Entity: URLPattern("https://localhost:443/...")}
+		otherPerm := HttpPermission{Kind_: permbase.Read, Entity: URL("https://localhost:443/abc/...")}
 		assert.True(t, perm.Includes(otherPerm))
 	})
 
 	t.Run("schemes should be equal", func(t *testing.T) {
-		httpsPerm := HttpPermission{Kind_: permkind.Read, Entity: URLPattern("https://localhost:443/...")}
-		httpPerm := HttpPermission{Kind_: permkind.Read, Entity: URL("http://localhost:443/...")}
+		httpsPerm := HttpPermission{Kind_: permbase.Read, Entity: URLPattern("https://localhost:443/...")}
+		httpPerm := HttpPermission{Kind_: permbase.Read, Entity: URL("http://localhost:443/...")}
 		assert.False(t, httpsPerm.Includes(httpPerm))
 		assert.False(t, httpPerm.Includes(httpsPerm))
 	})
 
 	t.Run("write includes create & update", func(t *testing.T) {
 		patt := URLPattern("https://localhost:443/...")
-		writePerm := HttpPermission{Kind_: permkind.Write, Entity: patt}
-		createPerm := HttpPermission{Kind_: permkind.Create, Entity: patt}
-		updatePerm := HttpPermission{Kind_: permkind.Update, Entity: patt}
+		writePerm := HttpPermission{Kind_: permbase.Write, Entity: patt}
+		createPerm := HttpPermission{Kind_: permbase.Create, Entity: patt}
+		updatePerm := HttpPermission{Kind_: permbase.Update, Entity: patt}
 
 		assert.True(t, writePerm.Includes(createPerm))
 		assert.True(t, writePerm.Includes(updatePerm))
@@ -82,13 +82,13 @@ func TestHttpPermission(t *testing.T) {
 	})
 
 	t.Run("special any entity permission", func(t *testing.T) {
-		perm := HttpPermission{Kind_: permkind.Write, Entity: nil, AnyEntity: true}
+		perm := HttpPermission{Kind_: permbase.Write, Entity: nil, AnyEntity: true}
 
-		assert.True(t, perm.Includes(HttpPermission{Kind_: permkind.Write, Entity: Host("https://localhost")}))
-		assert.True(t, perm.Includes(HttpPermission{Kind_: permkind.Write, Entity: Host("https://localhost:8080")}))
-		assert.True(t, perm.Includes(HttpPermission{Kind_: permkind.Write, Entity: Host("http://localhost")}))
+		assert.True(t, perm.Includes(HttpPermission{Kind_: permbase.Write, Entity: Host("https://localhost")}))
+		assert.True(t, perm.Includes(HttpPermission{Kind_: permbase.Write, Entity: Host("https://localhost:8080")}))
+		assert.True(t, perm.Includes(HttpPermission{Kind_: permbase.Write, Entity: Host("http://localhost")}))
 
-		writeLocahost := HttpPermission{Kind_: permkind.Write, Entity: Host("https://localhost")}
+		writeLocahost := HttpPermission{Kind_: permbase.Write, Entity: Host("https://localhost")}
 		assert.False(t, writeLocahost.Includes(perm))
 	})
 }
@@ -96,8 +96,8 @@ func TestHttpPermission(t *testing.T) {
 func TestWebsocketPermission(t *testing.T) {
 
 	t.Run("host includes host and URL but URL does not include host", func(t *testing.T) {
-		permWithHost := WebsocketPermission{Kind_: permkind.Write, Endpoint: Host("wss://localhost")}
-		permWithURL := WebsocketPermission{Kind_: permkind.Write, Endpoint: URL("wss://localhost/")}
+		permWithHost := WebsocketPermission{Kind_: permbase.Write, Endpoint: Host("wss://localhost")}
+		permWithURL := WebsocketPermission{Kind_: permbase.Write, Endpoint: URL("wss://localhost/")}
 
 		assert.True(t, permWithHost.Includes(permWithHost))
 		assert.True(t, permWithHost.Includes(permWithURL))
@@ -106,8 +106,8 @@ func TestWebsocketPermission(t *testing.T) {
 	})
 
 	t.Run("write includes write-stream", func(t *testing.T) {
-		perm := WebsocketPermission{Kind_: permkind.Write, Endpoint: URL("wss://localhost/")}
-		assert.True(t, perm.Includes(WebsocketPermission{Kind_: permkind.WriteStream, Endpoint: URL("wss://localhost/")}))
+		perm := WebsocketPermission{Kind_: permbase.Write, Endpoint: URL("wss://localhost/")}
+		assert.True(t, perm.Includes(WebsocketPermission{Kind_: permbase.WriteStream, Endpoint: URL("wss://localhost/")}))
 	})
 
 }
@@ -139,8 +139,8 @@ func TestDNSPermission(t *testing.T) {
 		}
 
 		t.Run(fmt.Sprintf(FMT, t.Name(), testCase.domain1, testCase.domain2), func(t *testing.T) {
-			perm1 := DNSPermission{permkind.Read, testCase.domain1}
-			perm2 := DNSPermission{permkind.Read, testCase.domain2}
+			perm1 := DNSPermission{permbase.Read, testCase.domain1}
+			perm2 := DNSPermission{permbase.Read, testCase.domain2}
 
 			if testCase.oneIncludesTwo {
 				assert.True(t, perm1.Includes(perm2))
@@ -178,8 +178,8 @@ func TestRawTcpPermission(t *testing.T) {
 		}
 
 		t.Run(fmt.Sprintf(FMT, t.Name(), testCase.domain1, testCase.domain2), func(t *testing.T) {
-			perm1 := RawTcpPermission{permkind.Read, testCase.domain1}
-			perm2 := RawTcpPermission{permkind.Read, testCase.domain2}
+			perm1 := RawTcpPermission{permbase.Read, testCase.domain1}
+			perm2 := RawTcpPermission{permbase.Read, testCase.domain2}
 
 			if testCase.oneIncludesTwo {
 				assert.True(t, perm1.Includes(perm2))
@@ -222,7 +222,7 @@ func TestFilesystemPermission(t *testing.T) {
 		PathPattern("./*.go"),
 	}
 
-	for kind := permkind.Read; kind <= permkind.Provide; kind++ {
+	for kind := permbase.Read; kind <= permbase.Provide; kind++ {
 		for _, entity := range ENTITIES {
 			t.Run(kind.String()+"_"+fmt.Sprint(entity), func(t *testing.T) {
 				perm := FilesystemPermission{Kind_: kind, Entity: entity.(GoString)}
@@ -254,8 +254,8 @@ func TestFilesystemPermission(t *testing.T) {
 		}
 
 		t.Run(fmt.Sprintf(FMT, t.Name(), testCase.entity1, testCase.entity2), func(t *testing.T) {
-			perm1 := FilesystemPermission{permkind.Read, testCase.entity1}
-			perm2 := FilesystemPermission{permkind.Read, testCase.entity2}
+			perm1 := FilesystemPermission{permbase.Read, testCase.entity1}
+			perm2 := FilesystemPermission{permbase.Read, testCase.entity2}
 
 			if testCase.oneIncludesTwo {
 				assert.True(t, perm1.Includes(perm2))
@@ -267,9 +267,9 @@ func TestFilesystemPermission(t *testing.T) {
 
 	t.Run("write includes create & update", func(t *testing.T) {
 		patt := PathPattern("/...")
-		writePerm := FilesystemPermission{Kind_: permkind.Write, Entity: patt}
-		createPerm := FilesystemPermission{Kind_: permkind.Create, Entity: patt}
-		updatePerm := FilesystemPermission{Kind_: permkind.Update, Entity: patt}
+		writePerm := FilesystemPermission{Kind_: permbase.Write, Entity: patt}
+		createPerm := FilesystemPermission{Kind_: permbase.Create, Entity: patt}
+		updatePerm := FilesystemPermission{Kind_: permbase.Update, Entity: patt}
 
 		assert.True(t, writePerm.Includes(createPerm))
 		assert.True(t, writePerm.Includes(updatePerm))
@@ -318,7 +318,7 @@ func TestDatabasePermission(t *testing.T) {
 		HostPattern("ldb://**"),
 	}
 
-	for kind := permkind.Read; kind <= permkind.Provide; kind++ {
+	for kind := permbase.Read; kind <= permbase.Provide; kind++ {
 		for _, entity := range ENTITIES {
 			t.Run(kind.String()+"_"+fmt.Sprint(entity)+"_includes_itself", func(t *testing.T) {
 				perm := DatabasePermission{Kind_: kind, Entity: entity.(GoString)}
@@ -327,7 +327,7 @@ func TestDatabasePermission(t *testing.T) {
 		}
 	}
 
-	for kind := permkind.Read; kind <= permkind.Provide; kind++ {
+	for kind := permbase.Read; kind <= permbase.Provide; kind++ {
 		for i, entity := range ENTITIES {
 			for _, prevEntity := range ENTITIES[:i] {
 				t.Run(fmt.Sprintf("%s_%s_includes_%s", kind, entity, prevEntity), func(t *testing.T) {
@@ -341,23 +341,23 @@ func TestDatabasePermission(t *testing.T) {
 	}
 
 	t.Run("a permission with a prefix pattern should include a permission with a longer prefix pattern", func(t *testing.T) {
-		perm := DatabasePermission{Kind_: permkind.Read, Entity: URLPattern("ldb://main:443/...")}
-		otherPerm := DatabasePermission{Kind_: permkind.Read, Entity: URL("ldb://main:443/abc/...")}
+		perm := DatabasePermission{Kind_: permbase.Read, Entity: URLPattern("ldb://main:443/...")}
+		otherPerm := DatabasePermission{Kind_: permbase.Read, Entity: URL("ldb://main:443/abc/...")}
 		assert.True(t, perm.Includes(otherPerm))
 	})
 
 	t.Run("schemes should be equal", func(t *testing.T) {
-		ldbPerm := DatabasePermission{Kind_: permkind.Read, Entity: URLPattern("ldb://main:443/...")}
-		odbPerm := DatabasePermission{Kind_: permkind.Read, Entity: URL("odb://main:443/...")}
+		ldbPerm := DatabasePermission{Kind_: permbase.Read, Entity: URLPattern("ldb://main:443/...")}
+		odbPerm := DatabasePermission{Kind_: permbase.Read, Entity: URL("odb://main:443/...")}
 		assert.False(t, ldbPerm.Includes(odbPerm))
 		assert.False(t, odbPerm.Includes(ldbPerm))
 	})
 
 	t.Run("write includes create & update", func(t *testing.T) {
 		patt := URLPattern("ldb://localhost:443/...")
-		writePerm := DatabasePermission{Kind_: permkind.Write, Entity: patt}
-		createPerm := DatabasePermission{Kind_: permkind.Create, Entity: patt}
-		updatePerm := DatabasePermission{Kind_: permkind.Update, Entity: patt}
+		writePerm := DatabasePermission{Kind_: permbase.Write, Entity: patt}
+		createPerm := DatabasePermission{Kind_: permbase.Create, Entity: patt}
+		updatePerm := DatabasePermission{Kind_: permbase.Update, Entity: patt}
 
 		assert.True(t, writePerm.Includes(createPerm))
 		assert.True(t, writePerm.Includes(updatePerm))
@@ -409,7 +409,7 @@ func TestDatabasePermission(t *testing.T) {
 				}
 				err := e.(error)
 				assert.ErrorIs(t, err, NewNotAllowedError(DatabasePermission{
-					Kind_:  permkind.Read,
+					Kind_:  permbase.Read,
 					Entity: URL("ldb://main/object/a"),
 				}))
 			}()
@@ -425,7 +425,7 @@ func TestDatabasePermission(t *testing.T) {
 		func() {
 			err := sharedObject.SetProp(ctx, "a", Int(2))
 			assert.ErrorIs(t, err, NewNotAllowedError(DatabasePermission{
-				Kind_:  permkind.Write,
+				Kind_:  permbase.Write,
 				Entity: URL("ldb://main/object/a"),
 			}))
 		}()
@@ -454,7 +454,7 @@ func TestDatabasePermission(t *testing.T) {
 				}
 				err := e.(error)
 				assert.ErrorIs(t, err, NewNotAllowedError(DatabasePermission{
-					Kind_:  permkind.Read,
+					Kind_:  permbase.Read,
 					Entity: URL("ldb://main/a"),
 				}))
 			}()
@@ -466,7 +466,7 @@ func TestDatabasePermission(t *testing.T) {
 		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				DatabasePermission{
-					Kind_:  permkind.Read,
+					Kind_:  permbase.Read,
 					Entity: Host("ldb://main"),
 				},
 			},

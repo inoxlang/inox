@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/html_ns"
@@ -37,11 +37,11 @@ func init() {
 			}
 
 			permissions := []core.Permission{
-				core.GlobalVarPermission{Kind_: permkind.Use, Name: "*"},
-				core.GlobalVarPermission{Kind_: permkind.Create, Name: "*"},
-				core.GlobalVarPermission{Kind_: permkind.Read, Name: "*"},
-				core.LThreadPermission{Kind_: permkind.Create},
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
+				core.GlobalVarPermission{Kind_: permbase.Use, Name: "*"},
+				core.GlobalVarPermission{Kind_: permbase.Create, Name: "*"},
+				core.GlobalVarPermission{Kind_: permbase.Read, Name: "*"},
+				core.LThreadPermission{Kind_: permbase.Create},
+				core.FilesystemPermission{Kind_: permbase.Read, Entity: core.PathPattern("/...")},
 			}
 
 			permissions = append(permissions, config.Permissions...)
@@ -92,9 +92,9 @@ func TestGetFilesystemRoutingServerAPI(t *testing.T) {
 
 		var ctx *core.Context
 		perms := append(core.GetDefaultGlobalVarPermissions(),
-			core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
-			core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")},
-			core.LThreadPermission{Kind_: permkind.Create},
+			core.FilesystemPermission{Kind_: permbase.Read, Entity: core.PathPattern("/...")},
+			core.FilesystemPermission{Kind_: permbase.Write, Entity: core.PathPattern("/...")},
+			core.LThreadPermission{Kind_: permbase.Create},
 		)
 
 		if len(noState) == 0 || !noState[0] {

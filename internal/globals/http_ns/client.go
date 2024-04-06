@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/utils"
 	"golang.org/x/net/context"
@@ -272,17 +272,17 @@ func getPermForRequest(method string, u core.URL) (core.HttpPermission, error) {
 	switch method {
 	case "GET", "HEAD", "OPTIONS":
 		perm = core.HttpPermission{
-			Kind_:  permkind.Read,
+			Kind_:  permbase.Read,
 			Entity: u,
 		}
 	case "POST", "PATCH":
 		perm = core.HttpPermission{
-			Kind_:  permkind.Write,
+			Kind_:  permbase.Write,
 			Entity: u,
 		}
 	case "DELETE":
 		perm = core.HttpPermission{
-			Kind_:  permkind.Delete,
+			Kind_:  permbase.Delete,
 			Entity: u,
 		}
 	default:

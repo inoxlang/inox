@@ -92,6 +92,8 @@ type ResourceName interface {
 	GoString
 	Serializable
 	ResourceName() string
+	IsURL() bool
+	IsPath() bool
 }
 
 func ResourceNameFrom(s string) ResourceName {
@@ -272,6 +274,14 @@ func (pth Path) UnderlyingString() string {
 
 func (pth Path) ResourceName() string {
 	return string(pth)
+}
+
+func (pth Path) IsURL() bool {
+	return false
+}
+
+func (pth Path) IsPath() bool {
+	return true
 }
 
 func (pth Path) Extension() string {
@@ -931,6 +941,14 @@ func (u URL) ResourceName() string {
 	return string(u)
 }
 
+func (u URL) IsURL() bool {
+	return true
+}
+
+func (u URL) IsPath() bool {
+	return false
+}
+
 func (u URL) WithScheme(scheme Scheme) URL {
 	_, afterScheme, _ := strings.Cut(string(u), "://")
 	return URL(scheme + "://" + Scheme(afterScheme))
@@ -1214,6 +1232,14 @@ func (host Host) UnderlyingString() string {
 
 func (host Host) ResourceName() string {
 	return string(host)
+}
+
+func (host Host) IsURL() bool {
+	return false
+}
+
+func (host Host) IsPath() bool {
+	return false
 }
 
 func (host Host) PropertyNames(ctx *Context) []string {

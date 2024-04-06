@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"testing"
 
-	permkind "github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/parse"
@@ -34,7 +34,7 @@ func TestDatabaseIL(t *testing.T) {
 		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				DatabasePermission{
-					Kind_:  permkind.Read,
+					Kind_:  permbase.Read,
 					Entity: Host("ldb://main"),
 				},
 			},
@@ -98,7 +98,7 @@ func TestDatabaseIL(t *testing.T) {
 		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				DatabasePermission{
-					Kind_:  permkind.Read,
+					Kind_:  permbase.Read,
 					Entity: Host("ldb://main"),
 				},
 			},
@@ -167,7 +167,7 @@ func TestDatabaseIL(t *testing.T) {
 		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				DatabasePermission{
-					Kind_:  permkind.Read,
+					Kind_:  permbase.Read,
 					Entity: Host("ldb://main"),
 				},
 			},
@@ -204,7 +204,7 @@ func TestDatabaseIL(t *testing.T) {
 		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				DatabasePermission{
-					Kind_:  permkind.Read,
+					Kind_:  permbase.Read,
 					Entity: Host("ldb://main"),
 				},
 			},
@@ -237,7 +237,7 @@ func TestDatabaseIL(t *testing.T) {
 		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				DatabasePermission{
-					Kind_:  permkind.Read,
+					Kind_:  permbase.Read,
 					Entity: Host("ldb://main"),
 				},
 			},
@@ -273,7 +273,7 @@ func TestDatabaseIL(t *testing.T) {
 		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				DatabasePermission{
-					Kind_:  permkind.Read,
+					Kind_:  permbase.Read,
 					Entity: Host("ldb://main"),
 				},
 			},
@@ -313,7 +313,7 @@ func TestDatabaseIL(t *testing.T) {
 		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				DatabasePermission{
-					Kind_:  permkind.Read,
+					Kind_:  permbase.Read,
 					Entity: Host("ldb://main"),
 				},
 			},
@@ -349,7 +349,7 @@ func TestDatabaseIL(t *testing.T) {
 		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				DatabasePermission{
-					Kind_:  permkind.Read,
+					Kind_:  permbase.Read,
 					Entity: Host("ldb://main"),
 				},
 			},
@@ -386,7 +386,7 @@ func TestDatabaseIL(t *testing.T) {
 		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				DatabasePermission{
-					Kind_:  permkind.Read,
+					Kind_:  permbase.Read,
 					Entity: Host("ldb://main"),
 				},
 			},
@@ -426,7 +426,7 @@ func TestDatabaseIL(t *testing.T) {
 		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				DatabasePermission{
-					Kind_:  permkind.Read,
+					Kind_:  permbase.Read,
 					Entity: Host("ldb://main"),
 				},
 			},
@@ -456,7 +456,7 @@ func TestDatabaseIL(t *testing.T) {
 		ctx1 := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				DatabasePermission{
-					Kind_:  permkind.Read,
+					Kind_:  permbase.Read,
 					Entity: Host("ldb://main"),
 				},
 			},
@@ -487,7 +487,7 @@ func TestDatabaseIL(t *testing.T) {
 		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				DatabasePermission{
-					Kind_:  permkind.Read,
+					Kind_:  permbase.Read,
 					Entity: Host("ldb://main"),
 				},
 			},
@@ -514,7 +514,7 @@ func TestDatabaseIL(t *testing.T) {
 		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				DatabasePermission{
-					Kind_:  permkind.Read,
+					Kind_:  permbase.Read,
 					Entity: Host("ldb://main"),
 				},
 			},
@@ -547,7 +547,7 @@ func TestDatabaseIL(t *testing.T) {
 		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				DatabasePermission{
-					Kind_:  permkind.Read,
+					Kind_:  permbase.Read,
 					Entity: Host("ldb://main"),
 				},
 			},
@@ -585,7 +585,7 @@ func TestDatabaseIL(t *testing.T) {
 		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				DatabasePermission{
-					Kind_:  permkind.Read,
+					Kind_:  permbase.Read,
 					Entity: Host("ldb://main"),
 				},
 			},
@@ -649,7 +649,7 @@ func TestDatabaseIL(t *testing.T) {
 		ctx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				DatabasePermission{
-					Kind_:  permkind.Read,
+					Kind_:  permbase.Read,
 					Entity: Host("ldb://main"),
 				},
 			},
@@ -709,7 +709,7 @@ func TestDatabaseIL(t *testing.T) {
 			ctx := NewContextWithEmptyState(ContextConfig{
 				Permissions: []Permission{
 					DatabasePermission{
-						Kind_:  permkind.Read,
+						Kind_:  permbase.Read,
 						Entity: Host("ldb://main"),
 					},
 				},
@@ -737,7 +737,7 @@ func TestDatabaseIL(t *testing.T) {
 			ctx := NewContextWithEmptyState(ContextConfig{
 				Permissions: []Permission{
 					DatabasePermission{
-						Kind_:  permkind.Read,
+						Kind_:  permbase.Read,
 						Entity: Host("ldb://main"),
 					},
 				},
@@ -771,7 +771,7 @@ func TestDatabaseILGetOrLoad(t *testing.T) {
 	ctx := NewContextWithEmptyState(ContextConfig{
 		Permissions: []Permission{
 			DatabasePermission{
-				Kind_:  permkind.Read,
+				Kind_:  permbase.Read,
 				Entity: Host("ldb://main"),
 			},
 		},

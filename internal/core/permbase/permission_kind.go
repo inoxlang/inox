@@ -1,4 +1,4 @@
-package permkind
+package permbase
 
 import "github.com/inoxlang/inox/internal/utils"
 

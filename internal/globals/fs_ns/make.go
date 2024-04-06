@@ -12,7 +12,7 @@ import (
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/parse"
 )
@@ -492,7 +492,7 @@ func __createFile(ctx *core.Context, fpath core.Path, b []byte, fmode fs.FileMod
 		return err
 	}
 
-	perm := core.FilesystemPermission{Kind_: permkind.Create, Entity: fpath}
+	perm := core.FilesystemPermission{Kind_: permbase.Create, Entity: fpath}
 	if err := ctx.CheckHasPermission(perm); err != nil {
 		return err
 	}

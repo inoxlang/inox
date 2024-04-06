@@ -7,7 +7,7 @@ import (
 	"slices"
 	"time"
 
-	permkind "github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/parse"
 )
 
@@ -19,7 +19,7 @@ const (
 
 var (
 	IMPLICITLY_REMOVED_ROUTINE_PERMS = []Permission{
-		LThreadPermission{permkind.Create},
+		LThreadPermission{permbase.Create},
 	}
 	DEFAULT_SWITCH_MATCH_EXPR_RESULT = Nil
 )
@@ -205,7 +205,7 @@ func EvalSimpleValueLiteral(n parse.SimpleValueLiteral, global *GlobalState) (Se
 		}
 		return evalRate(q, node.DivUnit)
 	case *parse.NamedSegmentPathPatternLiteral:
-		return NewNamedSegmentPathPattern(node),nil
+		return NewNamedSegmentPathPattern(node), nil
 	case *parse.RegularExpressionLiteral:
 		return NewRegexPattern(node.Value), nil
 	case *parse.PathSlice:

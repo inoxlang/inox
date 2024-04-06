@@ -151,7 +151,7 @@ func (f *metaFsFile) Truncate(size int64) error {
 	}
 
 	if f.metadata.concreteFile != nil {
-		stat, err := core.FileStat(f.underlying, f.fs)
+		stat, err := afs.FileStat(f.underlying, f.fs)
 		if err != nil {
 			return err
 		}

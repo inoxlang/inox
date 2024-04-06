@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -27,7 +27,7 @@ func TestCreateFileEffect(t *testing.T) {
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: []core.Permission{
-					core.FilesystemPermission{Kind_: permkind.Create, Entity: core.PathPattern("/...")},
+					core.FilesystemPermission{Kind_: permbase.Create, Entity: core.PathPattern("/...")},
 				},
 				Limits: []core.Limit{
 					permissiveTotalLimit,
@@ -56,8 +56,8 @@ func TestCreateFileEffect(t *testing.T) {
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: []core.Permission{
-					core.FilesystemPermission{Kind_: permkind.Create, Entity: core.PathPattern("/...")},
-					core.FilesystemPermission{Kind_: permkind.Delete, Entity: core.PathPattern("/...")},
+					core.FilesystemPermission{Kind_: permbase.Create, Entity: core.PathPattern("/...")},
+					core.FilesystemPermission{Kind_: permbase.Delete, Entity: core.PathPattern("/...")},
 				},
 				Limits: []core.Limit{
 					permissiveTotalLimit,
@@ -102,7 +102,7 @@ func TestAppendBytesToFileEffect(t *testing.T) {
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: []core.Permission{
-					core.FilesystemPermission{Kind_: permkind.Update, Entity: core.PathPattern("/...")},
+					core.FilesystemPermission{Kind_: permbase.Update, Entity: core.PathPattern("/...")},
 				},
 				Limits: []core.Limit{
 					permissiveTotalLimit,
@@ -138,7 +138,7 @@ func TestAppendBytesToFileEffect(t *testing.T) {
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: []core.Permission{
-					core.FilesystemPermission{Kind_: permkind.Update, Entity: core.PathPattern("/...")},
+					core.FilesystemPermission{Kind_: permbase.Update, Entity: core.PathPattern("/...")},
 				},
 				Limits: []core.Limit{
 					permissiveTotalLimit,
@@ -175,7 +175,7 @@ func TestCreateDirEffect(t *testing.T) {
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: []core.Permission{
-					core.FilesystemPermission{Kind_: permkind.Create, Entity: core.PathPattern("/...")},
+					core.FilesystemPermission{Kind_: permbase.Create, Entity: core.PathPattern("/...")},
 				},
 				Limits: []core.Limit{
 					permissiveTotalLimit,
@@ -204,8 +204,8 @@ func TestCreateDirEffect(t *testing.T) {
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: []core.Permission{
-					core.FilesystemPermission{Kind_: permkind.Create, Entity: core.PathPattern("/...")},
-					core.FilesystemPermission{Kind_: permkind.Delete, Entity: core.PathPattern("/...")},
+					core.FilesystemPermission{Kind_: permbase.Create, Entity: core.PathPattern("/...")},
+					core.FilesystemPermission{Kind_: permbase.Delete, Entity: core.PathPattern("/...")},
 				},
 				Limits: []core.Limit{
 					permissiveTotalLimit,
@@ -241,7 +241,7 @@ func TestRemoveFileEffect(t *testing.T) {
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: []core.Permission{
-					core.FilesystemPermission{Kind_: permkind.Delete, Entity: core.PathPattern("/...")},
+					core.FilesystemPermission{Kind_: permbase.Delete, Entity: core.PathPattern("/...")},
 				},
 				Limits: []core.Limit{
 					permissiveTotalLimit,
@@ -272,7 +272,7 @@ func TestRemoveFileEffect(t *testing.T) {
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: []core.Permission{
-					core.FilesystemPermission{Kind_: permkind.Delete, Entity: core.PathPattern("/...")},
+					core.FilesystemPermission{Kind_: permbase.Delete, Entity: core.PathPattern("/...")},
 				},
 				Limits: []core.Limit{
 					permissiveTotalLimit,
@@ -296,7 +296,7 @@ func TestRemoveFileEffect(t *testing.T) {
 
 			ctx := core.NewContext(core.ContextConfig{
 				Permissions: []core.Permission{
-					core.FilesystemPermission{Kind_: permkind.Delete, Entity: core.PathPattern("/...")},
+					core.FilesystemPermission{Kind_: permbase.Delete, Entity: core.PathPattern("/...")},
 				},
 				Limits: []core.Limit{
 					permissiveTotalLimit,

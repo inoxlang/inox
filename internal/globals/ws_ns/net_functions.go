@@ -10,7 +10,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -57,12 +57,12 @@ func WebsocketConnect(args WebsocketConnectParams) (*WebsocketConnection, error)
 
 	//check that a websocket read or write-stream permission is granted
 	perm := core.WebsocketPermission{
-		Kind_:    permkind.WriteStream,
+		Kind_:    permbase.WriteStream,
 		Endpoint: u,
 	}
 
 	if err := ctx.CheckHasPermission(perm); err != nil {
-		perm.Kind_ = permkind.Read
+		perm.Kind_ = permbase.Read
 
 		if err := ctx.CheckHasPermission(perm); err != nil {
 			return nil, err

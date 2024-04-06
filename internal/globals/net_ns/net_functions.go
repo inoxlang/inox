@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/miekg/dns"
 )
 
@@ -28,7 +28,7 @@ func dnsResolve(ctx *core.Context, domain core.String, recordTypeName core.Strin
 	msg := new(dns.Msg)
 	var recordType uint16
 
-	perm := core.DNSPermission{Kind_: permkind.Read, Domain: core.Host("://" + domain)}
+	perm := core.DNSPermission{Kind_: permbase.Read, Domain: core.Host("://" + domain)}
 	if err := ctx.CheckHasPermission(perm); err != nil {
 		return nil, err
 	}
@@ -69,7 +69,7 @@ func dnsResolve(ctx *core.Context, domain core.String, recordTypeName core.Strin
 func tcpConnect(ctx *core.Context, host core.Host) (*TcpConn, error) {
 
 	perm := core.RawTcpPermission{
-		Kind_:  permkind.Read,
+		Kind_:  permbase.Read,
 		Domain: host,
 	}
 

@@ -10,7 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	fs_ns "github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/globals/net_ns"
@@ -54,19 +54,19 @@ func createTestServerAndClient(t *testing.T, out io.Writer) (*core.Context, *tes
 	//create context & state
 	perms := []core.Permission{
 		//TODO: change path pattern
-		core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
-		core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")},
-		core.FilesystemPermission{Kind_: permkind.Delete, Entity: core.PathPattern("/...")},
+		core.FilesystemPermission{Kind_: permbase.Read, Entity: core.PathPattern("/...")},
+		core.FilesystemPermission{Kind_: permbase.Write, Entity: core.PathPattern("/...")},
+		core.FilesystemPermission{Kind_: permbase.Delete, Entity: core.PathPattern("/...")},
 
-		core.WebsocketPermission{Kind_: permkind.Provide},
-		core.HttpPermission{Kind_: permkind.Provide, Entity: core.ANY_HTTPS_HOST_PATTERN},
-		core.HttpPermission{Kind_: permkind.Provide, Entity: core.HostPattern("https://**:8080")},
+		core.WebsocketPermission{Kind_: permbase.Provide},
+		core.HttpPermission{Kind_: permbase.Provide, Entity: core.ANY_HTTPS_HOST_PATTERN},
+		core.HttpPermission{Kind_: permbase.Provide, Entity: core.HostPattern("https://**:8080")},
 
-		core.HttpPermission{Kind_: permkind.Read, AnyEntity: true},
-		core.HttpPermission{Kind_: permkind.Write, AnyEntity: true},
-		core.HttpPermission{Kind_: permkind.Delete, AnyEntity: true},
+		core.HttpPermission{Kind_: permbase.Read, AnyEntity: true},
+		core.HttpPermission{Kind_: permbase.Write, AnyEntity: true},
+		core.HttpPermission{Kind_: permbase.Delete, AnyEntity: true},
 
-		core.LThreadPermission{Kind_: permkind.Create},
+		core.LThreadPermission{Kind_: permbase.Create},
 	}
 
 	perms = append(perms, core.GetDefaultGlobalVarPermissions()...)

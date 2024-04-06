@@ -1,4 +1,4 @@
-package permkind
+package permbase
 
 import (
 	"testing"

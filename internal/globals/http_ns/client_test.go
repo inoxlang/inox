@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/stretchr/testify/assert"
 )
@@ -41,7 +41,7 @@ func TestHttpClient(t *testing.T) {
 		server, URL := makeServer()
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.HttpPermission{Kind_: permkind.Read, Entity: URL},
+				core.HttpPermission{Kind_: permbase.Read, Entity: URL},
 			},
 			Limits: []core.Limit{permissiveHttpReqLimit},
 		})
@@ -69,7 +69,7 @@ func TestHttpClient(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.HttpPermission{Kind_: permkind.Read, Entity: URL},
+				core.HttpPermission{Kind_: permbase.Read, Entity: URL},
 			},
 			Limits: []core.Limit{permissiveHttpReqLimit},
 		})
@@ -97,7 +97,7 @@ func TestHttpClient(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.HttpPermission{Kind_: permkind.Read, Entity: URL},
+				core.HttpPermission{Kind_: permbase.Read, Entity: URL},
 			},
 			Limits: []core.Limit{permissiveHttpReqLimit},
 		})

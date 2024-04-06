@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
@@ -10,9 +11,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-git/go-billy/v5"
+	"github.com/go-git/go-billy/v5/memfs"
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/afs"
-	permkind "github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/inoxmod"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/core/text"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
@@ -25,9 +29,9 @@ func TestPreInit(t *testing.T) {
 	testconfig.AllowParallelization(t)
 
 	defaultGlobalPermissions := []Permission{
-		GlobalVarPermission{permkind.Read, "*"},
-		GlobalVarPermission{permkind.Use, "*"},
-		GlobalVarPermission{permkind.Create, "*"},
+		GlobalVarPermission{permbase.Read, "*"},
+		GlobalVarPermission{permbase.Use, "*"},
+		GlobalVarPermission{permbase.Create, "*"},
 	}
 
 	//register limits
@@ -248,7 +252,7 @@ func TestPreInit(t *testing.T) {
 				manifest {
 					permissions: { read: PATH_B }
 				}`,
-			expectedPermissions: []Permission{FilesystemPermission{Kind_: permkind.Read, Entity: Path("/a/b")}},
+			expectedPermissions: []Permission{FilesystemPermission{Kind_: permbase.Read, Entity: Path("/a/b")}},
 			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
 			expectedResolutions: nil,
 		},
@@ -258,7 +262,7 @@ func TestPreInit(t *testing.T) {
 				manifest {
 					permissions: { read: PATH }
 				}`,
-			expectedPermissions: []Permission{FilesystemPermission{Kind_: permkind.Read, Entity: Path("/file.txt")}},
+			expectedPermissions: []Permission{FilesystemPermission{Kind_: permbase.Read, Entity: Path("/file.txt")}},
 			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
 			expectedResolutions: nil,
 			additionalGlobals:   map[string]Value{"PATH": Path("/file.txt")},
@@ -272,7 +276,7 @@ func TestPreInit(t *testing.T) {
 				manifest {
 					permissions: { read: %p }
 				}`,
-			expectedPermissions: []Permission{FilesystemPermission{Kind_: permkind.Read, Entity: PathPattern("/...")}},
+			expectedPermissions: []Permission{FilesystemPermission{Kind_: permbase.Read, Entity: PathPattern("/...")}},
 			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
 			expectedResolutions: nil,
 			additionalGlobals:   map[string]Value{"PATH_PATTERN": PathPattern("/...")},
@@ -328,7 +332,7 @@ func TestPreInit(t *testing.T) {
 			module: `manifest {
 					permissions: { read: {globals: "*"} }
 				}`,
-			expectedPermissions: []Permission{GlobalVarPermission{permkind.Read, "*"}},
+			expectedPermissions: []Permission{GlobalVarPermission{permbase.Read, "*"}},
 			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
 			expectedResolutions: nil,
 			error:               false,
@@ -340,7 +344,7 @@ func TestPreInit(t *testing.T) {
 						create: {threads: {}}
 					}
 				}`,
-			expectedPermissions: []Permission{LThreadPermission{permkind.Create}},
+			expectedPermissions: []Permission{LThreadPermission{permbase.Create}},
 			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
 			expectedResolutions: nil,
 			error:               false,
@@ -352,7 +356,7 @@ func TestPreInit(t *testing.T) {
 						create: {threads: {}}
 					}
 				}`,
-			expectedPermissions: []Permission{LThreadPermission{permkind.Create}},
+			expectedPermissions: []Permission{LThreadPermission{permbase.Create}},
 			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
 			expectedResolutions: nil,
 			error:               false,
@@ -366,7 +370,7 @@ func TestPreInit(t *testing.T) {
 				manifest {
 					permissions: { read: $URL}
 				}`,
-			expectedPermissions: []Permission{HttpPermission{Kind_: permkind.Read, Entity: URL("https://example.com/")}},
+			expectedPermissions: []Permission{HttpPermission{Kind_: permbase.Read, Entity: URL("https://example.com/")}},
 			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
 			expectedResolutions: nil,
 			error:               false,
@@ -454,7 +458,7 @@ func TestPreInit(t *testing.T) {
 					}
 				}`,
 			expectedPermissions: []Permission{
-				DNSPermission{permkind.Read, HostPattern("://**.com")},
+				DNSPermission{permbase.Read, HostPattern("://**.com")},
 			},
 			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
 			expectedResolutions: nil,
@@ -482,7 +486,7 @@ func TestPreInit(t *testing.T) {
 				}`,
 			expectedPermissions: []Permission{
 				DatabasePermission{
-					permkind.Read,
+					permbase.Read,
 					URLPattern("ldb://main/users"),
 				},
 			},
@@ -888,11 +892,11 @@ func TestPreInit(t *testing.T) {
 				}`,
 			expectedPermissions: []Permission{
 				DatabasePermission{
-					permkind.Read,
+					permbase.Read,
 					Host("ldb://main"),
 				},
 				DatabasePermission{
-					permkind.Write,
+					permbase.Write,
 					Host("ldb://main"),
 				},
 			},
@@ -921,11 +925,11 @@ func TestPreInit(t *testing.T) {
 				}`,
 			expectedPermissions: []Permission{
 				DatabasePermission{
-					permkind.Read,
+					permbase.Read,
 					Host("ldb://main"),
 				},
 				DatabasePermission{
-					permkind.Write,
+					permbase.Write,
 					Host("ldb://main"),
 				},
 			},
@@ -960,11 +964,11 @@ func TestPreInit(t *testing.T) {
 				}`,
 			expectedPermissions: []Permission{
 				DatabasePermission{
-					permkind.Read,
+					permbase.Read,
 					Host("ldb://main"),
 				},
 				DatabasePermission{
-					permkind.Write,
+					permbase.Write,
 					Host("ldb://main"),
 				},
 			},
@@ -1698,7 +1702,7 @@ func TestPreInit(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			if testCase.name == "read any global" {
 				testCase.expectedPermissions =
-					append(testCase.expectedPermissions, GlobalVarPermission{permkind.Use, "*"}, GlobalVarPermission{permkind.Create, "*"})
+					append(testCase.expectedPermissions, GlobalVarPermission{permbase.Use, "*"}, GlobalVarPermission{permbase.Create, "*"})
 			} else {
 				testCase.expectedPermissions = append(testCase.expectedPermissions, defaultGlobalPermissions...)
 			}
@@ -1736,11 +1740,11 @@ func TestPreInit(t *testing.T) {
 				}
 
 				parsedChunk := parse.NewParsedChunkSource(chunk, srcFile)
-				mod := &Module{
+				mod := WrapLowerModule(&inoxmod.Module{
 					MainChunk:        parsedChunk,
 					TopLevelNode:     parsedChunk.Node,
 					ManifestTemplate: chunk.Manifest,
-				}
+				})
 
 				parentState = NewGlobalState(NewContext(ContextConfig{
 					DoNotSpawnDoneGoroutine: true,
@@ -1776,7 +1780,7 @@ func TestPreInit(t *testing.T) {
 				return
 			}
 
-			mod := &Module{
+			mod := WrapLowerModule(&inoxmod.Module{
 				MainChunk: parse.NewParsedChunkSource(chunk,
 					parse.SourceFile{
 						NameString:             "/main.ix",
@@ -1788,22 +1792,22 @@ func TestPreInit(t *testing.T) {
 					},
 				),
 				TopLevelNode:          chunk,
-				ModuleKind:            testCase.moduleKind,
+				Kind:                  testCase.moduleKind,
 				ManifestTemplate:      chunk.Manifest,
 				InclusionStatementMap: map[*parse.InclusionImportStatement]*IncludedChunk{},
 				IncludedChunkMap:      map[string]*IncludedChunk{},
-			}
+			})
 
 			{
 				ctx := NewContext(ContextConfig{
 					Permissions: []Permission{
-						FilesystemPermission{Kind_: permkind.Read, Entity: PathPattern("/...")},
+						FilesystemPermission{Kind_: permbase.Read, Entity: PathPattern("/...")},
 					},
 					DoNotSpawnDoneGoroutine: true,
 					Filesystem:              fls,
 				})
 				ParseLocalIncludedFiles(ctx, IncludedFilesParsingConfig{
-					Module:                              mod,
+					Module:                              mod.Lower(),
 					Filesystem:                          fls,
 					RecoverFromNonExistingIncludedFiles: false,
 				})
@@ -1917,4 +1921,108 @@ func TestPreInit(t *testing.T) {
 		})
 	}
 
+}
+
+func newMemFilesystem() afs.Filesystem {
+	fs := memfs.New()
+
+	return afs.AddAbsoluteFeature(fs, func(path string) (string, error) {
+		if path[0] == '/' {
+			return path, nil
+		}
+		return "", ErrNotImplemented
+	})
+}
+
+func newMemFilesystemRootWD() afs.Filesystem {
+	fs := memfs.New()
+
+	return afs.AddAbsoluteFeature(fs, func(path string) (string, error) {
+		if path[0] == '/' {
+			return path, nil
+		}
+		if len(path) > 1 && path[0] == '.' && path[1] == '/' {
+			return path[1:], nil
+		}
+		return "", ErrNotImplemented
+	})
+}
+
+func newSnapshotableMemFilesystem() *snapshotableMemFilesystem {
+	return &snapshotableMemFilesystem{memfs.New()}
+}
+
+var _ = afs.Filesystem((*snapshotableMemFilesystem)(nil))
+var _ = SnapshotableFilesystem((*snapshotableMemFilesystem)(nil))
+
+func copyMemFs(fls afs.Filesystem) afs.Filesystem {
+	newMemFs := newMemFilesystem()
+	err := util.Walk(fls, "/", func(path string, info fs.FileInfo, err error) error {
+		if info.IsDir() {
+			return newMemFs.MkdirAll(path, info.Mode().Perm())
+		} else {
+			content, err := util.ReadFile(fls, path)
+			if err != nil {
+				return err
+			}
+			return util.WriteFile(newMemFs, path, content, info.Mode().Perm())
+		}
+	})
+	if err != nil {
+		panic(err)
+	}
+	return newMemFs
+}
+
+type snapshotableMemFilesystem struct {
+	billy.Filesystem
+}
+
+func (*snapshotableMemFilesystem) Absolute(path string) (string, error) {
+	if path[0] == '/' {
+		return path, nil
+	}
+	return "", ErrNotImplemented
+}
+
+func (fls *snapshotableMemFilesystem) TakeFilesystemSnapshot(config FilesystemSnapshotConfig) (FilesystemSnapshot, error) {
+	return &memFilesystemSnapshot{
+		fls: copyMemFs(fls),
+	}, nil
+}
+
+var _ = FilesystemSnapshot((*memFilesystemSnapshot)(nil))
+
+// memFilesystemSnapshot is partial implementation of FilesystemSnapshot,
+// it only implements NewAdaptedFilesystem by returning a deep copy of fls.
+type memFilesystemSnapshot struct {
+	fls afs.Filesystem
+}
+
+func (s *memFilesystemSnapshot) NewAdaptedFilesystem(maxTotalStorageSizeHint ByteCount) (SnapshotableFilesystem, error) {
+	return &snapshotableMemFilesystem{copyMemFs(s.fls)}, nil
+}
+
+func (s *memFilesystemSnapshot) WriteTo(fls afs.Filesystem, params SnapshotWriteToFilesystem) error {
+	panic("unimplemented")
+}
+
+func (*memFilesystemSnapshot) Content(path string) (AddressableContent, error) {
+	panic("unimplemented")
+}
+
+func (*memFilesystemSnapshot) ForEachEntry(func(m EntrySnapshotMetadata) error) error {
+	panic("unimplemented")
+}
+
+func (*memFilesystemSnapshot) IsStoredLocally() bool {
+	panic("unimplemented")
+}
+
+func (*memFilesystemSnapshot) Metadata(path string) (EntrySnapshotMetadata, error) {
+	panic("unimplemented")
+}
+
+func (*memFilesystemSnapshot) RootDirEntries() []string {
+	panic("unimplemented")
 }

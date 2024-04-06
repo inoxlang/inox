@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/inoxd/node"
 	"github.com/inoxlang/inox/internal/project"
@@ -34,7 +34,7 @@ func TestApplicationDeployment(t *testing.T) {
 
 		ctx := core.NewContextWithEmptyState(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.ROOT_PREFIX_PATH_PATTERN},
+				core.FilesystemPermission{Kind_: permbase.Read, Entity: core.ROOT_PREFIX_PATH_PATTERN},
 			},
 			Filesystem: fls,
 		}, nil)

@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/afs"
-	permkind "github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/rs/zerolog"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
@@ -807,7 +807,7 @@ func (ctx *Context) HasPermissionUntyped(perm any) bool {
 }
 
 // THIS FUNCTION SHOULD NEVER BE USED apart from the symbolic package
-func (ctx *Context) HasAPermissionWithKindAndType(kind permkind.PermissionKind, typename permkind.InternalPermissionTypename) bool {
+func (ctx *Context) HasAPermissionWithKindAndType(kind permbase.PermissionKind, typename permbase.InternalPermissionTypename) bool {
 	ctx.lock.RLock()
 	defer ctx.lock.RUnlock()
 

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/mimeconsts"
 	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/stretchr/testify/assert"
@@ -40,7 +40,7 @@ func TestHttpGet(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.HttpPermission{Kind_: permkind.Delete, Entity: URL},
+				core.HttpPermission{Kind_: permbase.Delete, Entity: URL},
 			},
 		})
 		core.NewGlobalState(ctx)
@@ -49,7 +49,7 @@ func TestHttpGet(t *testing.T) {
 		resp, err := HttpGet(ctx, URL)
 		assert.Error(t, err)
 		assert.IsType(t, &core.NotAllowedError{}, err)
-		assert.Equal(t, core.HttpPermission{Kind_: permkind.Read, Entity: URL}, err.(*core.NotAllowedError).Permission)
+		assert.Equal(t, core.HttpPermission{Kind_: permbase.Read, Entity: URL}, err.(*core.NotAllowedError).Permission)
 		assert.Nil(t, resp)
 	})
 
@@ -62,7 +62,7 @@ func TestHttpGet(t *testing.T) {
 		//create a context that allows up to one request per second
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.HttpPermission{Kind_: permkind.Read, Entity: URL},
+				core.HttpPermission{Kind_: permbase.Read, Entity: URL},
 			},
 			Limits: []core.Limit{
 				{
@@ -135,7 +135,7 @@ func TestHttpRead(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.HttpPermission{Kind_: permkind.Delete, Entity: URL},
+				core.HttpPermission{Kind_: permbase.Delete, Entity: URL},
 			},
 		})
 		core.NewGlobalState(ctx)
@@ -148,7 +148,7 @@ func TestHttpRead(t *testing.T) {
 			return
 		}
 
-		assert.Equal(t, core.HttpPermission{Kind_: permkind.Read, Entity: URL}, notAllowedError.Permission)
+		assert.Equal(t, core.HttpPermission{Kind_: permbase.Read, Entity: URL}, notAllowedError.Permission)
 		assert.Nil(t, resp)
 	})
 
@@ -161,7 +161,7 @@ func TestHttpRead(t *testing.T) {
 		//create a context that allows up to one request per second
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.HttpPermission{Kind_: permkind.Read, Entity: URL},
+				core.HttpPermission{Kind_: permbase.Read, Entity: URL},
 			},
 			Limits: []core.Limit{
 				{
@@ -197,7 +197,7 @@ func TestHttpRead(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.HttpPermission{Kind_: permkind.Read, Entity: URL},
+				core.HttpPermission{Kind_: permbase.Read, Entity: URL},
 			},
 			Limits: []core.Limit{
 				{
@@ -231,7 +231,7 @@ func TestHttpRead(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.HttpPermission{Kind_: permkind.Read, Entity: URL},
+				core.HttpPermission{Kind_: permbase.Read, Entity: URL},
 			},
 			Limits: []core.Limit{
 				{
@@ -265,7 +265,7 @@ func TestHttpRead(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.HttpPermission{Kind_: permkind.Read, Entity: URL},
+				core.HttpPermission{Kind_: permbase.Read, Entity: URL},
 			},
 			Limits: []core.Limit{
 				{

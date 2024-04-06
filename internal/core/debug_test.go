@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core/inoxmod"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
@@ -43,7 +44,7 @@ func TestTreeWalkDebug(t *testing.T) {
 			ExceptionBreakpointId: options.exceptionBreakpointId,
 		})
 
-		state.Module = &core.Module{MainChunk: chunk, TopLevelNode: chunk.Node}
+		state.Module = core.WrapLowerModule(&inoxmod.Module{MainChunk: chunk, TopLevelNode: chunk.Node})
 		debugger.AttachAndStart(treeWalkState)
 
 		return treeWalkState, state.Ctx, chunk, debugger

@@ -12,7 +12,7 @@ import (
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core"
 
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 )
 
 const (
@@ -71,7 +71,7 @@ func openExistingFile(ctx *core.Context, pth core.Path, write bool) (*File, erro
 	if err != nil {
 		return nil, err
 	}
-	perm := core.FilesystemPermission{Kind_: permkind.Read, Entity: absPath}
+	perm := core.FilesystemPermission{Kind_: permbase.Read, Entity: absPath}
 	if err := ctx.CheckHasPermission(perm); err != nil {
 		return nil, err
 	}
@@ -146,7 +146,7 @@ func (f *File) doRead(ctx *core.Context, closeFile bool, count int64) ([]byte, e
 	default:
 	}
 
-	perm := core.FilesystemPermission{Kind_: permkind.Read, Entity: f.path}
+	perm := core.FilesystemPermission{Kind_: permbase.Read, Entity: f.path}
 	if err := ctx.CheckHasPermission(perm); err != nil {
 		return nil, err
 	}
@@ -157,7 +157,7 @@ func (f *File) doRead(ctx *core.Context, closeFile bool, count int64) ([]byte, e
 	}
 
 	fls := ctx.GetFileSystem()
-	stat, err := core.FileStat(f.f, fls)
+	stat, err := afs.FileStat(f.f, fls)
 	if err != nil {
 		return nil, err
 	}
@@ -192,7 +192,7 @@ func (f *File) doRead(ctx *core.Context, closeFile bool, count int64) ([]byte, e
 		b = append(b, chunk[0:n]...)
 		totalN += int64(n)
 
-		stat, err := core.FileStat(f.f, fls)
+		stat, err := afs.FileStat(f.f, fls)
 		if err != nil {
 			return nil, err
 		}
@@ -206,7 +206,7 @@ func (f *File) doRead(ctx *core.Context, closeFile bool, count int64) ([]byte, e
 }
 
 func (f *File) write(ctx *core.Context, data core.Readable) error {
-	perm := core.FilesystemPermission{Kind_: permkind.WriteStream, Entity: f.path}
+	perm := core.FilesystemPermission{Kind_: permbase.WriteStream, Entity: f.path}
 	if err := ctx.CheckHasPermission(perm); err != nil {
 		return err
 	}
@@ -234,7 +234,7 @@ func (f *File) close(ctx *core.Context) {
 }
 
 func (f *File) info(ctx *core.Context) (core.FileInfo, error) {
-	stat, err := core.FileStat(f.f, ctx.GetFileSystem())
+	stat, err := afs.FileStat(f.f, ctx.GetFileSystem())
 	if err != nil {
 		return core.FileInfo{}, err
 	}

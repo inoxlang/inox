@@ -9,7 +9,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/compressarch"
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/mimeconsts"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -33,7 +33,7 @@ func NewFileServer(ctx *core.Context, args ...core.Value) (*HttpsServer, error) 
 			parsed, _ := url.Parse(string(v))
 			addr = parsed.Host
 
-			perm := core.HttpPermission{Kind_: permkind.Provide, Entity: v}
+			perm := core.HttpPermission{Kind_: permbase.Provide, Entity: v}
 			if err := ctx.CheckHasPermission(perm); err != nil {
 				return nil, err
 			}
@@ -47,7 +47,7 @@ func NewFileServer(ctx *core.Context, args ...core.Value) (*HttpsServer, error) 
 				return nil, err
 			}
 
-			perm := core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern(string(dir) + "...")}
+			perm := core.FilesystemPermission{Kind_: permbase.Read, Entity: core.PathPattern(string(dir) + "...")}
 			if err := ctx.CheckHasPermission(perm); err != nil {
 				return nil, err
 			}

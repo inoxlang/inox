@@ -9,7 +9,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -143,7 +143,7 @@ func NewEventSourceWithFilesystem(ctx *core.Context, fls afs.Filesystem, resourc
 		return nil, errors.New("cannot watch a symlinked directory")
 	}
 
-	perm := core.FilesystemPermission{Kind_: permkind.Read, Entity: permissionEntity}
+	perm := core.FilesystemPermission{Kind_: permbase.Read, Entity: permissionEntity}
 	if err := ctx.CheckHasPermission(perm); err != nil {
 		return nil, err
 	}

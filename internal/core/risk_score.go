@@ -6,7 +6,7 @@ import (
 	"slices"
 	"strconv"
 
-	permkind "github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -72,28 +72,28 @@ var (
 
 	DEFAULT_PERM_RISK_SCORES = map[reflect.Type][]BasePermissionRiskScore{
 		HTTP_PERM_TYPE: {
-			{HTTP_PERM_TYPE, permkind.Read, HTTP_READ_PERM_RISK_SCORE},
-			{HTTP_PERM_TYPE, permkind.Write, HTTP_WRITE_PERM_RISK_SCORE},
-			{HTTP_PERM_TYPE, permkind.Provide, HTTP_WRITE_PERM_RISK_SCORE},
+			{HTTP_PERM_TYPE, permbase.Read, HTTP_READ_PERM_RISK_SCORE},
+			{HTTP_PERM_TYPE, permbase.Write, HTTP_WRITE_PERM_RISK_SCORE},
+			{HTTP_PERM_TYPE, permbase.Provide, HTTP_WRITE_PERM_RISK_SCORE},
 		},
 
 		WS_PERM_TYPE: {
-			{WS_PERM_TYPE, permkind.Read, WS_READ_PERM_RISK_SCORE},
-			{WS_PERM_TYPE, permkind.Write, WS_WRITE_PERM_RISK_SCORE},
-			{WS_PERM_TYPE, permkind.Provide, WS_WRITE_PERM_RISK_SCORE},
+			{WS_PERM_TYPE, permbase.Read, WS_READ_PERM_RISK_SCORE},
+			{WS_PERM_TYPE, permbase.Write, WS_WRITE_PERM_RISK_SCORE},
+			{WS_PERM_TYPE, permbase.Provide, WS_WRITE_PERM_RISK_SCORE},
 		},
 
 		FS_PERM_TYPE: {
-			{FS_PERM_TYPE, permkind.Read, FS_READ_PERM_RISK_SCORE},
-			{FS_PERM_TYPE, permkind.Write, FS_WRITE_PERM_RISK_SCORE},
+			{FS_PERM_TYPE, permbase.Read, FS_READ_PERM_RISK_SCORE},
+			{FS_PERM_TYPE, permbase.Write, FS_WRITE_PERM_RISK_SCORE},
 		},
 
 		ROUTINE_PERM_TYPE: {
-			{ROUTINE_PERM_TYPE, permkind.Create, LTHREAD_PERM_RISK_SCORE},
+			{ROUTINE_PERM_TYPE, permbase.Create, LTHREAD_PERM_RISK_SCORE},
 		},
 
 		CMD_PERM_TYPE: {
-			{CMD_PERM_TYPE, permkind.Use, CMD_PERM_RISK_SCORE},
+			{CMD_PERM_TYPE, permbase.Use, CMD_PERM_RISK_SCORE},
 		},
 	}
 

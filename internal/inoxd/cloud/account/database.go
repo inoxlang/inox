@@ -8,7 +8,7 @@ import (
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/buntdb"
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -19,7 +19,7 @@ var (
 func OpenAnonymousAccountDatabase(ctx *core.Context, path core.Path, fls afs.Filesystem) (*AnonymousAccountDatabase, error) {
 
 	readPerm := core.FilesystemPermission{
-		Kind_:  permkind.Read,
+		Kind_:  permbase.Read,
 		Entity: path,
 	}
 
@@ -28,7 +28,7 @@ func OpenAnonymousAccountDatabase(ctx *core.Context, path core.Path, fls afs.Fil
 	}
 
 	writePerm := core.FilesystemPermission{
-		Kind_:  permkind.Write,
+		Kind_:  permbase.Write,
 		Entity: path,
 	}
 

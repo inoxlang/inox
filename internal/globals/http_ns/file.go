@@ -6,9 +6,10 @@ import (
 	"net/http"
 	"path/filepath"
 
+	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/compressarch"
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/mimeconsts"
 )
 
@@ -39,7 +40,7 @@ func serveFile(args fileServingParams) error {
 		}
 	}
 
-	perm := core.FilesystemPermission{Kind_: permkind.Read, Entity: pth}
+	perm := core.FilesystemPermission{Kind_: permbase.Read, Entity: pth}
 
 	if err := ctx.CheckHasPermission(perm); err != nil {
 		return err
@@ -53,7 +54,7 @@ func serveFile(args fileServingParams) error {
 
 	//TODO: add implementation of afs.StatCapable to all file types in fs_ns.
 
-	stat, err := core.FileStat(f, fls)
+	stat, err := afs.FileStat(f, fls)
 	if err != nil {
 		return err
 	}

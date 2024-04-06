@@ -14,7 +14,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -44,7 +44,7 @@ func ReadEntireFile(ctx *core.Context, fpath core.Path) ([]byte, error) {
 		return nil, err
 	}
 
-	perm := core.FilesystemPermission{Kind_: permkind.Read, Entity: fpath}
+	perm := core.FilesystemPermission{Kind_: permbase.Read, Entity: fpath}
 	if err := ctx.CheckHasPermission(perm); err != nil {
 		return nil, err
 	}
@@ -66,7 +66,7 @@ func ReadDir(ctx *core.Context, pth core.Path) ([]fs.DirEntry, error) {
 	}
 
 	perm := core.FilesystemPermission{
-		Kind_:  permkind.Read,
+		Kind_:  permbase.Read,
 		Entity: pth,
 	}
 
@@ -208,7 +208,7 @@ func ListFiles(ctx *core.Context, pathOrPatt *core.OptionalParam[core.Value]) ([
 	} else { //pattern
 		absPatt := patt.ToAbs(ctx.GetFileSystem())
 		perm := core.FilesystemPermission{
-			Kind_:  permkind.Read,
+			Kind_:  permbase.Read,
 			Entity: absPatt,
 		}
 
@@ -243,7 +243,7 @@ func IsDir(ctx *core.Context, pth core.Path) core.Bool {
 	}
 
 	perm := core.FilesystemPermission{
-		Kind_:  permkind.Read,
+		Kind_:  permbase.Read,
 		Entity: pth,
 	}
 
@@ -263,7 +263,7 @@ func IsFile(ctx *core.Context, pth core.Path) core.Bool {
 	}
 
 	perm := core.FilesystemPermission{
-		Kind_:  permkind.Read,
+		Kind_:  permbase.Read,
 		Entity: pth,
 	}
 
@@ -283,7 +283,7 @@ func Exists(ctx *core.Context, pth core.Path) core.Bool {
 	}
 
 	perm := core.FilesystemPermission{
-		Kind_:  permkind.Read,
+		Kind_:  permbase.Read,
 		Entity: pth,
 	}
 

@@ -17,7 +17,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/config"
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/css/tailwind"
 	"github.com/inoxlang/inox/internal/deno"
 	denobinary "github.com/inoxlang/inox/internal/deno/binary"
@@ -308,39 +308,39 @@ func determineProjectServerPermissions(projectServerConfig projectserver.Individ
 	perms := []core.Permission{
 		//Filesystem permissions
 		//TODO: change path patterns
-		core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
-		core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")},
-		core.FilesystemPermission{Kind_: permkind.Delete, Entity: core.PathPattern("/...")},
+		core.FilesystemPermission{Kind_: permbase.Read, Entity: core.PathPattern("/...")},
+		core.FilesystemPermission{Kind_: permbase.Write, Entity: core.PathPattern("/...")},
+		core.FilesystemPermission{Kind_: permbase.Delete, Entity: core.PathPattern("/...")},
 
 		//Websocket provide permission
 
-		core.WebsocketPermission{Kind_: permkind.Provide},
+		core.WebsocketPermission{Kind_: permbase.Provide},
 
 		//HTTP Provide permissions
 
-		core.HttpPermission{Kind_: permkind.Provide, Entity: core.ANY_HTTPS_HOST_PATTERN},
-		core.HttpPermission{Kind_: permkind.Provide, Entity: core.HostPattern("https://**:" + inoxconsts.DEV_PORT_0)},
-		core.HttpPermission{Kind_: permkind.Provide, Entity: core.HostPattern("https://**:" + inoxconsts.DEV_PORT_1)},
-		core.HttpPermission{Kind_: permkind.Provide, Entity: core.HostPattern("https://**:" + inoxconsts.DEV_PORT_2)},
-		core.HttpPermission{Kind_: permkind.Provide, Entity: core.HostPattern("http://" + chrome_ns.BROWSER_PROXY_ADDR)},
+		core.HttpPermission{Kind_: permbase.Provide, Entity: core.ANY_HTTPS_HOST_PATTERN},
+		core.HttpPermission{Kind_: permbase.Provide, Entity: core.HostPattern("https://**:" + inoxconsts.DEV_PORT_0)},
+		core.HttpPermission{Kind_: permbase.Provide, Entity: core.HostPattern("https://**:" + inoxconsts.DEV_PORT_1)},
+		core.HttpPermission{Kind_: permbase.Provide, Entity: core.HostPattern("https://**:" + inoxconsts.DEV_PORT_2)},
+		core.HttpPermission{Kind_: permbase.Provide, Entity: core.HostPattern("http://" + chrome_ns.BROWSER_PROXY_ADDR)},
 
 		//Default HTTP read|write|delete permissions
 
-		core.HttpPermission{Kind_: permkind.Read, Entity: DEV_LOCALHOST_0},
-		core.HttpPermission{Kind_: permkind.Write, Entity: DEV_LOCALHOST_0},
-		core.HttpPermission{Kind_: permkind.Delete, Entity: DEV_LOCALHOST_0},
+		core.HttpPermission{Kind_: permbase.Read, Entity: DEV_LOCALHOST_0},
+		core.HttpPermission{Kind_: permbase.Write, Entity: DEV_LOCALHOST_0},
+		core.HttpPermission{Kind_: permbase.Delete, Entity: DEV_LOCALHOST_0},
 
-		core.HttpPermission{Kind_: permkind.Read, Entity: DEV_LOCALHOST_1},
-		core.HttpPermission{Kind_: permkind.Write, Entity: DEV_LOCALHOST_1},
-		core.HttpPermission{Kind_: permkind.Delete, Entity: DEV_LOCALHOST_1},
+		core.HttpPermission{Kind_: permbase.Read, Entity: DEV_LOCALHOST_1},
+		core.HttpPermission{Kind_: permbase.Write, Entity: DEV_LOCALHOST_1},
+		core.HttpPermission{Kind_: permbase.Delete, Entity: DEV_LOCALHOST_1},
 
-		core.HttpPermission{Kind_: permkind.Read, Entity: DEV_LOCALHOST_2},
-		core.HttpPermission{Kind_: permkind.Write, Entity: DEV_LOCALHOST_2},
-		core.HttpPermission{Kind_: permkind.Delete, Entity: DEV_LOCALHOST_2},
+		core.HttpPermission{Kind_: permbase.Read, Entity: DEV_LOCALHOST_2},
+		core.HttpPermission{Kind_: permbase.Write, Entity: DEV_LOCALHOST_2},
+		core.HttpPermission{Kind_: permbase.Delete, Entity: DEV_LOCALHOST_2},
 
 		//Lighweight thread permissions
 
-		core.LThreadPermission{Kind_: permkind.Create},
+		core.LThreadPermission{Kind_: permbase.Create},
 
 		//Command permissions
 
@@ -356,27 +356,27 @@ func determineProjectServerPermissions(projectServerConfig projectserver.Individ
 
 		perms = append(perms,
 			core.HttpPermission{
-				Kind_:  permkind.Read,
+				Kind_:  permbase.Read,
 				Entity: httpsHost,
 			},
 			core.HttpPermission{
-				Kind_:  permkind.Read,
+				Kind_:  permbase.Read,
 				Entity: httpHost,
 			},
 			core.HttpPermission{
-				Kind_:  permkind.Write,
+				Kind_:  permbase.Write,
 				Entity: httpsHost,
 			},
 			core.HttpPermission{
-				Kind_:  permkind.Write,
+				Kind_:  permbase.Write,
 				Entity: httpHost,
 			},
 			core.HttpPermission{
-				Kind_:  permkind.Delete,
+				Kind_:  permbase.Delete,
 				Entity: httpsHost,
 			},
 			core.HttpPermission{
-				Kind_:  permkind.Delete,
+				Kind_:  permbase.Delete,
 				Entity: httpHost,
 			},
 		)
@@ -385,9 +385,9 @@ func determineProjectServerPermissions(projectServerConfig projectserver.Individ
 	//If no domains are specified in the allow list we add the permissions to make any HTTP request.
 	if len(projectServerConfig.DomainAllowList) == 0 {
 		perms = append(perms,
-			core.HttpPermission{Kind_: permkind.Read, AnyEntity: true},
-			core.HttpPermission{Kind_: permkind.Write, AnyEntity: true},
-			core.HttpPermission{Kind_: permkind.Delete, AnyEntity: true})
+			core.HttpPermission{Kind_: permbase.Read, AnyEntity: true},
+			core.HttpPermission{Kind_: permbase.Write, AnyEntity: true},
+			core.HttpPermission{Kind_: permbase.Delete, AnyEntity: true})
 	}
 
 	return perms

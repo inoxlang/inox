@@ -7,7 +7,7 @@ import (
 	"reflect"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/rs/zerolog"
 
@@ -115,7 +115,7 @@ func (s *Server) startTcpServer(netType string, addr string) error {
 	}
 
 	if err := s.ctx.CheckHasPermission(core.RawTcpPermission{
-		Kind_:  permkind.Provide,
+		Kind_:  permbase.Provide,
 		Domain: core.Host("://" + addr),
 	}); err != nil {
 		return err

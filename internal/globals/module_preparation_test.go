@@ -14,7 +14,7 @@ import (
 	"github.com/cloudflare/cloudflare-go"
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/parse"
@@ -285,7 +285,7 @@ func TestPrepareLocalModule(t *testing.T) {
 			Content: []byte{},
 			Parsed:  core.String(""),
 			RequiredPermission: core.FilesystemPermission{
-				Kind_:  permkind.Read,
+				Kind_:  permbase.Read,
 				Entity: core.Path("/file.txt"),
 			},
 		}, manifest.PreinitFiles[0])
@@ -757,9 +757,9 @@ func TestPrepareLocalModule(t *testing.T) {
 		}
 
 		perms := state.Ctx.GetGrantedPermissions()
-		assert.Contains(t, perms, core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")})
-		assert.Contains(t, perms, core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")})
-		assert.Contains(t, perms, core.LThreadPermission{Kind_: permkind.Create})
+		assert.Contains(t, perms, core.FilesystemPermission{Kind_: permbase.Read, Entity: core.PathPattern("/...")})
+		assert.Contains(t, perms, core.FilesystemPermission{Kind_: permbase.Write, Entity: core.PathPattern("/...")})
+		assert.Contains(t, perms, core.LThreadPermission{Kind_: permbase.Create})
 	})
 
 	t.Run("program testing should be allowed in project mode", func(t *testing.T) {
@@ -936,7 +936,7 @@ func TestPrepareLocalModule(t *testing.T) {
 		}
 
 		perms := state.Ctx.GetGrantedPermissions()
-		assert.NotContains(t, perms, core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")})
+		assert.NotContains(t, perms, core.FilesystemPermission{Kind_: permbase.Read, Entity: core.PathPattern("/...")})
 	})
 
 	t.Run("if the OS filesystem used the IWD should be the current working directory", func(t *testing.T) {
@@ -985,7 +985,7 @@ func TestPrepareLocalModule(t *testing.T) {
 		assert.EqualValues(t, wd+"/...", IWD_PREFIX_PATTERN)
 
 		perms := state.Ctx.GetGrantedPermissions()
-		assert.Contains(t, perms, core.FilesystemPermission{Kind_: permkind.Read, Entity: IWD.(core.Path)})
+		assert.Contains(t, perms, core.FilesystemPermission{Kind_: permbase.Read, Entity: IWD.(core.Path)})
 	})
 
 	t.Run("function requiring an early declaration", func(t *testing.T) {
@@ -2204,7 +2204,7 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: append(
 				core.GetDefaultGlobalVarPermissions(),
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
+				core.FilesystemPermission{Kind_: permbase.Read, Entity: core.PathPattern("/...")},
 			),
 			Filesystem: fls,
 		})
@@ -2326,7 +2326,7 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: append(
 				core.GetDefaultGlobalVarPermissions(),
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
+				core.FilesystemPermission{Kind_: permbase.Read, Entity: core.PathPattern("/...")},
 			),
 			Filesystem: fs,
 		})
@@ -2443,7 +2443,7 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: append(
 				core.GetDefaultGlobalVarPermissions(),
-				core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
+				core.FilesystemPermission{Kind_: permbase.Read, Entity: core.PathPattern("/...")},
 			),
 			Filesystem: fs,
 		})
@@ -3224,7 +3224,7 @@ func TestPrepareDevModeIncludableChunkFile(t *testing.T) {
 			return
 		}
 
-		if !assert.NotEmpty(t, state.Module.ParsingErrors) {
+		if !assert.NotEmpty(t, state.Module.Errors) {
 			return
 		}
 
@@ -3272,7 +3272,7 @@ func TestPrepareDevModeIncludableChunkFile(t *testing.T) {
 			return
 		}
 
-		if !assert.NotEmpty(t, state.Module.ParsingErrors) {
+		if !assert.NotEmpty(t, state.Module.Errors) {
 			return
 		}
 
@@ -3318,7 +3318,7 @@ func TestPrepareDevModeIncludableChunkFile(t *testing.T) {
 			return
 		}
 
-		if !assert.Empty(t, state.Module.ParsingErrors) {
+		if !assert.Empty(t, state.Module.Errors) {
 			return
 		}
 

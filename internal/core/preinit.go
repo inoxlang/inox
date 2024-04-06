@@ -1,19 +1,30 @@
 package core
 
 import (
+	"errors"
 	"fmt"
+	"io"
+	"math"
 	"os"
 
+	"github.com/go-git/go-billy/v5"
 	"github.com/inoxlang/inox/internal/afs"
-	permkind "github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/inoxmod"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
+const (
+	MAX_PREINIT_FILE_SIZE      = int32(100_000)
+	DEFAULT_MAX_READ_FILE_SIZE = int32(100_000_000)
+)
+
 var (
-	USABLE_GLOBALS_IN_PREINIT = []string{globalnames.READ_FN}
+	USABLE_GLOBALS_IN_PREINIT       = []string{globalnames.READ_FN}
+	ErrFileSizeExceedSpecifiedLimit = errors.New("file's size exceeds the specified limit")
 )
 
 type PreinitArgs struct {
@@ -90,7 +101,7 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 
 	if parse.HasErrorAtAnyDepth(manifestObjLiteral) ||
 		(preinitArgs.PreinitStatement != nil && parse.HasErrorAtAnyDepth(preinitArgs.PreinitStatement)) {
-		return nil, nil, nil, ErrParsingErrorInManifestOrPreinit
+		return nil, nil, nil, inoxmod.ErrParsingErrorInManifestOrPreinit
 	}
 
 	//check preinit block
@@ -118,7 +129,7 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 		checkManifestObject(manifestStaticCheckArguments{
 			objLit:                manifestObjLiteral,
 			ignoreUnknownSections: preinitArgs.IgnoreUnknownSections,
-			moduleKind:            m.ModuleKind,
+			moduleKind:            m.Kind,
 			onError: func(n parse.Node, msg string) {
 				location := m.MainChunk.GetSourcePosition(n.Base().Span)
 				checkErr := NewStaticCheckError(msg, parse.SourcePositionStack{location})
@@ -138,11 +149,11 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 	//we create a temporary state to pre-evaluate some parts of the manifest
 	if preinitArgs.RunningState == nil {
 
-		ctxPerms := []Permission{GlobalVarPermission{permkind.Read, "*"}}
+		ctxPerms := []Permission{GlobalVarPermission{permbase.Read, "*"}}
 
 		//Allow calling some builtins.
 		for _, name := range USABLE_GLOBALS_IN_PREINIT {
-			ctxPerms = append(ctxPerms, GlobalVarPermission{permkind.Use, name})
+			ctxPerms = append(ctxPerms, GlobalVarPermission{permbase.Use, name})
 		}
 
 		//Allow using additional globals and user-defined global constants (direct call or method call).
@@ -150,13 +161,13 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 			for _, decl := range preinitArgs.GlobalConsts.Declarations {
 				ident, ok := decl.Left.(*parse.IdentifierLiteral)
 				if ok {
-					ctxPerms = append(ctxPerms, GlobalVarPermission{permkind.Use, ident.Name})
+					ctxPerms = append(ctxPerms, GlobalVarPermission{permbase.Use, ident.Name})
 				}
 			}
 		}
 
 		for k := range preinitArgs.AdditionalGlobals {
-			ctxPerms = append(ctxPerms, GlobalVarPermission{permkind.Use, k})
+			ctxPerms = append(ctxPerms, GlobalVarPermission{permbase.Use, k})
 		}
 
 		ctx := NewContext(ContextConfig{
@@ -284,7 +295,7 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 					Path:    path,
 					Pattern: pattern,
 					RequiredPermission: FilesystemPermission{
-						Kind_:  permkind.Read,
+						Kind_:  permbase.Read,
 						Entity: path,
 					},
 				})
@@ -368,4 +379,62 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 	})
 
 	return manifest, state, nil, err
+}
+
+// ReadFileInFS reads up to maxSize bytes from a file in the given filesystem.
+// if maxSize is <=0 the max size is set to 100MB.
+func ReadFileInFS(fls billy.Basic, name string, maxSize int32) ([]byte, error) {
+	f, err := fls.OpenFile(name, os.O_RDONLY, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	defer f.Close()
+
+	if maxSize <= 0 {
+		maxSize = DEFAULT_MAX_READ_FILE_SIZE
+	}
+
+	var size32 int32
+	if info, err := afs.FileStat(f, fls); err == nil {
+		size64 := info.Size()
+		if size64 > int64(maxSize) || size64 >= math.MaxInt32 {
+			return nil, ErrFileSizeExceedSpecifiedLimit
+		}
+
+		size32 = int32(size64)
+	}
+
+	size32++ // one byte for final read at EOF
+	// If a file claims a small size, read at least 512 bytes.
+	// In particular, files in Linux's /proc claim size 0 but
+	// then do not work right if read in small pieces,
+	// so an initial read of 1 byte would not work correctly.
+
+	if size32 < 512 {
+		size32 = 512
+	}
+
+	data := make([]byte, 0, size32)
+	for {
+		if len(data) >= cap(data) {
+			d := append(data[:cap(data)], 0)
+			data = d[:len(data)]
+		}
+
+		n, err := f.Read(data[len(data):cap(data)])
+		data = data[:len(data)+n]
+
+		if len(data) > int(maxSize) {
+			return nil, ErrFileSizeExceedSpecifiedLimit
+		}
+
+		if err != nil {
+			if err == io.EOF {
+				err = nil
+			}
+
+			return data, err
+		}
+	}
 }

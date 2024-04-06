@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/utils"
@@ -52,7 +52,7 @@ func TestWebsocketServer(t *testing.T) {
 	t.Run("create with required permission", func(t *testing.T) {
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.WebsocketPermission{Kind_: permkind.Provide},
+				core.WebsocketPermission{Kind_: permbase.Provide},
 			},
 			Filesystem: fs_ns.GetOsFilesystem(),
 		})
@@ -68,7 +68,7 @@ func TestWebsocketServer(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		server, err := NewWebsocketServer(ctx)
-		assert.ErrorIs(t, err, core.NewNotAllowedError(core.WebsocketPermission{Kind_: permkind.Provide}))
+		assert.ErrorIs(t, err, core.NewNotAllowedError(core.WebsocketPermission{Kind_: permbase.Provide}))
 		assert.Nil(t, server)
 	})
 
@@ -78,7 +78,7 @@ func TestWebsocketServer(t *testing.T) {
 
 		clientCtx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.WebsocketPermission{Kind_: permkind.Read, Endpoint: ENDPOINT},
+				core.WebsocketPermission{Kind_: permbase.Read, Endpoint: ENDPOINT},
 			},
 			Filesystem: fs_ns.GetOsFilesystem(),
 			Limits:     []core.Limit{permissiveSocketCountLimit},
@@ -87,9 +87,9 @@ func TestWebsocketServer(t *testing.T) {
 
 		serverCtx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.WebsocketPermission{Kind_: permkind.Provide},
+				core.WebsocketPermission{Kind_: permbase.Provide},
 				core.HttpPermission{
-					Kind_:  permkind.Provide,
+					Kind_:  permbase.Provide,
 					Entity: HOST,
 				},
 			},
@@ -125,7 +125,7 @@ func TestWebsocketServer(t *testing.T) {
 
 		clientCtx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.WebsocketPermission{Kind_: permkind.Read, Endpoint: ENDPOINT},
+				core.WebsocketPermission{Kind_: permbase.Read, Endpoint: ENDPOINT},
 			},
 			Filesystem: fs_ns.GetOsFilesystem(),
 			Limits:     []core.Limit{permissiveSocketCountLimit},
@@ -134,9 +134,9 @@ func TestWebsocketServer(t *testing.T) {
 
 		serverCtx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.WebsocketPermission{Kind_: permkind.Provide},
+				core.WebsocketPermission{Kind_: permbase.Provide},
 				core.HttpPermission{
-					Kind_:  permkind.Provide,
+					Kind_:  permbase.Provide,
 					Entity: HOST,
 				},
 			},
@@ -184,7 +184,7 @@ func TestWebsocketServer(t *testing.T) {
 
 		clientCtx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.WebsocketPermission{Kind_: permkind.Read, Endpoint: ENDPOINT},
+				core.WebsocketPermission{Kind_: permbase.Read, Endpoint: ENDPOINT},
 			},
 			Filesystem: fs_ns.GetOsFilesystem(),
 			Limits:     []core.Limit{permissiveSocketCountLimit},
@@ -193,9 +193,9 @@ func TestWebsocketServer(t *testing.T) {
 
 		serverCtx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.WebsocketPermission{Kind_: permkind.Provide},
+				core.WebsocketPermission{Kind_: permbase.Provide},
 				core.HttpPermission{
-					Kind_:  permkind.Provide,
+					Kind_:  permbase.Provide,
 					Entity: HOST,
 				},
 			},
@@ -257,7 +257,7 @@ func TestWebsocketServer(t *testing.T) {
 
 		clientCtx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.WebsocketPermission{Kind_: permkind.Read, Endpoint: ENDPOINT},
+				core.WebsocketPermission{Kind_: permbase.Read, Endpoint: ENDPOINT},
 			},
 			Filesystem: fs_ns.GetOsFilesystem(),
 			Limits:     []core.Limit{permissiveSocketCountLimit},
@@ -266,9 +266,9 @@ func TestWebsocketServer(t *testing.T) {
 
 		serverCtx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.WebsocketPermission{Kind_: permkind.Provide},
+				core.WebsocketPermission{Kind_: permbase.Provide},
 				core.HttpPermission{
-					Kind_:  permkind.Provide,
+					Kind_:  permbase.Provide,
 					Entity: HOST,
 				},
 			},
@@ -330,8 +330,8 @@ func createWebsocketServer(config testWebsocketServerConfig, ctx *core.Context) 
 	if ctx == nil {
 		ctx = core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.WebsocketPermission{Kind_: permkind.Provide},
-				core.HttpPermission{Kind_: permkind.Provide, Entity: config.host},
+				core.WebsocketPermission{Kind_: permbase.Provide},
+				core.HttpPermission{Kind_: permbase.Provide, Entity: config.host},
 			},
 			Filesystem: fs_ns.GetOsFilesystem(),
 		})

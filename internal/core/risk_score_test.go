@@ -3,7 +3,7 @@ package core
 import (
 	"testing"
 
-	permkind "github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -111,7 +111,7 @@ func TestComputeProgramRiskScore(t *testing.T) {
 
 		ComputeProgramRiskScore(mod, &Manifest{
 			RequiredPermissions: []Permission{
-				HttpPermission{Kind_: permkind.Read, AnyEntity: true},
+				HttpPermission{Kind_: permbase.Read, AnyEntity: true},
 			},
 		})
 	})

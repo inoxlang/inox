@@ -198,12 +198,12 @@ func computeDocumentDiagnostics(params diagnosticNotificationParams) (result *do
 	i := -1
 
 	//Parsing diagnostics
-	for _, err := range mod.ParsingErrors {
+	for _, err := range mod.Errors {
 		i++
 
-		pos := mod.ParsingErrorPositions[i]
+		pos := err.Position
 		docURI, uriErr := getFileURI(pos.SourceName, usingInoxFS)
-		text := err.Text()
+		text := err.BaseError.Error()
 
 		//If the error is about the missing closing brace of a block we only show the rightmost
 		//position in the error's range. Keeping the whole range would cause the editor to underline
@@ -215,7 +215,7 @@ func computeDocumentDiagnostics(params diagnosticNotificationParams) (result *do
 		}
 
 		diagnostic := defines.Diagnostic{
-			Message:  err.Text(),
+			Message:  text,
 			Severity: &errSeverity,
 			Range:    rangeToLspRange(pos),
 		}

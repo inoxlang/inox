@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/inoxlang/inox/internal/core/inoxmod"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/core/text"
 	"github.com/inoxlang/inox/internal/globals/globalnames"
@@ -1325,17 +1326,17 @@ func (c *checker) checkImportStmt(node *parse.ImportStatement, parent, closestMo
 		if err != nil {
 			panic(ErrUnreachable)
 		}
-		src, err := getSourceFromImportSource(value, c.currentModule, c.checkInput.State.Ctx)
+		src, err := inoxmod.GetSourceFromImportSource(value.(ResourceName), c.currentModule.Lower(), c.checkInput.State.Ctx)
 		if err != nil {
 			c.addError(node, fmt.Sprintf("failed to resolve location of imported module: %s", err.Error()))
 			return parse.ContinueTraversal
 		}
-		importedModuleSource = src
+		importedModuleSource = src.(GoString)
 	default:
 		return parse.ContinueTraversal
 	}
 
-	importedModule := c.currentModule.DirectlyImportedModules[importedModuleSource.UnderlyingString()]
+	importedModule := WrapLowerModule(c.currentModule.DirectlyImportedModules[importedModuleSource.UnderlyingString()])
 	importedModuleNode := importedModule.MainChunk.Node
 
 	globals := make(map[parse.Node]map[string]globalVarInfo)
@@ -2561,7 +2562,7 @@ loop:
 			}
 			return parse.ContinueTraversal
 		case *parse.Chunk:
-			if c.currentModule != nil && c.currentModule.ModuleKind == LifetimeJobModule { // ok
+			if c.currentModule != nil && c.currentModule.Kind == LifetimeJobModule { // ok
 				return parse.ContinueTraversal
 			}
 		case *parse.ExtendStatement:
@@ -2886,7 +2887,7 @@ search_test_suite:
 		}
 	}
 
-	if !inTestSuite && node.IsStatement && (c.currentModule == nil || c.currentModule.ModuleKind != TestSuiteModule) {
+	if !inTestSuite && node.IsStatement && (c.currentModule == nil || c.currentModule.Kind != TestSuiteModule) {
 		c.addError(node, text.TEST_CASE_STMTS_NOT_ALLOWED_OUTSIDE_OF_TEST_SUITES)
 	}
 
@@ -3129,25 +3130,6 @@ func shallowCheckObjectRecordProperties(
 	}
 
 	return parse.ContinueTraversal, keys
-}
-
-// CombineParsingErrorValues combines errors into a single error with a multiline message.
-func CombineParsingErrorValues(errs []Error, positions []parse.SourcePositionRange) error {
-
-	if len(errs) == 0 {
-		return nil
-	}
-
-	goErrors := make([]error, len(errs))
-	for i, e := range errs {
-		if i < len(positions) {
-			goErrors[i] = fmt.Errorf("%s %w", positions[i].String(), e.goError)
-		} else {
-			goErrors[i] = e.goError
-		}
-	}
-
-	return utils.CombineErrors(goErrors...)
 }
 
 // combineStaticCheckErrors combines static check errors into a single error with a multiline message.

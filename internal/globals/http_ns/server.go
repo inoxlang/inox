@@ -29,7 +29,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	http_ns_symb "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
 
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 )
 
 const (
@@ -577,7 +577,7 @@ func (serv *HttpsServer) Close(ctx *core.Context) {
 }
 
 func newSymbolicHttpsServer(ctx *symbolic.Context, host *symbolic.Host, args ...symbolic.Value) (*http_ns_symb.HttpsServer, *symbolic.Error) {
-	if !ctx.HasAPermissionWithKindAndType(permkind.Provide, permkind.HTTP_PERM_TYPENAME) {
+	if !ctx.HasAPermissionWithKindAndType(permbase.Provide, permbase.HTTP_PERM_TYPENAME) {
 		ctx.AddSymbolicGoFunctionWarning(HTTP_PROVIDE_PERM_MIGHT_BE_MISSING)
 	}
 

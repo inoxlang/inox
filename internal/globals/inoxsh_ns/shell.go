@@ -27,6 +27,7 @@ import (
 
 	"github.com/rs/zerolog"
 
+	"github.com/inoxlang/inox/internal/core/inoxmod"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	symbolic_shell "github.com/inoxlang/inox/internal/globals/inoxsh_ns/symbolic"
 
@@ -1206,10 +1207,10 @@ func (sh *shell) parseModule(inputString string) (*core.Module, error) {
 		chunk.Node.IsShellChunk = true
 	}
 
-	return &core.Module{
+	return core.WrapLowerModule(&inoxmod.Module{
 		MainChunk:    chunk,
 		TopLevelNode: chunk.Node,
-	}, err
+	}), err
 }
 
 func (sh *shell) checkModule(mod *core.Module) (*core.StaticCheckData, *symbolic.Data, error) {

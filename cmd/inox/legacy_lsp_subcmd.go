@@ -9,7 +9,7 @@ import (
 	"os"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/inoxprocess"
 	"github.com/inoxlang/inox/internal/projectserver"
 	"github.com/inoxlang/inox/internal/utils"
@@ -62,11 +62,11 @@ func LegacyLSP(mainSubCommand string, mainSubCommandArgs []string, outW, errW io
 
 	perms := []core.Permission{
 		//TODO: change path pattern
-		core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
+		core.FilesystemPermission{Kind_: permbase.Read, Entity: core.PathPattern("/...")},
 	}
 
 	if opts.Websocket != nil {
-		perms = append(perms, core.WebsocketPermission{Kind_: permkind.Provide})
+		perms = append(perms, core.WebsocketPermission{Kind_: permbase.Provide})
 	}
 
 	filesystem := projectserver.NewDefaultFilesystem()

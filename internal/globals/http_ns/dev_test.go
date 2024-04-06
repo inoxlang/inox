@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/project"
@@ -32,7 +32,7 @@ func TestTargetServerCreationAndDevServerForwarding(t *testing.T) {
 
 		rootCtx := core.NewContextWithEmptyState(core.ContextConfig{
 			Filesystem:  fls,
-			Permissions: []core.Permission{core.HttpPermission{Kind_: permkind.Provide, Entity: host}},
+			Permissions: []core.Permission{core.HttpPermission{Kind_: permbase.Provide, Entity: host}},
 		}, nil)
 
 		rootCtx.MustGetClosestState().Project = project
@@ -157,7 +157,7 @@ func TestTargetServerCreationAndDevServerForwarding(t *testing.T) {
 
 		rootCtx := core.NewContextWithEmptyState(core.ContextConfig{
 			Filesystem:  fls,
-			Permissions: []core.Permission{core.HttpPermission{Kind_: permkind.Provide, Entity: host}},
+			Permissions: []core.Permission{core.HttpPermission{Kind_: permbase.Provide, Entity: host}},
 		}, nil)
 
 		rootCtx.MustGetClosestState().Project = project

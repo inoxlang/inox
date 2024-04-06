@@ -11,7 +11,7 @@ import (
 	_ "embed"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/deno"
 	"github.com/inoxlang/inox/internal/deno/binary"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
@@ -39,9 +39,9 @@ func TestParseHyperscriptWithDeno(t *testing.T) {
 	//Setup the control server.
 
 	perms := []core.Permission{
-		core.WebsocketPermission{Kind_: permkind.Provide},
-		core.FilesystemPermission{Kind_: permkind.Write, Entity: core.PathPattern("/...")},
-		core.FilesystemPermission{Kind_: permkind.Read, Entity: core.PathPattern("/...")},
+		core.WebsocketPermission{Kind_: permbase.Provide},
+		core.FilesystemPermission{Kind_: permbase.Write, Entity: core.PathPattern("/...")},
+		core.FilesystemPermission{Kind_: permbase.Read, Entity: core.PathPattern("/...")},
 	}
 	limits := []core.Limit{
 		{Name: fs_ns.FS_READ_LIMIT_NAME, Kind: core.ByteRateLimit, Value: 100_000_000},

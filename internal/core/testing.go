@@ -13,7 +13,8 @@ import (
 
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/commonfmt"
-	permkind "github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/inoxmod"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/inoxconsts"
@@ -100,13 +101,13 @@ func NewTestSuite(input TestSuiteCreationInput) (*TestSuite, error) {
 	// 	return nil, err
 	// }
 
-	routineMod := &Module{
+	routineMod := WrapLowerModule(&inoxmod.Module{
 		MainChunk:        parsedChunk,
 		TopLevelNode:     embeddedModChunk,
 		ManifestTemplate: parsedChunk.Node.Manifest,
-		ModuleKind:       TestSuiteModule,
+		Kind:             TestSuiteModule,
 		//TODO: bytecode ?
-	}
+	})
 
 	suite := &TestSuite{
 		meta: meta,
@@ -250,7 +251,7 @@ func (s *TestSuite) Run(ctx *Context, options ...Option) (*LThread, error) {
 		return nil, err
 	}
 
-	createLthreadPerm := LThreadPermission{Kind_: permkind.Create}
+	createLthreadPerm := LThreadPermission{Kind_: permbase.Create}
 
 	if err := spawnerState.Ctx.CheckHasPermission(createLthreadPerm); err != nil {
 		return nil, fmt.Errorf("testing: following permission is required for running tests: %w", err)
@@ -339,13 +340,13 @@ func NewTestCase(input TestCaseCreationInput) (*TestCase, error) {
 	// 	return nil, err
 	// }
 
-	routineMod := &Module{
+	routineMod := WrapLowerModule(&inoxmod.Module{
 		MainChunk:        parsedChunk,
 		TopLevelNode:     modChunk,
 		ManifestTemplate: parsedChunk.Node.Manifest,
-		ModuleKind:       TestCaseModule,
+		Kind:             TestCaseModule,
 		//TODO: bytecode ?
-	}
+	})
 
 	testCase := &TestCase{
 		meta: meta,
@@ -604,9 +605,9 @@ func runTestItem(
 	implicitlyAddedPermissions = append(implicitlyAddedPermissions, programDatabasePermissions...)
 
 	fsPerms := []Permission{
-		FilesystemPermission{Kind_: permkind.Read, Entity: PathPattern("/...")},
-		FilesystemPermission{Kind_: permkind.Write, Entity: PathPattern("/...")},
-		FilesystemPermission{Kind_: permkind.Delete, Entity: PathPattern("/...")},
+		FilesystemPermission{Kind_: permbase.Read, Entity: PathPattern("/...")},
+		FilesystemPermission{Kind_: permbase.Write, Entity: PathPattern("/...")},
+		FilesystemPermission{Kind_: permbase.Delete, Entity: PathPattern("/...")},
 	}
 
 	for _, fsPerm := range fsPerms {
@@ -625,7 +626,7 @@ func runTestItem(
 			continue
 		}
 		implicitlyAddedPermissions = append(implicitlyAddedPermissions, perm)
-		if httpPerm.Kind_ == permkind.Provide {
+		if httpPerm.Kind_ == permbase.Provide {
 			host, ok := httpPerm.Entity.(Host)
 			if ok && host.Name() == "localhost" {
 				client, err := CreateHttpClient(true, true)
@@ -644,7 +645,7 @@ func runTestItem(
 
 		//if the parent test suite has already parsed the module, use the cache.
 		if suite.isTestedProgramFromParent && parentTestSuite != nil && parentTestSuite.testedProgramPath == suite.testedProgramPath {
-			if spawnerState.TestingState.TestedProgram.sourceName != parentTestSuite.testedProgramPath {
+			if spawnerState.TestingState.TestedProgram.SourceName() != parentTestSuite.testedProgramPath {
 				panic(ErrUnreachable)
 			}
 			testedProgramModule = spawnerState.TestingState.TestedProgram
@@ -690,9 +691,9 @@ func runTestItem(
 		if ok {
 			CheckDatabasesObject(databasesObj, nil, func(name string, scheme Scheme, resource ResourceName) {
 				implicitlyAddedPermissions = append(implicitlyAddedPermissions,
-					DatabasePermission{Kind_: permkind.Read, Entity: resource},
-					DatabasePermission{Kind_: permkind.Write, Entity: resource},
-					DatabasePermission{Kind_: permkind.Delete, Entity: resource},
+					DatabasePermission{Kind_: permbase.Read, Entity: resource},
+					DatabasePermission{Kind_: permbase.Write, Entity: resource},
+					DatabasePermission{Kind_: permbase.Delete, Entity: resource},
 				)
 			}, spawnerState.Project)
 		}
@@ -706,7 +707,7 @@ func runTestItem(
 		}
 	}
 
-	createLthreadPerm := LThreadPermission{Kind_: permkind.Create}
+	createLthreadPerm := LThreadPermission{Kind_: permbase.Create}
 
 	permissions := slices.Clone(manifest.RequiredPermissions)
 	permissions = append(permissions, createLthreadPerm)

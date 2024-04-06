@@ -7,7 +7,8 @@ import (
 	"strings"
 
 	"github.com/inoxlang/inox/internal/afs"
-	permkind "github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/inoxmod"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/core/text"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
@@ -131,15 +132,15 @@ func checkManifestObject(args manifestStaticCheckArguments) {
 
 		switch sectionName {
 		case inoxconsts.MANIFEST_KIND_SECTION_NAME:
-			kindName, ok := getUncheckedModuleKindNameFromNode(p.Value)
+			kindName, ok := inoxmod.GetUncheckedModuleKindNameFromNode(p.Value)
 			if !ok {
 				onError(p.Key, text.KIND_SECTION_SHOULD_BE_A_STRING_LITERAL)
 				continue
 			}
 
-			kind, err := ParseModuleKind(kindName)
+			kind, err := inoxmod.ParseModuleKind(kindName)
 			if err != nil {
-				onError(p.Key, ErrInvalidModuleKind.Error())
+				onError(p.Key, inoxmod.ErrInvalidModuleKind.Error())
 				continue
 			}
 			if kind.IsEmbedded() {
@@ -334,7 +335,7 @@ func checkPermissionListingObject(objLit *parse.ObjectLiteral, onError func(n pa
 		}
 
 		propName := p.Name()
-		permKind, ok := permkind.PermissionKindFromString(propName)
+		permKind, ok := permbase.PermissionKindFromString(propName)
 		if !ok {
 			onError(p.Key, text.FmtNotValidPermissionKindName(p.Name()))
 			continue

@@ -9,7 +9,7 @@ package obsdb
 
 // 	"github.com/inoxlang/inox/internal/afs"
 // 	"github.com/inoxlang/inox/internal/core"
-// 	"github.com/inoxlang/inox/internal/core/permkind"
+// 	"github.com/inoxlang/inox/internal/core/permbase"
 // 	"github.com/inoxlang/inox/internal/globals/containers"
 // 	"github.com/inoxlang/inox/internal/globals/containers/common"
 // 	"github.com/inoxlang/inox/internal/globals/fs_ns"
@@ -529,7 +529,7 @@ package obsdb
 
 // 		ctxConfig := core.ContextConfig{
 // 			Permissions: []core.Permission{
-// 				core.DatabasePermission{Kind_: permkind.Read, Entity: DB_HOST},
+// 				core.DatabasePermission{Kind_: permbase.Read, Entity: DB_HOST},
 // 			},
 // 			HostResolutions: map[core.Host]core.Value{
 // 				DB_HOST: s3Host,

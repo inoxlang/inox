@@ -8,7 +8,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/containers/setcoll"
 	"github.com/inoxlang/inox/internal/utils"
@@ -55,7 +55,7 @@ func determineHttpServerParams(ctx *core.Context, server *HttpsServer, providedH
 			return
 		}
 
-		perm := core.HttpPermission{Kind_: permkind.Provide, Entity: providedHost}
+		perm := core.HttpPermission{Kind_: permbase.Provide, Entity: providedHost}
 		if err := ctx.CheckHasPermission(perm); err != nil {
 			argErr = err
 			return

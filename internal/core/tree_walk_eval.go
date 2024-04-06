@@ -11,7 +11,8 @@ import (
 	"strings"
 	"unsafe"
 
-	permkind "github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/inoxmod"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/inoxconsts"
@@ -105,7 +106,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		}
 
 		if state.HasGlobal(n.Left.Name) {
-			err = state.Global.Ctx.CheckHasPermission(GlobalVarPermission{Kind_: permkind.Use, Name: n.Left.Name})
+			err = state.Global.Ctx.CheckHasPermission(GlobalVarPermission{Kind_: permbase.Use, Name: n.Left.Name})
 			if err != nil {
 				return nil, err
 			}
@@ -240,7 +241,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 	case *parse.Variable:
 
 		if val, ok := state.Global.Globals.CheckedGet(n.Name); ok {
-			err := state.Global.Ctx.CheckHasPermission(GlobalVarPermission{Kind_: permkind.Read, Name: n.Name})
+			err := state.Global.Ctx.CheckHasPermission(GlobalVarPermission{Kind_: permbase.Read, Name: n.Name})
 			if err != nil {
 				return nil, err
 			}
@@ -317,7 +318,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		//we first get the callee
 		switch c := n.Callee.(type) {
 		case *parse.IdentifierLiteral:
-			err := state.Global.Ctx.CheckHasPermission(GlobalVarPermission{Kind_: permkind.Use, Name: c.Name})
+			err := state.Global.Ctx.CheckHasPermission(GlobalVarPermission{Kind_: permbase.Use, Name: c.Name})
 			if err != nil {
 				return nil, err
 			}
@@ -332,7 +333,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			}
 
 			if state.HasGlobal(c.Left.Name) {
-				err = state.Global.Ctx.CheckHasPermission(GlobalVarPermission{Kind_: permkind.Use, Name: c.Left.Name})
+				err = state.Global.Ctx.CheckHasPermission(GlobalVarPermission{Kind_: permbase.Use, Name: c.Left.Name})
 				if err != nil {
 					return nil, err
 				}
@@ -501,12 +502,12 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 					return nil, errors.New("attempt to assign a constant global")
 				}
 
-				err := state.Global.Ctx.CheckHasPermission(GlobalVarPermission{Kind_: permkind.Update, Name: name})
+				err := state.Global.Ctx.CheckHasPermission(GlobalVarPermission{Kind_: permbase.Update, Name: name})
 				if err != nil {
 					return nil, err
 				}
 			} else {
-				err = state.Global.Ctx.CheckHasPermission(GlobalVarPermission{Kind_: permkind.Create, Name: name})
+				err = state.Global.Ctx.CheckHasPermission(GlobalVarPermission{Kind_: permbase.Create, Name: name})
 				if err != nil {
 					return nil, err
 				}
@@ -1034,7 +1035,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		return TreeWalkEval(chunk.Node, state)
 	case *parse.ImportStatement:
-		varPerm := GlobalVarPermission{permkind.Create, n.Identifier.Name}
+		varPerm := GlobalVarPermission{permbase.Create, n.Identifier.Name}
 		if err := state.Global.Ctx.CheckHasPermission(varPerm); err != nil {
 			return nil, fmt.Errorf("import: %s", err.Error())
 		}
@@ -1208,11 +1209,11 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			Source: state.currentChunk().Source,
 		}
 
-		routineMod := &Module{
+		routineMod := WrapLowerModule(&inoxmod.Module{
 			MainChunk:    parsedChunk,
 			TopLevelNode: n.Module,
-			ModuleKind:   UserLThreadModule,
-		}
+			Kind:         UserLThreadModule,
+		})
 
 		lthread, err := SpawnLThread(LthreadSpawnArgs{
 			SpawnerState: state.Global,
@@ -2227,7 +2228,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		}
 
 		if !ok.(Bool) {
-			modKind := state.Global.Module.ModuleKind
+			modKind := state.Global.Module.Kind
 			isTestAssertion := modKind == TestSuiteModule || modKind == TestCaseModule
 			var testModule *Module
 			if isTestAssertion {
@@ -2392,7 +2393,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 			result, err := lthread.WaitResult(state.Global.Ctx)
 
-			if state.Global.Module.ModuleKind != TestSuiteModule {
+			if state.Global.Module.Kind != TestSuiteModule {
 				return Nil, nil
 			}
 
@@ -2449,12 +2450,12 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			Source: state.currentChunk().Source,
 		}
 
-		jobMod := &Module{
-			ModuleKind:       LifetimeJobModule,
+		jobMod := WrapLowerModule(&inoxmod.Module{
+			Kind:             LifetimeJobModule,
 			TopLevelNode:     n.Module,
 			MainChunk:        parsedChunk,
 			ManifestTemplate: parsedChunk.Node.Manifest,
-		}
+		})
 
 		job, err := NewLifetimeJob(meta, subjectPattern, jobMod, state.Global)
 		if err != nil {

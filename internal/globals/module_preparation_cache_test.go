@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/stretchr/testify/assert"
 )
@@ -22,7 +22,7 @@ func TestNewModulePreparationCache(t *testing.T) {
 
 	parsingCtx := core.NewContextWithEmptyState(core.ContextConfig{
 		Filesystem:  fls,
-		Permissions: []core.Permission{core.FilesystemPermission{Kind_: permkind.Read, Entity: core.ROOT_PREFIX_PATH_PATTERN}},
+		Permissions: []core.Permission{core.FilesystemPermission{Kind_: permbase.Read, Entity: core.ROOT_PREFIX_PATH_PATTERN}},
 	}, nil)
 
 	state, _, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{

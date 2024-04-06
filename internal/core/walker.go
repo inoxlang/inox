@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	afs "github.com/inoxlang/inox/internal/afs"
-	permkind "github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 )
 
 var (
@@ -268,7 +268,7 @@ func (p Path) Walker(ctx *Context) (Walker, error) {
 	}
 
 	perm := FilesystemPermission{
-		Kind_:  permkind.Read,
+		Kind_:  permbase.Read,
 		Entity: PathPattern(string(absPath) + "..."),
 	}
 

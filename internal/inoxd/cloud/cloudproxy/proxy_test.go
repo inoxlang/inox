@@ -14,7 +14,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/ws_ns"
 	"github.com/inoxlang/inox/internal/inoxconsts"
@@ -148,8 +148,8 @@ func TestAccountCreation(t *testing.T) {
 
 	ctx := core.NewContextWithEmptyState(core.ContextConfig{
 		Permissions: []core.Permission{
-			core.WebsocketPermission{Kind_: permkind.Read, Endpoint: host},
-			core.WebsocketPermission{Kind_: permkind.Write, Endpoint: host},
+			core.WebsocketPermission{Kind_: permbase.Read, Endpoint: host},
+			core.WebsocketPermission{Kind_: permbase.Write, Endpoint: host},
 		},
 		Limits:              []core.Limit{{Name: ws_ns.WS_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimit, Value: 5}},
 		ParentStdLibContext: goctx,

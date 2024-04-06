@@ -7,7 +7,7 @@ import (
 	"sync/atomic"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	netns_symbolic "github.com/inoxlang/inox/internal/globals/net_ns/symbolic"
 )
 
@@ -52,7 +52,7 @@ func (conn *TcpConn) read(ctx *core.Context) (*core.ByteSlice, error) {
 	}
 
 	perm := core.RawTcpPermission{
-		Kind_:  permkind.Read,
+		Kind_:  permbase.Read,
 		Domain: conn.host,
 	}
 
@@ -76,7 +76,7 @@ func (conn *TcpConn) write(ctx *core.Context, data core.Readable) error {
 	}
 
 	perm := core.RawTcpPermission{
-		Kind_:  permkind.WriteStream,
+		Kind_:  permbase.WriteStream,
 		Domain: conn.host,
 	}
 

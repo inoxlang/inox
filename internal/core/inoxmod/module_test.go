@@ -1,25 +1,50 @@
-package core
+package inoxmod_test
 
 import (
 	"context"
-	"io/fs"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/helper/polyfill"
 	"github.com/go-git/go-billy/v5/memfs"
 	"github.com/go-git/go-billy/v5/osfs"
 	"github.com/go-git/go-billy/v5/util"
 
 	afs "github.com/inoxlang/inox/internal/afs"
+	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core/inoxmod"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/inoxlang/inox/internal/utils/fsutils"
 	"github.com/stretchr/testify/assert"
+)
+
+type ModuleParsingConfig = inoxmod.ModuleParsingConfig
+type IncludedChunk = inoxmod.IncludedChunk
+type Path = core.Path
+type PathPattern = core.PathPattern
+type ContextConfig = core.ContextConfig
+type Permission = permbase.Permission
+
+var (
+	ParseLocalModule         = inoxmod.ParseLocalModule
+	ParseModuleFromSource    = inoxmod.ParseModuleFromSource
+	NewContextWithEmptyState = core.NewContextWithEmptyState
+	CreateFsReadPerm         = core.CreateFsReadPerm
+
+	SpecModule        = inoxmod.SpecModule
+	ApplicationModule = inoxmod.ApplicationModule
+
+	ErrImportCycleDetected          = inoxmod.ErrImportCycleDetected
+	ErrFileAlreadyIncluded          = inoxmod.ErrFileAlreadyIncluded
+	ErrFileToIncludeDoesNotExist    = inoxmod.ErrFileToIncludeDoesNotExist
+	ErrMaxModuleImportDepthExceeded = inoxmod.ErrMaxModuleImportDepthExceeded
+	ErrMissingManifest              = inoxmod.ErrMissingManifest
 )
 
 func TestParseModuleFromSource(t *testing.T) {
@@ -117,7 +142,7 @@ func TestParseLocalModule(t *testing.T) {
 
 		assert.ErrorContains(t, err, "missing manifest")
 		assert.NotNil(t, mod.MainChunk)
-		assert.Len(t, mod.ParsingErrors, 1)
+		assert.Len(t, mod.Errors, 1)
 		assert.Empty(t, mod.IncludedChunkForest)
 		assert.Nil(t, mod.ManifestTemplate)
 	})
@@ -141,7 +166,7 @@ func TestParseLocalModule(t *testing.T) {
 			return
 		}
 
-		assert.Equal(t, ApplicationModule, mod.ModuleKind)
+		assert.Equal(t, ApplicationModule, mod.Kind)
 	})
 
 	t.Run("spec.ix file", func(t *testing.T) {
@@ -163,7 +188,7 @@ func TestParseLocalModule(t *testing.T) {
 			return
 		}
 
-		assert.Equal(t, SpecModule, mod.ModuleKind)
+		assert.Equal(t, SpecModule, mod.Kind)
 	})
 
 	t.Run("small timeout duration for file parsing", func(t *testing.T) {
@@ -250,7 +275,7 @@ func TestParseLocalModule(t *testing.T) {
 		assert.NotNil(t, mod.MainChunk)
 		assert.Empty(t, mod.IncludedChunkForest)
 		assert.NotNil(t, mod.ManifestTemplate)
-		assert.Len(t, mod.ParsingErrors, 1)
+		assert.Len(t, mod.Errors, 1)
 	})
 
 	t.Run("inclusion imports", func(t *testing.T) {
@@ -349,7 +374,7 @@ func TestParseLocalModule(t *testing.T) {
 
 			assert.NotNil(t, mod.MainChunk)
 			assert.NotNil(t, mod.ManifestTemplate)
-			assert.Len(t, mod.ParsingErrors, 1)
+			assert.Len(t, mod.Errors, 1)
 
 			if !assert.Len(t, mod.IncludedChunkForest, 1) {
 				return
@@ -360,7 +385,7 @@ func TestParseLocalModule(t *testing.T) {
 			includedChunk1 := mod.IncludedChunkForest[0]
 			assert.NotNil(t, includedChunk1.Node)
 			assert.Empty(t, includedChunk1.IncludedChunkForest)
-			assert.Equal(t, mod.ParsingErrors, includedChunk1.ParsingErrors)
+			assert.Equal(t, mod.Errors, includedChunk1.Errors)
 
 			assert.Equal(t, []*IncludedChunk{includedChunk1}, mod.FlattenedIncludedChunkList)
 		})
@@ -501,17 +526,17 @@ func TestParseLocalModule(t *testing.T) {
 			assert.NotNil(t, mod.MainChunk)
 			assert.Len(t, mod.IncludedChunkForest, 1)
 			assert.NotNil(t, mod.ManifestTemplate)
-			assert.Len(t, mod.ParsingErrors, 1)
+			assert.Len(t, mod.Errors, 1)
 
 			includedChunk1 := mod.IncludedChunkForest[0]
 			assert.NotNil(t, includedChunk1.Node)
 			assert.Len(t, includedChunk1.IncludedChunkForest, 1)
-			assert.Equal(t, mod.ParsingErrors, includedChunk1.ParsingErrors)
+			assert.Equal(t, mod.Errors, includedChunk1.Errors)
 
 			includedChunk2 := includedChunk1.IncludedChunkForest[0]
 			assert.NotNil(t, includedChunk2.Node)
 			assert.Empty(t, includedChunk2.IncludedChunkForest)
-			assert.Equal(t, mod.ParsingErrors, includedChunk2.ParsingErrors)
+			assert.Equal(t, mod.Errors, includedChunk2.Errors)
 
 			assert.Equal(t, []*IncludedChunk{includedChunk2, includedChunk1}, mod.FlattenedIncludedChunkList)
 		})
@@ -565,8 +590,7 @@ func TestParseLocalModule(t *testing.T) {
 			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: parsingCtx})
 			assert.Error(t, err)
 
-			assert.Len(t, mod.ParsingErrors, 1)
-			assert.Len(t, mod.ParsingErrorPositions, 1)
+			assert.Len(t, mod.Errors, 1)
 
 			assert.NotNil(t, mod.MainChunk)
 			assert.NotNil(t, mod.ManifestTemplate)
@@ -595,8 +619,7 @@ func TestParseLocalModule(t *testing.T) {
 			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: parsingCtx})
 			assert.Error(t, err)
 
-			assert.Len(t, mod.ParsingErrors, 1)
-			assert.Len(t, mod.ParsingErrorPositions, 1)
+			assert.Len(t, mod.Errors, 1)
 
 			assert.NotNil(t, mod.MainChunk)
 			assert.NotNil(t, mod.ManifestTemplate)
@@ -727,8 +750,7 @@ func TestParseLocalModule(t *testing.T) {
 				return
 			}
 
-			assert.Len(t, mod.ParsingErrors, 0)
-			assert.Len(t, mod.ParsingErrorPositions, 0)
+			assert.Len(t, mod.Errors, 0)
 
 			assert.NotNil(t, mod.MainChunk)
 			assert.Len(t, mod.IncludedChunkForest, 0)
@@ -768,8 +790,7 @@ func TestParseLocalModule(t *testing.T) {
 				return
 			}
 
-			assert.Len(t, mod.ParsingErrors, 0)
-			assert.Len(t, mod.ParsingErrorPositions, 0)
+			assert.Len(t, mod.Errors, 0)
 
 			assert.NotNil(t, mod.MainChunk)
 			assert.Len(t, mod.IncludedChunkForest, 0)
@@ -814,9 +835,8 @@ func TestParseLocalModule(t *testing.T) {
 				return
 			}
 
-			assert.Len(t, mod.OriginalErrors, 1)
-			assert.Len(t, mod.ParsingErrors, 1)
-			assert.Len(t, mod.ParsingErrorPositions, 1)
+			assert.Len(t, mod.FileLevelParsingErrors, 1)
+			assert.Len(t, mod.Errors, 1)
 
 			assert.NotNil(t, mod.MainChunk)
 			assert.Len(t, mod.IncludedChunkForest, 0)
@@ -831,9 +851,8 @@ func TestParseLocalModule(t *testing.T) {
 				return
 			}
 
-			assert.Equal(t, mod.OriginalErrors, importedMod.OriginalErrors)
-			assert.Equal(t, mod.ParsingErrors, importedMod.ParsingErrors)
-			assert.Equal(t, mod.ParsingErrorPositions, importedMod.ParsingErrorPositions)
+			assert.Equal(t, mod.FileLevelParsingErrors, importedMod.FileLevelParsingErrors)
+			assert.Equal(t, mod.Errors, importedMod.Errors)
 		})
 
 		t.Run("imported module includes a file", func(t *testing.T) {
@@ -862,8 +881,7 @@ func TestParseLocalModule(t *testing.T) {
 				return
 			}
 
-			assert.Len(t, mod.ParsingErrors, 0)
-			assert.Len(t, mod.ParsingErrorPositions, 0)
+			assert.Len(t, mod.Errors, 0)
 
 			assert.NotNil(t, mod.MainChunk)
 			assert.Len(t, mod.IncludedChunkForest, 0)
@@ -913,9 +931,8 @@ func TestParseLocalModule(t *testing.T) {
 				return
 			}
 
-			assert.Len(t, mod.OriginalErrors, 1)
-			assert.Len(t, mod.ParsingErrors, 1)
-			assert.Len(t, mod.ParsingErrorPositions, 1)
+			assert.Len(t, mod.FileLevelParsingErrors, 1)
+			assert.Len(t, mod.Errors, 1)
 
 			assert.NotNil(t, mod.MainChunk)
 			assert.Len(t, mod.IncludedChunkForest, 0)
@@ -936,13 +953,11 @@ func TestParseLocalModule(t *testing.T) {
 
 			includedChunk := importedMod.IncludedChunkMap["/included.ix"]
 
-			assert.Equal(t, mod.OriginalErrors, importedMod.OriginalErrors)
-			assert.Equal(t, mod.ParsingErrors, importedMod.ParsingErrors)
-			assert.Equal(t, mod.ParsingErrorPositions, importedMod.ParsingErrorPositions)
+			assert.Equal(t, mod.FileLevelParsingErrors, importedMod.FileLevelParsingErrors)
+			assert.Equal(t, mod.Errors, importedMod.Errors)
 
-			assert.Equal(t, importedMod.OriginalErrors, includedChunk.OriginalErrors)
-			assert.Equal(t, importedMod.ParsingErrors, includedChunk.ParsingErrors)
-			assert.Equal(t, importedMod.ParsingErrorPositions, includedChunk.ParsingErrorPositions)
+			assert.Equal(t, importedMod.FileLevelParsingErrors, includedChunk.OriginalErrors)
+			assert.Equal(t, importedMod.Errors, includedChunk.Errors)
 		})
 
 		t.Run("importing itself should be an error: absolute path", func(t *testing.T) {
@@ -1036,7 +1051,7 @@ func TestParseLocalModule(t *testing.T) {
 			depth5 := "manifest {}\nimport res /depth6.ix {}"
 			depth6 := "manifest {}\n"
 
-			assert.Equal(t, 5, DEFAULT_MAX_MOD_GRAPH_PATH_LEN)
+			assert.Equal(t, 5, inoxmod.DEFAULT_MAX_MOD_GRAPH_PATH_LEN)
 
 			fls := newMemFilesystem()
 			util.WriteFile(fls, "/mod.ix", []byte(modContent), 0600)
@@ -1088,9 +1103,8 @@ func TestParseLocalModule(t *testing.T) {
 				return
 			}
 
-			assert.Len(t, mod.ParsingErrors, 1)
-			assert.Len(t, mod.ParsingErrorPositions, 1)
-			assert.ErrorIs(t, mod.ParsingErrors[0].goError, ErrFileToIncludeDoesNotExist)
+			assert.Len(t, mod.Errors, 1)
+			assert.ErrorIs(t, mod.Errors[0].BaseError, ErrFileToIncludeDoesNotExist)
 
 			assert.NotNil(t, mod.MainChunk)
 			assert.Len(t, mod.IncludedChunkForest, 1)
@@ -1129,9 +1143,8 @@ func TestParseLocalModule(t *testing.T) {
 				return
 			}
 
-			assert.Len(t, mod.ParsingErrors, 1)
-			assert.Len(t, mod.ParsingErrorPositions, 1)
-			assert.ErrorIs(t, mod.ParsingErrors[0].goError, ErrFileToIncludeDoesNotExist)
+			assert.Len(t, mod.Errors, 1)
+			assert.ErrorIs(t, mod.Errors[0].BaseError, ErrFileToIncludeDoesNotExist)
 
 			assert.NotNil(t, mod.MainChunk)
 			assert.Len(t, mod.IncludedChunkForest, 2)
@@ -1174,10 +1187,9 @@ func TestParseLocalModule(t *testing.T) {
 				return
 			}
 
-			assert.Len(t, mod.ParsingErrors, 2)
-			assert.Len(t, mod.ParsingErrorPositions, 2)
-			assert.ErrorIs(t, mod.ParsingErrors[0].goError, ErrFileToIncludeDoesNotExist)
-			assert.ErrorIs(t, mod.ParsingErrors[1].goError, ErrFileToIncludeDoesNotExist)
+			assert.Len(t, mod.Errors, 2)
+			assert.ErrorIs(t, mod.Errors[0].BaseError, ErrFileToIncludeDoesNotExist)
+			assert.ErrorIs(t, mod.Errors[1].BaseError, ErrFileToIncludeDoesNotExist)
 
 			assert.NotNil(t, mod.MainChunk)
 			assert.Len(t, mod.IncludedChunkForest, 2)
@@ -1438,7 +1450,7 @@ func writeModuleAndIncludedFiles(t *testing.T, mod string, modContent string, de
 	return modPath
 }
 
-func createParsingContext(modpath string) *Context {
+func createParsingContext(modpath string) *core.Context {
 	pathPattern := PathPattern(Path(modpath).DirPath() + "...")
 	return NewContextWithEmptyState(ContextConfig{
 		Permissions: []Permission{CreateFsReadPerm(pathPattern)},
@@ -1461,7 +1473,7 @@ func newMemFilesystem() afs.Filesystem {
 		if path[0] == '/' {
 			return path, nil
 		}
-		return "", ErrNotImplemented
+		return "", errors.New("not implemented")
 	})
 }
 
@@ -1475,85 +1487,7 @@ func newMemFilesystemRootWD() afs.Filesystem {
 		if len(path) > 1 && path[0] == '.' && path[1] == '/' {
 			return path[1:], nil
 		}
-		return "", ErrNotImplemented
+		return "", errors.New("not implemented")
 	})
 }
 
-func newSnapshotableMemFilesystem() *snapshotableMemFilesystem {
-	return &snapshotableMemFilesystem{memfs.New()}
-}
-
-var _ = afs.Filesystem((*snapshotableMemFilesystem)(nil))
-var _ = SnapshotableFilesystem((*snapshotableMemFilesystem)(nil))
-
-func copyMemFs(fls afs.Filesystem) afs.Filesystem {
-	newMemFs := newMemFilesystem()
-	err := util.Walk(fls, "/", func(path string, info fs.FileInfo, err error) error {
-		if info.IsDir() {
-			return newMemFs.MkdirAll(path, info.Mode().Perm())
-		} else {
-			content, err := util.ReadFile(fls, path)
-			if err != nil {
-				return err
-			}
-			return util.WriteFile(newMemFs, path, content, info.Mode().Perm())
-		}
-	})
-	if err != nil {
-		panic(err)
-	}
-	return newMemFs
-}
-
-type snapshotableMemFilesystem struct {
-	billy.Filesystem
-}
-
-func (*snapshotableMemFilesystem) Absolute(path string) (string, error) {
-	if path[0] == '/' {
-		return path, nil
-	}
-	return "", ErrNotImplemented
-}
-
-func (fls *snapshotableMemFilesystem) TakeFilesystemSnapshot(config FilesystemSnapshotConfig) (FilesystemSnapshot, error) {
-	return &memFilesystemSnapshot{
-		fls: copyMemFs(fls),
-	}, nil
-}
-
-var _ = FilesystemSnapshot((*memFilesystemSnapshot)(nil))
-
-// memFilesystemSnapshot is partial implementation of FilesystemSnapshot,
-// it only implements NewAdaptedFilesystem by returning a deep copy of fls.
-type memFilesystemSnapshot struct {
-	fls afs.Filesystem
-}
-
-func (s *memFilesystemSnapshot) NewAdaptedFilesystem(maxTotalStorageSizeHint ByteCount) (SnapshotableFilesystem, error) {
-	return &snapshotableMemFilesystem{copyMemFs(s.fls)}, nil
-}
-
-func (s *memFilesystemSnapshot) WriteTo(fls afs.Filesystem, params SnapshotWriteToFilesystem) error {
-	panic("unimplemented")
-}
-
-func (*memFilesystemSnapshot) Content(path string) (AddressableContent, error) {
-	panic("unimplemented")
-}
-
-func (*memFilesystemSnapshot) ForEachEntry(func(m EntrySnapshotMetadata) error) error {
-	panic("unimplemented")
-}
-
-func (*memFilesystemSnapshot) IsStoredLocally() bool {
-	panic("unimplemented")
-}
-
-func (*memFilesystemSnapshot) Metadata(path string) (EntrySnapshotMetadata, error) {
-	panic("unimplemented")
-}
-
-func (*memFilesystemSnapshot) RootDirEntries() []string {
-	panic("unimplemented")
-}

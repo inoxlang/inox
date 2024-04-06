@@ -34,8 +34,8 @@ type ApplicationDeployment struct {
 func (app *Application) PrepareDeployment(args node.ApplicationDeploymentParams) (node.ApplicationDeployment, error) {
 	appMod := args.AppMod
 
-	if appMod.ModuleKind != core.ApplicationModule {
-		return nil, fmt.Errorf("module %s is of kind '%s' not 'application'", appMod.Name(), appMod.ModuleKind)
+	if appMod.Kind != core.ApplicationModule {
+		return nil, fmt.Errorf("module %s is of kind '%s' not 'application'", appMod.Name(), appMod.Kind)
 	}
 
 	app.lock.Lock()

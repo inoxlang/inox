@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/help"
@@ -1316,7 +1316,7 @@ func findObjectInteriorCompletions(n *parse.ObjectLiteral, search completionSear
 			parent.HasNameEqualTo(core.IMPORT_CONFIG__ALLOW_PROPNAME) &&
 			utils.Implements[*parse.ImportStatement](ancestors[len(ancestors)-3]) {
 
-			for _, info := range permkind.PERMISSION_KINDS {
+			for _, info := range permbase.PERMISSION_KINDS {
 				//ignore kinds that are already present.
 				if n.HasNamedProp(info.Name) {
 					continue
@@ -1342,7 +1342,7 @@ func findObjectInteriorCompletions(n *parse.ObjectLiteral, search completionSear
 		case *parse.Manifest:
 			switch parent.Name() {
 			case inoxconsts.MANIFEST_PERMS_SECTION_NAME: //permissions section
-				for _, info := range permkind.PERMISSION_KINDS {
+				for _, info := range permbase.PERMISSION_KINDS {
 					//ignore kinds that are already present.
 					if n.HasNamedProp(info.Name) {
 						continue

@@ -8,7 +8,7 @@ import (
 
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/core/golang/gen"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 )
 
@@ -38,7 +38,7 @@ func (a *TranspiledApp) WriteToFilesystem(ctx *Context, srcDir string) error {
 	//Check that we are allowed to write to the filesystem.
 
 	err := ctx.CheckHasPermission(FilesystemPermission{
-		Kind_:  permkind.Write,
+		Kind_:  permbase.Write,
 		Entity: DirPathFrom(srcDir).ToPrefixPattern(),
 	})
 

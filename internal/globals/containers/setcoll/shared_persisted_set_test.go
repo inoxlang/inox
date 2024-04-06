@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/filekv"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
@@ -892,11 +892,11 @@ func sharedSetTestSetup(t *testing.T) (*core.Context, core.DataStore) {
 	ctx := core.NewContextWithEmptyState(core.ContextConfig{
 		Permissions: []core.Permission{
 			core.DatabasePermission{
-				Kind_:  permkind.Read,
+				Kind_:  permbase.Read,
 				Entity: core.Host("ldb://main"),
 			},
 			core.DatabasePermission{
-				Kind_:  permkind.Write,
+				Kind_:  permbase.Write,
 				Entity: core.Host("ldb://main"),
 			},
 		},
@@ -912,11 +912,11 @@ func sharedSetTestSetup2(t *testing.T) (*core.Context, *core.Context, core.DataS
 	config := core.ContextConfig{
 		Permissions: []core.Permission{
 			core.DatabasePermission{
-				Kind_:  permkind.Read,
+				Kind_:  permbase.Read,
 				Entity: core.Host("ldb://main"),
 			},
 			core.DatabasePermission{
-				Kind_:  permkind.Write,
+				Kind_:  permbase.Write,
 				Entity: core.Host("ldb://main"),
 			},
 		},

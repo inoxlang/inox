@@ -11,7 +11,7 @@ import (
 	"slices"
 
 	"github.com/go-git/go-billy/v5"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
@@ -3852,7 +3852,7 @@ func evalSpawnExpression(node *parse.SpawnExpression, state *State) (_ Value, fi
 	var permListingNode *parse.ObjectLiteral
 
 	//check permissions
-	if !state.ctx.HasAPermissionWithKindAndType(permkind.Create, permkind.LTHREAD_PERM_TYPENAME) {
+	if !state.ctx.HasAPermissionWithKindAndType(permbase.Create, permbase.LTHREAD_PERM_TYPENAME) {
 		warningSpan := parse.NodeSpan{Start: node.Span.Start, End: node.Span.Start + 2}
 		state.addWarning(makeSymbolicEvalWarningWithSpan(warningSpan, state, POSSIBLE_MISSING_PERM_TO_CREATE_A_LTHREAD))
 	}

@@ -4,7 +4,8 @@ import (
 	"testing"
 	"time"
 
-	permkind "github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/inoxmod"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/stretchr/testify/assert"
@@ -174,22 +175,22 @@ func TestObject(t *testing.T) {
 
 			ctx := NewContext(ContextConfig{
 				Permissions: []Permission{
-					LThreadPermission{Kind_: permkind.Create},
-					GlobalVarPermission{Kind_: permkind.Use, Name: "*"},
-					GlobalVarPermission{Kind_: permkind.Read, Name: "*"},
-					GlobalVarPermission{Kind_: permkind.Create, Name: "*"},
+					LThreadPermission{Kind_: permbase.Create},
+					GlobalVarPermission{Kind_: permbase.Use, Name: "*"},
+					GlobalVarPermission{Kind_: permbase.Read, Name: "*"},
+					GlobalVarPermission{Kind_: permbase.Create, Name: "*"},
 				},
 				Limits: []Limit{MustMakeNotAutoDepletingCountLimit(THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, 10)},
 			})
 
 			state := NewGlobalState(ctx)
 			chunk := parse.MustParseChunk("")
-			state.Module = &Module{
+			state.Module = WrapLowerModule(&inoxmod.Module{
 				MainChunk: &parse.ParsedChunkSource{
 					Node: chunk,
 				},
 				TopLevelNode: chunk,
-			}
+			})
 
 			valMap := ValMap{
 				"a": Int(1),

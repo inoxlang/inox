@@ -7,7 +7,7 @@ import (
 	"sort"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
-	permkind "github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -313,7 +313,7 @@ func (obj *Object) prop(ctx *Context, name string, stored bool) (returnedValue V
 	if obj.hasAdditionalFields() {
 		if obj.url != "" {
 			perm := DatabasePermission{
-				Kind_:  permkind.Read,
+				Kind_:  permbase.Read,
 				Entity: obj.url.ToDirURL().AppendRelativePath("./" + Path(name)),
 			}
 
@@ -394,7 +394,7 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 
 	if obj.hasAdditionalFields() && obj.url != "" {
 		perm := DatabasePermission{
-			Kind_:  permkind.Write,
+			Kind_:  permbase.Write,
 			Entity: obj.url.ToDirURL().AppendRelativePath("./" + Path(name)),
 		}
 

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -37,8 +37,8 @@ func TestTcpConn(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.RawTcpPermission{Kind_: permkind.Read, Domain: host},
-				core.RawTcpPermission{Kind_: permkind.WriteStream, Domain: host},
+				core.RawTcpPermission{Kind_: permbase.Read, Domain: host},
+				core.RawTcpPermission{Kind_: permbase.WriteStream, Domain: host},
 			},
 			Limits: []core.Limit{{Name: TCP_SIMUL_CONN_TOTAL_LIMIT_NAME, Kind: core.TotalLimit, Value: 1}},
 		})

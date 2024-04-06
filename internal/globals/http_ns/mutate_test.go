@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/mimeconsts"
 	"github.com/inoxlang/inox/internal/testconfig"
 )
@@ -48,7 +48,7 @@ func TestHttpPost(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.HttpPermission{Kind_: permkind.Read, Entity: URL},
+				core.HttpPermission{Kind_: permbase.Read, Entity: URL},
 			},
 		})
 		core.NewGlobalState(ctx)
@@ -71,7 +71,7 @@ func TestHttpPost(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.HttpPermission{Kind_: permkind.Read, Entity: URL},
+				core.HttpPermission{Kind_: permbase.Read, Entity: URL},
 			},
 		})
 		core.NewGlobalState(ctx)
@@ -94,7 +94,7 @@ func TestHttpPost(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.HttpPermission{Kind_: permkind.Read, Entity: URL},
+				core.HttpPermission{Kind_: permbase.Read, Entity: URL},
 			},
 		})
 		core.NewGlobalState(ctx)
@@ -117,7 +117,7 @@ func TestHttpPost(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.HttpPermission{Kind_: permkind.Read, Entity: URL},
+				core.HttpPermission{Kind_: permbase.Read, Entity: URL},
 			},
 			Limits: []core.Limit{},
 		})
@@ -131,7 +131,7 @@ func TestHttpPost(t *testing.T) {
 
 		assert.Error(t, err)
 		assert.IsType(t, &core.NotAllowedError{}, err)
-		assert.Equal(t, core.HttpPermission{Kind_: permkind.Write, Entity: URL}, err.(*core.NotAllowedError).Permission)
+		assert.Equal(t, core.HttpPermission{Kind_: permbase.Write, Entity: URL}, err.(*core.NotAllowedError).Permission)
 		assert.Nil(t, resp)
 	})
 
@@ -153,7 +153,7 @@ func TestHttpPost(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.HttpPermission{Kind_: permkind.Write, Entity: URL},
+				core.HttpPermission{Kind_: permbase.Write, Entity: URL},
 			},
 			Limits: []core.Limit{
 				{Name: HTTP_REQUEST_RATE_LIMIT_NAME, Kind: core.FrequencyLimit, Value: 1 * core.FREQ_LIMIT_SCALE},
@@ -193,7 +193,7 @@ func TestHttpPost(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.HttpPermission{Kind_: permkind.Write, Entity: URL},
+				core.HttpPermission{Kind_: permbase.Write, Entity: URL},
 			},
 			Limits: []core.Limit{
 				{Name: HTTP_REQUEST_RATE_LIMIT_NAME, Kind: core.FrequencyLimit, Value: 1 * core.FREQ_LIMIT_SCALE},
@@ -243,7 +243,7 @@ func TestHttpDelete(t *testing.T) {
 
 		ctx := core.NewContext(core.ContextConfig{
 			Permissions: []core.Permission{
-				core.HttpPermission{Kind_: permkind.Read, Entity: URL},
+				core.HttpPermission{Kind_: permbase.Read, Entity: URL},
 			},
 			Limits: []core.Limit{},
 		})
@@ -253,7 +253,7 @@ func TestHttpDelete(t *testing.T) {
 		resp, err := HttpDelete(ctx, URL)
 		assert.Error(t, err)
 		assert.IsType(t, &core.NotAllowedError{}, err)
-		assert.Equal(t, core.HttpPermission{Kind_: permkind.Delete, Entity: URL}, err.(*core.NotAllowedError).Permission)
+		assert.Equal(t, core.HttpPermission{Kind_: permbase.Delete, Entity: URL}, err.(*core.NotAllowedError).Permission)
 		assert.Nil(t, resp)
 	})
 }

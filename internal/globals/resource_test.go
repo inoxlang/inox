@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/mimeconsts"
@@ -181,8 +181,8 @@ func setup(t *testing.T, handler func(ctx *core.Context, rw *http_ns.ResponseWri
 
 	ctx := core.NewContext(core.ContextConfig{
 		Permissions: []core.Permission{
-			core.HttpPermission{Kind_: permkind.Read, Entity: core.URLPattern(host + "/...")},
-			core.HttpPermission{Kind_: permkind.Provide, Entity: host},
+			core.HttpPermission{Kind_: permbase.Read, Entity: core.URLPattern(host + "/...")},
+			core.HttpPermission{Kind_: permbase.Provide, Entity: host},
 		},
 		Filesystem: fs_ns.GetOsFilesystem(),
 		Limits:     []core.Limit{permissiveHttpReqLimit},

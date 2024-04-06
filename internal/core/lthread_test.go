@@ -4,7 +4,8 @@ import (
 	"testing"
 	"time"
 
-	permkind "github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/inoxmod"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/inoxlang/inox/internal/utils"
@@ -19,9 +20,9 @@ func TestSpawnLThread(t *testing.T) {
 	t.Run("spawning a lthread without the required permission should fail", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{
 			Permissions: []Permission{
-				GlobalVarPermission{Kind_: permkind.Read, Name: "*"},
-				GlobalVarPermission{Kind_: permkind.Use, Name: "*"},
-				GlobalVarPermission{Kind_: permkind.Create, Name: "*"},
+				GlobalVarPermission{Kind_: permbase.Read, Name: "*"},
+				GlobalVarPermission{Kind_: permbase.Use, Name: "*"},
+				GlobalVarPermission{Kind_: permbase.Create, Name: "*"},
 			},
 		})
 		defer ctx.CancelGracefully()
@@ -35,11 +36,11 @@ func TestSpawnLThread(t *testing.T) {
 		lthread, err := SpawnLThread(LthreadSpawnArgs{
 			SpawnerState: state,
 			Globals:      GlobalVariablesFromMap(map[string]Value{}, nil),
-			Module: &Module{
+			Module: WrapLowerModule(&inoxmod.Module{
 				MainChunk:    chunk,
 				TopLevelNode: chunk.Node,
-				ModuleKind:   UserLThreadModule,
-			},
+				Kind:         UserLThreadModule,
+			}),
 		})
 		assert.Nil(t, lthread)
 		assert.Error(t, err)
@@ -48,10 +49,10 @@ func TestSpawnLThread(t *testing.T) {
 	t.Run("a lthread should have access to globals passed to it", func(t *testing.T) {
 		state := NewGlobalState(NewContext(ContextConfig{
 			Permissions: []Permission{
-				GlobalVarPermission{Kind_: permkind.Read, Name: "*"},
-				GlobalVarPermission{Kind_: permkind.Use, Name: "*"},
-				GlobalVarPermission{Kind_: permkind.Create, Name: "*"},
-				LThreadPermission{permkind.Create},
+				GlobalVarPermission{Kind_: permbase.Read, Name: "*"},
+				GlobalVarPermission{Kind_: permbase.Use, Name: "*"},
+				GlobalVarPermission{Kind_: permbase.Create, Name: "*"},
+				LThreadPermission{permbase.Create},
 			},
 			Limits: []Limit{permissiveLthreadLimit},
 		}))
@@ -67,11 +68,11 @@ func TestSpawnLThread(t *testing.T) {
 			Globals: GlobalVariablesFromMap(map[string]Value{
 				"x": Int(1),
 			}, nil),
-			Module: &Module{
+			Module: WrapLowerModule(&inoxmod.Module{
 				MainChunk:    chunk,
 				TopLevelNode: chunk.Node,
-				ModuleKind:   UserLThreadModule,
-			},
+				Kind:         UserLThreadModule,
+			}),
 		})
 		assert.NoError(t, err)
 
@@ -83,10 +84,10 @@ func TestSpawnLThread(t *testing.T) {
 	t.Run("the result of a lthread should be shared if it is sharable", func(t *testing.T) {
 		state := NewGlobalState(NewContext(ContextConfig{
 			Permissions: []Permission{
-				GlobalVarPermission{Kind_: permkind.Read, Name: "*"},
-				GlobalVarPermission{Kind_: permkind.Use, Name: "*"},
-				GlobalVarPermission{Kind_: permkind.Create, Name: "*"},
-				LThreadPermission{permkind.Create},
+				GlobalVarPermission{Kind_: permbase.Read, Name: "*"},
+				GlobalVarPermission{Kind_: permbase.Use, Name: "*"},
+				GlobalVarPermission{Kind_: permbase.Create, Name: "*"},
+				LThreadPermission{permbase.Create},
 			},
 			Limits: []Limit{permissiveLthreadLimit},
 		}))
@@ -100,11 +101,11 @@ func TestSpawnLThread(t *testing.T) {
 		lthread, err := SpawnLThread(LthreadSpawnArgs{
 			SpawnerState: state,
 			Globals:      GlobalVariablesFromMap(map[string]Value{}, nil),
-			Module: &Module{
+			Module: WrapLowerModule(&inoxmod.Module{
 				MainChunk:    chunk,
 				TopLevelNode: chunk.Node,
-				ModuleKind:   UserLThreadModule,
-			},
+				Kind:         UserLThreadModule,
+			}),
 		})
 		assert.NoError(t, err)
 
@@ -121,10 +122,10 @@ func TestSpawnLThread(t *testing.T) {
 	t.Run("the context of the lthread should be done when .WaitResult() returns", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{
 			Permissions: []Permission{
-				GlobalVarPermission{Kind_: permkind.Read, Name: "*"},
-				GlobalVarPermission{Kind_: permkind.Use, Name: "*"},
-				GlobalVarPermission{Kind_: permkind.Create, Name: "*"},
-				LThreadPermission{permkind.Create},
+				GlobalVarPermission{Kind_: permbase.Read, Name: "*"},
+				GlobalVarPermission{Kind_: permbase.Use, Name: "*"},
+				GlobalVarPermission{Kind_: permbase.Create, Name: "*"},
+				LThreadPermission{permbase.Create},
 			},
 			Limits: []Limit{permissiveLthreadLimit},
 		})
@@ -139,11 +140,11 @@ func TestSpawnLThread(t *testing.T) {
 		lthread, err := SpawnLThread(LthreadSpawnArgs{
 			SpawnerState: state,
 			Globals:      GlobalVariablesFromMap(map[string]Value{}, nil),
-			Module: &Module{
+			Module: WrapLowerModule(&inoxmod.Module{
 				MainChunk:    chunk,
 				TopLevelNode: chunk.Node,
-				ModuleKind:   UserLThreadModule,
-			},
+				Kind:         UserLThreadModule,
+			}),
 		})
 
 		if !assert.NoError(t, err) {
@@ -161,10 +162,10 @@ func TestSpawnLThread(t *testing.T) {
 	t.Run("ResumeAsync should resume the lthread if it does not continue by default after yielding", func(t *testing.T) {
 		state := NewGlobalState(NewContext(ContextConfig{
 			Permissions: []Permission{
-				GlobalVarPermission{Kind_: permkind.Read, Name: "*"},
-				GlobalVarPermission{Kind_: permkind.Use, Name: "*"},
-				GlobalVarPermission{Kind_: permkind.Create, Name: "*"},
-				LThreadPermission{permkind.Create},
+				GlobalVarPermission{Kind_: permbase.Read, Name: "*"},
+				GlobalVarPermission{Kind_: permbase.Use, Name: "*"},
+				GlobalVarPermission{Kind_: permbase.Create, Name: "*"},
+				LThreadPermission{permbase.Create},
 			},
 			Limits: []Limit{permissiveLthreadLimit},
 		}))
@@ -178,11 +179,11 @@ func TestSpawnLThread(t *testing.T) {
 		lthread, err := SpawnLThread(LthreadSpawnArgs{
 			SpawnerState: state,
 			Globals:      GlobalVariablesFromMap(map[string]Value{}, nil),
-			Module: &Module{
+			Module: WrapLowerModule(&inoxmod.Module{
 				MainChunk:    chunk,
 				TopLevelNode: chunk.Node,
-				ModuleKind:   UserLThreadModule,
-			},
+				Kind:         UserLThreadModule,
+			}),
 			//prevent the lthread to continue after yielding
 			PauseAfterYield: true,
 		})

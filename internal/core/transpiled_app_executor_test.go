@@ -14,7 +14,7 @@ import (
 
 	"github.com/inoxlang/inox"
 	"github.com/inoxlang/inox/internal/core"
-	permkind "github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/utils/processutils"
@@ -43,11 +43,11 @@ func TestTestingAppExecutor(t *testing.T) {
 			ParentStdLibContext: timeoutCtx,
 			Permissions: []core.Permission{
 				core.FilesystemPermission{
-					Kind_:  permkind.Read,
+					Kind_:  permbase.Read,
 					Entity: core.ROOT_PREFIX_PATH_PATTERN,
 				},
 				core.FilesystemPermission{
-					Kind_:  permkind.Write,
+					Kind_:  permbase.Write,
 					Entity: core.ROOT_PREFIX_PATH_PATTERN,
 				},
 			},

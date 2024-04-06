@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/inoxlang/inox/internal/core/permkind"
+	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/parse"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
@@ -230,7 +230,7 @@ func (ctx *Context) HasPermission(perm any) bool {
 	return ctx.isolatedConcreteContext.HasPermissionUntyped(perm)
 }
 
-func (ctx *Context) HasAPermissionWithKindAndType(kind permkind.PermissionKind, name permkind.InternalPermissionTypename) bool {
+func (ctx *Context) HasAPermissionWithKindAndType(kind permbase.PermissionKind, name permbase.InternalPermissionTypename) bool {
 	if ctx.isolatedConcreteContext == nil {
 		return false
 	}
@@ -271,7 +271,7 @@ func (ctx *Context) fork() *Context {
 type ConcreteContext interface {
 	context.Context
 	HasPermissionUntyped(perm any) bool
-	HasAPermissionWithKindAndType(kind permkind.PermissionKind, typename permkind.InternalPermissionTypename) bool
+	HasAPermissionWithKindAndType(kind permbase.PermissionKind, typename permbase.InternalPermissionTypename) bool
 }
 
 type dummyConcreteContext struct {
@@ -281,6 +281,6 @@ type dummyConcreteContext struct {
 func (ctx dummyConcreteContext) HasPermissionUntyped(perm any) bool {
 	return false
 }
-func (ctx dummyConcreteContext) HasAPermissionWithKindAndType(kind permkind.PermissionKind, typename permkind.InternalPermissionTypename) bool {
+func (ctx dummyConcreteContext) HasAPermissionWithKindAndType(kind permbase.PermissionKind, typename permbase.InternalPermissionTypename) bool {
 	return false
 }
