@@ -17,8 +17,7 @@ they are located in [eval_test.go](eval_test.go).
 - Bytecode Interpreter (inspired from https://github.com/d5/tengo.)
     - [compiler.go](compiler.go)
     - [vm.go](vm.go)
-- Static Check
-    - [static_check.go](static_check.go)
+- Static Check [(sub package)](staticcheck/check.go)
 - Symbolic Evaluation and Typechecking
     - [symbolic.go](symbolic.go)
     - [symbolic package](./symbolic/)
@@ -34,8 +33,8 @@ they are located in [eval_test.go](eval_test.go).
 - Core Pattern Types
     - [pattern.go](pattern.go)
     - [string_pattern.go](string_pattern.go)
-- Module
-    - [module.go](module.go)
+- Module Parsing [(sub package)](inoxmod/module.go)
+- Module Instantiation
     - [module_import.go](module_import.go)
     - [preinit.go](preinit.go)
     - [manifest.go](manifest.go)
