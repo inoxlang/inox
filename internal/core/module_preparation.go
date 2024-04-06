@@ -653,7 +653,7 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 				return nil
 			}(),
 			Patterns:          state.Ctx.GetNamedPatternNames(),
-			PatternNamespaces: state.Ctx.GetPatternNamespaceNames(),
+			PatternNamespaces: state.Ctx.GetPatternNamespacePatternNames(),
 		})
 	}
 
@@ -917,7 +917,7 @@ func PrepareExtractionModeIncludableFile(args IncludableFilePreparationArgs) (st
 		Chunk:             mod.MainChunk,
 		Globals:           state.Globals,
 		Patterns:          state.Ctx.GetNamedPatternNames(),
-		PatternNamespaces: state.Ctx.GetPatternNamespaceNames(),
+		PatternNamespaces: state.Ctx.GetPatternNamespacePatternNames(),
 	})
 
 	state.StaticCheckData = staticCheckData

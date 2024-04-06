@@ -8,6 +8,7 @@ import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
+	"golang.org/x/exp/maps"
 )
 
 func init() {
@@ -54,7 +55,7 @@ type StaticCheckInput struct {
 
 	Globals           GlobalVariables
 	Patterns          map[string]struct{}
-	PatternNamespaces map[string]struct{}
+	PatternNamespaces map[string][]string
 
 	AdditionalGlobalConsts []string
 	ShellLocalVars         []string
@@ -77,6 +78,14 @@ func StaticCheck(input StaticCheckInput) (*StaticCheckData, error) {
 		baseGlobals[name] = staticcheck.GlobalVarInfo{IsConst: true, IsStartConstant: true}
 	}
 
+	basePatternNamespacePatterns := map[string][]string{}
+
+	for name, namespace := range basePatternNamespaces {
+		basePatternNamespacePatterns[name] = maps.Keys(namespace.Patterns)
+	}
+
+	//Module
+
 	var mod *inoxmod.Module
 	if input.Module != nil {
 		mod = input.Module.Lower()
@@ -93,7 +102,7 @@ func StaticCheck(input StaticCheckInput) (*StaticCheckData, error) {
 		PatternNamespaces: input.PatternNamespaces,
 
 		BasePatternsForImportedModule:          utils.KeySet(basePatterns),
-		BasePatternNamespacesForImportedModule: utils.KeySet(basePatternNamespaces),
+		BasePatternNamespacesForImportedModule: basePatternNamespacePatterns,
 		BaseGlobalsForImportedModule:           baseGlobals,
 
 		ShellLocalVars:         input.ShellLocalVars,

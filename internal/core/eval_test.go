@@ -135,7 +135,7 @@ func bytecodeTest(t *testing.T, optimize bool) {
 				Chunk:             mod.MainChunk,
 				Globals:           s.Globals,
 				Patterns:          s.Ctx.GetNamedPatternNames(),
-				PatternNamespaces: s.Ctx.GetPatternNamespaceNames(),
+				PatternNamespaces: s.Ctx.GetPatternNamespacePatternNames(),
 			})
 			if !assert.NoError(t, err) {
 				return nil, err
@@ -13012,7 +13012,7 @@ func _makeTreeWalkEvalFunc(t *testing.T, recycle bool) func(c any, s *core.Globa
 				Chunk:             mod.MainChunk,
 				Globals:           s.Globals,
 				Patterns:          s.Ctx.GetNamedPatternNames(),
-				PatternNamespaces: s.Ctx.GetPatternNamespaceNames(),
+				PatternNamespaces: s.Ctx.GetPatternNamespacePatternNames(),
 			})
 			if !assert.NoError(t, err) {
 				return nil, err

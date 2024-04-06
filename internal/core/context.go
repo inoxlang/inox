@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"maps"
 	"os"
 	"runtime/debug"
 	"slices"
@@ -17,6 +16,7 @@ import (
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/rs/zerolog"
+	"golang.org/x/exp/maps"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/utils"
@@ -1234,6 +1234,19 @@ func (ctx *Context) GetPatternNamespaceNames() map[string]struct{} {
 	defer ctx.lock.RUnlock()
 
 	return utils.KeySet(ctx.patternNamespaces)
+}
+
+func (ctx *Context) GetPatternNamespacePatternNames() map[string][]string {
+	ctx.lock.RLock()
+	defer ctx.lock.RUnlock()
+
+	names := make(map[string][]string, len(ctx.patternNamespaces))
+
+	for namespaceName, namespace := range ctx.patternNamespaces {
+		names[namespaceName] = maps.Keys(namespace.Patterns)
+	}
+
+	return names
 }
 
 func (ctx *Context) ForEachPatternNamespace(fn func(name string, namespace *PatternNamespace) error) error {

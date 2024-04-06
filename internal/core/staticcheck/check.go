@@ -41,11 +41,11 @@ type Input struct {
 	AdditionalGlobalConsts []string
 	ShellLocalVars         []string
 	Patterns               map[string]struct{}
-	PatternNamespaces      map[string]struct{}
+	PatternNamespaces      map[string][]string
 
 	BaseGlobalsForImportedModule           map[string]GlobalVarInfo
 	BasePatternsForImportedModule          map[string]struct{}
-	BasePatternNamespacesForImportedModule map[string]struct{}
+	BasePatternNamespacesForImportedModule map[string][]string
 }
 
 // Check performs various checks on an AST, like checking duplicate declarations and keys or checking that statements like return,
@@ -84,10 +84,14 @@ func Check(input Input) (*Data, error) {
 		patterns[module][k] = 0
 	}
 
-	patternNamespaces := make(map[parse.Node]map[string]int)
-	patternNamespaces[module] = map[string]int{}
-	for k := range input.PatternNamespaces {
-		patternNamespaces[module][k] = 0
+	patternNamespaces := make(map[parse.Node]map[string]patternNamespaceInfo)
+	patternNamespaces[module] = map[string]patternNamespaceInfo{}
+	for name, patterns := range input.PatternNamespaces {
+		info := patternNamespaceInfo{patterns: make(map[string]int, len(patterns))}
+		for _, patternName := range patterns {
+			info.patterns[patternName] = 0
+		}
+		patternNamespaces[module][name] = info
 	}
 
 	checker := &checker{
@@ -157,7 +161,7 @@ type checker struct {
 	patterns map[parse.Node]map[string]int
 
 	//key: *parse.Chunk|*parse.EmbeddedModule
-	patternNamespaces map[parse.Node]map[string]int
+	patternNamespaces map[parse.Node]map[string]patternNamespaceInfo
 
 	shellLocalVars map[string]bool
 
@@ -177,6 +181,10 @@ type GlobalVarInfo struct {
 	IsConst         bool
 	IsStartConstant bool
 	FnExpr          *parse.FunctionExpression
+}
+
+type patternNamespaceInfo struct {
+	patterns map[string]int
 }
 
 // locallVarInfo represents the information stored about a local variable during checking.
@@ -424,10 +432,10 @@ func (checker *checker) getModPatterns(mod parse.Node) map[string]int {
 	return patterns
 }
 
-func (checker *checker) getModPatternNamespaces(module parse.Node) map[string]int {
+func (checker *checker) getModPatternNamespaces(module parse.Node) map[string]patternNamespaceInfo {
 	namespaces, ok := checker.patternNamespaces[module]
 	if !ok {
-		namespaces = make(map[string]int)
+		namespaces = make(map[string]patternNamespaceInfo)
 		checker.patternNamespaces[module] = namespaces
 	}
 	return namespaces
@@ -643,10 +651,12 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 		return c.checkPatternDef(node, parent, closestModule, inPreinitBlock)
 	case *parse.PatternNamespaceDefinition:
 		return c.checkPatternNamespaceDefinition(node, parent, closestModule, inPreinitBlock)
-	case *parse.PatternNamespaceIdentifierLiteral:
-		return c.checkPatternNamespaceIdentifier(node, closestModule)
 	case *parse.PatternIdentifierLiteral:
 		return c.checkPatternIdentifier(node, parent, closestModule, ancestorChain)
+	case *parse.PatternNamespaceIdentifierLiteral:
+		return c.checkPatternNamespaceIdentifier(node, closestModule)
+	case *parse.PatternNamespaceMemberExpression:
+		return c.checkPatternNamespaceMember(node, closestModule)
 	case *parse.RuntimeTypeCheckExpression:
 		return c.checkRuntimeTypeCheckExpr(node, parent)
 	case *parse.DynamicMemberExpression:
@@ -1169,10 +1179,14 @@ func (c *checker) checkInclusionImportStmt(node *parse.InclusionImportStatement,
 		patterns[includedChunk.Node][k] = 0
 	}
 
-	patternNamespaces := make(map[parse.Node]map[string]int)
-	patternNamespaces[includedChunk.Node] = map[string]int{}
-	for k := range c.checkInput.PatternNamespaces {
-		patternNamespaces[includedChunk.Node][k] = 0
+	patternNamespaces := make(map[parse.Node]map[string]patternNamespaceInfo)
+	patternNamespaces[includedChunk.Node] = map[string]patternNamespaceInfo{}
+	for name, patterns := range c.checkInput.PatternNamespaces {
+		info := patternNamespaceInfo{patterns: make(map[string]int, len(patterns))}
+		for _, patternName := range patterns {
+			info.patterns[patternName] = 0
+		}
+		patternNamespaces[includedChunk.Node][name] = info
 	}
 
 	chunkChecker := &checker{
@@ -1346,14 +1360,20 @@ func (c *checker) checkImportStmt(node *parse.ImportStatement, parent, closestMo
 
 	patterns := make(map[parse.Node]map[string]int)
 	patterns[importedModuleNode] = map[string]int{}
-	for k := range c.checkInput.BasePatternsForImportedModule {
-		patterns[importedModuleNode][k] = 0
+	for patternName := range c.checkInput.BasePatternsForImportedModule {
+		patterns[importedModuleNode][patternName] = 0
 	}
 
-	patternNamespaces := make(map[parse.Node]map[string]int)
-	patternNamespaces[importedModuleNode] = map[string]int{}
-	for k := range c.checkInput.BasePatternNamespacesForImportedModule {
-		patternNamespaces[importedModuleNode][k] = 0
+	patternNamespaces := make(map[parse.Node]map[string]patternNamespaceInfo)
+	patternNamespaces[importedModuleNode] = map[string]patternNamespaceInfo{}
+	for patternNamespaceName, patterns := range c.checkInput.BasePatternNamespacesForImportedModule {
+		info := patternNamespaceInfo{
+			patterns: map[string]int{},
+		}
+		for _, patternName := range patterns {
+			info.patterns[patternName] = 0
+		}
+		patternNamespaces[importedModuleNode][patternNamespaceName] = info
 	}
 
 	chunkChecker := &checker{
@@ -2630,25 +2650,31 @@ func (c *checker) checkPatternNamespaceDefinition(node *parse.PatternNamespaceDe
 	}
 
 	namespaceName, ok := node.NamespaceName()
+
 	if ok {
 		namespaces := c.getModPatternNamespaces(closestModule)
 		if _, alreadyDefined := namespaces[namespaceName]; alreadyDefined && !inPreinitBlock {
 			c.addError(node, text.FmtPatternNamespaceAlreadyDeclared(namespaceName))
 		} else {
-			namespaces[namespaceName] = 0
+			patterns := map[string]int{}
+			namespaces[namespaceName] = patternNamespaceInfo{patterns: patterns}
+
+			var properties []*parse.ObjectProperty
+			switch right := node.Right.(type) {
+			case *parse.ObjectLiteral:
+				properties = right.Properties
+			case *parse.RecordLiteral:
+				properties = right.Properties
+			}
+
+			for _, prop := range properties {
+				if prop.HasNoKey() {
+					continue
+				}
+				patterns[prop.Name()] = 0
+			}
 		}
 	}
-	return parse.ContinueTraversal
-}
-
-func (c *checker) checkPatternNamespaceIdentifier(node *parse.PatternNamespaceIdentifierLiteral, closestModule parse.Node) parse.TraversalAction {
-	namespaceName := node.Name
-	namespaces := c.getModPatternNamespaces(closestModule)
-
-	if _, alreadyDefined := namespaces[namespaceName]; !alreadyDefined {
-		c.addError(node, text.FmtPatternNamespaceIsNotDeclared(namespaceName))
-	}
-
 	return parse.ContinueTraversal
 }
 
@@ -2724,6 +2750,37 @@ func (c *checker) checkPatternIdentifier(node *parse.PatternIdentifierLiteral, p
 		}
 		c.addError(node, errMsg)
 	}
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkPatternNamespaceIdentifier(node *parse.PatternNamespaceIdentifierLiteral, closestModule parse.Node) parse.TraversalAction {
+	namespaceName := node.Name
+	namespaces := c.getModPatternNamespaces(closestModule)
+
+	if _, alreadyDefined := namespaces[namespaceName]; !alreadyDefined {
+		c.addError(node, text.FmtPatternNamespaceIsNotDeclared(namespaceName))
+	}
+
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkPatternNamespaceMember(node *parse.PatternNamespaceMemberExpression, closestModule parse.Node) parse.TraversalAction {
+
+	namespaceName := node.Namespace.Name
+	namespaces := c.getModPatternNamespaces(closestModule)
+
+	info, alreadyDefined := namespaces[namespaceName]
+	if !alreadyDefined {
+		//No error is reported because this is already done by checkPatternNamespaceIdentifier.
+		return parse.ContinueTraversal
+	}
+
+	memberName := node.MemberName.Name
+	_, ok := info.patterns[memberName]
+	if !ok {
+		c.addError(node.MemberName, text.FmtPatternNamespaceDoesNotHaveMember(namespaceName, memberName))
+	}
+
 	return parse.ContinueTraversal
 }
 

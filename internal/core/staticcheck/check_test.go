@@ -1141,8 +1141,8 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{
 				Node:  n,
 				Chunk: src,
-				PatternNamespaces: map[string]struct{}{
-					"ns": {},
+				PatternNamespaces: map[string][]string{
+					"ns": {"int"},
 				},
 			}))
 		})
@@ -1209,8 +1209,8 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{
 				Node:  n,
 				Chunk: src,
-				PatternNamespaces: map[string]struct{}{
-					"ns": {},
+				PatternNamespaces: map[string][]string{
+					"ns": {"int"},
 				},
 			}))
 		})
@@ -4603,7 +4603,7 @@ func TestCheck(t *testing.T) {
 					"int":    {},
 					"object": {},
 				},
-				PatternNamespaces: map[string]struct{}{"dom": {}},
+				PatternNamespaces: map[string][]string{"dom": {}},
 			}))
 		})
 
@@ -4698,6 +4698,23 @@ func TestCheck(t *testing.T) {
 	})
 
 	t.Run("pattern namespace definition", func(t *testing.T) {
+		t.Run("base case", func(t *testing.T) {
+			n, src := mustParseCode(`
+				pnamespace p. = {a: %(1)}
+
+				%p.a
+				%p.b
+			`)
+			namespaceMemberExprs := parse.FindNodes(n, (*parse.PatternNamespaceMemberExpression)(nil), nil)
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+
+			expectedErr := utils.CombineErrors(
+				makeError(namespaceMemberExprs[1].MemberName, src, text.FmtPatternNamespaceDoesNotHaveMember("p", "b")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
 		t.Run("redeclaration", func(t *testing.T) {
 			n, src := mustParseCode(`
 				pnamespace p. = {}

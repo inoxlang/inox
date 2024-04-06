@@ -863,7 +863,7 @@ func setupTestCase(t *testing.T, testCase serverTestCase) (*core.GlobalState, *c
 		Chunk:                  state.Module.MainChunk,
 		Globals:                state.Globals,
 		Patterns:               state.Ctx.GetNamedPatternNames(),
-		PatternNamespaces:      state.Ctx.GetPatternNamespaceNames(),
+		PatternNamespaces:      state.Ctx.GetPatternNamespacePatternNames(),
 		AdditionalGlobalConsts: testCase.additionalGlobalConstsForStaticChecks,
 	})
 	if !assert.NoError(t, err) {

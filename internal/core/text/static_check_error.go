@@ -365,6 +365,10 @@ func FmtPatternNamespaceAlreadyDeclared(name string) string {
 	return fmt.Sprintf("pattern namespace %%%s is already declared", name)
 }
 
+func FmtPatternNamespaceDoesNotHaveMember(namespace, member string) string {
+	return fmt.Sprintf("pattern namespace %%%s. does not have a member '%s'", namespace, member)
+}
+
 func FmtStructTypeIsNotDefined(name string) string {
 	return fmt.Sprintf("struct type '%s' is not defined", name)
 }

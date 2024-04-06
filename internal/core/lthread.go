@@ -112,7 +112,7 @@ func SpawnLThread(args LthreadSpawnArgs) (*LThread, error) {
 		Chunk:             args.Module.MainChunk,
 		Globals:           args.Globals,
 		Patterns:          args.LthreadCtx.GetNamedPatternNames(),
-		PatternNamespaces: args.LthreadCtx.GetPatternNamespaceNames(),
+		PatternNamespaces: args.LthreadCtx.GetPatternNamespacePatternNames(),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("cannot spawn lthread: expression: module/expr checking failed: %w", err)

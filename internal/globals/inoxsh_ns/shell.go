@@ -1223,7 +1223,7 @@ func (sh *shell) checkModule(mod *core.Module) (*core.StaticCheckData, *symbolic
 		Globals:           sh.state.Global.Globals,
 		ShellLocalVars:    maps.Keys(sh.state.CurrentLocalScope()),
 		Patterns:          sh.state.Global.Ctx.GetNamedPatternNames(),
-		PatternNamespaces: sh.state.Global.Ctx.GetPatternNamespaceNames(),
+		PatternNamespaces: sh.state.Global.Ctx.GetPatternNamespacePatternNames(),
 	})
 
 	if checkErr != nil {
