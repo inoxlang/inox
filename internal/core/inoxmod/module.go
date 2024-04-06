@@ -434,10 +434,10 @@ func ParseModuleFromSource(src parse.ChunkSource, resource ResourceName, config 
 		for i, err := range errorAggregation.Errors {
 			pos := errorAggregation.ErrorPositions[i]
 			mod.FileLevelParsingErrors = append(mod.FileLevelParsingErrors, err)
-			mod.Errors = append(mod.Errors, Error{
+			mod.Errors[i] = Error{
 				BaseError: err,
 				Position:  pos,
-			})
+			}
 		}
 	}
 
