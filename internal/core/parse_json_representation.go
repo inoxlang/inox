@@ -13,6 +13,7 @@ import (
 
 	"slices"
 
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/parse"
 )
@@ -743,11 +744,11 @@ func parseLineCountJSONRepresentation(ctx *Context, it *jsoniter.Iterator, patte
 	}
 	s := it.ReadString()
 
-	if !strings.HasSuffix(s, LINE_COUNT_UNIT) {
+	if !strings.HasSuffix(s, inoxconsts.LINE_COUNT_UNIT) {
 		return 0, fmt.Errorf("invalid unit")
 	}
 
-	s = strings.TrimSuffix(s, LINE_COUNT_UNIT)
+	s = strings.TrimSuffix(s, inoxconsts.LINE_COUNT_UNIT)
 
 	if it.Error != nil && it.Error != io.EOF {
 		return 0, fmt.Errorf("failed to parse line count: %w", it.Error)
@@ -768,14 +769,14 @@ func parseByteCountJSONRepresentation(ctx *Context, it *jsoniter.Iterator, patte
 	}
 	s := it.ReadString()
 
-	if !strings.HasSuffix(s, BYTE_COUNT_UNIT) {
+	if !strings.HasSuffix(s, inoxconsts.BYTE_COUNT_UNIT) {
 		if try {
 			return 0, ErrTriedToParseJSONRepr
 		}
 		return 0, fmt.Errorf("invalid unit")
 	}
 
-	s = strings.TrimSuffix(s, BYTE_COUNT_UNIT)
+	s = strings.TrimSuffix(s, inoxconsts.BYTE_COUNT_UNIT)
 
 	if it.Error != nil && it.Error != io.EOF {
 		if try {
@@ -803,14 +804,14 @@ func parseRuneCountJSONRepresentation(ctx *Context, it *jsoniter.Iterator, patte
 
 	s := it.ReadString()
 
-	if !strings.HasSuffix(s, RUNE_COUNT_UNIT) {
+	if !strings.HasSuffix(s, inoxconsts.RUNE_COUNT_UNIT) {
 		if try {
 			return 0, ErrTriedToParseJSONRepr
 		}
 		return 0, fmt.Errorf("invalid unit")
 	}
 
-	s = strings.TrimSuffix(s, RUNE_COUNT_UNIT)
+	s = strings.TrimSuffix(s, inoxconsts.RUNE_COUNT_UNIT)
 
 	if it.Error != nil && it.Error != io.EOF {
 		if try {

@@ -4404,11 +4404,11 @@ func evalObjectLiteral(n *parse.ObjectLiteral, state *State, options evalOptions
 
 	for _, p := range n.MetaProperties {
 		switch p.Name() {
-		case extData.CONSTRAINTS_KEY:
+		case inoxconsts.CONSTRAINTS_KEY:
 			if err := handleConstraints(obj, p.Initialization, state); err != nil {
 				return nil, err
 			}
-		case extData.VISIBILITY_KEY:
+		case inoxconsts.VISIBILITY_KEY:
 			//
 		default:
 			state.addError(makeSymbolicEvalError(p, state, fmtCannotInitializedMetaProp(p.Name())))

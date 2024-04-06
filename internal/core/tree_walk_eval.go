@@ -13,6 +13,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/core/inoxmod"
 	"github.com/inoxlang/inox/internal/core/permbase"
+	"github.com/inoxlang/inox/internal/core/staticcheck"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/inoxconsts"
@@ -1672,7 +1673,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			}
 		}
 
-		var staticData *FunctionStaticData
+		var staticData *staticcheck.FunctionData
 		var capturedGlobals []capturedGlobal
 		if state.Global.StaticCheckData != nil {
 			staticData = state.Global.StaticCheckData.GetFnData(n)

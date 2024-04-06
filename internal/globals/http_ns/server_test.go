@@ -862,8 +862,8 @@ func setupTestCase(t *testing.T, testCase serverTestCase) (*core.GlobalState, *c
 		Module:                 state.Module,
 		Chunk:                  state.Module.MainChunk,
 		Globals:                state.Globals,
-		Patterns:               state.Ctx.GetNamedPatterns(),
-		PatternNamespaces:      state.Ctx.GetPatternNamespaces(),
+		Patterns:               state.Ctx.GetNamedPatternNames(),
+		PatternNamespaces:      state.Ctx.GetPatternNamespaceNames(),
 		AdditionalGlobalConsts: testCase.additionalGlobalConstsForStaticChecks,
 	})
 	if !assert.NoError(t, err) {

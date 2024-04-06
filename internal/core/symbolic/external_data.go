@@ -12,8 +12,6 @@ import (
 
 var (
 	extData = ExternalData{
-		CONSTRAINTS_KEY:                         "_constraints_",
-		VISIBILITY_KEY:                          "_visibility_",
 		MANIFEST_PARAMS_SECTION_NAME:            "parameters",
 		MANIFEST_POSITIONAL_PARAM_NAME_FIELD:    "name",
 		MANIFEST_POSITIONAL_PARAM_PATTERN_FIELD: "pattern",
@@ -75,8 +73,6 @@ type ExternalData struct {
 
 	DEFAULT_PATTERN_NAMESPACES map[string]*PatternNamespace
 
-	CONSTRAINTS_KEY                         string
-	VISIBILITY_KEY                          string
 	MANIFEST_PARAMS_SECTION_NAME            string
 	MANIFEST_POSITIONAL_PARAM_NAME_FIELD    string
 	MANIFEST_POSITIONAL_PARAM_PATTERN_FIELD string

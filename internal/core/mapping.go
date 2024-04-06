@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync/atomic"
 
+	"github.com/inoxlang/inox/internal/core/staticcheck"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
@@ -31,7 +32,7 @@ type Mapping struct {
 
 	shared          atomic.Bool
 	staticCheck     bool //TODO: remove at some point, static checks should be mandatory
-	staticData      *MappingStaticData
+	staticData      *staticcheck.MappingData
 	capturedGlobals map[string]Value
 }
 
@@ -271,9 +272,9 @@ func (m *Mapping) IsSharable(originState *GlobalState) (bool, string) {
 	if !m.staticCheck {
 		return false, "mapping is not sharable because static data is missing"
 	}
-	if m.staticData != nil && len(m.staticData.referencedGlobals) > 0 {
+	if m.staticData != nil && len(m.staticData.ReferencedGlobals()) > 0 {
 		staticData := m.staticData
-		for _, name := range staticData.referencedGlobals {
+		for _, name := range staticData.ReferencedGlobals() {
 			if ok, expl := IsSharableOrClonable(originState.Globals.Get(name), originState); !ok { // TODO: fix: globals could change after call to .IsSharable()
 				return false, fmt.Sprintf("mapping is not sharable because referenced global %s is not sharable/clonable: %s", name, expl)
 			}
@@ -284,10 +285,11 @@ func (m *Mapping) IsSharable(originState *GlobalState) (bool, string) {
 
 func (m *Mapping) Share(originState *GlobalState) {
 	if m.shared.CompareAndSwap(false, true) {
-		if m.staticData != nil && len(m.staticData.referencedGlobals) > 0 {
-			staticData := m.staticData
-			m.capturedGlobals = make(map[string]Value, len(staticData.referencedGlobals))
-			for _, name := range staticData.referencedGlobals {
+		if m.staticData != nil && len(m.staticData.ReferencedGlobals()) > 0 {
+			referencedGlobals := m.staticData.ReferencedGlobals()
+
+			m.capturedGlobals = make(map[string]Value, len(referencedGlobals))
+			for _, name := range referencedGlobals {
 				val := originState.Globals.Get(name)
 				val, err := ShareOrClone(val, originState)
 				if err != nil {

@@ -14,6 +14,7 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 
 	"github.com/inoxlang/inox/internal/core/inoxmod"
+	"github.com/inoxlang/inox/internal/core/staticcheck"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	parse "github.com/inoxlang/inox/internal/parse"
 
@@ -277,11 +278,11 @@ func GetCheckData(fpath string, compilationCtx *core.Context, out io.Writer) map
 
 	if state != nil && state.StaticCheckData != nil {
 		i := -1
-		data["staticCheckErrors"] = utils.MapSlice(state.StaticCheckData.Errors(), func(err *core.StaticCheckError) any {
+		data["staticCheckErrors"] = utils.MapSlice(state.StaticCheckData.Errors(), func(err *staticcheck.Error) any {
 			i++
 			return map[string]any{
 				"text":     err.Message,
-				"location": err.Location[0],
+				"location": err.Location[0].String(),
 			}
 		})
 		i = -1
@@ -290,7 +291,7 @@ func GetCheckData(fpath string, compilationCtx *core.Context, out io.Writer) map
 			i++
 			return map[string]any{
 				"text":     err.Message,
-				"location": err.Location[0],
+				"location": err.Location[0].String(),
 			}
 		})
 	}

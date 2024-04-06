@@ -1161,6 +1161,13 @@ func (ctx *Context) GetNamedPatterns() map[string]Pattern {
 	return maps.Clone(ctx.namedPatterns)
 }
 
+func (ctx *Context) GetNamedPatternNames() map[string]struct{} {
+	ctx.lock.RLock()
+	defer ctx.lock.RUnlock()
+
+	return utils.KeySet(ctx.namedPatterns)
+}
+
 func (ctx *Context) ForEachNamedPattern(fn func(name string, pattern Pattern) error) error {
 	ctx.lock.RLock()
 	defer ctx.lock.RUnlock()
@@ -1220,6 +1227,13 @@ func (ctx *Context) GetPatternNamespaces() map[string]*PatternNamespace {
 	defer ctx.lock.RUnlock()
 
 	return maps.Clone(ctx.patternNamespaces)
+}
+
+func (ctx *Context) GetPatternNamespaceNames() map[string]struct{} {
+	ctx.lock.RLock()
+	defer ctx.lock.RUnlock()
+
+	return utils.KeySet(ctx.patternNamespaces)
 }
 
 func (ctx *Context) ForEachPatternNamespace(fn func(name string, namespace *PatternNamespace) error) error {

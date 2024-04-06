@@ -14,7 +14,7 @@ type Error struct {
 }
 
 func (err Error) Error() string {
-	return fmt.Sprintf("%s %w", err.Position.String(), err.BaseError)
+	return fmt.Sprintf("%s %s", err.Position.String(), err.BaseError)
 }
 
 type ModuleRetrievalError struct {

@@ -19,6 +19,7 @@ import (
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core/inoxmod"
 	"github.com/inoxlang/inox/internal/core/permbase"
+	"github.com/inoxlang/inox/internal/core/staticcheck"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/inoxconsts"
@@ -290,7 +291,7 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 		manifest                 *Manifest
 		preinitState             *TreeWalkState
 		preinitErr               error
-		preinitStaticCheckErrors []*StaticCheckError
+		preinitStaticCheckErrors []*staticcheck.Error
 	)
 
 	if mod != nil {
@@ -651,8 +652,8 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 				}
 				return nil
 			}(),
-			Patterns:          state.Ctx.GetNamedPatterns(),
-			PatternNamespaces: state.Ctx.GetPatternNamespaces(),
+			Patterns:          state.Ctx.GetNamedPatternNames(),
+			PatternNamespaces: state.Ctx.GetPatternNamespaceNames(),
 		})
 	}
 
@@ -915,8 +916,8 @@ func PrepareExtractionModeIncludableFile(args IncludableFilePreparationArgs) (st
 		Node:              mod.MainChunk.Node,
 		Chunk:             mod.MainChunk,
 		Globals:           state.Globals,
-		Patterns:          state.Ctx.GetNamedPatterns(),
-		PatternNamespaces: state.Ctx.GetPatternNamespaces(),
+		Patterns:          state.Ctx.GetNamedPatternNames(),
+		PatternNamespaces: state.Ctx.GetPatternNamespaceNames(),
 	})
 
 	state.StaticCheckData = staticCheckData

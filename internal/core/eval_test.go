@@ -1,6 +1,7 @@
 package core_test
 
 import (
+	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
@@ -29,6 +30,7 @@ import (
 	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/globalnames"
+	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/inoxlang/inox/internal/utils"
@@ -132,8 +134,8 @@ func bytecodeTest(t *testing.T, optimize bool) {
 				Module:            mod,
 				Chunk:             mod.MainChunk,
 				Globals:           s.Globals,
-				Patterns:          s.Ctx.GetNamedPatterns(),
-				PatternNamespaces: s.Ctx.GetPatternNamespaces(),
+				Patterns:          s.Ctx.GetNamedPatternNames(),
+				PatternNamespaces: s.Ctx.GetPatternNamespaceNames(),
 			})
 			if !assert.NoError(t, err) {
 				return nil, err
@@ -3169,8 +3171,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			},
 			{
 				input: `(for i, e in [1] { yield [i, e] })`,
-				result: NewWrappedValueList(
-					NewWrappedValueList(Int(0), Int(1)),
+				result: core.NewWrappedValueList(
+					core.NewWrappedValueList(core.Int(0), core.Int(1)),
 				),
 				doSymbolicCheck: true,
 			},
@@ -3182,8 +3184,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						}
 					})
 				`,
-				result: NewWrappedValueList(
-					NewWrappedValueList(Int(0), Int(1)),
+				result: core.NewWrappedValueList(
+					core.NewWrappedValueList(core.Int(0), core.Int(1)),
 				),
 				doSymbolicCheck: true,
 			},
@@ -3195,8 +3197,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 						}
 					})
 				`,
-				result: NewWrappedValueList(
-					NewWrappedValueList(Int(0), Int(1)),
+				result: core.NewWrappedValueList(
+					core.NewWrappedValueList(core.Int(0), core.Int(1)),
 				),
 				doSymbolicCheck: true,
 			},
@@ -3222,7 +3224,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					})
 				`,
 				result: core.NewWrappedValueList(
-					NewWrappedValueList(Int(1), Rune('b')),
+					core.NewWrappedValueList(core.Int(1), core.Rune('b')),
 				),
 				doSymbolicCheck: true,
 			},
@@ -3772,7 +3774,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					
 					return [a, b]
 				`,
-				result: NewWrappedValueList(Int(1), Int(1)),
+				result: core.NewWrappedValueList(core.Int(1), core.Int(1)),
 			},
 			{
 				name: "unconditional break in first case",
@@ -3796,7 +3798,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					
 					return [a, b]
 				`,
-				result: NewWrappedValueList(Int(1), Int(1)),
+				result: core.NewWrappedValueList(core.Int(1), core.Int(1)),
 			},
 			{
 				name: "stack check: 2 cases",
@@ -4057,7 +4059,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					
 					return [a, b]
 				`,
-				result: NewWrappedValueList(Int(1), Int(1)),
+				result: core.NewWrappedValueList(core.Int(1), core.Int(1)),
 			},
 			{
 				name: "unconditional break in first case",
@@ -4081,7 +4083,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					
 					return [a, b]
 				`,
-				result: NewWrappedValueList(Int(1), Int(1)),
+				result: core.NewWrappedValueList(core.Int(1), core.Int(1)),
 			},
 			{
 				name: "stack check: 2 cases",
@@ -13009,8 +13011,8 @@ func _makeTreeWalkEvalFunc(t *testing.T, recycle bool) func(c any, s *core.Globa
 				Module:            mod,
 				Chunk:             mod.MainChunk,
 				Globals:           s.Globals,
-				Patterns:          s.Ctx.GetNamedPatterns(),
-				PatternNamespaces: s.Ctx.GetPatternNamespaces(),
+				Patterns:          s.Ctx.GetNamedPatternNames(),
+				PatternNamespaces: s.Ctx.GetPatternNamespaceNames(),
 			})
 			if !assert.NoError(t, err) {
 				return nil, err
@@ -13274,4 +13276,89 @@ func (*memFilesystemSnapshot) Metadata(path string) (core.EntrySnapshotMetadata,
 
 func (*memFilesystemSnapshot) RootDirEntries() []string {
 	panic("unimplemented")
+}
+
+// TestMutableGoValue implements the GoValue interface
+type TestMutableGoValue struct {
+	Name   string
+	Secret string
+}
+
+func (v TestMutableGoValue) HasRepresentation(encountered map[uintptr]int, config *core.ReprConfig) bool {
+	return true
+}
+
+func (v TestMutableGoValue) IsMutable() bool {
+	return true
+}
+
+func (v TestMutableGoValue) WriteRepresentation(ctx *core.Context, w io.Writer, encountered map[uintptr]int, config *core.ReprConfig) error {
+	_, err := w.Write([]byte("mygoval"))
+	return err
+}
+
+func (v TestMutableGoValue) HasJSONRepresentation(encountered map[uintptr]int, config core.JSONSerializationConfig) bool {
+	return true
+}
+
+func (v TestMutableGoValue) WriteJSONRepresentation(ctx *core.Context, w *jsoniter.Stream, encountered map[uintptr]int, config core.JSONSerializationConfig) error {
+	_, err := w.Write([]byte("\"mygoval\""))
+	return err
+}
+
+func (r TestMutableGoValue) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(fmt.Fprintf(w, "%#v", r))
+}
+
+func (v TestMutableGoValue) ToSymbolicValue(ctx *core.Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+	return symbolic.ANY, nil
+}
+
+func (v TestMutableGoValue) GetGoMethod(name string) (*core.GoFunction, bool) {
+	switch name {
+	case "getName":
+		return core.WrapGoMethod(v.GetName), true
+	case "getNameNoCtx":
+		return core.WrapGoMethod(v.GetNameNoCtx), true
+	default:
+		return nil, false
+	}
+}
+
+func (v TestMutableGoValue) Prop(ctx *core.Context, name string) core.Value {
+	switch name {
+	case "name":
+		return core.String(v.Name)
+	default:
+		method, ok := v.GetGoMethod(name)
+		if !ok {
+			panic(core.FormatErrPropertyDoesNotExist(name, v))
+		}
+		return method
+	}
+}
+
+func (v TestMutableGoValue) SetProp(ctx *core.Context, name string, value core.Value) error {
+	return core.ErrCannotSetProp
+}
+
+func (v TestMutableGoValue) PropertyNames(ctx *core.Context) []string {
+	return []string{"name", "getName", "getNameNoCtx"}
+}
+
+func (val TestMutableGoValue) Equal(ctx *core.Context, other core.Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherVal, ok := other.(*TestMutableGoValue)
+	return ok && val.Name == otherVal.Name && val.Secret == otherVal.Secret
+}
+
+func (user TestMutableGoValue) GetName(ctx *core.Context) core.String {
+	return core.String(user.Name)
+}
+
+func (user TestMutableGoValue) GetNameNoCtx() core.String {
+	return core.String(user.Name)
+}
+
+func (user TestMutableGoValue) Clone(clones map[uintptr]map[int]core.Value, depth int) (core.Value, error) {
+	return nil, core.ErrNotClonable
 }

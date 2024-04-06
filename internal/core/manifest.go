@@ -12,6 +12,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/core/inoxmod"
 	"github.com/inoxlang/inox/internal/core/permbase"
+	"github.com/inoxlang/inox/internal/core/staticcheck"
 	"github.com/inoxlang/inox/internal/core/text"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"golang.org/x/exp/maps"
@@ -644,7 +645,7 @@ func EvaluatePermissionListingObjectNode(n *parse.ObjectLiteral, config PreinitA
 
 	{
 		var checkErr []error
-		checkPermissionListingObject(n, func(n parse.Node, msg string) {
+		staticcheck.CheckPermissionListingObject(n, func(n parse.Node, msg string) {
 			checkErr = append(checkErr, errors.New(msg))
 		})
 		if len(checkErr) != 0 {

@@ -25,3 +25,11 @@ func EqualMaps[K comparable, V any](m1 map[K]V, m2 map[K]V, eql func(v1, v2 V) b
 	}
 	return true
 }
+
+func KeySet[K comparable, V any](m map[K]V) map[K]struct{} {
+	_map := make(map[K]struct{}, len(m))
+	for k := range m {
+		_map[k] = struct{}{}
+	}
+	return _map
+}

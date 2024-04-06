@@ -1,22 +1,23 @@
-package core_test
+package staticcheck_test
 
 import (
-	"bufio"
-	"fmt"
-	"io"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/go-git/go-billy/v5/helper/polyfill"
+	"github.com/go-git/go-billy/v5/osfs"
+	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/inoxmod"
 	"github.com/inoxlang/inox/internal/core/permbase"
+	"github.com/inoxlang/inox/internal/core/staticcheck"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/core/text"
 	"github.com/inoxlang/inox/internal/inoxconsts"
-	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
+	"github.com/inoxlang/inox/internal/utils/fsutils"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -1130,7 +1131,7 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{
 				Node:     n,
 				Chunk:    src,
-				Patterns: map[string]Pattern{"int": INT_PATTERN},
+				Patterns: map[string]struct{}{"int": {}},
 			}))
 		})
 
@@ -1140,12 +1141,8 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{
 				Node:  n,
 				Chunk: src,
-				PatternNamespaces: map[string]*PatternNamespace{
-					"ns": {
-						Patterns: map[string]Pattern{
-							"int": INT_PATTERN,
-						},
-					},
+				PatternNamespaces: map[string]struct{}{
+					"ns": {},
 				},
 			}))
 		})
@@ -1163,7 +1160,7 @@ func TestCheck(t *testing.T) {
 				State:    NewGlobalState(ctx),
 				Node:     n,
 				Chunk:    src,
-				Patterns: map[string]Pattern{"int": INT_PATTERN},
+				Patterns: map[string]struct{}{"int": {}},
 			})
 
 			assert.NoError(t, err)
@@ -1202,7 +1199,7 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{
 				Node:     n,
 				Chunk:    src,
-				Patterns: map[string]Pattern{"int": INT_PATTERN},
+				Patterns: map[string]struct{}{"int": {}},
 			}))
 		})
 
@@ -1212,12 +1209,8 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{
 				Node:  n,
 				Chunk: src,
-				PatternNamespaces: map[string]*PatternNamespace{
-					"ns": {
-						Patterns: map[string]Pattern{
-							"int": INT_PATTERN,
-						},
-					},
+				PatternNamespaces: map[string]struct{}{
+					"ns": {},
 				},
 			}))
 		})
@@ -1235,7 +1228,7 @@ func TestCheck(t *testing.T) {
 				State:    NewGlobalState(ctx),
 				Node:     n,
 				Chunk:    src,
-				Patterns: map[string]Pattern{"int": INT_PATTERN},
+				Patterns: map[string]struct{}{"int": {}},
 			})
 
 			assert.NoError(t, err)
@@ -4606,11 +4599,11 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{
 				Node:  n,
 				Chunk: src,
-				Patterns: map[string]Pattern{
-					"int":    INT_PATTERN,
-					"object": OBJECT_PATTERN,
+				Patterns: map[string]struct{}{
+					"int":    {},
+					"object": {},
 				},
-				PatternNamespaces: map[string]*PatternNamespace{"dom": {}},
+				PatternNamespaces: map[string]struct{}{"dom": {}},
 			}))
 		})
 
@@ -4835,7 +4828,7 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{
 				Node:     n,
 				Chunk:    src,
-				Patterns: map[string]Pattern{"int": INT_PATTERN},
+				Patterns: map[string]struct{}{"int": {}},
 			}))
 		})
 
@@ -4844,7 +4837,7 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{
 				Node:     n,
 				Chunk:    src,
-				Patterns: map[string]Pattern{"int": INT_PATTERN},
+				Patterns: map[string]struct{}{"int": {}},
 			}))
 		})
 
@@ -5153,7 +5146,7 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{
 				Node:     n,
 				Chunk:    src,
-				Patterns: map[string]Pattern{"int": INT_PATTERN, "bool": BOOL_PATTERN},
+				Patterns: map[string]struct{}{"int": {}, "bool": {}},
 			}))
 		})
 
@@ -5539,7 +5532,7 @@ func TestCheck(t *testing.T) {
 			err := staticCheckNoData(StaticCheckInput{
 				Node:     n,
 				Chunk:    src,
-				Patterns: map[string]Pattern{"int": INT_PATTERN, "bool": BOOL_PATTERN},
+				Patterns: map[string]struct{}{"int": {}, "bool": {}},
 			})
 			expectedErr := utils.CombineErrors(
 				makeError(secondStructDef.Name, src, text.FmtAnXFieldOrMethodIsAlreadyDefined("a")),
@@ -5581,7 +5574,7 @@ func TestCheck(t *testing.T) {
 			err := staticCheckNoData(StaticCheckInput{
 				Node:     n,
 				Chunk:    src,
-				Patterns: map[string]Pattern{"int": INT_PATTERN},
+				Patterns: map[string]struct{}{"int": {}},
 			})
 
 			expectedErr := utils.CombineErrors(
@@ -5602,7 +5595,7 @@ func TestCheck(t *testing.T) {
 			err := staticCheckNoData(StaticCheckInput{
 				Node:     n,
 				Chunk:    src,
-				Patterns: map[string]Pattern{"int": INT_PATTERN},
+				Patterns: map[string]struct{}{"int": {}},
 			})
 
 			expectedErr := utils.CombineErrors(
@@ -5709,7 +5702,7 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{
 				Node:     n,
 				Chunk:    src,
-				Patterns: map[string]Pattern{"int": INT_PATTERN},
+				Patterns: map[string]struct{}{"int": {}},
 			}))
 		})
 
@@ -5738,7 +5731,7 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{
 				Node:     n,
 				Chunk:    src,
-				Patterns: map[string]Pattern{"int": INT_PATTERN},
+				Patterns: map[string]struct{}{"int": {}},
 			}))
 		})
 
@@ -6123,7 +6116,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 		`)
 		pathNode := parse.FindNode(objLiteral, (*parse.AbsolutePathLiteral)(nil), nil)
 
-		checkData, _ := GetStaticallyCheckDbResolutionDataFn("ldb")
+		checkData, _ := GetStaticallyCheckDbResolutionDataFn(core.Scheme("ldb"))
 		errMsg := checkData(pathNode, nil)
 
 		err := false
@@ -6157,7 +6150,7 @@ func TestCheckDatabasesObject(t *testing.T) {
 		`)
 		pathNode := parse.FindNode(objLiteral, (*parse.AbsolutePathLiteral)(nil), nil)
 
-		checkData, _ := GetStaticallyCheckDbResolutionDataFn("ldb")
+		checkData, _ := GetStaticallyCheckDbResolutionDataFn(core.Scheme("ldb"))
 		errMsg := checkData(pathNode, project)
 
 		err := false
@@ -6169,91 +6162,6 @@ func TestCheckDatabasesObject(t *testing.T) {
 
 		assert.True(t, err)
 	})
-}
-
-// TestMutableGoValue implements the GoValue interface
-type TestMutableGoValue struct {
-	Name   string
-	Secret string
-}
-
-func (v TestMutableGoValue) HasRepresentation(encountered map[uintptr]int, config *ReprConfig) bool {
-	return true
-}
-
-func (v TestMutableGoValue) IsMutable() bool {
-	return true
-}
-
-func (v TestMutableGoValue) WriteRepresentation(ctx *Context, w io.Writer, encountered map[uintptr]int, config *ReprConfig) error {
-	_, err := w.Write([]byte("mygoval"))
-	return err
-}
-
-func (v TestMutableGoValue) HasJSONRepresentation(encountered map[uintptr]int, config JSONSerializationConfig) bool {
-	return true
-}
-
-func (v TestMutableGoValue) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, encountered map[uintptr]int, config JSONSerializationConfig) error {
-	_, err := w.Write([]byte("\"mygoval\""))
-	return err
-}
-
-func (r TestMutableGoValue) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(fmt.Fprintf(w, "%#v", r))
-}
-
-func (v TestMutableGoValue) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return symbolic.ANY, nil
-}
-
-func (v TestMutableGoValue) GetGoMethod(name string) (*GoFunction, bool) {
-	switch name {
-	case "getName":
-		return WrapGoMethod(v.GetName), true
-	case "getNameNoCtx":
-		return WrapGoMethod(v.GetNameNoCtx), true
-	default:
-		return nil, false
-	}
-}
-
-func (v TestMutableGoValue) Prop(ctx *Context, name string) Value {
-	switch name {
-	case "name":
-		return String(v.Name)
-	default:
-		method, ok := v.GetGoMethod(name)
-		if !ok {
-			panic(FormatErrPropertyDoesNotExist(name, v))
-		}
-		return method
-	}
-}
-
-func (v TestMutableGoValue) SetProp(ctx *Context, name string, value Value) error {
-	return ErrCannotSetProp
-}
-
-func (v TestMutableGoValue) PropertyNames(ctx *Context) []string {
-	return []string{"name", "getName", "getNameNoCtx"}
-}
-
-func (val TestMutableGoValue) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherVal, ok := other.(*TestMutableGoValue)
-	return ok && val.Name == otherVal.Name && val.Secret == otherVal.Secret
-}
-
-func (user TestMutableGoValue) GetName(ctx *Context) String {
-	return String(user.Name)
-}
-
-func (user TestMutableGoValue) GetNameNoCtx() String {
-	return String(user.Name)
-}
-
-func (user TestMutableGoValue) Clone(clones map[uintptr]map[int]Value, depth int) (Value, error) {
-	return nil, ErrNotClonable
 }
 
 var _ = Project((*testProject)(nil))
@@ -6295,11 +6203,11 @@ func (*testProject) GetS3CredentialsForBucket(ctx *Context, bucketName string, p
 }
 
 type StaticCheckInput = core.StaticCheckInput
-type StaticCheckError = core.StaticCheckError
+type StaticCheckError = staticcheck.Error
 type Pattern = core.Pattern
 type PatternNamespace = core.PatternNamespace
-type FunctionStaticData = core.FunctionStaticData
-type MappingStaticData = core.MappingStaticData
+type FunctionStaticData = staticcheck.FunctionData
+type MappingStaticData = staticcheck.MappingData
 
 type GlobalState = core.GlobalState
 type Context = core.Context
@@ -6336,10 +6244,10 @@ var (
 	NewContext             = core.NewContext
 	NewGlobalState         = core.NewGlobalState
 	GlobalVariablesFromMap = core.GlobalVariablesFromMap
-	NewFunctionStaticData  = core.NewFunctionStaticData
-	NewMappingStaticData   = core.NewMappingStaticData
+	NewFunctionStaticData  = staticcheck.NewFunctionStaticData
+	NewMappingStaticData   = staticcheck.NewMappingStaticData
 	ParseLocalModule       = core.ParseLocalModule
-	NewStaticCheckError    = core.NewStaticCheckError
+	NewStaticCheckError    = staticcheck.NewError
 	NewNamespace           = core.NewNamespace
 	WrapGoFunction         = core.WrapGoFunction
 	WrapGoMethod           = core.WrapGoMethod
@@ -6348,18 +6256,18 @@ var (
 	RandomProjectID        = core.RandomProjectID
 	NewWrappedValueList    = core.NewWrappedValueList
 
-	CheckDatabasesObject    = core.CheckDatabasesObject
-	CheckPreinitFilesObject = core.CheckPreinitFilesObject
+	CheckDatabasesObject    = staticcheck.CheckDatabasesObject
+	CheckPreinitFilesObject = staticcheck.CheckPreinitFilesObject
 
-	ResetStaticallyCheckDbResolutionDataFnRegistry = core.ResetStaticallyCheckDbResolutionDataFnRegistry
+	ResetStaticallyCheckDbResolutionDataFnRegistry = staticcheck.ResetDbResolutionDataCheckFnRegistry
 	RegisterStaticallyCheckDbResolutionDataFn      = core.RegisterStaticallyCheckDbResolutionDataFn
-	GetStaticallyCheckDbResolutionDataFn           = core.GetStaticallyCheckDbResolutionDataFn
+	GetStaticallyCheckDbResolutionDataFn           = staticcheck.GetStaticallyCheckDbResolutionDataFn
 
 	STR_PATTERN                = core.STR_PATTERN
 	INT_PATTERN                = core.INT_PATTERN
 	BOOL_PATTERN               = core.BOOL_PATTERN
 	OBJECT_PATTERN             = core.OBJECT_PATTERN
-	MAX_NAME_BYTE_LEN          = core.MAX_NAME_BYTE_LEN
+	MAX_NAME_BYTE_LEN          = staticcheck.MAX_NAME_BYTE_LEN
 	DEFAULT_PATTERN_NAMESPACES = core.DEFAULT_PATTERN_NAMESPACES
 
 	ErrNegQuantityNotSupported     = core.ErrNegQuantityNotSupported
@@ -6373,3 +6281,33 @@ var (
 
 	FormatErrPropertyDoesNotExist = core.FormatErrPropertyDoesNotExist
 )
+
+// writeModuleAndIncludedFiles write a module & it's included files in a temporary directory on the OS filesystem.
+func writeModuleAndIncludedFiles(t *testing.T, mod string, modContent string, dependencies map[string]string) string {
+	dir := t.TempDir()
+	modPath := filepath.Join(dir, mod)
+
+	assert.NoError(t, fsutils.WriteFileSync(modPath, []byte(modContent), 0o400))
+
+	for name, content := range dependencies {
+		assert.NoError(t, fsutils.WriteFileSync(filepath.Join(dir, name), []byte(content), 0o400))
+	}
+
+	return modPath
+}
+
+func createParsingContext(modpath string) *core.Context {
+	pathPattern := PathPattern(core.Path(modpath).DirPath() + "...")
+	return core.NewContextWithEmptyState(ContextConfig{
+		Permissions: []Permission{core.CreateFsReadPerm(pathPattern)},
+		Filesystem:  newOsFilesystem(),
+	}, nil)
+}
+
+func newOsFilesystem() afs.Filesystem {
+	fs := polyfill.New(osfs.Default)
+
+	return afs.AddAbsoluteFeature(fs, func(path string) (string, error) {
+		return filepath.Abs(path)
+	})
+}

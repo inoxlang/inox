@@ -8,6 +8,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/inoxlang/inox/internal/core/staticcheck"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
@@ -82,7 +83,7 @@ type GlobalState struct {
 
 	//Errors & check data
 
-	PrenitStaticCheckErrors   []*StaticCheckError
+	PrenitStaticCheckErrors   []*staticcheck.Error
 	MainPreinitError          error
 	FirstDatabaseOpeningError error
 	StaticCheckData           *StaticCheckData

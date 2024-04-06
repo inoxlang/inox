@@ -15,6 +15,7 @@ import (
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core/inoxmod"
 	"github.com/inoxlang/inox/internal/core/permbase"
+	"github.com/inoxlang/inox/internal/core/staticcheck"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/inoxconsts"
@@ -689,11 +690,12 @@ func runTestItem(
 
 		//add database permissions
 		if ok {
-			CheckDatabasesObject(databasesObj, nil, func(name string, scheme Scheme, resource ResourceName) {
+			staticcheck.CheckDatabasesObject(databasesObj, nil, func(name string, scheme staticcheck.Scheme, resource inoxmod.ResourceName) {
+				resourceName := resource.(ResourceName)
 				implicitlyAddedPermissions = append(implicitlyAddedPermissions,
-					DatabasePermission{Kind_: permbase.Read, Entity: resource},
-					DatabasePermission{Kind_: permbase.Write, Entity: resource},
-					DatabasePermission{Kind_: permbase.Delete, Entity: resource},
+					DatabasePermission{Kind_: permbase.Read, Entity: resourceName},
+					DatabasePermission{Kind_: permbase.Write, Entity: resourceName},
+					DatabasePermission{Kind_: permbase.Delete, Entity: resourceName},
 				)
 			}, spawnerState.Project)
 		}

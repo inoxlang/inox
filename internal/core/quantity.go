@@ -7,15 +7,9 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
-)
-
-const (
-	LINE_COUNT_UNIT               = "ln"
-	RUNE_COUNT_UNIT               = "rn"
-	BYTE_COUNT_UNIT               = "B"
-	SIMPLE_RATE_PER_SECOND_SUFFIX = "x/s"
 )
 
 var (
@@ -291,15 +285,15 @@ func evalQuantity(values []float64, units []string) (Serializable, error) {
 			}
 			partResult = partValue / 100
 			totalResult = Float(partResult)
-		case LINE_COUNT_UNIT:
+		case inoxconsts.LINE_COUNT_UNIT:
 			isInt = true
 			partResult = partValue * multiplier
 			totalResult = LineCount(partResult)
-		case RUNE_COUNT_UNIT:
+		case inoxconsts.RUNE_COUNT_UNIT:
 			isInt = true
 			partResult = partValue * multiplier
 			totalResult = RuneCount(partResult)
-		case BYTE_COUNT_UNIT:
+		case inoxconsts.BYTE_COUNT_UNIT:
 			isInt = true
 			partResult = partValue * multiplier
 			totalResult = ByteCount(partResult)

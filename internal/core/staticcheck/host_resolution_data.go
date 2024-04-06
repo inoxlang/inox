@@ -1,31 +1,32 @@
-package core
+package staticcheck
 
 import (
+	"errors"
 	"sync"
 
 	"github.com/inoxlang/inox/internal/parse"
 )
 
 var (
-	staticallyCheckHostDefinitionDataFnRegistry = map[Scheme]StaticallyCheckHostDefinitionFn{}
+	staticallyCheckHostDefinitionDataFnRegistry = map[Scheme]HostDefinitionCheckFn{}
 	staticallyCheckHostDefinitionFnRegistryLock sync.Mutex
 )
 
-type StaticallyCheckHostDefinitionFn func(optionalProject Project, node parse.Node) (errorMsg string)
+type HostDefinitionCheckFn func(optionalProject Project, node parse.Node) (errorMsg string)
 
-func resetStaticallyCheckHostDefinitionDataFnRegistry() {
+func ResetHostDefinitionDataCheckFnRegistry() {
 	staticallyCheckHostDefinitionFnRegistryLock.Lock()
 	clear(staticallyCheckHostDefinitionDataFnRegistry)
 	staticallyCheckHostDefinitionFnRegistryLock.Unlock()
 }
 
-func RegisterStaticallyCheckHostDefinitionFn(scheme Scheme, fn StaticallyCheckHostDefinitionFn) {
+func RegisterStaticallyCheckHostDefinitionFn(scheme Scheme, fn HostDefinitionCheckFn) {
 	staticallyCheckHostDefinitionFnRegistryLock.Lock()
 	defer staticallyCheckHostDefinitionFnRegistryLock.Unlock()
 
 	_, ok := staticallyCheckHostDefinitionDataFnRegistry[scheme]
 	if ok {
-		panic(ErrNonUniqueDbOpenFnRegistration)
+		panic(errors.New("non-unique registration of static checker for host definition data"))
 	}
 
 	staticallyCheckHostDefinitionDataFnRegistry[scheme] = fn

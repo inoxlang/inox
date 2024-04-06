@@ -47,8 +47,6 @@ type optionalParamInfo struct {
 func init() {
 
 	symbolic.SetExternalData(symbolic.ExternalData{
-		CONSTRAINTS_KEY:                         CONSTRAINTS_KEY,
-		VISIBILITY_KEY:                          VISIBILITY_KEY,
 		MANIFEST_POSITIONAL_PARAM_NAME_FIELD:    "name",
 		MANIFEST_POSITIONAL_PARAM_PATTERN_FIELD: "pattern",
 		MANIFEST_PARAMS_SECTION_NAME:            inoxconsts.MANIFEST_PARAMS_SECTION_NAME,

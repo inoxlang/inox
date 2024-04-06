@@ -11,6 +11,7 @@ import (
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core/inoxmod"
 	"github.com/inoxlang/inox/internal/core/permbase"
+	"github.com/inoxlang/inox/internal/core/staticcheck"
 	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
@@ -23,7 +24,6 @@ const (
 )
 
 var (
-	USABLE_GLOBALS_IN_PREINIT       = []string{globalnames.READ_FN}
 	ErrFileSizeExceedSpecifiedLimit = errors.New("file's size exceeds the specified limit")
 )
 
@@ -64,7 +64,7 @@ type PreinitArgs struct {
 // 11) create the manifest.
 //
 // If an error occurs at any step, the function returns.
-func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState *TreeWalkState, _ []*StaticCheckError, preinitErr error) {
+func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState *TreeWalkState, _ []*staticcheck.Error, preinitErr error) {
 	defer func() {
 		if preinitErr != nil && m.ManifestTemplate != nil {
 			preinitErr = LocatedEvalError{
@@ -106,7 +106,7 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 
 	//check preinit block
 	if preinitArgs.PreinitStatement != nil {
-		var checkErrs []*StaticCheckError
+		var checkErrs []*staticcheck.Error
 		checkPreinitBlock(preinitBlockCheckParams{
 			node:   preinitArgs.PreinitStatement,
 			fls:    preinitArgs.PreinitFilesystem,
@@ -114,31 +114,32 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 
 			onError: func(n parse.Node, msg string) {
 				location := m.MainChunk.GetSourcePosition(n.Base().Span)
-				checkErr := NewStaticCheckError(msg, parse.SourcePositionStack{location})
+				checkErr := staticcheck.NewError(msg, parse.SourcePositionStack{location})
 				checkErrs = append(checkErrs, checkErr)
 			},
 		})
 		if len(checkErrs) != 0 {
-			return nil, nil, checkErrs, fmt.Errorf("%s: error while checking preinit block: %w", m.Name(), combineStaticCheckErrors(checkErrs...))
+			return nil, nil, checkErrs, fmt.Errorf("%s: error while checking preinit block: %w", m.Name(), staticcheck.CombineStaticCheckErrors(checkErrs...))
 		}
 	}
 
 	// check manifest
 	{
-		var checkErrs []*StaticCheckError
-		checkManifestObject(manifestStaticCheckArguments{
-			objLit:                manifestObjLiteral,
-			ignoreUnknownSections: preinitArgs.IgnoreUnknownSections,
-			moduleKind:            m.Kind,
-			onError: func(n parse.Node, msg string) {
+		var checkErrs []*staticcheck.Error
+		staticcheck.CheckManifestObject(staticcheck.ManifestStaticCheckArguments{
+			ObjectLit:             manifestObjLiteral,
+			IgnoreUnknownSections: preinitArgs.IgnoreUnknownSections,
+			ModuleKind:            m.Kind,
+			OnError: func(n parse.Node, msg string) {
 				location := m.MainChunk.GetSourcePosition(n.Base().Span)
-				checkErr := NewStaticCheckError(msg, parse.SourcePositionStack{location})
+				checkErr := staticcheck.NewError(msg, parse.SourcePositionStack{location})
 				checkErrs = append(checkErrs, checkErr)
 			},
-			project: preinitArgs.Project,
+			Project: preinitArgs.Project,
 		})
 		if len(checkErrs) != 0 {
-			return nil, nil, checkErrs, fmt.Errorf("%s: error while checking manifest's object literal: %w", m.Name(), combineStaticCheckErrors(checkErrs...))
+			aggregationError := fmt.Errorf("%s: error while checking manifest's object literal: %w", m.Name(), staticcheck.CombineStaticCheckErrors(checkErrs...))
+			return nil, nil, checkErrs, aggregationError
 		}
 	}
 
@@ -152,7 +153,7 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 		ctxPerms := []Permission{GlobalVarPermission{permbase.Read, "*"}}
 
 		//Allow calling some builtins.
-		for _, name := range USABLE_GLOBALS_IN_PREINIT {
+		for _, name := range globalnames.USABLE_GLOBALS_IN_PREINIT {
 			ctxPerms = append(ctxPerms, GlobalVarPermission{permbase.Use, name})
 		}
 

@@ -17,6 +17,7 @@ import (
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core/inoxmod"
 	"github.com/inoxlang/inox/internal/core/permbase"
+	"github.com/inoxlang/inox/internal/core/staticcheck"
 	"github.com/inoxlang/inox/internal/core/text"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
@@ -60,8 +61,8 @@ func TestPreInit(t *testing.T) {
 
 	//register host definition checking functions
 	{
-		resetStaticallyCheckHostDefinitionDataFnRegistry()
-		defer resetStaticallyCheckHostDefinitionDataFnRegistry()
+		staticcheck.ResetHostDefinitionDataCheckFnRegistry()
+		defer staticcheck.ResetHostDefinitionDataCheckFnRegistry()
 
 		RegisterStaticallyCheckHostDefinitionFn("ldb", func(project Project, node parse.Node) (errorMsg string) {
 			return ""
@@ -641,7 +642,7 @@ func TestPreInit(t *testing.T) {
 				ValueVisibilityPermission{Pattern: EMAIL_ADDR_PATTERN},
 				ValueVisibilityPermission{Pattern: INT_PATTERN},
 			},
-			expectedStaticCheckErrors: []string{ErrForbiddenNodeinPreinit.Error()},
+			expectedStaticCheckErrors: []string{staticcheck.ErrForbiddenNodeinPreinit.Error()},
 			error:                     true,
 		},
 		{
@@ -1154,7 +1155,7 @@ func TestPreInit(t *testing.T) {
 				}`,
 
 			setup: func() error {
-				ResetStaticallyCheckDbResolutionDataFnRegistry()
+				staticcheck.ResetDbResolutionDataCheckFnRegistry()
 
 				RegisterStaticallyCheckDbResolutionDataFn("ldb", func(node parse.Node, p Project) (errorMsg string) {
 					return ""
@@ -1163,7 +1164,7 @@ func TestPreInit(t *testing.T) {
 				return nil
 			},
 			teardown: func() {
-				ResetStaticallyCheckDbResolutionDataFnRegistry()
+				staticcheck.ResetDbResolutionDataCheckFnRegistry()
 			},
 			error:                     true,
 			expectedStaticCheckErrors: []string{text.THE_DATABASES_SECTION_SHOULD_BE_PRESENT},
@@ -1198,7 +1199,7 @@ func TestPreInit(t *testing.T) {
 				OnAddedElement: "ldb://main/users",
 			},
 			setup: func() error {
-				ResetStaticallyCheckDbResolutionDataFnRegistry()
+				staticcheck.ResetDbResolutionDataCheckFnRegistry()
 
 				RegisterStaticallyCheckDbResolutionDataFn("ldb", func(node parse.Node, p Project) (errorMsg string) {
 					return ""
@@ -1207,7 +1208,7 @@ func TestPreInit(t *testing.T) {
 				return nil
 			},
 			teardown: func() {
-				ResetStaticallyCheckDbResolutionDataFnRegistry()
+				staticcheck.ResetDbResolutionDataCheckFnRegistry()
 			},
 		},
 
@@ -1235,7 +1236,7 @@ func TestPreInit(t *testing.T) {
 			expectedStaticCheckErrors: []string{text.A_BOOL_LIT_IS_EXPECTED},
 
 			setup: func() error {
-				ResetStaticallyCheckDbResolutionDataFnRegistry()
+				staticcheck.ResetDbResolutionDataCheckFnRegistry()
 
 				RegisterStaticallyCheckDbResolutionDataFn("ldb", func(node parse.Node, p Project) (errorMsg string) {
 					return ""
@@ -1244,7 +1245,7 @@ func TestPreInit(t *testing.T) {
 				return nil
 			},
 			teardown: func() {
-				ResetStaticallyCheckDbResolutionDataFnRegistry()
+				staticcheck.ResetDbResolutionDataCheckFnRegistry()
 			},
 		},
 
@@ -1271,7 +1272,7 @@ func TestPreInit(t *testing.T) {
 			errorIs:             ErrURLNotCorrespondingToDefinedDB,
 
 			setup: func() error {
-				ResetStaticallyCheckDbResolutionDataFnRegistry()
+				staticcheck.ResetDbResolutionDataCheckFnRegistry()
 
 				RegisterStaticallyCheckDbResolutionDataFn("ldb", func(node parse.Node, p Project) (errorMsg string) {
 					return ""
@@ -1280,7 +1281,7 @@ func TestPreInit(t *testing.T) {
 				return nil
 			},
 			teardown: func() {
-				ResetStaticallyCheckDbResolutionDataFnRegistry()
+				staticcheck.ResetDbResolutionDataCheckFnRegistry()
 			},
 		},
 
@@ -1316,7 +1317,7 @@ func TestPreInit(t *testing.T) {
 				Async:          true,
 			},
 			setup: func() error {
-				ResetStaticallyCheckDbResolutionDataFnRegistry()
+				staticcheck.ResetDbResolutionDataCheckFnRegistry()
 
 				RegisterStaticallyCheckDbResolutionDataFn("ldb", func(node parse.Node, p Project) (errorMsg string) {
 					return ""
@@ -1325,7 +1326,7 @@ func TestPreInit(t *testing.T) {
 				return nil
 			},
 			teardown: func() {
-				ResetStaticallyCheckDbResolutionDataFnRegistry()
+				staticcheck.ResetDbResolutionDataCheckFnRegistry()
 			},
 		},
 

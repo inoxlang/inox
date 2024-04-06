@@ -8,6 +8,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/inoxlang/inox/internal/core/staticcheck"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/parse"
 	"golang.org/x/exp/maps"
@@ -28,7 +29,7 @@ type InoxFunction struct {
 	capturedLocals         []Value //alway empty if .CompiledFunction is nil
 
 	symbolicValue *symbolic.InoxFunction
-	staticData    *FunctionStaticData
+	staticData    *staticcheck.FunctionData
 
 	mutationFieldsLock sync.Mutex // exclusive access for initializing .watchers & .mutationCallbacks
 	watchers           *ValueWatchers
@@ -99,9 +100,11 @@ func (fn *InoxFunction) IsSharable(originState *GlobalState) (bool, string) {
 func (fn *InoxFunction) Share(originState *GlobalState) {
 	if fn.shared.CompareAndSwap(false, true) {
 		fn.originState = originState
-		if fn.staticData != nil && len(fn.staticData.capturedGlobals) > 0 {
-			fn.capturedGlobals = make([]capturedGlobal, len(fn.staticData.capturedGlobals))
-			for i, name := range fn.staticData.capturedGlobals {
+		if fn.staticData != nil && len(fn.staticData.CapturedGlobals()) > 0 {
+			capturedGlobals := fn.staticData.CapturedGlobals()
+
+			fn.capturedGlobals = make([]capturedGlobal, len(capturedGlobals))
+			for i, name := range capturedGlobals {
 
 				value := originState.Globals.Get(name)
 				if value == nil {

@@ -84,8 +84,8 @@ func runStartupScript(startupScriptPath string, processTempDirPerms []core.Permi
 		State:             state,
 		Node:              startupMod.MainChunk.Node,
 		Chunk:             startupMod.MainChunk,
-		Patterns:          state.Ctx.GetNamedPatterns(),
-		PatternNamespaces: state.Ctx.GetPatternNamespaces(),
+		Patterns:          state.Ctx.GetNamedPatternNames(),
+		PatternNamespaces: state.Ctx.GetPatternNamespaceNames(),
 	})
 	state.StaticCheckData = staticCheckData
 

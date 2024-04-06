@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/inoxlang/inox/internal/core/permbase"
+	"github.com/inoxlang/inox/internal/core/staticcheck"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/parse"
@@ -67,7 +68,7 @@ func TestDatabaseIL(t *testing.T) {
 				"val": migrationHandlerReturnedVal,
 			},
 			symbolicValue: symbolicFn,
-			staticData:    &FunctionStaticData{},
+			staticData:    &staticcheck.FunctionData{},
 		}
 
 		func() {
@@ -131,7 +132,7 @@ func TestDatabaseIL(t *testing.T) {
 				"val": migrationHandlerReturnedVal,
 			},
 			symbolicValue: symbolicFn,
-			staticData:    &FunctionStaticData{},
+			staticData:    &staticcheck.FunctionData{},
 		}
 
 		func() {
@@ -618,7 +619,7 @@ func TestDatabaseIL(t *testing.T) {
 				"val": migrationHandlerReturnedVal,
 			},
 			symbolicValue: symbolicFn,
-			staticData:    &FunctionStaticData{},
+			staticData:    &staticcheck.FunctionData{},
 		}
 
 		newSchema := NewInexactObjectPattern([]ObjectPatternEntry{
@@ -692,7 +693,7 @@ func TestDatabaseIL(t *testing.T) {
 				"val": migrationHandlerReturnedVal,
 			},
 			symbolicValue: symbolicFn,
-			staticData:    &FunctionStaticData{},
+			staticData:    &staticcheck.FunctionData{},
 		}
 
 		assert.PanicsWithError(t, ErrNewSchemaNotEqualToExpectedSchema.Error(), func() {

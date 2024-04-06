@@ -39,6 +39,7 @@ import (
 	//EXTERNAL
 
 	"github.com/muesli/cancelreader"
+	"golang.org/x/exp/maps"
 	"golang.org/x/term"
 )
 
@@ -1220,9 +1221,9 @@ func (sh *shell) checkModule(mod *core.Module) (*core.StaticCheckData, *symbolic
 		Chunk:             mod.MainChunk,
 		Module:            mod,
 		Globals:           sh.state.Global.Globals,
-		ShellLocalVars:    sh.state.CurrentLocalScope(),
-		Patterns:          sh.state.Global.Ctx.GetNamedPatterns(),
-		PatternNamespaces: sh.state.Global.Ctx.GetPatternNamespaces(),
+		ShellLocalVars:    maps.Keys(sh.state.CurrentLocalScope()),
+		Patterns:          sh.state.Global.Ctx.GetNamedPatternNames(),
+		PatternNamespaces: sh.state.Global.Ctx.GetPatternNamespaceNames(),
 	})
 
 	if checkErr != nil {
