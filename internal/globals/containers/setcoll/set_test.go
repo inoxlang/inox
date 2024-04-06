@@ -178,7 +178,7 @@ func TestUnsharedSetAddRemove(t *testing.T) {
 		record := core.NewRecordFromMap(core.ValMap{"password": core.String("x"), "email-address": core.EmailAddress("a@mail.com")})
 		set.Add(ctx, record)
 
-		val, ok := set.Get(ctx, core.String(`{"email-address":{"emailaddr__value":"a@mail.com"},"password":"x"}`))
+		val, ok := set.Get(ctx, core.String(`{"email-address":{"email-address__value":"a@mail.com"},"password":"x"}`))
 
 		if !assert.True(t, bool(ok)) {
 			return

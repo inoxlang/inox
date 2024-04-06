@@ -237,7 +237,7 @@ func TestObjectJSONRepresentation(t *testing.T) {
 			"e":        EmailAddress("a@mail.com"),
 		})
 
-		expectedRepr := `{"object__value":{"a":"1","e":{"emailaddr__value":"a@mail.com"},"password":"mypassword"}}`
+		expectedRepr := `{"object__value":{"a":"1","e":{"email-address__value":"a@mail.com"},"password":"mypassword"}}`
 
 		assert.Equal(t, expectedRepr, getJSONRepr(t, obj, ctx, JSONSerializationConfig{
 			ReprConfig: &ReprConfig{
@@ -260,7 +260,7 @@ func TestObjectJSONRepresentation(t *testing.T) {
 			publicKeys: []string{"a", "password", "e"},
 		})
 
-		expectedRepr := `{"object__value":{"a":"1","e":{"emailaddr__value":"a@mail.com"},"password":"mypassword"}}`
+		expectedRepr := `{"object__value":{"a":"1","e":{"email-address__value":"a@mail.com"},"password":"mypassword"}}`
 
 		assert.Equal(t, expectedRepr, getJSONRepr(t, obj, ctx, JSONSerializationConfig{
 			ReprConfig: &ReprConfig{
@@ -676,7 +676,7 @@ func TestEmailAddressJSONRepresentation(t *testing.T) {
 
 			addr := EmailAddress(testCase)
 
-			assert.Equal(t, `{"emailaddr__value":"`+testCase+`"}`, getJSONRepr(t, addr, ctx))
+			assert.Equal(t, `{"email-address__value":"`+testCase+`"}`, getJSONRepr(t, addr, ctx))
 			assert.Equal(t, `"`+testCase+`"`, getJSONRepr(t, addr, ctx, JSONSerializationConfig{
 				Pattern: EMAIL_ADDR_PATTERN,
 			}))

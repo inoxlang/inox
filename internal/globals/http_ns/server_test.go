@@ -696,7 +696,7 @@ func TestHttpServerMapping(t *testing.T) {
 				requests: []requestTestInfo{
 					{
 						acceptedContentType: mimeconsts.JSON_CTYPE,
-						result:              `{"object__value":{"a":{"int__value":1},"e":{"emailaddr__value":"a@mail.com"},"password":"mypassword"}}`,
+						result:              `{"object__value":{"a":{"int__value":1},"e":{"email-address__value":"a@mail.com"},"password":"mypassword"}}`,
 					},
 				},
 			},
