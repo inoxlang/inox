@@ -1357,6 +1357,13 @@ type ObjectDestructurationProperty struct {
 	NewName      *IdentifierLiteral //can be nil
 }
 
+func (p ObjectDestructurationProperty) NameNode() *IdentifierLiteral {
+	if p.NewName != nil {
+		return p.NewName
+	}
+	return p.PropertyName
+}
+
 type Assignment struct {
 	NodeBase
 	Left     Node

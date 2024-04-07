@@ -1116,18 +1116,10 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 9}, nil, false},
 				Statements: []Node{
 					&LocalVariableDeclarations{
-						NodeBase: NodeBase{
-							NodeSpan{0, 9},
-							nil,
-							false,
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 9}},
 						Declarations: []*LocalVariableDeclarator{
 							{
-								NodeBase: NodeBase{
-									NodeSpan{4, 9},
-									nil,
-									false,
-								},
+								NodeBase: NodeBase{Span: NodeSpan{4, 9}},
 								Left: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{4, 5}, nil, false},
 									Name:     "a",
@@ -1150,18 +1142,10 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
 				Statements: []Node{
 					&LocalVariableDeclarations{
-						NodeBase: NodeBase{
-							NodeSpan{0, 14},
-							nil,
-							false,
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 14}},
 						Declarations: []*LocalVariableDeclarator{
 							{
-								NodeBase: NodeBase{
-									NodeSpan{4, 14},
-									nil,
-									false,
-								},
+								NodeBase: NodeBase{Span: NodeSpan{4, 14}},
 								Left: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{4, 5}, nil, false},
 									Name:     "a",
@@ -1188,18 +1172,10 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
 				Statements: []Node{
 					&LocalVariableDeclarations{
-						NodeBase: NodeBase{
-							NodeSpan{0, 13},
-							nil,
-							false,
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 13}},
 						Declarations: []*LocalVariableDeclarator{
 							{
-								NodeBase: NodeBase{
-									NodeSpan{4, 13},
-									nil,
-									false,
-								},
+								NodeBase: NodeBase{Span: NodeSpan{4, 13}},
 								Left: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{4, 5}, nil, false},
 									Name:     "a",
@@ -2001,6 +1977,43 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("two object destructurations: no properties", func(t *testing.T) {
+			n := mustparseChunk(t, "var ( {} = 1, {} = 2 )")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 22}, nil, false},
+				Statements: []Node{
+					&LocalVariableDeclarations{
+						NodeBase: NodeBase{Span: NodeSpan{0, 22}},
+						Declarations: []*LocalVariableDeclarator{
+							{
+								NodeBase: NodeBase{Span: NodeSpan{6, 12}},
+								Left: &ObjectDestructuration{
+									NodeBase: NodeBase{NodeSpan{6, 8}, nil, false},
+								},
+								Right: &IntLiteral{
+									NodeBase: NodeBase{NodeSpan{11, 12}, nil, false},
+									Raw:      "1",
+									Value:    1,
+								},
+							},
+							{
+								NodeBase: NodeBase{Span: NodeSpan{14, 20}},
+								Left: &ObjectDestructuration{
+
+									NodeBase: NodeBase{NodeSpan{14, 16}, nil, false},
+								},
+								Right: &IntLiteral{
+									NodeBase: NodeBase{NodeSpan{19, 20}, nil, false},
+									Raw:      "2",
+									Value:    2,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("var keyword at end of file", func(t *testing.T) {
 			n, err := parseChunk(t, "var", "")
 			assert.Error(t, err)
@@ -2730,6 +2743,68 @@ func testParse(
 								},
 								Right: &IntLiteral{
 									NodeBase: NodeBase{NodeSpan{17, 18}, nil, false},
+									Raw:      "1",
+									Value:    1,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("two object destructurations: no properties", func(t *testing.T) {
+			n := mustparseChunk(t, "globalvar ( {} = 1, {} = 2 )")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 28}, nil, false},
+				Statements: []Node{
+					&GlobalVariableDeclarations{
+						NodeBase: NodeBase{Span: NodeSpan{0, 28}},
+						Declarations: []*GlobalVariableDeclarator{
+							{
+								NodeBase: NodeBase{Span: NodeSpan{12, 18}},
+								Left: &ObjectDestructuration{
+									NodeBase: NodeBase{NodeSpan{12, 14}, nil, false},
+								},
+								Right: &IntLiteral{
+									NodeBase: NodeBase{NodeSpan{17, 18}, nil, false},
+									Raw:      "1",
+									Value:    1,
+								},
+							},
+							{
+								NodeBase: NodeBase{Span: NodeSpan{20, 26}},
+								Left: &ObjectDestructuration{
+
+									NodeBase: NodeBase{NodeSpan{20, 22}, nil, false},
+								},
+								Right: &IntLiteral{
+									NodeBase: NodeBase{NodeSpan{25, 26}, nil, false},
+									Raw:      "2",
+									Value:    2,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("single object destructuration without parentheses: no properties", func(t *testing.T) {
+			n := mustparseChunk(t, "globalvar {} = 1")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
+				Statements: []Node{
+					&GlobalVariableDeclarations{
+						NodeBase: NodeBase{Span: NodeSpan{0, 16}},
+						Declarations: []*GlobalVariableDeclarator{
+							{
+								NodeBase: NodeBase{Span: NodeSpan{10, 16}},
+								Left: &ObjectDestructuration{
+									NodeBase: NodeBase{NodeSpan{10, 12}, nil, false},
+								},
+								Right: &IntLiteral{
+									NodeBase: NodeBase{NodeSpan{15, 16}, nil, false},
 									Raw:      "1",
 									Value:    1,
 								},

@@ -3338,7 +3338,7 @@ func (p *parser) parseLocalVariableDeclarations(varKeywordBase NodeBase) *LocalV
 				break
 			}
 
-			p.eatSpaceNewlineComment()
+			p.eatSpaceNewlineCommaComment()
 		}
 
 		if p.i < p.len && p.s[p.i] == ')' {
@@ -3492,7 +3492,7 @@ func (p *parser) parseGlobalVariableDeclarations(globalVarKeywordBase NodeBase) 
 		}
 	}
 
-	if isAlpha(p.s[p.i]) || p.s[p.i] == '_' {
+	if isAlpha(p.s[p.i]) || p.s[p.i] == '_' || p.s[p.i] == '{' {
 		p.parseSingleGlobalVarDeclarator(&declarations)
 	} else {
 		//multi declarations
@@ -3518,7 +3518,7 @@ func (p *parser) parseGlobalVariableDeclarations(globalVarKeywordBase NodeBase) 
 				break
 			}
 
-			p.eatSpaceNewlineComment()
+			p.eatSpaceNewlineCommaComment()
 		}
 
 		if p.i < p.len && p.s[p.i] == ')' {

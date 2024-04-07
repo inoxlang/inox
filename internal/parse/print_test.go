@@ -111,6 +111,7 @@ func TestPrint(t *testing.T) {
 		"var a namespace.pattern = 1",
 		"var a {} = 1",
 		"var a #{} = 1",
+		"var (a = 1, b = 2)",
 		//local object destructuration
 		"var {}",
 		"var {} = 1",
@@ -136,6 +137,7 @@ func TestPrint(t *testing.T) {
 		"globalvar a namespace.pattern = 1",
 		"globalvar a {} = 1",
 		"globalvar a #{} = 1",
+		"globalvar (a = 1, b = 2)",
 		//global object destructuration
 		"globalvar {}",
 		"globalvar {} = 1",
