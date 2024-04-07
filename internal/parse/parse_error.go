@@ -37,6 +37,8 @@ const (
 
 	UnterminatedUnquotedRegion
 
+	UnterminatedObjectDestructuration
+
 	MissingFnBody
 	MissingEqualsSignInDeclaration
 	MissingObjectPropertyValue
@@ -295,6 +297,13 @@ const (
 	UNTERMINATED_GLOBAL_VAR_DECLS_MISSING_CLOSING_PAREN = "unterminated global variable declarations, missing closing parenthesis"
 	INVALID_GLOBAL_VAR_DECL_LHS_MUST_BE_AN_IDENT        = "invalid global variable declaration, left hand side must be an identifier"
 
+	//object destructuration
+	MISSING_NEW_NAME_AFTER_AS_KEYWORD                         = "missing new name after the 'as' keyword"
+	UNTERMINATED_OBJECT_DESTRUCTURATION_MISSING_CLOSING_BRACE = "unterminated object destructuration: missing closing brace '}'"
+	TYPE_ANNOTATIONS_NOT_ALLOWED_WHEN_DESTRUCTURING_AN_OBJECT = "type annotations are not allowed when destructuring an object"
+	UNTERMINATED_OBJECT_DESTRUCTURATION_MISSING_EQUAL_SIGN    = "unterminated object destructuration: missing equal sign '='"
+	UNEXPECTED_SPACE_BETWEEN_PROPERTY_NAME_AND_QUESTION_MARK  = "unexpected space between the property name and the question mark symbol '?'"
+
 	//spawn expression
 	UNTERMINATED_SPAWN_EXPRESSION_MISSING_EMBEDDED_MODULE_AFTER_GO_KEYWORD = "unterminated spawn expression: missing embedded module after 'go' keyword"
 	UNTERMINATED_SPAWN_EXPRESSION_MISSING_DO_KEYWORD_AFTER_META            = "unterminated spawn expression: missing 'do' keyword after meta value"
@@ -516,18 +525,18 @@ const (
 	STMTS_SHOULD_BE_SEPARATED_BY                          = "statements should be separated by a space, newline or ';'"
 
 	//xml expression and XML pattern
-	UNTERMINATED_XML_EXPRESSION_MISSING_TOP_ELEM_NAME                = "unterminated xml expression: missing name of top element"
-	UNTERMINATED_XML_PATTERN_EXPRESSION_MISSING_TOP_ELEM_NAME        = "unterminated xml pattern expression: missing name of top element"
-	UNTERMINATED_OPENING_XML_TAG_MISSING_CLOSING                     = "unterminated opening xml tag: missing closing delimiter '>'"
-	UNTERMINATED_SELF_CLOSING_XML_TAG_MISSING_CLOSING                = "unterminated self-closing xml tag: missing closing '>' after '/'"
-	UNTERMINATED_XML_INTERP                                          = "unterminated xml interpolation"
-	UNTERMINATED_CLOSING_XML_TAG_MISSING_CLOSING_DELIM               = "unterminated closing xml tag: missing closing delimiter '>' after tag name"
-	UNTERMINATED_HYPERSCRIPT_ATTRIBUTE_SHORTHAND                     = "unterminated hyperscript attribute shorthand"
-	EMPTY_XML_INTERP                                                 = "xml interpolation should not be empty"
-	INVALID_XML_INTERP                                               = "invalid xml interpolation"
-	XML_INTERP_SHOULD_CONTAIN_A_SINGLE_EXPR                          = "an xml interpolation should contain a single expression"
-	XML_ATTRIBUTE_NAME_SHOULD_BE_IDENT                               = "xml attribute's name should be an identifier"
-	INVALID_TAG_NAME                                                 = "invalid tag name"
+	UNTERMINATED_XML_EXPRESSION_MISSING_TOP_ELEM_NAME                 = "unterminated xml expression: missing name of top element"
+	UNTERMINATED_XML_PATTERN_EXPRESSION_MISSING_TOP_ELEM_NAME         = "unterminated xml pattern expression: missing name of top element"
+	UNTERMINATED_OPENING_XML_TAG_MISSING_CLOSING                      = "unterminated opening xml tag: missing closing delimiter '>'"
+	UNTERMINATED_SELF_CLOSING_XML_TAG_MISSING_CLOSING                 = "unterminated self-closing xml tag: missing closing '>' after '/'"
+	UNTERMINATED_XML_INTERP                                           = "unterminated xml interpolation"
+	UNTERMINATED_CLOSING_XML_TAG_MISSING_CLOSING_DELIM                = "unterminated closing xml tag: missing closing delimiter '>' after tag name"
+	UNTERMINATED_HYPERSCRIPT_ATTRIBUTE_SHORTHAND                      = "unterminated hyperscript attribute shorthand"
+	EMPTY_XML_INTERP                                                  = "xml interpolation should not be empty"
+	INVALID_XML_INTERP                                                = "invalid xml interpolation"
+	XML_INTERP_SHOULD_CONTAIN_A_SINGLE_EXPR                           = "an xml interpolation should contain a single expression"
+	XML_ATTRIBUTE_NAME_SHOULD_BE_IDENT                                = "xml attribute's name should be an identifier"
+	INVALID_TAG_NAME                                                  = "invalid tag name"
 	THERE_SHOULD_NOT_BE_SPACE_BETWEEN_THE_TAG_NAME_AND_THE_QUANTIFIER = "there should not be space between the tag name and the quantifier"
 
 	//pattern definition
@@ -847,6 +856,10 @@ func fmtUnexpectedCharInStructBody(r rune) string {
 
 func fmtUnexpectedCharInStructInitLiteral(r rune) string {
 	return fmt.Sprintf("unexpected char %s in struct initialization literal", fmtRuneInfo(r))
+}
+
+func fmtUnexpectedCharInObjectDestructuration(r rune) string {
+	return fmt.Sprintf("unexpected char %s in object destructuration", fmtRuneInfo(r))
 }
 
 func fmtInvalidSpreadElemExprShouldBeExtrExprNot(expr Node) string {

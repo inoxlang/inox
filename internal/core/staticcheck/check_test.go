@@ -1593,7 +1593,7 @@ func TestCheck(t *testing.T) {
 	
 				fn f(){}
 			`)
-			globalVar := parse.FindNode(n, (*parse.GlobalVariableDeclaration)(nil), nil)
+			globalVar := parse.FindNode(n, (*parse.GlobalVariableDeclarator)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
 				makeError(globalVar, src, text.FmtInvalidAssignmentNameIsFuncName("f")),
@@ -2075,7 +2075,7 @@ func TestCheck(t *testing.T) {
 				a = 0
 				var a = 0
 			`)
-			decl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), nil)
+			decl := parse.FindNode(n, (*parse.LocalVariableDeclarator)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
 				makeError(decl, src, text.FmtInvalidLocalVarDeclAlreadyDeclared("a")),
@@ -2088,7 +2088,7 @@ func TestCheck(t *testing.T) {
 				globalvar a = 0
 				var a = 0
 			`)
-			decl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), nil)
+			decl := parse.FindNode(n, (*parse.LocalVariableDeclarator)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
 				makeError(decl, src, text.FmtCannotShadowGlobalVariable("a")),
@@ -2101,7 +2101,7 @@ func TestCheck(t *testing.T) {
 				var a = 0
 				var a = 1
 			`)
-			decl := parse.FindNodes(n, (*parse.LocalVariableDeclaration)(nil), nil)[1]
+			decl := parse.FindNodes(n, (*parse.LocalVariableDeclarator)(nil), nil)[1]
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
 				makeError(decl, src, text.FmtInvalidLocalVarDeclAlreadyDeclared("a")),
@@ -2125,7 +2125,7 @@ func TestCheck(t *testing.T) {
 				$a = 0
 				globalvar a = 0
 			`)
-			decl := parse.FindNode(n, (*parse.GlobalVariableDeclaration)(nil), nil)
+			decl := parse.FindNode(n, (*parse.GlobalVariableDeclarator)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
 				makeError(decl, src, text.FmtCannotShadowLocalVariable("a")),
@@ -2138,7 +2138,7 @@ func TestCheck(t *testing.T) {
 				globalvar a = 0
 				globalvar a = 1
 			`)
-			decl := parse.FindNodes(n, (*parse.GlobalVariableDeclaration)(nil), nil)[1]
+			decl := parse.FindNodes(n, (*parse.GlobalVariableDeclarator)(nil), nil)[1]
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
 				makeError(decl, src, text.FmtInvalidGlobalVarDeclAlreadyDeclared("a")),

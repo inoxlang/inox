@@ -291,7 +291,7 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 		for _, decl := range n.Declarations {
 			walk(decl, node, ancestorChain, fn, afterFn)
 		}
-	case *LocalVariableDeclaration:
+	case *LocalVariableDeclarator:
 		walk(n.Left, node, ancestorChain, fn, afterFn)
 		walk(n.Type, node, ancestorChain, fn, afterFn)
 		walk(n.Right, node, ancestorChain, fn, afterFn)
@@ -299,10 +299,17 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 		for _, decl := range n.Declarations {
 			walk(decl, node, ancestorChain, fn, afterFn)
 		}
-	case *GlobalVariableDeclaration:
+	case *GlobalVariableDeclarator:
 		walk(n.Left, node, ancestorChain, fn, afterFn)
 		walk(n.Type, node, ancestorChain, fn, afterFn)
 		walk(n.Right, node, ancestorChain, fn, afterFn)
+	case *ObjectDestructuration:
+		for _, prop := range n.Properties {
+			walk(prop, node, ancestorChain, fn, afterFn)
+		}
+	case *ObjectDestructurationProperty:
+		walk(n.PropertyName, node, ancestorChain, fn, afterFn)
+		walk(n.NewName, node, ancestorChain, fn, afterFn)
 	case *ObjectLiteral:
 		for _, prop := range n.Properties {
 			walk(prop, node, ancestorChain, fn, afterFn)
@@ -944,8 +951,8 @@ func FindObjPropWithName(root Node, name string) *ObjectProperty {
 	})
 }
 
-func FindLocalVarDeclWithName(root Node, name string) *LocalVariableDeclaration {
-	return FindNode(root, (*LocalVariableDeclaration)(nil), func(n *LocalVariableDeclaration, isFirstFound bool, ancestors []Node) bool {
+func FindLocalVarDeclWithName(root Node, name string) *LocalVariableDeclarator {
+	return FindNode(root, (*LocalVariableDeclarator)(nil), func(n *LocalVariableDeclarator, isFirstFound bool, ancestors []Node) bool {
 		ident, ok := n.Left.(*IdentifierLiteral)
 		return ok && ident.Name == name
 	})

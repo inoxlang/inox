@@ -2846,7 +2846,7 @@ func (c *checker) checkPointerType(node *parse.PointerType, parent parse.Node) p
 			if node != parent.ReturnType {
 				c.addError(node, text.MISPLACED_POINTER_TYPE)
 			}
-		case *parse.LocalVariableDeclaration:
+		case *parse.LocalVariableDeclarator:
 			if node != parent.Type {
 				c.addError(node, text.MISPLACED_POINTER_TYPE)
 			}

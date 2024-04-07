@@ -741,7 +741,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
-			decl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), nil)
+			decl := parse.FindNode(n, (*parse.LocalVariableDeclarator)(nil), nil)
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(decl.Right, state,
@@ -779,7 +779,7 @@ func TestSymbolicEval(t *testing.T) {
 				return a
 			`, nil)
 
-			typeAnnotation := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), nil).Type
+			typeAnnotation := parse.FindNode(n, (*parse.LocalVariableDeclarator)(nil), nil).Type
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -886,7 +886,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
-			decl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), nil)
+			decl := parse.FindNode(n, (*parse.LocalVariableDeclarator)(nil), nil)
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(decl.Right, state,
@@ -903,7 +903,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
-			decl := parse.FindNode(n, (*parse.LocalVariableDeclaration)(nil), nil)
+			decl := parse.FindNode(n, (*parse.LocalVariableDeclarator)(nil), nil)
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(decl.Right, state,
@@ -1019,7 +1019,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
-			decl := parse.FindNode(n, (*parse.GlobalVariableDeclaration)(nil), nil)
+			decl := parse.FindNode(n, (*parse.GlobalVariableDeclarator)(nil), nil)
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(decl.Right, state,
@@ -1057,7 +1057,7 @@ func TestSymbolicEval(t *testing.T) {
 				return a
 			`, nil)
 
-			typeAnnotation := parse.FindNode(n, (*parse.GlobalVariableDeclaration)(nil), nil).Type
+			typeAnnotation := parse.FindNode(n, (*parse.GlobalVariableDeclarator)(nil), nil).Type
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -1164,7 +1164,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
-			decl := parse.FindNode(n, (*parse.GlobalVariableDeclaration)(nil), nil)
+			decl := parse.FindNode(n, (*parse.GlobalVariableDeclarator)(nil), nil)
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(decl.Right, state,
@@ -1181,7 +1181,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
-			decl := parse.FindNode(n, (*parse.GlobalVariableDeclaration)(nil), nil)
+			decl := parse.FindNode(n, (*parse.GlobalVariableDeclarator)(nil), nil)
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				makeSymbolicEvalError(decl.Right, state,

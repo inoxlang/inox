@@ -3181,29 +3181,44 @@ func (p *parser) parseGlobalConstantDeclarations() *GlobalConstantDeclarations {
 	return nil
 }
 
-func (p *parser) parseSingleLocalVarDeclaration(declarations *[]*LocalVariableDeclaration) {
+func (p *parser) parseSingleLocalVarDeclarator(declarations *[]*LocalVariableDeclarator) {
 	p.panicIfContextDone()
 
 	var declParsingErr *ParsingError
 
-	lhs, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
-	ident, ok := lhs.(*IdentifierLiteral)
-	if !ok {
-		declParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_LOCAL_VAR_DECL_LHS_MUST_BE_AN_IDENT}
-	} else if isKeyword(ident.Name) {
-		declParsingErr = &ParsingError{UnspecifiedParsingError, KEYWORDS_SHOULD_NOT_BE_USED_IN_ASSIGNMENT_LHS}
+	//LHS
+	var lhs Node
+	var objectDestructuration *ObjectDestructuration
+	var ident *IdentifierLiteral
+
+	if p.s[p.i] == '{' {
+		objectDestructuration = p.parseObjectDestructuration()
+		lhs = objectDestructuration
+	} else {
+		lhs, _ = p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+		var ok bool
+		ident, ok = lhs.(*IdentifierLiteral)
+		if !ok {
+			declParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_LOCAL_VAR_DECL_LHS_MUST_BE_AN_IDENT}
+		} else if isKeyword(ident.Name) {
+			declParsingErr = &ParsingError{UnspecifiedParsingError, KEYWORDS_SHOULD_NOT_BE_USED_IN_ASSIGNMENT_LHS}
+		}
 	}
 
 	p.eatSpace()
 
+	//Unterminated
+
 	if p.i >= p.len || (p.s[p.i] != '=' && !isAcceptedFirstVariableTypeAnnotationChar(p.s[p.i])) {
 		if ident != nil {
 			declParsingErr = &ParsingError{UnspecifiedParsingError, fmtInvalidLocalVarDeclMissingEqualsSign(ident.Name)}
+		} else if objectDestructuration != nil {
+			declParsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJECT_DESTRUCTURATION_MISSING_EQUAL_SIGN}
 		}
 		if p.i < p.len {
 			p.i++
 		}
-		*declarations = append(*declarations, &LocalVariableDeclaration{
+		*declarations = append(*declarations, &LocalVariableDeclarator{
 			NodeBase: NodeBase{
 				NodeSpan{lhs.Base().Span.Start, p.i},
 				declParsingErr,
@@ -3214,6 +3229,8 @@ func (p *parser) parseSingleLocalVarDeclaration(declarations *[]*LocalVariableDe
 		return
 	}
 
+	//Type annotation
+
 	var type_ Node
 
 	if isAcceptedFirstVariableTypeAnnotationChar(p.s[p.i]) {
@@ -3222,9 +3239,14 @@ func (p *parser) parseSingleLocalVarDeclaration(declarations *[]*LocalVariableDe
 
 		type_, _ = p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
 		p.inPattern = prev
+		if objectDestructuration != nil && type_.Base().Err == nil {
+			type_.BasePtr().Err = &ParsingError{UnspecifiedParsingError, TYPE_ANNOTATIONS_NOT_ALLOWED_WHEN_DESTRUCTURING_AN_OBJECT}
+		}
 	}
 
 	p.eatSpace()
+
+	//Equal sign
 
 	//temporary
 	if p.i >= p.len || p.s[p.i] != '=' {
@@ -3232,7 +3254,7 @@ func (p *parser) parseSingleLocalVarDeclaration(declarations *[]*LocalVariableDe
 		if p.i < p.len {
 			p.i++
 		}
-		*declarations = append(*declarations, &LocalVariableDeclaration{
+		*declarations = append(*declarations, &LocalVariableDeclarator{
 			NodeBase: NodeBase{
 				NodeSpan{lhs.Base().Span.Start, p.i},
 				declParsingErr,
@@ -3248,10 +3270,12 @@ func (p *parser) parseSingleLocalVarDeclaration(declarations *[]*LocalVariableDe
 	p.i++
 	p.eatSpace()
 
+	//RHS
+
 	rhs, _ := p.parseExpression()
 	p.tokens = append(p.tokens, Token{Type: EQUAL, SubType: ASSIGN_EQUAL, Span: NodeSpan{equalSignIndex, equalSignIndex + 1}})
 
-	*declarations = append(*declarations, &LocalVariableDeclaration{
+	*declarations = append(*declarations, &LocalVariableDeclarator{
 		NodeBase: NodeBase{
 			NodeSpan{lhs.Base().Span.Start, rhs.Base().Span.End},
 			declParsingErr,
@@ -3274,7 +3298,7 @@ func (p *parser) parseLocalVariableDeclarations(varKeywordBase NodeBase) *LocalV
 
 	p.eatSpace()
 	var (
-		declarations []*LocalVariableDeclaration
+		declarations []*LocalVariableDeclarator
 		parsingErr   *ParsingError
 	)
 
@@ -3288,8 +3312,8 @@ func (p *parser) parseLocalVariableDeclarations(varKeywordBase NodeBase) *LocalV
 		}
 	}
 
-	if isAlpha(p.s[p.i]) || p.s[p.i] == '_' {
-		p.parseSingleLocalVarDeclaration(&declarations)
+	if isAlpha(p.s[p.i]) || p.s[p.i] == '_' || p.s[p.i] == '{' {
+		p.parseSingleLocalVarDeclarator(&declarations)
 	} else { //multi declarations
 		hasOpeninParenthesis := false
 		if p.s[p.i] != '(' {
@@ -3308,7 +3332,7 @@ func (p *parser) parseLocalVariableDeclarations(varKeywordBase NodeBase) *LocalV
 				break
 			}
 
-			p.parseSingleLocalVarDeclaration(&declarations)
+			p.parseSingleLocalVarDeclarator(&declarations)
 
 			if !hasOpeninParenthesis {
 				break
@@ -3337,29 +3361,44 @@ func (p *parser) parseLocalVariableDeclarations(varKeywordBase NodeBase) *LocalV
 	return decls
 }
 
-func (p *parser) parseSingleGlobalVarDeclaration(declarations *[]*GlobalVariableDeclaration) {
+func (p *parser) parseSingleGlobalVarDeclarator(declarations *[]*GlobalVariableDeclarator) {
 	p.panicIfContextDone()
 
 	var declParsingErr *ParsingError
 
-	lhs, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
-	ident, ok := lhs.(*IdentifierLiteral)
-	if !ok {
-		declParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_GLOBAL_VAR_DECL_LHS_MUST_BE_AN_IDENT}
-	} else if isKeyword(ident.Name) {
-		declParsingErr = &ParsingError{UnspecifiedParsingError, KEYWORDS_SHOULD_NOT_BE_USED_IN_ASSIGNMENT_LHS}
+	//LHS
+	var lhs Node
+	var objectDestructuration *ObjectDestructuration
+	var ident *IdentifierLiteral
+
+	if p.s[p.i] == '{' {
+		objectDestructuration = p.parseObjectDestructuration()
+		lhs = objectDestructuration
+	} else {
+		lhs, _ = p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+		var ok bool
+		ident, ok = lhs.(*IdentifierLiteral)
+		if !ok {
+			declParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_GLOBAL_VAR_DECL_LHS_MUST_BE_AN_IDENT}
+		} else if isKeyword(ident.Name) {
+			declParsingErr = &ParsingError{UnspecifiedParsingError, KEYWORDS_SHOULD_NOT_BE_USED_IN_ASSIGNMENT_LHS}
+		}
 	}
 
 	p.eatSpace()
 
+	//Unterminated
+
 	if p.i >= p.len || (p.s[p.i] != '=' && !isAcceptedFirstVariableTypeAnnotationChar(p.s[p.i])) {
 		if ident != nil {
 			declParsingErr = &ParsingError{UnspecifiedParsingError, fmtInvalidGlobalVarDeclMissingEqualsSign(ident.Name)}
+		} else if objectDestructuration != nil {
+			declParsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_OBJECT_DESTRUCTURATION_MISSING_EQUAL_SIGN}
 		}
 		if p.i < p.len {
 			p.i++
 		}
-		*declarations = append(*declarations, &GlobalVariableDeclaration{
+		*declarations = append(*declarations, &GlobalVariableDeclarator{
 			NodeBase: NodeBase{
 				NodeSpan{lhs.Base().Span.Start, p.i},
 				declParsingErr,
@@ -3370,6 +3409,8 @@ func (p *parser) parseSingleGlobalVarDeclaration(declarations *[]*GlobalVariable
 		return
 	}
 
+	//Type annotation
+
 	var type_ Node
 
 	if isAcceptedFirstVariableTypeAnnotationChar(p.s[p.i]) {
@@ -3378,9 +3419,14 @@ func (p *parser) parseSingleGlobalVarDeclaration(declarations *[]*GlobalVariable
 
 		type_, _ = p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
 		p.inPattern = prev
+		if objectDestructuration != nil && type_.Base().Err == nil {
+			type_.BasePtr().Err = &ParsingError{UnspecifiedParsingError, TYPE_ANNOTATIONS_NOT_ALLOWED_WHEN_DESTRUCTURING_AN_OBJECT}
+		}
 	}
 
 	p.eatSpace()
+
+	//Equal sign
 
 	//temporary
 	if p.i >= p.len || p.s[p.i] != '=' {
@@ -3388,7 +3434,7 @@ func (p *parser) parseSingleGlobalVarDeclaration(declarations *[]*GlobalVariable
 		if p.i < p.len {
 			p.i++
 		}
-		*declarations = append(*declarations, &GlobalVariableDeclaration{
+		*declarations = append(*declarations, &GlobalVariableDeclarator{
 			NodeBase: NodeBase{
 				NodeSpan{lhs.Base().Span.Start, p.i},
 				declParsingErr,
@@ -3404,10 +3450,12 @@ func (p *parser) parseSingleGlobalVarDeclaration(declarations *[]*GlobalVariable
 	p.i++
 	p.eatSpace()
 
+	//RHS
+
 	rhs, _ := p.parseExpression()
 	p.tokens = append(p.tokens, Token{Type: EQUAL, SubType: ASSIGN_EQUAL, Span: NodeSpan{equalSignIndex, equalSignIndex + 1}})
 
-	*declarations = append(*declarations, &GlobalVariableDeclaration{
+	*declarations = append(*declarations, &GlobalVariableDeclarator{
 		NodeBase: NodeBase{
 			NodeSpan{lhs.Base().Span.Start, rhs.Base().Span.End},
 			declParsingErr,
@@ -3430,7 +3478,7 @@ func (p *parser) parseGlobalVariableDeclarations(globalVarKeywordBase NodeBase) 
 
 	p.eatSpace()
 	var (
-		declarations []*GlobalVariableDeclaration
+		declarations []*GlobalVariableDeclarator
 		parsingErr   *ParsingError
 	)
 
@@ -3445,7 +3493,7 @@ func (p *parser) parseGlobalVariableDeclarations(globalVarKeywordBase NodeBase) 
 	}
 
 	if isAlpha(p.s[p.i]) || p.s[p.i] == '_' {
-		p.parseSingleGlobalVarDeclaration(&declarations)
+		p.parseSingleGlobalVarDeclarator(&declarations)
 	} else {
 		//multi declarations
 		hasOpeninParenthesis := false
@@ -3464,7 +3512,7 @@ func (p *parser) parseGlobalVariableDeclarations(globalVarKeywordBase NodeBase) 
 				break
 			}
 
-			p.parseSingleGlobalVarDeclaration(&declarations)
+			p.parseSingleGlobalVarDeclarator(&declarations)
 
 			if !hasOpeninParenthesis {
 				break
@@ -3491,6 +3539,110 @@ func (p *parser) parseGlobalVariableDeclarations(globalVarKeywordBase NodeBase) 
 	}
 
 	return decls
+}
+
+func (p *parser) parseObjectDestructuration() *ObjectDestructuration {
+	objectDestructuration := &ObjectDestructuration{
+		NodeBase: NodeBase{Span: NodeSpan{p.i, p.i + 1}},
+	}
+
+	p.tokens = append(p.tokens, Token{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
+	p.i++
+
+	p.eatSpaceNewlineCommaComment()
+
+	for p.i < p.len && (p.s[p.i] != '}' && p.s[p.i] != '=') {
+		if !IsFirstIdentChar(p.s[p.i]) {
+			p.tokens = append(p.tokens, Token{
+				Type: UNEXPECTED_CHAR,
+				Raw:  string(p.s[p.i]),
+				Span: NodeSpan{p.i, p.i + 1},
+			})
+
+			objectDestructuration.Properties = append(objectDestructuration.Properties, &UnknownNode{
+				NodeBase: NodeBase{
+					Span: NodeSpan{p.i, p.i + 1},
+					Err:  &ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInObjectDestructuration(p.s[p.i])},
+				},
+			})
+			p.i++
+		} else {
+			identStart := p.i
+			p.i++
+			for p.i < p.len && IsIdentChar(p.s[p.i]) {
+				p.i++
+			}
+
+			ident := &IdentifierLiteral{
+				NodeBase: NodeBase{Span: NodeSpan{identStart, p.i}},
+				Name:     string(p.s[identStart:p.i]),
+			}
+
+			prop := &ObjectDestructurationProperty{
+				NodeBase:     ident.NodeBase,
+				PropertyName: ident,
+			}
+			objectDestructuration.Properties = append(objectDestructuration.Properties, prop)
+
+			spaceCount := p.eatSpace()
+
+			if p.i < p.len && p.s[p.i] == '?' {
+				if spaceCount == 0 {
+					prop.Nillable = true
+				} else {
+					p.tokens = append(p.tokens, Token{
+						Type: UNEXPECTED_CHAR,
+						Raw:  string(p.s[p.i]),
+						Span: NodeSpan{p.i, p.i + 1},
+					})
+					prop.Err = &ParsingError{UnspecifiedParsingError, UNEXPECTED_SPACE_BETWEEN_PROPERTY_NAME_AND_QUESTION_MARK}
+				}
+				p.i++
+				prop.Span.End = p.i
+			}
+
+			if p.i < p.len-2 && p.s[p.i] == 'a' && p.s[p.i+1] == 's' && (p.i == p.len-1 || !IsIdentChar(p.s[p.i+2])) {
+				p.tokens = append(p.tokens, Token{
+					Type: AS_KEYWORD,
+					Span: NodeSpan{p.i, p.i + 2},
+				})
+				p.i += 2
+
+				p.eatSpace()
+				prop.Span.End = p.i
+
+				if p.i < p.len && IsFirstIdentChar(p.s[p.i]) {
+					identStart := p.i
+					p.i++
+					for p.i < p.len && IsIdentChar(p.s[p.i]) {
+						p.i++
+					}
+
+					prop.NewName = &IdentifierLiteral{
+						NodeBase: NodeBase{Span: NodeSpan{identStart, p.i}},
+						Name:     string(p.s[identStart:p.i]),
+					}
+					prop.Span.End = p.i
+				} else {
+					prop.Err = &ParsingError{UnspecifiedParsingError, MISSING_NEW_NAME_AFTER_AS_KEYWORD}
+				}
+			}
+			p.eatSpaceNewlineCommaComment()
+		}
+	}
+
+	if p.i >= p.len || p.s[p.i] != '}' {
+		objectDestructuration.Err = &ParsingError{UnterminatedObjectDestructuration, UNTERMINATED_OBJECT_DESTRUCTURATION_MISSING_CLOSING_BRACE}
+	} else {
+		p.tokens = append(p.tokens, Token{
+			Type: CLOSING_CURLY_BRACKET,
+			Span: NodeSpan{p.i, p.i + 1},
+		})
+		p.i++
+	}
+
+	objectDestructuration.Span.End = p.i
+	return objectDestructuration
 }
 
 func (p *parser) parseEmbeddedModule() *EmbeddedModule {

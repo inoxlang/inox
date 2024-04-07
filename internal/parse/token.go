@@ -129,6 +129,7 @@ const (
 	NEW_KEYWORD
 	TO_KEYWORD
 	OTHERPROPS_KEYWORD
+	AS_KEYWORD
 	AND_KEYWORD
 	OR_KEYWORD
 	PERCENT_STR
@@ -383,6 +384,7 @@ var tokenStrings = [...]string{
 	NEW_KEYWORD:                       NEW_KEYWORD_STRING,
 	TO_KEYWORD:                        "to",
 	OTHERPROPS_KEYWORD:                OTHERPROPS_KEYWORD_STRING,
+	AS_KEYWORD:                        "as",
 	AND_KEYWORD:                       "and",
 	OR_KEYWORD:                        "or",
 	PERCENT_FN:                        "%fn",
@@ -561,6 +563,7 @@ var tokenTypenames = [...]string{
 	NEW_KEYWORD:                       "NEW_KEYWORD",
 	TO_KEYWORD:                        "TO_KEYWORD",
 	OTHERPROPS_KEYWORD:                "OTHERPROPS_KEYWORD",
+	AS_KEYWORD:                        "AS_KEYWORD",
 	AND_KEYWORD:                       "AND_KEYWORD",
 	OR_KEYWORD:                        "OR_KEYWORD",
 	PERCENT_STR:                       "PERCENT_STR",
@@ -926,6 +929,13 @@ func GetTokens(node Node, chunk *Chunk, addMeta bool) []Token {
 					Type: XML_ELEMENT_QUANTIFIER,
 					Raw:  raw,
 					Span: NodeSpan{nameSpan.End, nameSpan.End + 1},
+				})
+			}
+		case *ObjectDestructurationProperty:
+			if n.Nillable {
+				tokens = append(tokens, Token{
+					Type: QUESTION_MARK,
+					Span: NodeSpan{n.PropertyName.Span.End, n.PropertyName.Span.End + 1},
 				})
 			}
 		}

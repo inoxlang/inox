@@ -1307,42 +1307,54 @@ func (GlobalConstantDeclaration) Kind() NodeKind {
 
 type LocalVariableDeclarations struct {
 	NodeBase
-	Declarations []*LocalVariableDeclaration
+	Declarations []*LocalVariableDeclarator
 }
 
 func (LocalVariableDeclarations) Kind() NodeKind {
 	return Stmt
 }
 
-type LocalVariableDeclaration struct {
+type LocalVariableDeclarator struct {
 	NodeBase
-	Left  Node
+	Left  Node //*IdentifierLiteral | *ObjectDestructuration
 	Type  Node //can be nil
 	Right Node
 }
 
-func (LocalVariableDeclaration) Kind() NodeKind {
+func (LocalVariableDeclarator) Kind() NodeKind {
 	return Stmt
 }
 
 type GlobalVariableDeclarations struct {
 	NodeBase
-	Declarations []*GlobalVariableDeclaration
+	Declarations []*GlobalVariableDeclarator
 }
 
 func (GlobalVariableDeclarations) Kind() NodeKind {
 	return Stmt
 }
 
-type GlobalVariableDeclaration struct {
+type GlobalVariableDeclarator struct {
 	NodeBase
-	Left  Node
+	Left  Node //*IdentifierLiteral | *ObjectDestructuration
 	Type  Node //can be nil
 	Right Node
 }
 
-func (GlobalVariableDeclaration) Kind() NodeKind {
+func (GlobalVariableDeclarator) Kind() NodeKind {
 	return Stmt
+}
+
+type ObjectDestructuration struct {
+	NodeBase
+	Properties []Node // *ObjectDestructurationProperty if valid
+}
+
+type ObjectDestructurationProperty struct {
+	NodeBase
+	PropertyName *IdentifierLiteral
+	Nillable     bool
+	NewName      *IdentifierLiteral //can be nil
 }
 
 type Assignment struct {
