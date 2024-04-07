@@ -1079,6 +1079,13 @@ func TestSymbolicEval(t *testing.T) {
 			}, state.errors())
 		})
 
+		t.Run("parsing error: invalid LHS", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				var 1 = 1 
+			`)
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+		})
 	})
 
 	t.Run("global variable declaration", func(t *testing.T) {
@@ -1369,6 +1376,11 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, INT_1, res)
 		})
 
+		t.Run("parsing error: invalid LHS", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`globalvar 1 = 1 `)
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+		})
 	})
 
 	t.Run("variable assignment", func(t *testing.T) {
