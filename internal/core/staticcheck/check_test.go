@@ -2069,7 +2069,7 @@ func TestCheck(t *testing.T) {
 
 	})
 
-	t.Run("local variable declaration", func(t *testing.T) {
+	t.Run("local variable declaration: regular", func(t *testing.T) {
 		t.Run("declaration after assignment", func(t *testing.T) {
 			n, src := mustParseCode(`
 				a = 0
@@ -2078,7 +2078,7 @@ func TestCheck(t *testing.T) {
 			decl := parse.FindNode(n, (*parse.LocalVariableDeclarator)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(decl, src, text.FmtInvalidLocalVarDeclAlreadyDeclared("a")),
+				makeError(decl.Left, src, text.FmtInvalidLocalVarDeclAlreadyDeclared("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2091,7 +2091,7 @@ func TestCheck(t *testing.T) {
 			decl := parse.FindNode(n, (*parse.LocalVariableDeclarator)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(decl, src, text.FmtCannotShadowGlobalVariable("a")),
+				makeError(decl.Left, src, text.FmtCannotShadowGlobalVariable("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2104,7 +2104,7 @@ func TestCheck(t *testing.T) {
 			decl := parse.FindNodes(n, (*parse.LocalVariableDeclarator)(nil), nil)[1]
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(decl, src, text.FmtInvalidLocalVarDeclAlreadyDeclared("a")),
+				makeError(decl.Left, src, text.FmtInvalidLocalVarDeclAlreadyDeclared("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2118,7 +2118,7 @@ func TestCheck(t *testing.T) {
 		})
 	})
 
-	t.Run("global variable declaration", func(t *testing.T) {
+	t.Run("global variable declaration: regular", func(t *testing.T) {
 
 		t.Run("shadowing of local variable", func(t *testing.T) {
 			n, src := mustParseCode(`
@@ -2252,6 +2252,61 @@ func TestCheck(t *testing.T) {
 			`)
 			assert.Error(t, err)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+	})
+
+	t.Run("global variable declaration: object destructuration", func(t *testing.T) {
+
+		t.Run("shadowing of local variable", func(t *testing.T) {
+			n, src := mustParseCode(`
+				a = 0
+				globalvar {a} = {}
+			`)
+			destructuration := parse.FindNode(n, (*parse.ObjectDestructuration)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(destructuration.Properties[0], src, text.FmtCannotShadowLocalVariable("a")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("duplicate names", func(t *testing.T) {
+			n, src := mustParseCode(`
+				globalvar {a,a} = {}
+			`)
+			destructuration := parse.FindNode(n, (*parse.ObjectDestructuration)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(destructuration.Properties[1], src, text.FmtInvalidGlobalVarDeclAlreadyDeclared("a")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("duplicate names", func(t *testing.T) {
+			n, src := mustParseCode(`
+				globalvar {a as b,b} = {}
+			`)
+			destructuration := parse.FindNode(n, (*parse.ObjectDestructuration)(nil), nil)
+			newName := destructuration.Properties[1].(*parse.ObjectDestructurationProperty).PropertyName
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(newName, src, text.FmtInvalidGlobalVarDeclAlreadyDeclared("b")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("duplicate declarations", func(t *testing.T) {
+			n, src := mustParseCode(`
+				globalvar {a} = {}
+				globalvar {a} = {}
+			`)
+			destructuration := parse.FindNode(n, (*parse.ObjectDestructuration)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(destructuration.Properties[0], src, text.FmtInvalidGlobalVarDeclAlreadyDeclared("a")),
+			)
+			assert.Equal(t, expectedErr, err)
 		})
 	})
 

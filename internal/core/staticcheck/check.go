@@ -1499,33 +1499,53 @@ func (c *checker) checkGlobalConstDecls(node *parse.GlobalConstantDeclarations, 
 
 func (c *checker) checkLocalVarDecls(node *parse.LocalVariableDeclarations, scopeNode, closestModule parse.Node) parse.TraversalAction {
 	localVars := c.getLocalVarsInScope(scopeNode)
+	globalVariables := c.getModGlobalVars(closestModule)
 
 	for _, decl := range node.Declarations {
-		ident, ok := decl.Left.(*parse.IdentifierLiteral)
-		if !ok { //invalid
+		switch left := decl.Left.(type) {
+		case *parse.IdentifierLiteral:
+			ident := left
+			c.checkLocalVarDecl(ident, localVars, globalVariables)
+		case *parse.ObjectDestructuration:
+			destructuration := left
+			for _, prop := range destructuration.Properties {
+				validProp, ok := prop.(*parse.ObjectDestructurationProperty)
+				if !ok {
+					continue
+				}
+
+				nameNode := validProp.NameNode()
+				c.checkLocalVarDecl(nameNode, localVars, globalVariables)
+			}
+		default:
 			continue
 		}
-		name := ident.Name
-
-		globalVariables := c.getModGlobalVars(closestModule)
-
-		if _, alreadyDefined := globalVariables[name]; alreadyDefined {
-			c.addError(decl, text.FmtCannotShadowGlobalVariable(name))
-			return parse.ContinueTraversal
-		}
-
-		_, alreadyUsed := localVars[name]
-		if alreadyUsed {
-			c.addError(decl, text.FmtInvalidLocalVarDeclAlreadyDeclared(name))
-			return parse.ContinueTraversal
-		}
-		localVars[name] = localVarInfo{}
 	}
 	return parse.ContinueTraversal
 }
 
+func (c *checker) checkLocalVarDecl(
+	node *parse.IdentifierLiteral,
+	localVars map[string]localVarInfo,
+	globalVariables map[string]GlobalVarInfo,
+) {
+	name := node.Name
+	if _, alreadyDefined := globalVariables[name]; alreadyDefined {
+		c.addError(node, text.FmtCannotShadowGlobalVariable(name))
+		return
+	}
+
+	_, alreadyUsed := localVars[name]
+	if alreadyUsed {
+		c.addError(node, text.FmtInvalidLocalVarDeclAlreadyDeclared(name))
+		return
+	}
+
+	localVars[name] = localVarInfo{}
+}
+
 func (c *checker) checkGlobalVarDecls(node *parse.GlobalVariableDeclarations, parentNode, scopeNode, closestModule parse.Node) parse.TraversalAction {
-	globalVars := c.getModGlobalVars(closestModule)
+	globalVariables := c.getModGlobalVars(closestModule)
 
 	//Check the declarations are not misplaced.
 
@@ -1542,40 +1562,62 @@ func (c *checker) checkGlobalVarDecls(node *parse.GlobalVariableDeclarations, pa
 
 	//Check each declaration.
 
+	localVariables := c.getLocalVarsInScope(scopeNode)
+
 	for _, decl := range node.Declarations {
-		ident, ok := decl.Left.(*parse.IdentifierLiteral)
-		if !ok { //invalid
+		switch left := decl.Left.(type) {
+		case *parse.IdentifierLiteral:
+			ident := left
+			c.checkGlobalVarDecl(ident, localVariables, globalVariables, closestModule)
+		case *parse.ObjectDestructuration:
+			destructuration := left
+			for _, prop := range destructuration.Properties {
+				validProp, ok := prop.(*parse.ObjectDestructurationProperty)
+				if !ok {
+					continue
+				}
+
+				nameNode := validProp.NameNode()
+				c.checkGlobalVarDecl(nameNode, localVariables, globalVariables, closestModule)
+			}
+		default:
 			continue
 		}
-		name := ident.Name
-
-		localVariables := c.getLocalVarsInScope(scopeNode)
-
-		if _, alreadyDefined := localVariables[name]; alreadyDefined {
-			c.addError(decl, text.FmtCannotShadowLocalVariable(name))
-			return parse.ContinueTraversal
-		}
-
-		_, alreadyUsed := globalVars[name]
-		if alreadyUsed {
-
-			fnDecls := c.getModFunctionDecls(closestModule)
-			_, isFunc := fnDecls[name]
-
-			msg := ""
-			if isFunc {
-				msg = text.FmtInvalidAssignmentNameIsFuncName(name)
-			} else {
-				msg = text.FmtInvalidGlobalVarDeclAlreadyDeclared(name)
-			}
-
-			c.addError(decl, msg)
-			return parse.ContinueTraversal
-		}
-		globalVars[name] = GlobalVarInfo{}
 	}
 
 	return parse.ContinueTraversal
+}
+
+func (c *checker) checkGlobalVarDecl(
+	ident *parse.IdentifierLiteral,
+	localVariables map[string]localVarInfo,
+	globalVariables map[string]GlobalVarInfo,
+	closestModule parse.Node,
+) {
+	name := ident.Name
+
+	if _, alreadyDefined := localVariables[name]; alreadyDefined {
+		c.addError(ident, text.FmtCannotShadowLocalVariable(name))
+		return
+	}
+
+	_, alreadyUsed := globalVariables[name]
+	if alreadyUsed {
+
+		fnDecls := c.getModFunctionDecls(closestModule)
+		_, isFunc := fnDecls[name]
+
+		msg := ""
+		if isFunc {
+			msg = text.FmtInvalidAssignmentNameIsFuncName(name)
+		} else {
+			msg = text.FmtInvalidGlobalVarDeclAlreadyDeclared(name)
+		}
+
+		c.addError(ident, msg)
+		return
+	}
+	globalVariables[name] = GlobalVarInfo{}
 }
 
 func (c *checker) checkAssignment(node parse.Node, scopeNode, closestModule parse.Node) parse.TraversalAction {
@@ -2300,10 +2342,10 @@ func (c *checker) checkVariable(node *parse.Variable, scopeNode parse.Node, ance
 	return parse.ContinueTraversal
 }
 
-func (c *checker) checkIdentifier(node *parse.IdentifierLiteral, parent, scopeNode, closestModule parse.Node, ancestorChain []parse.Node) parse.TraversalAction {
+func (c *checker) checkIdentifier(ident *parse.IdentifierLiteral, parent, scopeNode, closestModule parse.Node, ancestorChain []parse.Node) parse.TraversalAction {
 
-	if len(node.Name) > MAX_NAME_BYTE_LEN {
-		c.addError(node, text.FmtNameIsTooLong(node.Name))
+	if len(ident.Name) > MAX_NAME_BYTE_LEN {
+		c.addError(ident, text.FmtNameIsTooLong(ident.Name))
 		return parse.ContinueTraversal
 	}
 
@@ -2314,54 +2356,60 @@ func (c *checker) checkIdentifier(node *parse.IdentifierLiteral, parent, scopeNo
 	//we check the parent to know if the identifier refers to a variable
 	switch p := parent.(type) {
 	case *parse.CallExpression:
-		if p.CommandLikeSyntax && !node.IncludedIn(p.Callee) {
+		if p.CommandLikeSyntax && !ident.IncludedIn(p.Callee) {
 			return parse.ContinueTraversal
 
 		}
 	case *parse.FunctionDeclaration:
 		return parse.ContinueTraversal
+	case *parse.LocalVariableDeclarator:
+		if p.Left == ident {
+			return parse.ContinueTraversal
+		}
+	case *parse.ObjectDestructurationProperty:
+		return parse.ContinueTraversal
 	case *parse.ObjectProperty:
-		if p.Key == node {
+		if p.Key == ident {
 			return parse.ContinueTraversal
 		}
 	case *parse.ObjectPatternProperty:
-		if p.Key == node {
+		if p.Key == ident {
 			return parse.ContinueTraversal
 
 		}
 	case *parse.ObjectMetaProperty:
-		if p.Key == node {
+		if p.Key == ident {
 			return parse.ContinueTraversal
 
 		}
 	case *parse.StructDefinition:
-		if p.Name == node {
+		if p.Name == ident {
 			return parse.ContinueTraversal
 
 		}
 
 	case *parse.StructFieldDefinition:
-		if p.Name == node {
+		if p.Name == ident {
 			return parse.ContinueTraversal
 
 		}
 	case *parse.NewExpression:
-		if p.Type == node {
+		if p.Type == ident {
 			return parse.ContinueTraversal
 
 		}
 	case *parse.StructFieldInitialization:
-		if p.Name == node {
+		if p.Name == ident {
 			return parse.ContinueTraversal
 
 		}
 	case *parse.IdentifierMemberExpression:
-		if node != p.Left {
+		if ident != p.Left {
 			return parse.ContinueTraversal
 
 		}
 	case *parse.DynamicMemberExpression:
-		if node != p.Left {
+		if ident != p.Left {
 			return parse.ContinueTraversal
 
 		}
@@ -2369,12 +2417,12 @@ func (c *checker) checkIdentifier(node *parse.IdentifierLiteral, parent, scopeNo
 		return parse.ContinueTraversal
 
 	case *parse.DoubleColonExpression:
-		if node == p.Element {
+		if ident == p.Element {
 			return parse.ContinueTraversal
 
 		}
 	case *parse.DynamicMappingEntry:
-		if node == p.KeyVar || node == p.GroupMatchingVariable {
+		if ident == p.KeyVar || ident == p.GroupMatchingVariable {
 			return parse.ContinueTraversal
 
 		}
@@ -2385,52 +2433,52 @@ func (c *checker) checkIdentifier(node *parse.IdentifierLiteral, parent, scopeNo
 		return parse.ContinueTraversal
 
 	case *parse.XMLOpeningElement:
-		if node == p.Name {
+		if ident == p.Name {
 			return parse.ContinueTraversal
 
 		}
 	case *parse.XMLClosingElement:
-		if node == p.Name {
+		if ident == p.Name {
 			return parse.ContinueTraversal
 
 		}
 	case *parse.XMLAttribute:
-		if node == p.Name {
+		if ident == p.Name {
 			return parse.ContinueTraversal
 
 		}
 	}
 
 	if _, ok := scopeNode.(*parse.ExtendStatement); ok {
-		c.addError(node, text.VARS_NOT_ALLOWED_IN_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES)
+		c.addError(ident, text.VARS_NOT_ALLOWED_IN_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES)
 		return parse.ContinueTraversal
 	}
 
 	if _, ok := scopeNode.(*parse.StructDefinition); ok {
-		c.addError(node, text.VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS)
+		c.addError(ident, text.VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS)
 		return parse.ContinueTraversal
 	}
 
-	if !c.varExists(node.Name, ancestorChain) {
-		if node.Name == "const" {
-			c.addError(node, text.VAR_CONST_NOT_DECLARED_IF_YOU_MEANT_TO_DECLARE_CONSTANTS_GLOBAL_CONST_DECLS_ONLY_SUPPORTED_AT_THE_START_OF_THE_MODULE)
+	if !c.varExists(ident.Name, ancestorChain) {
+		if ident.Name == "const" {
+			c.addError(ident, text.VAR_CONST_NOT_DECLARED_IF_YOU_MEANT_TO_DECLARE_CONSTANTS_GLOBAL_CONST_DECLS_ONLY_SUPPORTED_AT_THE_START_OF_THE_MODULE)
 		} else {
-			c.addError(node, text.FmtVarIsNotDeclared(node.Name))
+			c.addError(ident, text.FmtVarIsNotDeclared(ident.Name))
 		}
 		return parse.ContinueTraversal
 	}
 
 	// if the variable is a global in a function expression or in a mapping entry we capture it
-	if c.doGlobalVarExist(node.Name, closestModule) {
+	if c.doGlobalVarExist(ident.Name, closestModule) {
 		fnDecls := c.getModFunctionDecls(closestModule)
 
-		if fnDecls[node.Name] != nil && fnDecls[node.Name].module == closestModule {
+		if fnDecls[ident.Name] != nil && fnDecls[ident.Name].module == closestModule {
 
 			//If the identifier references a  function then no global declarations (patterns, global variables)
 			//should be located after this reference.
 
 			if _, ok := c.data.firstForbiddenPosForGlobalElementDecls[closestModule]; !ok {
-				topLevelStmt, ok := parse.FindClosestTopLevelStatement(node, ancestorChain)
+				topLevelStmt, ok := parse.FindClosestTopLevelStatement(ident, ancestorChain)
 				if !ok {
 					panic(ErrUnreachable)
 				}
@@ -2438,11 +2486,11 @@ func (c *checker) checkIdentifier(node *parse.IdentifierLiteral, parent, scopeNo
 			}
 		}
 
-		globalVarInfo := c.getModGlobalVars(closestModule)[node.Name]
+		globalVarInfo := c.getModGlobalVars(closestModule)[ident.Name]
 
 		switch scope := scopeNode.(type) {
 		case *parse.FunctionExpression:
-			c.data.addFnCapturedGlobal(scope, node.Name, &globalVarInfo)
+			c.data.addFnCapturedGlobal(scope, ident.Name, &globalVarInfo)
 		case *parse.EmbeddedModule:
 			embeddedModIndex := -1
 			for i, ancestor := range ancestorChain {
@@ -2464,12 +2512,12 @@ func (c *checker) checkIdentifier(node *parse.IdentifierLiteral, parent, scopeNo
 			if ok {
 				parentScopeNode := findClosestScopeContainerNode(ancestorChain[:embeddedModIndex-1])
 				if fnExpr, ok := parentScopeNode.(*parse.FunctionExpression); ok {
-					c.data.addFnCapturedGlobal(fnExpr, node.Name, &globalVarInfo)
+					c.data.addFnCapturedGlobal(fnExpr, ident.Name, &globalVarInfo)
 				}
 			}
 		case *parse.DynamicMappingEntry, *parse.StaticMappingEntry:
 			mappingExpr := findClosest[*parse.MappingExpression](ancestorChain)
-			c.data.addMappingCapturedGlobal(mappingExpr, node.Name)
+			c.data.addMappingCapturedGlobal(mappingExpr, ident.Name)
 		}
 	}
 
