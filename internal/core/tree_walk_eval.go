@@ -484,41 +484,88 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		currentScope := state.CurrentLocalScope()
 
 		for _, decl := range n.Declarations {
-			name := decl.Left.(*parse.IdentifierLiteral).Name
-
 			right, err := TreeWalkEval(decl.Right, state)
 			if err != nil {
 				return nil, err
 			}
-			currentScope[name] = right
+
+			switch left := decl.Left.(type) {
+			case *parse.IdentifierLiteral:
+				name := left.Name
+				currentScope[name] = right
+			case *parse.ObjectDestructuration:
+				for _, prop := range left.Properties {
+					validProp := prop.(*parse.ObjectDestructurationProperty)
+
+					propName := validProp.PropertyName.Name
+					name := validProp.NameNode().Name
+					iprops := right.(IProps)
+
+					var varValue Value
+
+					if validProp.Nillable {
+						if slices.Contains(iprops.PropertyNames(state.Global.Ctx), propName) {
+							//TODO: make thread safe (Time-of-check / time-of-use)
+							varValue = iprops.Prop(state.Global.Ctx, propName)
+						} else {
+							varValue = Nil
+						}
+					} else {
+						varValue = iprops.Prop(state.Global.Ctx, propName)
+					}
+					currentScope[name] = varValue
+				}
+			default:
+				panic(ErrUnreachable)
+			}
 		}
 		return nil, nil
 	case *parse.GlobalVariableDeclarations:
 		for _, decl := range n.Declarations {
-			name := decl.Left.(*parse.IdentifierLiteral).Name
-
-			alreadyDefined := state.Global.Globals.Has(name)
-			if alreadyDefined {
-				if _, ok := state.constantVars[name]; ok {
-					return nil, errors.New("attempt to assign a constant global")
-				}
-
-				err := state.Global.Ctx.CheckHasPermission(GlobalVarPermission{Kind_: permbase.Update, Name: name})
-				if err != nil {
-					return nil, err
-				}
-			} else {
-				err = state.Global.Ctx.CheckHasPermission(GlobalVarPermission{Kind_: permbase.Create, Name: name})
-				if err != nil {
-					return nil, err
-				}
-			}
 
 			right, err := TreeWalkEval(decl.Right, state)
 			if err != nil {
 				return nil, err
 			}
-			state.SetGlobal(name, right, GlobalVar)
+
+			switch left := decl.Left.(type) {
+			case *parse.IdentifierLiteral:
+				name := left.Name
+				err := precheckGlobalVariableDeclaration(name, state)
+				if err != nil {
+					return nil, err
+				}
+				state.SetGlobal(name, right, GlobalVar)
+			case *parse.ObjectDestructuration:
+				for _, prop := range left.Properties {
+					validProp := prop.(*parse.ObjectDestructurationProperty)
+
+					propName := validProp.PropertyName.Name
+					name := validProp.NameNode().Name
+					iprops := right.(IProps)
+
+					var varValue Value
+
+					if validProp.Nillable {
+						if slices.Contains(iprops.PropertyNames(state.Global.Ctx), propName) {
+							//TODO: make thread safe (Time-of-check / time-of-use)
+							varValue = iprops.Prop(state.Global.Ctx, propName)
+						} else {
+							varValue = Nil
+						}
+					} else {
+						varValue = iprops.Prop(state.Global.Ctx, propName)
+					}
+					err := precheckGlobalVariableDeclaration(name, state)
+					if err != nil {
+						return nil, err
+					}
+					state.SetGlobal(name, varValue, GlobalVar)
+				}
+			default:
+				panic(ErrUnreachable)
+			}
+
 		}
 		return nil, nil
 	case *parse.Assignment:
@@ -3602,4 +3649,17 @@ func evalMatchExpression(n *parse.MatchExpression, state *TreeWalkState) (Value,
 	}
 
 	return DEFAULT_SWITCH_MATCH_EXPR_RESULT, nil
+}
+
+func precheckGlobalVariableDeclaration(name string, state *TreeWalkState) error {
+	alreadyDefined := state.Global.Globals.Has(name)
+	if alreadyDefined {
+		if _, ok := state.constantVars[name]; ok {
+			return errors.New("attempt to assign a constant global")
+		}
+
+		return state.Global.Ctx.CheckHasPermission(GlobalVarPermission{Kind_: permbase.Update, Name: name})
+	} else {
+		return state.Global.Ctx.CheckHasPermission(GlobalVarPermission{Kind_: permbase.Create, Name: name})
+	}
 }

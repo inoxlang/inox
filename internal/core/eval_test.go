@@ -1579,6 +1579,34 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				`,
 				result: core.NewWrappedValueList(core.Int(1), core.Int(2)),
 			},
+			{
+				input: `
+					var {} = {}
+					return 1
+				`,
+				result: core.Int(1),
+			},
+			{
+				input: `
+					var {a} = {a: 1}
+					return a
+				`,
+				result: core.Int(1),
+			},
+			{
+				input: `
+					var {a?} = {}
+					return a
+				`,
+				result: core.Nil,
+			},
+			{
+				input: `
+					var {a?} = {a: 1}
+					return a
+				`,
+				result: core.Int(1),
+			},
 		}
 
 		for _, testCase := range testCases {
@@ -1626,6 +1654,34 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					return [a, b]
 				`,
 				result: core.NewWrappedValueList(core.Int(1), core.Int(2)),
+			},
+			{
+				input: `
+					globalvar {} = {}
+					return 1
+				`,
+				result: core.Int(1),
+			},
+			{
+				input: `
+					globalvar {a} = {a: 1}
+					return a
+				`,
+				result: core.Int(1),
+			},
+			{
+				input: `
+					globalvar {a?} = {}
+					return a
+				`,
+				result: core.Nil,
+			},
+			{
+				input: `
+					globalvar {a?} = {a: 1}
+					return a
+				`,
+				result: core.Int(1),
 			},
 		}
 
