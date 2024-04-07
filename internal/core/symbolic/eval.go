@@ -620,10 +620,12 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 			return ANY, nil
 		}
 
-		val := symbolicMemb(left, n.PropertyName.Name, n.Optional, n, state)
+		accessKind := unspecifiedMemberAccess
 		if n.Optional {
-			val = joinValues([]Value{val, Nil})
+			accessKind = optionalMemberAccess
 		}
+
+		val := symbolicMemb(left, n.PropertyName.Name, accessKind, n, state)
 
 		state.SetMostSpecificNodeValue(n.PropertyName, val)
 
@@ -665,7 +667,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 			if prevIdent != nil {
 				state.SetMostSpecificNodeValue(prevIdent, v)
 			}
-			v = symbolicMemb(v, ident.Name, false, n, state)
+			v = symbolicMemb(v, ident.Name, unspecifiedMemberAccess, n, state)
 			prevIdent = ident
 		}
 
@@ -683,7 +685,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 			return ANY, nil
 		}
 
-		return NewDynamicValue(symbolicMemb(iprops, n.PropertyName.Name, false, n, state)), nil
+		return NewDynamicValue(symbolicMemb(iprops, n.PropertyName.Name, unspecifiedMemberAccess, n, state)), nil
 	case *parse.ExtractionExpression:
 		return evalExtractionExpression(n, state, options)
 	case *parse.DoubleColonExpression:
@@ -1362,7 +1364,8 @@ func evalPatternCallExpression(n *parse.PatternCallExpression, state *State) (_ 
 
 func evalLocalVariableDeclarations(n *parse.LocalVariableDeclarations, state *State) (finalErr error) {
 	for _, decl := range n.Declarations {
-		name := decl.Left.(*parse.IdentifierLiteral).Name
+
+		//First we evaluate the type annotation and the right hand side.
 
 		var static Pattern
 		var staticMatching Value
@@ -1424,8 +1427,22 @@ func evalLocalVariableDeclarations(n *parse.LocalVariableDeclarations, state *St
 			}
 		}
 
-		state.setLocal(name, right, static, decl.Left)
-		state.SetMostSpecificNodeValue(decl.Left, right)
+		//Left hand side
+
+		switch left := decl.Left.(type) {
+		case *parse.IdentifierLiteral:
+			ident := left
+			state.setLocal(ident.Name, right, static, decl.Left)
+			state.SetMostSpecificNodeValue(ident, right)
+		case *parse.ObjectDestructuration:
+			areLocalDeclarations := true
+			err := evalObjectDestructuration(left, decl.Right, right, state, areLocalDeclarations)
+			if err != nil {
+				return err
+			}
+		default:
+			continue
+		}
 	}
 	state.SetLocalScopeData(n, state.currentLocalScopeData())
 	return nil
@@ -1433,7 +1450,8 @@ func evalLocalVariableDeclarations(n *parse.LocalVariableDeclarations, state *St
 
 func evalGlobalVariableDeclarations(n *parse.GlobalVariableDeclarations, state *State) (finalErr error) {
 	for _, decl := range n.Declarations {
-		name := decl.Left.(*parse.IdentifierLiteral).Name
+
+		//First we evaluate the type annotation and the right hand side.
 
 		var static Pattern
 		var staticMatching Value
@@ -1492,10 +1510,64 @@ func evalGlobalVariableDeclarations(n *parse.GlobalVariableDeclarations, state *
 			}
 		}
 
-		state.setGlobal(name, right, GlobalVar, decl.Left)
-		state.SetMostSpecificNodeValue(decl.Left, right)
+		//Left hand side
+
+		switch left := decl.Left.(type) {
+		case *parse.IdentifierLiteral:
+			ident := left
+			state.setGlobal(ident.Name, right, GlobalVar, decl.Left)
+			state.SetMostSpecificNodeValue(ident, right)
+		case *parse.ObjectDestructuration:
+			areLocalDeclarations := false
+			err := evalObjectDestructuration(left, decl.Right, right, state, areLocalDeclarations)
+			if err != nil {
+				return err
+			}
+		default:
+			continue
+		}
 	}
 	state.SetGlobalScopeData(n, state.currentGlobalScopeData())
+	return nil
+}
+
+func evalObjectDestructuration(
+	destructuration *parse.ObjectDestructuration,
+	rightNode parse.Node,
+	rightValue Value,
+	state *State,
+	localDeclarations bool,
+) (finalErr error) {
+	rightValue = AsIprops(rightValue)
+	iprops, ok := rightValue.(IProps)
+	if !ok {
+		state.addError(makeSymbolicEvalError(rightNode, state, fmtUnexpectedRhsOfObjectDestructuration(rightValue)))
+	}
+
+	for _, prop := range destructuration.Properties {
+		validProp, ok := prop.(*parse.ObjectDestructurationProperty)
+		if !ok {
+			continue
+		}
+
+		var variableValue Value = ANY
+
+		nameNode := validProp.NameNode()
+		if iprops != nil {
+			accessKind := destructurationMemberAccess
+			if validProp.Nillable {
+				accessKind = optionalDestructurationMemberAccess
+			}
+			variableValue = symbolicMemb(rightValue, nameNode.Name, accessKind, validProp, state)
+		}
+		if localDeclarations {
+			state.setLocal(nameNode.Name, variableValue, nil /* type annotation is ignored */, nameNode)
+		} else {
+			state.setGlobal(nameNode.Name, variableValue, GlobalVar, nameNode)
+		}
+		state.SetMostSpecificNodeValue(nameNode, variableValue)
+	}
+
 	return nil
 }
 
@@ -1796,7 +1868,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 		}
 
 		for _, ident := range lhs.PropertyNames[:len(lhs.PropertyNames)-1] {
-			v = symbolicMemb(v, ident.Name, false, lhs, state)
+			v = symbolicMemb(v, ident.Name, unspecifiedMemberAccess, lhs, state)
 			state.SetMostSpecificNodeValue(ident, v)
 		}
 
@@ -5330,7 +5402,7 @@ func evalExtractionExpression(n *parse.ExtractionExpression, state *State, optio
 			result.entries[name] = ANY_SERIALIZABLE
 			result.static[name] = getStatic(ANY_SERIALIZABLE)
 		} else {
-			result.entries[name] = symbolicMemb(left, name, false, n, state).(Serializable)
+			result.entries[name] = symbolicMemb(left, name, unspecifiedMemberAccess, n, state).(Serializable)
 			result.static[name] = getStatic(result.entries[name])
 		}
 	}
@@ -5923,7 +5995,7 @@ func evalDoubleColonExpression(n *parse.DoubleColonExpression, state *State, opt
 
 		//get actual value of the property.
 
-		memb := symbolicMemb(obj, elementName, false, n, state)
+		memb := symbolicMemb(obj, elementName, unspecifiedMemberAccess, n, state)
 		state.SetMostSpecificNodeValue(n.Element, memb)
 
 		if IsAnyOrAnySerializable(memb) || utils.Ret0(IsSharable(memb)) {
@@ -6543,7 +6615,16 @@ func evalNewExpression(n *parse.NewExpression, state *State, options evalOptions
 	return ANY, nil
 }
 
-func symbolicMemb(value Value, name string, optionalMembExpr bool, node parse.Node, state *State) (result Value) {
+type memberAccessKind int
+
+const (
+	unspecifiedMemberAccess memberAccessKind = iota
+	optionalMemberAccess
+	destructurationMemberAccess
+	optionalDestructurationMemberAccess
+)
+
+func symbolicMemb(value Value, name string, accessKind memberAccessKind, node parse.Node, state *State) (result Value) {
 	//note: the property of a %serializable is not necessarily serializable (example: Go methods)
 
 	pointer, ok := value.(*Pointer)
@@ -6553,7 +6634,7 @@ func symbolicMemb(value Value, name string, optionalMembExpr bool, node parse.No
 			state.addError(makeSymbolicEvalError(node, state, POINTED_VALUE_HAS_NO_PROPERTIES))
 			return ANY
 		}
-		if optionalMembExpr {
+		if accessKind == optionalMemberAccess {
 			state.addError(makeSymbolicEvalError(node, state, OPTIONAL_MEMBER_EXPRS_NOT_ALLOWED_FOR_STRUCT_FIELDS))
 			return ANY
 		}
@@ -6565,45 +6646,59 @@ func symbolicMemb(value Value, name string, optionalMembExpr bool, node parse.No
 		return ANY
 	}
 
+	isOptionalAccess := accessKind == optionalMemberAccess || accessKind == optionalDestructurationMemberAccess
+
 	iprops, ok := AsIprops(value).(IProps)
 	if !ok {
-
 		state.addError(makeSymbolicEvalError(node, state, fmtValueHasNoProperties(value)))
 		return ANY
 	}
 
 	defer func() {
 		e := recover()
+
 		if e != nil {
 			//TODO: add log
 
 			//if err, ok := e.(error); ok && strings.Contains(err.Error(), "nil pointer") {
 			//}
 
-			closest, distance, found := utils.FindClosestString(nil, iprops.PropertyNames(), name, MAX_STRING_SUGGESTION_DIFF)
+			concreteCtx := state.ctx.startingConcreteContext
+			closest, distance, found := utils.FindClosestString(concreteCtx, iprops.PropertyNames(), name, MAX_STRING_SUGGESTION_DIFF)
 			if !found || (len(closest) >= MAX_STRING_SUGGESTION_DIFF && distance >= MAX_STRING_SUGGESTION_DIFF-1) {
 				closest = ""
 			}
 
-			if !optionalMembExpr {
+			if !isOptionalAccess {
 				state.addError(makeSymbolicEvalError(node, state, fmtPropOfDoesNotExist(name, value, closest)))
 			}
 			result = ANY
 		} else {
 			if optIprops, ok := iprops.(OptionalIProps); ok {
-				if !optionalMembExpr && utils.SliceContains(optIprops.OptionalPropertyNames(), name) {
-					state.addError(makeSymbolicEvalError(node, state, fmtPropertyIsOptionalUseOptionalMembExpr(name)))
+				if !isOptionalAccess && utils.SliceContains(optIprops.OptionalPropertyNames(), name) {
+					msg := ""
+					if accessKind == destructurationMemberAccess {
+						msg = fmtPropertyIsOptionalUseAnOptionalDestructuration(name)
+					} else {
+						msg = fmtPropertyIsOptionalUseOptionalMembExpr(name)
+					}
+					state.addError(makeSymbolicEvalError(node, state, msg))
 				}
 			}
 		}
 	}()
 
-	prop := iprops.Prop(name)
-	if prop == nil {
+	propValue := iprops.Prop(name)
+
+	if propValue == nil {
 		state.addError(makeSymbolicEvalError(node, state, "symbolic IProp should panic when a non-existing property is accessed"))
 		return ANY
 	}
-	return prop
+	if isOptionalAccess {
+		propValue = joinValues([]Value{propValue, Nil})
+	}
+
+	return propValue
 }
 
 func handleConstraints(obj *Object, block *parse.InitializationBlock, state *State) error {

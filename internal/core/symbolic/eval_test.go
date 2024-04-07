@@ -984,6 +984,101 @@ func TestSymbolicEval(t *testing.T) {
 			}
 			assert.Equal(t, expectedFn, res)
 		})
+
+		t.Run("object destructuration", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				var {a} = {a: 1}; 
+				return a
+			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, INT_1, res)
+		})
+
+		t.Run("object destructuration (optional) with a property that is optional in the RHS", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				return fn(obj {a?: int}){
+					var {a?} = obj; 
+					return a
+				}
+			`)
+
+			fnExpr := n.Statements[0].(*parse.ReturnStatement).Expr
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+
+			argType := NewInexactObject(
+				map[string]Serializable{
+					"a": ANY_INT,
+				},
+				map[string]struct{}{
+					"a": {},
+				},
+				map[string]Pattern{
+					"a": state.ctx.ResolveNamedPattern("int"),
+				},
+			)
+
+			expectedFn := &InoxFunction{
+				node:           fnExpr,
+				nodeChunk:      n,
+				parameters:     []Value{argType},
+				parameterNames: []string{"obj"},
+				result:         NewMultivalue(ANY_INT, Nil),
+			}
+			assert.Equal(t, expectedFn, res)
+		})
+
+		t.Run("object destructuration with a property that is optional in the RHS", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn(obj {a?: int}){
+					var {a} = obj; 
+					return a
+				}
+			`)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			destructurationProp := parse.FindNode(n, (*parse.ObjectDestructurationProperty)(nil), nil)
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(destructurationProp.NameNode(), state, fmtPropertyIsOptionalUseAnOptionalDestructuration("a")),
+			}, state.errors())
+		})
+
+		t.Run("object destructuration with a property that is no present in the RHS", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				var {a} = {}; 
+			`)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			destructurationProp := parse.FindNode(n, (*parse.ObjectDestructurationProperty)(nil), nil)
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(destructurationProp.NameNode(), state, fmtPropOfDoesNotExist("a", EMPTY_OBJECT, "")),
+			}, state.errors())
+		})
+
+		t.Run("object destructuration with a non-iprops value on the right hand side", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				var {} = 1; 
+			`)
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			decl := parse.FindNode(n, (*parse.LocalVariableDeclarator)(nil), nil)
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(decl.Right, state, fmtUnexpectedRhsOfObjectDestructuration(INT_1)),
+			}, state.errors())
+		})
+
 	})
 
 	t.Run("global variable declaration", func(t *testing.T) {
@@ -1262,6 +1357,18 @@ func TestSymbolicEval(t *testing.T) {
 			}
 			assert.Equal(t, expectedFn, res)
 		})
+
+		t.Run("object destructuration", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				globalvar {a} = {a: 1}; 
+				return a
+			`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, INT_1, res)
+		})
+
 	})
 
 	t.Run("variable assignment", func(t *testing.T) {

@@ -552,6 +552,10 @@ func fmtPropertyIsOptionalUseOptionalMembExpr(name string) string {
 	return fmt.Sprintf("property .%s is optional, you should use an optional member expression: .?%s", name, name)
 }
 
+func fmtPropertyIsOptionalUseAnOptionalDestructuration(name string) string {
+	return fmt.Sprintf("property .%s is optional, you should use an optional destructuration: %s?", name, name)
+}
+
 func fmtExtensionsDoNotProvideTheXProp(name string, suggestion string) string {
 	if suggestion != "" {
 		suggestion = " maybe you meant ." + suggestion
@@ -744,4 +748,8 @@ func fmtDidYouMeanPercentName(name string) string {
 
 func fmtDidYouMeanDollarName(name string) string {
 	return fmt.Sprintf("; did you mean $%s ? In this location local variable names require a leading `$`", name)
+}
+
+func fmtUnexpectedRhsOfObjectDestructuration(rhs Value) string {
+	return fmt.Sprintf("unexpected right hand side of object destructuration: %s; an Inox value containing properties is expected", Stringify(rhs))
 }
