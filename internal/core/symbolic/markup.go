@@ -14,17 +14,17 @@ const (
 var (
 	ANY_MARKUP_ELEM = &MarkupElement{}
 
-	xmlInterpolationCheckingFunctions = map[uintptr] /* go symbolic function pointer*/ MarkupInterpolationCheckingFunction{}
+	markupInterpolationCheckingFunctions = map[uintptr] /* go symbolic function pointer*/ MarkupInterpolationCheckingFunction{}
 )
 
 type MarkupInterpolationCheckingFunction func(n parse.Node, value Value) (errorMsg string)
 
 func RegisterMarkupInterpolationCheckingFunction(factory any, fn MarkupInterpolationCheckingFunction) {
-	xmlInterpolationCheckingFunctions[reflect.ValueOf(factory).Pointer()] = fn
+	markupInterpolationCheckingFunctions[reflect.ValueOf(factory).Pointer()] = fn
 }
 
 func UnregisterMarkupCheckingFunction(factory any) {
-	delete(xmlInterpolationCheckingFunctions, reflect.ValueOf(factory).Pointer())
+	delete(markupInterpolationCheckingFunctions, reflect.ValueOf(factory).Pointer())
 }
 
 // A MarkupElement represents a symbolic MarkupElement.
@@ -75,8 +75,7 @@ func (r *MarkupElement) Test(v Value, state RecTestCallState) bool {
 }
 
 func (r *MarkupElement) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
-	w.WriteName("xml-element")
-	return
+	w.WriteName("markup-element")
 }
 
 func (r *MarkupElement) Writer() *Writer {

@@ -80,8 +80,8 @@ const (
 	NESTED_RECURSIVE_FUNCTION_DECLARATION = "nested recursive function declarations are not allowed"
 	THIS_EXPR_STMT_SYNTAX_IS_NOT_ALLOWED  = "this expression/statement/syntax element is not allowed in this function"
 
-	NAMESPACE_APPLIED_TO_MARKUP_ELEMENT_SHOUD_BE_A_RECORD           = "namespace applied to xml element should be an Inox namespace such as html"
-	MISSING_FACTORY_IN_NAMESPACE_APPLIED_TO_MARKUP_ELEMENT          = "namespace applied to xml has not a " + FROM_MARKUP_FACTORY_NAME + " property"
+	NAMESPACE_APPLIED_TO_MARKUP_ELEMENT_SHOUD_BE_A_RECORD           = "namespace applied to markup element should be an Inox namespace such as html"
+	MISSING_FACTORY_IN_NAMESPACE_APPLIED_TO_MARKUP_ELEMENT          = "namespace applied to markup has not a " + FROM_MARKUP_FACTORY_NAME + " property"
 	FROM_MARKUP_FACTORY_IS_NOT_A_GO_FUNCTION                        = "factory ." + FROM_MARKUP_FACTORY_NAME + " is not a Go function"
 	FROM_MARKUP_FACTORY_SHOULD_NOT_BE_A_SHARED_FUNCTION             = "factory ." + FROM_MARKUP_FACTORY_NAME + " should not be a shared function"
 	FROM_MARKUP_FACTORY_SHOULD_HAVE_AT_LEAST_ONE_NON_VARIADIC_PARAM = "factory ." + FROM_MARKUP_FACTORY_NAME + " should have at least one non variadic parameter"

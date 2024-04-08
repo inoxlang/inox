@@ -79,7 +79,7 @@ func (p *parser) parseMarkupElement(start int32) (_ *MarkupElement, noOrExpected
 
 	p.eatSpaceNewlineComment()
 
-	openingElement := &MarkupOpeningTag{
+	openingTag := &MarkupOpeningTag{
 		NodeBase: NodeBase{
 			Span: NodeSpan{start, p.i},
 		},
@@ -106,9 +106,9 @@ func (p *parser) parseMarkupElement(start int32) (_ *MarkupElement, noOrExpected
 			if !terminated {
 				unterminatedHyperscriptAttribute = true
 			}
-			openingElement.Attributes = append(openingElement.Attributes, attr)
+			openingTag.Attributes = append(openingTag.Attributes, attr)
 			p.eatSpaceNewlineComment()
-			openingElement.Span.End = p.i
+			openingTag.Span.End = p.i
 			continue
 		}
 		unterminatedHyperscriptAttribute = false
@@ -116,7 +116,7 @@ func (p *parser) parseMarkupElement(start int32) (_ *MarkupElement, noOrExpected
 		name, isMissingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
 
 		if isMissingExpr {
-			openingElement.Attributes = append(openingElement.Attributes, &MarkupAttribute{
+			openingTag.Attributes = append(openingTag.Attributes, &MarkupAttribute{
 				NodeBase: NodeBase{
 					Span: name.Base().Span,
 				},
@@ -150,7 +150,7 @@ func (p *parser) parseMarkupElement(start int32) (_ *MarkupElement, noOrExpected
 
 			value, isMissingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
 
-			openingElement.Attributes = append(openingElement.Attributes, &MarkupAttribute{
+			openingTag.Attributes = append(openingTag.Attributes, &MarkupAttribute{
 				NodeBase: NodeBase{
 					Span: NodeSpan{name.Base().Span.Start, p.i},
 				},
@@ -168,13 +168,13 @@ func (p *parser) parseMarkupElement(start int32) (_ *MarkupElement, noOrExpected
 			}
 		} else {
 
-			openingElement.Attributes = append(openingElement.Attributes, &MarkupAttribute{
+			openingTag.Attributes = append(openingTag.Attributes, &MarkupAttribute{
 				NodeBase: NodeBase{
 					Span: NodeSpan{name.Base().Span.Start, p.i},
 				},
 				Name: name,
 			})
-			openingElement.Span.End = p.i
+			openingTag.Span.End = p.i
 		}
 
 		p.eatSpaceNewlineComment()
@@ -197,7 +197,7 @@ func (p *parser) parseMarkupElement(start int32) (_ *MarkupElement, noOrExpected
 
 	if p.i >= p.len || (p.s[p.i] != '>' && p.s[p.i] != '/') {
 		if !unterminatedHyperscriptAttribute { //Avoid reporting two errors.
-			openingElement.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_OPENING_MARKUP_TAG_MISSING_CLOSING}
+			openingTag.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_OPENING_MARKUP_TAG_MISSING_CLOSING}
 		}
 
 		return &MarkupElement{
@@ -206,7 +206,7 @@ func (p *parser) parseMarkupElement(start int32) (_ *MarkupElement, noOrExpected
 				parsingErr,
 				false,
 			},
-			Opening:                 openingElement,
+			Opening:                 openingTag,
 			EstimatedRawElementType: estimatedRawElementType,
 		}, noOrExpectedClosingTag
 	}
@@ -219,9 +219,9 @@ func (p *parser) parseMarkupElement(start int32) (_ *MarkupElement, noOrExpected
 		if p.i >= p.len-1 || p.s[p.i+1] != '>' {
 			p.tokens = append(p.tokens, Token{Type: SLASH, Span: NodeSpan{p.i, p.i + 1}})
 			p.i++
-			openingElement.Span.End = p.i
+			openingTag.Span.End = p.i
 
-			openingElement.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_SELF_CLOSING_MARKUP_TAG_MISSING_CLOSING}
+			openingTag.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_SELF_CLOSING_MARKUP_TAG_MISSING_CLOSING}
 
 			return &MarkupElement{
 				NodeBase: NodeBase{
@@ -229,7 +229,7 @@ func (p *parser) parseMarkupElement(start int32) (_ *MarkupElement, noOrExpected
 					parsingErr,
 					false,
 				},
-				Opening:                 openingElement,
+				Opening:                 openingTag,
 				EstimatedRawElementType: estimatedRawElementType,
 			}, noOrExpectedClosingTag
 		}
@@ -237,7 +237,7 @@ func (p *parser) parseMarkupElement(start int32) (_ *MarkupElement, noOrExpected
 		p.tokens = append(p.tokens, Token{Type: SELF_CLOSING_TAG_TERMINATOR, Span: NodeSpan{p.i, p.i + 2}})
 		p.i += 2
 
-		openingElement.Span.End = p.i
+		openingTag.Span.End = p.i
 
 		return &MarkupElement{
 			NodeBase: NodeBase{
@@ -245,7 +245,7 @@ func (p *parser) parseMarkupElement(start int32) (_ *MarkupElement, noOrExpected
 				parsingErr,
 				false,
 			},
-			Opening:                 openingElement,
+			Opening:                 openingTag,
 			Closing:                 nil,
 			Children:                nil,
 			EstimatedRawElementType: estimatedRawElementType,
@@ -254,7 +254,7 @@ func (p *parser) parseMarkupElement(start int32) (_ *MarkupElement, noOrExpected
 
 	p.tokens = append(p.tokens, Token{Type: GREATER_THAN, SubType: MARKUP_TAG_CLOSING_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
 	p.i++
-	openingElement.Span.End = p.i
+	openingTag.Span.End = p.i
 
 	//Children
 
@@ -281,7 +281,7 @@ func (p *parser) parseMarkupElement(start int32) (_ *MarkupElement, noOrExpected
 		rawElementText = string(p.s[rawStart:rawEnd])
 	} else {
 		var err *ParsingError
-		children, regionHeaders, err, allChildrenHaveMatchingClosingTag = p.parseXMLChildren(singleBracketInterpolations)
+		children, regionHeaders, err, allChildrenHaveMatchingClosingTag = p.parseMarkupChildren(singleBracketInterpolations)
 		parsingErr = err
 	}
 
@@ -298,7 +298,7 @@ func (p *parser) parseMarkupElement(start int32) (_ *MarkupElement, noOrExpected
 				err,
 				false,
 			},
-			Opening:                 openingElement,
+			Opening:                 openingTag,
 			RegionHeaders:           regionHeaders,
 			Children:                children,
 			RawElementContent:       rawElementText,
@@ -310,29 +310,29 @@ func (p *parser) parseMarkupElement(start int32) (_ *MarkupElement, noOrExpected
 
 	//Closing element.
 
-	closingElemStart := p.i
+	closingTagStart := p.i
 	p.tokens = append(p.tokens, Token{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{p.i, p.i + 2}})
 	p.i += 2
 
 	closingName, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
 
-	closingElement := &MarkupClosingTag{
+	closingTag := &MarkupClosingTag{
 		NodeBase: NodeBase{
-			Span: NodeSpan{closingElemStart, p.i},
+			Span: NodeSpan{closingTagStart, p.i},
 		},
 		Name: closingName,
 	}
 
 	if closing, ok := closingName.(*IdentifierLiteral); !ok {
-		closingElement.Err = &ParsingError{UnspecifiedParsingError, INVALID_TAG_NAME}
+		closingTag.Err = &ParsingError{UnspecifiedParsingError, INVALID_TAG_NAME}
 	} else if closing.Name != openingIdent.Name {
-		closingElement.Err = &ParsingError{UnspecifiedParsingError, fmtExpectedClosingTag(openingIdent.Name)}
+		closingTag.Err = &ParsingError{UnspecifiedParsingError, fmtExpectedClosingTag(openingIdent.Name)}
 		noOrExpectedClosingTag = false
 	}
 
 	if p.i >= p.len || p.s[p.i] != '>' {
-		if closingElement.Err == nil {
-			closingElement.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_CLOSING_MARKUP_TAG_MISSING_CLOSING_DELIM}
+		if closingTag.Err == nil {
+			closingTag.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_CLOSING_MARKUP_TAG_MISSING_CLOSING_DELIM}
 		}
 
 		return &MarkupElement{
@@ -341,8 +341,8 @@ func (p *parser) parseMarkupElement(start int32) (_ *MarkupElement, noOrExpected
 				parsingErr,
 				false,
 			},
-			Opening:                 openingElement,
-			Closing:                 closingElement,
+			Opening:                 openingTag,
+			Closing:                 closingTag,
 			RegionHeaders:           regionHeaders,
 			Children:                children,
 			RawElementContent:       rawElementText,
@@ -354,7 +354,7 @@ func (p *parser) parseMarkupElement(start int32) (_ *MarkupElement, noOrExpected
 
 	p.tokens = append(p.tokens, Token{Type: GREATER_THAN, SubType: MARKUP_TAG_CLOSING_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
 	p.i++
-	closingElement.Span.End = p.i
+	closingTag.Span.End = p.i
 
 	result := &MarkupElement{
 		NodeBase: NodeBase{
@@ -362,8 +362,8 @@ func (p *parser) parseMarkupElement(start int32) (_ *MarkupElement, noOrExpected
 			parsingErr,
 			false,
 		},
-		Opening:                 openingElement,
-		Closing:                 closingElement,
+		Opening:                 openingTag,
+		Closing:                 closingTag,
 		RegionHeaders:           regionHeaders,
 		Children:                children,
 		RawElementContent:       rawElementText,
@@ -469,7 +469,7 @@ func (p *parser) parseHyperscriptAttribute(start int32) (attr *HyperscriptAttrib
 	return
 }
 
-func (p *parser) parseXMLChildren(singleBracketInterpolations bool) (_ []Node, _ []*AnnotatedRegionHeader, _ *ParsingError, allChildrenHaveMatchingClosingTag bool) {
+func (p *parser) parseMarkupChildren(singleBracketInterpolations bool) (_ []Node, _ []*AnnotatedRegionHeader, _ *ParsingError, allChildrenHaveMatchingClosingTag bool) {
 	p.panicIfContextDone()
 
 	allChildrenHaveMatchingClosingTag = true

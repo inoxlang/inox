@@ -172,9 +172,9 @@ func GetNodeColorizations(chunk *parse.Chunk, lightMode bool) []ColorizationInfo
 		case *parse.IdentifierLiteral:
 			var colorSeq []byte
 			if openingElem, ok := parent.(*parse.MarkupOpeningTag); ok && openingElem.Name == n {
-				colorSeq = colors.XmlTagName
+				colorSeq = colors.MarkupTagName
 			} else if _, ok := parent.(*parse.MarkupClosingTag); ok {
-				colorSeq = colors.XmlTagName
+				colorSeq = colors.MarkupTagName
 			} else {
 				colorSeq = colors.IdentifierLiteral
 			}

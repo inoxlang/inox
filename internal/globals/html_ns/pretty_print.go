@@ -40,7 +40,7 @@ func (n *HTMLNode) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, 
 		if config.Colorize {
 			switch token.Type {
 			case chroma.NameTag:
-				w.Write(config.Colors.XmlTagName)
+				w.Write(config.Colors.MarkupTagName)
 			case chroma.Punctuation:
 				w.Write(config.Colors.DiscreteColor)
 			case chroma.LiteralString:

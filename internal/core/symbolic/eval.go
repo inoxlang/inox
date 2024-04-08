@@ -5896,7 +5896,7 @@ func evalMarkupExpression(n *parse.MarkupExpression, state *State, options evalO
 			defer func() {
 				state.checkMarkupInterpolation = checkMarkupInterpolation
 			}()
-			state.checkMarkupInterpolation = xmlInterpolationCheckingFunctions[reflect.ValueOf(goFn.fn).Pointer()]
+			state.checkMarkupInterpolation = markupInterpolationCheckingFunctions[reflect.ValueOf(goFn.fn).Pointer()]
 		}
 
 		elem, err := symbolicEval(n.Element, state)

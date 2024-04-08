@@ -40,7 +40,7 @@ func (p *parser) parseMarkupPatternExpression(prefixed bool) *MarkupPatternExpre
 		}
 	}
 
-	topElem, _ := p.parseXMLPatternElement(p.i)
+	topElem, _ := p.parseMarkupPatternElement(p.i)
 
 	return &MarkupPatternExpression{
 		NodeBase: NodeBase{Span: NodeSpan{start, p.i}},
@@ -48,7 +48,7 @@ func (p *parser) parseMarkupPatternExpression(prefixed bool) *MarkupPatternExpre
 	}
 }
 
-func (p *parser) parseXMLPatternElement(start int32) (_ *MarkupPatternElement, noOrExpectedClosingTag bool) {
+func (p *parser) parseMarkupPatternElement(start int32) (_ *MarkupPatternElement, noOrExpectedClosingTag bool) {
 	p.panicIfContextDone()
 
 	noOrExpectedClosingTag = true
@@ -82,7 +82,7 @@ func (p *parser) parseXMLPatternElement(start int32) (_ *MarkupPatternElement, n
 	// 	parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_TAG_NAME}
 	// }
 
-	openingElement := &MarkupPatternOpeningTag{
+	openingTag := &MarkupPatternOpeningTag{
 		NodeBase: NodeBase{
 			Span: NodeSpan{start, p.i},
 		},
@@ -108,18 +108,18 @@ func (p *parser) parseXMLPatternElement(start int32) (_ *MarkupPatternElement, n
 		if spaceCount == 0 {
 			switch p.s[p.i] {
 			case OPTIONAL_MARKUP_ELEMENT_QUANTIFIER_RUNE:
-				openingElement.Quantifier = OptionalMarkupElement
+				openingTag.Quantifier = OptionalMarkupElement
 			case ONE_OR_MORE_MARKUP_ELEMENT_QUANTIFIER_RUNE:
-				openingElement.Quantifier = OneOrMoreMarkupElements
+				openingTag.Quantifier = OneOrMoreMarkupElements
 			case ZERO_OR_MORE_MARKUP_ELEMENT_QUANTIFIER_RUNE:
-				openingElement.Quantifier = ZeroOrMoreMarkupElements
+				openingTag.Quantifier = ZeroOrMoreMarkupElements
 			}
 		} else {
 			p.tokens = append(p.tokens, Token{Type: UNEXPECTED_CHAR, Raw: string(p.s[p.i]), Span: NodeSpan{p.i, p.i + 1}})
-			openingElement.Err = &ParsingError{UnspecifiedParsingError, THERE_SHOULD_NOT_BE_SPACE_BETWEEN_THE_TAG_NAME_AND_THE_QUANTIFIER}
+			openingTag.Err = &ParsingError{UnspecifiedParsingError, THERE_SHOULD_NOT_BE_SPACE_BETWEEN_THE_TAG_NAME_AND_THE_QUANTIFIER}
 		}
 		p.i++
-		openingElement.Span.End = p.i
+		openingTag.Span.End = p.i
 	}
 
 	p.eatSpaceNewlineComment()
@@ -133,7 +133,7 @@ func (p *parser) parseXMLPatternElement(start int32) (_ *MarkupPatternElement, n
 		p.inPattern = true
 
 		if isMissingExpr {
-			openingElement.Attributes = append(openingElement.Attributes, &MarkupAttribute{
+			openingTag.Attributes = append(openingTag.Attributes, &MarkupAttribute{
 				NodeBase: NodeBase{
 					Span: name.Base().Span,
 				},
@@ -167,7 +167,7 @@ func (p *parser) parseXMLPatternElement(start int32) (_ *MarkupPatternElement, n
 
 			value, isMissingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
 
-			openingElement.Attributes = append(openingElement.Attributes, &MarkupAttribute{
+			openingTag.Attributes = append(openingTag.Attributes, &MarkupAttribute{
 				NodeBase: NodeBase{
 					Span: NodeSpan{name.Base().Span.Start, p.i},
 				},
@@ -185,13 +185,13 @@ func (p *parser) parseXMLPatternElement(start int32) (_ *MarkupPatternElement, n
 			}
 		} else {
 
-			openingElement.Attributes = append(openingElement.Attributes, &MarkupAttribute{
+			openingTag.Attributes = append(openingTag.Attributes, &MarkupAttribute{
 				NodeBase: NodeBase{
 					Span: NodeSpan{name.Base().Span.Start, p.i},
 				},
 				Name: name,
 			})
-			openingElement.Span.End = p.i
+			openingTag.Span.End = p.i
 		}
 
 		p.eatSpaceNewlineComment()
@@ -213,11 +213,11 @@ func (p *parser) parseXMLPatternElement(start int32) (_ *MarkupPatternElement, n
 	//Handle unterminated opening tags.
 
 	if p.i >= p.len || (p.s[p.i] != '>' && p.s[p.i] != '/') {
-		openingElement.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_OPENING_MARKUP_TAG_MISSING_CLOSING}
+		openingTag.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_OPENING_MARKUP_TAG_MISSING_CLOSING}
 
 		return &MarkupPatternElement{
 			NodeBase:                NodeBase{Span: NodeSpan{start, p.i}},
-			Opening:                 openingElement,
+			Opening:                 openingTag,
 			EstimatedRawElementType: estimatedRawElementType,
 		}, noOrExpectedClosingTag
 	}
@@ -230,9 +230,9 @@ func (p *parser) parseXMLPatternElement(start int32) (_ *MarkupPatternElement, n
 		if p.i >= p.len-1 || p.s[p.i+1] != '>' {
 			p.tokens = append(p.tokens, Token{Type: SLASH, Span: NodeSpan{p.i, p.i + 1}})
 			p.i++
-			openingElement.Span.End = p.i
+			openingTag.Span.End = p.i
 
-			openingElement.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_SELF_CLOSING_MARKUP_TAG_MISSING_CLOSING}
+			openingTag.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_SELF_CLOSING_MARKUP_TAG_MISSING_CLOSING}
 
 			return &MarkupPatternElement{
 				NodeBase: NodeBase{
@@ -240,7 +240,7 @@ func (p *parser) parseXMLPatternElement(start int32) (_ *MarkupPatternElement, n
 					parsingErr,
 					false,
 				},
-				Opening:                 openingElement,
+				Opening:                 openingTag,
 				EstimatedRawElementType: estimatedRawElementType,
 			}, noOrExpectedClosingTag
 		}
@@ -248,7 +248,7 @@ func (p *parser) parseXMLPatternElement(start int32) (_ *MarkupPatternElement, n
 		p.tokens = append(p.tokens, Token{Type: SELF_CLOSING_TAG_TERMINATOR, Span: NodeSpan{p.i, p.i + 2}})
 		p.i += 2
 
-		openingElement.Span.End = p.i
+		openingTag.Span.End = p.i
 
 		return &MarkupPatternElement{
 			NodeBase: NodeBase{
@@ -256,7 +256,7 @@ func (p *parser) parseXMLPatternElement(start int32) (_ *MarkupPatternElement, n
 				parsingErr,
 				false,
 			},
-			Opening:                 openingElement,
+			Opening:                 openingTag,
 			Closing:                 nil,
 			Children:                nil,
 			EstimatedRawElementType: estimatedRawElementType,
@@ -265,7 +265,7 @@ func (p *parser) parseXMLPatternElement(start int32) (_ *MarkupPatternElement, n
 
 	p.tokens = append(p.tokens, Token{Type: GREATER_THAN, SubType: MARKUP_TAG_CLOSING_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
 	p.i++
-	openingElement.Span.End = p.i
+	openingTag.Span.End = p.i
 
 	//Children
 
@@ -292,7 +292,7 @@ func (p *parser) parseXMLPatternElement(start int32) (_ *MarkupPatternElement, n
 		rawElementText = string(p.s[rawStart:rawEnd])
 	} else {
 		var err *ParsingError
-		children, regionHeaders, err, allChildrenHaveMatchingClosingTag = p.parseXMLPatternChildren(singleBracketInterpolations)
+		children, regionHeaders, err, allChildrenHaveMatchingClosingTag = p.parseMarkupPatternChildren(singleBracketInterpolations)
 		parsingErr = err
 	}
 
@@ -309,7 +309,7 @@ func (p *parser) parseXMLPatternElement(start int32) (_ *MarkupPatternElement, n
 				err,
 				false,
 			},
-			Opening:                 openingElement,
+			Opening:                 openingTag,
 			RegionHeaders:           regionHeaders,
 			Children:                children,
 			RawElementContent:       rawElementText,
@@ -321,29 +321,29 @@ func (p *parser) parseXMLPatternElement(start int32) (_ *MarkupPatternElement, n
 
 	//Closing element.
 
-	closingElemStart := p.i
+	closingTagStart := p.i
 	p.tokens = append(p.tokens, Token{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{p.i, p.i + 2}})
 	p.i += 2
 
 	closingName, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
 
-	closingElement := &MarkupPatternClosingTag{
+	closingTag := &MarkupPatternClosingTag{
 		NodeBase: NodeBase{
-			Span: NodeSpan{closingElemStart, p.i},
+			Span: NodeSpan{closingTagStart, p.i},
 		},
 		Name: closingName,
 	}
 
 	if closing, ok := closingName.(*PatternIdentifierLiteral); !ok {
-		closingElement.Err = &ParsingError{UnspecifiedParsingError, INVALID_TAG_NAME}
+		closingTag.Err = &ParsingError{UnspecifiedParsingError, INVALID_TAG_NAME}
 	} else if closing.Name != openingIdent.Name {
-		closingElement.Err = &ParsingError{UnspecifiedParsingError, fmtExpectedClosingTag(openingIdent.Name)}
+		closingTag.Err = &ParsingError{UnspecifiedParsingError, fmtExpectedClosingTag(openingIdent.Name)}
 		noOrExpectedClosingTag = false
 	}
 
 	if p.i >= p.len || p.s[p.i] != '>' {
-		if closingElement.Err == nil {
-			closingElement.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_CLOSING_MARKUP_TAG_MISSING_CLOSING_DELIM}
+		if closingTag.Err == nil {
+			closingTag.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_CLOSING_MARKUP_TAG_MISSING_CLOSING_DELIM}
 		}
 
 		return &MarkupPatternElement{
@@ -352,8 +352,8 @@ func (p *parser) parseXMLPatternElement(start int32) (_ *MarkupPatternElement, n
 				parsingErr,
 				false,
 			},
-			Opening:                 openingElement,
-			Closing:                 closingElement,
+			Opening:                 openingTag,
+			Closing:                 closingTag,
 			RegionHeaders:           regionHeaders,
 			Children:                children,
 			RawElementContent:       rawElementText,
@@ -365,7 +365,7 @@ func (p *parser) parseXMLPatternElement(start int32) (_ *MarkupPatternElement, n
 
 	p.tokens = append(p.tokens, Token{Type: GREATER_THAN, SubType: MARKUP_TAG_CLOSING_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
 	p.i++
-	closingElement.Span.End = p.i
+	closingTag.Span.End = p.i
 
 	result := &MarkupPatternElement{
 		NodeBase: NodeBase{
@@ -373,8 +373,8 @@ func (p *parser) parseXMLPatternElement(start int32) (_ *MarkupPatternElement, n
 			parsingErr,
 			false,
 		},
-		Opening:                 openingElement,
-		Closing:                 closingElement,
+		Opening:                 openingTag,
+		Closing:                 closingTag,
 		RegionHeaders:           regionHeaders,
 		Children:                children,
 		RawElementContent:       rawElementText,
@@ -386,7 +386,7 @@ func (p *parser) parseXMLPatternElement(start int32) (_ *MarkupPatternElement, n
 	return result, noOrExpectedClosingTag
 }
 
-func (p *parser) parseXMLPatternChildren(singleBracketInterpolations bool) (_ []Node, _ []*AnnotatedRegionHeader, _ *ParsingError, allChildrenHaveMatchingClosingTag bool) {
+func (p *parser) parseMarkupPatternChildren(singleBracketInterpolations bool) (_ []Node, _ []*AnnotatedRegionHeader, _ *ParsingError, allChildrenHaveMatchingClosingTag bool) {
 	p.panicIfContextDone()
 
 	allChildrenHaveMatchingClosingTag = true
@@ -567,7 +567,7 @@ children_parsing_loop:
 
 			//Child element
 
-			child, noOrExpectedClosingTag := p.parseXMLPatternElement(p.i)
+			child, noOrExpectedClosingTag := p.parseMarkupPatternElement(p.i)
 			children = append(children, child)
 			childStart = p.i
 

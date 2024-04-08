@@ -5170,7 +5170,7 @@ func TestCheck(t *testing.T) {
 
 	})
 
-	t.Run("xml element", func(t *testing.T) {
+	t.Run("markup element", func(t *testing.T) {
 
 		t.Run("no variable used in elements", func(t *testing.T) {
 			n, src := mustParseCode(`html<div a=1></div>`)
@@ -5193,7 +5193,7 @@ func TestCheck(t *testing.T) {
 		})
 	})
 
-	t.Run("xml pattern", func(t *testing.T) {
+	t.Run("markup pattern", func(t *testing.T) {
 		t.Run("no quantifiers, attributes nor wildcards", func(t *testing.T) {
 			n, src := mustParseCode(`%<div></div>`)
 

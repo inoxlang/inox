@@ -586,7 +586,7 @@ func TestFormat(t *testing.T) {
 			},
 		},
 
-		//xml attributes
+		//markup attributes
 
 		{
 			{
@@ -609,7 +609,7 @@ func TestFormat(t *testing.T) {
 			},
 		},
 
-		//single-line xml interpolations
+		//single-line markup interpolations
 		{
 			{
 				"manifest {}",
@@ -621,7 +621,7 @@ func TestFormat(t *testing.T) {
 			},
 		},
 
-		//multi-line xml interpolations should not be updated
+		//multi-line markup interpolations should not be updated
 		{
 			{
 				"manifest {}",
