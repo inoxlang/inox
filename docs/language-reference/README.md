@@ -15,7 +15,7 @@
 - [Functions](./functions.md)
 - [Patterns](./patterns.md)
 - [Extensions](./extensions.md)
-- [XML Expressions](./xml-expressions.md)
+- [Markup Expressions (HTML)](./markup-expressions.md)
 - [Concurrency](./concurrency.md)
 
 ## Module-level Features And Components

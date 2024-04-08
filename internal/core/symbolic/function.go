@@ -20,7 +20,6 @@ const (
 var (
 	ANY_INOX_FUNC = &InoxFunction{}
 	ANY_FUNC      = &Function{}
-
 )
 
 // An InoxFunction represents a symbolic InoxFunction.
@@ -696,7 +695,7 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult Value, mu
 		switch c := callLikeNode.(type) {
 		case *parse.CallExpression:
 			argumentNodes = c.Arguments
-		case *parse.XMLExpression:
+		case *parse.MarkupExpression:
 			argumentNodes = []parse.Node{c.Element}
 		}
 

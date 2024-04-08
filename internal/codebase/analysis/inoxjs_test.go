@@ -90,7 +90,7 @@ func TestAnalyzeInoxjs(t *testing.T) {
 		assert.True(t, result.IsInoxComponentLibUsed)
 	})
 
-	t.Run("css scope inline: <style> element of XML expression", func(t *testing.T) {
+	t.Run("css scope inline: <style> element of markup expression", func(t *testing.T) {
 		ctx := setup()
 		defer ctx.CancelGracefully()
 		fls := ctx.GetFileSystem()
@@ -114,7 +114,7 @@ func TestAnalyzeInoxjs(t *testing.T) {
 		assert.True(t, result.IsCssScopeInlineUsed)
 	})
 
-	t.Run("css scope inline: <style> not element of XML expression", func(t *testing.T) {
+	t.Run("css scope inline: <style> not element of markup expression", func(t *testing.T) {
 		ctx := setup()
 		defer ctx.CancelGracefully()
 		fls := ctx.GetFileSystem()

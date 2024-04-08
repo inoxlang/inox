@@ -2609,8 +2609,8 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		return String(selector.String()), nil
 	case parse.SimpleValueLiteral:
 		return EvalSimpleValueLiteral(n, state.Global)
-	case *parse.XMLExpression:
-		xmlElem, err := TreeWalkEval(n.Element, state)
+	case *parse.MarkupExpression:
+		markupElem, err := TreeWalkEval(n.Element, state)
 		if err != nil {
 			return nil, err
 		}
@@ -2631,17 +2631,17 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		}
 
 		ns := namespace.(*Namespace)
-		factory := ns.Prop(state.Global.Ctx, symbolic.FROM_XML_FACTORY_NAME).(*GoFunction)
+		factory := ns.Prop(state.Global.Ctx, symbolic.FROM_MARKUP_FACTORY_NAME).(*GoFunction)
 
-		return factory.Call([]any{xmlElem}, state.Global, nil, false, false)
-	case *parse.XMLElement:
+		return factory.Call([]any{markupElem}, state.Global, nil, false, false)
+	case *parse.MarkupElement:
 		name := n.Opening.GetName()
 
-		var attrs []XMLAttribute
+		var attrs []MarkupAttribute
 
 		for _, attrNode := range n.Opening.Attributes {
-			var attr XMLAttribute
-			if regularAttr, ok := attrNode.(*parse.XMLAttribute); ok {
+			var attr MarkupAttribute
+			if regularAttr, ok := attrNode.(*parse.MarkupAttribute); ok {
 				attr.name = regularAttr.GetName()
 				if regularAttr.Value != nil {
 					attrValue, err := TreeWalkEval(regularAttr.Value, state)
@@ -2650,7 +2650,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 					}
 					attr.value = attrValue
 				} else {
-					attr.value = DEFAULT_XML_ATTR_VALUE
+					attr.value = DEFAULT_MARKUP_ATTR_VALUE
 				}
 			} else {
 				shorthand := attrNode.(*parse.HyperscriptAttributeShorthand)
@@ -2664,7 +2664,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		var children []Value
 
 		if n.RawElementContent != "" {
-			return NewRawTextXmlElement(name, attrs, n.RawElementContent), nil
+			return NewRawTextMarkupElement(name, attrs, n.RawElementContent), nil
 		}
 
 		for _, child := range n.Children {
@@ -2675,11 +2675,11 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			children = append(children, childValue)
 		}
 
-		return NewXmlElement(name, attrs, children), nil
-	case *parse.XMLText:
+		return NewMarkupElement(name, attrs, children), nil
+	case *parse.MarkupText:
 		//we assume factories will properly escape the string.
 		return String(n.Value), nil
-	case *parse.XMLInterpolation:
+	case *parse.MarkupInterpolation:
 		val, err := TreeWalkEval(n.Expr, state)
 		if err != nil {
 			return nil, err

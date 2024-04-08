@@ -24,7 +24,7 @@ func IsParseHypercriptRegistered() bool {
 	return parseHyperscript != nil
 }
 
-func (p *parser) parseContentOfRawXMLElement(element *XMLElement) {
+func (p *parser) parseContentOfRawMarkupElement(element *MarkupElement) {
 
 	ident, ok := element.Opening.Name.(*IdentifierLiteral)
 	if !ok {

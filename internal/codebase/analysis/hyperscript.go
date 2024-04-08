@@ -20,7 +20,7 @@ func (a *analyzer) addUsedHyperscriptFeaturesAndCommands(node parse.Node) {
 		} else if node.HyperscriptParsingError != nil {
 			tokens = append(tokens, node.HyperscriptParsingError.Tokens...)
 		}
-	case *parse.XMLElement:
+	case *parse.MarkupElement:
 		if node.EstimatedRawElementType == parse.HyperscriptScript {
 			result, ok := node.RawElementParsingResult.(*hscode.ParsingResult)
 			if ok {

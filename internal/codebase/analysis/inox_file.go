@@ -51,14 +51,14 @@ func (a *analyzer) preAnalyzeInoxFile(path string, fileContent string, chunk *pa
 	parse.Walk(chunk, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
 
 		switch node := node.(type) {
-		//XML
-		case *parse.XMLAttribute:
-			a.preAnalyzeXmlAttribute(node)
+		//markup
+		case *parse.MarkupAttribute:
+			a.preAnalyzeMarkupAttribute(node)
 		case *parse.HyperscriptAttributeShorthand:
 			a.preAnalyzeHyperscriptAtributeShortand(node)
-		case *parse.XMLElement:
-			a.preAnalyzeXmlElement(node)
-		case *parse.XMLText:
+		case *parse.MarkupElement:
+			a.preAnalyzeMarkupElement(node)
+		case *parse.MarkupText:
 			if strings.Contains(node.Value, inoxjs.TEXT_INTERPOLATION_OPENING_DELIMITER) && !a.result.IsInoxComponentLibUsed {
 				a.result.IsInoxComponentLibUsed = true
 				a.result.UsedInoxJsLibs = append(a.result.UsedInoxJsLibs, inoxjs.INOX_COMPONENT_LIB_NAME)

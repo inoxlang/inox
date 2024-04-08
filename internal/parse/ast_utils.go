@@ -659,10 +659,10 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 	case *CssAttributeSelector:
 		walk(n.AttributeName, node, ancestorChain, fn, afterFn)
 		walk(n.Value, node, ancestorChain, fn, afterFn)
-	case *XMLExpression:
+	case *MarkupExpression:
 		walk(n.Namespace, node, ancestorChain, fn, afterFn)
 		walk(n.Element, node, ancestorChain, fn, afterFn)
-	case *XMLElement:
+	case *MarkupElement:
 		walk(n.Opening, node, ancestorChain, fn, afterFn)
 		for _, header := range n.RegionHeaders {
 			walk(header, node, ancestorChain, fn, afterFn)
@@ -671,21 +671,21 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 			walk(child, node, ancestorChain, fn, afterFn)
 		}
 		walk(n.Closing, node, ancestorChain, fn, afterFn)
-	case *XMLOpeningElement:
+	case *MarkupOpeningTag:
 		walk(n.Name, node, ancestorChain, fn, afterFn)
 		for _, attr := range n.Attributes {
 			walk(attr, node, ancestorChain, fn, afterFn)
 		}
-	case *XMLAttribute:
+	case *MarkupAttribute:
 		walk(n.Name, node, ancestorChain, fn, afterFn)
 		walk(n.Value, node, ancestorChain, fn, afterFn)
-	case *XMLClosingElement:
+	case *MarkupClosingTag:
 		walk(n.Name, node, ancestorChain, fn, afterFn)
-	case *XMLInterpolation:
+	case *MarkupInterpolation:
 		walk(n.Expr, node, ancestorChain, fn, afterFn)
-	case *XMLPatternExpression:
+	case *MarkupPatternExpression:
 		walk(n.Element, node, ancestorChain, fn, afterFn)
-	case *XMLPatternElement:
+	case *MarkupPatternElement:
 		walk(n.Opening, node, ancestorChain, fn, afterFn)
 		for _, header := range n.RegionHeaders {
 			walk(header, node, ancestorChain, fn, afterFn)
@@ -694,18 +694,18 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 			walk(child, node, ancestorChain, fn, afterFn)
 		}
 		walk(n.Closing, node, ancestorChain, fn, afterFn)
-	case *XMLPatternOpeningElement:
+	case *MarkupPatternOpeningTag:
 		walk(n.Name, node, ancestorChain, fn, afterFn)
 
 		for _, attr := range n.Attributes {
 			walk(attr, node, ancestorChain, fn, afterFn)
 		}
-	case *XMLPatternAttribute:
+	case *MarkupPatternAttribute:
 		walk(n.Name, node, ancestorChain, fn, afterFn)
 		walk(n.Type, node, ancestorChain, fn, afterFn)
-	case *XMLPatternClosingElement:
+	case *MarkupPatternClosingTag:
 		walk(n.Name, node, ancestorChain, fn, afterFn)
-	case *XMLPatternInterpolation:
+	case *MarkupPatternInterpolation:
 		walk(n.Expr, node, ancestorChain, fn, afterFn)
 	case *ExtendStatement:
 		walk(n.ExtendedPattern, node, ancestorChain, fn, afterFn)

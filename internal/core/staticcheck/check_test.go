@@ -1811,7 +1811,7 @@ func TestCheck(t *testing.T) {
 				assert.Len(t, decls, 1)
 			})
 
-			t.Run("reference in an XML interpolation", func(t *testing.T) {
+			t.Run("reference in an markup interpolation", func(t *testing.T) {
 				chunk, src := mustParseCode(`
 					html<div> {f()} </div>
 
@@ -1839,16 +1839,16 @@ func TestCheck(t *testing.T) {
 					return
 				}
 
-				xmlExpression := chunk.Statements[0]
+				markupExpr := chunk.Statements[0]
 
 				pos, _ := data.GetEarlyFunctionDeclarationsPosition(chunk)
-				assert.Equal(t, xmlExpression.Base().Span.Start, pos)
+				assert.Equal(t, markupExpr.Base().Span.Start, pos)
 
 				decls := data.GetFunctionsToDeclareEarly(chunk)
 				assert.Len(t, decls, 1)
 			})
 
-			t.Run("reference in an XML interpolation in a return statement", func(t *testing.T) {
+			t.Run("reference in an markup interpolation in a return statement", func(t *testing.T) {
 				chunk, src := mustParseCode(`
 					return html<div> {f()} </div>
 

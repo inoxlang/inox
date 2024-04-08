@@ -1236,7 +1236,7 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 		})
 	})
 
-	t.Run("html attribute names in XML expression with implicit namespace", func(t *testing.T) {
+	t.Run("html attribute names in markup expression with implicit namespace", func(t *testing.T) {
 		t.Run("local variable in top level module", func(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
 			defer state.Global.Ctx.CancelGracefully()

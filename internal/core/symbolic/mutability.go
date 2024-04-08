@@ -623,7 +623,7 @@ func (*SecretPattern) IsMutable() bool {
 	return false
 }
 
-func (*XMLElement) IsMutable() bool {
+func (*MarkupElement) IsMutable() bool {
 	return false
 }
 

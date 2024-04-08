@@ -1705,7 +1705,7 @@ func (p *SecretPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]sy
 	return symbolic.NewSecretPattern(stringPattern.(symbolic.StringPattern)), nil
 }
 
-func (p *XMLElement) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+func (p *MarkupElement) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 
 	attributes := make(map[string]symbolic.Value, len(p.attributes))
 
@@ -1726,7 +1726,7 @@ func (p *XMLElement) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbo
 		children = append(children, symbolicVal)
 	}
 
-	return symbolic.NewXmlElement(p.name, attributes, children), nil
+	return symbolic.NewMarkupElement(p.name, attributes, children), nil
 }
 
 func (db *DatabaseIL) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {

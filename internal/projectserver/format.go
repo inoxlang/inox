@@ -77,9 +77,9 @@ func (f *formatter) formatInoxChunk(chunk *parse.ParsedChunkSource, options defi
 func (f *formatter) preVisitNode(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
 
 	switch node.(type) {
-	case *parse.XMLExpression, *parse.XMLElement:
+	case *parse.MarkupExpression, *parse.MarkupElement:
 		return parse.Prune, nil
-	case *parse.XMLInterpolation:
+	case *parse.MarkupInterpolation:
 		return parse.Prune, nil
 	}
 
@@ -101,7 +101,7 @@ func (f *formatter) postVisitNode(node, parent, scopeNode parse.Node, ancestorCh
 	//Update identation of comment tokens.
 	if hasTokens {
 		for _, token := range tokens {
-			if token.SubType == parse.XML_TAG_OPENING_BRACKET { //Temporary fix
+			if token.SubType == parse.MARKUP_TAG_OPENING_BRACKET { //Temporary fix
 				break
 			}
 
@@ -130,7 +130,7 @@ func (f *formatter) postVisitNode(node, parent, scopeNode parse.Node, ancestorCh
 
 	//Update identation and surrounding space of some tokens.
 	for _, token := range tokens {
-		if token.SubType == parse.XML_TAG_OPENING_BRACKET { //Temporary fix
+		if token.SubType == parse.MARKUP_TAG_OPENING_BRACKET { //Temporary fix
 			return parse.ContinueTraversal, nil
 		}
 
@@ -302,7 +302,7 @@ func doesNodeIncreaseDepth(node parse.Node, ancestors []parse.Node) bool {
 	case *parse.ObjectLiteral, *parse.ObjectPatternLiteral, *parse.RecordLiteral,
 		*parse.ListLiteral, *parse.MappingExpression, *parse.DictionaryLiteral, *parse.EmbeddedModule,
 		*parse.SwitchStatement, *parse.MatchStatement,
-		*parse.XMLElement,
+		*parse.MarkupElement,
 		*parse.GlobalConstantDeclarations:
 		return true
 	case *parse.Block:

@@ -717,7 +717,7 @@ func TestFormat(t *testing.T) {
 				"}",
 			},
 		},
-		//formatting of comments inside XML interpolations is not supported yet:
+		//formatting of comments inside markup interpolations is not supported yet:
 		{
 			{
 				"manifest {}",

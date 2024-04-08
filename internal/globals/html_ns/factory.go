@@ -10,7 +10,7 @@ import (
 	"golang.org/x/net/html"
 )
 
-func CreateHTMLNodeFromXMLElement(ctx *core.Context, arg *core.XMLElement) *HTMLNode {
+func CreateHTMLNodeFromMarkupElement(ctx *core.Context, arg *core.MarkupElement) *HTMLNode {
 	children := arg.Children()
 	childNodes := make([]*HTMLNode, 0, len(children))
 
@@ -74,8 +74,8 @@ func CreateHTMLNodeFromXMLElement(ctx *core.Context, arg *core.XMLElement) *HTML
 
 func createChildNodesFromValue(ctx *core.Context, child core.Value, childNodes *[]*HTMLNode) {
 	switch c := child.(type) {
-	case *core.XMLElement:
-		*childNodes = append(*childNodes, CreateHTMLNodeFromXMLElement(ctx, c))
+	case *core.MarkupElement:
+		*childNodes = append(*childNodes, CreateHTMLNodeFromMarkupElement(ctx, c))
 	case *HTMLNode:
 		if c.HasParent() {
 			panic(core.ErrUnreachable)

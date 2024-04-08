@@ -36,7 +36,7 @@ func init() {
 		EscapeString, func(ctx *symbolic.Context, s symbolic.StringLike) *symbolic.String {
 			return symbolic.ANY_STRING
 		},
-		CreateHTMLNodeFromXMLElement, _html_symbolic.CreateHTMLNodeFromXMLElement,
+		CreateHTMLNodeFromMarkupElement, _html_symbolic.CreateHTMLNodeFromMarkupElement,
 	})
 
 	specifcTagFactory := func(ctx *symbolic.Context, desc *symbolic.Object) *_html_symbolic.HTMLNode {
@@ -62,6 +62,6 @@ func NewHTMLNamespace() *core.Namespace {
 		"str_render": core.WrapGoFunction(RenderToString),
 		"escape":     core.WrapGoFunction(EscapeString),
 
-		symbolic.FROM_XML_FACTORY_NAME: core.WrapGoFunction(CreateHTMLNodeFromXMLElement),
+		symbolic.FROM_MARKUP_FACTORY_NAME: core.WrapGoFunction(CreateHTMLNodeFromMarkupElement),
 	})
 }

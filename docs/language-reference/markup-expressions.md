@@ -2,13 +2,13 @@
 
 ---
 
-# XML Expressions
+# Markup Expressions
 
-An XML expression produces a value by passing an XML-like structure to a
+A markup expression produces a value by passing an XML-like markup to a
 namespace that interprets it:
 
 ```
-# The XML structure is passed to the html namespace.
+# The markup is passed to the html namespace.
 html<div></div> 
 
 The namespace is optional and defaults to html if not explicitly specified.

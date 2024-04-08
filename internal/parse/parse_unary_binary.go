@@ -31,14 +31,14 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(openingParenIndex in
 	if !hasPreviousOperator && p.i < p.len && p.s[p.i] == '<' && (p.i == p.len-1 || p.s[p.i+1] != '{') {
 		if p.inPattern {
 			prefixed := false
-			left = p.parseXMLPatternExpression(prefixed)
+			left = p.parseMarkupPatternExpression(prefixed)
 		} else {
-			// XML expression without namespace.
-			left = p.parseXMLExpression(nil, p.i)
+			// Markup expression without namespace.
+			left = p.parseMarkupExpression(nil, p.i)
 		}
 
 		if p.areNextSpacesNewlinesCommentsFollowedBy('<') {
-			//Potentially malformed XML expressions.
+			//Potentially malformed markup expressions.
 			return left
 		}
 	} else {
@@ -405,7 +405,7 @@ func (p *parser) tryParseUnparenthesizedBinaryExpr(left Node) (Node, bool) {
 		return nil, false
 	case '*', '>', '!':
 	case '<':
-		if utils.Implements[*XMLExpression](left) {
+		if utils.Implements[*MarkupExpression](left) {
 			//$left is potentially malformed
 			return nil, false
 		}

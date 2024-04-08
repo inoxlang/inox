@@ -904,26 +904,26 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		return evalStringTemplateLiteral(n, state, options)
 	case *parse.CssSelectorExpression:
 		return ANY_STRING, nil
-	case *parse.XMLExpression:
-		return evalXMLExpression(n, state, options)
-	case *parse.XMLElement:
-		return evalXMLElement(n, state, options)
-	case *parse.XMLInterpolation:
+	case *parse.MarkupExpression:
+		return evalMarkupExpression(n, state, options)
+	case *parse.MarkupElement:
+		return evalMarkupElement(n, state, options)
+	case *parse.MarkupInterpolation:
 
 		val, err := symbolicEval(n.Expr, state)
 		if err != nil {
 			return nil, err
 		}
 
-		if state.checkXMLInterpolation != nil {
-			msg := state.checkXMLInterpolation(n.Expr, val)
+		if state.checkMarkupInterpolation != nil {
+			msg := state.checkMarkupInterpolation(n.Expr, val)
 			if msg != "" {
 				state.addError(makeSymbolicEvalError(n.Expr, state, msg))
 			}
 		}
 
 		return val, err
-	case *parse.XMLText:
+	case *parse.MarkupText:
 		return ANY_STRING, nil
 	case *parse.ExtendStatement:
 		return evalExtendStatement(n, state, options)
@@ -5835,7 +5835,7 @@ func evalStringTemplateLiteral(n *parse.StringTemplateLiteral, state *State, opt
 	return &CheckedString{}, nil
 }
 
-func evalXMLExpression(n *parse.XMLExpression, state *State, options evalOptions) (Value, error) {
+func evalMarkupExpression(n *parse.MarkupExpression, state *State, options evalOptions) (Value, error) {
 
 	var namespaceErrorNode parse.Node = n
 
@@ -5865,38 +5865,38 @@ func evalXMLExpression(n *parse.XMLExpression, state *State, options evalOptions
 			return nil, err
 		}
 
-		state.addError(makeSymbolicEvalError(namespaceErrorNode, state, NAMESPACE_APPLIED_TO_XML_ELEMENT_SHOUD_BE_A_RECORD))
+		state.addError(makeSymbolicEvalError(namespaceErrorNode, state, NAMESPACE_APPLIED_TO_MARKUP_ELEMENT_SHOUD_BE_A_RECORD))
 		return ANY, nil
 	} else {
-		factory, ok := ns.entries[FROM_XML_FACTORY_NAME]
+		factory, ok := ns.entries[FROM_MARKUP_FACTORY_NAME]
 		if !ok {
-			state.addError(makeSymbolicEvalError(namespaceErrorNode, state, MISSING_FACTORY_IN_NAMESPACE_APPLIED_TO_XML_ELEMENT))
+			state.addError(makeSymbolicEvalError(namespaceErrorNode, state, MISSING_FACTORY_IN_NAMESPACE_APPLIED_TO_MARKUP_ELEMENT))
 			return ANY, nil
 		}
 		goFn, ok := factory.(*GoFunction)
 		if !ok {
-			state.addError(makeSymbolicEvalError(namespaceErrorNode, state, FROM_XML_FACTORY_IS_NOT_A_GO_FUNCTION))
+			state.addError(makeSymbolicEvalError(namespaceErrorNode, state, FROM_MARKUP_FACTORY_IS_NOT_A_GO_FUNCTION))
 			return ANY, nil
 		}
 
 		if goFn.IsShared() {
-			state.addError(makeSymbolicEvalError(namespaceErrorNode, state, FROM_XML_FACTORY_SHOULD_NOT_BE_A_SHARED_FUNCTION))
+			state.addError(makeSymbolicEvalError(namespaceErrorNode, state, FROM_MARKUP_FACTORY_SHOULD_NOT_BE_A_SHARED_FUNCTION))
 			return ANY, nil
 		}
 
 		utils.PanicIfErr(goFn.LoadSignatureData())
 
 		if len(goFn.NonVariadicParametersExceptCtx()) == 0 {
-			state.addError(makeSymbolicEvalError(namespaceErrorNode, state, FROM_XML_FACTORY_SHOULD_HAVE_AT_LEAST_ONE_NON_VARIADIC_PARAM))
+			state.addError(makeSymbolicEvalError(namespaceErrorNode, state, FROM_MARKUP_FACTORY_SHOULD_HAVE_AT_LEAST_ONE_NON_VARIADIC_PARAM))
 			return ANY, nil
 		}
 
 		if goFn.fn != nil {
-			checkXMLInterpolation := state.checkXMLInterpolation
+			checkMarkupInterpolation := state.checkMarkupInterpolation
 			defer func() {
-				state.checkXMLInterpolation = checkXMLInterpolation
+				state.checkMarkupInterpolation = checkMarkupInterpolation
 			}()
-			state.checkXMLInterpolation = xmlInterpolationCheckingFunctions[reflect.ValueOf(goFn.fn).Pointer()]
+			state.checkMarkupInterpolation = xmlInterpolationCheckingFunctions[reflect.ValueOf(goFn.fn).Pointer()]
 		}
 
 		elem, err := symbolicEval(n.Element, state)
@@ -5930,7 +5930,7 @@ func evalXMLExpression(n *parse.XMLExpression, state *State, options evalOptions
 	}
 }
 
-func evalXMLElement(n *parse.XMLElement, state *State, options evalOptions) (Value, error) {
+func evalMarkupElement(n *parse.MarkupElement, state *State, options evalOptions) (Value, error) {
 	var children []Value
 	name := n.Opening.Name.(*parse.IdentifierLiteral).Name
 	var attrs map[string]Value
@@ -5938,7 +5938,7 @@ func evalXMLElement(n *parse.XMLElement, state *State, options evalOptions) (Val
 		attrs = make(map[string]Value, len(n.Opening.Attributes))
 
 		for _, attr := range n.Opening.Attributes {
-			regularAttr, ok := attr.(*parse.XMLAttribute)
+			regularAttr, ok := attr.(*parse.MarkupAttribute)
 			if ok {
 				name := regularAttr.Name.(*parse.IdentifierLiteral).Name
 				if regularAttr.Value == nil {
@@ -5964,15 +5964,15 @@ func evalXMLElement(n *parse.XMLElement, state *State, options evalOptions) (Val
 		children = append(children, child)
 	}
 
-	xmlElem := NewXmlElement(name, attrs, children)
-	xmlElem.sourceNode = n
+	markupElem := NewMarkupElement(name, attrs, children)
+	markupElem.sourceNode = n
 
-	state.SetMostSpecificNodeValue(n.Opening.Name, xmlElem)
+	state.SetMostSpecificNodeValue(n.Opening.Name, markupElem)
 	if n.Closing != nil {
-		state.SetMostSpecificNodeValue(n.Closing.Name, xmlElem)
+		state.SetMostSpecificNodeValue(n.Closing.Name, markupElem)
 	}
 
-	return xmlElem, nil
+	return markupElem, nil
 }
 
 func evalDoubleColonExpression(n *parse.DoubleColonExpression, state *State, options evalOptions) (Value, error) {

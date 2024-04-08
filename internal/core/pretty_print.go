@@ -171,9 +171,9 @@ func GetNodeColorizations(chunk *parse.Chunk, lightMode bool) []ColorizationInfo
 		//literals
 		case *parse.IdentifierLiteral:
 			var colorSeq []byte
-			if openingElem, ok := parent.(*parse.XMLOpeningElement); ok && openingElem.Name == n {
+			if openingElem, ok := parent.(*parse.MarkupOpeningTag); ok && openingElem.Name == n {
 				colorSeq = colors.XmlTagName
-			} else if _, ok := parent.(*parse.XMLClosingElement); ok {
+			} else if _, ok := parent.(*parse.MarkupClosingTag); ok {
 				colorSeq = colors.XmlTagName
 			} else {
 				colorSeq = colors.IdentifierLiteral
@@ -296,7 +296,7 @@ func GetNodeColorizations(chunk *parse.Chunk, lightMode bool) []ColorizationInfo
 				Span:          n.Base().Span,
 				ColorSequence: colors.Constant,
 			})
-		case *parse.XMLOpeningElement, *parse.XMLClosingElement:
+		case *parse.MarkupOpeningTag, *parse.MarkupClosingTag:
 			// for _, token := range n.Base().Tokens {
 			// 	colorizations = append(colorizations, ColorizationInfo{
 			// 		Span:          token.Span,
@@ -2242,7 +2242,7 @@ func (s *SecretPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, 
 	PrintType(w, s)
 }
 
-func (s *XMLElement) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (s *MarkupElement) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	PrintType(w, s)
 }
 

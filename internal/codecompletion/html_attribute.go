@@ -17,7 +17,7 @@ import (
 
 // This file contains completion logic for HTML and HTMX.
 
-func findHtmlAttributeNameCompletions(ident *parse.IdentifierLiteral, parent *parse.XMLAttribute, tagName string, ancestors []parse.Node) (completions []Completion) {
+func findHtmlAttributeNameCompletions(ident *parse.IdentifierLiteral, parent *parse.MarkupAttribute, tagName string, ancestors []parse.Node) (completions []Completion) {
 	attributes, ok := html_ns.GetAllTagAttributes(tagName)
 	if !ok {
 		return
@@ -44,7 +44,7 @@ func findHtmlAttributeNameCompletions(ident *parse.IdentifierLiteral, parent *pa
 
 func findHtmlAttributeValueCompletions(
 	strLiteral parse.SimpleValueLiteral,
-	parent *parse.XMLAttribute,
+	parent *parse.MarkupAttribute,
 	tagName string,
 	search completionSearch,
 ) (completions []Completion) {

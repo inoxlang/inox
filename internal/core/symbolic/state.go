@@ -37,8 +37,8 @@ type State struct {
 
 	iterationChange IterationChange
 
-	checkXMLInterpolation XMLInterpolationCheckingFunction
-	Module                *Module
+	checkMarkupInterpolation MarkupInterpolationCheckingFunction
+	Module                   *Module
 
 	//base globals and patterns
 
@@ -623,7 +623,7 @@ func (state *State) fork() *State {
 	child.baseGlobals = state.baseGlobals
 	child.basePatterns = state.basePatterns
 	child.basePatternNamespaces = state.basePatternNamespaces
-	child.checkXMLInterpolation = state.checkXMLInterpolation
+	child.checkMarkupInterpolation = state.checkMarkupInterpolation
 	child.projectFilesystem = state.projectFilesystem
 
 	globalScopeCopy := &scopeInfo{

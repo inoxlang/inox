@@ -104,7 +104,7 @@ func ParseChunk2(str string, sourceName string, opts ...ParserOptions) (runes []
 						EndColumn:   endCol,
 						Span:        NodeSpan{tokenStartPosition, tokenEndPosition},
 					})
-				case *XMLElement:
+				case *MarkupElement:
 					hsParsingError, ok := n.RawElementParsingResult.(*hscode.ParsingError)
 					if !ok {
 						break

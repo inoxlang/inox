@@ -8,7 +8,7 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
-func addUsedHtmxExtensions(xmlAttr *parse.XMLAttribute, attrName string, result *Result) {
+func addUsedHtmxExtensions(markupAttr *parse.MarkupAttribute, attrName string, result *Result) {
 
 	switch {
 	case htmx.JSONFORM_SHORTHAND_ATTRIBUTE_PATTERN.MatchString(attrName):
@@ -19,7 +19,7 @@ func addUsedHtmxExtensions(xmlAttr *parse.XMLAttribute, attrName string, result 
 			result.UsedHtmxExtensions[extName] = struct{}{}
 		}
 	case attrName == "hx-ext":
-		names := strings.Split(xmlAttr.ValueIfStringLiteral(), ",")
+		names := strings.Split(markupAttr.ValueIfStringLiteral(), ",")
 		names = utils.MapSlice(names, strings.TrimSpace)
 		for _, extName := range names {
 			_, ok := result.UsedHtmxExtensions[extName]

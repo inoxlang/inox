@@ -154,13 +154,13 @@ func FindCompletions(args SearchArgs) []Completion {
 			completions = findRecordInteriorCompletions(n, search)
 		case *parse.DictionaryLiteral:
 			completions = findDictionaryInteriorCompletions(n, search)
-		case *parse.XMLOpeningElement:
-			completions = findXMLOpeningElementInteriorCompletions(n, search)
-		case *parse.XMLClosingElement:
-			if cursorIndex == n.Span.Start && utils.Implements[*parse.XMLElement](parent) {
-				completions = findHyperscriptScriptCompletions(parent.(*parse.XMLElement), search)
+		case *parse.MarkupOpeningTag:
+			completions = findOpeningTagInteriorCompletions(n, search)
+		case *parse.MarkupClosingTag:
+			if cursorIndex == n.Span.Start && utils.Implements[*parse.MarkupElement](parent) {
+				completions = findHyperscriptScriptCompletions(parent.(*parse.MarkupElement), search)
 			}
-		case *parse.XMLElement:
+		case *parse.MarkupElement:
 			completions = findHyperscriptScriptCompletions(n, search)
 		case *parse.HyperscriptAttributeShorthand:
 			completions = findHyperscriptAttributeCompletions(n, search)
@@ -532,19 +532,19 @@ after_subcommand_completions:
 	}
 
 	switch p := parent.(type) {
-	case *parse.XMLAttribute:
+	case *parse.MarkupAttribute:
 		attribute := p
 		//if name
 		switch {
 		case ident == attribute.Name:
-			completions = findXmlAttributeNameCompletions(ident, attribute, ancestors)
+			completions = findMarkupAttributeNameCompletions(ident, attribute, ancestors)
 		}
 		return completions
-	case *parse.XMLOpeningElement:
+	case *parse.MarkupOpeningTag:
 		//if tag name
 		switch {
 		case ident == p.Name:
-			completions = findXmlTagAndTagNameCompletions(ident, search)
+			completions = findTagAndTagNameCompletions(ident, search)
 		}
 		return completions
 	}
@@ -1494,10 +1494,10 @@ func findStringCompletions(strLit parse.SimpleValueLiteral, search completionSea
 	}
 
 	// in attribute
-	if attribute, ok := search.parent.(*parse.XMLAttribute); ok {
+	if attribute, ok := search.parent.(*parse.MarkupAttribute); ok {
 		switch {
 		case strLit == attribute.Value:
-			completions = findXMLAttributeValueCompletions(strLit, attribute, search)
+			completions = findMarkupAttributeValueCompletions(strLit, attribute, search)
 		}
 
 		return completions

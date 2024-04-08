@@ -2446,17 +2446,17 @@ type CssAttributeSelector struct {
 	Value         Node
 }
 
-type XMLExpression struct {
-	NodeBase  `json:"base:xml-expr"`
-	Namespace Node        `json:"namespace,omitempty"` //*IdentifierLiteral or nil, NOT an XML namespace
-	Element   *XMLElement `json:"element"`
+type MarkupExpression struct {
+	NodeBase  `json:"base:markup-expr"`
+	Namespace Node           `json:"namespace,omitempty"` //*IdentifierLiteral or nil, NOT an XML namespace
+	Element   *MarkupElement `json:"element"`
 }
 
-func (XMLExpression) Kind() NodeKind {
+func (MarkupExpression) Kind() NodeKind {
 	return Expr
 }
 
-func (e XMLExpression) EffectiveNamespaceName() string {
+func (e MarkupExpression) EffectiveNamespaceName() string {
 	if e.Namespace == nil {
 		return globalnames.HTML_NS
 	}
@@ -2464,12 +2464,12 @@ func (e XMLExpression) EffectiveNamespaceName() string {
 	return e.Namespace.(*IdentifierLiteral).Name
 }
 
-type XMLElement struct {
-	NodeBase                `json:"base:xml-elem"`
-	Opening                 *XMLOpeningElement       `json:"opening,omitempty"`
+type MarkupElement struct {
+	NodeBase                `json:"base:markup-elem"`
+	Opening                 *MarkupOpeningTag        `json:"opening,omitempty"`
 	RegionHeaders           []*AnnotatedRegionHeader `json:"regionHeaders,omitempty"`
 	Children                []Node                   `json:"children,omitempty"`
-	Closing                 *XMLClosingElement       `json:"closing,omitempty"`           //nil if self-closed
+	Closing                 *MarkupClosingTag        `json:"closing,omitempty"`           //nil if self-closed
 	RawElementContent       string                   `json:"rawElementContent,omitempty"` //set for script and style tags
 	RawElementContentStart  int32                    `json:"rawElementContentStart,omitempty"`
 	RawElementContentEnd    int32                    `json:"rawElementContentEnd,omitempty"`
@@ -2477,6 +2477,15 @@ type XMLElement struct {
 
 	//The following field can be set only if parsing RawElementContent is supported (js, css, hyperscript).
 	RawElementParsingResult any `json:"-"` //example: *hscode.ParsingResult|*hscode.ParsingError
+}
+
+func (e MarkupElement) IsFirstTagNameLetterCapitalized() bool {
+	ident, ok := e.Opening.Name.(*IdentifierLiteral)
+	if !ok {
+		return false
+	}
+	char := ident.Name[0]
+	return char >= 'A' && char <= 'Z'
 }
 
 type RawElementType string
@@ -2487,33 +2496,33 @@ const (
 	CssStyleElem      RawElementType = "css-style"
 )
 
-type XMLOpeningElement struct {
-	NodeBase   `json:"base:xml-opening-elem"`
+type MarkupOpeningTag struct {
+	NodeBase   `json:"base:markup-opening-elem"`
 	Name       Node   `json:"name"`
-	Attributes []Node `json:"attributes"` //*XMLAttribute | *HyperscriptAttributeShorthand
+	Attributes []Node `json:"attributes"` //*MarkupAttribute | *HyperscriptAttributeShorthand
 	SelfClosed bool   `json:"selfClosed"`
 }
 
-func (attr XMLOpeningElement) GetName() string {
+func (attr MarkupOpeningTag) GetName() string {
 	return attr.Name.(*IdentifierLiteral).Name
 }
 
-type XMLClosingElement struct {
-	NodeBase `json:"base:xml-closing-elem"`
+type MarkupClosingTag struct {
+	NodeBase `json:"base:markup-closing-elem"`
 	Name     Node `json:"name"`
 }
 
-type XMLAttribute struct {
-	NodeBase `json:"base:xml-attr"`
+type MarkupAttribute struct {
+	NodeBase `json:"base:markup-attr"`
 	Name     Node `json:"name"`
 	Value    Node `json:"value,omitempty"`
 }
 
-func (attr XMLAttribute) GetName() string {
+func (attr MarkupAttribute) GetName() string {
 	return attr.Name.(*IdentifierLiteral).Name
 }
 
-func (attr XMLAttribute) ValueIfStringLiteral() string {
+func (attr MarkupAttribute) ValueIfStringLiteral() string {
 	switch val := attr.Value.(type) {
 	case *DoubleQuotedStringLiteral:
 		return val.Value
@@ -2537,14 +2546,14 @@ type HyperscriptAttributeShorthand struct {
 	HyperscriptParsingError  *hscode.ParsingError  `json:"-"`
 }
 
-type XMLText struct {
-	NodeBase `json:"base:xml-text"`
+type MarkupText struct {
+	NodeBase `json:"base:markup-text"`
 	Raw      string `json:"raw"`
 	Value    string `json:"value"`
 }
 
-type XMLInterpolation struct {
-	NodeBase `json:"base:xml-interpolation"`
+type MarkupInterpolation struct {
+	NodeBase `json:"base:markup-interpolation"`
 	Expr     Node `json:"expr"`
 }
 
@@ -2558,21 +2567,21 @@ func (ExtendStatement) Kind() NodeKind {
 	return Stmt
 }
 
-type XMLPatternExpression struct {
-	NodeBase `json:"base:xml-pattern-expr"`
-	Element  *XMLPatternElement `json:"element"`
+type MarkupPatternExpression struct {
+	NodeBase `json:"base:markup-pattern-expr"`
+	Element  *MarkupPatternElement `json:"element"`
 }
 
-func (XMLPatternExpression) Kind() NodeKind {
+func (MarkupPatternExpression) Kind() NodeKind {
 	return Expr
 }
 
-type XMLPatternElement struct {
-	NodeBase      `json:"base:xml-pattern-elem"`
-	Opening       *XMLPatternOpeningElement `json:"opening,omitempty"`
-	RegionHeaders []*AnnotatedRegionHeader  `json:"regionHeaders,omitempty"`
-	Children      []Node                    `json:"children,omitempty"`
-	Closing       *XMLPatternClosingElement `json:"closing,omitempty"` //nil if self-closed
+type MarkupPatternElement struct {
+	NodeBase      `json:"base:markup-pattern-elem"`
+	Opening       *MarkupPatternOpeningTag `json:"opening,omitempty"`
+	RegionHeaders []*AnnotatedRegionHeader `json:"regionHeaders,omitempty"`
+	Children      []Node                   `json:"children,omitempty"`
+	Closing       *MarkupPatternClosingTag `json:"closing,omitempty"` //nil if self-closed
 
 	RawElementContent       string         `json:"rawElementContent,omitempty"` //set for script and style tags
 	RawElementContentStart  int32          `json:"rawElementContentStart,omitempty"`
@@ -2580,54 +2589,54 @@ type XMLPatternElement struct {
 	EstimatedRawElementType RawElementType `json:"estimatedRawElementType,omitempty"`
 }
 
-type XMLPatternElementQuantifier int
+type MarkupPatternElementQuantifier int
 
 const (
-	OneXmlElement XMLPatternElementQuantifier = iota
-	OptionalXmlElement
-	ZeroOrMoreXmlElements
-	OneOrMoreXmlElements
+	OneMarkupElement MarkupPatternElementQuantifier = iota
+	OptionalMarkupElement
+	ZeroOrMoreMarkupElements
+	OneOrMoreMarkupElements
 )
 
-type XMLPatternOpeningElement struct {
-	NodeBase   `json:"base:xml-pattern-opening-elem"`
-	Name       Node                        `json:"name"`
-	Quantifier XMLPatternElementQuantifier `json:"quantifier"`
-	Attributes []Node                      `json:"attributes"` //*XMLPatternAttribute
-	SelfClosed bool                        `json:"selfClosed"`
+type MarkupPatternOpeningTag struct {
+	NodeBase   `json:"base:markup-pattern-opening-elem"`
+	Name       Node                           `json:"name"`
+	Quantifier MarkupPatternElementQuantifier `json:"quantifier"`
+	Attributes []Node                         `json:"attributes"` //*MarkupPatternAttribute
+	SelfClosed bool                           `json:"selfClosed"`
 }
 
-func (attr XMLPatternOpeningElement) GetName() string {
+func (attr MarkupPatternOpeningTag) GetName() string {
 	return attr.Name.(*IdentifierLiteral).Name
 }
 
-type XMLPatternClosingElement struct {
-	NodeBase `json:"base:xml-pattern-closing-elem"`
+type MarkupPatternClosingTag struct {
+	NodeBase `json:"base:markup-pattern-closing-elem"`
 	Name     Node `json:"name"`
 }
 
-type XMLPatternAttribute struct {
-	NodeBase `json:"base:xml-pattern-attr"`
+type MarkupPatternAttribute struct {
+	NodeBase `json:"base:markup-pattern-attr"`
 	Name     Node `json:"name"`
 	Type     Node `json:"type,omitempty"` //can be nil
 }
 
-type XMLPatternWildcard struct {
-	NodeBase `json:"base:xml-pattern-wildcard"`
-	Wildcard XmlWildcard
+type MarkupPatternWildcard struct {
+	NodeBase `json:"base:markup-pattern-wildcard"`
+	Wildcard MarkupWildcard
 }
 
-type XmlWildcard int
+type MarkupWildcard int
 
 const (
-	XmlStarWildcard XmlWildcard = iota
+	MarkupStarWildcard MarkupWildcard = iota
 )
 
-func (attr XMLPatternAttribute) GetName() string {
+func (attr MarkupPatternAttribute) GetName() string {
 	return attr.Name.(*IdentifierLiteral).Name
 }
 
-func (attr XMLPatternAttribute) ValueIfStringLiteral() string {
+func (attr MarkupPatternAttribute) ValueIfStringLiteral() string {
 	switch val := attr.Type.(type) {
 	case *DoubleQuotedStringLiteral:
 		return val.Value
@@ -2638,8 +2647,8 @@ func (attr XMLPatternAttribute) ValueIfStringLiteral() string {
 	}
 }
 
-type XMLPatternInterpolation struct {
-	NodeBase `json:"base:xml-pattern-interpolation"`
+type MarkupPatternInterpolation struct {
+	NodeBase `json:"base:markup-pattern-interpolation"`
 	Expr     Node `json:"expr"`
 }
 

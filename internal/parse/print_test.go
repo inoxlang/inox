@@ -632,7 +632,7 @@ func TestPrint(t *testing.T) {
 		"@'a' @a;1",
 		"@'a' @a# x\n1",
 		"@'a' @a 1",
-		//XML expressions
+		//markup expressions
 		"h<div></div>",
 		"h<div",
 		"h<div/>",
@@ -652,7 +652,7 @@ func TestPrint(t *testing.T) {
 		`h<div "a"="b"/>`,
 		"h<div></span></span></div>",
 		"h<div></span>1</span>2</div>",
-		//XML expressions with region headers
+		//markup expressions with region headers
 		"h<div>\n@'a'\n<a></a></div>",
 		"h<div>\n@'a' @a\n<a></a></div>",
 		"h<div>\n@'a'\n</div>",
@@ -660,7 +660,7 @@ func TestPrint(t *testing.T) {
 		"h<div>@'a'</div>",
 		"h<div>@'a' @a</div>",
 		"h<div>@'</div>",
-		//XML expressions with interpolations
+		//markup expressions with interpolations
 		"h<div>{1}2</div>",
 		"h<div\n>{1}2</div>",
 		"h<script>{1}2</script>",
@@ -670,7 +670,7 @@ func TestPrint(t *testing.T) {
 		"h<div>{\n1}2</div>",
 		"h<div>{1\n}2</div>",
 		"h<div>{\n1\n}2</div>",
-		//XML expressions with an Hyperscript attribute shorthand
+		//markup expressions with an Hyperscript attribute shorthand
 		"h<div {}></div>",
 		"h<div {1}></div>",
 		"h<div {1></div>",
@@ -681,15 +681,15 @@ func TestPrint(t *testing.T) {
 		"h<div {if true 1 else 2 rest}></div>",
 		"h<div {if true 1 else 2\n}></div>",
 		"h<div {if true}></div>",
-		//XML expressions with an Hyperscript <script>
+		//markup expressions with an Hyperscript <script>
 		"h<script h>on click</script>",
 		"h<script type=\"text/hyperscript\">on click</script>",
 		"h<script type=\"text/hyperscript\" n>on click</script>",
 		"h<script>f()</script>",
-		//parenthesized XML expressions with an explicit namespace
+		//parenthesized markup expressions with an explicit namespace
 		"(html<div><ul></ol></div>)",
 		"(html<div><ul></ol><a></span></div>)",
-		//XML expressions with an implicit namespace
+		//markup expressions with an implicit namespace
 		"<div>",
 		"<div></div>",
 		"<div><ul>",
@@ -698,7 +698,7 @@ func TestPrint(t *testing.T) {
 		"<div><ul></ol><a></a></div>",
 		"<div><ul></ol><a></span>",
 		"<div><ul></ol><a></span></div>",
-		//parenthesized XML expressions with an implicit namespace
+		//parenthesized markup expressions with an implicit namespace
 		"(<div>",
 		"(<div></div>)",
 		"(<div><ul>",
@@ -707,13 +707,13 @@ func TestPrint(t *testing.T) {
 		"(<div><ul></ol><a></a></div>)",
 		"(<div><ul></ol><a></span>",
 		"(<div><ul></ol><a></span></div>)",
-		//XML expressions with unquoted regions
+		//markup expressions with unquoted regions
 		"h<div><{1}>2</div>",
 		"h<div>1<{2}></div>",
 		"h<div>1<{2}>3</div>",
 		`h<div <{a}>="b"></div>`,
 		`h<div a=<{b}></div>`,
-		//XML pattern expressions
+		//markup pattern expressions
 		"%<div></div>",
 		"%<div",
 		"%<div/>",
@@ -740,7 +740,7 @@ func TestPrint(t *testing.T) {
 		`%<div "a"="b"/>`,
 		"%<div></span></span></div>",
 		"%<div></span>1</span>2</div>",
-		//XML pattern expressions with region headers
+		//markup pattern expressions with region headers
 		"%<div>\n@'a'\n<a></a></div>",
 		"%<div>\n@'a' @a\n<a></a></div>",
 		"%<div>\n@'a'\n</div>",
@@ -748,7 +748,7 @@ func TestPrint(t *testing.T) {
 		"%<div>@'a'</div>",
 		"%<div>@'a' @a</div>",
 		"%<div>@'</div>",
-		//XML pattern expressions with interpolations
+		//markup pattern expressions with interpolations
 		"%<div>{1}2</div>",
 		"%<div\n>{1}2</div>",
 		"%<script>{1}2</script>",
@@ -758,7 +758,7 @@ func TestPrint(t *testing.T) {
 		"%<div>{\n1}2</div>",
 		"%<div>{1\n}2</div>",
 		"%<div>{\n1\n}2</div>",
-		//XML pattern expressions with unquoted regions
+		//markup pattern expressions with unquoted regions
 		"%<div><{1}>2</div>",
 		"%<div>1<{2}></div>",
 		"%<div>1<{2}>3</div>",

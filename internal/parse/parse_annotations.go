@@ -208,7 +208,7 @@ func (p *parser) tryParseMetadaAnnotationsAfterProperty() *MetadataAnnotations {
 	}
 }
 
-func (p *parser) parseAnnotatedRegionHeadersInXML(
+func (p *parser) parseAnnotatedRegionHeadersInMarkup(
 	regionHeaders *[]*AnnotatedRegionHeader,
 ) {
 

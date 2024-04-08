@@ -26,7 +26,7 @@ func getAutoEditForChange(documentText string, replacement string, rangeStart, r
 			return
 		}
 
-		elem, ok := node.(*parse.XMLOpeningElement)
+		elem, ok := node.(*parse.MarkupOpeningTag)
 		if !ok {
 			return
 		}

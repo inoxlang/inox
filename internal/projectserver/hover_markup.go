@@ -24,7 +24,7 @@ func getTagOrAttributeHoverHelp(
 		return
 	}
 
-	xmlExpr, _, ok := parse.FindClosest(ancestors, (*parse.XMLExpression)(nil))
+	markupExpr, _, ok := parse.FindClosest(ancestors, (*parse.MarkupExpression)(nil))
 	if !ok {
 		return
 	}
@@ -35,11 +35,11 @@ func getTagOrAttributeHoverHelp(
 	case *parse.DoubleQuotedStringLiteral:
 		//Determine if the string is the value of an attribute.
 		parent := ancestors[len(ancestors)-1]
-		xmlAttr, ok := parent.(*parse.XMLAttribute)
+		markupAttr, ok := parent.(*parse.MarkupAttribute)
 		if !ok {
 			return
 		}
-		return getAttributeValueHoverHelp(n, xmlAttr, xmlExpr, ancestors, cursorIndex, hoverContentParams)
+		return getAttributeValueHoverHelp(n, markupAttr, markupExpr, ancestors, cursorIndex, hoverContentParams)
 	case *parse.IdentifierLiteral:
 		ident = n
 	default:
@@ -49,17 +49,17 @@ func getTagOrAttributeHoverHelp(
 	//Help for tag or attribute name.
 
 	var (
-		attribute   *parse.XMLAttribute
-		openingElem *parse.XMLOpeningElement
+		attribute   *parse.MarkupAttribute
+		openingElem *parse.MarkupOpeningTag
 		parent      parse.Node
 		tagIdent    *parse.IdentifierLiteral
 	)
 
 	parent = ancestors[len(ancestors)-1]
-	attribute, ok = parent.(*parse.XMLAttribute)
+	attribute, ok = parent.(*parse.MarkupAttribute)
 
 	if ok {
-		openingElem, ok = ancestors[len(ancestors)-2].(*parse.XMLOpeningElement)
+		openingElem, ok = ancestors[len(ancestors)-2].(*parse.MarkupOpeningTag)
 		if !ok { //invalid state
 			return
 		}
@@ -68,7 +68,7 @@ func getTagOrAttributeHoverHelp(
 			return
 		}
 	} else {
-		openingElem, ok = parent.(*parse.XMLOpeningElement)
+		openingElem, ok = parent.(*parse.MarkupOpeningTag)
 		if !ok { //invalid state
 			return
 		}
@@ -79,7 +79,7 @@ func getTagOrAttributeHoverHelp(
 		tagIdent = ident
 	}
 
-	namespaceName := xmlExpr.EffectiveNamespaceName()
+	namespaceName := markupExpr.EffectiveNamespaceName()
 
 	//TODO: use symbolic data in order to support aliases
 	switch namespaceName {
@@ -117,8 +117,8 @@ func getTagOrAttributeHoverHelp(
 
 func getAttributeValueHoverHelp(
 	node parse.Node,
-	parent *parse.XMLAttribute,
-	xmlExpr *parse.XMLExpression,
+	parent *parse.MarkupAttribute,
+	markupExpr *parse.MarkupExpression,
 	ancestors []parse.Node,
 	index int32,
 	hoverContentParams hoverContentParams,
@@ -130,7 +130,7 @@ func getAttributeValueHoverHelp(
 	}
 
 	//Only help for the values of HTML attributes is supported for now.
-	if xmlExpr.EffectiveNamespaceName() != globalnames.HTML_NS {
+	if markupExpr.EffectiveNamespaceName() != globalnames.HTML_NS {
 		return
 	}
 
@@ -220,7 +220,7 @@ func getCssClassHoverHelp(attrValue parse.Node, index int32, hoverContentParams 
 	return help
 }
 
-func getRawXMLelementContentHelpMarkdown(element *parse.XMLElement, span parse.NodeSpan) string {
+func getRawMarkupElementContentHelpMarkdown(element *parse.MarkupElement, span parse.NodeSpan) string {
 	switch parsingResult := element.RawElementParsingResult.(type) {
 	case *hscode.ParsingResult:
 		cursorIndexInHsCode := span.Start - element.RawElementContentStart

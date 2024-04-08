@@ -833,7 +833,7 @@ html.escape("<span></span>")
 ```
 ### html.Node
 
-The html.Node factory function creates a node with a given tag. The first argument is the tag name. The second argument is an object with several optional parameters (properties): id, class, children. Additional parameters depend on the tag: (e.g. href for `<a>`). html.Node is still being developped, for now it only supports additional  parameters for `<a>`. It is recommended to use XML expressions with `html` as the namespace instead of using html.Node:  calling the function and creating the object argument (description) is not efficient.
+The html.Node factory function creates a node with a given tag. The first argument is the tag name. The second argument is an object with several optional parameters (properties): id, class, children. Additional parameters depend on the tag: (e.g. href for `<a>`). html.Node is still being developped, for now it only supports additional  parameters for `<a>`. It is recommended to use markup expressions with `html` as the namespace instead of using html.Node:  calling the function and creating the object argument (description) is not efficient.
 
 **examples**
 

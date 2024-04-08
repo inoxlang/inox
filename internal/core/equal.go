@@ -2097,9 +2097,9 @@ func (s *SecretPattern) Equal(ctx *Context, other Value, alreadyCompared map[uin
 	return s == otherPattern
 }
 
-func (e *XMLElement) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+func (e *MarkupElement) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
 	//TODO: implement
-	otherElem, ok := other.(*XMLElement)
+	otherElem, ok := other.(*MarkupElement)
 	if !ok {
 		return false
 	}

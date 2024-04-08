@@ -12,7 +12,7 @@ const (
 	STYLE_TAG_NAME  = "style"
 )
 
-func (p *parser) parseXMLExpression(namespaceIdent *IdentifierLiteral /* can be nil */, start int32) *XMLExpression {
+func (p *parser) parseMarkupExpression(namespaceIdent *IdentifierLiteral /* can be nil */, start int32) *MarkupExpression {
 	p.panicIfContextDone()
 
 	var namespace Node
@@ -23,34 +23,34 @@ func (p *parser) parseXMLExpression(namespaceIdent *IdentifierLiteral /* can be 
 	//we do not increment because we keep the '<' for parsing the top element
 
 	if p.i+1 >= p.len || !isAlpha(p.s[p.i+1]) {
-		p.tokens = append(p.tokens, Token{Type: LESS_THAN, SubType: XML_TAG_OPENING_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
+		p.tokens = append(p.tokens, Token{Type: LESS_THAN, SubType: MARKUP_TAG_OPENING_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
 
-		return &XMLExpression{
+		return &MarkupExpression{
 			NodeBase: NodeBase{
 				NodeSpan{start, p.i},
-				&ParsingError{UnspecifiedParsingError, UNTERMINATED_XML_EXPRESSION_MISSING_TOP_ELEM_NAME},
+				&ParsingError{UnspecifiedParsingError, UNTERMINATED_MARKUP_EXPRESSION_MISSING_TOP_ELEM_NAME},
 				false,
 			},
 			Namespace: namespace,
 		}
 	}
 
-	topElem, _ := p.parseXMLElement(p.i)
+	topElem, _ := p.parseMarkupElement(p.i)
 
-	return &XMLExpression{
+	return &MarkupExpression{
 		NodeBase:  NodeBase{Span: NodeSpan{start, p.i}},
 		Namespace: namespace,
 		Element:   topElem,
 	}
 }
 
-func (p *parser) parseXMLElement(start int32) (_ *XMLElement, noOrExpectedClosingTag bool) {
+func (p *parser) parseMarkupElement(start int32) (_ *MarkupElement, noOrExpectedClosingTag bool) {
 	p.panicIfContextDone()
 
 	noOrExpectedClosingTag = true
 
 	var parsingErr *ParsingError
-	p.tokens = append(p.tokens, Token{Type: LESS_THAN, SubType: XML_TAG_OPENING_BRACKET, Span: NodeSpan{start, start + 1}})
+	p.tokens = append(p.tokens, Token{Type: LESS_THAN, SubType: MARKUP_TAG_OPENING_BRACKET, Span: NodeSpan{start, start + 1}})
 	p.i++
 
 	//Parse opening tag.
@@ -79,7 +79,7 @@ func (p *parser) parseXMLElement(start int32) (_ *XMLElement, noOrExpectedClosin
 
 	p.eatSpaceNewlineComment()
 
-	openingElement := &XMLOpeningElement{
+	openingElement := &MarkupOpeningTag{
 		NodeBase: NodeBase{
 			Span: NodeSpan{start, p.i},
 		},
@@ -116,7 +116,7 @@ func (p *parser) parseXMLElement(start int32) (_ *XMLElement, noOrExpectedClosin
 		name, isMissingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
 
 		if isMissingExpr {
-			openingElement.Attributes = append(openingElement.Attributes, &XMLAttribute{
+			openingElement.Attributes = append(openingElement.Attributes, &MarkupAttribute{
 				NodeBase: NodeBase{
 					Span: name.Base().Span,
 				},
@@ -138,19 +138,19 @@ func (p *parser) parseXMLElement(start int32) (_ *XMLElement, noOrExpectedClosin
 			//ok
 		default:
 			if name.Base().Err == nil {
-				name.BasePtr().Err = &ParsingError{UnspecifiedParsingError, XML_ATTRIBUTE_NAME_SHOULD_BE_IDENT}
+				name.BasePtr().Err = &ParsingError{UnspecifiedParsingError, MARKUP_ATTRIBUTE_NAME_SHOULD_BE_IDENT}
 			}
 		}
 
 		if p.i < p.len && p.s[p.i] == '=' {
 			//Parse value.
 
-			p.tokens = append(p.tokens, Token{Type: EQUAL, SubType: XML_ATTR_EQUAL, Span: NodeSpan{p.i, p.i + 1}})
+			p.tokens = append(p.tokens, Token{Type: EQUAL, SubType: MARKUP_ATTR_EQUAL, Span: NodeSpan{p.i, p.i + 1}})
 			p.i++
 
 			value, isMissingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
 
-			openingElement.Attributes = append(openingElement.Attributes, &XMLAttribute{
+			openingElement.Attributes = append(openingElement.Attributes, &MarkupAttribute{
 				NodeBase: NodeBase{
 					Span: NodeSpan{name.Base().Span.Start, p.i},
 				},
@@ -168,7 +168,7 @@ func (p *parser) parseXMLElement(start int32) (_ *XMLElement, noOrExpectedClosin
 			}
 		} else {
 
-			openingElement.Attributes = append(openingElement.Attributes, &XMLAttribute{
+			openingElement.Attributes = append(openingElement.Attributes, &MarkupAttribute{
 				NodeBase: NodeBase{
 					Span: NodeSpan{name.Base().Span.Start, p.i},
 				},
@@ -197,10 +197,10 @@ func (p *parser) parseXMLElement(start int32) (_ *XMLElement, noOrExpectedClosin
 
 	if p.i >= p.len || (p.s[p.i] != '>' && p.s[p.i] != '/') {
 		if !unterminatedHyperscriptAttribute { //Avoid reporting two errors.
-			openingElement.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_OPENING_XML_TAG_MISSING_CLOSING}
+			openingElement.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_OPENING_MARKUP_TAG_MISSING_CLOSING}
 		}
 
-		return &XMLElement{
+		return &MarkupElement{
 			NodeBase: NodeBase{
 				NodeSpan{start, p.i},
 				parsingErr,
@@ -221,9 +221,9 @@ func (p *parser) parseXMLElement(start int32) (_ *XMLElement, noOrExpectedClosin
 			p.i++
 			openingElement.Span.End = p.i
 
-			openingElement.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_SELF_CLOSING_XML_TAG_MISSING_CLOSING}
+			openingElement.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_SELF_CLOSING_MARKUP_TAG_MISSING_CLOSING}
 
-			return &XMLElement{
+			return &MarkupElement{
 				NodeBase: NodeBase{
 					NodeSpan{start, p.i},
 					parsingErr,
@@ -239,7 +239,7 @@ func (p *parser) parseXMLElement(start int32) (_ *XMLElement, noOrExpectedClosin
 
 		openingElement.Span.End = p.i
 
-		return &XMLElement{
+		return &MarkupElement{
 			NodeBase: NodeBase{
 				NodeSpan{start, p.i},
 				parsingErr,
@@ -252,7 +252,7 @@ func (p *parser) parseXMLElement(start int32) (_ *XMLElement, noOrExpectedClosin
 		}, noOrExpectedClosingTag
 	}
 
-	p.tokens = append(p.tokens, Token{Type: GREATER_THAN, SubType: XML_TAG_CLOSING_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
+	p.tokens = append(p.tokens, Token{Type: GREATER_THAN, SubType: MARKUP_TAG_CLOSING_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
 	p.i++
 	openingElement.Span.End = p.i
 
@@ -292,7 +292,7 @@ func (p *parser) parseXMLElement(start int32) (_ *XMLElement, noOrExpectedClosin
 			err = &ParsingError{UnspecifiedParsingError, fmtExpectedClosingTag(openingIdent.Name)}
 		}
 
-		return &XMLElement{
+		return &MarkupElement{
 			NodeBase: NodeBase{
 				NodeSpan{start, p.i},
 				err,
@@ -316,7 +316,7 @@ func (p *parser) parseXMLElement(start int32) (_ *XMLElement, noOrExpectedClosin
 
 	closingName, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
 
-	closingElement := &XMLClosingElement{
+	closingElement := &MarkupClosingTag{
 		NodeBase: NodeBase{
 			Span: NodeSpan{closingElemStart, p.i},
 		},
@@ -332,10 +332,10 @@ func (p *parser) parseXMLElement(start int32) (_ *XMLElement, noOrExpectedClosin
 
 	if p.i >= p.len || p.s[p.i] != '>' {
 		if closingElement.Err == nil {
-			closingElement.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_CLOSING_XML_TAG_MISSING_CLOSING_DELIM}
+			closingElement.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_CLOSING_MARKUP_TAG_MISSING_CLOSING_DELIM}
 		}
 
-		return &XMLElement{
+		return &MarkupElement{
 			NodeBase: NodeBase{
 				NodeSpan{start, p.i},
 				parsingErr,
@@ -352,11 +352,11 @@ func (p *parser) parseXMLElement(start int32) (_ *XMLElement, noOrExpectedClosin
 		}, noOrExpectedClosingTag
 	}
 
-	p.tokens = append(p.tokens, Token{Type: GREATER_THAN, SubType: XML_TAG_CLOSING_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
+	p.tokens = append(p.tokens, Token{Type: GREATER_THAN, SubType: MARKUP_TAG_CLOSING_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
 	p.i++
 	closingElement.Span.End = p.i
 
-	result := &XMLElement{
+	result := &MarkupElement{
 		NodeBase: NodeBase{
 			NodeSpan{start, p.i},
 			parsingErr,
@@ -373,7 +373,7 @@ func (p *parser) parseXMLElement(start int32) (_ *XMLElement, noOrExpectedClosin
 	}
 
 	if rawElementText != "" {
-		p.parseContentOfRawXMLElement(result)
+		p.parseContentOfRawMarkupElement(result)
 	}
 
 	return result, noOrExpectedClosingTag
@@ -496,14 +496,14 @@ children_parsing_loop:
 			}
 			p.tokens = append(p.tokens, Token{
 				Type:    OPENING_CURLY_BRACKET,
-				SubType: XML_INTERP_OPENING_BRACE,
+				SubType: MARKUP_INTERP_OPENING_BRACE,
 				Span:    NodeSpan{p.i, p.i + 1},
 			})
 
 			// add previous slice
 			raw := string(p.s[childStart:p.i])
 			value, sliceErr := p.getValueOfMultilineStringSliceOrLiteral([]byte(raw), false)
-			children = append(children, &XMLText{
+			children = append(children, &MarkupText{
 				NodeBase: NodeBase{
 					NodeSpan{childStart, p.i},
 					sliceErr,
@@ -526,7 +526,7 @@ children_parsing_loop:
 
 			closingBracketToken := Token{
 				Type:    CLOSING_CURLY_BRACKET,
-				SubType: XML_INTERP_CLOSING_BRACE,
+				SubType: MARKUP_INTERP_CLOSING_BRACE,
 				Span:    NodeSpan{p.i, p.i + 1},
 			}
 			interpolationExclEnd := p.i
@@ -540,7 +540,7 @@ children_parsing_loop:
 			interpolation := p.s[interpolationStart:interpolationExclEnd]
 
 			if strings.TrimSpace(string(interpolation)) == "" {
-				interpParsingErr = &ParsingError{UnspecifiedParsingError, EMPTY_XML_INTERP}
+				interpParsingErr = &ParsingError{UnspecifiedParsingError, EMPTY_MARKUP_INTERP}
 			} else {
 				//ignore leading & trailing space
 				relativeExprStart := int32(0)
@@ -622,16 +622,16 @@ children_parsing_loop:
 							Raw:  string(p.s[unexpectedRestStart:interpolationExclEnd]),
 						})
 						if !missingExpr {
-							interpParsingErr = &ParsingError{UnspecifiedParsingError, XML_INTERP_SHOULD_CONTAIN_A_SINGLE_EXPR}
+							interpParsingErr = &ParsingError{UnspecifiedParsingError, MARKUP_INTERP_SHOULD_CONTAIN_A_SINGLE_EXPR}
 						}
 					}
 				} else {
-					interpParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_XML_INTERP}
+					interpParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_MARKUP_INTERP}
 				}
 			}
 			p.tokens = append(p.tokens, closingBracketToken)
 
-			interpolationNode := &XMLInterpolation{
+			interpolationNode := &MarkupInterpolation{
 				NodeBase: NodeBase{
 					NodeSpan{interpolationStart, interpolationExclEnd},
 					interpParsingErr,
@@ -645,7 +645,7 @@ children_parsing_loop:
 			// Add previous slice
 			raw := string(p.s[childStart:p.i])
 			value, sliceErr := p.getValueOfMultilineStringSliceOrLiteral([]byte(raw), false)
-			children = append(children, &XMLText{
+			children = append(children, &MarkupText{
 				NodeBase: NodeBase{
 					NodeSpan{childStart, p.i},
 					sliceErr,
@@ -665,7 +665,7 @@ children_parsing_loop:
 
 			//Child element
 
-			child, noOrExpectedClosingTag := p.parseXMLElement(p.i)
+			child, noOrExpectedClosingTag := p.parseMarkupElement(p.i)
 			children = append(children, child)
 			childStart = p.i
 
@@ -677,7 +677,7 @@ children_parsing_loop:
 			// Add previous slice
 			raw := string(p.s[childStart:p.i])
 			value, sliceErr := p.getValueOfMultilineStringSliceOrLiteral([]byte(raw), false)
-			children = append(children, &XMLText{
+			children = append(children, &MarkupText{
 				NodeBase: NodeBase{
 					NodeSpan{childStart, p.i},
 					sliceErr,
@@ -687,7 +687,7 @@ children_parsing_loop:
 				Value: value,
 			})
 
-			p.parseAnnotatedRegionHeadersInXML(&regionHeaders)
+			p.parseAnnotatedRegionHeadersInMarkup(&regionHeaders)
 			childStart = p.i
 		default:
 			p.i++
@@ -698,10 +698,10 @@ children_parsing_loop:
 		raw := string(p.s[interpolationStart:p.i])
 		value, _ := p.getValueOfMultilineStringSliceOrLiteral([]byte(raw), false)
 
-		children = append(children, &XMLText{
+		children = append(children, &MarkupText{
 			NodeBase: NodeBase{
 				NodeSpan{interpolationStart, p.i},
-				&ParsingError{UnspecifiedParsingError, UNTERMINATED_XML_INTERP},
+				&ParsingError{UnspecifiedParsingError, UNTERMINATED_MARKUP_INTERP},
 				false,
 			},
 			Raw:   raw,
@@ -711,7 +711,7 @@ children_parsing_loop:
 		raw := string(p.s[childStart:p.i])
 		value, sliceErr := p.getValueOfMultilineStringSliceOrLiteral([]byte(raw), false)
 
-		children = append(children, &XMLText{
+		children = append(children, &MarkupText{
 			NodeBase: NodeBase{
 				NodeSpan{childStart, p.i},
 				sliceErr,

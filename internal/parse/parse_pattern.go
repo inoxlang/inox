@@ -80,7 +80,7 @@ func (p *parser) parsePercentPrefixedPattern(precededByOpeningParen bool) Node {
 		}
 	case '<':
 		prefixed := true
-		return p.parseXMLPatternExpression(prefixed)
+		return p.parseMarkupPatternExpression(prefixed)
 	case '`':
 		return p.parseRegularExpressionLiteral(true)
 	case '-':

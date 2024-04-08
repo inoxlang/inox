@@ -216,12 +216,12 @@ func (p *parser) parseExpression(config ...exprParsingConfig) (expr Node, isMiss
 	case '<':
 		if p.i < p.len {
 			switch {
-			case isAlpha(p.s[p.i+1]): //XML expression without namespace.
+			case isAlpha(p.s[p.i+1]): //markup expression without namespace.
 				if p.inPattern {
 					prefixed := false
-					return p.parseXMLPatternExpression(prefixed), false
+					return p.parseMarkupPatternExpression(prefixed), false
 				}
-				return p.parseXMLExpression(nil, p.i), false
+				return p.parseMarkupExpression(nil, p.i), false
 			case p.s[p.i+1] == '{':
 				return p.parseUnquotedRegion(), false
 			}
@@ -493,7 +493,7 @@ func (p *parser) parseUnderscoreAlphaStartingExpression(precededByOpeningParen b
 
 	if p.s[p.i] == '<' && NodeIs(identStartingExpr, (*IdentifierLiteral)(nil)) {
 		ident := identStartingExpr.(*IdentifierLiteral)
-		node = p.parseXMLExpression(ident, ident.Span.Start)
+		node = p.parseMarkupExpression(ident, ident.Span.Start)
 		return
 	}
 

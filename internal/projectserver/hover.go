@@ -94,9 +94,9 @@ func getHoverContent(handlingCtx *core.Context, params hoverContentParams) (*def
 		}, nil
 	}
 
-	//Raw XML element (e.g. <script>, <style>).
-	if elem, ok := hoveredNode.(*parse.XMLElement); ok && elem.RawElementContent != "" {
-		help := getRawXMLelementContentHelpMarkdown(elem, span)
+	//Raw markup element (e.g. <script>, <style>).
+	if elem, ok := hoveredNode.(*parse.MarkupElement); ok && elem.RawElementContent != "" {
+		help := getRawMarkupElementContentHelpMarkdown(elem, span)
 		if help == "" {
 			return &defines.Hover{}, nil
 		}

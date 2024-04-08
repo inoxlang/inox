@@ -7,12 +7,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSymbolicCreateHTMLNodeFromXMLElement(t *testing.T) {
+func TestSymbolicCreateHTMLNodeFromMarkupElement(t *testing.T) {
 
 	globals := func() map[string]symbolic.Value {
 		return map[string]symbolic.Value{
 			"html": symbolic.NewNamespace(map[string]symbolic.Value{
-				symbolic.FROM_XML_FACTORY_NAME: symbolic.WrapGoFunction(CreateHTMLNodeFromXMLElement),
+				symbolic.FROM_MARKUP_FACTORY_NAME: symbolic.WrapGoFunction(CreateHTMLNodeFromMarkupElement),
 			}),
 		}
 	}
@@ -80,7 +80,7 @@ func TestSymbolicCreateHTMLNodeFromXMLElement(t *testing.T) {
 			assert.NotEmpty(t, state.Errors())
 		})
 
-		t.Run("invalid XML attribute value", func(t *testing.T) {
+		t.Run("invalid markup attribute value", func(t *testing.T) {
 			chunk, state := symbolic.MakeTestStateAndChunk("html<div a=1.0></div>", globals())
 
 			_, err := symbolic.SymbolicEval(chunk, state)
@@ -114,7 +114,7 @@ func TestSymbolicCreateHTMLNodeFromXMLElement(t *testing.T) {
 		assert.Contains(t, errors[0].Error(), INTERPOLATION_LIMITATION_ERROR_MSG)
 	})
 
-	t.Run("deep: invalid XML attribute value", func(t *testing.T) {
+	t.Run("deep: invalid markup attribute value", func(t *testing.T) {
 		chunk, state := symbolic.MakeTestStateAndChunk("html<div><span a=1.0></span></div>", globals())
 
 		_, err := symbolic.SymbolicEval(chunk, state)

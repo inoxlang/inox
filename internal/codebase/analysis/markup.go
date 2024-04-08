@@ -14,9 +14,9 @@ var (
 	PREACT_SIGNALS_DETECTION_PATTERN   = regexp.MustCompile(`(signal|computed|effect|batch|untracked)\(`)
 )
 
-func (a *analyzer) preAnalyzeXmlAttribute(xmlAttr *parse.XMLAttribute) {
+func (a *analyzer) preAnalyzeMarkupAttribute(markupAddr *parse.MarkupAttribute) {
 
-	ident, ok := xmlAttr.Name.(*parse.IdentifierLiteral)
+	ident, ok := markupAddr.Name.(*parse.IdentifierLiteral)
 	if !ok {
 		return
 	}
@@ -25,20 +25,20 @@ func (a *analyzer) preAnalyzeXmlAttribute(xmlAttr *parse.XMLAttribute) {
 
 	//Tailwind
 	if ident.Name == "class" {
-		addUsedTailwindRulesets(xmlAttr.Value, result)
-		addUsedVarBasedCssClasses(xmlAttr.Value, result)
+		addUsedTailwindRulesets(markupAddr.Value, result)
+		addUsedVarBasedCssClasses(markupAddr.Value, result)
 		return
 	}
 
 	//HTMX
 	if strings.HasPrefix(ident.Name, "hx-") {
-		addUsedHtmxExtensions(xmlAttr, ident.Name, result)
+		addUsedHtmxExtensions(markupAddr, ident.Name, result)
 		return
 	}
 
 }
 
-func (a *analyzer) preAnalyzeXmlElement(node *parse.XMLElement) {
+func (a *analyzer) preAnalyzeMarkupElement(node *parse.MarkupElement) {
 	result := a.result
 
 	switch node.EstimatedRawElementType {

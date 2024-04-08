@@ -1804,7 +1804,7 @@ func (p *parser) parseRuneRuneRange() Node {
 	}
 }
 
-func (p *parser) parseIfExpression(openingParenIndex int32 /* -1 if unparenthesized (in XML interpolation) */, ifKeywordStart int32) *IfExpression {
+func (p *parser) parseIfExpression(openingParenIndex int32 /* -1 if unparenthesized (in markup interpolation) */, ifKeywordStart int32) *IfExpression {
 	p.panicIfContextDone()
 
 	var alternate Node
@@ -1910,7 +1910,7 @@ func (p *parser) parseIfExpression(openingParenIndex int32 /* -1 if unparenthesi
 
 			end = p.i
 		}
-	} else { //in XML interpolation
+	} else { //in markup interpolation
 		//No need to report an error if there is something after the expression
 		//because this is handled by the caller.
 		end = p.i

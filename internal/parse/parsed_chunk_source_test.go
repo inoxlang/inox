@@ -153,13 +153,13 @@ func TestGetNodeAtSpan(t *testing.T) {
 			}))
 
 			// elements: ... (div)[identifier] (>)[token of opening elem] ()[xml text] ...
-			// the found node should be the XML opening element.
+			// the found node should be the markup opening tag.
 
 			node, ok := chunk.GetNodeAtSpan(NodeSpan{8, 9}) //the 'div' identifier ends at 8.
 			if !assert.True(t, ok) {
 				return
 			}
-			assert.IsType(t, &XMLOpeningElement{}, node)
+			assert.IsType(t, &MarkupOpeningTag{}, node)
 		})
 
 		t.Run("empty span within an identifier", func(t *testing.T) {
@@ -185,11 +185,11 @@ func TestGetNodeAtSpan(t *testing.T) {
 				CodeString: "html<div></div>",
 			}))
 
-			node, ok := chunk.GetNodeAtSpan(NodeSpan{9, 9}) //the XML text is empty and its position is 9
+			node, ok := chunk.GetNodeAtSpan(NodeSpan{9, 9}) //the markup text is empty and its position is 9
 			if !assert.True(t, ok) {
 				return
 			}
-			assert.IsType(t, &XMLElement{}, node)
+			assert.IsType(t, &MarkupElement{}, node)
 		})
 	})
 

@@ -2432,17 +2432,17 @@ func (c *checker) checkIdentifier(ident *parse.IdentifierLiteral, parent, scopeN
 		*parse.KeyListExpression:
 		return parse.ContinueTraversal
 
-	case *parse.XMLOpeningElement:
+	case *parse.MarkupOpeningTag:
 		if ident == p.Name {
 			return parse.ContinueTraversal
 
 		}
-	case *parse.XMLClosingElement:
+	case *parse.MarkupClosingTag:
 		if ident == p.Name {
 			return parse.ContinueTraversal
 
 		}
-	case *parse.XMLAttribute:
+	case *parse.MarkupAttribute:
 		if ident == p.Name {
 			return parse.ContinueTraversal
 
@@ -2737,11 +2737,11 @@ func (c *checker) checkPatternIdentifier(node *parse.PatternIdentifierLiteral, p
 		if parent.Name == node {
 			return parse.ContinueTraversal
 		}
-	case *parse.XMLPatternOpeningElement:
+	case *parse.MarkupPatternOpeningTag:
 		if parent.Name == node {
 			return parse.ContinueTraversal
 		}
-	case *parse.XMLPatternClosingElement:
+	case *parse.MarkupPatternClosingTag:
 		if parent.Name == node {
 			return parse.ContinueTraversal
 		}

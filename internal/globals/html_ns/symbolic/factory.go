@@ -11,8 +11,8 @@ import (
 const INTERPOLATION_LIMITATION_ERROR_MSG = "only HTML nodes, strings, integers, and resource names (e.g. paths, URLs) are allowed"
 
 func init() {
-	symbolic.RegisterXMLInterpolationCheckingFunction(
-		CreateHTMLNodeFromXMLElement,
+	symbolic.RegisterMarkupInterpolationCheckingFunction(
+		CreateHTMLNodeFromMarkupElement,
 		func(n parse.Node, value symbolic.Value) (errorMsg string) {
 
 			return checkInterpolationValue(value)
@@ -59,10 +59,10 @@ func checkInterpolationValue(value symbolic.Value) (errMsg string) {
 	return INTERPOLATION_LIMITATION_ERROR_MSG
 }
 
-func CreateHTMLNodeFromXMLElement(ctx *symbolic.Context, elem *symbolic.XMLElement) *HTMLNode {
+func CreateHTMLNodeFromMarkupElement(ctx *symbolic.Context, elem *symbolic.MarkupElement) *HTMLNode {
 
-	var checkElem func(e *symbolic.XMLElement)
-	checkElem = func(e *symbolic.XMLElement) {
+	var checkElem func(e *symbolic.MarkupElement)
+	checkElem = func(e *symbolic.MarkupElement) {
 		for name, val := range e.Attributes() {
 			switch val.(type) {
 			case symbolic.GoString, symbolic.StringLike, *symbolic.Int:
@@ -79,7 +79,7 @@ func CreateHTMLNodeFromXMLElement(ctx *symbolic.Context, elem *symbolic.XMLEleme
 
 		for _, child := range e.Children() {
 			switch c := child.(type) {
-			case *symbolic.XMLElement:
+			case *symbolic.MarkupElement:
 				checkElem(c)
 			default:
 				//already checked during interpolation checks

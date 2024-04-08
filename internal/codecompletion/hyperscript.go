@@ -33,7 +33,7 @@ func findHyperscriptAttributeCompletions(n *parse.HyperscriptAttributeShorthand,
 		return
 	}
 
-	openingElem, ok := search.parent.(*parse.XMLOpeningElement)
+	openingElem, ok := search.parent.(*parse.MarkupOpeningTag)
 	if !ok {
 		return
 	}
@@ -46,7 +46,7 @@ func findHyperscriptAttributeCompletions(n *parse.HyperscriptAttributeShorthand,
 	return findHyperscriptCompletions(tokensNoSpace, tokens, cursorIndexInHsCode, hsCodeStart, hsCodeEnd, search)
 }
 
-func findHyperscriptScriptCompletions(n *parse.XMLElement, search completionSearch) (completions []Completion) {
+func findHyperscriptScriptCompletions(n *parse.MarkupElement, search completionSearch) (completions []Completion) {
 	cursorIndexInHsCode := search.cursorIndex - n.RawElementContentStart
 
 	var tokensNoSpace []hscode.Token

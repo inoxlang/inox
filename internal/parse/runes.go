@@ -210,11 +210,11 @@ func isNonSpaceCSSCombinator(r rune) bool {
 	}
 }
 
-func isXmlElementQuantifier(r rune) bool {
+func isMarkupPatternElementQuantifier(r rune) bool {
 	switch r {
-	case OPTIONAL_XML_ELEMENT_QUANTIFIER_RUNE,
-		ONE_OR_MORE_XML_ELEMENT_QUANTIFIER_RUNE,
-		ZERO_OR_MORE_XML_ELEMENT_QUANTIFIER_RUNE:
+	case OPTIONAL_MARKUP_ELEMENT_QUANTIFIER_RUNE,
+		ONE_OR_MORE_MARKUP_ELEMENT_QUANTIFIER_RUNE,
+		ZERO_OR_MORE_MARKUP_ELEMENT_QUANTIFIER_RUNE:
 		return true
 	}
 	return false

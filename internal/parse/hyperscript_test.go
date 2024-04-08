@@ -77,8 +77,8 @@ func TestParseHyperscriptScriptElement(t *testing.T) {
 			return
 		}
 
-		xmlElement := FindNode(chunk, (*XMLElement)(nil), nil)
-		assert.IsType(t, (*hscode.ParsingResult)(nil), xmlElement.RawElementParsingResult)
+		markupElement := FindNode(chunk, (*MarkupElement)(nil), nil)
+		assert.IsType(t, (*hscode.ParsingResult)(nil), markupElement.RawElementParsingResult)
 	})
 
 	t.Run("error", func(t *testing.T) {
@@ -90,8 +90,8 @@ func TestParseHyperscriptScriptElement(t *testing.T) {
 			return
 		}
 
-		xmlElement := FindNode(chunk, (*XMLElement)(nil), nil)
-		if !assert.NotNil(t, xmlElement.RawElementParsingResult) {
+		markupElement := FindNode(chunk, (*MarkupElement)(nil), nil)
+		if !assert.NotNil(t, markupElement.RawElementParsingResult) {
 			return
 		}
 

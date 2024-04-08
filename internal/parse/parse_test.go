@@ -30007,23 +30007,23 @@ func testParse(
 		})
 	})
 
-	t.Run("XML expression", func(t *testing.T) {
-		//Future parsing modifications should be reflected and tested for XML pattern expressions.
+	t.Run("markup expression", func(t *testing.T) {
+		//Future parsing modifications should be reflected and tested for markup pattern expressions.
 
 		t.Run("no children: 0 characters", func(t *testing.T) {
 			n := mustparseChunk(t, "h<div></div>")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 12}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
@@ -30031,13 +30031,13 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{6, 12}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{8, 11}, nil, false},
@@ -30055,11 +30055,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 11}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 11}, nil, false},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{0, 11}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{0, 5}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{1, 4}, nil, false},
@@ -30067,13 +30067,13 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{5, 5}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{5, 11}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{7, 10}, nil, false},
@@ -30091,11 +30091,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{1, 12}, nil, true},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 12}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
@@ -30103,13 +30103,13 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{6, 12}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{8, 11}, nil, false},
@@ -30128,18 +30128,18 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 5}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 5}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 5}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{
 									NodeSpan{1, 5},
-									&ParsingError{UnspecifiedParsingError, UNTERMINATED_OPENING_XML_TAG_MISSING_CLOSING},
+									&ParsingError{UnspecifiedParsingError, UNTERMINATED_OPENING_MARKUP_TAG_MISSING_CLOSING},
 									false,
 								},
 								Name: &IdentifierLiteral{
@@ -30159,15 +30159,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 17}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
@@ -30175,17 +30175,17 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{
 										Span: NodeSpan{6, 6},
 									},
 								},
-								&XMLElement{
+								&MarkupElement{
 									NodeBase: NodeBase{NodeSpan{6, 11}, nil, false},
-									Opening: &XMLOpeningElement{
+									Opening: &MarkupOpeningTag{
 										NodeBase: NodeBase{
 											NodeSpan{6, 11},
-											&ParsingError{UnspecifiedParsingError, UNTERMINATED_OPENING_XML_TAG_MISSING_CLOSING},
+											&ParsingError{UnspecifiedParsingError, UNTERMINATED_OPENING_MARKUP_TAG_MISSING_CLOSING},
 											false,
 										},
 										Name: &IdentifierLiteral{
@@ -30194,13 +30194,13 @@ func testParse(
 										},
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{
 										Span: NodeSpan{11, 11},
 									},
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{11, 17}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{13, 16}, nil, false},
@@ -30219,15 +30219,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 28}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 28}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 28}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
@@ -30235,14 +30235,14 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{
 										Span: NodeSpan{6, 6},
 									},
 								},
-								&XMLElement{
+								&MarkupElement{
 									NodeBase: NodeBase{NodeSpan{6, 22}, nil, false},
-									Opening: &XMLOpeningElement{
+									Opening: &MarkupOpeningTag{
 										NodeBase: NodeBase{Span: NodeSpan{6, 11}},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{7, 10}, nil, false},
@@ -30250,17 +30250,17 @@ func testParse(
 										},
 									},
 									Children: []Node{
-										&XMLText{
+										&MarkupText{
 											NodeBase: NodeBase{
 												Span: NodeSpan{11, 11},
 											},
 										},
-										&XMLElement{
+										&MarkupElement{
 											NodeBase: NodeBase{NodeSpan{11, 16}, nil, false},
-											Opening: &XMLOpeningElement{
+											Opening: &MarkupOpeningTag{
 												NodeBase: NodeBase{
 													NodeSpan{11, 16},
-													&ParsingError{UnspecifiedParsingError, UNTERMINATED_OPENING_XML_TAG_MISSING_CLOSING},
+													&ParsingError{UnspecifiedParsingError, UNTERMINATED_OPENING_MARKUP_TAG_MISSING_CLOSING},
 													false,
 												},
 												Name: &IdentifierLiteral{
@@ -30269,13 +30269,13 @@ func testParse(
 												},
 											},
 										},
-										&XMLText{
+										&MarkupText{
 											NodeBase: NodeBase{
 												Span: NodeSpan{16, 16},
 											},
 										},
 									},
-									Closing: &XMLClosingElement{
+									Closing: &MarkupClosingTag{
 										NodeBase: NodeBase{Span: NodeSpan{16, 22}},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{18, 21}, nil, false},
@@ -30283,13 +30283,13 @@ func testParse(
 										},
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{
 										Span: NodeSpan{22, 22},
 									},
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{22, 28}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{24, 27}, nil, false},
@@ -30307,15 +30307,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 13}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 7}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
@@ -30323,13 +30323,13 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{7, 7}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{
 									NodeSpan{7, 13},
 									nil,
@@ -30355,15 +30355,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 18}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 18}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 18}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{
 									NodeSpan{1, 12},
 									nil,
@@ -30378,7 +30378,7 @@ func testParse(
 									Name:     "div",
 								},
 								Attributes: []Node{
-									&XMLAttribute{
+									&MarkupAttribute{
 										NodeBase: NodeBase{
 											NodeSpan{6, 11},
 											nil,
@@ -30397,13 +30397,13 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{12, 12}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{
 									NodeSpan{12, 18},
 									nil,
@@ -30429,15 +30429,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 18}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 18}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 18}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{
 									Span: NodeSpan{1, 12},
 								},
@@ -30446,7 +30446,7 @@ func testParse(
 									Name:     "div",
 								},
 								Attributes: []Node{
-									&XMLAttribute{
+									&MarkupAttribute{
 										NodeBase: NodeBase{
 											NodeSpan{6, 11},
 											nil,
@@ -30465,13 +30465,13 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{12, 12}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{
 									NodeSpan{12, 18},
 									nil,
@@ -30499,22 +30499,22 @@ func testParse(
 				Statements: []Node{
 					&QuotedExpression{
 						NodeBase: NodeBase{NodeSpan{0, 25}, nil, false},
-						Expression: &XMLExpression{
+						Expression: &MarkupExpression{
 							NodeBase: NodeBase{NodeSpan{2, 24}, nil, true},
 							Namespace: &IdentifierLiteral{
 								NodeBase: NodeBase{NodeSpan{2, 3}, nil, false},
 								Name:     "h",
 							},
-							Element: &XMLElement{
+							Element: &MarkupElement{
 								NodeBase: NodeBase{NodeSpan{3, 24}, nil, false},
-								Opening: &XMLOpeningElement{
+								Opening: &MarkupOpeningTag{
 									NodeBase: NodeBase{Span: NodeSpan{3, 18}},
 									Name: &IdentifierLiteral{
 										NodeBase: NodeBase{NodeSpan{4, 7}, nil, false},
 										Name:     "div",
 									},
 									Attributes: []Node{
-										&XMLAttribute{
+										&MarkupAttribute{
 											NodeBase: NodeBase{Span: NodeSpan{8, 17}},
 											Name: &UnquotedRegion{
 												NodeBase: NodeBase{Span: NodeSpan{8, 13}},
@@ -30532,13 +30532,13 @@ func testParse(
 									},
 								},
 								Children: []Node{
-									&XMLText{
+									&MarkupText{
 										NodeBase: NodeBase{NodeSpan{18, 18}, nil, false},
 										Raw:      "",
 										Value:    "",
 									},
 								},
-								Closing: &XMLClosingElement{
+								Closing: &MarkupClosingTag{
 									NodeBase: NodeBase{Span: NodeSpan{18, 24}},
 									Name: &IdentifierLiteral{
 										NodeBase: NodeBase{NodeSpan{20, 23}, nil, false},
@@ -30559,22 +30559,22 @@ func testParse(
 				Statements: []Node{
 					&QuotedExpression{
 						NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
-						Expression: &XMLExpression{
+						Expression: &MarkupExpression{
 							NodeBase: NodeBase{NodeSpan{2, 22}, nil, true},
 							Namespace: &IdentifierLiteral{
 								NodeBase: NodeBase{NodeSpan{2, 3}, nil, false},
 								Name:     "h",
 							},
-							Element: &XMLElement{
+							Element: &MarkupElement{
 								NodeBase: NodeBase{NodeSpan{3, 22}, nil, false},
-								Opening: &XMLOpeningElement{
+								Opening: &MarkupOpeningTag{
 									NodeBase: NodeBase{Span: NodeSpan{3, 16}},
 									Name: &IdentifierLiteral{
 										NodeBase: NodeBase{NodeSpan{4, 7}, nil, false},
 										Name:     "div",
 									},
 									Attributes: []Node{
-										&XMLAttribute{
+										&MarkupAttribute{
 											NodeBase: NodeBase{Span: NodeSpan{8, 15}},
 											Name: &IdentifierLiteral{
 												NodeBase: NodeBase{NodeSpan{8, 9}, nil, false},
@@ -30591,13 +30591,13 @@ func testParse(
 									},
 								},
 								Children: []Node{
-									&XMLText{
+									&MarkupText{
 										NodeBase: NodeBase{NodeSpan{16, 16}, nil, false},
 										Raw:      "",
 										Value:    "",
 									},
 								},
-								Closing: &XMLClosingElement{
+								Closing: &MarkupClosingTag{
 									NodeBase: NodeBase{Span: NodeSpan{16, 22}},
 									Name: &IdentifierLiteral{
 										NodeBase: NodeBase{NodeSpan{18, 21}, nil, false},
@@ -30616,22 +30616,22 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 14}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 8}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
 									Name:     "div",
 								},
 								Attributes: []Node{
-									&XMLAttribute{
+									&MarkupAttribute{
 										NodeBase: NodeBase{Span: NodeSpan{6, 7}},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
@@ -30641,13 +30641,13 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{8, 8}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{8, 14}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{10, 13}, nil, false},
@@ -30665,15 +30665,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 13}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{
 									NodeSpan{1, 13},
 									nil,
@@ -30688,7 +30688,7 @@ func testParse(
 									Name:     "div",
 								},
 								Attributes: []Node{
-									&XMLAttribute{
+									&MarkupAttribute{
 										NodeBase: NodeBase{
 											NodeSpan{6, 11},
 											nil,
@@ -30717,15 +30717,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 19}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{
 									NodeSpan{1, 13},
 									nil,
@@ -30740,7 +30740,7 @@ func testParse(
 									Name:     "div",
 								},
 								Attributes: []Node{
-									&XMLAttribute{
+									&MarkupAttribute{
 										NodeBase: NodeBase{
 											NodeSpan{6, 11},
 											nil,
@@ -30759,13 +30759,13 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{13, 13}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{
 									NodeSpan{13, 19},
 									nil,
@@ -30792,15 +30792,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 20}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{
 									NodeSpan{1, 14},
 									nil,
@@ -30815,7 +30815,7 @@ func testParse(
 									Name:     "div",
 								},
 								Attributes: []Node{
-									&XMLAttribute{
+									&MarkupAttribute{
 										NodeBase: NodeBase{
 											NodeSpan{6, 13},
 											nil,
@@ -30824,7 +30824,7 @@ func testParse(
 										Name: &DoubleQuotedStringLiteral{
 											NodeBase: NodeBase{
 												NodeSpan{6, 9},
-												&ParsingError{UnspecifiedParsingError, XML_ATTRIBUTE_NAME_SHOULD_BE_IDENT},
+												&ParsingError{UnspecifiedParsingError, MARKUP_ATTRIBUTE_NAME_SHOULD_BE_IDENT},
 												false,
 											},
 											Raw:   `"a"`,
@@ -30839,13 +30839,13 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{14, 14}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{
 									NodeSpan{14, 20},
 									nil,
@@ -30872,15 +30872,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 15}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{
 									NodeSpan{1, 9},
 									nil,
@@ -30895,7 +30895,7 @@ func testParse(
 									Name:     "div",
 								},
 								Attributes: []Node{
-									&XMLAttribute{
+									&MarkupAttribute{
 										NodeBase: NodeBase{
 											NodeSpan{6, 8},
 											nil,
@@ -30916,13 +30916,13 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{9, 9}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{
 									NodeSpan{9, 15},
 									nil,
@@ -30949,15 +30949,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 15}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{
 									NodeSpan{1, 9},
 									nil,
@@ -30972,7 +30972,7 @@ func testParse(
 									Name:     "div",
 								},
 								Attributes: []Node{
-									&XMLAttribute{
+									&MarkupAttribute{
 										NodeBase: NodeBase{
 											NodeSpan{6, 8},
 											nil,
@@ -30993,13 +30993,13 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{9, 9}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{
 									NodeSpan{9, 15},
 									nil,
@@ -31025,15 +31025,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 14}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{
 									NodeSpan{1, 8},
 									nil,
@@ -31048,7 +31048,7 @@ func testParse(
 									Name:     "div",
 								},
 								Attributes: []Node{
-									&XMLAttribute{
+									&MarkupAttribute{
 										NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
@@ -31058,13 +31058,13 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{8, 8}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{
 									NodeSpan{8, 14},
 									nil,
@@ -31091,18 +31091,18 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 7}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 7}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 7}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{
 									NodeSpan{1, 7},
-									&ParsingError{UnspecifiedParsingError, UNTERMINATED_OPENING_XML_TAG_MISSING_CLOSING},
+									&ParsingError{UnspecifiedParsingError, UNTERMINATED_OPENING_MARKUP_TAG_MISSING_CLOSING},
 									false,
 								},
 								Name: &IdentifierLiteral{
@@ -31110,7 +31110,7 @@ func testParse(
 									Name:     "div",
 								},
 								Attributes: []Node{
-									&XMLAttribute{
+									&MarkupAttribute{
 										NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
@@ -31130,15 +31130,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 24}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 24}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 24}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{
 									NodeSpan{1, 18},
 									nil,
@@ -31153,7 +31153,7 @@ func testParse(
 									Name:     "div",
 								},
 								Attributes: []Node{
-									&XMLAttribute{
+									&MarkupAttribute{
 										NodeBase: NodeBase{
 											NodeSpan{6, 11},
 											nil,
@@ -31169,7 +31169,7 @@ func testParse(
 											Value:    "b",
 										},
 									},
-									&XMLAttribute{
+									&MarkupAttribute{
 										NodeBase: NodeBase{
 											NodeSpan{12, 17},
 											nil,
@@ -31188,13 +31188,13 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{18, 18}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{
 									NodeSpan{18, 24},
 									nil,
@@ -31220,15 +31220,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 15}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 9}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
@@ -31242,13 +31242,13 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{9, 9}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{9, 15}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{11, 14}, nil, false},
@@ -31266,15 +31266,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 16}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 10}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
@@ -31288,13 +31288,13 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{10, 10}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{10, 16}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{12, 15}, nil, false},
@@ -31312,15 +31312,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 16}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 10}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
@@ -31334,13 +31334,13 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{10, 10}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{10, 16}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{12, 15}, nil, false},
@@ -31358,15 +31358,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 16}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 10}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
@@ -31380,13 +31380,13 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{10, 10}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{10, 16}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{12, 15}, nil, false},
@@ -31405,18 +31405,18 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 8}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{
 									NodeSpan{1, 8},
-									&ParsingError{UnspecifiedParsingError, UNTERMINATED_OPENING_XML_TAG_MISSING_CLOSING},
+									&ParsingError{UnspecifiedParsingError, UNTERMINATED_OPENING_MARKUP_TAG_MISSING_CLOSING},
 									false,
 								},
 								Name: &IdentifierLiteral{
@@ -31442,15 +31442,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 7}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 7}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 7}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 7}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
@@ -31480,15 +31480,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 8}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 8}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
@@ -31518,15 +31518,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 15}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 15}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
@@ -31556,15 +31556,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 8}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 8}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
@@ -31593,15 +31593,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 7}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 7}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 7}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{
 									NodeSpan{1, 7},
 									nil,
@@ -31629,18 +31629,18 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 6}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 6}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{
 									NodeSpan{1, 6},
-									&ParsingError{UnspecifiedParsingError, UNTERMINATED_SELF_CLOSING_XML_TAG_MISSING_CLOSING},
+									&ParsingError{UnspecifiedParsingError, UNTERMINATED_SELF_CLOSING_MARKUP_TAG_MISSING_CLOSING},
 									false,
 									/*[]Token{
 										{Type: LESS_THAN, Span: NodeSpan{1, 2}},
@@ -31663,15 +31663,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 13}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{
 									NodeSpan{1, 6},
 									nil,
@@ -31687,13 +31687,13 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 									Raw:      " ",
 									Value:    " ",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{
 									NodeSpan{7, 13},
 									nil,
@@ -31719,15 +31719,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 13}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
@@ -31735,13 +31735,13 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 									Raw:      "\n",
 									Value:    "\n",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{7, 13}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{9, 12}, nil, false},
@@ -31759,15 +31759,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{Span: NodeSpan{1, 16}},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
@@ -31775,12 +31775,12 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
-								&XMLInterpolation{
+								&MarkupInterpolation{
 									NodeBase: NodeBase{NodeSpan{7, 8}, nil, false},
 									Expr: &IntLiteral{
 										NodeBase: NodeBase{NodeSpan{7, 8}, nil, false},
@@ -31788,13 +31788,13 @@ func testParse(
 										Value:    1,
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{9, 10}, nil, false},
 									Raw:      "2",
 									Value:    "2",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{10, 16}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{12, 15}, nil, false},
@@ -31814,15 +31814,15 @@ func testParse(
 				Statements: []Node{
 					&QuotedExpression{
 						NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
-						Expression: &XMLExpression{
+						Expression: &MarkupExpression{
 							NodeBase: NodeBase{NodeSpan{2, 20}, nil, true},
 							Namespace: &IdentifierLiteral{
 								NodeBase: NodeBase{NodeSpan{2, 3}, nil, false},
 								Name:     "h",
 							},
-							Element: &XMLElement{
+							Element: &MarkupElement{
 								NodeBase: NodeBase{Span: NodeSpan{3, 20}},
-								Opening: &XMLOpeningElement{
+								Opening: &MarkupOpeningTag{
 									NodeBase: NodeBase{Span: NodeSpan{3, 8}},
 									Name: &IdentifierLiteral{
 										NodeBase: NodeBase{NodeSpan{4, 7}, nil, false},
@@ -31830,7 +31830,7 @@ func testParse(
 									},
 								},
 								Children: []Node{
-									&XMLText{
+									&MarkupText{
 										NodeBase: NodeBase{NodeSpan{8, 8}, nil, false},
 										Raw:      "",
 										Value:    "",
@@ -31843,13 +31843,13 @@ func testParse(
 											Value:    1,
 										},
 									},
-									&XMLText{
+									&MarkupText{
 										NodeBase: NodeBase{NodeSpan{13, 14}, nil, false},
 										Raw:      "2",
 										Value:    "2",
 									},
 								},
-								Closing: &XMLClosingElement{
+								Closing: &MarkupClosingTag{
 									NodeBase: NodeBase{Span: NodeSpan{14, 20}},
 									Name: &IdentifierLiteral{
 										NodeBase: NodeBase{NodeSpan{16, 19}, nil, false},
@@ -31868,15 +31868,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{Span: NodeSpan{1, 16}},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
@@ -31884,12 +31884,12 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 									Raw:      "1",
 									Value:    "1",
 								},
-								&XMLInterpolation{
+								&MarkupInterpolation{
 									NodeBase: NodeBase{NodeSpan{8, 9}, nil, false},
 									Expr: &IntLiteral{
 										NodeBase: NodeBase{NodeSpan{8, 9}, nil, false},
@@ -31897,13 +31897,13 @@ func testParse(
 										Value:    2,
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{10, 10}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{10, 16}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{12, 15}, nil, false},
@@ -31923,15 +31923,15 @@ func testParse(
 				Statements: []Node{
 					&QuotedExpression{
 						NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
-						Expression: &XMLExpression{
+						Expression: &MarkupExpression{
 							NodeBase: NodeBase{NodeSpan{2, 20}, nil, true},
 							Namespace: &IdentifierLiteral{
 								NodeBase: NodeBase{NodeSpan{2, 3}, nil, false},
 								Name:     "h",
 							},
-							Element: &XMLElement{
+							Element: &MarkupElement{
 								NodeBase: NodeBase{Span: NodeSpan{3, 20}},
-								Opening: &XMLOpeningElement{
+								Opening: &MarkupOpeningTag{
 									NodeBase: NodeBase{Span: NodeSpan{3, 8}},
 									Name: &IdentifierLiteral{
 										NodeBase: NodeBase{NodeSpan{4, 7}, nil, false},
@@ -31939,7 +31939,7 @@ func testParse(
 									},
 								},
 								Children: []Node{
-									&XMLText{
+									&MarkupText{
 										NodeBase: NodeBase{NodeSpan{8, 9}, nil, false},
 										Raw:      "1",
 										Value:    "1",
@@ -31952,13 +31952,13 @@ func testParse(
 											Value:    2,
 										},
 									},
-									&XMLText{
+									&MarkupText{
 										NodeBase: NodeBase{NodeSpan{14, 14}, nil, false},
 										Raw:      "",
 										Value:    "",
 									},
 								},
-								Closing: &XMLClosingElement{
+								Closing: &MarkupClosingTag{
 									NodeBase: NodeBase{Span: NodeSpan{14, 20}},
 									Name: &IdentifierLiteral{
 										NodeBase: NodeBase{NodeSpan{16, 19}, nil, false},
@@ -31977,15 +31977,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 22}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 22}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 22}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{
 									NodeSpan{1, 9},
 									nil,
@@ -32004,7 +32004,7 @@ func testParse(
 							RawElementContentStart:  9,
 							RawElementContentEnd:    13,
 							EstimatedRawElementType: JsScript,
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{
 									NodeSpan{13, 22},
 									nil,
@@ -32030,15 +32030,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 21}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{
 									NodeSpan{1, 9},
 									nil,
@@ -32053,7 +32053,7 @@ func testParse(
 							RawElementContentStart:  9,
 							RawElementContentEnd:    12,
 							EstimatedRawElementType: JsScript,
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{
 									NodeSpan{12, 21},
 									nil,
@@ -32075,22 +32075,22 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 23}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 11}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 8}, nil, false},
 									Name:     "script",
 								},
 								Attributes: []Node{
-									&XMLAttribute{
+									&MarkupAttribute{
 										NodeBase: NodeBase{NodeSpan{9, 10}, nil, false},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{9, 10}, nil, false},
@@ -32103,7 +32103,7 @@ func testParse(
 							RawElementContentStart:  11,
 							RawElementContentEnd:    14,
 							EstimatedRawElementType: HyperscriptScript,
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{14, 23}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{16, 22}, nil, false},
@@ -32121,22 +32121,22 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 45}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 45}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 45}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 33}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 8}, nil, false},
 									Name:     "script",
 								},
 								Attributes: []Node{
-									&XMLAttribute{
+									&MarkupAttribute{
 										NodeBase: NodeBase{NodeSpan{9, 32}, nil, false},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{9, 13}, nil, false},
@@ -32154,7 +32154,7 @@ func testParse(
 							RawElementContentStart:  33,
 							RawElementContentEnd:    36,
 							EstimatedRawElementType: HyperscriptScript,
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{36, 45}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{38, 44}, nil, false},
@@ -32172,22 +32172,22 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 47}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 47}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 47}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 35}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 8}, nil, false},
 									Name:     "script",
 								},
 								Attributes: []Node{
-									&XMLAttribute{
+									&MarkupAttribute{
 										NodeBase: NodeBase{NodeSpan{9, 32}, nil, false},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{9, 13}, nil, false},
@@ -32199,7 +32199,7 @@ func testParse(
 											Raw:      `"text/hyperscript"`,
 										},
 									},
-									&XMLAttribute{
+									&MarkupAttribute{
 										NodeBase: NodeBase{NodeSpan{33, 34}, nil, false},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{33, 34}, nil, false},
@@ -32212,7 +32212,7 @@ func testParse(
 							RawElementContentStart:  35,
 							RawElementContentEnd:    38,
 							EstimatedRawElementType: HyperscriptScript,
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{38, 47}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{40, 46}, nil, false},
@@ -32230,15 +32230,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 20}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{
 									NodeSpan{1, 8},
 									nil,
@@ -32257,7 +32257,7 @@ func testParse(
 							RawElementContentStart:  8,
 							RawElementContentEnd:    12,
 							EstimatedRawElementType: CssStyleElem,
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{
 									NodeSpan{12, 20},
 									nil,
@@ -32283,15 +32283,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 19}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{
 									NodeSpan{1, 8},
 									nil,
@@ -32306,7 +32306,7 @@ func testParse(
 							RawElementContentStart:  8,
 							RawElementContentEnd:    11,
 							EstimatedRawElementType: CssStyleElem,
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{
 									NodeSpan{11, 19},
 									nil,
@@ -32323,20 +32323,20 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("XML expression within interpolation", func(t *testing.T) {
+		t.Run("markup expression within interpolation", func(t *testing.T) {
 			n := mustparseChunk(t, "h<div>{h<div></div>}2</div>")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 27}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 27}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{Span: NodeSpan{1, 27}},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
@@ -32344,22 +32344,22 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
-								&XMLInterpolation{
+								&MarkupInterpolation{
 									NodeBase: NodeBase{NodeSpan{7, 19}, nil, false},
-									Expr: &XMLExpression{
+									Expr: &MarkupExpression{
 										NodeBase: NodeBase{NodeSpan{7, 19}, nil, false},
 										Namespace: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{7, 8}, nil, false},
 											Name:     "h",
 										},
-										Element: &XMLElement{
+										Element: &MarkupElement{
 											NodeBase: NodeBase{NodeSpan{8, 19}, nil, false},
-											Opening: &XMLOpeningElement{
+											Opening: &MarkupOpeningTag{
 												NodeBase: NodeBase{Span: NodeSpan{8, 13}},
 												Name: &IdentifierLiteral{
 													NodeBase: NodeBase{NodeSpan{9, 12}, nil, false},
@@ -32367,13 +32367,13 @@ func testParse(
 												},
 											},
 											Children: []Node{
-												&XMLText{
+												&MarkupText{
 													NodeBase: NodeBase{NodeSpan{13, 13}, nil, false},
 													Raw:      "",
 													Value:    "",
 												},
 											},
-											Closing: &XMLClosingElement{
+											Closing: &MarkupClosingTag{
 												NodeBase: NodeBase{Span: NodeSpan{13, 19}},
 												Name: &IdentifierLiteral{
 													NodeBase: NodeBase{NodeSpan{15, 18}, nil, false},
@@ -32383,13 +32383,13 @@ func testParse(
 										},
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{20, 21}, nil, false},
 									Raw:      "2",
 									Value:    "2",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{21, 27}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{23, 26}, nil, false},
@@ -32407,16 +32407,16 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
 
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{Span: NodeSpan{1, 17}},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
@@ -32424,24 +32424,24 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
-								&XMLInterpolation{
+								&MarkupInterpolation{
 									NodeBase: NodeBase{NodeSpan{7, 9}, nil, false},
 									Expr: &ObjectLiteral{
 										NodeBase: NodeBase{NodeSpan{7, 9}, nil, false},
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{10, 11}, nil, false},
 									Raw:      "2",
 									Value:    "2",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{11, 17}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{13, 16}, nil, false},
@@ -32461,13 +32461,13 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{
 								NodeSpan{1, 14},
 								nil,
@@ -32477,7 +32477,7 @@ func testParse(
 									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{7, 8}},
 								},*/
 							},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{
 									NodeSpan{1, 6},
 									nil,
@@ -32493,25 +32493,25 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
-								&XMLInterpolation{
+								&MarkupInterpolation{
 									NodeBase: NodeBase{
 										NodeSpan{7, 7},
-										&ParsingError{UnspecifiedParsingError, EMPTY_XML_INTERP},
+										&ParsingError{UnspecifiedParsingError, EMPTY_MARKUP_INTERP},
 										false,
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{8, 8}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{
 									NodeSpan{8, 14},
 									nil,
@@ -32539,13 +32539,13 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{
 								NodeSpan{1, 15},
 								nil,
@@ -32555,7 +32555,7 @@ func testParse(
 									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{8, 9}},
 								},*/
 							},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{
 									NodeSpan{1, 6},
 									nil,
@@ -32571,25 +32571,25 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
-								&XMLInterpolation{
+								&MarkupInterpolation{
 									NodeBase: NodeBase{
 										NodeSpan{7, 8},
-										&ParsingError{UnspecifiedParsingError, EMPTY_XML_INTERP},
+										&ParsingError{UnspecifiedParsingError, EMPTY_MARKUP_INTERP},
 										false,
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{9, 9}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{
 									NodeSpan{9, 15},
 									nil,
@@ -32616,13 +32616,13 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{
 								NodeSpan{1, 16},
 								nil,
@@ -32633,7 +32633,7 @@ func testParse(
 									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
 								},*/
 							},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{
 									NodeSpan{1, 6},
 									nil,
@@ -32649,12 +32649,12 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
-								&XMLInterpolation{
+								&MarkupInterpolation{
 									NodeBase: NodeBase{Span: NodeSpan{7, 9}},
 									Expr: &IntLiteral{
 										NodeBase: NodeBase{Span: NodeSpan{8, 9}},
@@ -32662,13 +32662,13 @@ func testParse(
 										Value:    1,
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{10, 10}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{
 									NodeSpan{10, 16},
 									nil,
@@ -32695,13 +32695,13 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{
 								NodeSpan{1, 16},
 								nil,
@@ -32712,7 +32712,7 @@ func testParse(
 									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
 								},*/
 							},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{
 									NodeSpan{1, 6},
 									nil,
@@ -32728,12 +32728,12 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
-								&XMLInterpolation{
+								&MarkupInterpolation{
 									NodeBase: NodeBase{Span: NodeSpan{7, 9}},
 									Expr: &IntLiteral{
 										NodeBase: NodeBase{Span: NodeSpan{7, 8}},
@@ -32741,13 +32741,13 @@ func testParse(
 										Value:    1,
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{10, 10}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{
 									NodeSpan{10, 16},
 									nil,
@@ -32774,15 +32774,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{Span: NodeSpan{1, 17}},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
@@ -32790,15 +32790,15 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
-								&XMLInterpolation{
+								&MarkupInterpolation{
 									NodeBase: NodeBase{
 										NodeSpan{7, 10},
-										&ParsingError{UnspecifiedParsingError, XML_INTERP_SHOULD_CONTAIN_A_SINGLE_EXPR},
+										&ParsingError{UnspecifiedParsingError, MARKUP_INTERP_SHOULD_CONTAIN_A_SINGLE_EXPR},
 										false,
 									},
 									Expr: &IntLiteral{
@@ -32807,13 +32807,13 @@ func testParse(
 										Value:    1,
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{11, 11}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{11, 17}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{13, 16}, nil, false},
@@ -32832,15 +32832,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 30}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 30}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{Span: NodeSpan{1, 30}},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
@@ -32848,12 +32848,12 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
-								&XMLInterpolation{
+								&MarkupInterpolation{
 									NodeBase: NodeBase{Span: NodeSpan{7, 23}},
 									Expr: &IfExpression{
 										NodeBase: NodeBase{Span: NodeSpan{7, 23}},
@@ -32873,13 +32873,13 @@ func testParse(
 										},
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{24, 24}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{24, 30}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{26, 29}, nil, false},
@@ -32898,15 +32898,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 31}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 31}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{Span: NodeSpan{1, 31}},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
@@ -32914,12 +32914,12 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
-								&XMLInterpolation{
+								&MarkupInterpolation{
 									NodeBase: NodeBase{Span: NodeSpan{7, 24}},
 									Expr: &IfExpression{
 										NodeBase: NodeBase{Span: NodeSpan{7, 24}},
@@ -32939,13 +32939,13 @@ func testParse(
 										},
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{25, 25}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{25, 31}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{27, 30}, nil, false},
@@ -32965,15 +32965,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{Span: NodeSpan{1, 21}},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
@@ -32981,12 +32981,12 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
-								&XMLInterpolation{
+								&MarkupInterpolation{
 									NodeBase: NodeBase{Span: NodeSpan{7, 14}},
 									Expr: &IfExpression{
 										NodeBase: NodeBase{Span: NodeSpan{7, 14}},
@@ -33003,13 +33003,13 @@ func testParse(
 										},
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{15, 15}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{15, 21}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{17, 20}, nil, false},
@@ -33028,15 +33028,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 30}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 30}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{Span: NodeSpan{1, 30}},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
@@ -33044,12 +33044,12 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
-								&XMLInterpolation{
+								&MarkupInterpolation{
 									NodeBase: NodeBase{Span: NodeSpan{7, 23}},
 									Expr: &ForExpression{
 										NodeBase: NodeBase{Span: NodeSpan{7, 23}, IsParenthesized: true},
@@ -33066,13 +33066,13 @@ func testParse(
 										},
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{24, 24}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{24, 30}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{26, 29}, nil, false},
@@ -33091,15 +33091,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 31}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 31}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{Span: NodeSpan{1, 31}},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
@@ -33107,12 +33107,12 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
-								&XMLInterpolation{
+								&MarkupInterpolation{
 									NodeBase: NodeBase{Span: NodeSpan{7, 24}},
 									Expr: &ForExpression{
 										NodeBase: NodeBase{Span: NodeSpan{7, 24}, IsParenthesized: true},
@@ -33129,13 +33129,13 @@ func testParse(
 										},
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{25, 25}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{25, 31}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{27, 30}, nil, false},
@@ -33155,15 +33155,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 28}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 28}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{Span: NodeSpan{1, 28}},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
@@ -33171,12 +33171,12 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
-								&XMLInterpolation{
+								&MarkupInterpolation{
 									NodeBase: NodeBase{Span: NodeSpan{7, 21}},
 									Expr: &ForExpression{
 										NodeBase: NodeBase{Span: NodeSpan{7, 21}, IsParenthesized: true},
@@ -33196,13 +33196,13 @@ func testParse(
 										},
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{22, 22}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{22, 28}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{24, 27}, nil, false},
@@ -33221,16 +33221,16 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
 
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{Span: NodeSpan{1, 16}},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
@@ -33238,12 +33238,12 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
-								&XMLInterpolation{
+								&MarkupInterpolation{
 									NodeBase: NodeBase{NodeSpan{7, 8}, nil, false},
 									Expr: &MissingExpression{
 										NodeBase: NodeBase{
@@ -33253,13 +33253,13 @@ func testParse(
 										},
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{9, 10}, nil, false},
 									Raw:      "2",
 									Value:    "2",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{10, 16}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{12, 15}, nil, false},
@@ -33277,15 +33277,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 27}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 27}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 27}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{
 									NodeSpan{1, 6},
 									nil,
@@ -33301,14 +33301,14 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
-								&XMLElement{
+								&MarkupElement{
 									NodeBase: NodeBase{NodeSpan{6, 20}, nil, false},
-									Opening: &XMLOpeningElement{
+									Opening: &MarkupOpeningTag{
 										NodeBase: NodeBase{
 											NodeSpan{6, 12},
 											nil,
@@ -33324,13 +33324,13 @@ func testParse(
 										},
 									},
 									Children: []Node{
-										&XMLText{
+										&MarkupText{
 											NodeBase: NodeBase{NodeSpan{12, 13}, nil, false},
 											Raw:      "1",
 											Value:    "1",
 										},
 									},
-									Closing: &XMLClosingElement{
+									Closing: &MarkupClosingTag{
 										NodeBase: NodeBase{
 											NodeSpan{13, 20},
 											nil,
@@ -33346,13 +33346,13 @@ func testParse(
 										},
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{20, 21}, nil, false},
 									Raw:      "2",
 									Value:    "2",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{
 									NodeSpan{21, 27},
 									nil,
@@ -33378,15 +33378,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 28}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 28}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 28}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{
 									NodeSpan{1, 6},
 									nil,
@@ -33402,14 +33402,14 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 									Raw:      "\n",
 									Value:    "\n",
 								},
-								&XMLElement{
+								&MarkupElement{
 									NodeBase: NodeBase{NodeSpan{7, 21}, nil, false},
-									Opening: &XMLOpeningElement{
+									Opening: &MarkupOpeningTag{
 										NodeBase: NodeBase{
 											NodeSpan{7, 13},
 											nil,
@@ -33425,13 +33425,13 @@ func testParse(
 										},
 									},
 									Children: []Node{
-										&XMLText{
+										&MarkupText{
 											NodeBase: NodeBase{NodeSpan{13, 14}, nil, false},
 											Raw:      "1",
 											Value:    "1",
 										},
 									},
-									Closing: &XMLClosingElement{
+									Closing: &MarkupClosingTag{
 										NodeBase: NodeBase{
 											NodeSpan{14, 21},
 											nil,
@@ -33447,13 +33447,13 @@ func testParse(
 										},
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{21, 22}, nil, false},
 									Raw:      "2",
 									Value:    "2",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{
 									NodeSpan{22, 28},
 									nil,
@@ -33480,11 +33480,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 22}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{1, 21}, nil, true},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 21}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
@@ -33492,14 +33492,14 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
-								&XMLElement{
+								&MarkupElement{
 									NodeBase: NodeBase{NodeSpan{6, 15}, nil, false},
-									Opening: &XMLOpeningElement{
+									Opening: &MarkupOpeningTag{
 										NodeBase: NodeBase{Span: NodeSpan{6, 10}},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{7, 9}, nil, false},
@@ -33507,13 +33507,13 @@ func testParse(
 										},
 									},
 									Children: []Node{
-										&XMLText{
+										&MarkupText{
 											NodeBase: NodeBase{NodeSpan{10, 10}, nil, false},
 											Raw:      "",
 											Value:    "",
 										},
 									},
-									Closing: &XMLClosingElement{
+									Closing: &MarkupClosingTag{
 										NodeBase: NodeBase{
 											NodeSpan{10, 15},
 											&ParsingError{UnspecifiedParsingError, fmtExpectedClosingTag("ul")},
@@ -33525,13 +33525,13 @@ func testParse(
 										},
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{15, 15}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{15, 21}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{17, 20}, nil, false},
@@ -33550,11 +33550,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{1, 22}, nil, true},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 22}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
@@ -33562,14 +33562,14 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
-								&XMLElement{
+								&MarkupElement{
 									NodeBase: NodeBase{NodeSpan{6, 15}, nil, false},
-									Opening: &XMLOpeningElement{
+									Opening: &MarkupOpeningTag{
 										NodeBase: NodeBase{Span: NodeSpan{6, 10}},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{7, 9}, nil, false},
@@ -33577,13 +33577,13 @@ func testParse(
 										},
 									},
 									Children: []Node{
-										&XMLText{
+										&MarkupText{
 											NodeBase: NodeBase{NodeSpan{10, 10}, nil, false},
 											Raw:      "",
 											Value:    "",
 										},
 									},
-									Closing: &XMLClosingElement{
+									Closing: &MarkupClosingTag{
 										NodeBase: NodeBase{
 											NodeSpan{10, 15},
 											&ParsingError{UnspecifiedParsingError, fmtExpectedClosingTag("ul")},
@@ -33595,13 +33595,13 @@ func testParse(
 										},
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{15, 16}, nil, false},
 									Raw:      " ",
 									Value:    " ",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{16, 22}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{18, 21}, nil, false},
@@ -33620,11 +33620,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 29}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{1, 28}, nil, true},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 28}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
@@ -33632,14 +33632,14 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
-								&XMLElement{
+								&MarkupElement{
 									NodeBase: NodeBase{NodeSpan{6, 15}, nil, false},
-									Opening: &XMLOpeningElement{
+									Opening: &MarkupOpeningTag{
 										NodeBase: NodeBase{Span: NodeSpan{6, 10}},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{7, 9}, nil, false},
@@ -33647,13 +33647,13 @@ func testParse(
 										},
 									},
 									Children: []Node{
-										&XMLText{
+										&MarkupText{
 											NodeBase: NodeBase{NodeSpan{10, 10}, nil, false},
 											Raw:      "",
 											Value:    "",
 										},
 									},
-									Closing: &XMLClosingElement{
+									Closing: &MarkupClosingTag{
 										NodeBase: NodeBase{
 											NodeSpan{10, 15},
 											&ParsingError{UnspecifiedParsingError, fmtExpectedClosingTag("ul")},
@@ -33665,14 +33665,14 @@ func testParse(
 										},
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{15, 15}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
-								&XMLElement{
+								&MarkupElement{
 									NodeBase: NodeBase{NodeSpan{15, 22}, nil, false},
-									Opening: &XMLOpeningElement{
+									Opening: &MarkupOpeningTag{
 										NodeBase: NodeBase{Span: NodeSpan{15, 18}},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{16, 17}, nil, false},
@@ -33680,13 +33680,13 @@ func testParse(
 										},
 									},
 									Children: []Node{
-										&XMLText{
+										&MarkupText{
 											NodeBase: NodeBase{NodeSpan{18, 18}, nil, false},
 											Raw:      "",
 											Value:    "",
 										},
 									},
-									Closing: &XMLClosingElement{
+									Closing: &MarkupClosingTag{
 										NodeBase: NodeBase{Span: NodeSpan{18, 22}},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{20, 21}, nil, false},
@@ -33694,13 +33694,13 @@ func testParse(
 										},
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{22, 22}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{22, 28}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{24, 27}, nil, false},
@@ -33718,15 +33718,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 18}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 18}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 18}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
@@ -33744,18 +33744,18 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 									Raw:      "\n",
 									Value:    "\n",
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{11, 12}, nil, false},
 									Raw:      "\n",
 									Value:    "\n",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{12, 18}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{14, 17}, nil, false},
@@ -33774,19 +33774,19 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 11}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 11}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{
 								NodeSpan{1, 11},
 								&ParsingError{UnspecifiedParsingError, fmtExpectedClosingTag("div")},
 								false,
 							},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
@@ -33804,12 +33804,12 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 									Raw:      "\n",
 									Value:    "\n",
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{11, 11}, nil, false},
 									Raw:      "",
 									Value:    "",
@@ -33826,15 +33826,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 25}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 25}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 25}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
@@ -33852,19 +33852,19 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 									Raw:      "\n",
 									Value:    "\n",
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{11, 12}, nil, false},
 									Raw:      "\n",
 									Value:    "\n",
 								},
-								&XMLElement{
+								&MarkupElement{
 									NodeBase: NodeBase{NodeSpan{12, 19}, nil, false},
-									Opening: &XMLOpeningElement{
+									Opening: &MarkupOpeningTag{
 										NodeBase: NodeBase{NodeSpan{12, 15}, nil, false},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{13, 14}, nil, false},
@@ -33872,13 +33872,13 @@ func testParse(
 										},
 									},
 									Children: []Node{
-										&XMLText{
+										&MarkupText{
 											NodeBase: NodeBase{NodeSpan{15, 15}, nil, false},
 											Raw:      "",
 											Value:    "",
 										},
 									},
-									Closing: &XMLClosingElement{
+									Closing: &MarkupClosingTag{
 										NodeBase: NodeBase{NodeSpan{15, 19}, nil, false},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{17, 18}, nil, false},
@@ -33886,13 +33886,13 @@ func testParse(
 										},
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{19, 19}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{19, 25}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{21, 24}, nil, false},
@@ -33910,15 +33910,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 28}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 28}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 28}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
@@ -33945,19 +33945,19 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 									Raw:      "\n",
 									Value:    "\n",
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{14, 15}, nil, false},
 									Raw:      "\n",
 									Value:    "\n",
 								},
-								&XMLElement{
+								&MarkupElement{
 									NodeBase: NodeBase{NodeSpan{15, 22}, nil, false},
-									Opening: &XMLOpeningElement{
+									Opening: &MarkupOpeningTag{
 										NodeBase: NodeBase{NodeSpan{15, 18}, nil, false},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{16, 17}, nil, false},
@@ -33965,13 +33965,13 @@ func testParse(
 										},
 									},
 									Children: []Node{
-										&XMLText{
+										&MarkupText{
 											NodeBase: NodeBase{NodeSpan{18, 18}, nil, false},
 											Raw:      "",
 											Value:    "",
 										},
 									},
-									Closing: &XMLClosingElement{
+									Closing: &MarkupClosingTag{
 										NodeBase: NodeBase{NodeSpan{18, 22}, nil, false},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{20, 21}, nil, false},
@@ -33979,13 +33979,13 @@ func testParse(
 										},
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{22, 22}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{22, 28}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{24, 27}, nil, false},
@@ -34004,15 +34004,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
 				Statements: []Node{
-					&XMLExpression{
+					&MarkupExpression{
 						NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
-						Element: &XMLElement{
+						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 17}, nil, false},
-							Opening: &XMLOpeningElement{
+							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
@@ -34034,18 +34034,18 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 									Raw:      "\n",
 									Value:    "\n",
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{11, 11}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLClosingElement{
+							Closing: &MarkupClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{11, 17}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{13, 16}, nil, false},
@@ -34059,18 +34059,18 @@ func testParse(
 		})
 	})
 
-	t.Run("XML pattern expression", func(t *testing.T) {
+	t.Run("markup pattern expression", func(t *testing.T) {
 
 		t.Run("no children: 0 characters", func(t *testing.T) {
 			n := mustparseChunk(t, "%<div></div>")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 12}, nil, false},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
@@ -34079,13 +34079,13 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{6, 12}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{8, 11}, nil, false},
@@ -34111,11 +34111,11 @@ func testParse(
 							Name:       "p",
 							Unprefixed: true,
 						},
-						Right: &XMLPatternExpression{
+						Right: &MarkupPatternExpression{
 							NodeBase: NodeBase{NodeSpan{12, 23}, nil, false},
-							Element: &XMLPatternElement{
+							Element: &MarkupPatternElement{
 								NodeBase: NodeBase{NodeSpan{12, 23}, nil, false},
-								Opening: &XMLPatternOpeningElement{
+								Opening: &MarkupPatternOpeningTag{
 									NodeBase: NodeBase{Span: NodeSpan{12, 17}},
 									Name: &PatternIdentifierLiteral{
 										NodeBase:   NodeBase{NodeSpan{13, 16}, nil, false},
@@ -34124,13 +34124,13 @@ func testParse(
 									},
 								},
 								Children: []Node{
-									&XMLText{
+									&MarkupText{
 										NodeBase: NodeBase{NodeSpan{17, 17}, nil, false},
 										Raw:      "",
 										Value:    "",
 									},
 								},
-								Closing: &XMLPatternClosingElement{
+								Closing: &MarkupPatternClosingTag{
 									NodeBase: NodeBase{Span: NodeSpan{17, 23}},
 									Name: &PatternIdentifierLiteral{
 										NodeBase:   NodeBase{NodeSpan{19, 22}, nil, false},
@@ -34157,11 +34157,11 @@ func testParse(
 							Name:       "p",
 							Unprefixed: true,
 						},
-						Right: &XMLPatternExpression{
+						Right: &MarkupPatternExpression{
 							NodeBase: NodeBase{NodeSpan{13, 24}, nil, true},
-							Element: &XMLPatternElement{
+							Element: &MarkupPatternElement{
 								NodeBase: NodeBase{NodeSpan{13, 24}, nil, false},
-								Opening: &XMLPatternOpeningElement{
+								Opening: &MarkupPatternOpeningTag{
 									NodeBase: NodeBase{Span: NodeSpan{13, 18}},
 									Name: &PatternIdentifierLiteral{
 										NodeBase:   NodeBase{NodeSpan{14, 17}, nil, false},
@@ -34170,13 +34170,13 @@ func testParse(
 									},
 								},
 								Children: []Node{
-									&XMLText{
+									&MarkupText{
 										NodeBase: NodeBase{NodeSpan{18, 18}, nil, false},
 										Raw:      "",
 										Value:    "",
 									},
 								},
-								Closing: &XMLPatternClosingElement{
+								Closing: &MarkupPatternClosingTag{
 									NodeBase: NodeBase{Span: NodeSpan{18, 24}},
 									Name: &PatternIdentifierLiteral{
 										NodeBase:   NodeBase{NodeSpan{20, 23}, nil, false},
@@ -34196,13 +34196,13 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 13}, nil, false},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase:   NodeBase{Span: NodeSpan{1, 7}},
-								Quantifier: OneOrMoreXmlElements,
+								Quantifier: OneOrMoreMarkupElements,
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
 									Name:       "div",
@@ -34210,13 +34210,13 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{7, 7}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{7, 13}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{9, 12}, nil, false},
@@ -34236,11 +34236,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 14}, nil, false},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{
 									NodeSpan{1, 8},
 									&ParsingError{UnspecifiedParsingError, THERE_SHOULD_NOT_BE_SPACE_BETWEEN_THE_TAG_NAME_AND_THE_QUANTIFIER},
@@ -34253,13 +34253,13 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{8, 8}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{8, 14}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{10, 13}, nil, false},
@@ -34278,11 +34278,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 13}, nil, false},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{Span: NodeSpan{2, 5}},
@@ -34291,22 +34291,22 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
-								&XMLPatternWildcard{
+								&MarkupPatternWildcard{
 									NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
-									Wildcard: XmlStarWildcard,
+									Wildcard: MarkupStarWildcard,
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{7, 7}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{7, 13}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{9, 12}, nil, false},
@@ -34325,11 +34325,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 14}, nil, false},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{Span: NodeSpan{2, 5}},
@@ -34338,22 +34338,22 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 									Raw:      "1",
 									Value:    "1",
 								},
-								&XMLPatternWildcard{
+								&MarkupPatternWildcard{
 									NodeBase: NodeBase{NodeSpan{7, 8}, nil, false},
-									Wildcard: XmlStarWildcard,
+									Wildcard: MarkupStarWildcard,
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{8, 8}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{8, 14}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{10, 13}, nil, false},
@@ -34372,11 +34372,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 20}, nil, false},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{Span: NodeSpan{2, 5}},
@@ -34385,14 +34385,14 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
-								&XMLPatternElement{
+								&MarkupPatternElement{
 									NodeBase: NodeBase{NodeSpan{6, 13}, nil, false},
-									Opening: &XMLPatternOpeningElement{
+									Opening: &MarkupPatternOpeningTag{
 										NodeBase: NodeBase{Span: NodeSpan{6, 9}},
 										Name: &PatternIdentifierLiteral{
 											NodeBase:   NodeBase{Span: NodeSpan{7, 8}},
@@ -34401,13 +34401,13 @@ func testParse(
 										},
 									},
 									Children: []Node{
-										&XMLText{
+										&MarkupText{
 											NodeBase: NodeBase{NodeSpan{9, 9}, nil, false},
 											Raw:      "",
 											Value:    "",
 										},
 									},
-									Closing: &XMLPatternClosingElement{
+									Closing: &MarkupPatternClosingTag{
 										NodeBase: NodeBase{Span: NodeSpan{9, 13}},
 										Name: &PatternIdentifierLiteral{
 											NodeBase:   NodeBase{NodeSpan{11, 12}, nil, false},
@@ -34416,22 +34416,22 @@ func testParse(
 										},
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{13, 13}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
-								&XMLPatternWildcard{
+								&MarkupPatternWildcard{
 									NodeBase: NodeBase{NodeSpan{13, 14}, nil, false},
-									Wildcard: XmlStarWildcard,
+									Wildcard: MarkupStarWildcard,
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{14, 14}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{14, 20}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{16, 19}, nil, false},
@@ -34451,14 +34451,14 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 5}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 5}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 5}, nil, false},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{
 									NodeSpan{1, 5},
-									&ParsingError{UnspecifiedParsingError, UNTERMINATED_OPENING_XML_TAG_MISSING_CLOSING},
+									&ParsingError{UnspecifiedParsingError, UNTERMINATED_OPENING_MARKUP_TAG_MISSING_CLOSING},
 									false,
 								},
 								Name: &PatternIdentifierLiteral{
@@ -34479,11 +34479,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 17}, nil, false},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
@@ -34492,17 +34492,17 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{
 										Span: NodeSpan{6, 6},
 									},
 								},
-								&XMLPatternElement{
+								&MarkupPatternElement{
 									NodeBase: NodeBase{NodeSpan{6, 11}, nil, false},
-									Opening: &XMLPatternOpeningElement{
+									Opening: &MarkupPatternOpeningTag{
 										NodeBase: NodeBase{
 											NodeSpan{6, 11},
-											&ParsingError{UnspecifiedParsingError, UNTERMINATED_OPENING_XML_TAG_MISSING_CLOSING},
+											&ParsingError{UnspecifiedParsingError, UNTERMINATED_OPENING_MARKUP_TAG_MISSING_CLOSING},
 											false,
 										},
 										Name: &PatternIdentifierLiteral{
@@ -34512,13 +34512,13 @@ func testParse(
 										},
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{
 										Span: NodeSpan{11, 11},
 									},
 								},
 							},
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{11, 17}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{13, 16}, nil, false},
@@ -34538,11 +34538,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 28}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 28}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 28}, nil, false},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
@@ -34551,14 +34551,14 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{
 										Span: NodeSpan{6, 6},
 									},
 								},
-								&XMLPatternElement{
+								&MarkupPatternElement{
 									NodeBase: NodeBase{NodeSpan{6, 22}, nil, false},
-									Opening: &XMLPatternOpeningElement{
+									Opening: &MarkupPatternOpeningTag{
 										NodeBase: NodeBase{Span: NodeSpan{6, 11}},
 										Name: &PatternIdentifierLiteral{
 											NodeBase:   NodeBase{NodeSpan{7, 10}, nil, false},
@@ -34567,17 +34567,17 @@ func testParse(
 										},
 									},
 									Children: []Node{
-										&XMLText{
+										&MarkupText{
 											NodeBase: NodeBase{
 												Span: NodeSpan{11, 11},
 											},
 										},
-										&XMLPatternElement{
+										&MarkupPatternElement{
 											NodeBase: NodeBase{NodeSpan{11, 16}, nil, false},
-											Opening: &XMLPatternOpeningElement{
+											Opening: &MarkupPatternOpeningTag{
 												NodeBase: NodeBase{
 													NodeSpan{11, 16},
-													&ParsingError{UnspecifiedParsingError, UNTERMINATED_OPENING_XML_TAG_MISSING_CLOSING},
+													&ParsingError{UnspecifiedParsingError, UNTERMINATED_OPENING_MARKUP_TAG_MISSING_CLOSING},
 													false,
 												},
 												Name: &PatternIdentifierLiteral{
@@ -34587,13 +34587,13 @@ func testParse(
 												},
 											},
 										},
-										&XMLText{
+										&MarkupText{
 											NodeBase: NodeBase{
 												Span: NodeSpan{16, 16},
 											},
 										},
 									},
-									Closing: &XMLPatternClosingElement{
+									Closing: &MarkupPatternClosingTag{
 										NodeBase: NodeBase{Span: NodeSpan{16, 22}},
 										Name: &PatternIdentifierLiteral{
 											NodeBase:   NodeBase{NodeSpan{18, 21}, nil, false},
@@ -34602,13 +34602,13 @@ func testParse(
 										},
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{
 										Span: NodeSpan{22, 22},
 									},
 								},
 							},
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{22, 28}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{24, 27}, nil, false},
@@ -34627,11 +34627,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 13}, nil, false},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 7}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
@@ -34640,13 +34640,13 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{7, 7}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{
 									NodeSpan{7, 13},
 									nil,
@@ -34673,11 +34673,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 18}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 18}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 18}, nil, false},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 12}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
@@ -34685,7 +34685,7 @@ func testParse(
 									Unprefixed: true,
 								},
 								Attributes: []Node{
-									&XMLAttribute{
+									&MarkupAttribute{
 										NodeBase: NodeBase{Span: NodeSpan{6, 11}},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
@@ -34700,13 +34700,13 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{12, 12}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{12, 18}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{14, 17}, nil, false},
@@ -34725,11 +34725,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 18}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 18}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 18}, nil, false},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{
 									Span: NodeSpan{1, 12},
 								},
@@ -34739,7 +34739,7 @@ func testParse(
 									Unprefixed: true,
 								},
 								Attributes: []Node{
-									&XMLAttribute{
+									&MarkupAttribute{
 										NodeBase: NodeBase{Span: NodeSpan{6, 11}},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
@@ -34754,13 +34754,13 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{12, 12}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{12, 18}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{14, 17}, nil, false},
@@ -34781,11 +34781,11 @@ func testParse(
 				Statements: []Node{
 					&QuotedExpression{
 						NodeBase: NodeBase{NodeSpan{0, 25}, nil, false},
-						Expression: &XMLPatternExpression{
+						Expression: &MarkupPatternExpression{
 							NodeBase: NodeBase{NodeSpan{2, 24}, nil, true},
-							Element: &XMLPatternElement{
+							Element: &MarkupPatternElement{
 								NodeBase: NodeBase{NodeSpan{3, 24}, nil, false},
-								Opening: &XMLPatternOpeningElement{
+								Opening: &MarkupPatternOpeningTag{
 									NodeBase: NodeBase{Span: NodeSpan{3, 18}},
 									Name: &PatternIdentifierLiteral{
 										NodeBase:   NodeBase{NodeSpan{4, 7}, nil, false},
@@ -34793,7 +34793,7 @@ func testParse(
 										Unprefixed: true,
 									},
 									Attributes: []Node{
-										&XMLAttribute{
+										&MarkupAttribute{
 											NodeBase: NodeBase{Span: NodeSpan{8, 17}},
 											Name: &UnquotedRegion{
 												NodeBase: NodeBase{Span: NodeSpan{8, 13}},
@@ -34811,13 +34811,13 @@ func testParse(
 									},
 								},
 								Children: []Node{
-									&XMLText{
+									&MarkupText{
 										NodeBase: NodeBase{NodeSpan{18, 18}, nil, false},
 										Raw:      "",
 										Value:    "",
 									},
 								},
-								Closing: &XMLPatternClosingElement{
+								Closing: &MarkupPatternClosingTag{
 									NodeBase: NodeBase{Span: NodeSpan{18, 24}},
 									Name: &PatternIdentifierLiteral{
 										NodeBase:   NodeBase{NodeSpan{20, 23}, nil, false},
@@ -34839,11 +34839,11 @@ func testParse(
 				Statements: []Node{
 					&QuotedExpression{
 						NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
-						Expression: &XMLPatternExpression{
+						Expression: &MarkupPatternExpression{
 							NodeBase: NodeBase{NodeSpan{2, 22}, nil, true},
-							Element: &XMLPatternElement{
+							Element: &MarkupPatternElement{
 								NodeBase: NodeBase{NodeSpan{3, 22}, nil, false},
-								Opening: &XMLPatternOpeningElement{
+								Opening: &MarkupPatternOpeningTag{
 									NodeBase: NodeBase{Span: NodeSpan{3, 16}},
 									Name: &PatternIdentifierLiteral{
 										NodeBase:   NodeBase{NodeSpan{4, 7}, nil, false},
@@ -34851,7 +34851,7 @@ func testParse(
 										Unprefixed: true,
 									},
 									Attributes: []Node{
-										&XMLAttribute{
+										&MarkupAttribute{
 											NodeBase: NodeBase{Span: NodeSpan{8, 15}},
 											Name: &IdentifierLiteral{
 												NodeBase: NodeBase{NodeSpan{8, 9}, nil, false},
@@ -34868,13 +34868,13 @@ func testParse(
 									},
 								},
 								Children: []Node{
-									&XMLText{
+									&MarkupText{
 										NodeBase: NodeBase{NodeSpan{16, 16}, nil, false},
 										Raw:      "",
 										Value:    "",
 									},
 								},
-								Closing: &XMLPatternClosingElement{
+								Closing: &MarkupPatternClosingTag{
 									NodeBase: NodeBase{Span: NodeSpan{16, 22}},
 									Name: &PatternIdentifierLiteral{
 										NodeBase:   NodeBase{NodeSpan{18, 21}, nil, false},
@@ -34894,11 +34894,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 14}, nil, false},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 8}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
@@ -34906,7 +34906,7 @@ func testParse(
 									Unprefixed: true,
 								},
 								Attributes: []Node{
-									&XMLAttribute{
+									&MarkupAttribute{
 										NodeBase: NodeBase{Span: NodeSpan{6, 7}},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
@@ -34916,13 +34916,13 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{8, 8}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{8, 14}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{10, 13}, nil, false},
@@ -34941,11 +34941,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 13}, nil, false},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 13}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
@@ -34953,7 +34953,7 @@ func testParse(
 									Unprefixed: true,
 								},
 								Attributes: []Node{
-									&XMLAttribute{
+									&MarkupAttribute{
 										NodeBase: NodeBase{
 											NodeSpan{6, 11},
 											nil,
@@ -34982,11 +34982,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 19}, nil, false},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 13}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
@@ -34994,7 +34994,7 @@ func testParse(
 									Unprefixed: true,
 								},
 								Attributes: []Node{
-									&XMLAttribute{
+									&MarkupAttribute{
 										NodeBase: NodeBase{Span: NodeSpan{6, 11}},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
@@ -35009,13 +35009,13 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{13, 13}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{
 									NodeSpan{13, 19},
 									nil,
@@ -35043,11 +35043,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 20}, nil, false},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{
 									NodeSpan{1, 14},
 									nil,
@@ -35063,7 +35063,7 @@ func testParse(
 									Unprefixed: true,
 								},
 								Attributes: []Node{
-									&XMLAttribute{
+									&MarkupAttribute{
 										NodeBase: NodeBase{
 											NodeSpan{6, 13},
 											nil,
@@ -35072,7 +35072,7 @@ func testParse(
 										Name: &DoubleQuotedStringLiteral{
 											NodeBase: NodeBase{
 												NodeSpan{6, 9},
-												&ParsingError{UnspecifiedParsingError, XML_ATTRIBUTE_NAME_SHOULD_BE_IDENT},
+												&ParsingError{UnspecifiedParsingError, MARKUP_ATTRIBUTE_NAME_SHOULD_BE_IDENT},
 												false,
 											},
 											Raw:   `"a"`,
@@ -35087,13 +35087,13 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{14, 14}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{
 									NodeSpan{14, 20},
 									nil,
@@ -35121,11 +35121,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 15}, nil, false},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 9}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
@@ -35133,7 +35133,7 @@ func testParse(
 									Unprefixed: true,
 								},
 								Attributes: []Node{
-									&XMLAttribute{
+									&MarkupAttribute{
 										NodeBase: NodeBase{
 											NodeSpan{6, 8},
 											nil,
@@ -35154,13 +35154,13 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{9, 9}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{
 									NodeSpan{9, 15},
 									nil,
@@ -35188,11 +35188,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 15}, nil, false},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 9}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
@@ -35200,7 +35200,7 @@ func testParse(
 									Unprefixed: true,
 								},
 								Attributes: []Node{
-									&XMLAttribute{
+									&MarkupAttribute{
 										NodeBase: NodeBase{Span: NodeSpan{6, 8}},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
@@ -35217,13 +35217,13 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{9, 9}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{
 									NodeSpan{9, 15},
 									nil,
@@ -35250,11 +35250,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 14}, nil, false},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 8}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
@@ -35262,7 +35262,7 @@ func testParse(
 									Unprefixed: true,
 								},
 								Attributes: []Node{
-									&XMLAttribute{
+									&MarkupAttribute{
 										NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
@@ -35272,13 +35272,13 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{8, 8}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{
 									NodeSpan{8, 14},
 									nil,
@@ -35306,14 +35306,14 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 7}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 7}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 7}, nil, false},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{
 									NodeSpan{1, 7},
-									&ParsingError{UnspecifiedParsingError, UNTERMINATED_OPENING_XML_TAG_MISSING_CLOSING},
+									&ParsingError{UnspecifiedParsingError, UNTERMINATED_OPENING_MARKUP_TAG_MISSING_CLOSING},
 									false,
 								},
 								Name: &PatternIdentifierLiteral{
@@ -35322,7 +35322,7 @@ func testParse(
 									Unprefixed: true,
 								},
 								Attributes: []Node{
-									&XMLAttribute{
+									&MarkupAttribute{
 										NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
@@ -35342,11 +35342,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 24}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 24}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 24}, nil, false},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 18}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
@@ -35354,7 +35354,7 @@ func testParse(
 									Unprefixed: true,
 								},
 								Attributes: []Node{
-									&XMLAttribute{
+									&MarkupAttribute{
 										NodeBase: NodeBase{
 											NodeSpan{6, 11},
 											nil,
@@ -35370,7 +35370,7 @@ func testParse(
 											Value:    "b",
 										},
 									},
-									&XMLAttribute{
+									&MarkupAttribute{
 										NodeBase: NodeBase{
 											NodeSpan{12, 17},
 											nil,
@@ -35389,13 +35389,13 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{18, 18}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{
 									NodeSpan{18, 24},
 									nil,
@@ -35426,11 +35426,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 7}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 7}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 7}, nil, false},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{
 									NodeSpan{1, 7},
 									nil,
@@ -35459,14 +35459,14 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 6}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 6}, nil, false},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{
 									NodeSpan{1, 6},
-									&ParsingError{UnspecifiedParsingError, UNTERMINATED_SELF_CLOSING_XML_TAG_MISSING_CLOSING},
+									&ParsingError{UnspecifiedParsingError, UNTERMINATED_SELF_CLOSING_MARKUP_TAG_MISSING_CLOSING},
 									false,
 									/*[]Token{
 										{Type: LESS_THAN, Span: NodeSpan{1, 2}},
@@ -35490,11 +35490,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 13}, nil, false},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{
 									NodeSpan{1, 6},
 									nil,
@@ -35511,13 +35511,13 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 									Raw:      " ",
 									Value:    " ",
 								},
 							},
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{
 									NodeSpan{7, 13},
 									nil,
@@ -35544,11 +35544,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 13}, nil, false},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
@@ -35557,13 +35557,13 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 									Raw:      "\n",
 									Value:    "\n",
 								},
 							},
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{7, 13}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{9, 12}, nil, false},
@@ -35582,11 +35582,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{Span: NodeSpan{1, 16}},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
@@ -35595,12 +35595,12 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
-								&XMLPatternInterpolation{
+								&MarkupPatternInterpolation{
 									NodeBase: NodeBase{NodeSpan{7, 8}, nil, false},
 									Expr: &IntLiteral{
 										NodeBase: NodeBase{NodeSpan{7, 8}, nil, false},
@@ -35608,13 +35608,13 @@ func testParse(
 										Value:    1,
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{9, 10}, nil, false},
 									Raw:      "2",
 									Value:    "2",
 								},
 							},
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{10, 16}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{12, 15}, nil, false},
@@ -35635,11 +35635,11 @@ func testParse(
 				Statements: []Node{
 					&QuotedExpression{
 						NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
-						Expression: &XMLPatternExpression{
+						Expression: &MarkupPatternExpression{
 							NodeBase: NodeBase{NodeSpan{2, 20}, nil, true},
-							Element: &XMLPatternElement{
+							Element: &MarkupPatternElement{
 								NodeBase: NodeBase{Span: NodeSpan{3, 20}},
-								Opening: &XMLPatternOpeningElement{
+								Opening: &MarkupPatternOpeningTag{
 									NodeBase: NodeBase{Span: NodeSpan{3, 8}},
 									Name: &PatternIdentifierLiteral{
 										NodeBase:   NodeBase{NodeSpan{4, 7}, nil, false},
@@ -35648,7 +35648,7 @@ func testParse(
 									},
 								},
 								Children: []Node{
-									&XMLText{
+									&MarkupText{
 										NodeBase: NodeBase{NodeSpan{8, 8}, nil, false},
 										Raw:      "",
 										Value:    "",
@@ -35661,13 +35661,13 @@ func testParse(
 											Value:    1,
 										},
 									},
-									&XMLText{
+									&MarkupText{
 										NodeBase: NodeBase{NodeSpan{13, 14}, nil, false},
 										Raw:      "2",
 										Value:    "2",
 									},
 								},
-								Closing: &XMLPatternClosingElement{
+								Closing: &MarkupPatternClosingTag{
 									NodeBase: NodeBase{Span: NodeSpan{14, 20}},
 									Name: &PatternIdentifierLiteral{
 										NodeBase:   NodeBase{NodeSpan{16, 19}, nil, false},
@@ -35687,11 +35687,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{Span: NodeSpan{1, 16}},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
@@ -35700,12 +35700,12 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 									Raw:      "1",
 									Value:    "1",
 								},
-								&XMLPatternInterpolation{
+								&MarkupPatternInterpolation{
 									NodeBase: NodeBase{NodeSpan{8, 9}, nil, false},
 									Expr: &IntLiteral{
 										NodeBase: NodeBase{NodeSpan{8, 9}, nil, false},
@@ -35713,13 +35713,13 @@ func testParse(
 										Value:    2,
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{10, 10}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{10, 16}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{12, 15}, nil, false},
@@ -35740,11 +35740,11 @@ func testParse(
 				Statements: []Node{
 					&QuotedExpression{
 						NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
-						Expression: &XMLPatternExpression{
+						Expression: &MarkupPatternExpression{
 							NodeBase: NodeBase{NodeSpan{2, 20}, nil, true},
-							Element: &XMLPatternElement{
+							Element: &MarkupPatternElement{
 								NodeBase: NodeBase{Span: NodeSpan{3, 20}},
-								Opening: &XMLPatternOpeningElement{
+								Opening: &MarkupPatternOpeningTag{
 									NodeBase: NodeBase{Span: NodeSpan{3, 8}},
 									Name: &PatternIdentifierLiteral{
 										NodeBase:   NodeBase{NodeSpan{4, 7}, nil, false},
@@ -35753,7 +35753,7 @@ func testParse(
 									},
 								},
 								Children: []Node{
-									&XMLText{
+									&MarkupText{
 										NodeBase: NodeBase{NodeSpan{8, 9}, nil, false},
 										Raw:      "1",
 										Value:    "1",
@@ -35766,13 +35766,13 @@ func testParse(
 											Value:    2,
 										},
 									},
-									&XMLText{
+									&MarkupText{
 										NodeBase: NodeBase{NodeSpan{14, 14}, nil, false},
 										Raw:      "",
 										Value:    "",
 									},
 								},
-								Closing: &XMLPatternClosingElement{
+								Closing: &MarkupPatternClosingTag{
 									NodeBase: NodeBase{Span: NodeSpan{14, 20}},
 									Name: &PatternIdentifierLiteral{
 										NodeBase:   NodeBase{NodeSpan{16, 19}, nil, false},
@@ -35792,11 +35792,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 22}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 22}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 22}, nil, false},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 9}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 8}, nil, false},
@@ -35808,7 +35808,7 @@ func testParse(
 							RawElementContentStart:  9,
 							RawElementContentEnd:    13,
 							EstimatedRawElementType: JsScript,
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{13, 22}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{15, 21}, nil, false},
@@ -35827,11 +35827,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 21}, nil, false},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 9}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 8}, nil, false},
@@ -35843,7 +35843,7 @@ func testParse(
 							RawElementContentStart:  9,
 							RawElementContentEnd:    12,
 							EstimatedRawElementType: JsScript,
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{12, 21}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{14, 20}, nil, false},
@@ -35862,11 +35862,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 23}, nil, false},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 11}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 8}, nil, false},
@@ -35874,7 +35874,7 @@ func testParse(
 									Unprefixed: true,
 								},
 								Attributes: []Node{
-									&XMLAttribute{
+									&MarkupAttribute{
 										NodeBase: NodeBase{NodeSpan{9, 10}, nil, false},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{9, 10}, nil, false},
@@ -35887,7 +35887,7 @@ func testParse(
 							RawElementContentStart:  11,
 							RawElementContentEnd:    14,
 							EstimatedRawElementType: HyperscriptScript,
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{14, 23}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{16, 22}, nil, false},
@@ -35906,11 +35906,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 45}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 45}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 45}, nil, false},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 33}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 8}, nil, false},
@@ -35918,7 +35918,7 @@ func testParse(
 									Unprefixed: true,
 								},
 								Attributes: []Node{
-									&XMLAttribute{
+									&MarkupAttribute{
 										NodeBase: NodeBase{NodeSpan{9, 32}, nil, false},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{9, 13}, nil, false},
@@ -35936,7 +35936,7 @@ func testParse(
 							RawElementContentStart:  33,
 							RawElementContentEnd:    36,
 							EstimatedRawElementType: HyperscriptScript,
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{36, 45}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{38, 44}, nil, false},
@@ -35955,11 +35955,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 47}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 47}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 47}, nil, false},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 35}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 8}, nil, false},
@@ -35967,7 +35967,7 @@ func testParse(
 									Unprefixed: true,
 								},
 								Attributes: []Node{
-									&XMLAttribute{
+									&MarkupAttribute{
 										NodeBase: NodeBase{NodeSpan{9, 32}, nil, false},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{9, 13}, nil, false},
@@ -35979,7 +35979,7 @@ func testParse(
 											Raw:      `"text/hyperscript"`,
 										},
 									},
-									&XMLAttribute{
+									&MarkupAttribute{
 										NodeBase: NodeBase{NodeSpan{33, 34}, nil, false},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{33, 34}, nil, false},
@@ -35992,7 +35992,7 @@ func testParse(
 							RawElementContentStart:  35,
 							RawElementContentEnd:    38,
 							EstimatedRawElementType: HyperscriptScript,
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{38, 47}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{40, 46}, nil, false},
@@ -36011,11 +36011,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 20}, nil, false},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 8}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 7}, nil, false},
@@ -36027,7 +36027,7 @@ func testParse(
 							RawElementContentStart:  8,
 							RawElementContentEnd:    12,
 							EstimatedRawElementType: CssStyleElem,
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{12, 20}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{14, 19}, nil, false},
@@ -36046,11 +36046,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 19}, nil, false},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 8}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 7}, nil, false},
@@ -36062,7 +36062,7 @@ func testParse(
 							RawElementContentStart:  8,
 							RawElementContentEnd:    11,
 							EstimatedRawElementType: CssStyleElem,
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{11, 19}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{13, 18}, nil, false},
@@ -36076,16 +36076,16 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("XML expression within interpolation", func(t *testing.T) {
+		t.Run("markup expression within interpolation", func(t *testing.T) {
 			n := mustparseChunk(t, "%<div>{%<div></div>}2</div>")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 27}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 27}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{Span: NodeSpan{1, 27}},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
@@ -36094,18 +36094,18 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
-								&XMLPatternInterpolation{
+								&MarkupPatternInterpolation{
 									NodeBase: NodeBase{NodeSpan{7, 19}, nil, false},
-									Expr: &XMLPatternExpression{
+									Expr: &MarkupPatternExpression{
 										NodeBase: NodeBase{NodeSpan{7, 19}, nil, false},
-										Element: &XMLPatternElement{
+										Element: &MarkupPatternElement{
 											NodeBase: NodeBase{NodeSpan{8, 19}, nil, false},
-											Opening: &XMLPatternOpeningElement{
+											Opening: &MarkupPatternOpeningTag{
 												NodeBase: NodeBase{Span: NodeSpan{8, 13}},
 												Name: &PatternIdentifierLiteral{
 													NodeBase:   NodeBase{NodeSpan{9, 12}, nil, false},
@@ -36114,13 +36114,13 @@ func testParse(
 												},
 											},
 											Children: []Node{
-												&XMLText{
+												&MarkupText{
 													NodeBase: NodeBase{NodeSpan{13, 13}, nil, false},
 													Raw:      "",
 													Value:    "",
 												},
 											},
-											Closing: &XMLPatternClosingElement{
+											Closing: &MarkupPatternClosingTag{
 												NodeBase: NodeBase{Span: NodeSpan{13, 19}},
 												Name: &PatternIdentifierLiteral{
 													NodeBase:   NodeBase{NodeSpan{15, 18}, nil, false},
@@ -36131,13 +36131,13 @@ func testParse(
 										},
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{20, 21}, nil, false},
 									Raw:      "2",
 									Value:    "2",
 								},
 							},
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{21, 27}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{23, 26}, nil, false},
@@ -36156,11 +36156,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{Span: NodeSpan{1, 17}},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
@@ -36169,24 +36169,24 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
-								&XMLPatternInterpolation{
+								&MarkupPatternInterpolation{
 									NodeBase: NodeBase{NodeSpan{7, 9}, nil, false},
 									Expr: &ObjectPatternLiteral{
 										NodeBase: NodeBase{NodeSpan{7, 9}, nil, false},
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{10, 11}, nil, false},
 									Raw:      "2",
 									Value:    "2",
 								},
 							},
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{11, 17}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{13, 16}, nil, false},
@@ -36207,11 +36207,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{Span: NodeSpan{1, 14}},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
@@ -36220,25 +36220,25 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
-								&XMLPatternInterpolation{
+								&MarkupPatternInterpolation{
 									NodeBase: NodeBase{
 										NodeSpan{7, 7},
-										&ParsingError{UnspecifiedParsingError, EMPTY_XML_INTERP},
+										&ParsingError{UnspecifiedParsingError, EMPTY_MARKUP_INTERP},
 										false,
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{8, 8}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{
 									Span: NodeSpan{8, 14},
 								},
@@ -36261,11 +36261,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{Span: NodeSpan{1, 15}},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
@@ -36274,25 +36274,25 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
-								&XMLPatternInterpolation{
+								&MarkupPatternInterpolation{
 									NodeBase: NodeBase{
 										NodeSpan{7, 8},
-										&ParsingError{UnspecifiedParsingError, EMPTY_XML_INTERP},
+										&ParsingError{UnspecifiedParsingError, EMPTY_MARKUP_INTERP},
 										false,
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{9, 9}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{
 									NodeSpan{9, 15},
 									nil,
@@ -36320,11 +36320,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{Span: NodeSpan{1, 16}},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
@@ -36333,12 +36333,12 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
-								&XMLPatternInterpolation{
+								&MarkupPatternInterpolation{
 									NodeBase: NodeBase{Span: NodeSpan{7, 9}},
 									Expr: &IntLiteral{
 										NodeBase: NodeBase{Span: NodeSpan{8, 9}},
@@ -36346,13 +36346,13 @@ func testParse(
 										Value:    1,
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{10, 10}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{10, 16}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{12, 15}, nil, false},
@@ -36372,11 +36372,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{Span: NodeSpan{1, 16}},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
@@ -36385,12 +36385,12 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
-								&XMLPatternInterpolation{
+								&MarkupPatternInterpolation{
 									NodeBase: NodeBase{Span: NodeSpan{7, 9}},
 									Expr: &IntLiteral{
 										NodeBase: NodeBase{Span: NodeSpan{7, 8}},
@@ -36398,13 +36398,13 @@ func testParse(
 										Value:    1,
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{10, 10}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{10, 16}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{12, 15}, nil, false},
@@ -36424,11 +36424,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{Span: NodeSpan{1, 17}},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
@@ -36437,15 +36437,15 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
-								&XMLPatternInterpolation{
+								&MarkupPatternInterpolation{
 									NodeBase: NodeBase{
 										NodeSpan{7, 10},
-										&ParsingError{UnspecifiedParsingError, XML_INTERP_SHOULD_CONTAIN_A_SINGLE_EXPR},
+										&ParsingError{UnspecifiedParsingError, MARKUP_INTERP_SHOULD_CONTAIN_A_SINGLE_EXPR},
 										false,
 									},
 									Expr: &IntLiteral{
@@ -36454,13 +36454,13 @@ func testParse(
 										Value:    1,
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{11, 11}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{11, 17}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{13, 16}, nil, false},
@@ -36480,11 +36480,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{Span: NodeSpan{1, 16}},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
@@ -36493,12 +36493,12 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
-								&XMLPatternInterpolation{
+								&MarkupPatternInterpolation{
 									NodeBase: NodeBase{NodeSpan{7, 8}, nil, false},
 									Expr: &MissingExpression{
 										NodeBase: NodeBase{
@@ -36508,13 +36508,13 @@ func testParse(
 										},
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{9, 10}, nil, false},
 									Raw:      "2",
 									Value:    "2",
 								},
 							},
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{10, 16}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{12, 15}, nil, false},
@@ -36533,11 +36533,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 27}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 27}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 27}, nil, false},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
@@ -36546,14 +36546,14 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
-								&XMLPatternElement{
+								&MarkupPatternElement{
 									NodeBase: NodeBase{NodeSpan{6, 20}, nil, false},
-									Opening: &XMLPatternOpeningElement{
+									Opening: &MarkupPatternOpeningTag{
 										NodeBase: NodeBase{Span: NodeSpan{6, 12}},
 										Name: &PatternIdentifierLiteral{
 											NodeBase:   NodeBase{NodeSpan{7, 11}, nil, false},
@@ -36562,13 +36562,13 @@ func testParse(
 										},
 									},
 									Children: []Node{
-										&XMLText{
+										&MarkupText{
 											NodeBase: NodeBase{NodeSpan{12, 13}, nil, false},
 											Raw:      "1",
 											Value:    "1",
 										},
 									},
-									Closing: &XMLPatternClosingElement{
+									Closing: &MarkupPatternClosingTag{
 										NodeBase: NodeBase{Span: NodeSpan{13, 20}},
 										Name: &PatternIdentifierLiteral{
 											NodeBase:   NodeBase{NodeSpan{15, 19}, nil, false},
@@ -36577,13 +36577,13 @@ func testParse(
 										},
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{20, 21}, nil, false},
 									Raw:      "2",
 									Value:    "2",
 								},
 							},
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{21, 27}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{23, 26}, nil, false},
@@ -36602,11 +36602,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 28}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 28}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 28}, nil, false},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
@@ -36615,14 +36615,14 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 									Raw:      "\n",
 									Value:    "\n",
 								},
-								&XMLPatternElement{
+								&MarkupPatternElement{
 									NodeBase: NodeBase{NodeSpan{7, 21}, nil, false},
-									Opening: &XMLPatternOpeningElement{
+									Opening: &MarkupPatternOpeningTag{
 										NodeBase: NodeBase{Span: NodeSpan{7, 13}},
 										Name: &PatternIdentifierLiteral{
 											NodeBase:   NodeBase{NodeSpan{8, 12}, nil, false},
@@ -36631,13 +36631,13 @@ func testParse(
 										},
 									},
 									Children: []Node{
-										&XMLText{
+										&MarkupText{
 											NodeBase: NodeBase{NodeSpan{13, 14}, nil, false},
 											Raw:      "1",
 											Value:    "1",
 										},
 									},
-									Closing: &XMLPatternClosingElement{
+									Closing: &MarkupPatternClosingTag{
 										NodeBase: NodeBase{Span: NodeSpan{14, 21}},
 										Name: &PatternIdentifierLiteral{
 											NodeBase:   NodeBase{NodeSpan{16, 20}, nil, false},
@@ -36646,13 +36646,13 @@ func testParse(
 										},
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{21, 22}, nil, false},
 									Raw:      "2",
 									Value:    "2",
 								},
 							},
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{22, 28}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{24, 27}, nil, false},
@@ -36679,11 +36679,11 @@ func testParse(
 							Name:       "p",
 							Unprefixed: true,
 						},
-						Right: &XMLPatternExpression{
+						Right: &MarkupPatternExpression{
 							NodeBase: NodeBase{NodeSpan{13, 33}, nil, true},
-							Element: &XMLPatternElement{
+							Element: &MarkupPatternElement{
 								NodeBase: NodeBase{NodeSpan{13, 33}, nil, false},
-								Opening: &XMLPatternOpeningElement{
+								Opening: &MarkupPatternOpeningTag{
 									NodeBase: NodeBase{Span: NodeSpan{13, 18}},
 									Name: &PatternIdentifierLiteral{
 										NodeBase:   NodeBase{NodeSpan{14, 17}, nil, false},
@@ -36692,14 +36692,14 @@ func testParse(
 									},
 								},
 								Children: []Node{
-									&XMLText{
+									&MarkupText{
 										NodeBase: NodeBase{NodeSpan{18, 18}, nil, false},
 										Raw:      "",
 										Value:    "",
 									},
-									&XMLPatternElement{
+									&MarkupPatternElement{
 										NodeBase: NodeBase{NodeSpan{18, 27}, nil, false},
-										Opening: &XMLPatternOpeningElement{
+										Opening: &MarkupPatternOpeningTag{
 											NodeBase: NodeBase{Span: NodeSpan{18, 22}},
 											Name: &PatternIdentifierLiteral{
 												NodeBase:   NodeBase{NodeSpan{19, 21}, nil, false},
@@ -36708,13 +36708,13 @@ func testParse(
 											},
 										},
 										Children: []Node{
-											&XMLText{
+											&MarkupText{
 												NodeBase: NodeBase{NodeSpan{22, 22}, nil, false},
 												Raw:      "",
 												Value:    "",
 											},
 										},
-										Closing: &XMLPatternClosingElement{
+										Closing: &MarkupPatternClosingTag{
 											NodeBase: NodeBase{
 												NodeSpan{22, 27},
 												&ParsingError{UnspecifiedParsingError, fmtExpectedClosingTag("ul")},
@@ -36727,13 +36727,13 @@ func testParse(
 											},
 										},
 									},
-									&XMLText{
+									&MarkupText{
 										NodeBase: NodeBase{NodeSpan{27, 27}, nil, false},
 										Raw:      "",
 										Value:    "",
 									},
 								},
-								Closing: &XMLPatternClosingElement{
+								Closing: &MarkupPatternClosingTag{
 									NodeBase: NodeBase{Span: NodeSpan{27, 33}},
 									Name: &PatternIdentifierLiteral{
 										NodeBase:   NodeBase{NodeSpan{29, 32}, nil, false},
@@ -36761,11 +36761,11 @@ func testParse(
 							Name:       "p",
 							Unprefixed: true,
 						},
-						Right: &XMLPatternExpression{
+						Right: &MarkupPatternExpression{
 							NodeBase: NodeBase{NodeSpan{13, 34}, nil, true},
-							Element: &XMLPatternElement{
+							Element: &MarkupPatternElement{
 								NodeBase: NodeBase{NodeSpan{13, 34}, nil, false},
-								Opening: &XMLPatternOpeningElement{
+								Opening: &MarkupPatternOpeningTag{
 									NodeBase: NodeBase{Span: NodeSpan{13, 18}},
 									Name: &PatternIdentifierLiteral{
 										NodeBase:   NodeBase{NodeSpan{14, 17}, nil, false},
@@ -36774,14 +36774,14 @@ func testParse(
 									},
 								},
 								Children: []Node{
-									&XMLText{
+									&MarkupText{
 										NodeBase: NodeBase{NodeSpan{18, 18}, nil, false},
 										Raw:      "",
 										Value:    "",
 									},
-									&XMLPatternElement{
+									&MarkupPatternElement{
 										NodeBase: NodeBase{NodeSpan{18, 27}, nil, false},
-										Opening: &XMLPatternOpeningElement{
+										Opening: &MarkupPatternOpeningTag{
 											NodeBase: NodeBase{Span: NodeSpan{18, 22}},
 											Name: &PatternIdentifierLiteral{
 												NodeBase:   NodeBase{NodeSpan{19, 21}, nil, false},
@@ -36790,13 +36790,13 @@ func testParse(
 											},
 										},
 										Children: []Node{
-											&XMLText{
+											&MarkupText{
 												NodeBase: NodeBase{NodeSpan{22, 22}, nil, false},
 												Raw:      "",
 												Value:    "",
 											},
 										},
-										Closing: &XMLPatternClosingElement{
+										Closing: &MarkupPatternClosingTag{
 											NodeBase: NodeBase{
 												NodeSpan{22, 27},
 												&ParsingError{UnspecifiedParsingError, fmtExpectedClosingTag("ul")},
@@ -36809,13 +36809,13 @@ func testParse(
 											},
 										},
 									},
-									&XMLText{
+									&MarkupText{
 										NodeBase: NodeBase{NodeSpan{27, 28}, nil, false},
 										Raw:      " ",
 										Value:    " ",
 									},
 								},
-								Closing: &XMLPatternClosingElement{
+								Closing: &MarkupPatternClosingTag{
 									NodeBase: NodeBase{Span: NodeSpan{28, 34}},
 									Name: &PatternIdentifierLiteral{
 										NodeBase:   NodeBase{NodeSpan{30, 33}, nil, false},
@@ -36843,11 +36843,11 @@ func testParse(
 							Name:       "p",
 							Unprefixed: true,
 						},
-						Right: &XMLPatternExpression{
+						Right: &MarkupPatternExpression{
 							NodeBase: NodeBase{NodeSpan{13, 40}, nil, true},
-							Element: &XMLPatternElement{
+							Element: &MarkupPatternElement{
 								NodeBase: NodeBase{NodeSpan{13, 40}, nil, false},
-								Opening: &XMLPatternOpeningElement{
+								Opening: &MarkupPatternOpeningTag{
 									NodeBase: NodeBase{Span: NodeSpan{13, 18}},
 									Name: &PatternIdentifierLiteral{
 										NodeBase:   NodeBase{NodeSpan{14, 17}, nil, false},
@@ -36856,14 +36856,14 @@ func testParse(
 									},
 								},
 								Children: []Node{
-									&XMLText{
+									&MarkupText{
 										NodeBase: NodeBase{NodeSpan{18, 18}, nil, false},
 										Raw:      "",
 										Value:    "",
 									},
-									&XMLPatternElement{
+									&MarkupPatternElement{
 										NodeBase: NodeBase{NodeSpan{18, 27}, nil, false},
-										Opening: &XMLPatternOpeningElement{
+										Opening: &MarkupPatternOpeningTag{
 											NodeBase: NodeBase{Span: NodeSpan{18, 22}},
 											Name: &PatternIdentifierLiteral{
 												NodeBase:   NodeBase{NodeSpan{19, 21}, nil, false},
@@ -36872,13 +36872,13 @@ func testParse(
 											},
 										},
 										Children: []Node{
-											&XMLText{
+											&MarkupText{
 												NodeBase: NodeBase{NodeSpan{22, 22}, nil, false},
 												Raw:      "",
 												Value:    "",
 											},
 										},
-										Closing: &XMLPatternClosingElement{
+										Closing: &MarkupPatternClosingTag{
 											NodeBase: NodeBase{
 												NodeSpan{22, 27},
 												&ParsingError{UnspecifiedParsingError, fmtExpectedClosingTag("ul")},
@@ -36891,14 +36891,14 @@ func testParse(
 											},
 										},
 									},
-									&XMLText{
+									&MarkupText{
 										NodeBase: NodeBase{NodeSpan{27, 27}, nil, false},
 										Raw:      "",
 										Value:    "",
 									},
-									&XMLPatternElement{
+									&MarkupPatternElement{
 										NodeBase: NodeBase{NodeSpan{27, 34}, nil, false},
-										Opening: &XMLPatternOpeningElement{
+										Opening: &MarkupPatternOpeningTag{
 											NodeBase: NodeBase{Span: NodeSpan{27, 30}},
 											Name: &PatternIdentifierLiteral{
 												NodeBase:   NodeBase{NodeSpan{28, 29}, nil, false},
@@ -36907,13 +36907,13 @@ func testParse(
 											},
 										},
 										Children: []Node{
-											&XMLText{
+											&MarkupText{
 												NodeBase: NodeBase{NodeSpan{30, 30}, nil, false},
 												Raw:      "",
 												Value:    "",
 											},
 										},
-										Closing: &XMLPatternClosingElement{
+										Closing: &MarkupPatternClosingTag{
 											NodeBase: NodeBase{Span: NodeSpan{30, 34}},
 											Name: &PatternIdentifierLiteral{
 												NodeBase:   NodeBase{NodeSpan{32, 33}, nil, false},
@@ -36922,13 +36922,13 @@ func testParse(
 											},
 										},
 									},
-									&XMLText{
+									&MarkupText{
 										NodeBase: NodeBase{NodeSpan{34, 34}, nil, false},
 										Raw:      "",
 										Value:    "",
 									},
 								},
-								Closing: &XMLPatternClosingElement{
+								Closing: &MarkupPatternClosingTag{
 									NodeBase: NodeBase{Span: NodeSpan{34, 40}},
 									Name: &PatternIdentifierLiteral{
 										NodeBase:   NodeBase{NodeSpan{36, 39}, nil, false},
@@ -36948,11 +36948,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 18}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 18}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 18}, nil, false},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
@@ -36971,18 +36971,18 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 									Raw:      "\n",
 									Value:    "\n",
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{11, 12}, nil, false},
 									Raw:      "\n",
 									Value:    "\n",
 								},
 							},
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{12, 18}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{14, 17}, nil, false},
@@ -37002,15 +37002,15 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 11}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 11}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{
 								NodeSpan{1, 11},
 								&ParsingError{UnspecifiedParsingError, fmtExpectedClosingTag("div")},
 								false,
 							},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
@@ -37029,12 +37029,12 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 									Raw:      "\n",
 									Value:    "\n",
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{11, 11}, nil, false},
 									Raw:      "",
 									Value:    "",
@@ -37051,11 +37051,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 25}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 25}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 25}, nil, false},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
@@ -37074,19 +37074,19 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 									Raw:      "\n",
 									Value:    "\n",
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{11, 12}, nil, false},
 									Raw:      "\n",
 									Value:    "\n",
 								},
-								&XMLPatternElement{
+								&MarkupPatternElement{
 									NodeBase: NodeBase{NodeSpan{12, 19}, nil, false},
-									Opening: &XMLPatternOpeningElement{
+									Opening: &MarkupPatternOpeningTag{
 										NodeBase: NodeBase{NodeSpan{12, 15}, nil, false},
 										Name: &PatternIdentifierLiteral{
 											NodeBase:   NodeBase{NodeSpan{13, 14}, nil, false},
@@ -37095,13 +37095,13 @@ func testParse(
 										},
 									},
 									Children: []Node{
-										&XMLText{
+										&MarkupText{
 											NodeBase: NodeBase{NodeSpan{15, 15}, nil, false},
 											Raw:      "",
 											Value:    "",
 										},
 									},
-									Closing: &XMLPatternClosingElement{
+									Closing: &MarkupPatternClosingTag{
 										NodeBase: NodeBase{NodeSpan{15, 19}, nil, false},
 										Name: &PatternIdentifierLiteral{
 											NodeBase:   NodeBase{NodeSpan{17, 18}, nil, false},
@@ -37110,13 +37110,13 @@ func testParse(
 										},
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{19, 19}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{19, 25}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{21, 24}, nil, false},
@@ -37135,11 +37135,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 28}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 28}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 28}, nil, false},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
@@ -37167,19 +37167,19 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 									Raw:      "\n",
 									Value:    "\n",
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{14, 15}, nil, false},
 									Raw:      "\n",
 									Value:    "\n",
 								},
-								&XMLPatternElement{
+								&MarkupPatternElement{
 									NodeBase: NodeBase{NodeSpan{15, 22}, nil, false},
-									Opening: &XMLPatternOpeningElement{
+									Opening: &MarkupPatternOpeningTag{
 										NodeBase: NodeBase{NodeSpan{15, 18}, nil, false},
 										Name: &PatternIdentifierLiteral{
 											NodeBase:   NodeBase{NodeSpan{16, 17}, nil, false},
@@ -37188,13 +37188,13 @@ func testParse(
 										},
 									},
 									Children: []Node{
-										&XMLText{
+										&MarkupText{
 											NodeBase: NodeBase{NodeSpan{18, 18}, nil, false},
 											Raw:      "",
 											Value:    "",
 										},
 									},
-									Closing: &XMLPatternClosingElement{
+									Closing: &MarkupPatternClosingTag{
 										NodeBase: NodeBase{NodeSpan{18, 22}, nil, false},
 										Name: &PatternIdentifierLiteral{
 											NodeBase:   NodeBase{NodeSpan{20, 21}, nil, false},
@@ -37203,13 +37203,13 @@ func testParse(
 										},
 									},
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{22, 22}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{22, 28}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{24, 27}, nil, false},
@@ -37229,11 +37229,11 @@ func testParse(
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
 				Statements: []Node{
-					&XMLPatternExpression{
+					&MarkupPatternExpression{
 						NodeBase: NodeBase{NodeSpan{0, 17}, nil, false},
-						Element: &XMLPatternElement{
+						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 17}, nil, false},
-							Opening: &XMLPatternOpeningElement{
+							Opening: &MarkupPatternOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
@@ -37256,18 +37256,18 @@ func testParse(
 								},
 							},
 							Children: []Node{
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 									Raw:      "\n",
 									Value:    "\n",
 								},
-								&XMLText{
+								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{11, 11}, nil, false},
 									Raw:      "",
 									Value:    "",
 								},
 							},
-							Closing: &XMLPatternClosingElement{
+							Closing: &MarkupPatternClosingTag{
 								NodeBase: NodeBase{Span: NodeSpan{11, 17}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{13, 16}, nil, false},
