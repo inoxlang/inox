@@ -275,7 +275,7 @@ func TestHandling(t *testing.T) {
 						method:              "GET",
 						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
 						result:              "",
-						header: http.Header{
+						requestHeaders: http.Header{
 							"A": []string{"1", "2"},
 							"B": []string{"3"},
 						},
@@ -423,7 +423,7 @@ func TestHandling(t *testing.T) {
 						pause:  10 * time.Millisecond,
 						path:   "/sessions",
 						method: "GET",
-						header: http.Header{
+						requestHeaders: http.Header{
 							"Cookie": []string{DEFAULT_SESSION_ID_COOKIE_NAME + "=85216e5c138b662924f5831df3a55cc8"},
 						},
 						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,

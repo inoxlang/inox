@@ -38,7 +38,7 @@ func TestFilesystemRouting(t *testing.T) {
 						path:                "/x.html",
 						acceptedContentType: mimeconsts.HTML_CTYPE,
 						result:              `x`,
-						header: http.Header{
+						requestHeaders: http.Header{
 							CSP_HEADER_NAME: []string{DEFAULT_CSP.HeaderValue(CSPHeaderValueParams{})},
 						},
 					},
@@ -99,6 +99,45 @@ func TestFilesystemRouting(t *testing.T) {
 						path:                "/x",
 						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
 						result:              `hello`,
+					},
+				},
+			},
+			createClient,
+		)
+	})
+
+	t.Run("large responses should be compressed if gzip is an accepted encoding", func(t *testing.T) {
+		runServerTest(t,
+			serverTestCase{
+				input: `return {
+						routing: {dynamic: /routes/}
+					}`,
+				makeFilesystem: func() core.SnapshotableFilesystem {
+					fls := fs_ns.NewMemFilesystem(10_000)
+					fls.MkdirAll("/routes", fs_ns.DEFAULT_DIR_FMODE)
+					util.WriteFile(fls, "/routes/x.ix", []byte(`
+							manifest {}
+	
+							return "`+strings.Repeat(core.CryptoRandSource.ReadNBytesAsHex(100), 10)+`"
+						`), fs_ns.DEFAULT_FILE_FMODE)
+
+					return fls
+				},
+				requests: []requestTestInfo{
+					{
+						path:                "/x",
+						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
+						requestHeaders: http.Header{
+							"Accept-Encoding": []string{"gzip"},
+						},
+						expectedHeaderSubset: http.Header{
+							"Content-Encoding": []string{"gzip"},
+						},
+						checkResponse: func(t *testing.T, resp *http.Response, body string) (cont bool) {
+							uncompressedSize := 2 * (100 * 10)
+							assert.Less(t, len(body), uncompressedSize)
+							return true
+						},
 					},
 				},
 			},
@@ -238,9 +277,9 @@ func TestFilesystemRouting(t *testing.T) {
 				},
 				requests: []requestTestInfo{
 					{
-						method:      "POST",
-						requestBody: `{"name": "foo"}`,
-						header:      http.Header{"Content-Type": []string{mimeconsts.JSON_CTYPE}},
+						method:         "POST",
+						requestBody:    `{"name": "foo"}`,
+						requestHeaders: http.Header{"Content-Type": []string{mimeconsts.JSON_CTYPE}},
 
 						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
 						result:              `name is foo`,
@@ -277,17 +316,17 @@ func TestFilesystemRouting(t *testing.T) {
 					},
 					requests: []requestTestInfo{
 						{
-							method:      "POST",
-							requestBody: `{"name": "foo"}`,
-							header:      http.Header{"Content-Type": []string{mimeconsts.JSON_CTYPE}},
+							method:         "POST",
+							requestBody:    `{"name": "foo"}`,
+							requestHeaders: http.Header{"Content-Type": []string{mimeconsts.JSON_CTYPE}},
 
 							acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
 							result:              `hello`,
 						},
 						{
-							method:      "PATCH",
-							requestBody: `{"name": "foo"}`,
-							header:      http.Header{"Content-Type": []string{mimeconsts.JSON_CTYPE}},
+							method:         "PATCH",
+							requestBody:    `{"name": "foo"}`,
+							requestHeaders: http.Header{"Content-Type": []string{mimeconsts.JSON_CTYPE}},
 
 							acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
 							status:              http.StatusBadRequest,
@@ -327,9 +366,9 @@ func TestFilesystemRouting(t *testing.T) {
 							acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
 						},
 						{
-							method:      "POST",
-							requestBody: `body1`,
-							header:      http.Header{"Content-Type": []string{mimeconsts.PLAIN_TEXT_CTYPE}},
+							method:         "POST",
+							requestBody:    `body1`,
+							requestHeaders: http.Header{"Content-Type": []string{mimeconsts.PLAIN_TEXT_CTYPE}},
 
 							acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
 							status:              http.StatusBadRequest,
@@ -372,17 +411,17 @@ func TestFilesystemRouting(t *testing.T) {
 							result:              ``,
 						},
 						{
-							method:      "POST",
-							requestBody: `body1`,
-							header:      http.Header{"Content-Type": []string{mimeconsts.PLAIN_TEXT_CTYPE}},
+							method:         "POST",
+							requestBody:    `body1`,
+							requestHeaders: http.Header{"Content-Type": []string{mimeconsts.PLAIN_TEXT_CTYPE}},
 
 							acceptedContentType: mimeconsts.APP_OCTET_STREAM_CTYPE,
 							result:              `body1`,
 						},
 						{
-							method:      "PATCH",
-							requestBody: `body2`,
-							header:      http.Header{"Content-Type": []string{mimeconsts.PLAIN_TEXT_CTYPE}},
+							method:         "PATCH",
+							requestBody:    `body2`,
+							requestHeaders: http.Header{"Content-Type": []string{mimeconsts.PLAIN_TEXT_CTYPE}},
 
 							acceptedContentType: mimeconsts.APP_OCTET_STREAM_CTYPE,
 							result:              `body2`,
@@ -415,9 +454,9 @@ func TestFilesystemRouting(t *testing.T) {
 					},
 					requests: []requestTestInfo{
 						{
-							method:      "POST",
-							requestBody: `{"name": "foo"}`,
-							header:      http.Header{"Content-Type": []string{mimeconsts.JSON_CTYPE}},
+							method:         "POST",
+							requestBody:    `{"name": "foo"}`,
+							requestHeaders: http.Header{"Content-Type": []string{mimeconsts.JSON_CTYPE}},
 
 							acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
 							status:              http.StatusNotFound,

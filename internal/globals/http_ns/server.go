@@ -220,7 +220,7 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 		}
 	}
 
-	//Ceate the http.HandlerFunc that will call lastHandlerFn & middlewares.
+	//Create the http.HandlerFunc that will call lastHandlerFn & middlewares.
 	topHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		serverLogger := server.serverLogger
 
@@ -350,26 +350,35 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 	server.endChan = make(chan struct{}, 1)
 	server.initialized.Store(true)
 
+	err = server.start(ctx, params.effectiveAddr, params.port)
+	if err != nil {
+		return nil, err
+	}
+
+	return server, nil
+}
+
+func (server *HttpsServer) start(ctx *core.Context, effectiveAddr, port string) error {
 	aboutToStartChan := make(chan struct{}, 1)
 
 	//Log a startup message with one URL per network interface the server binds to.
 
 	ips, err := netaddr.GetGlobalUnicastIPs()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	urls := []string{"https://localhost:" + params.port}
-	if !isLocalhostOr127001Addr(params.effectiveAddr) {
+	urls := []string{"https://localhost:" + port}
+	if !isLocalhostOr127001Addr(effectiveAddr) {
 		urls = append(urls, utils.FilterMapSlice(ips, func(e net.IP) (string, bool) {
 			if e.To4() == nil {
 				return "", false
 			}
-			return "https://" + e.String() + ":" + params.port, e.To4() != nil
+			return "https://" + e.String() + ":" + port, e.To4() != nil
 		})...)
 	}
 
-	server.serverLogger.Info().Msgf("start HTTPS server on %s (%s)", params.effectiveAddr, strings.Join(urls, ", "))
+	server.serverLogger.Info().Msgf("start HTTPS server on %s (%s)", effectiveAddr, strings.Join(urls, ", "))
 
 	//Listen and serve.
 	go func() {
@@ -389,14 +398,14 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 				if ctx.IsDoneSlowCheck() {
 					return
 				}
-				server.serverLogger.Info().Msgf("a virtual server is already running on the port %s for the current session", params.port)
+				server.serverLogger.Info().Msgf("a virtual server is already running on the port %s for the current session", port)
 				return
 			}
 			<-ctx.Done()
 			return
 		}
 
-		err = goServer.ListenAndServeTLS("", "")
+		err = server.wrappedServer.ListenAndServeTLS("", "")
 		if err != nil {
 			server.serverLogger.Print(err)
 		}
@@ -408,7 +417,7 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 			recover()
 			server.endChan <- struct{}{}
 		}()
-		defer server.serverLogger.Info().Msg("server (" + params.effectiveAddr + ") is now closed")
+		defer server.serverLogger.Info().Msg("server (" + effectiveAddr + ") is now closed")
 
 		<-ctx.Done()
 		server.ImmediatelyClose(ctx)
@@ -422,7 +431,7 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 		time.Sleep(SERVER_STARTING_WAIT_TIME)
 	}
 
-	return server, nil
+	return nil
 }
 
 func (serv *HttpsServer) ListeningAddr() core.Host {

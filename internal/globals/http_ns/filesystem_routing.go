@@ -21,6 +21,7 @@ import (
 	"github.com/inoxlang/inox/internal/mimeconsts"
 	"github.com/inoxlang/inox/internal/mod"
 	"github.com/inoxlang/inox/internal/utils"
+	"github.com/klauspost/compress/gzhttp"
 )
 
 const (
@@ -106,9 +107,10 @@ func addFilesystemRoutingHandler(server *HttpsServer, staticDir, dynamicDir core
 }
 
 type filesystemRouter struct {
-	server     *HttpsServer
-	dynamicDir core.Path
-	staticDir  core.Path
+	server      *HttpsServer
+	dynamicDir  core.Path
+	staticDir   core.Path
+	gzipWrapper func(http.Handler) http.HandlerFunc
 }
 
 func newFilesytemRouter(dynamicDir, staticDir core.Path, server *HttpsServer, fls afs.Filesystem) (*filesystemRouter, error) {
@@ -131,6 +133,12 @@ func newFilesytemRouter(dynamicDir, staticDir core.Path, server *HttpsServer, fl
 		}
 		router.staticDir = staticDir
 	}
+
+	gzipWrapper, err := gzhttp.NewWrapper()
+	if err != nil {
+		return nil, err
+	}
+	router.gzipWrapper = gzipWrapper
 
 	return router, nil
 }
@@ -258,131 +266,140 @@ func (router *filesystemRouter) handleDynamic(req *Request, rw *ResponseWriter, 
 		return
 	}
 
-	//Prepare the module
-	//TODO: check the file is not writable
+	httpHandler := http.HandlerFunc(func(gzipWriter http.ResponseWriter, _ *http.Request) {
+		//Update the underlying response writer.
+		//This is not done earlier because static content serving uses file compression with caching.
+		rw.rw = gzipWriter
 
-	modulePath := module.ModuleName()
-	handlerCtx := handlerGlobalState.Ctx
+		//Prepare the module
+		//TODO: check the file is not writable
 
-	preparationStart := time.Now()
+		modulePath := module.ModuleName()
+		handlerCtx := handlerGlobalState.Ctx
 
-	fsRoutingLogger := handlerGlobalState.Ctx.NewChildLoggerForInternalSource(FS_ROUTING_LOG_SRC)
-	fsRoutingLogger = fsRoutingLogger.With().Str("handler", modulePath).Logger()
-	moduleLogger := handlerGlobalState.Logger
+		preparationStart := time.Now()
 
-	state, _, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
-		Fpath: modulePath,
+		fsRoutingLogger := handlerGlobalState.Ctx.NewChildLoggerForInternalSource(FS_ROUTING_LOG_SRC)
+		fsRoutingLogger = fsRoutingLogger.With().Str("handler", modulePath).Logger()
+		moduleLogger := handlerGlobalState.Logger
 
-		CacheEntry:        module,
-		ForceUseCache:     true,
-		DoNotRefreshCache: true,
+		state, _, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
+			Fpath: modulePath,
 
-		ParentContext:         handlerCtx,
-		ParentContextRequired: true,
-		DefaultLimits:         core.GetDefaultRequestHandlingLimits(),
+			CacheEntry:        module,
+			ForceUseCache:     true,
+			DoNotRefreshCache: true,
 
-		ParsingCompilationContext: handlerCtx,
-		Out:                       handlerGlobalState.Out,
-		Logger:                    moduleLogger,
-		LogLevels:                 router.server.state.LogLevels,
+			ParentContext:         handlerCtx,
+			ParentContextRequired: true,
+			DefaultLimits:         core.GetDefaultRequestHandlingLimits(),
 
-		FullAccessToDatabases: false, //databases should be passed by parent state
-		PreinitFilesystem:     handlerCtx.GetFileSystem(),
-		GetArguments: func(manifest *core.Manifest) (*core.ModuleArgs, error) {
-			args, errStatusCode, err := getHandlerModuleArguments(req, manifest, handlerCtx, methodSpecificModule)
-			if err != nil {
-				rw.writeHeaders(errStatusCode)
-			}
-			return args, err
-		},
-		BeforeContextCreation: func(m *core.Manifest) ([]core.Limit, error) {
-			return getLimitsOfHandlerModule(m, modulePath, router.server)
-		},
-	})
+			ParsingCompilationContext: handlerCtx,
+			Out:                       handlerGlobalState.Out,
+			Logger:                    moduleLogger,
+			LogLevels:                 router.server.state.LogLevels,
 
-	if err != nil {
-		fsRoutingLogger.Err(err).Send()
-		if !rw.IsStatusSent() {
-			rw.writeHeaders(http.StatusInternalServerError)
-		}
-		if !handlerCtx.IsDoneSlowCheck() {
-			tx.Rollback(handlerCtx)
-		}
-		return
-	}
+			FullAccessToDatabases: false, //databases should be passed by parent state
+			PreinitFilesystem:     handlerCtx.GetFileSystem(),
+			GetArguments: func(manifest *core.Manifest) (*core.ModuleArgs, error) {
+				args, errStatusCode, err := getHandlerModuleArguments(req, manifest, handlerCtx, methodSpecificModule)
+				if err != nil {
+					rw.writeHeaders(errStatusCode)
+				}
+				return args, err
+			},
+			BeforeContextCreation: func(m *core.Manifest) ([]core.Limit, error) {
+				return getLimitsOfHandlerModule(m, modulePath, router.server)
+			},
+		})
 
-	//Put path parameters in the context.
-	for _, param := range pathParams {
-		ctxDataPath := PATH_PARAMS_CTX_DATA_NAMESPACE.JoinEntry(param.Name)
-		state.Ctx.PutUserData(ctxDataPath, core.String(param.Value))
-	}
-
-	fsRoutingLogger.Debug().Dur("preparation-time", time.Since(preparationStart)).Send()
-
-	//Create child debugger.
-
-	var debugger *core.Debugger
-
-	if parentDebugger, _ := router.server.state.Debugger.Load().(*core.Debugger); parentDebugger != nil {
-		debugger = parentDebugger.NewChild()
-	}
-
-	//Run the handler module in the current goroutine.
-	//The CPU time depletion of the handler is paused because the same corresponding depletion in the module's limiter is going to start.
-
-	handlerCtx.PauseCPUTimeDepletion()
-
-	handlerExecStart := time.Now()
-
-	result, _, _, _, err := mod.RunPreparedModule(mod.RunPreparedModuleArgs{
-		State: state,
-
-		ParentContext:             handlerCtx,
-		ParsingCompilationContext: handlerCtx,
-		IgnoreHighRiskScore:       true,
-		Debugger:                  debugger,
-
-		DoNotCancelWhenFinished: true,
-	})
-
-	handlerCtx.ResumeCPUTimeDepletion()
-
-	fsRoutingLogger.Debug().Dur("exec-dur", time.Since(handlerExecStart)).Send()
-
-	if err != nil {
-		handlerGlobalState.Logger.Err(err).Send()
-
-		if handlerCtx.IsDoneSlowCheck() {
+		if err != nil {
+			fsRoutingLogger.Err(err).Send()
 			if !rw.IsStatusSent() {
 				rw.writeHeaders(http.StatusInternalServerError)
 			}
-		} else {
-			if !rw.IsStatusSent() {
-				rw.writeHeaders(http.StatusNotFound)
+			if !handlerCtx.IsDoneSlowCheck() {
+				tx.Rollback(handlerCtx)
 			}
+			return
 		}
 
-		tx.Rollback(handlerCtx)
-		return
-	}
+		//Put path parameters in the context.
+		for _, param := range pathParams {
+			ctxDataPath := PATH_PARAMS_CTX_DATA_NAMESPACE.JoinEntry(param.Name)
+			state.Ctx.PutUserData(ctxDataPath, core.String(param.Value))
+		}
 
-	nonce := randomCSPNonce()
+		fsRoutingLogger.Debug().Dur("preparation-time", time.Since(preparationStart)).Send()
 
-	//add nonce to <script> tags
-	if node, ok := result.(*html_ns.HTMLNode); ok {
-		node.AddNonceToScriptTagsNoEvent(nonce)
-	}
+		//Create child debugger.
 
-	respondWithMappingResult(handlingArguments{
-		value:        result,
-		req:          req,
-		rw:           rw,
-		state:        handlerGlobalState,
-		server:       router.server,
-		logger:       handlerGlobalState.Logger,
-		scriptsNonce: nonce,
-		isMiddleware: false,
+		var debugger *core.Debugger
+
+		if parentDebugger, _ := router.server.state.Debugger.Load().(*core.Debugger); parentDebugger != nil {
+			debugger = parentDebugger.NewChild()
+		}
+
+		//Run the handler module in the current goroutine.
+		//The CPU time depletion of the handler is paused because the same corresponding depletion in the module's limiter is going to start.
+
+		handlerCtx.PauseCPUTimeDepletion()
+
+		handlerExecStart := time.Now()
+
+		result, _, _, _, err := mod.RunPreparedModule(mod.RunPreparedModuleArgs{
+			State: state,
+
+			ParentContext:             handlerCtx,
+			ParsingCompilationContext: handlerCtx,
+			IgnoreHighRiskScore:       true,
+			Debugger:                  debugger,
+
+			DoNotCancelWhenFinished: true,
+		})
+
+		handlerCtx.ResumeCPUTimeDepletion()
+
+		fsRoutingLogger.Debug().Dur("exec-dur", time.Since(handlerExecStart)).Send()
+
+		if err != nil {
+			handlerGlobalState.Logger.Err(err).Send()
+
+			if handlerCtx.IsDoneSlowCheck() {
+				if !rw.IsStatusSent() {
+					rw.writeHeaders(http.StatusInternalServerError)
+				}
+			} else {
+				if !rw.IsStatusSent() {
+					rw.writeHeaders(http.StatusNotFound)
+				}
+			}
+
+			tx.Rollback(handlerCtx)
+			return
+		}
+
+		nonce := randomCSPNonce()
+
+		//add nonce to <script> tags
+		if node, ok := result.(*html_ns.HTMLNode); ok {
+			node.AddNonceToScriptTagsNoEvent(nonce)
+		}
+
+		respondWithMappingResult(handlingArguments{
+			value:        result,
+			req:          req,
+			rw:           rw,
+			state:        handlerGlobalState,
+			server:       router.server,
+			logger:       handlerGlobalState.Logger,
+			scriptsNonce: nonce,
+			isMiddleware: false,
+		})
 	})
+
+	//Call the handler with the gzip response writer.
+	router.gzipWrapper(httpHandler)(rw.rw, req.request)
 }
 
 func getLimitsOfHandlerModule(m *core.Manifest, modulePath string, server *HttpsServer) ([]core.Limit, error) {

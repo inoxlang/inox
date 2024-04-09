@@ -31,7 +31,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.1
 	github.com/johannesboyne/gofakes3 v0.0.0-20240217095638-c55a48f17be6
-	github.com/klauspost/compress v1.17.6
+	github.com/klauspost/compress v1.17.8
 	github.com/maruel/natural v1.1.1
 	github.com/miekg/dns v1.1.58
 	github.com/minio/minio-go/v7 v7.0.67

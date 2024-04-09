@@ -456,7 +456,7 @@ func TestHttpServerMapping(t *testing.T) {
 				requests: []requestTestInfo{
 					{
 						method:              "POST",
-						header:              http.Header{"Content-Type": []string{mimeconsts.PLAIN_TEXT_CTYPE}},
+						requestHeaders:      http.Header{"Content-Type": []string{mimeconsts.PLAIN_TEXT_CTYPE}},
 						acceptedContentType: mimeconsts.PLAIN_TEXT_CTYPE,
 						result:              `hello`,
 					},
@@ -520,7 +520,7 @@ func TestHttpServerMapping(t *testing.T) {
 				requests: []requestTestInfo{
 					{
 						method:              "POST",
-						header:              http.Header{"Content-Type": []string{mimeconsts.PLAIN_TEXT_CTYPE}},
+						requestHeaders:      http.Header{"Content-Type": []string{mimeconsts.PLAIN_TEXT_CTYPE}},
 						acceptedContentType: mimeconsts.HTML_CTYPE,
 						result:              `<div></div>`,
 					},
@@ -981,7 +981,7 @@ func runAdvancedServerTest(
 				req.Header.Set("Content-Type", string(info.contentType))
 			}
 
-			for k, values := range info.header {
+			for k, values := range info.requestHeaders {
 				for _, val := range values {
 					req.Header.Add(k, val)
 				}
@@ -1163,7 +1163,7 @@ type requestTestInfo struct {
 	acceptedContentType core.Mimetype
 	path                string
 	method              string
-	header              http.Header
+	requestHeaders      http.Header
 	requestBody         string
 
 	//expected
