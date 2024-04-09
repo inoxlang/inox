@@ -7,7 +7,10 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
-func (p *parser) parseUnaryBinaryAndParenthesizedExpression(openingParenIndex int32, previousOperatorEnd int32) Node {
+func (p *parser) parseUnaryBinaryAndParenthesizedExpression(
+	openingParenIndex int32, /*-1 for subsequent binary expressions in or/and chain*/
+	previousOperatorEnd int32,
+) Node {
 	p.panicIfContextDone()
 
 	//firstParenTokenIndex := -1
@@ -42,16 +45,21 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(openingParenIndex in
 			return left
 		}
 	} else {
-		left, isMissingExpr = p.parseExpression(exprParsingConfig{precededByOpeningParen: true, disallowUnparenthesizedBinExpr: true})
+		left, isMissingExpr = p.parseExpression(exprParsingConfig{
+			precedingOpeningParenIndexPlusOne: openingParenIndex + 1,
+			disallowUnparenthesizedBinForExpr: true,
+			forceAllowForExpr:                 !hasPreviousOperator,
+		})
 	}
 
 	if ident, ok := left.(*IdentifierLiteral); ok && !hasPreviousOperator {
 		switch ident.Name {
-		case "if":
+		case IF_KEYWORD_STRING:
 			return p.parseIfExpression(openingParenIndex, ident.Span.Start)
-		case "for":
-			return p.parseForExpression(openingParenIndex, ident.Span.Start)
 		}
+	}
+	if forExpr, ok := left.(*ForExpression); ok {
+		return forExpr
 	}
 
 	p.eatSpaceNewlineComment()
@@ -112,7 +120,7 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(openingParenIndex in
 	}
 
 	if stringLiteral, ok := left.(*UnquotedStringLiteral); ok && stringLiteral.Value == "-" {
-		operand, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+		operand, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
 
 		p.tokens = append(p.tokens, Token{Type: MINUS, Span: left.Base().Span})
 
@@ -185,7 +193,7 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(openingParenIndex in
 		p.inPattern = true
 	}
 
-	right, isMissingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+	right, isMissingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
 
 	p.inPattern = inPatternSave
 
@@ -490,7 +498,7 @@ func (p *parser) tryParseUnparenthesizedBinaryExpr(left Node) (Node, bool) {
 		p.inPattern = true
 	}
 
-	right, isMissingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+	right, isMissingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
 
 	p.inPattern = inPatternSave
 

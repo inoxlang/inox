@@ -1,10 +1,11 @@
 package parse
 
 type exprParsingConfig struct {
-	precededByOpeningParen                  bool
+	precedingOpeningParenIndexPlusOne       int32 //0 if no parenthesis
 	statement                               bool
-	disallowUnparenthesizedBinExpr          bool
+	disallowUnparenthesizedBinForExpr       bool
 	disallowParsingSeveralPatternUnionCases bool
+	forceAllowForExpr                       bool
 }
 
 // parseExpression parses any expression, if $expr is a *MissingExpression $isMissingExpr will be true.
@@ -12,11 +13,21 @@ type exprParsingConfig struct {
 func (p *parser) parseExpression(config ...exprParsingConfig) (expr Node, isMissingExpr bool) {
 	p.panicIfContextDone()
 
-	precededByOpeningParen := len(config) > 0 && config[0].precededByOpeningParen
-	isStmt := len(config) > 0 && config[0].statement
+	var precedingOpeningParenIndex int32 = -1
+	precededByOpeningParen := false
+	isStmt := false
+	allowForExpr := true
+	if len(config) > 0 {
+		if config[0].precedingOpeningParenIndexPlusOne > 0 {
+			precedingOpeningParenIndex = config[0].precedingOpeningParenIndexPlusOne - 1
+			precededByOpeningParen = true
+		}
+		isStmt = config[0].statement
+		allowForExpr = !isStmt && (!config[0].disallowUnparenthesizedBinForExpr || config[0].forceAllowForExpr)
+	}
 
 	defer func() {
-		allowUnparenthesizedBinExpr := !p.inPattern && !isStmt && (len(config) == 0 || !config[0].disallowUnparenthesizedBinExpr)
+		allowUnparenthesizedBinExpr := !p.inPattern && !isStmt && (len(config) == 0 || !config[0].disallowUnparenthesizedBinForExpr)
 
 		if expr != nil && !isMissingExpr && allowUnparenthesizedBinExpr {
 			binExpr, ok := p.tryParseUnparenthesizedBinaryExpr(expr)
@@ -117,7 +128,7 @@ func (p *parser) parseExpression(config ...exprParsingConfig) (expr Node, isMiss
 	//TODO: refactor ?
 	case '_', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
 		'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
-		e, returnNow := p.parseUnderscoreAlphaStartingExpression(precededByOpeningParen, isStmt)
+		e, returnNow := p.parseUnderscoreAlphaStartingExpression(precedingOpeningParenIndex, isStmt, allowForExpr)
 		if returnNow {
 			return e, false
 		}
@@ -340,8 +351,9 @@ loop:
 	}, true
 }
 
-func (p *parser) parseUnderscoreAlphaStartingExpression(precededByOpeningParen bool, stmt bool) (node Node, returnNow bool) {
+func (p *parser) parseUnderscoreAlphaStartingExpression(precedingOpeningParen int32, stmt, forceAllowForExpr bool) (node Node, returnNow bool) {
 	returnNow = true
+	precededByOpeningParen := precedingOpeningParen >= 0
 	identStartingExpr := p.parseIdentStartingExpression(p.inPattern)
 
 	var name string
@@ -401,6 +413,11 @@ func (p *parser) parseUnderscoreAlphaStartingExpression(precededByOpeningParen b
 		case NEW_KEYWORD_STRING:
 			node = p.parseNewExpression(v)
 			return
+		case FOR_KEYWORD_STRING:
+			if !stmt && forceAllowForExpr {
+				node = p.parseForExpression(int32(precedingOpeningParen), v.Span.Start)
+				return
+			}
 		default:
 			if !stmt && (name == SWITCH_KEYWORD_STRING || name == MATCH_KEYWORD_STRING) {
 				node = p.parseSwitchMatchExpression(v)

@@ -16409,6 +16409,41 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("unparenthesized", func(t *testing.T) {
+			n := mustparseChunk(t, "a = for i, u in $users => i")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 27}, nil, false},
+				Statements: []Node{
+					&Assignment{
+						NodeBase: NodeBase{NodeSpan{0, 27}, nil, false},
+						Left: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "a",
+						},
+						Right: &ForExpression{
+							NodeBase: NodeBase{Span: NodeSpan{4, 27}},
+							KeyIndexIdent: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{8, 9}, nil, false},
+								Name:     "i",
+							},
+							ValueElemIdent: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{11, 12}, nil, false},
+								Name:     "u",
+							},
+							IteratedValue: &Variable{
+								NodeBase: NodeBase{NodeSpan{16, 22}, nil, false},
+								Name:     "users",
+							},
+							Body: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{26, 27}, nil, false},
+								Name:     "i",
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("missing value after arrow", func(t *testing.T) {
 			n, err := parseChunk(t, "(for i, u in $users =>)", "")
 			assert.Error(t, err)
@@ -16531,6 +16566,11 @@ func testParse(
 					},
 				},
 			}, n)
+		})
+
+		t.Run("unparenthesized for expression are not supported in unparenthesized binary expressions", func(t *testing.T) {
+			_, err := parseChunk(t, "a = 1 match for u in users {}", "")
+			assert.Error(t, err)
 		})
 	})
 
@@ -33052,7 +33092,7 @@ func testParse(
 								&MarkupInterpolation{
 									NodeBase: NodeBase{Span: NodeSpan{7, 23}},
 									Expr: &ForExpression{
-										NodeBase: NodeBase{Span: NodeSpan{7, 23}, IsParenthesized: true},
+										NodeBase: NodeBase{Span: NodeSpan{7, 23}},
 										ValueElemIdent: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{11, 12}, nil, false},
 											Name:     "i",
@@ -33115,7 +33155,7 @@ func testParse(
 								&MarkupInterpolation{
 									NodeBase: NodeBase{Span: NodeSpan{7, 24}},
 									Expr: &ForExpression{
-										NodeBase: NodeBase{Span: NodeSpan{7, 24}, IsParenthesized: true},
+										NodeBase: NodeBase{Span: NodeSpan{7, 24}},
 										ValueElemIdent: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{11, 12}, nil, false},
 											Name:     "i",
@@ -33179,7 +33219,7 @@ func testParse(
 								&MarkupInterpolation{
 									NodeBase: NodeBase{Span: NodeSpan{7, 21}},
 									Expr: &ForExpression{
-										NodeBase: NodeBase{Span: NodeSpan{7, 21}, IsParenthesized: true},
+										NodeBase: NodeBase{Span: NodeSpan{7, 21}},
 										ValueElemIdent: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{11, 12}, nil, false},
 											Name:     "i",

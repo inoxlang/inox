@@ -319,6 +319,13 @@ func TestPrint(t *testing.T) {
 		"{a: 1 >= 2 b: 2}",
 		"{a: a is b: 2}",
 		"{a: a is b b: 2}",
+		//for expressions
+		"(for u in users => u)",
+		"(for u in users => )",
+		"(for u in users {})",
+		"(for u in users {)",
+		//unparenthesized for expressions
+		"a = for u in users => u",
 		//concatenations
 		"concat",
 		"concat \"a\"",

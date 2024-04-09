@@ -170,7 +170,7 @@ func (p *parser) parseCssSelectorElement(ignoreNextSpace bool) (node Node, isSpa
 			return makeNode(UNTERMINATED_CSS_ATTR_SELECTOR_INVALID_PATTERN), false
 		}
 
-		value, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+		value, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
 
 		if p.i >= p.len || p.s[p.i] != ']' {
 			return makeNode(UNTERMINATED_CSS_ATTRIBUTE_SELECTOR_MISSING_BRACKET), false
@@ -721,7 +721,7 @@ func (p *parser) parseDashStartingExpression(precededByOpeningParen bool) Node {
 			}
 		}
 
-		operand, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+		operand, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
 
 		p.tokens = append(p.tokens, Token{Type: MINUS, Span: NodeSpan{__start, __start + 1}})
 		return &UnaryExpression{
@@ -813,7 +813,7 @@ func (p *parser) parseDashStartingExpression(precededByOpeningParen bool) Node {
 	}
 
 	value, _ := p.parseExpression(exprParsingConfig{
-		disallowUnparenthesizedBinExpr: true,
+		disallowUnparenthesizedBinForExpr: true,
 	})
 
 	return &OptionExpression{
@@ -1375,7 +1375,7 @@ func (p *parser) parseKeyList() *KeyListExpression {
 			break
 		}
 
-		e, missingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+		e, missingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
 		if missingExpr {
 			r := p.s[p.i]
 			span := NodeSpan{p.i, p.i + 1}
@@ -2036,7 +2036,7 @@ func (p *parser) parseCallArgsNoParenthesis(call *CallExpression) {
 			p.i += 3
 		}
 
-		arg, isMissingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+		arg, isMissingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
 
 		if lastSpreadArg != nil {
 			lastSpreadArg.Expr = arg
@@ -3056,7 +3056,7 @@ func (p *parser) parseSingleGlobalConstDeclaration(declarations *[]*GlobalConsta
 
 	var declParsingErr *ParsingError
 
-	lhs, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+	lhs, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
 	globvar, ok := lhs.(*IdentifierLiteral)
 	if !ok {
 		declParsingErr = &ParsingError{UnspecifiedParsingError, INVALID_GLOBAL_CONST_DECL_LHS_MUST_BE_AN_IDENT}
@@ -3195,7 +3195,7 @@ func (p *parser) parseSingleLocalVarDeclarator(declarations *[]*LocalVariableDec
 		objectDestructuration = p.parseObjectDestructuration()
 		lhs = objectDestructuration
 	} else {
-		lhs, _ = p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+		lhs, _ = p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
 		var ok bool
 		ident, ok = lhs.(*IdentifierLiteral)
 		if !ok {
@@ -3237,7 +3237,7 @@ func (p *parser) parseSingleLocalVarDeclarator(declarations *[]*LocalVariableDec
 		prev := p.inPattern
 		p.inPattern = true
 
-		type_, _ = p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+		type_, _ = p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
 		p.inPattern = prev
 		if objectDestructuration != nil && type_.Base().Err == nil {
 			type_.BasePtr().Err = &ParsingError{UnspecifiedParsingError, TYPE_ANNOTATIONS_NOT_ALLOWED_WHEN_DESTRUCTURING_AN_OBJECT}
@@ -3375,7 +3375,7 @@ func (p *parser) parseSingleGlobalVarDeclarator(declarations *[]*GlobalVariableD
 		objectDestructuration = p.parseObjectDestructuration()
 		lhs = objectDestructuration
 	} else {
-		lhs, _ = p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+		lhs, _ = p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
 		var ok bool
 		ident, ok = lhs.(*IdentifierLiteral)
 		if !ok {
@@ -3417,7 +3417,7 @@ func (p *parser) parseSingleGlobalVarDeclarator(declarations *[]*GlobalVariableD
 		prev := p.inPattern
 		p.inPattern = true
 
-		type_, _ = p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+		type_, _ = p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
 		p.inPattern = prev
 		if objectDestructuration != nil && type_.Base().Err == nil {
 			type_.BasePtr().Err = &ParsingError{UnspecifiedParsingError, TYPE_ANNOTATIONS_NOT_ALLOWED_WHEN_DESTRUCTURING_AN_OBJECT}
@@ -3771,7 +3771,7 @@ func (p *parser) parseSpawnExpression(goIdent Node) Node {
 		}
 	}
 
-	meta, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+	meta, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
 	var e Node
 	p.eatSpace()
 
@@ -3781,7 +3781,7 @@ func (p *parser) parseSpawnExpression(goIdent Node) Node {
 		goto parse_embedded_module
 	}
 
-	e, _ = p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+	e, _ = p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
 	p.eatSpace()
 
 	if ident, ok := e.(*IdentifierLiteral); ok && ident.Name == "do" {
@@ -4216,7 +4216,7 @@ func (p *parser) parseConcatenationExpression(concatIdent Node, precededByOpenin
 			threeDotsSpan := NodeSpan{p.i, p.i + 3}
 			p.i += 3
 
-			e, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+			e, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
 			p.tokens = append(p.tokens, Token{Type: THREE_DOTS, Span: threeDotsSpan})
 
 			elem = &ElementSpreadElement{
@@ -4227,7 +4227,7 @@ func (p *parser) parseConcatenationExpression(concatIdent Node, precededByOpenin
 			}
 
 		} else {
-			e, isMissingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+			e, isMissingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
 
 			if isMissingExpr {
 				p.tokens = append(p.tokens, Token{Type: UNEXPECTED_CHAR, Span: NodeSpan{p.i, p.i + 1}, Raw: string(p.s[p.i])})
@@ -4378,7 +4378,7 @@ func (p *parser) parseLifetimeJobExpression(ident *IdentifierLiteral) *Lifetimej
 
 	if p.i < p.len && p.s[p.i] == 'f' { //TODO: rework
 		e := p.parseIdentStartingExpression(false)
-		if ident, ok := e.(*IdentifierLiteral); ok && ident.Name == "for" {
+		if ident, ok := e.(*IdentifierLiteral); ok && ident.Name == FOR_KEYWORD_STRING {
 			p.tokens = append(p.tokens, Token{Type: FOR_KEYWORD, Span: ident.Span})
 
 			p.eatSpace()
@@ -4634,7 +4634,7 @@ func (p *parser) parseFunction(start int32) Node {
 		p.eatSpace()
 
 		for p.i < p.len && p.s[p.i] != ']' {
-			e, isMissingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+			e, isMissingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
 
 			if isMissingExpr && p.i >= p.len {
 				break
@@ -4730,7 +4730,7 @@ func (p *parser) parseFunction(start int32) Node {
 			p.i += 3
 		}
 
-		varNode, isMissingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+		varNode, isMissingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
 		var typ Node
 
 		if isMissingExpr {
@@ -4752,7 +4752,7 @@ func (p *parser) parseFunction(start int32) Node {
 				prev := p.inPattern
 				p.inPattern = true
 
-				typ, isMissingExpr = p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+				typ, isMissingExpr = p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
 
 				p.inPattern = prev
 			}
@@ -4818,7 +4818,7 @@ func (p *parser) parseFunction(start int32) Node {
 			p.inPattern = true
 
 			returnType, _ = p.parseExpression(exprParsingConfig{
-				disallowUnparenthesizedBinExpr:          true,
+				disallowUnparenthesizedBinForExpr:       true,
 				disallowParsingSeveralPatternUnionCases: true,
 			})
 
@@ -4935,7 +4935,7 @@ func (p *parser) parseIfStatement(ifIdent *IdentifierLiteral) *IfStatement {
 				alternate = p.parseBlock()
 				end = alternate.(*Block).Span.End
 			case p.i < p.len-1 && p.s[p.i] == 'i' && p.s[p.i+1] == 'f' && (p.i >= p.len-2 || !IsIdentChar(p.s[p.i+2])):
-				ident, _ := p.parseExpression(exprParsingConfig{precededByOpeningParen: false})
+				ident, _ := p.parseExpression()
 				alternate = p.parseIfStatement(ident.(*IdentifierLiteral))
 				end = alternate.(*IfStatement).Span.End
 			default:
@@ -5001,16 +5001,16 @@ func (p *parser) parseForStatement(forIdent *IdentifierLiteral) *ForStatement {
 		if p.i < p.len && p.s[p.i] == '{' {
 			return parseVariableLessForStatement(firstPattern)
 		}
-		e, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+		e, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
 		first = e
 	} else {
-		first, _ = p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+		first, _ = p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
 
 		if ident, ok := first.(*IdentifierLiteral); ok && !ident.IsParenthesized && ident.Name == "chunked" {
 			p.tokens = append(p.tokens, Token{Type: CHUNKED_KEYWORD, Span: ident.Span})
 			chunked = true
 			p.eatSpace()
-			first, _ = p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+			first, _ = p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
 		}
 	}
 
@@ -5061,7 +5061,7 @@ func (p *parser) parseForStatement(forIdent *IdentifierLiteral) *ForStatement {
 				p.eatSpace()
 			}
 
-			e, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+			e, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
 
 			if ident, isVar := e.(*IdentifierLiteral); !isVar {
 				parsingErr = &ParsingError{UnspecifiedParsingError, fmtInvalidForStmtKeyIndexVarShouldBeFollowedByVarNot(keyIndexIdent)}
@@ -5193,16 +5193,16 @@ func (p *parser) parseForExpression(openingParenIndex int32 /*-1 if no unparenth
 		firstPattern = p.parsePercentPrefixedPattern(false)
 		p.eatSpace()
 
-		e, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+		e, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
 		first = e
 	} else {
-		first, _ = p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+		first, _ = p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
 
 		if ident, ok := first.(*IdentifierLiteral); ok && !ident.IsParenthesized && ident.Name == "chunked" {
 			p.tokens = append(p.tokens, Token{Type: CHUNKED_KEYWORD, Span: ident.Span})
 			chunked = true
 			p.eatSpace()
-			first, _ = p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+			first, _ = p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
 		}
 	}
 
@@ -5215,7 +5215,7 @@ func (p *parser) parseForExpression(openingParenIndex int32 /*-1 if no unparenth
 				NodeBase: NodeBase{
 					Span:            NodeSpan{forExprStart, p.i},
 					Err:             &ParsingError{UnspecifiedParsingError, INVALID_FOR_EXPR},
-					IsParenthesized: true,
+					IsParenthesized: shouldHaveClosingParen,
 				},
 				Chunked:       chunked,
 				KeyPattern:    firstPattern,
@@ -5242,7 +5242,7 @@ func (p *parser) parseForExpression(openingParenIndex int32 /*-1 if no unparenth
 					NodeBase: NodeBase{
 						Span:            NodeSpan{forExprStart, p.i},
 						Err:             &ParsingError{UnterminatedForExpr, UNTERMINATED_FOR_EXPR},
-						IsParenthesized: true,
+						IsParenthesized: shouldHaveClosingParen,
 					},
 					Chunked:       chunked,
 					KeyPattern:    firstPattern,
@@ -5255,7 +5255,7 @@ func (p *parser) parseForExpression(openingParenIndex int32 /*-1 if no unparenth
 				p.eatSpace()
 			}
 
-			e, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+			e, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
 
 			if ident, isVar := e.(*IdentifierLiteral); !isVar {
 				parsingErr = &ParsingError{UnspecifiedParsingError, fmtInvalidForExprKeyIndexVarShouldBeFollowedByVarNot(keyIndexIdent)}
@@ -5270,7 +5270,7 @@ func (p *parser) parseForExpression(openingParenIndex int32 /*-1 if no unparenth
 					NodeBase: NodeBase{
 						Span:            NodeSpan{forExprStart, p.i},
 						Err:             &ParsingError{UnterminatedForExpr, UNTERMINATED_FOR_EXPR},
-						IsParenthesized: true,
+						IsParenthesized: shouldHaveClosingParen,
 					},
 					KeyPattern:    firstPattern,
 					KeyIndexIdent: v,
@@ -5284,7 +5284,7 @@ func (p *parser) parseForExpression(openingParenIndex int32 /*-1 if no unparenth
 					NodeBase: NodeBase{
 						Span:            NodeSpan{forExprStart, p.i},
 						Err:             &ParsingError{UnterminatedForExpr, UNTERMINATED_FOR_EXPR_MISSING_IN_KEYWORD},
-						IsParenthesized: true,
+						IsParenthesized: shouldHaveClosingParen,
 					},
 					KeyPattern:     keyPattern,
 					KeyIndexIdent:  keyIndexIdent,
@@ -5308,7 +5308,7 @@ func (p *parser) parseForExpression(openingParenIndex int32 /*-1 if no unparenth
 				NodeBase: NodeBase{
 					Span:            NodeSpan{forExprStart, p.i},
 					Err:             &ParsingError{UnterminatedForExpr, INVALID_FOR_EXPR_IN_KEYWORD_SHOULD_BE_FOLLOWED_BY_SPACE},
-					IsParenthesized: true,
+					IsParenthesized: shouldHaveClosingParen,
 				},
 				KeyPattern:     keyPattern,
 				KeyIndexIdent:  keyIndexIdent,
@@ -5324,7 +5324,7 @@ func (p *parser) parseForExpression(openingParenIndex int32 /*-1 if no unparenth
 				NodeBase: NodeBase{
 					Span:            NodeSpan{forExprStart, p.i},
 					Err:             &ParsingError{UnspecifiedParsingError, INVALID_FOR_STMT_MISSING_VALUE_AFTER_IN},
-					IsParenthesized: true,
+					IsParenthesized: shouldHaveClosingParen,
 				},
 				KeyPattern:     firstPattern,
 				KeyIndexIdent:  keyIndexIdent,
@@ -5380,7 +5380,7 @@ func (p *parser) parseForExpression(openingParenIndex int32 /*-1 if no unparenth
 			NodeBase: NodeBase{
 				Span:            NodeSpan{forExprStart, end},
 				Err:             parsingErr,
-				IsParenthesized: true,
+				IsParenthesized: shouldHaveClosingParen,
 			},
 			KeyPattern:     keyPattern,
 			KeyIndexIdent:  keyIndexIdent,
@@ -5395,7 +5395,7 @@ func (p *parser) parseForExpression(openingParenIndex int32 /*-1 if no unparenth
 			NodeBase: NodeBase{
 				Span:            NodeSpan{forExprStart, p.i},
 				Err:             &ParsingError{UnspecifiedParsingError, INVALID_FOR_EXPR},
-				IsParenthesized: true,
+				IsParenthesized: shouldHaveClosingParen,
 			},
 			Chunked:    chunked,
 			KeyPattern: firstPattern,
@@ -5419,7 +5419,7 @@ func (p *parser) parseWalkStatement(walkIdent *IdentifierLiteral) *WalkStatement
 	var metaIdent, entryIdent *IdentifierLiteral
 	p.eatSpace()
 
-	walked, isMissingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+	walked, isMissingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
 	p.tokens = append(p.tokens, Token{Type: WALK_KEYWORD, Span: walkIdent.Span})
 
 	if isMissingExpr {
@@ -5432,7 +5432,7 @@ func (p *parser) parseWalkStatement(walkIdent *IdentifierLiteral) *WalkStatement
 	}
 
 	p.eatSpace()
-	e, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+	e, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
 
 	var ok bool
 	if entryIdent, ok = e.(*IdentifierLiteral); !ok {
@@ -5459,7 +5459,7 @@ func (p *parser) parseWalkStatement(walkIdent *IdentifierLiteral) *WalkStatement
 		if p.i >= p.len || p.s[p.i] == '{' {
 			parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_WALK_STMT_MISSING_ENTRY_IDENTIFIER}
 		} else {
-			e, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+			e, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
 			if entryIdent, ok = e.(*IdentifierLiteral); !ok {
 				return &WalkStatement{
 					NodeBase: NodeBase{
@@ -6145,7 +6145,7 @@ func (p *parser) parseImportStatement(importIdent *IdentifierLiteral) Node {
 
 	p.eatSpace()
 
-	e, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+	e, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
 
 	var identifier *IdentifierLiteral
 
@@ -6453,7 +6453,7 @@ func (p *parser) parseMultiAssignmentStatement(assignIdent *IdentifierLiteral) *
 
 	for p.i < p.len && p.s[p.i] != '=' {
 		p.eatSpace()
-		e, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+		e, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
 
 		switch nameNode := e.(type) {
 		case *IdentifierLiteral:
@@ -6710,7 +6710,7 @@ func (p *parser) parseCommandLikeStatement(expr Node) Node {
 			return stmt
 		}
 
-		callee, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+		callee, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
 
 		currentCall := &CallExpression{
 			NodeBase: NodeBase{
@@ -6791,7 +6791,7 @@ func (p *parser) parseExtendStatement(extendIdent *IdentifierLiteral) *ExtendSta
 			}()
 
 			extendStmt.ExtendedPattern, _ = p.parseExpression(exprParsingConfig{
-				disallowUnparenthesizedBinExpr:          true,
+				disallowUnparenthesizedBinForExpr:       true,
 				disallowParsingSeveralPatternUnionCases: true,
 			})
 			extendStmt.Span.End = p.i

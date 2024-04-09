@@ -129,7 +129,7 @@ func (p *parser) parseMarkupPatternElement(start int32) (_ *MarkupPatternElement
 		/*not start of another element*/ (p.s[p.i] != '<' || (p.i < p.len-1 && p.s[p.i+1] == '{')) {
 
 		p.inPattern = false
-		name, isMissingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+		name, isMissingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
 		p.inPattern = true
 
 		if isMissingExpr {
@@ -165,7 +165,7 @@ func (p *parser) parseMarkupPatternElement(start int32) (_ *MarkupPatternElement
 			p.tokens = append(p.tokens, Token{Type: EQUAL, SubType: MARKUP_ATTR_EQUAL, Span: NodeSpan{p.i, p.i + 1}})
 			p.i++
 
-			value, isMissingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+			value, isMissingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
 
 			openingTag.Attributes = append(openingTag.Attributes, &MarkupAttribute{
 				NodeBase: NodeBase{
@@ -325,7 +325,7 @@ func (p *parser) parseMarkupPatternElement(start int32) (_ *MarkupPatternElement
 	p.tokens = append(p.tokens, Token{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{p.i, p.i + 2}})
 	p.i += 2
 
-	closingName, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinExpr: true})
+	closingName, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
 
 	closingTag := &MarkupPatternClosingTag{
 		NodeBase: NodeBase{
