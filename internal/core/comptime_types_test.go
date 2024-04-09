@@ -4,6 +4,7 @@ import (
 	"testing"
 	"unsafe"
 
+	"github.com/inoxlang/inox/internal/core/mem"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
@@ -27,7 +28,7 @@ func TestPointerTypeNew(t *testing.T) {
 	symbolicTypes.DefineType("BoolIntFieldsStruct", structType2)
 
 	types := NewModuleComptimeTypes(symbolicTypes)
-	heap := NewArenaHeap(100)
+	heap := mem.NewArenaHeap(100)
 	heap.Alloc(1, 1)
 
 	{

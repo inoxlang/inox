@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"unsafe"
 
+	"github.com/inoxlang/inox/internal/core/mem"
 	"github.com/inoxlang/inox/internal/core/patternnames"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 )
@@ -264,9 +265,9 @@ func (t *PointerType) GoType() reflect.Type {
 }
 
 // New allocates the memory needed for the value and returns a pointer to it.
-func (t *PointerType) New(heap *ModuleHeap) HeapAddress {
+func (t *PointerType) New(heap *mem.ModuleHeap) mem.HeapAddress {
 	size, alignment := t.GetValueAllocParams()
-	return Alloc[byte](heap, size, alignment)
+	return mem.Alloc[byte](heap, size, alignment)
 }
 
 func (t *PointerType) GetValueAllocParams() (size int, alignment int) {

@@ -1,4 +1,4 @@
-package core
+package mem
 
 import (
 	"errors"
@@ -59,6 +59,10 @@ func NewArrayPool[T any](
 
 func (p *ArrayPool[T]) TotalArrayCount() int {
 	return p.arrayCount
+}
+
+func (p *ArrayPool[T]) SingleArrayLen() int {
+	return p.arrayLen
 }
 
 func (p *ArrayPool[T]) AvailableArrayCount() int {
@@ -125,4 +129,12 @@ func (p *ArrayPool[T]) ReleaseArray(s []T) error {
 	}
 	p.bitset.Clear(arrayIndex)
 	return nil
+}
+
+func (p *ArrayPool[T]) ForceLock() {
+	p.lock.Lock()
+}
+
+func (p *ArrayPool[T]) ForceUnlock() {
+	p.lock.Unlock()
 }

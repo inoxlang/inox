@@ -9,6 +9,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/inoxlang/inox/internal/core/mem"
 	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -38,7 +39,7 @@ var (
 	ErrNotSupportedSpecificMutation  = errors.New("not supported specific mutation")
 	ErrInvalidMutationPrefixSymbol   = errors.New("invalid mutation prefix symbol")
 
-	mutationCallbackPool     *ArrayPool[mutationCallback]
+	mutationCallbackPool     *mem.ArrayPool[mutationCallback]
 	mutationCallbackPoolLock sync.Mutex
 
 	_ = []Value{Mutation{}}
@@ -52,9 +53,8 @@ func resetMutationCallbackPool() {
 	if testing.Testing() {
 		current := mutationCallbackPool
 		if current != nil {
-			current.lock.Lock()
-			defer current.lock.Unlock()
-
+			current.ForceLock()
+			defer current.ForceUnlock()
 		}
 
 		mutationCallbackPoolLock.Lock()
@@ -63,7 +63,7 @@ func resetMutationCallbackPool() {
 		panic(errors.New("resetMutationCallbackPool is only available for testing"))
 	}
 
-	mutationCallbackPool = utils.Must(NewArrayPool[mutationCallback](100_000, 10, func(mc *mutationCallback) {
+	mutationCallbackPool = utils.Must(mem.NewArrayPool[mutationCallback](100_000, 10, func(mc *mutationCallback) {
 		*mc = mutationCallback{}
 	}))
 }
@@ -521,7 +521,7 @@ func (c *MutationCallbacks) init() {
 	// setting a finalizer to release an array with just a few items set makes no sense.
 
 	if mutationCallbackPool.IsFull() {
-		c.callbacks = make([]mutationCallback, mutationCallbackPool.arrayLen)
+		c.callbacks = make([]mutationCallback, mutationCallbackPool.SingleArrayLen())
 	} else {
 		c.callbacks = utils.Must(mutationCallbackPool.GetArray())
 	}
