@@ -332,7 +332,7 @@ For expressions allow you to create a [list](./serializable-data-structures.md#l
 evaluating an expression for each iteration step.
 
 ```
-doubles = (for n in [1, 2, 3] => 2 * n)
+doubles = for n in [1, 2, 3] => 2 * n
 print(doubles)
 
 output:
@@ -344,11 +344,11 @@ output:
 A block can be used when complex logic needs to be executed for each step.
 
 ```
-positive_doubles = (for n in [-1, 0, 1, 2, 3] {
+positive_doubles = for n in [-1, 0, 1, 2, 3] {
     if n > 0 {
         yield 2 * n
     }
-})
+}
 
 print(positive_doubles)
 
@@ -359,6 +359,20 @@ output:
 ```
 
 The `yield` statement **yields** an item, and ends the current step (like `continue`).
+
+⚠️ **`for` expressions need to be parenthesized in ambiguous contexts.**
+
+```
+# not valid
+if [2] == for n in [1] => 2 * n {
+
+}
+
+# valid
+if [2] == (for n in [1] => 2 * n) {
+    
+}
+```
 
 ## Walk Statement
 
