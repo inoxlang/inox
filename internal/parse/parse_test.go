@@ -17283,11 +17283,6 @@ func testParse(
 							NodeSpan{0, 11},
 							nil,
 							true,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
-								{Type: DOT_DOT_LESS_THAN, Span: NodeSpan{4, 7}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{10, 11}},
-							},*/
 						},
 						Operator: ExclEndRange,
 						Left: &Variable{

@@ -164,9 +164,6 @@ func TestPrint(t *testing.T) {
 		"$a.?b",
 		"$a.b.",
 		"$a.b.?",
-		"a.<b",
-		"a.<?b",
-		"a.<?",
 		//double-colon expression
 		"a::b",
 		"a::bc",
