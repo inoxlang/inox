@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/inoxlang/inox/internal/core/limitbase"
 	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/parse"
@@ -221,7 +222,7 @@ func SpawnLthreadWithState(args LthreadWithStateSpawnArgs) (*LThread, error) {
 		lthread.paused.Store(true)
 	}
 
-	if err := args.SpawnerState.Ctx.Take(THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, 1); err != nil {
+	if err := args.SpawnerState.Ctx.Take(limitbase.THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, 1); err != nil {
 		return nil, fmt.Errorf("cannot spawn lthread: %s", err.Error())
 	}
 
@@ -273,7 +274,7 @@ func SpawnLthreadWithState(args LthreadWithStateSpawnArgs) (*LThread, error) {
 		}()
 
 		defer func() {
-			args.SpawnerState.Ctx.GiveBack(THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, 1)
+			args.SpawnerState.Ctx.GiveBack(limitbase.THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, 1)
 		}()
 
 		if startPaused {

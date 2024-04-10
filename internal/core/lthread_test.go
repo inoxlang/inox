@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/core/inoxmod"
+	"github.com/inoxlang/inox/internal/core/limitbase"
 	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/testconfig"
@@ -15,7 +16,7 @@ import (
 func TestSpawnLThread(t *testing.T) {
 	testconfig.AllowParallelization(t)
 
-	permissiveLthreadLimit := MustMakeNotAutoDepletingCountLimit(THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, 100_000)
+	permissiveLthreadLimit := limitbase.MustMakeNotAutoDepletingCountLimit(limitbase.THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, 100_000)
 
 	t.Run("spawning a lthread without the required permission should fail", func(t *testing.T) {
 		ctx := NewContext(ContextConfig{

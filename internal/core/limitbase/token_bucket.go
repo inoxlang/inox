@@ -1,4 +1,4 @@
-package core
+package limitbase
 
 import (
 	"errors"
@@ -44,7 +44,7 @@ type tokenBucket struct {
 	increment           ScaledTokenCount
 	depletingStateCount atomic.Int32
 	decrementFn         TokenDepletionFn
-	context             *Context
+	context             Context
 
 	chanListLock         sync.Mutex
 	waitChans            []chan (struct{})
@@ -65,32 +65,32 @@ func (c ScaledTokenCount) RealCount() int64 {
 
 type TokenDepletionFn func(lastDecrementTime time.Time, beingDepletedStateCount int32) int64
 
-type tokenBucketConfig struct {
-	cap                          int64
-	initialAvail                 int64
-	fillRate                     int64 //tokens per second
-	depleteFn                    TokenDepletionFn
-	cancelContextOnNegativeCount bool
+type TokenBucketConfig struct {
+	Cap                          int64
+	InitialAvail                 int64
+	FillRate                     int64 //tokens per second
+	DepleteFn                    TokenDepletionFn
+	CancelContextOnNegativeCount bool
 }
 
 // newBucket returns a new token bucket with the specified fillrate & capacity, the bucket is created full.
-func newBucket(config tokenBucketConfig) *tokenBucket {
-	if config.cap < 0 {
-		panic(fmt.Sprintf("token bucket: capacity %v should be > 0", config.cap))
+func newBucket(config TokenBucketConfig) *tokenBucket {
+	if config.Cap < 0 {
+		panic(fmt.Sprintf("token bucket: capacity %v should be > 0", config.Cap))
 	}
 
-	avail := config.initialAvail
+	avail := config.InitialAvail
 	if avail < 0 {
-		avail = config.cap
+		avail = config.Cap
 	}
 
 	tb := &tokenBucket{
 		lock:                         &sync.Mutex{},
-		capacity:                     ScaledTokenCount(config.cap * TOKEN_BUCKET_CAPACITY_SCALE),
+		capacity:                     ScaledTokenCount(config.Cap * TOKEN_BUCKET_CAPACITY_SCALE),
 		available:                    ScaledTokenCount(avail * TOKEN_BUCKET_CAPACITY_SCALE),
-		increment:                    ScaledTokenCount(config.fillRate),
-		decrementFn:                  config.depleteFn,
-		cancelContextOnNegativeCount: config.cancelContextOnNegativeCount,
+		increment:                    ScaledTokenCount(config.FillRate),
+		decrementFn:                  config.DepleteFn,
+		cancelContextOnNegativeCount: config.CancelContextOnNegativeCount,
 		lastDecrementTime:            time.Now(),
 	}
 
@@ -101,7 +101,7 @@ func newBucket(config tokenBucketConfig) *tokenBucket {
 	return tb
 }
 
-func (tb *tokenBucket) SetContext(ctx *Context) {
+func (tb *tokenBucket) SetContext(ctx Context) {
 	tb.lock.Lock()
 	defer tb.lock.Unlock()
 

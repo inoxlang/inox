@@ -7,10 +7,12 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"time"
 
 	"slices"
 
 	"github.com/inoxlang/inox/internal/core/inoxmod"
+	"github.com/inoxlang/inox/internal/core/limitbase"
 	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/core/staticcheck"
 	"github.com/inoxlang/inox/internal/core/text"
@@ -20,6 +22,18 @@ import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
+)
+
+const (
+	FREQ_LIMIT_SCALE                          = limitbase.FREQ_LIMIT_SCALE
+	THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME = limitbase.THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME
+	EXECUTION_TOTAL_LIMIT_NAME                = limitbase.EXECUTION_TOTAL_LIMIT_NAME
+	EXECUTION_CPU_TIME_LIMIT_NAME             = limitbase.EXECUTION_CPU_TIME_LIMIT_NAME
+	MAX_LIMIT_VALUE                           = limitbase.MAX_LIMIT_VALUE
+
+	FrequencyLimit = limitbase.FrequencyLimit
+	ByteRateLimit  = limitbase.ByteRateLimit
+	TotalLimit     = limitbase.TotalLimit
 )
 
 var (
@@ -69,6 +83,9 @@ type Manifest struct {
 
 	InitialWorkingDirectory Path
 }
+
+type Limit = limitbase.Limit
+type LimitKind = limitbase.LimitKind
 
 func NewEmptyManifest() *Manifest {
 	return &Manifest{
@@ -806,11 +823,11 @@ func (m *Module) createManifest(ctx *Context, object *Object, config manifestObj
 	}
 	//add minimal limits.
 	//this piece of code is here to make sure that almost all limits are present.
-	limRegistry.forEachRegisteredLimit(func(name string, kind LimitKind, minimum int64) error {
+	limitbase.ForEachRegisteredLimit(func(name string, kind LimitKind, minimum int64) error {
 
 		switch name {
 		//ignored because these limits have a .DecrementFn.
-		case EXECUTION_TOTAL_LIMIT_NAME, EXECUTION_CPU_TIME_LIMIT_NAME:
+		case limitbase.EXECUTION_TOTAL_LIMIT_NAME, limitbase.EXECUTION_CPU_TIME_LIMIT_NAME:
 			return nil
 		}
 
@@ -1834,4 +1851,91 @@ func getVisibilityPerms(desc Value) ([]Permission, error) {
 	}
 
 	return perms, nil
+}
+
+func GetLimit(ctx *Context, limitName string, limitValue Serializable) (_ Limit, resultErr error) {
+	var limit Limit
+
+	switch v := limitValue.(type) {
+	case Rate:
+		limit = Limit{Name: limitName}
+
+		switch r := v.(type) {
+		case ByteRate:
+			limit.Kind = ByteRateLimit
+			limit.Value = int64(r)
+		case Frequency:
+			limit.Kind = FrequencyLimit
+			limit.Value = int64(r * limitbase.FREQ_LIMIT_SCALE)
+		default:
+			resultErr = fmt.Errorf("not a valid rate type %T", r)
+			return
+		}
+
+	case Int:
+		limit = Limit{
+			Name:  limitName,
+			Kind:  TotalLimit,
+			Value: int64(v),
+		}
+	case Duration:
+		limit = Limit{
+			Name:  limitName,
+			Kind:  TotalLimit,
+			Value: int64(v),
+		}
+	default:
+		resultErr = fmt.Errorf("invalid manifest, invalid value %s for a limit", Stringify(v, ctx))
+		return
+	}
+
+	registeredKind, registeredMinimum, ok := limitbase.GetRegisteredLimitInfo(limitName)
+	if !ok {
+		resultErr = fmt.Errorf("invalid manifest, limits: '%s' is not a registered limit", limitName)
+		return
+	}
+	if limit.Kind != registeredKind {
+		resultErr = fmt.Errorf("invalid manifest, limits: value of '%s' has not a valid type", limitName)
+		return
+	}
+	if registeredMinimum > 0 && limit.Value < registeredMinimum {
+		resultErr = fmt.Errorf("invalid manifest, limits: value for limit '%s' is too low, minimum is %d", limitName, registeredMinimum)
+		return
+	}
+	if limit.Value > limitbase.MAX_LIMIT_VALUE {
+		resultErr = fmt.Errorf("invalid manifest, limits: value for limit '%s' is too high, hard maximum is %d", limitName, limitbase.MAX_LIMIT_VALUE)
+		return
+	}
+
+	//check & postprocess limits
+
+	switch limit.Name {
+	case limitbase.EXECUTION_TOTAL_LIMIT_NAME:
+		if limit.Value == 0 {
+			resultErr = fmt.Errorf("invalid manifest, limits: %s should have a total value", limitbase.EXECUTION_TOTAL_LIMIT_NAME)
+			return
+		}
+		limit.DecrementFn = func(lastDecrementTime time.Time, decrementingStateCount int32) int64 {
+			return time.Since(lastDecrementTime).Nanoseconds()
+		}
+	case limitbase.EXECUTION_CPU_TIME_LIMIT_NAME:
+		if limit.Value == 0 {
+			resultErr = fmt.Errorf("invalid manifest, limits: %s should have a total value", limitbase.EXECUTION_CPU_TIME_LIMIT_NAME)
+			return
+		}
+		limit.DecrementFn = func(lastDecrementTime time.Time, decrementingStateCount int32) int64 {
+			return time.Since(lastDecrementTime).Nanoseconds() * int64(decrementingStateCount)
+		}
+		//IMPORTANT: make sure to exclude all limits with auto depletion in mustGetMinimumNotAutoDepletingCountLimit.
+	}
+
+	return limit, nil
+}
+
+func RegisterLimit(name string, kind LimitKind, minimumLimit int64) {
+	limitbase.RegisterLimit(name, kind, minimumLimit)
+}
+
+func MustMakeNotAutoDepletingCountLimit(limitName string, value int64) Limit {
+	return limitbase.MustMakeNotAutoDepletingCountLimit(limitName, value)
 }

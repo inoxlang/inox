@@ -41,8 +41,6 @@ they are located in [eval_test.go](eval_test.go).
 - Context & Security
     - [context.go](context.go)
     - [permissions.go](permissions.go)
-    - [limit.go](limit.go)
-    - [token_bucket.go](token_bucket.go)
 - Transaction
     - [transaction.go](./transaction.go)
     - [transaction_isolation.go](./transaction_isolation.go)

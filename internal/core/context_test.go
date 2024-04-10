@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/inoxlang/inox/internal/core/limitbase"
 	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
@@ -358,7 +359,7 @@ func TestContextBuckets(t *testing.T) {
 		assert.Equal(t, int64(0), total)
 
 		//we check that the total has not increased after a wait
-		time.Sleep(2 * TOKEN_BUCKET_MANAGEMENT_TICK_INTERVAL)
+		time.Sleep(2 * limitbase.TOKEN_BUCKET_MANAGEMENT_TICK_INTERVAL)
 		total, err = ctx.GetTotal(LIMIT_NAME)
 		assert.NoError(t, err)
 		assert.Equal(t, int64(0), total)
@@ -557,9 +558,9 @@ func TestContextLimiters(t *testing.T) {
 
 		capacity := int64(time.Second)
 
-		assert.Equal(t, capacity, ctx.limiters["test"].bucket.Available())
+		assert.Equal(t, capacity, ctx.limiters["test"].Available())
 		time.Sleep(time.Second)
-		assert.InDelta(t, int64(0), ctx.limiters["test"].bucket.Available(), float64(capacity/20))
+		assert.InDelta(t, int64(0), ctx.limiters["test"].Available(), float64(capacity/20))
 	})
 
 	t.Run("auto decrement: paused + resumed", func(t *testing.T) {
@@ -579,15 +580,15 @@ func TestContextLimiters(t *testing.T) {
 		NewGlobalState(ctx) //start depletion
 
 		capacity := int64(time.Second)
-		assert.Equal(t, capacity, ctx.limiters["test"].bucket.Available())
+		assert.Equal(t, capacity, ctx.limiters["test"].Available())
 
-		ctx.limiters["test"].bucket.PauseOneStateDepletion()
+		ctx.limiters["test"].Bucket().PauseOneStateDepletion()
 		time.Sleep(time.Second)
-		assert.InDelta(t, capacity, ctx.limiters["test"].bucket.Available(), float64(capacity/100))
+		assert.InDelta(t, capacity, ctx.limiters["test"].Available(), float64(capacity/100))
 
-		ctx.limiters["test"].bucket.ResumeOneStateDepletion()
+		ctx.limiters["test"].Bucket().ResumeOneStateDepletion()
 		time.Sleep(time.Second)
-		assert.InDelta(t, int64(0), ctx.limiters["test"].bucket.Available(), float64(capacity/20))
+		assert.InDelta(t, int64(0), ctx.limiters["test"].Available(), float64(capacity/20))
 	})
 
 	t.Run("child should share limiters of common limits with parent", func(t *testing.T) {
@@ -606,7 +607,7 @@ func TestContextLimiters(t *testing.T) {
 			ParentContext: parentCtx,
 		})
 
-		assert.Same(t, parentCtx.limiters["fs/read"], ctx.limiters["fs/read"].parentLimiter)
+		assert.Same(t, parentCtx.limiters["fs/read"], ctx.limiters["fs/read"].ParentLimiter())
 		assert.NotSame(t, parentCtx.limiters["fs/write"], ctx.limiters["fs/write"])
 	})
 

@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/afs"
+	"github.com/inoxlang/inox/internal/core/limitbase"
 	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/rs/zerolog"
 	"golang.org/x/exp/maps"
@@ -91,7 +92,7 @@ type Context struct {
 	grantedPermissions   []Permission
 	forbiddenPermissions []Permission
 	limits               []Limit
-	limiters             map[string]*limiter //the map is not changed after context creation
+	limiters             map[string]*limitbase.Limiter //the map is not changed after context creation
 
 	//values
 	namedPatterns       map[string]Pattern
@@ -202,7 +203,7 @@ outer_loop:
 	}
 
 	for _, limit := range c.Limits {
-		if parentLimiter, ok := c.ParentContext.limiters[limit.Name]; ok && !parentLimiter.limit.LessOrAsRestrictiveAs(limit) {
+		if parentLimiter, ok := c.ParentContext.limiters[limit.Name]; ok && !parentLimiter.Limit().LessOrAsRestrictiveAs(limit) {
 			return fmt.Errorf("parent of context should have less restrictive limits than its child: limit '%s'", limit.Name), false
 		}
 	}
@@ -240,7 +241,7 @@ func NewContextWithEmptyState(config ContextConfig, out io.Writer) *Context {
 func NewContext(config ContextConfig) *Context {
 
 	var (
-		limiters                map[string]*limiter
+		limiters                map[string]*limitbase.Limiter
 		stdlibCtx               context.Context
 		cancel                  context.CancelFunc
 		filesystem              afs.Filesystem = config.Filesystem
@@ -270,8 +271,8 @@ func NewContext(config ContextConfig) *Context {
 	}
 
 	//create limiters
-	limiters = make(map[string]*limiter)
-	var parentContextLimiters map[string]*limiter
+	limiters = make(map[string]*limitbase.Limiter)
+	var parentContextLimiters map[string]*limitbase.Limiter
 
 	if config.ParentContext != nil {
 		if config.ParentStdLibContext != nil {
@@ -307,16 +308,13 @@ func NewContext(config ContextConfig) *Context {
 			initialAvail = -1 //capacity
 		}
 
-		limiters[l.Name] = &limiter{
-			limit: l,
-			bucket: newBucket(tokenBucketConfig{
-				cap:                          cap,
-				initialAvail:                 initialAvail,
-				fillRate:                     fillRate,
-				depleteFn:                    l.DecrementFn,
-				cancelContextOnNegativeCount: l.Kind == TotalLimit,
-			}),
-		}
+		limiters[l.Name] = limitbase.NewLimiter(l, limitbase.TokenBucketConfig{
+			Cap:                          cap,
+			InitialAvail:                 initialAvail,
+			FillRate:                     fillRate,
+			DepleteFn:                    l.DecrementFn,
+			CancelContextOnNegativeCount: l.Kind == TotalLimit,
+		})
 	}
 
 	hostDefinitions := map[Host]Value{}
@@ -346,7 +344,7 @@ func NewContext(config ContextConfig) *Context {
 
 		//inherit limits from parent
 		for _, parentLimiter := range parentCtx.limiters {
-			limitName := parentLimiter.limit.Name
+			limitName := parentLimiter.Limit().Name
 			if _, ok := limiters[limitName]; !ok {
 				limiters[limitName] = parentLimiter.Child()
 			}
@@ -371,7 +369,7 @@ func NewContext(config ContextConfig) *Context {
 
 	limits := make([]Limit, 0)
 	for _, limiter := range limiters {
-		limits = append(limits, limiter.limit)
+		limits = append(limits, limiter.Limit())
 	}
 
 	actualFilesystem := filesystem
@@ -632,7 +630,7 @@ func (ctx *Context) SetClosestState(state *GlobalState) {
 
 	ctx.state = state
 	for _, limiter := range ctx.limiters {
-		limiter.SetStateOnce(state.id)
+		limiter.SetStateOnce(int64(state.id))
 	}
 }
 
@@ -968,7 +966,7 @@ func (ctx *Context) GiveBack(limitName string, count int64) error {
 		return ctx.makeDoneContextError()
 	}
 
-	scaledCount := TOKEN_BUCKET_CAPACITY_SCALE * count
+	scaledCount := limitbase.TOKEN_BUCKET_CAPACITY_SCALE * count
 
 	limiter, ok := ctx.limiters[limitName]
 	if !ok {
@@ -990,7 +988,7 @@ func (ctx *Context) PauseTokenDepletion(limitName string) error {
 }
 
 func (ctx *Context) PauseCPUTimeDepletionIfNotPaused() error {
-	limitName := EXECUTION_CPU_TIME_LIMIT_NAME
+	limitName := limitbase.EXECUTION_CPU_TIME_LIMIT_NAME
 	limiter, ok := ctx.limiters[limitName]
 	if ok {
 		limiter.PauseDepletionIfNotPaused()
@@ -1018,15 +1016,15 @@ func (ctx *Context) ResumeDepletion(limitName string) error {
 }
 
 func (ctx *Context) PauseCPUTimeDepletion() error {
-	return ctx.PauseTokenDepletion(EXECUTION_CPU_TIME_LIMIT_NAME)
+	return ctx.PauseTokenDepletion(limitbase.EXECUTION_CPU_TIME_LIMIT_NAME)
 }
 
 func (ctx *Context) ResumeCPUTimeDepletion() error {
-	return ctx.ResumeDepletion(EXECUTION_CPU_TIME_LIMIT_NAME)
+	return ctx.ResumeDepletion(limitbase.EXECUTION_CPU_TIME_LIMIT_NAME)
 }
 
 func (ctx *Context) DefinitelyStopCPUTimeDepletion() error {
-	return ctx.DefinitelyStopTokenDepletion(EXECUTION_CPU_TIME_LIMIT_NAME)
+	return ctx.DefinitelyStopTokenDepletion(limitbase.EXECUTION_CPU_TIME_LIMIT_NAME)
 }
 
 func (ctx *Context) DoIO(fn func() error) error {
@@ -1081,10 +1079,10 @@ func (ctx *Context) GetByteRate(name string) (ByteRate, error) {
 	if !ok {
 		return -1, fmt.Errorf("context: cannot get rate '%s': not present", name)
 	}
-	if limiter.limit.Kind != ByteRateLimit {
+	if limiter.Limit().Kind != ByteRateLimit {
 		return -1, fmt.Errorf("context: '%s' is not a rate", name)
 	}
-	return ByteRate(limiter.limit.Value), nil
+	return ByteRate(limiter.Limit().Value), nil
 }
 
 // GetTotal returns the value of a limit of kind total.

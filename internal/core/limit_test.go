@@ -11,6 +11,7 @@ import (
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/inoxmod"
+	"github.com/inoxlang/inox/internal/core/limitbase"
 	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
@@ -19,10 +20,10 @@ import (
 
 func TestExecutionTimeLimitIntegration(t *testing.T) {
 
-	permissiveLthreadLimit := core.MustMakeNotAutoDepletingCountLimit(core.THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, 100_000)
+	permissiveLthreadLimit := limitbase.MustMakeNotAutoDepletingCountLimit(limitbase.THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, 100_000)
 
 	t.Run("context should not be cancelled faster in the presence of child threads", func(t *testing.T) {
-		execLimit, err := core.GetLimit(nil, core.EXECUTION_TOTAL_LIMIT_NAME, core.Duration(100*time.Millisecond))
+		execLimit, err := core.GetLimit(nil, limitbase.EXECUTION_TOTAL_LIMIT_NAME, core.Duration(100*time.Millisecond))
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -36,7 +37,7 @@ func TestExecutionTimeLimitIntegration(t *testing.T) {
 					Kind_: permbase.Create,
 				},
 			},
-			Limits: []core.Limit{execLimit, permissiveLthreadLimit},
+			Limits: []limitbase.Limit{execLimit, permissiveLthreadLimit},
 		}, nil)
 		defer ctx.CancelGracefully()
 
@@ -74,10 +75,10 @@ func TestExecutionTimeLimitIntegration(t *testing.T) {
 }
 
 func TestCPUTimeLimitIntegration(t *testing.T) {
-	permissiveLthreadLimit := core.MustMakeNotAutoDepletingCountLimit(core.THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, 100_000)
+	permissiveLthreadLimit := limitbase.MustMakeNotAutoDepletingCountLimit(limitbase.THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, 100_000)
 
 	t.Run("context should be cancelled if all CPU time is spent", func(t *testing.T) {
-		cpuLimit, err := core.GetLimit(nil, core.EXECUTION_CPU_TIME_LIMIT_NAME, core.Duration(50*time.Millisecond))
+		cpuLimit, err := core.GetLimit(nil, limitbase.EXECUTION_CPU_TIME_LIMIT_NAME, core.Duration(50*time.Millisecond))
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -86,7 +87,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 		eval := makeTreeWalkEvalFunc(t)
 
 		ctx := core.NewContextWithEmptyState(core.ContextConfig{
-			Limits: []core.Limit{cpuLimit, permissiveLthreadLimit},
+			Limits: []limitbase.Limit{cpuLimit, permissiveLthreadLimit},
 		}, nil)
 		defer ctx.CancelGracefully()
 
@@ -109,13 +110,13 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 
 	t.Run("time spent waiting the locking of a shared object's should not count as CPU time", func(t *testing.T) {
 		cpuLimitDuration := 50 * time.Millisecond
-		cpuLimit, err := core.GetLimit(nil, core.EXECUTION_CPU_TIME_LIMIT_NAME, core.Duration(cpuLimitDuration))
+		cpuLimit, err := core.GetLimit(nil, limitbase.EXECUTION_CPU_TIME_LIMIT_NAME, core.Duration(cpuLimitDuration))
 		if !assert.NoError(t, err) {
 			return
 		}
 
 		ctx := core.NewContextWithEmptyState(core.ContextConfig{
-			Limits: []core.Limit{cpuLimit, permissiveLthreadLimit},
+			Limits: []limitbase.Limit{cpuLimit, permissiveLthreadLimit},
 		}, nil)
 		defer ctx.CancelGracefully()
 
@@ -165,13 +166,13 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 
 	t.Run("time spent sleeping should not count as CPU time", func(t *testing.T) {
 		cpuLimitDuration := 50 * time.Millisecond
-		cpuLimit, err := core.GetLimit(nil, core.EXECUTION_CPU_TIME_LIMIT_NAME, core.Duration(cpuLimitDuration))
+		cpuLimit, err := core.GetLimit(nil, limitbase.EXECUTION_CPU_TIME_LIMIT_NAME, core.Duration(cpuLimitDuration))
 		if !assert.NoError(t, err) {
 			return
 		}
 
 		ctx := core.NewContextWithEmptyState(core.ContextConfig{
-			Limits: []core.Limit{cpuLimit, permissiveLthreadLimit},
+			Limits: []limitbase.Limit{cpuLimit, permissiveLthreadLimit},
 		}, nil)
 		defer ctx.CancelGracefully()
 
@@ -188,7 +189,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 
 	t.Run("time spent waiting to continue after yielding should not count as CPU time", func(t *testing.T) {
 		CPU_TIME := 50 * time.Millisecond
-		cpuLimit, err := core.GetLimit(nil, core.EXECUTION_CPU_TIME_LIMIT_NAME, core.Duration(CPU_TIME))
+		cpuLimit, err := core.GetLimit(nil, limitbase.EXECUTION_CPU_TIME_LIMIT_NAME, core.Duration(CPU_TIME))
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -200,7 +201,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 				core.GlobalVarPermission{Kind_: permbase.Create, Name: "*"},
 				core.LThreadPermission{permbase.Create},
 			},
-			Limits: []core.Limit{permissiveLthreadLimit},
+			Limits: []limitbase.Limit{permissiveLthreadLimit},
 		}))
 		defer state.Ctx.CancelGracefully()
 
@@ -210,7 +211,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 		}))
 
 		lthreadCtx := core.NewContext(core.ContextConfig{
-			Limits:        []core.Limit{cpuLimit},
+			Limits:        []limitbase.Limit{cpuLimit},
 			ParentContext: state.Ctx,
 		})
 		defer lthreadCtx.CancelGracefully()
@@ -252,12 +253,12 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 	})
 
 	t.Run("time spent waiting for limit token bucket to refill should not count as CPU time", func(t *testing.T) {
-		core.ResetLimitRegistry()
-		defer core.ResetLimitRegistry()
-		core.RegisterLimit("my-limit", core.FrequencyLimit, 0)
+		limitbase.ResetLimitRegistry()
+		defer limitbase.ResetLimitRegistry()
+		limitbase.RegisterLimit("my-limit", limitbase.FrequencyLimit, 0)
 
 		CPU_TIME := 50 * time.Millisecond
-		cpuLimit, err := core.GetLimit(nil, core.EXECUTION_CPU_TIME_LIMIT_NAME, core.Duration(CPU_TIME))
+		cpuLimit, err := core.GetLimit(nil, limitbase.EXECUTION_CPU_TIME_LIMIT_NAME, core.Duration(CPU_TIME))
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -268,7 +269,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 		}
 
 		ctx := core.NewContextWithEmptyState(core.ContextConfig{
-			Limits: []core.Limit{cpuLimit, myLimit},
+			Limits: []limitbase.Limit{cpuLimit, myLimit},
 		}, nil)
 		defer ctx.CancelGracefully()
 
@@ -276,7 +277,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 		{
 
 			start := time.Now()
-			err := ctx.Take("my-limit", 1*core.FREQ_LIMIT_SCALE)
+			err := ctx.Take("my-limit", 1*limitbase.FREQ_LIMIT_SCALE)
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -286,7 +287,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 		//wait for the token bucket to refill
 		{
 			start := time.Now()
-			err := ctx.Take("my-limit", 1*core.FREQ_LIMIT_SCALE)
+			err := ctx.Take("my-limit", 1*limitbase.FREQ_LIMIT_SCALE)
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -303,7 +304,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 	})
 
 	t.Run("context should be cancelled if all CPU time is spent by child thread that we do not wait for", func(t *testing.T) {
-		cpuLimit, err := core.GetLimit(nil, core.EXECUTION_CPU_TIME_LIMIT_NAME, core.Duration(100*time.Millisecond))
+		cpuLimit, err := core.GetLimit(nil, limitbase.EXECUTION_CPU_TIME_LIMIT_NAME, core.Duration(100*time.Millisecond))
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -317,7 +318,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 					Kind_: permbase.Create,
 				},
 			},
-			Limits: []core.Limit{cpuLimit, permissiveLthreadLimit},
+			Limits: []limitbase.Limit{cpuLimit, permissiveLthreadLimit},
 		}, nil)
 		defer ctx.CancelGracefully()
 
@@ -364,7 +365,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 	})
 
 	t.Run("context should be cancelled if all CPU time is spent by child thread that we wait for", func(t *testing.T) {
-		cpuLimit, err := core.GetLimit(nil, core.EXECUTION_CPU_TIME_LIMIT_NAME, core.Duration(100*time.Millisecond))
+		cpuLimit, err := core.GetLimit(nil, limitbase.EXECUTION_CPU_TIME_LIMIT_NAME, core.Duration(100*time.Millisecond))
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -378,7 +379,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 					Kind_: permbase.Create,
 				},
 			},
-			Limits: []core.Limit{cpuLimit, permissiveLthreadLimit},
+			Limits: []limitbase.Limit{cpuLimit, permissiveLthreadLimit},
 		}, nil)
 		defer ctx.CancelGracefully()
 
@@ -403,7 +404,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 	})
 
 	t.Run("context should be cancelled twice as fast if all CPU time is spent equally by parent thread & child thread", func(t *testing.T) {
-		cpuLimit, err := core.GetLimit(nil, core.EXECUTION_CPU_TIME_LIMIT_NAME, core.Duration(100*time.Millisecond))
+		cpuLimit, err := core.GetLimit(nil, limitbase.EXECUTION_CPU_TIME_LIMIT_NAME, core.Duration(100*time.Millisecond))
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -417,7 +418,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 					Kind_: permbase.Create,
 				},
 			},
-			Limits: []core.Limit{cpuLimit, permissiveLthreadLimit},
+			Limits: []limitbase.Limit{cpuLimit, permissiveLthreadLimit},
 		}, nil)
 		defer ctx.CancelGracefully()
 
@@ -446,7 +447,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 	})
 
 	t.Run("context should not be cancelled faster if child thread does nothing", func(t *testing.T) {
-		cpuLimit, err := core.GetLimit(nil, core.EXECUTION_CPU_TIME_LIMIT_NAME, core.Duration(100*time.Millisecond))
+		cpuLimit, err := core.GetLimit(nil, limitbase.EXECUTION_CPU_TIME_LIMIT_NAME, core.Duration(100*time.Millisecond))
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -460,7 +461,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 					Kind_: permbase.Create,
 				},
 			},
-			Limits: []core.Limit{cpuLimit, permissiveLthreadLimit},
+			Limits: []limitbase.Limit{cpuLimit, permissiveLthreadLimit},
 		}, nil)
 		defer ctx.CancelGracefully()
 
@@ -483,7 +484,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 	})
 
 	t.Run("context should not be cancelled faster if child thread is cancelled", func(t *testing.T) {
-		cpuLimit, err := core.GetLimit(nil, core.EXECUTION_CPU_TIME_LIMIT_NAME, core.Duration(100*time.Millisecond))
+		cpuLimit, err := core.GetLimit(nil, limitbase.EXECUTION_CPU_TIME_LIMIT_NAME, core.Duration(100*time.Millisecond))
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -497,7 +498,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 					Kind_: permbase.Create,
 				},
 			},
-			Limits: []core.Limit{cpuLimit, permissiveLthreadLimit},
+			Limits: []limitbase.Limit{cpuLimit, permissiveLthreadLimit},
 		}, nil)
 		defer ctx.CancelGracefully()
 
@@ -530,7 +531,7 @@ func TestCPUTimeLimitIntegration(t *testing.T) {
 func TestThreadSimultaneousInstancesLimitIntegration(t *testing.T) {
 	t.Run("spawn expression should panic if there is no thread count token left", func(t *testing.T) {
 		//allow a single thread
-		threadCountLimit, err := core.GetLimit(nil, core.THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, core.Int(1))
+		threadCountLimit, err := core.GetLimit(nil, limitbase.THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, core.Int(1))
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -542,7 +543,7 @@ func TestThreadSimultaneousInstancesLimitIntegration(t *testing.T) {
 			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.LThreadPermission{
 				Kind_: permbase.Create,
 			}),
-			Limits: []core.Limit{threadCountLimit},
+			Limits: []limitbase.Limit{threadCountLimit},
 		}, nil)
 		defer ctx.CancelGracefully()
 
@@ -585,12 +586,12 @@ func TestThreadSimultaneousInstancesLimitIntegration(t *testing.T) {
 
 		assert.Less(t, time.Since(start), 50*time.Millisecond)
 
-		assert.ErrorContains(t, err, fmt.Sprintf("cannot take 1 tokens from bucket (%s)", core.THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME))
+		assert.ErrorContains(t, err, fmt.Sprintf("cannot take 1 tokens from bucket (%s)", limitbase.THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME))
 	})
 
 	t.Run("thread count token should be given back after lthread is done", func(t *testing.T) {
 		//allow a single thread
-		threadCountLimit, err := core.GetLimit(nil, core.THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, core.Int(1))
+		threadCountLimit, err := core.GetLimit(nil, limitbase.THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, core.Int(1))
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -602,7 +603,7 @@ func TestThreadSimultaneousInstancesLimitIntegration(t *testing.T) {
 			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.LThreadPermission{
 				Kind_: permbase.Create,
 			}),
-			Limits: []core.Limit{threadCountLimit},
+			Limits: []limitbase.Limit{threadCountLimit},
 		}, nil)
 		defer ctx.CancelGracefully()
 
@@ -648,7 +649,7 @@ func TestThreadSimultaneousInstancesLimitIntegration(t *testing.T) {
 
 	t.Run("module import should panic if there is no thread count token left", func(t *testing.T) {
 		//allow a single thread
-		threadCountLimit, err := core.GetLimit(nil, core.THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, core.Int(1))
+		threadCountLimit, err := core.GetLimit(nil, limitbase.THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, core.Int(1))
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -684,7 +685,7 @@ func TestThreadSimultaneousInstancesLimitIntegration(t *testing.T) {
 				core.CreateFsReadPerm(core.PathPattern("/...")),
 				core.CreateHttpReadPerm(core.ANY_HTTPS_HOST_PATTERN),
 			),
-			Limits:     []core.Limit{threadCountLimit},
+			Limits:     []limitbase.Limit{threadCountLimit},
 			Filesystem: fls,
 		}, nil)
 		defer ctx.CancelGracefully()
@@ -724,7 +725,7 @@ func TestThreadSimultaneousInstancesLimitIntegration(t *testing.T) {
 			return
 		}
 
-		assert.ErrorContains(t, err, fmt.Sprintf("cannot take 1 tokens from bucket (%s)", core.THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME))
+		assert.ErrorContains(t, err, fmt.Sprintf("cannot take 1 tokens from bucket (%s)", limitbase.THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME))
 	})
 
 }

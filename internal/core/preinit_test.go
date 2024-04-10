@@ -16,6 +16,7 @@ import (
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core/inoxmod"
+	"github.com/inoxlang/inox/internal/core/limitbase"
 	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/core/staticcheck"
 	"github.com/inoxlang/inox/internal/core/text"
@@ -37,15 +38,15 @@ func TestPreInit(t *testing.T) {
 
 	//register limits
 	{
-		ResetLimitRegistry()
-		defer ResetLimitRegistry()
+		limitbase.ResetLimitRegistry()
+		defer limitbase.ResetLimitRegistry()
 
-		limRegistry.registerLimit("a", TotalLimit, 0)
-		limRegistry.registerLimit("b", ByteRateLimit, 0)
+		limitbase.RegisterLimit("a", TotalLimit, 0)
+		limitbase.RegisterLimit("b", ByteRateLimit, 0)
 
 	}
 
-	threadLimit := mustGetMinimumNotAutoDepletingCountLimit(THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME)
+	threadLimit := limitbase.MustGetMinimumNotAutoDepletingCountLimit(THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME)
 
 	minLimitA := Limit{
 		Name:  "a",
