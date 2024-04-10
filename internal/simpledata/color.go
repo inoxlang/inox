@@ -1,9 +1,11 @@
-package core
+package simpledata
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 
+	"github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/muesli/termenv"
 )
 
@@ -59,12 +61,16 @@ func ColorFromTermenvColor(c termenv.Color, defaultColor ...Color) Color {
 		return ColorFromRGB24(r, g, b)
 	case termenv.NoColor:
 		if len(defaultColor) == 0 {
-			panic(ErrUnreachable)
+			panic(errors.New("missing default color"))
 		}
 		return defaultColor[0]
 	default:
-		panic(ErrUnreachable)
+		panic(errors.New("unreachable"))
 	}
+}
+
+func (c Color) Equal(other Color) bool {
+	return c.data == other.data && c.encodingId == other.encodingId
 }
 
 func (c Color) ToTermColor() termenv.Color {
@@ -85,7 +91,7 @@ func (c Color) ToTermColor() termenv.Color {
 }
 
 func (c Color) GetAnsiEscapeSequence(background bool) []byte {
-	return GetFullColorSequence(c.ToTermColor(), background)
+	return prettyprint.GetFullColorSequence(c.ToTermColor(), background)
 }
 
 func (c Color) IsDarkBackgroundColor() bool {

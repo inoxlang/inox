@@ -4,6 +4,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	_http_symbolic "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
+	"github.com/inoxlang/inox/internal/globals/visual/symbolicvisual"
 
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -315,8 +316,8 @@ func init() {
 		},
 
 		//
-		_Color, func(ctx *symbolic.Context, firstArg symbolic.Value, others ...symbolic.Value) *symbolic.Color {
-			return symbolic.ANY_COLOR
+		_Color, func(ctx *symbolic.Context, firstArg symbolic.Value, others ...symbolic.Value) *symbolicvisual.Color {
+			return symbolicvisual.ANY_COLOR
 		},
 
 		_add_ctx_data, func(ctx *symbolic.Context, path *symbolic.Path, value symbolic.Value) {

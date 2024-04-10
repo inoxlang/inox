@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/simpledata"
 	"github.com/muesli/termenv"
 )
 
@@ -57,7 +57,7 @@ func targetSpecificInit() {
 
 	if SHOULD_COLORIZE {
 		INITIAL_COLORS_SET = true
-		INITIAL_BG_COLOR = core.ColorFromTermenvColor(termenv.BackgroundColor(), core.ColorFromTermenvColor(termenv.ANSIBlack))
-		INITIAL_FG_COLOR = core.ColorFromTermenvColor(termenv.ForegroundColor(), core.ColorFromTermenvColor(termenv.ANSIWhite))
+		INITIAL_BG_COLOR = simpledata.ColorFromTermenvColor(termenv.BackgroundColor(), simpledata.ColorFromTermenvColor(termenv.ANSIBlack))
+		INITIAL_FG_COLOR = simpledata.ColorFromTermenvColor(termenv.ForegroundColor(), simpledata.ColorFromTermenvColor(termenv.ANSIWhite))
 	}
 }

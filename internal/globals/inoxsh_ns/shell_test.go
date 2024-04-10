@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/simpledata"
 	"github.com/muesli/termenv"
 	"github.com/stretchr/testify/assert"
 )
@@ -92,8 +93,9 @@ func TestShell(t *testing.T) {
 
 func setup() (ctx *core.Context, config REPLConfiguration, in io.ReadWriter, out io.ReadWriter) {
 
-	fgColor := core.ColorFromAnsiColor(termenv.ANSIWhite)
-	bgColor := core.ColorFromAnsiColor(termenv.ANSIBlack)
+	fgColor := simpledata.ColorFromAnsiColor(termenv.ANSIWhite)
+	bgColor := simpledata.ColorFromAnsiColor(termenv.ANSIBlack)
+
 	config = REPLConfiguration{
 		PrintingConfig: PrintingConfig{
 			defaultFgColor:                 fgColor,

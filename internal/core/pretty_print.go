@@ -2153,9 +2153,6 @@ func (s *ConfluenceStream) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfi
 	InspectPrint(w, s)
 }
 
-func (c Color) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
-	InspectPrint(w, c)
-}
 
 func (r *RingBuffer) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	PrintType(w, r)

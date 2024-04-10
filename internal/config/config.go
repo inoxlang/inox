@@ -12,6 +12,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
+	"github.com/inoxlang/inox/internal/simpledata"
 	"github.com/inoxlang/inox/internal/utils"
 
 	_ "embed"
@@ -60,8 +61,8 @@ var (
 
 	// set if SHOULD_COLORIZE
 	INITIAL_COLORS_SET bool
-	INITIAL_FG_COLOR   core.Color
-	INITIAL_BG_COLOR   core.Color
+	INITIAL_FG_COLOR   simpledata.Color
+	INITIAL_BG_COLOR   simpledata.Color
 
 	DEFAULT_LOG_PRINT_CONFIG = &core.PrettyPrintConfig{
 		PrettyPrintConfig: pprint.PrettyPrintConfig{

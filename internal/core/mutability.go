@@ -551,10 +551,6 @@ func (*ConfluenceStream) IsMutable() bool {
 	return true
 }
 
-func (Color) IsMutable() bool {
-	return false
-}
-
 func (*RingBuffer) IsMutable() bool {
 	return true
 }

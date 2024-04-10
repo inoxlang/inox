@@ -10,6 +10,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	symbolic_shell "github.com/inoxlang/inox/internal/globals/inoxsh_ns/symbolic"
+	"github.com/inoxlang/inox/internal/globals/visual"
 	//EXTERNAL
 )
 
@@ -45,8 +46,8 @@ func NewShell(ctx *core.Context, configObj *core.Object) (*shell, error) {
 			prompt: core.NewWrappedValueList(core.String("> ")),
 		}
 		globals map[string]core.Value
-		fgColor core.Color
-		bgColor core.Color
+		fgColor *visual.Color
+		bgColor *visual.Color
 	)
 
 	for _, key := range configObj.Keys(ctx) {
@@ -65,13 +66,13 @@ func NewShell(ctx *core.Context, configObj *core.Object) (*shell, error) {
 				return nil, core.FmtPropOfArgXShouldBeOfTypeY(key, CONFIG_ARGNAME, "object", value)
 			}
 		case FG_COLOR_KEY:
-			if color, ok := value.(core.Color); ok {
+			if color, ok := value.(*visual.Color); ok {
 				fgColor = color
 			} else {
 				return nil, core.FmtPropOfArgXShouldBeOfTypeY(key, CONFIG_ARGNAME, "color", value)
 			}
 		case BG_COLOR_KEY:
-			if color, ok := value.(core.Color); ok {
+			if color, ok := value.(*visual.Color); ok {
 				bgColor = color
 			} else {
 				return nil, core.FmtPropOfArgXShouldBeOfTypeY(key, CONFIG_ARGNAME, "color", value)
@@ -103,9 +104,9 @@ func NewShell(ctx *core.Context, configObj *core.Object) (*shell, error) {
 		shellState = core.NewGlobalState(shellCtx, globals)
 	}
 
-	config.defaultFgColor = fgColor
+	config.defaultFgColor = fgColor.Color
 	config.defaultFgColorSequence = fgColor.GetAnsiEscapeSequence(false)
-	config.backgroundColor = bgColor
+	config.backgroundColor = bgColor.Color
 	config.defaultBackgroundColorSequence = bgColor.GetAnsiEscapeSequence(true)
 
 	return newShell(config, shellState, in, out, preOut /*errOut*/), nil

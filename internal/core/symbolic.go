@@ -1592,9 +1592,7 @@ func (s *ConfluenceStream) ToSymbolicValue(ctx *Context, encountered map[uintptr
 	return symbolic.NewWritableStream(symbolic.ANY), nil
 }
 
-func (c Color) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return symbolic.ANY_COLOR, nil
-}
+
 
 func (r *RingBuffer) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.ANY_RING_BUFFER, nil

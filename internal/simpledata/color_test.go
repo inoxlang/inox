@@ -1,4 +1,4 @@
-package core
+package simpledata
 
 import (
 	"testing"

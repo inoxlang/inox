@@ -1970,17 +1970,6 @@ func (s *ConfluenceStream) Equal(ctx *Context, other Value, alreadyCompared map[
 	return ok && s == otherStream
 }
 
-func (c Color) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherColor, ok := other.(*Color)
-	if !ok {
-		return false
-	}
-
-	//TODO: return true if equivalent colors ?
-
-	return c.data == otherColor.data && c.encodingId == otherColor.encodingId
-}
-
 func (r *RingBuffer) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
 	otherBuf, ok := other.(*RingBuffer)
 	return ok && r == otherBuf

@@ -1742,9 +1742,7 @@ func (c *BytesConcatenation) WriteJSONRepresentation(ctx *Context, w *jsoniter.S
 	return ErrNotImplementedYet
 }
 
-func (c Color) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
-	return ErrNotImplementedYet
-}
+
 
 func (g *SystemGraph) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	if depth > MAX_JSON_REPR_WRITING_DEPTH {

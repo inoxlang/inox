@@ -521,9 +521,7 @@ func (s *WritableStream) IsMutable() bool {
 	return true
 }
 
-func (c Color) IsMutable() bool {
-	return false
-}
+
 
 func (r *RingBuffer) IsMutable() bool {
 	return true

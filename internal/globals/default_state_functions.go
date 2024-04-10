@@ -18,6 +18,7 @@ import (
 	"github.com/inoxlang/inox/internal/mod"
 
 	"github.com/inoxlang/inox/internal/globals/inoxsh_ns"
+	"github.com/inoxlang/inox/internal/globals/visual"
 
 	"github.com/inoxlang/inox/internal/core/permbase"
 
@@ -398,14 +399,14 @@ func _Event(ctx *core.Context, value core.Value) *core.Event {
 	return core.NewEvent(nil, value, core.DateTime(time.Now()))
 }
 
-func _Color(ctx *core.Context, firstArg core.Value, other ...core.Value) core.Color {
+func _Color(ctx *core.Context, firstArg core.Value, other ...core.Value) *visual.Color {
 	switch len(other) {
 	case 0:
 		if ident, ok := firstArg.(core.Identifier); ok && strings.HasPrefix(string(ident), "ansi-") {
 			name := ident[len("ansi-"):]
 			color, ok := inoxsh_ns.COLOR_NAME_TO_COLOR[name]
 			if ok {
-				return core.ColorFromTermenvColor(color)
+				return visual.ColorFromTermenvColor(color)
 			}
 		}
 		panic(core.FmtErrInvalidArgumentAtPos(firstArg, 0))

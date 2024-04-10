@@ -8,6 +8,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
+	"github.com/inoxlang/inox/internal/simpledata"
 )
 
 type REPLConfiguration struct {
@@ -111,9 +112,9 @@ func MakeREPLConfiguration(obj *core.Object) (REPLConfiguration, error) {
 }
 
 type PrintingConfig struct {
-	defaultFgColor                 core.Color
+	defaultFgColor                 simpledata.Color
 	defaultFgColorSequence         []byte
-	backgroundColor                core.Color
+	backgroundColor                simpledata.Color
 	defaultBackgroundColorSequence []byte
 
 	prettyPrintConfig *core.PrettyPrintConfig
@@ -134,9 +135,9 @@ func (c PrintingConfig) IsLight() bool {
 
 func GetPrintingConfig() PrintingConfig {
 	config := PrintingConfig{}
-	config.defaultFgColor = core.ColorFromTermenvColor(termenv.ForegroundColor(), core.ColorFromTermenvColor(termenv.ANSIWhite))
+	config.defaultFgColor = simpledata.ColorFromTermenvColor(termenv.ForegroundColor(), simpledata.ColorFromTermenvColor(termenv.ANSIWhite))
 	config.defaultFgColorSequence = config.defaultFgColor.GetAnsiEscapeSequence(false)
-	config.backgroundColor = core.ColorFromTermenvColor(termenv.BackgroundColor(), core.ColorFromTermenvColor(termenv.ANSIBlack))
+	config.backgroundColor = simpledata.ColorFromTermenvColor(termenv.BackgroundColor(), simpledata.ColorFromTermenvColor(termenv.ANSIBlack))
 	config.defaultBackgroundColorSequence = config.backgroundColor.GetAnsiEscapeSequence(true)
 
 	prettyPrintConfig := *defaultPrettyPrintConfig
