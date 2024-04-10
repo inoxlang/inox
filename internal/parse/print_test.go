@@ -743,6 +743,7 @@ func TestPrint(t *testing.T) {
 		`%<div a=></div>`,
 		`%<div "a"="b"></div>`,
 		`%<div a="b"/>`,
+		`%<div a=b/>`,
 		`%<div a=/>`,
 		`%<div "a"="b"/>`,
 		"%<div></span></span></div>",

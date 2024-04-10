@@ -26405,15 +26405,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
 				Statements: []Node{
 					&PatternDefinition{
-						NodeBase: NodeBase{
-							NodeSpan{0, 16},
-							nil,
-							false,
-							/*[]Token{
-								{Type: PATTERN_KEYWORD, Span: NodeSpan{0, 7}},
-								{Type: EQUAL, Span: NodeSpan{10, 11}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 16}},
 						Left: &PatternIdentifierLiteral{
 							NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
 							Name:       "i",
@@ -26434,16 +26426,8 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
 				Statements: []Node{
 					&PatternDefinition{
-						NodeBase: NodeBase{
-							NodeSpan{0, 15},
-							nil,
-							false,
-							/*[]Token{
-								{Type: PATTERN_KEYWORD, Span: NodeSpan{0, 7}},
-								{Type: EQUAL, Span: NodeSpan{10, 11}},
-							},*/
-						},
-						IsLazy: true,
+						NodeBase: NodeBase{Span: NodeSpan{0, 15}},
+						IsLazy:   true,
 						Left: &PatternIdentifierLiteral{
 							NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
 							Name:       "i",
@@ -27672,10 +27656,6 @@ func testParse(
 						NodeBase: NodeBase{
 							Span:            NodeSpan{0, 7},
 							IsParenthesized: false,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{5, 6}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{6, 7}},
-							},*/
 						},
 						Callee: &PatternIdentifierLiteral{
 							NodeBase: NodeBase{
@@ -27697,10 +27677,6 @@ func testParse(
 						NodeBase: NodeBase{
 							Span:            NodeSpan{0, 11},
 							IsParenthesized: false,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{9, 10}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{10, 11}},
-							},*/
 						},
 						Callee: &PatternNamespaceMemberExpression{
 							NodeBase: NodeBase{
@@ -27729,10 +27705,6 @@ func testParse(
 						NodeBase: NodeBase{
 							Span:            NodeSpan{0, 8},
 							IsParenthesized: false,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{5, 6}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{7, 8}},
-							},*/
 						},
 						Callee: &PatternIdentifierLiteral{
 							NodeBase: NodeBase{
@@ -27763,11 +27735,6 @@ func testParse(
 						NodeBase: NodeBase{
 							Span:            NodeSpan{0, 10},
 							IsParenthesized: false,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{5, 6}},
-								{Type: COMMA, Span: NodeSpan{7, 8}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{9, 10}},
-							},*/
 						},
 						Callee: &PatternIdentifierLiteral{
 							NodeBase: NodeBase{
@@ -27805,10 +27772,6 @@ func testParse(
 						NodeBase: NodeBase{
 							Span:            NodeSpan{0, 8},
 							IsParenthesized: false,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{5, 6}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{7, 8}},
-							},*/
 						},
 						Callee: &PatternIdentifierLiteral{
 							NodeBase: NodeBase{
@@ -27840,10 +27803,6 @@ func testParse(
 						NodeBase: NodeBase{
 							Span:            NodeSpan{0, 8},
 							IsParenthesized: false,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{5, 6}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{7, 8}},
-							},*/
 						},
 						Callee: &PatternIdentifierLiteral{
 							NodeBase: NodeBase{
@@ -27881,10 +27840,6 @@ func testParse(
 								NodeBase: NodeBase{
 									Span:            NodeSpan{5, 7},
 									IsParenthesized: false,
-									/*[]Token{
-										{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{5, 6}},
-										{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{6, 7}},
-									},*/
 								},
 							},
 						},
@@ -34687,15 +34642,7 @@ func testParse(
 								},
 							},
 							Closing: &MarkupPatternClosingTag{
-								NodeBase: NodeBase{
-									NodeSpan{7, 13},
-									nil,
-									false,
-									/*[]Token{
-										{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{12, 14}},
-										{Type: GREATER_THAN, Span: NodeSpan{17, 18}},
-									},*/
-								},
+								NodeBase: NodeBase{Span: NodeSpan{7, 13}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{9, 12}, nil, false},
 									Name:       "div",
@@ -34708,7 +34655,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("attribute with value", func(t *testing.T) {
+		t.Run("attribute with pattern", func(t *testing.T) {
 			n := mustparseChunk(t, `%<div a="b"></div>`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 18}, nil, false},
@@ -34760,7 +34707,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("attribute with value on next line", func(t *testing.T) {
+		t.Run("attribute with pattern on next line", func(t *testing.T) {
 			n := mustparseChunk(t, "%<div\na=\"b\"></div>")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 18}, nil, false},
@@ -34814,7 +34761,59 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("attribute with value and unquoted region as name", func(t *testing.T) {
+		t.Run("attribute with unprefixed named pattern", func(t *testing.T) {
+			n := mustparseChunk(t, `%<div a=b></div>`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
+				Statements: []Node{
+					&MarkupPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
+						Element: &MarkupPatternElement{
+							NodeBase: NodeBase{NodeSpan{1, 16}, nil, false},
+							Opening: &MarkupPatternOpeningTag{
+								NodeBase: NodeBase{Span: NodeSpan{1, 10}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+								Attributes: []Node{
+									&MarkupPatternAttribute{
+										NodeBase: NodeBase{Span: NodeSpan{6, 9}},
+										Name: &IdentifierLiteral{
+											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
+											Name:     "a",
+										},
+										Type: &PatternIdentifierLiteral{
+											NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+											Name:       "b",
+											Unprefixed: true,
+										},
+									},
+								},
+							},
+							Children: []Node{
+								&MarkupText{
+									NodeBase: NodeBase{NodeSpan{10, 10}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &MarkupPatternClosingTag{
+								NodeBase: NodeBase{Span: NodeSpan{10, 16}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{12, 15}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("attribute with pattern and unquoted region as name", func(t *testing.T) {
 			n := mustparseChunk(t, `@(%<div <{a}>="b"></div>)`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 25}, nil, false},
@@ -34872,7 +34871,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("attribute with unquoted region as value", func(t *testing.T) {
+		t.Run("attribute with unquoted region as pattern", func(t *testing.T) {
 			n := mustparseChunk(t, `@(%<div a=<{b}>></div>)`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
@@ -34929,7 +34928,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("attribute without value on next line", func(t *testing.T) {
+		t.Run("attribute without pattern on next line", func(t *testing.T) {
 			n := mustparseChunk(t, "%<div\na></div>")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
@@ -34976,7 +34975,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("self-closing: attribute with value", func(t *testing.T) {
+		t.Run("self-closing: attribute with pattern", func(t *testing.T) {
 			n := mustparseChunk(t, `%<div a="b"/>`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
@@ -34994,11 +34993,7 @@ func testParse(
 								},
 								Attributes: []Node{
 									&MarkupPatternAttribute{
-										NodeBase: NodeBase{
-											NodeSpan{6, 11},
-											nil,
-											false,
-										},
+										NodeBase: NodeBase{Span: NodeSpan{6, 11}},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 											Name:     "a",
@@ -35017,7 +35012,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("attribute with value, followed by space", func(t *testing.T) {
+		t.Run("attribute with pattern, followed by space", func(t *testing.T) {
 			n := mustparseChunk(t, `%<div a="b" ></div>`)
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
@@ -35056,15 +35051,7 @@ func testParse(
 								},
 							},
 							Closing: &MarkupPatternClosingTag{
-								NodeBase: NodeBase{
-									NodeSpan{13, 19},
-									nil,
-									false,
-									/*[]Token{
-										{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{13, 15}},
-										{Type: GREATER_THAN, Span: NodeSpan{18, 19}},
-									},*/
-								},
+								NodeBase: NodeBase{Span: NodeSpan{13, 19}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{15, 18}, nil, false},
 									Name:       "div",
@@ -35077,7 +35064,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("attribute with invalid name with value", func(t *testing.T) {
+		t.Run("attribute with invalid name with pattern", func(t *testing.T) {
 			n, err := parseChunk(t, `%<div "a"="b"></div>`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
@@ -35088,15 +35075,7 @@ func testParse(
 						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 20}, nil, false},
 							Opening: &MarkupPatternOpeningTag{
-								NodeBase: NodeBase{
-									NodeSpan{1, 14},
-									nil,
-									false,
-									/*[]Token{
-										{Type: LESS_THAN, Span: NodeSpan{1, 2}},
-										{Type: GREATER_THAN, Span: NodeSpan{13, 14}},
-									},*/
-								},
+								NodeBase: NodeBase{Span: NodeSpan{1, 14}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
 									Name:       "div",
@@ -35134,15 +35113,7 @@ func testParse(
 								},
 							},
 							Closing: &MarkupPatternClosingTag{
-								NodeBase: NodeBase{
-									NodeSpan{14, 20},
-									nil,
-									false,
-									/*[]Token{
-										{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{14, 16}},
-										{Type: GREATER_THAN, Span: NodeSpan{19, 20}},
-									},*/
-								},
+								NodeBase: NodeBase{Span: NodeSpan{14, 20}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{16, 19}, nil, false},
 									Name:       "div",
@@ -35155,7 +35126,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("attribute with missing value after '='", func(t *testing.T) {
+		t.Run("attribute with missing pattern after '='", func(t *testing.T) {
 			n, err := parseChunk(t, `%<div a=></div>`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
@@ -35201,15 +35172,7 @@ func testParse(
 								},
 							},
 							Closing: &MarkupPatternClosingTag{
-								NodeBase: NodeBase{
-									NodeSpan{9, 15},
-									nil,
-									false,
-									/*[]Token{
-										{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{9, 11}},
-										{Type: GREATER_THAN, Span: NodeSpan{14, 15}},
-									},*/
-								},
+								NodeBase: NodeBase{Span: NodeSpan{9, 15}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{11, 14}, nil, false},
 									Name:       "div",
@@ -35222,7 +35185,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("attribute with missing value after '='", func(t *testing.T) {
+		t.Run("attribute with missing pattern after '='", func(t *testing.T) {
 			n, err := parseChunk(t, `%<div a=></div>`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
@@ -35264,15 +35227,7 @@ func testParse(
 								},
 							},
 							Closing: &MarkupPatternClosingTag{
-								NodeBase: NodeBase{
-									NodeSpan{9, 15},
-									nil,
-									false,
-									/*[]Token{
-										{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{9, 11}},
-										{Type: GREATER_THAN, Span: NodeSpan{14, 15}},
-									},*/
-								},
+								NodeBase: NodeBase{Span: NodeSpan{9, 15}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{11, 14}, nil, false},
 									Name:       "div",
@@ -35319,15 +35274,7 @@ func testParse(
 								},
 							},
 							Closing: &MarkupPatternClosingTag{
-								NodeBase: NodeBase{
-									NodeSpan{8, 14},
-									nil,
-									false,
-									/*[]Token{
-										{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{8, 10}},
-										{Type: GREATER_THAN, Span: NodeSpan{13, 14}},
-									},*/
-								},
+								NodeBase: NodeBase{Span: NodeSpan{8, 14}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{10, 13}, nil, false},
 									Name:       "div",
@@ -35395,11 +35342,7 @@ func testParse(
 								},
 								Attributes: []Node{
 									&MarkupPatternAttribute{
-										NodeBase: NodeBase{
-											NodeSpan{6, 11},
-											nil,
-											false,
-										},
+										NodeBase: NodeBase{Span: NodeSpan{6, 11}},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 											Name:     "a",
@@ -35411,11 +35354,7 @@ func testParse(
 										},
 									},
 									&MarkupPatternAttribute{
-										NodeBase: NodeBase{
-											NodeSpan{12, 17},
-											nil,
-											false,
-										},
+										NodeBase: NodeBase{Span: NodeSpan{12, 17}},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{12, 13}, nil, false},
 											Name:     "c",
@@ -35436,15 +35375,7 @@ func testParse(
 								},
 							},
 							Closing: &MarkupPatternClosingTag{
-								NodeBase: NodeBase{
-									NodeSpan{18, 24},
-									nil,
-									false,
-									/*[]Token{
-										{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{18, 20}},
-										{Type: GREATER_THAN, Span: NodeSpan{23, 24}},
-									},*/
-								},
+								NodeBase: NodeBase{Span: NodeSpan{18, 24}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{20, 23}, nil, false},
 									Name:       "div",
@@ -35471,15 +35402,7 @@ func testParse(
 						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 7}, nil, false},
 							Opening: &MarkupPatternOpeningTag{
-								NodeBase: NodeBase{
-									NodeSpan{1, 7},
-									nil,
-									false,
-									/*[]Token{
-										{Type: LESS_THAN, Span: NodeSpan{1, 2}},
-										{Type: SELF_CLOSING_TAG_TERMINATOR, Span: NodeSpan{5, 7}},
-									},*/
-								},
+								NodeBase: NodeBase{Span: NodeSpan{1, 7}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
 									Name:       "div",
@@ -35508,10 +35431,6 @@ func testParse(
 									NodeSpan{1, 6},
 									&ParsingError{UnspecifiedParsingError, UNTERMINATED_SELF_CLOSING_MARKUP_TAG_MISSING_CLOSING},
 									false,
-									/*[]Token{
-										{Type: LESS_THAN, Span: NodeSpan{1, 2}},
-										{Type: SLASH, Span: NodeSpan{5, 6}},
-									},*/
 								},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
@@ -35535,15 +35454,7 @@ func testParse(
 						Element: &MarkupPatternElement{
 							NodeBase: NodeBase{NodeSpan{1, 13}, nil, false},
 							Opening: &MarkupPatternOpeningTag{
-								NodeBase: NodeBase{
-									NodeSpan{1, 6},
-									nil,
-									false,
-									/*[]Token{
-										{Type: LESS_THAN, Span: NodeSpan{1, 2}},
-										{Type: GREATER_THAN, Span: NodeSpan{5, 6}},
-									},*/
-								},
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
 									Name:       "div",
@@ -35558,15 +35469,7 @@ func testParse(
 								},
 							},
 							Closing: &MarkupPatternClosingTag{
-								NodeBase: NodeBase{
-									NodeSpan{7, 13},
-									nil,
-									false,
-									/*[]Token{
-										{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{7, 9}},
-										{Type: GREATER_THAN, Span: NodeSpan{12, 13}},
-									},*/
-								},
+								NodeBase: NodeBase{Span: NodeSpan{7, 13}},
 								Name: &PatternIdentifierLiteral{
 									NodeBase:   NodeBase{NodeSpan{9, 12}, nil, false},
 									Name:       "div",
@@ -35646,6 +35549,57 @@ func testParse(
 										NodeBase: NodeBase{NodeSpan{7, 8}, nil, false},
 										Raw:      "1",
 										Value:    1,
+									},
+								},
+								&MarkupText{
+									NodeBase: NodeBase{NodeSpan{9, 10}, nil, false},
+									Raw:      "2",
+									Value:    "2",
+								},
+							},
+							Closing: &MarkupPatternClosingTag{
+								NodeBase: NodeBase{Span: NodeSpan{10, 16}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{12, 15}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("unprefixed named pattern in interpolation", func(t *testing.T) {
+			n := mustparseChunk(t, "%<div>{p}2</div>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
+				Statements: []Node{
+					&MarkupPatternExpression{
+						NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
+						Element: &MarkupPatternElement{
+							NodeBase: NodeBase{Span: NodeSpan{1, 16}},
+							Opening: &MarkupPatternOpeningTag{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:       "div",
+									Unprefixed: true,
+								},
+							},
+							Children: []Node{
+								&MarkupText{
+									NodeBase: NodeBase{NodeSpan{6, 6}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+								&MarkupPatternInterpolation{
+									NodeBase: NodeBase{NodeSpan{7, 8}, nil, false},
+									Expr: &PatternIdentifierLiteral{
+										NodeBase:   NodeBase{NodeSpan{7, 8}, nil, false},
+										Unprefixed: true,
+										Name:       "p",
 									},
 								},
 								&MarkupText{
