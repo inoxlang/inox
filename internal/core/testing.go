@@ -282,7 +282,7 @@ func (*TestSuite) SetProp(ctx *Context, name string, value Value) error {
 }
 
 func (*TestSuite) PropertyNames(ctx *Context) []string {
-	return []string{"run"}
+	return symbolic.TEST_SUITE_PROPNAMES
 }
 
 // A TestCase represents a test case, TestCase implements Value.
@@ -554,7 +554,7 @@ func (*TestCase) SetProp(ctx *Context, name string, value Value) error {
 }
 
 func (*TestCase) PropertyNames(ctx *Context) []string {
-	return []string{"run"}
+	return symbolic.TEST_CASE_PROPNAMES
 }
 
 func runTestItem(

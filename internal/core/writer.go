@@ -5,6 +5,7 @@ import (
 	"io"
 	"sync"
 
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -123,5 +124,5 @@ func (w *Writer) Writer() *Writer {
 }
 
 func (Writer) PropertyNames(ctx *Context) []string {
-	return []string{"write"}
+	return symbolic.WRITER_PROPNAMES
 }

@@ -1368,7 +1368,7 @@ type MarkupPattern struct {
 type MarkupPatternElement struct {
 }
 
-func NewMarkupPatternFromExpression(node *parse.MarkupPatternExpression) (*MarkupPattern, error) {
+func NewMarkupPatternFromExpression(node *parse.MarkupPatternExpression, patterns map[string]Pattern) (*MarkupPattern, error) {
 	pattern := &MarkupPattern{}
 	elem, err := newMarkupPatternElementFromNode(node.Element)
 	if err != nil {

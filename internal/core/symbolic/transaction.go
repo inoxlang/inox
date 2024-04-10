@@ -4,6 +4,10 @@ import (
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
+var (
+	TRANSACTION_PROPNAMES = []string{"start", "commit", "rollback"}
+)
+
 // A Transaction represents a symbolic Transaction.
 type Transaction struct {
 	UnassignablePropsMixin
@@ -43,7 +47,7 @@ func (tx *Transaction) Prop(name string) Value {
 }
 
 func (tx *Transaction) PropertyNames() []string {
-	return []string{"start", "commit", "rollback"}
+	return TRANSACTION_PROPNAMES
 }
 
 func (tx *Transaction) GetGoMethod(name string) (*GoFunction, bool) {

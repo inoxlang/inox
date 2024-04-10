@@ -5,7 +5,8 @@ import (
 )
 
 var (
-	ANY_WRITABLE = &AnyWritable{}
+	ANY_WRITABLE     = &AnyWritable{}
+	WRITER_PROPNAMES = []string{"write"}
 )
 
 // A Writable represents a symbolic Writable.
@@ -92,7 +93,7 @@ func (Writer *Writer) Writer() *Writer {
 }
 
 func (Writer) PropertyNames() []string {
-	return []string{"write"}
+	return WRITER_PROPNAMES
 }
 
 func (*Writer) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {

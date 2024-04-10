@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -361,7 +362,7 @@ func (*Transaction) SetProp(ctx *Context, name string, value Value) error {
 }
 
 func (tx *Transaction) PropertyNames(ctx *Context) []string {
-	return []string{"start", "commit", "rollback"}
+	return symbolic.TRANSACTION_PROPNAMES
 }
 
 func (tx *Transaction) GetGoMethod(name string) (*GoFunction, bool) {

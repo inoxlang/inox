@@ -7,6 +7,8 @@ import (
 	"io"
 	"strings"
 	"sync"
+
+	"github.com/inoxlang/inox/internal/core/symbolic"
 )
 
 var (
@@ -114,7 +116,7 @@ func (reader *Reader) Reader() *Reader {
 }
 
 func (Reader) PropertyNames(ctx *Context) []string {
-	return []string{"read", "read_all"}
+	return symbolic.READER_PRONAMES
 }
 
 // ------------------------------------------------------------

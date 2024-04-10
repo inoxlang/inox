@@ -56,6 +56,8 @@ var (
 
 	CURRENT_TEST_PROPNAMES   = []string{"program"}
 	TESTED_PROGRAM_PROPNAMES = []string{"is-done", "cancel", "dbs"}
+	TEST_SUITE_PROPNAMES     = []string{"run"}
+	TEST_CASE_PROPNAMES      = []string{"run"}
 )
 
 // A TestSuite represents a symbolic TestSuite.
@@ -101,12 +103,11 @@ func (s *TestSuite) Prop(name string) Value {
 }
 
 func (*TestSuite) PropertyNames() []string {
-	return []string{"run"}
+	return TEST_SUITE_PROPNAMES
 }
 
 func (s *TestSuite) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("test-suite")
-	return
 }
 
 // A TestCase represents a symbolic TestCase.
@@ -144,7 +145,7 @@ func (s *TestCase) Prop(name string) Value {
 }
 
 func (*TestCase) PropertyNames() []string {
-	return nil
+	return TEST_CASE_PROPNAMES
 }
 
 func (s *TestCase) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {

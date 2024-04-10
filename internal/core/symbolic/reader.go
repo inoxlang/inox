@@ -5,6 +5,8 @@ import (
 )
 
 var (
+	READER_PRONAMES = []string{"read", "read_all"}
+
 	_ = []Readable{(*String)(nil), (*StringConcatenation)(nil)}
 )
 
@@ -94,7 +96,7 @@ func (reader *Reader) Reader() *Reader {
 }
 
 func (Reader) PropertyNames() []string {
-	return []string{"read", "read_all"}
+	return READER_PRONAMES
 }
 
 func (r *Reader) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
