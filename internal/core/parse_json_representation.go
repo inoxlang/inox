@@ -573,9 +573,6 @@ func ParseObjectJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern 
 	if err := obj.addMessageHandlers(ctx); err != nil {
 		return nil, err
 	}
-	if err := obj.instantiateLifetimeJobs(ctx); err != nil {
-		return nil, err
-	}
 
 	return obj, nil
 }

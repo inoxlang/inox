@@ -45,7 +45,6 @@ var (
 		UnspecifiedModuleKind: inoxconsts.MANIFEST_SECTION_NAMES,
 		ApplicationModule:     inoxconsts.MANIFEST_SECTION_NAMES,
 		SpecModule:            {inoxconsts.MANIFEST_KIND_SECTION_NAME, inoxconsts.MANIFEST_PERMS_SECTION_NAME, inoxconsts.MANIFEST_LIMITS_SECTION_NAME},
-		LifetimeJobModule:     {inoxconsts.MANIFEST_PERMS_SECTION_NAME, inoxconsts.MANIFEST_LIMITS_SECTION_NAME},
 		TestSuiteModule:       {inoxconsts.MANIFEST_PERMS_SECTION_NAME, inoxconsts.MANIFEST_LIMITS_SECTION_NAME},
 		TestCaseModule:        {inoxconsts.MANIFEST_PERMS_SECTION_NAME, inoxconsts.MANIFEST_LIMITS_SECTION_NAME},
 	}

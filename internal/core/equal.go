@@ -1874,16 +1874,6 @@ func (s *ExecutedStep) Equal(ctx *Context, other Value, alreadyCompared map[uint
 	return s == otherStep
 }
 
-func (j *LifetimeJob) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherJob, ok := other.(*LifetimeJob)
-	if !ok {
-		return false
-	}
-
-	//TODO: also  affected resource list ?
-	return j == otherJob
-}
-
 func Same(a, b Value) bool {
 	aVal := reflect.ValueOf(a)
 	bVal := reflect.ValueOf(b)

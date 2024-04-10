@@ -645,13 +645,6 @@ func TestCheck(t *testing.T) {
 			assert.Equal(t, expectedErr, err)
 		})
 
-		t.Run("is defined at the top level of a lifetime job", func(t *testing.T) {
-			n, src := mustParseCode(`
-				lifetimejob #job for %{} { self }
-			`)
-			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
-		})
-
 		t.Run("is defined in reception handlers", func(t *testing.T) {
 			n, src := mustParseCode(`
 				{
@@ -758,13 +751,6 @@ func TestCheck(t *testing.T) {
 				makeError(sendValExpr, src, text.MISPLACED_SENDVAL_EXPR),
 			)
 			assert.Equal(t, expectedErr, err)
-		})
-
-		t.Run("is allowed at the top level of a lifetime job", func(t *testing.T) {
-			n, src := mustParseCode(`
-				lifetimejob #job for %{} { sendval 1 to {} }
-			`)
-			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
 		t.Run("is not allowed at at the top level of an embedded module", func(t *testing.T) {
@@ -1320,33 +1306,6 @@ func TestCheck(t *testing.T) {
 			n, src := mustParseCode(`
 				globalvar a = 1
 				fn(){ return a }
-			`)
-
-			fnExpr := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
-			data, err := StaticCheck(StaticCheckInput{
-				State: NewGlobalState(ctx),
-				Node:  n,
-				Chunk: src,
-			})
-			if !assert.NoError(t, err) {
-				return
-			}
-			assert.Equal(t, NewFunctionStaticData([]string{"a"}), data.GetFnData(fnExpr))
-		})
-
-		t.Run("globals referenced in lifetimejob expressions inside a function should be listed in the function's list", func(t *testing.T) {
-			ctx := NewContext(ContextConfig{})
-			defer ctx.CancelGracefully()
-
-			n, src := mustParseCode(`
-				globalvar a = 1
-				fn(){ 
-					{
-						lifetimejob #job {
-							a
-						}
-					}
-				}
 			`)
 
 			fnExpr := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
@@ -2657,30 +2616,6 @@ func TestCheck(t *testing.T) {
 			n, src = mustParseCode(`
 				manifest {}
 
-				{
-					lifetimejob #job {
-						manifest {
-							parameters: {}
-						}
-					}
-				}
-			`)
-			assert.Error(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
-
-			n, src = mustParseCode(`
-				manifest {}
-
-				lifetimejob #job for %{} {
-					manifest {
-						parameters: {}
-					}
-				}
-			`)
-			assert.Error(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
-
-			n, src = mustParseCode(`
-				manifest {}
-
 				testsuite "" {
 					manifest {
 						parameters: {}
@@ -2719,30 +2654,6 @@ func TestCheck(t *testing.T) {
 			n, src = mustParseCode(`
 				manifest {}
 
-				{
-					lifetimejob #job {
-						manifest {
-							env: %{}
-						}
-					}
-				}
-			`)
-			assert.Error(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
-
-			n, src = mustParseCode(`
-				manifest {}
-
-				lifetimejob #job for %{} {
-					manifest {
-						env: %{}
-					}
-				}
-			`)
-			assert.Error(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
-
-			n, src = mustParseCode(`
-				manifest {}
-
 				testsuite "" {
 					manifest {
 						env: %{}
@@ -2771,30 +2682,6 @@ func TestCheck(t *testing.T) {
 				}
 
 				go do {
-					manifest {
-						databases: {}
-					}
-				}
-			`)
-			assert.Error(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
-
-			n, src = mustParseCode(`
-				manifest {}
-
-				{
-					lifetimejob #job {
-						manifest {
-							databases: {}
-						}
-					}
-				}
-			`)
-			assert.Error(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
-
-			n, src = mustParseCode(`
-				manifest {}
-
-				lifetimejob #job for %{} {
 					manifest {
 						databases: {}
 					}
@@ -4596,72 +4483,6 @@ func TestCheck(t *testing.T) {
 			)
 			assert.Equal(t, expectedErr, err)
 		})
-	})
-
-	t.Run("lifetimejob expression", func(t *testing.T) {
-
-		t.Run("lifetimejob expression has its own local scope", func(t *testing.T) {
-			n, src := mustParseCode(`
-				a = 1
-				pattern p = %{}
-				lifetimejob #job for %p { a }
-			`)
-
-			identLiteral := parse.FindNodes(n, (*parse.IdentifierLiteral)(nil), nil)[1]
-
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
-			expectedErr := utils.CombineErrors(
-				makeError(identLiteral, src, text.FmtVarIsNotDeclared("a")),
-			)
-			assert.Equal(t, expectedErr, err)
-		})
-
-		t.Run("missing subject lifetime job as value of explicit object property", func(t *testing.T) {
-			n, src := mustParseCode(`
-				{
-					job: lifetimejob #job { }
-				}
-			`)
-
-			job := parse.FindNode(n, (*parse.LifetimejobExpression)(nil), nil)
-
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
-			expectedErr := utils.CombineErrors(
-				makeError(job, src, text.MISSING_LIFETIMEJOB_SUBJECT_PATTERN_NOT_AN_IMPLICIT_OBJ_PROP),
-			)
-			assert.Equal(t, expectedErr, err)
-		})
-
-		t.Run("subject lifetime job wih no subject as value of explicit object property", func(t *testing.T) {
-			n, src := mustParseCode(`
-				{
-					lifetimejob #job { }
-				}
-			`)
-
-			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
-		})
-
-		t.Run("lifetime job should have access to parent module's patterns ", func(t *testing.T) {
-			n, src := mustParseCode(`
-				pattern p = 1
-				lifetimejob #job for %object {
-					[%p, %int, %dom.]
-				}
-			`)
-
-			assert.NoError(t, staticCheckNoData(StaticCheckInput{
-				Node:  n,
-				Chunk: src,
-				Patterns: map[string]struct{}{
-					"int":    {},
-					"object": {},
-				},
-				PatternNamespaces: map[string][]string{"dom": {}},
-			}))
-		})
-
-		//TODO: add tests on globals
 	})
 
 	t.Run("reception handler expression", func(t *testing.T) {

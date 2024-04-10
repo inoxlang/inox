@@ -1,7 +1,6 @@
 package treecoll
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 
@@ -75,24 +74,11 @@ type Tree struct {
 	root *TreeNode
 
 	lock core.SmartLock
-	jobs *core.ValueLifetimeJobs
 }
 
 func NewTree(ctx *core.Context, treedata *core.Treedata, args ...core.Value) *Tree {
 
 	//read arguments
-
-	var jobs []*core.LifetimeJob
-
-	for _, arg := range args {
-		if job, ok := arg.(*core.LifetimeJob); ok {
-			jobs = append(jobs, job)
-		} else {
-			panic(core.FmtErrInvalidArgument(arg))
-		}
-	}
-
-	hasLifetimeJobs := len(jobs) != 0
 
 	// construct the tree
 
@@ -130,22 +116,6 @@ func NewTree(ctx *core.Context, treedata *core.Treedata, args ...core.Value) *Tr
 
 		return nil
 	})
-
-	// instantiate lifetime jobs
-
-	state := ctx.MustGetClosestState()
-
-	if hasLifetimeJobs {
-		if ok, expl := tree.IsSharable(state); !ok {
-			panic(errors.New(expl))
-		}
-		tree.Share(state)
-		jobs := core.NewValueLifetimeJobs(ctx, tree, jobs)
-		if err := jobs.InstantiateJobs(ctx); err != nil {
-			panic(err)
-		}
-		tree.jobs = jobs
-	}
 
 	return tree
 }

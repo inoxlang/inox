@@ -9,8 +9,6 @@ import (
 
 func TestCreateTree(t *testing.T) {
 
-	//TODO: add tests on trees with lifetimejobs
-
 	//whitebox testing
 
 	t.Run("root only", func(t *testing.T) {

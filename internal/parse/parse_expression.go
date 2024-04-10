@@ -396,9 +396,6 @@ func (p *parser) parseUnderscoreAlphaStartingExpression(precedingOpeningParen in
 		case tokenStrings[TESTCASE_KEYWORD]:
 			node = p.parseTestCaseExpression(v)
 			return
-		case tokenStrings[LIFETIMEJOB_KEYWORD]:
-			node = p.parseLifetimeJobExpression(v)
-			return
 		case tokenStrings[ON_KEYWORD]:
 			node = p.parseReceptionHandlerExpression(v)
 			return

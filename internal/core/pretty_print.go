@@ -139,7 +139,7 @@ func GetNodeColorizations(chunk *parse.Chunk, lightMode bool) []ColorizationInfo
 		case parse.BREAK_KEYWORD, parse.CONTINUE_KEYWORD, parse.PRUNE_KEYWORD, parse.COYIELD_KEYWORD, parse.YIELD_KEYWORD, parse.RETURN_KEYWORD,
 			parse.DEFAULTCASE_KEYWORD, parse.SWITCH_KEYWORD, parse.MATCH_KEYWORD, parse.ASSERT_KEYWORD,
 			parse.GO_KEYWORD, parse.DO_KEYWORD, parse.TESTSUITE_KEYWORD, parse.TESTCASE_KEYWORD, parse.COMP_KEYWORD,
-			parse.LIFETIMEJOB_KEYWORD, parse.FOR_KEYWORD, parse.IN_KEYWORD, parse.IF_KEYWORD, parse.ELSE_KEYWORD,
+			parse.FOR_KEYWORD, parse.IN_KEYWORD, parse.IF_KEYWORD, parse.ELSE_KEYWORD,
 			parse.PREINIT_KEYWORD, parse.ON_KEYWORD, parse.WALK_KEYWORD,
 			parse.DROP_PERMS_KEYWORD, parse.IMPORT_KEYWORD:
 			colorizations = append(colorizations, ColorizationInfo{
@@ -2111,10 +2111,6 @@ func (e *Event) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth in
 
 func (s *ExecutedStep) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, s)
-}
-
-func (j *LifetimeJob) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
-	InspectPrint(w, j)
 }
 
 func (watcher *GenericWatcher) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {

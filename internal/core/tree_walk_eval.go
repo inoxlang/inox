@@ -1402,9 +1402,6 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		if err := finalObj.addMessageHandlers(state.Global.Ctx); err != nil {
 			return nil, err
 		}
-		if err := finalObj.instantiateLifetimeJobs(state.Global.Ctx); err != nil {
-			return nil, err
-		}
 
 		initializeMetaproperties(finalObj, n.MetaProperties)
 		return finalObj, nil
@@ -2464,47 +2461,6 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		} else {
 			return testCase, nil
 		}
-	case *parse.LifetimejobExpression:
-		meta, err := TreeWalkEval(n.Meta, state)
-		if err != nil {
-			return nil, err
-		}
-
-		var subjectPattern Pattern
-
-		if n.Subject != nil {
-			v, err := TreeWalkEval(n.Subject, state)
-			if err != nil {
-				return nil, err
-			}
-			subjectPattern = v.(Pattern)
-		}
-
-		mod, err := TreeWalkEval(n.Module, state)
-		if err != nil {
-			return nil, err
-		}
-
-		chunk := mod.(AstNode).Node.(*parse.Chunk)
-
-		parsedChunk := &parse.ParsedChunkSource{
-			Node:   chunk,
-			Source: state.currentChunk().Source,
-		}
-
-		jobMod := WrapLowerModule(&inoxmod.Module{
-			Kind:             LifetimeJobModule,
-			TopLevelNode:     n.Module,
-			MainChunk:        parsedChunk,
-			ManifestTemplate: parsedChunk.Node.Manifest,
-		})
-
-		job, err := NewLifetimeJob(meta, subjectPattern, jobMod, state.Global)
-		if err != nil {
-			return nil, err
-		}
-
-		return job, nil
 	case *parse.ReceptionHandlerExpression:
 		pattern, err := TreeWalkEval(n.Pattern, state)
 		if err != nil {

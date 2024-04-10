@@ -35,7 +35,6 @@ var (
 		UserLThreadModule:     "userlthread",
 		TestSuiteModule:       "testsuite",
 		TestCaseModule:        "testcase",
-		LifetimeJobModule:     "lifetimejob",
 		ApplicationModule:     "application",
 	}
 
@@ -101,7 +100,6 @@ const (
 	UserLThreadModule
 	TestSuiteModule
 	TestCaseModule
-	LifetimeJobModule
 )
 
 func ParseModuleKind(s string) (Kind, error) {
@@ -119,7 +117,7 @@ func (k Kind) IsTestModule() bool {
 }
 
 func (k Kind) IsEmbedded() bool {
-	return k >= UserLThreadModule && k <= LifetimeJobModule
+	return k >= UserLThreadModule
 }
 
 func (k Kind) String() string {

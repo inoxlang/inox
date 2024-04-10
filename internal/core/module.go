@@ -16,7 +16,6 @@ const (
 	UserLThreadModule     = inoxmod.UserLThreadModule
 	TestSuiteModule       = inoxmod.TestSuiteModule
 	TestCaseModule        = inoxmod.TestCaseModule
-	LifetimeJobModule     = inoxmod.LifetimeJobModule
 )
 
 var (

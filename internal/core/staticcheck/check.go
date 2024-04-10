@@ -561,8 +561,6 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 		return c.checkDictionaryLiteral(node)
 	case *parse.SpawnExpression:
 		return c.checkSpawnExpr(node, closestModule)
-	case *parse.LifetimejobExpression:
-		return c.checkLifetimejobExpr(node, parent, closestModule)
 	case *parse.ReceptionHandlerExpression:
 		if prop, ok := parent.(*parse.ObjectProperty); !ok || !prop.HasNoKey() {
 			c.addError(node, text.MISPLACED_RECEPTION_HANDLER_EXPRESSION)
@@ -1143,37 +1141,6 @@ func (c *checker) checkSpawnExpr(node *parse.SpawnExpression, closestModule pars
 
 	c.defineStructs(node.Module, node.Module.Statements)
 	c.precheckTopLevelStatements(node.Module)
-
-	return parse.ContinueTraversal
-}
-
-func (c *checker) checkLifetimejobExpr(node *parse.LifetimejobExpression, parent, closestModule parse.Node) parse.TraversalAction {
-
-	lifetimeJobGlobals := c.getModGlobalVars(node.Module)
-
-	for name, info := range c.getModGlobalVars(closestModule) {
-		lifetimeJobGlobals[name] = info
-	}
-
-	lifetimeJobPatterns := c.getModPatterns(node.Module)
-
-	for name, info := range c.getModPatterns(closestModule) {
-		lifetimeJobPatterns[name] = info
-	}
-
-	lifetimeJobPatternNamespaces := c.getModPatternNamespaces(node.Module)
-
-	for name, info := range c.getModPatternNamespaces(closestModule) {
-		lifetimeJobPatternNamespaces[name] = info
-	}
-
-	if node.Subject != nil {
-		return parse.ContinueTraversal
-	}
-
-	if prop, ok := parent.(*parse.ObjectProperty); !ok || !prop.HasNoKey() {
-		c.addError(node, text.MISSING_LIFETIMEJOB_SUBJECT_PATTERN_NOT_AN_IMPLICIT_OBJ_PROP)
-	}
 
 	return parse.ContinueTraversal
 }
@@ -2385,13 +2352,6 @@ func (c *checker) checkVariable(node *parse.Variable, scopeNode parse.Node, ance
 				break
 			}
 
-			_, ok := ancestorChain[embeddedModIndex-1].(*parse.LifetimejobExpression)
-			if ok {
-				parentScopeNode := findClosestScopeContainerNode(ancestorChain[:embeddedModIndex-1])
-				if fnExpr, ok := parentScopeNode.(*parse.FunctionExpression); ok {
-					c.data.addFnCapturedGlobal(fnExpr, node.Name, &globalVarInfo)
-				}
-			}
 		case *parse.DynamicMappingEntry, *parse.StaticMappingEntry:
 			mappingExpr := findClosest[*parse.MappingExpression](ancestorChain)
 			c.data.addMappingCapturedGlobal(mappingExpr, node.Name)
@@ -2597,13 +2557,6 @@ func (c *checker) checkIdentifier(ident *parse.IdentifierLiteral, parent, scopeN
 				break
 			}
 
-			_, ok := ancestorChain[embeddedModIndex-1].(*parse.LifetimejobExpression)
-			if ok {
-				parentScopeNode := findClosestScopeContainerNode(ancestorChain[:embeddedModIndex-1])
-				if fnExpr, ok := parentScopeNode.(*parse.FunctionExpression); ok {
-					c.data.addFnCapturedGlobal(fnExpr, ident.Name, &globalVarInfo)
-				}
-			}
 		case *parse.DynamicMappingEntry, *parse.StaticMappingEntry:
 			mappingExpr := findClosest[*parse.MappingExpression](ancestorChain)
 			c.data.addMappingCapturedGlobal(mappingExpr, ident.Name)
@@ -2704,15 +2657,11 @@ loop:
 			}
 
 			break loop
-		case *parse.EmbeddedModule: //ok if lifetime job
-			if i == 0 || !utils.Implements[*parse.LifetimejobExpression](ancestorChain[i-1]) {
-				c.addError(node, misplacementErr)
-			}
+		case *parse.EmbeddedModule:
+			c.addError(node, misplacementErr)
 			return parse.ContinueTraversal
 		case *parse.Chunk:
-			if c.currentModule != nil && c.currentModule.Kind == inoxmod.LifetimeJobModule { // ok
-				return parse.ContinueTraversal
-			}
+			//
 		case *parse.ExtendStatement:
 			if isSelfExpr && node.Base().IncludedIn(a.Extension) { //ok
 				return parse.ContinueTraversal
@@ -3151,8 +3100,6 @@ func (c *checker) postCheckSingleNode(node, parent, scopeNode parse.Node, ancest
 			if isEmbeddedModule {
 				var moduleKind inoxmod.Kind
 				switch ancestorChain[len(ancestorChain)-3].(type) {
-				case *parse.LifetimejobExpression:
-					moduleKind = inoxmod.LifetimeJobModule
 				case *parse.SpawnExpression:
 					moduleKind = inoxmod.UserLThreadModule
 				case *parse.TestSuiteExpression:

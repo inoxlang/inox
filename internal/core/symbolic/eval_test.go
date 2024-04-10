@@ -2116,34 +2116,6 @@ func TestSymbolicEval(t *testing.T) {
 			}, res)
 		})
 
-		t.Run("readonly objects should not have lifetime jobs", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				fn f(obj readonly {}){
-					return obj
-				}
-				return f({
-					lifetimejob #job {
-
-					}
-				})
-			`)
-			res, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-
-			lifetimeJobExpr := parse.FindNode(n, (*parse.LifetimejobExpression)(nil), nil)
-
-			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(lifetimeJobExpr, state, LIFETIME_JOBS_NOT_ALLOWED_IN_READONLY_OBJECTS),
-			}, state.errors())
-
-			if !assert.IsType(t, (*Object)(nil), res) {
-				return
-			}
-
-			obj := res.(*Object)
-			assert.True(t, obj.readonly)
-		})
-
 		t.Run("readonly objects should not have non-readonly property values", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				fn f(obj readonly {}){
@@ -5737,7 +5709,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, ANY_INT, res)
 		})
 
-		t.Run("object literal arguments without methods or lifetime jobs should be evaluated as exact objects", func(t *testing.T) {
+		t.Run("object literal arguments without methods should be evaluated as exact objects", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				return f({a: "a"})
 			`)
@@ -12606,135 +12578,6 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors())
 			assert.Equal(t, ANY_TEST_SUITE, res)
 		})
-
-	})
-
-	t.Run("lifetimejob expression", func(t *testing.T) {
-		t.Run("should have access to implicit subject properties defined before and after the jobs", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`{ 
-				a: int
-				lifetimejob "name" { [self.a, self.b] } 
-				b: 2
-			}`)
-
-			_, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Empty(t, state.errors())
-		})
-
-		t.Run("accessing a non existing property of the subject should cause an error", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`{ 
-				lifetimejob "name" { self.a } 
-			}`)
-
-			_, err := symbolicEval(n, state)
-
-			membExpr := parse.FindNode(n, &parse.MemberExpression{}, nil)
-			assert.NoError(t, err)
-			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(membExpr, state, fmtPropOfDoesNotExist("a", NewEmptyObject(), "")),
-			}, state.errors())
-		})
-
-		t.Run("implicit subject: error in module", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`{ 
-				a: int
-				lifetimejob "name" { (int + true) } 
-			}`)
-
-			binExpr := parse.FindNode(n, &parse.BinaryExpression{}, nil)
-
-			_, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(binExpr.Right, state, fmtRightOperandOfBinaryShouldBe(parse.Add, "int", "true")),
-			}, state.errors())
-		})
-
-		t.Run("explicit subject", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`lifetimejob "name" for %list {}`)
-
-			res, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Empty(t, state.errors())
-			assert.Equal(t, &LifetimeJob{subjectPattern: state.ctx.ResolveNamedPattern("list")}, res)
-		})
-
-		t.Run("explicit subject: error in module", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`lifetimejob "name" for %list {
-				(int + true)
-			}`)
-
-			binExpr := parse.FindNode(n, &parse.BinaryExpression{}, nil)
-
-			res, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(binExpr.Right, state, fmtRightOperandOfBinaryShouldBe(parse.Add, "int", "true")),
-			}, state.errors())
-			assert.Equal(t, &LifetimeJob{subjectPattern: state.ctx.ResolveNamedPattern("list")}, res)
-		})
-
-		t.Run("explicit subject: not matched by self", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				{
-					lifetimejob "name" for %{a: %int} {}
-				}
-			`)
-
-			lifetimeJobExpr := parse.FindNode(n, &parse.LifetimejobExpression{}, nil)
-			subjectPattern := NewExactObjectPattern(map[string]Pattern{
-				"a": state.ctx.ResolveNamedPattern("int"),
-			}, nil)
-
-			_, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(lifetimeJobExpr, state, fmtSelfShouldMatchLifetimeJobSubjectPattern(subjectPattern)),
-			}, state.errors())
-		})
-
-		t.Run("lifetime job within an object literal should have access to patterns defined in parent state", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				pattern p = int
-				{ 
-					a: int
-					lifetimejob "name" { [%p, %int]  } 
-				}`,
-			)
-
-			_, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Empty(t, state.errors())
-		})
-
-		t.Run("lifetime job within a function should have access to patterns defined in top level state", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				pattern p = int
-				fn createJob(){
-					return lifetimejob "name" for %object { [%p, %int]  } 
-				}
-			`)
-
-			_, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Empty(t, state.errors())
-		})
-
-		t.Run("meta value should be immutable", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				lifetimejob {} for %object {  } 
-			`)
-			objLit := parse.FindNode(n, (*parse.ObjectLiteral)(nil), nil)
-
-			_, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(objLit, state, META_VAL_OF_LIFETIMEJOB_SHOULD_BE_IMMUTABLE),
-			}, state.errors())
-		})
-
-		//TODO: add tests on globals
 
 	})
 

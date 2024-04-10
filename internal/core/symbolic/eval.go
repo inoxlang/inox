@@ -868,8 +868,6 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		return evalTestsuiteExpression(n, state, options)
 	case *parse.TestCaseExpression:
 		return evalTestcaseExpression(n, state, options)
-	case *parse.LifetimejobExpression:
-		return evalLifetimejobExpression(n, state, options)
 	case *parse.ReceptionHandlerExpression:
 		_, err := symbolicEval(n.Handler, state)
 		if err != nil {
@@ -4235,9 +4233,8 @@ func evalObjectLiteral(n *parse.ObjectLiteral, state *State, options evalOptions
 	entries := map[string]Serializable{}
 
 	var (
-		keys            []string
-		props           []*parse.ObjectProperty
-		hasLifetimeJobs = false
+		keys  []string
+		props []*parse.ObjectProperty
 	)
 
 	var noKeyProps []*parse.ObjectProperty
@@ -4261,15 +4258,6 @@ func evalObjectLiteral(n *parse.ObjectLiteral, state *State, options evalOptions
 
 		if hasKey && key == inoxconsts.IMPLICIT_PROP_NAME { //not allowed (static check error)
 			continue
-		}
-
-		_, ok := p.Value.(*parse.LifetimejobExpression)
-
-		if ok {
-			if hasKey { //error
-				continue
-			}
-			hasLifetimeJobs = true
 		}
 
 		if hasKey {
@@ -4318,7 +4306,7 @@ func evalObjectLiteral(n *parse.ObjectLiteral, state *State, options evalOptions
 		expectedObj = &Object{}
 	}
 
-	isExact := options.neverModifiedArgument && len(n.SpreadElements) == 0 && !hasLifetimeJobs
+	isExact := options.neverModifiedArgument && len(n.SpreadElements) == 0
 
 	obj := NewObject(isExact, entries, nil, nil)
 	if expectedObj.readonly {
@@ -4433,9 +4421,7 @@ func evalObjectLiteral(n *parse.ObjectLiteral, state *State, options evalOptions
 
 		//additional checks if expected object is readonly
 		if expectedObj.readonly {
-			if _, ok := propVal.(*LifetimeJob); ok {
-				state.addError(makeSymbolicEvalError(p, state, LIFETIME_JOBS_NOT_ALLOWED_IN_READONLY_OBJECTS))
-			} else if !IsReadonlyOrImmutable(propVal) {
+			if !IsReadonlyOrImmutable(propVal) {
 				state.addError(makeSymbolicEvalError(p.Key, state, PROPERTY_VALUES_OF_READONLY_OBJECTS_SHOULD_BE_READONLY_OR_IMMUTABLE))
 			}
 		}
@@ -5659,90 +5645,6 @@ func evalTestcaseExpression(n *parse.TestCaseExpression, state *State, options e
 	}
 
 	return &TestCase{}, nil
-}
-
-func evalLifetimejobExpression(n *parse.LifetimejobExpression, state *State, options evalOptions) (Value, error) {
-
-	meta, err := symbolicEval(n.Meta, state)
-	if err != nil {
-		return nil, err
-	}
-
-	if meta.IsMutable() {
-		state.addError(makeSymbolicEvalError(n.Meta, state, META_VAL_OF_LIFETIMEJOB_SHOULD_BE_IMMUTABLE))
-	}
-
-	var subject Value = ANY
-	var subjectPattern Pattern = ANY_PATTERN
-
-	if n.Subject != nil {
-		v, err := symbolicEval(n.Subject, state)
-		if err != nil {
-			return nil, err
-		}
-		patt, ok := v.(Pattern)
-
-		if !ok {
-			state.addError(makeSymbolicEvalError(n, state, fmtSubjectOfLifetimeJobShouldBeObjectPatternNot(v)))
-		} else {
-			subject = patt.SymbolicValue()
-			subjectPattern = patt
-		}
-	}
-
-	v, err := symbolicEval(n.Module, state)
-	if err != nil {
-		return nil, err
-	}
-
-	embeddedModule := v.(*AstNode).Node.(*parse.Chunk)
-
-	//add patterns of parent state
-
-	//TODO: read the manifest to known the permissions
-	modCtx := NewSymbolicContext(state.ctx.startingConcreteContext, state.ctx.startingConcreteContext, state.ctx)
-	state.ctx.ForEachPattern(func(name string, pattern Pattern, knowPosition bool, position parse.SourcePositionRange) {
-		modCtx.AddNamedPattern(name, pattern, state.inPreinit, parse.SourcePositionRange{})
-	})
-	state.ctx.ForEachPatternNamespace(func(name string, namespace *PatternNamespace, knowPosition bool, position parse.SourcePositionRange) {
-		modCtx.AddPatternNamespace(name, namespace, state.inPreinit, parse.SourcePositionRange{})
-	})
-
-	modState := newSymbolicState(modCtx, &parse.ParsedChunkSource{
-		Node:   embeddedModule,
-		Source: state.currentChunk().Source,
-	})
-	state.forEachGlobal(func(name string, info varSymbolicInfo) {
-		modState.setGlobal(name, info.value, info.constness())
-	})
-
-	modState.Module = state.Module
-	modState.symbolicData = state.symbolicData
-
-	nextSelf, ok := state.getNextSelf()
-
-	if n.Subject == nil { // implicit subject
-		if !ok {
-			return nil, errors.New("next self should be set")
-		}
-		modState.topLevelSelf = nextSelf
-	} else {
-		if ok && !subject.Test(nextSelf, RecTestCallState{}) {
-			state.addError(makeSymbolicEvalError(n, state, fmtSelfShouldMatchLifetimeJobSubjectPattern(subjectPattern)))
-		}
-		modState.topLevelSelf = subject
-	}
-
-	_, err = symbolicEval(embeddedModule, modState)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, err := range modState.errors() {
-		state.addError(err)
-	}
-
-	return NewLifetimeJob(subjectPattern), nil
 }
 
 func evalStringTemplateLiteral(n *parse.StringTemplateLiteral, state *State, options evalOptions) (Value, error) {

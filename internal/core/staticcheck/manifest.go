@@ -18,7 +18,6 @@ var (
 		inoxmod.UnspecifiedModuleKind: inoxconsts.MANIFEST_SECTION_NAMES,
 		inoxmod.ApplicationModule:     inoxconsts.MANIFEST_SECTION_NAMES,
 		inoxmod.SpecModule:            {inoxconsts.MANIFEST_KIND_SECTION_NAME, inoxconsts.MANIFEST_PERMS_SECTION_NAME, inoxconsts.MANIFEST_LIMITS_SECTION_NAME},
-		inoxmod.LifetimeJobModule:     {inoxconsts.MANIFEST_PERMS_SECTION_NAME, inoxconsts.MANIFEST_LIMITS_SECTION_NAME},
 		inoxmod.TestSuiteModule:       {inoxconsts.MANIFEST_PERMS_SECTION_NAME, inoxconsts.MANIFEST_LIMITS_SECTION_NAME},
 		inoxmod.TestCaseModule:        {inoxconsts.MANIFEST_PERMS_SECTION_NAME, inoxconsts.MANIFEST_LIMITS_SECTION_NAME},
 	}

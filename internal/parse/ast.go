@@ -153,10 +153,9 @@ func IsScopeContainerNode(node Node) bool {
 	switch node.(type) {
 	case *Chunk, *EmbeddedModule, *FunctionExpression, *FunctionPatternExpression, *QuotedExpression,
 		*InitializationBlock, *MappingExpression, *StaticMappingEntry, *DynamicMappingEntry, *TestSuiteExpression, *TestCaseExpression,
-		*ExtendStatement,       //ExtendStatement being a scope container is not 100% incorrect
-		*MetadataAnnotations,   //MetadataAnnotation being a scope container is not 100% incorrect
-		*StructDefinition,      //same
-		*LifetimejobExpression: // <-- remove ?
+		*ExtendStatement,     //ExtendStatement being a scope container is not 100% incorrect
+		*MetadataAnnotations, //MetadataAnnotation being a scope container is not 100% incorrect
+		*StructDefinition:    //same
 		return true
 	default:
 		return false
@@ -2362,17 +2361,6 @@ func (e TestCaseExpression) Kind() NodeKind {
 	if e.IsStatement {
 		return Stmt
 	}
-	return Expr
-}
-
-type LifetimejobExpression struct {
-	NodeBase
-	Meta    Node
-	Subject Node // can be nil
-	Module  *EmbeddedModule
-}
-
-func (LifetimejobExpression) Kind() NodeKind {
 	return Expr
 }
 

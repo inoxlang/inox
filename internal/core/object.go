@@ -33,8 +33,6 @@ type additionalObjectFields struct {
 	constraintId ConstraintId
 	visibilityId VisibilityId
 
-	jobs *ValueLifetimeJobs //can be nil
-
 	//Locking and transaction related fields
 
 	lock SmartLock
@@ -57,15 +55,14 @@ func NewObject() *Object {
 	return &Object{}
 }
 
-// helper function to create an object, lifetime jobs are initialized.
+// helper function to create an object, message handlers are added.
 func NewObjectFromMap(valMap ValMap, ctx *Context) *Object {
 	obj := objFrom(valMap)
 	obj.addMessageHandlers(ctx) // add handlers before because jobs can mutate the object
-	obj.instantiateLifetimeJobs(ctx)
 	return obj
 }
 
-// helper function to create an object, lifetime jobs are not initialized.
+// helper function to create an object, message handlers are not added.
 func NewObjectFromMapNoInit(valMap ValMap) *Object {
 	obj := objFrom(valMap)
 	return obj
@@ -80,7 +77,7 @@ func newUnitializedObjectWithPropCount(count int) *Object {
 
 type ValMap map[string]Serializable
 
-// helper function to create an object, lifetime jobs and system parts are NOT initialized
+// helper function to create an object, system parts are NOT initialized
 func objFrom(entryMap ValMap) *Object {
 	keys := make([]string, len(entryMap))
 	values := make([]Serializable, len(entryMap))
@@ -153,37 +150,6 @@ func (obj *Object) indexOfKey(k string) int {
 }
 
 // this function is called during object creation
-func (obj *Object) instantiateLifetimeJobs(ctx *Context) error {
-	var jobs []*LifetimeJob
-	state := ctx.MustGetClosestState()
-
-	for keyIndex, key := range obj.keys {
-		if key != inoxconsts.IMPLICIT_PROP_NAME {
-			continue
-		}
-
-		list := obj.values[keyIndex].(*List)
-
-		for elemIndex := 0; elemIndex < list.Len(); elemIndex++ {
-			if job, ok := list.At(ctx, elemIndex).(*LifetimeJob); ok && job.subjectPattern == nil {
-				jobs = append(jobs, job)
-			}
-		}
-	}
-
-	if len(jobs) != 0 {
-		obj.Share(state)
-		obj.ensureAdditionalFields()
-		jobs := NewValueLifetimeJobs(ctx, obj, jobs)
-		if err := jobs.InstantiateJobs(ctx); err != nil {
-			return err
-		}
-		obj.jobs = jobs
-	}
-	return nil
-}
-
-// this function is called during object creation
 func (obj *Object) addMessageHandlers(ctx *Context) error {
 	var handlers []*SynchronousMessageHandler
 
@@ -210,14 +176,6 @@ func (obj *Object) addMessageHandlers(ctx *Context) error {
 	}
 
 	return nil
-}
-
-// LifetimeJobs returns the lifetime jobs bound to the object, the returned pointer can be nil.
-func (obj *Object) LifetimeJobs() *ValueLifetimeJobs {
-	if obj.hasAdditionalFields() {
-		return nil
-	}
-	return obj.jobs
 }
 
 func (obj *Object) IsSharable(originState *GlobalState) (bool, string) {
@@ -275,13 +233,6 @@ func (obj *Object) SmartUnlock(state *GlobalState) {
 		panic(errors.New("unexpected Object.SmartUnlock call: object is not locked because it does not have additional fields"))
 	}
 	obj.lock.Unlock(state, obj, true)
-}
-
-func (obj *Object) JobInstances() []*LifetimeJobInstance {
-	if !obj.hasAdditionalFields() {
-		return nil
-	}
-	return obj.jobs.Instances()
 }
 
 func (obj *Object) waitForOtherTxsToTerminate(ctx *Context, requiredRunningTx bool) (currentTx *Transaction) {

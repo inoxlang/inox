@@ -105,8 +105,6 @@ const (
 	//permissions
 	POSSIBLE_MISSING_PERM_TO_CREATE_A_LTHREAD = "missing permission to create a lthread"
 
-	META_VAL_OF_LIFETIMEJOB_SHOULD_BE_IMMUTABLE                         = "meta value of lifetime job should be immutable"
-	LIFETIME_JOBS_NOT_ALLOWED_IN_READONLY_OBJECTS                       = "lifetime jobs are not allowed in readonly objects"
 	PROPERTY_VALUES_OF_READONLY_OBJECTS_SHOULD_BE_READONLY_OR_IMMUTABLE = "property values of readonly objects should be readonly or immutable"
 
 	//treedata
@@ -611,14 +609,6 @@ func fmtSynchronizedValueShouldBeASharableValueOrImmutableNot(v Value) string {
 
 func fmtXisNotAGroupMatchingPattern(v Value) string {
 	return fmt.Sprintf("a(n) %s is not a group matching pattern", Stringify(v))
-}
-
-func fmtSubjectOfLifetimeJobShouldBeObjectPatternNot(v Value) string {
-	return fmt.Sprintf("the subject pattern of a lifetime job should be an object pattern not an %s", Stringify(v))
-}
-
-func fmtSelfShouldMatchLifetimeJobSubjectPattern(p Pattern) string {
-	return fmt.Sprintf("self should match subject pattern of lifetime job (%s) ", Stringify(p))
 }
 
 func fmtSequenceShouldHaveLengthGreaterOrEqualTo(n int) string {

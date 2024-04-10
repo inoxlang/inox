@@ -347,10 +347,6 @@ func (o *Object) Migrate(ctx *Context, key Path, migration *FreeEntityMigrationA
 		panic(ErrUnreachable)
 	}
 
-	if o.jobs != nil {
-		panic(ErrNotImplementedYet)
-	}
-
 	if ctx.GetTx() != nil {
 		panic(ErrUnreachable)
 	}

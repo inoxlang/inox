@@ -116,7 +116,6 @@ const (
 	TESTSUITE_KEYWORD
 	TESTCASE_KEYWORD
 	SYNCHRONIZED_KEYWORD
-	LIFETIMEJOB_KEYWORD
 	ON_KEYWORD
 	RECEIVED_KEYWORD
 	DO_KEYWORD
@@ -370,7 +369,6 @@ var tokenStrings = [...]string{
 	TESTSUITE_KEYWORD:                 "testsuite",
 	TESTCASE_KEYWORD:                  "testcase",
 	SYNCHRONIZED_KEYWORD:              "synchronized",
-	LIFETIMEJOB_KEYWORD:               "lifetimejob",
 	ON_KEYWORD:                        "on",
 	RECEIVED_KEYWORD:                  "received",
 	DO_KEYWORD:                        "do",
@@ -548,7 +546,6 @@ var tokenTypenames = [...]string{
 	TESTSUITE_KEYWORD:                 "TESTSUITE_KEYWORD",
 	TESTCASE_KEYWORD:                  "TESTCASE_KEYWORD",
 	SYNCHRONIZED_KEYWORD:              "SYNCHRONIZED_KEYWORD",
-	LIFETIMEJOB_KEYWORD:               "LIFETIMEJOB_KEYWORD",
 	ON_KEYWORD:                        "ON_KEYWORD",
 	RECEIVED_KEYWORD:                  "RECEIVED_KEYWORD",
 	DO_KEYWORD:                        "DO_KEYWORD",

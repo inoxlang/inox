@@ -270,10 +270,6 @@ const (
 	UNTERMINATED_TESTSUITE_EXPRESSION_MISSING_BLOCK = "unterminated test suite expression: missing block"
 	UNTERMINATED_TESTCASE_EXPRESSION_MISSING_BLOCK  = "unterminated test case expression: missing block"
 
-	// lifetimejob
-	UNTERMINATED_LIFETIMEJOB_EXPRESSION_MISSING_META            = "unterminated lifetimejob expression: missing meta"
-	UNTERMINATED_LIFETIMEJOB_EXPRESSION_MISSING_EMBEDDED_MODULE = "unterminated lifetimejob expression: missing embedded module"
-
 	//send value expression
 
 	UNTERMINATED_SENDVALUE_EXPRESSION_MISSING_VALUE                 = "unterminated send value expression: missing value after 'sendval' keyword"

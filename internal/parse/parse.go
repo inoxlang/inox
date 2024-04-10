@@ -4325,61 +4325,6 @@ func (p *parser) parseTestCaseExpression(ident *IdentifierLiteral) *TestCaseExpr
 	}
 }
 
-func (p *parser) parseLifetimeJobExpression(ident *IdentifierLiteral) *LifetimejobExpression {
-	p.panicIfContextDone()
-
-	start := ident.Base().Span.Start
-	p.tokens = append(p.tokens, Token{Type: LIFETIMEJOB_KEYWORD, Span: ident.Base().Span})
-
-	p.eatSpace()
-	if p.i >= p.len {
-		return &LifetimejobExpression{
-			NodeBase: NodeBase{
-				Span: NodeSpan{start, p.i},
-				Err:  &ParsingError{UnspecifiedParsingError, UNTERMINATED_LIFETIMEJOB_EXPRESSION_MISSING_META},
-			},
-		}
-	}
-
-	meta, _ := p.parseExpression()
-	p.eatSpace()
-
-	var subject Node
-
-	if p.i < p.len && p.s[p.i] == 'f' { //TODO: rework
-		e := p.parseIdentStartingExpression(false)
-		if ident, ok := e.(*IdentifierLiteral); ok && ident.Name == FOR_KEYWORD_STRING {
-			p.tokens = append(p.tokens, Token{Type: FOR_KEYWORD, Span: ident.Span})
-
-			p.eatSpace()
-			subject, _ = p.parseExpression()
-			p.eatSpace()
-		}
-	}
-
-	if p.i >= p.len || p.s[p.i] != '{' {
-		return &LifetimejobExpression{
-			NodeBase: NodeBase{
-				Span: NodeSpan{start, p.i},
-				Err:  &ParsingError{UnspecifiedParsingError, UNTERMINATED_LIFETIMEJOB_EXPRESSION_MISSING_EMBEDDED_MODULE},
-			},
-			Meta:    meta,
-			Subject: subject,
-		}
-	}
-
-	emod := p.parseEmbeddedModule()
-
-	return &LifetimejobExpression{
-		NodeBase: NodeBase{
-			Span: NodeSpan{start, p.i},
-		},
-		Meta:    meta,
-		Subject: subject,
-		Module:  emod,
-	}
-}
-
 func (p *parser) parseReceptionHandlerExpression(onIdent Node) Node {
 	p.panicIfContextDone()
 

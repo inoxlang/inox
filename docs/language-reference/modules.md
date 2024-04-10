@@ -28,7 +28,6 @@ There are also **embedded** module kinds:
   `go do { }`
 - `testsuite`
 - `testcase`
-- `lifetimejob`
 
 [Issue discussing new module kinds](https://github.com/inoxlang/inox/issues/38).
 

@@ -1770,16 +1770,7 @@ func (e SystemGraphEdge) WriteJSONRepresentation(ctx *Context, w *jsoniter.Strea
 	return ErrNotImplementedYet
 }
 
-
 func (v Error) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
-	if depth > MAX_JSON_REPR_WRITING_DEPTH {
-		return ErrMaximumJSONReprWritingDepthReached
-	}
-
-	return ErrNotImplementedYet
-}
-
-func (j *LifetimeJob) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	if depth > MAX_JSON_REPR_WRITING_DEPTH {
 		return ErrMaximumJSONReprWritingDepthReached
 	}

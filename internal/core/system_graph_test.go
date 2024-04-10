@@ -44,18 +44,11 @@ func TestObjectGraph(t *testing.T) {
 		ctx := NewContext(ContextConfig{})
 		defer ctx.CancelGracefully()
 
-		state := NewGlobalState(ctx)
-
 		graph := NewSystemGraph()
 
 		object := NewObjectFromMap(ValMap{
-			"": NewWrappedValueList(createTestLifetimeJob(t, state, "")),
-			"inner0": NewObjectFromMap(ValMap{
-				"": NewWrappedValueList(createTestLifetimeJob(t, state, "")),
-			}, ctx),
-			"inner1": NewObjectFromMap(ValMap{
-				"": NewWrappedValueList(createTestLifetimeJob(t, state, "")),
-			}, ctx),
+			"inner0": NewObjectFromMap(ValMap{}, ctx),
+			"inner1": NewObjectFromMap(ValMap{}, ctx),
 		}, ctx)
 		object.ProposeSystemGraph(ctx, graph, "", nil)
 

@@ -11,8 +11,8 @@ var (
 	_ = []Serializable{
 		Bool(false), Int(0), Float(0), Byte(0), Nil,
 
-		ByteCount(0), RuneCount(0), LineCount(0), 
-		
+		ByteCount(0), RuneCount(0), LineCount(0),
+
 		ByteRate(0), Frequency(0),
 
 		Duration(0), Year(time.Time{}), Date(time.Time{}), DateTime(time.Time{}),
@@ -31,7 +31,7 @@ var (
 
 		Pattern(nil),
 
-		(*InoxFunction)(nil), (*LifetimeJob)(nil), (*SynchronousMessageHandler)(nil),
+		(*InoxFunction)(nil), (*SynchronousMessageHandler)(nil),
 
 		(*SystemGraph)(nil), (*SystemGraphEvent)(nil), (*SystemGraphEdge)(nil),
 

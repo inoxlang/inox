@@ -639,10 +639,6 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 	case *TestCaseExpression:
 		walk(n.Meta, node, ancestorChain, fn, afterFn)
 		walk(n.Module, node, ancestorChain, fn, afterFn)
-	case *LifetimejobExpression:
-		walk(n.Meta, node, ancestorChain, fn, afterFn)
-		walk(n.Subject, node, ancestorChain, fn, afterFn)
-		walk(n.Module, node, ancestorChain, fn, afterFn)
 	case *ReceptionHandlerExpression:
 		walk(n.Pattern, node, ancestorChain, fn, afterFn)
 		walk(n.Handler, node, ancestorChain, fn, afterFn)

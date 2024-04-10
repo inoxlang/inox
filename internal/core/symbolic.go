@@ -1472,22 +1472,6 @@ func (s *ExecutedStep) ToSymbolicValue(ctx *Context, encountered map[uintptr]sym
 	return &symbolic.ExecutedStep{}, nil
 }
 
-func (j *LifetimeJob) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	var symbPattern symbolic.Pattern
-
-	if j.subjectPattern == nil {
-		symbPattern = j.symbolicSubjectObjectPattern
-	} else {
-		pattern, err := j.subjectPattern.ToSymbolicValue(ctx, encountered)
-		if err != nil {
-			return nil, err
-		}
-		symbPattern = pattern.(symbolic.Pattern)
-	}
-
-	return symbolic.NewLifetimeJob(symbPattern), nil
-}
-
 func _toSymbolicValue(ctx *Context, v Value, wide bool, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	if encountered == nil {
 		encountered = map[uintptr]symbolic.Value{}

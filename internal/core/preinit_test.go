@@ -1346,18 +1346,6 @@ func TestPreInit(t *testing.T) {
 		},
 
 		{
-			name:       "the parameters section is not allowed in lifetime job modules",
-			moduleKind: LifetimeJobModule,
-			module: `
-				manifest {
-					parameters: {}
-				}`,
-			error:                     true,
-			expectedStaticCheckErrors: []string{text.FmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters", LifetimeJobModule)},
-			expectedLimits:            []Limit{},
-		},
-
-		{
 			name:       "the parameters section is not allowed in lthread modules",
 			moduleKind: UserLThreadModule,
 			module: `
@@ -1403,18 +1391,6 @@ func TestPreInit(t *testing.T) {
 				}`,
 			error:                     true,
 			expectedStaticCheckErrors: []string{text.FmtTheXSectionIsNotAllowedForTheCurrentModuleKind("databases", SpecModule)},
-			expectedLimits:            []Limit{},
-		},
-
-		{
-			name:       "the databases section is not allowed in lifetime job modules",
-			moduleKind: LifetimeJobModule,
-			module: `
-				manifest {
-					databases: {}
-				}`,
-			error:                     true,
-			expectedStaticCheckErrors: []string{text.FmtTheXSectionIsNotAllowedForTheCurrentModuleKind("databases", LifetimeJobModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1468,18 +1444,6 @@ func TestPreInit(t *testing.T) {
 		},
 
 		{
-			name:       "the parameters section is not allowed in lifetime job modules",
-			moduleKind: LifetimeJobModule,
-			module: `
-					manifest {
-						parameters: {}
-					}`,
-			error:                     true,
-			expectedStaticCheckErrors: []string{text.FmtTheXSectionIsNotAllowedForTheCurrentModuleKind("parameters", LifetimeJobModule)},
-			expectedLimits:            []Limit{},
-		},
-
-		{
 			name:       "the parameters section is not allowed in lthread modules",
 			moduleKind: UserLThreadModule,
 			module: `
@@ -1525,18 +1489,6 @@ func TestPreInit(t *testing.T) {
 					}`,
 			error:                     true,
 			expectedStaticCheckErrors: []string{text.FmtTheXSectionIsNotAllowedForTheCurrentModuleKind("invocation", SpecModule)},
-			expectedLimits:            []Limit{},
-		},
-
-		{
-			name:       "the invocation section is not allowed in lifetime job modules",
-			moduleKind: LifetimeJobModule,
-			module: `
-					manifest {
-						invocation: {}
-					}`,
-			error:                     true,
-			expectedStaticCheckErrors: []string{text.FmtTheXSectionIsNotAllowedForTheCurrentModuleKind("invocation", LifetimeJobModule)},
 			expectedLimits:            []Limit{},
 		},
 
@@ -1590,18 +1542,6 @@ func TestPreInit(t *testing.T) {
 		},
 
 		{
-			name:       "the preinit-files section is not allowed in lifetime job modules",
-			moduleKind: LifetimeJobModule,
-			module: `
-					manifest {
-						preinit-files: {}
-					}`,
-			error:                     true,
-			expectedStaticCheckErrors: []string{text.FmtTheXSectionIsNotAllowedForTheCurrentModuleKind("preinit-files", LifetimeJobModule)},
-			expectedLimits:            []Limit{},
-		},
-
-		{
 			name:       "the preinit-files section is not allowed in lthread modules",
 			moduleKind: UserLThreadModule,
 			module: `
@@ -1647,18 +1587,6 @@ func TestPreInit(t *testing.T) {
 						}`,
 			error:                     true,
 			expectedStaticCheckErrors: []string{text.FmtTheXSectionIsNotAllowedForTheCurrentModuleKind("env", SpecModule)},
-			expectedLimits:            []Limit{},
-		},
-
-		{
-			name:       "the env section is not allowed in lifetime job modules",
-			moduleKind: LifetimeJobModule,
-			module: `
-						manifest {
-							env: {}
-						}`,
-			error:                     true,
-			expectedStaticCheckErrors: []string{text.FmtTheXSectionIsNotAllowedForTheCurrentModuleKind("env", LifetimeJobModule)},
 			expectedLimits:            []Limit{},
 		},
 
