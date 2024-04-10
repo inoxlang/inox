@@ -1,6 +1,7 @@
-package core
+package globals
 
 import (
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -46,23 +47,23 @@ func init() {
 		return resultType, resultType
 	}
 
-	RegisterSymbolicGoFunctions([]any{
+	core.RegisterSymbolicGoFunctions([]any{
 		MinOf, symbMinOf,
 		MaxOf, symbMinOf,
 		MinMaxOf, symbMinMax,
 	})
 }
 
-func MinOf(ctx *Context, first Value, others ...Value) Value {
+func MinOf(ctx *core.Context, first core.Value, others ...core.Value) core.Value {
 	//TODO: the compiler should replace `minof` calls with known argument types with opcodes.
 
-	min := first.(Comparable)
+	min := first.(core.Comparable)
 
 	for i := 0; i < len(others); i++ {
-		other := others[i].(Comparable)
+		other := others[i].(core.Comparable)
 		result, comparable := other.Compare(min)
 		if !comparable {
-			panic(ErrNotComparable)
+			panic(core.ErrNotComparable)
 		}
 		if result < 0 {
 			min = other
@@ -74,16 +75,16 @@ func MinOf(ctx *Context, first Value, others ...Value) Value {
 	return min
 }
 
-func MaxOf(ctx *Context, first Value, others ...Value) Value {
+func MaxOf(ctx *core.Context, first core.Value, others ...core.Value) core.Value {
 	//TODO: the compiler should replace `maxof` calls with known argument types with opcodes.
 
-	max := first.(Comparable)
+	max := first.(core.Comparable)
 
 	for i := 0; i < len(others); i++ {
-		other := others[i].(Comparable)
+		other := others[i].(core.Comparable)
 		result, comparable := other.Compare(max)
 		if !comparable {
-			panic(ErrNotComparable)
+			panic(core.ErrNotComparable)
 		}
 		if result > 0 {
 			max = other
@@ -95,17 +96,17 @@ func MaxOf(ctx *Context, first Value, others ...Value) Value {
 	return max
 }
 
-func MinMaxOf(ctx *Context, first Value, others ...Value) (Value, Value) {
+func MinMaxOf(ctx *core.Context, first core.Value, others ...core.Value) (core.Value, core.Value) {
 	//TODO: the compiler should replace `maxof` calls with known argument types with opcodes.
 
-	max := first.(Comparable)
-	min := first.(Comparable)
+	max := first.(core.Comparable)
+	min := first.(core.Comparable)
 
 	for i := 0; i < len(others); i++ {
-		other := others[i].(Comparable)
+		other := others[i].(core.Comparable)
 		result, comparable := other.Compare(max)
 		if !comparable {
-			panic(ErrNotComparable)
+			panic(core.ErrNotComparable)
 		}
 		if result > 0 {
 			max = other

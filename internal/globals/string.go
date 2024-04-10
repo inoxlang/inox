@@ -1,1 +1,1 @@
-package internal
+package globals

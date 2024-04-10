@@ -1,4 +1,4 @@
-package internal
+package globals
 
 import (
 	"github.com/inoxlang/inox/internal/core"
@@ -94,9 +94,9 @@ func registerHelp() {
 		globalnames.IS_ODD_FN:  _is_even,
 
 		//comparable
-		globalnames.MINOF_FN:  core.MinOf,
-		globalnames.MAXOF_FN:  core.MaxOf,
-		globalnames.MINMAX_FN: core.MinMaxOf,
+		globalnames.MINOF_FN:  MinOf,
+		globalnames.MAXOF_FN:  MaxOf,
+		globalnames.MINMAX_FN: MinMaxOf,
 
 		//others
 		globalnames.ERROR_FN:        _Error,

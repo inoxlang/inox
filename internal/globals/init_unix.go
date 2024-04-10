@@ -1,6 +1,6 @@
 //go:build unix
 
-package internal
+package globals
 
 import (
 	"os"
