@@ -16,6 +16,7 @@ import (
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core/limitbase"
 	"github.com/inoxlang/inox/internal/core/permbase"
+	"github.com/inoxlang/inox/internal/core/slog"
 	"github.com/rs/zerolog"
 	"golang.org/x/exp/maps"
 
@@ -671,7 +672,7 @@ func (ctx *Context) NewChildLoggerForInternalSource(src string) zerolog.Logger {
 		return nopLogger
 	}
 
-	return childLoggerForInternalSource(state.Logger, src, state.LogLevels)
+	return slog.ChildLoggerForInternalSource(state.Logger, src, state.LogLevels)
 }
 
 func (ctx *Context) LoggerPrint(args ...any) {

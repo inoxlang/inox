@@ -6,6 +6,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core/slog"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/mod"
 	"github.com/inoxlang/inox/internal/project"
@@ -24,7 +25,7 @@ type RunProgramParams struct {
 
 	ProgramOut io.Writer
 	Logger     zerolog.Logger
-	LogLevels  *core.LogLevels
+	LogLevels  *slog.Levels
 
 	ProgramPreparedOrFailedToChan chan error
 }

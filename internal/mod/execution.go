@@ -12,6 +12,7 @@ import (
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/config"
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core/slog"
 	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/rs/zerolog"
@@ -72,7 +73,7 @@ type RunLocalModuleArgs struct {
 	//ignored if .Logger is set
 	LogOut    io.Writer
 	Logger    zerolog.Logger
-	LogLevels *core.LogLevels
+	LogLevels *slog.Levels
 
 	//PreparedChan signals when the script is prepared (nil error) or failed to be prepared (non-nil error),
 	//the channel should be buffered.

@@ -9,6 +9,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/config"
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core/slog"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/globals/transientcontainers"
@@ -141,15 +142,15 @@ func NewDefaultGlobalState(ctx *core.Context, conf core.DefaultGlobalStateConfig
 	}
 
 	logLevel := DEFAULT_MODULE_LOG_LEVEL
-	var logLevels *core.LogLevels
+	var logLevels *slog.Levels
 	if conf.LogLevels != nil {
 		logLevels = conf.LogLevels
 		logLevel = conf.LogLevels.LevelFor(core.Path(conf.AbsoluteModulePath))
 	} else {
-		logLevels = core.NewLogLevels(core.LogLevelsInitialization{DefaultLevel: logLevel})
+		logLevels = slog.NewLevels(slog.LevelsInitialization{DefaultLevel: logLevel})
 	}
 
-	logger = core.
+	logger = slog.
 		ChildLoggerForSource(logger, conf.AbsoluteModulePath).
 		With().Timestamp().
 		Logger().Level(logLevel)

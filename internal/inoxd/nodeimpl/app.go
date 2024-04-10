@@ -15,6 +15,7 @@ import (
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/permbase"
+	"github.com/inoxlang/inox/internal/core/slog"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/inoxd/node"
@@ -124,14 +125,14 @@ func (a *Agent) GetOrCreateApplication(name node.ApplicationName) (node.Applicat
 		state := core.NewGlobalState(appCtx)
 		state.Out = os.Stdout
 		state.Logger = a.logger
-		state.LogLevels = core.NewLogLevels(core.LogLevelsInitialization{
+		state.LogLevels = slog.NewLevels(slog.LevelsInitialization{
 			DefaultLevel: zerolog.InfoLevel,
 		})
 		state.OutputFieldsInitialized.Store(true)
 
 		app = &Application{
 			name:     name,
-			logger:   core.ChildLoggerForSource(a.logger, APP_LOG_SRC_PREFIX+string(name)),
+			logger:   slog.ChildLoggerForSource(a.logger, APP_LOG_SRC_PREFIX+string(name)),
 			agent:    a,
 			osAppDir: appDir,
 			ctx:      appCtx,

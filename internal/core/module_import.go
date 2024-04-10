@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/core/inoxmod"
+	"github.com/inoxlang/inox/internal/core/slog"
 	"github.com/inoxlang/inox/internal/globals/globalnames"
 
 	"github.com/inoxlang/inox/internal/utils"
@@ -205,7 +206,7 @@ func ImportModule(config ImportConfig) (*LThread, error) {
 	}
 
 	logLevels := config.ParentState.LogLevels
-	logger := ChildLoggerForSource(config.ParentState.Logger, importedMod.Name())
+	logger := slog.ChildLoggerForSource(config.ParentState.Logger, importedMod.Name())
 
 	resourceName, ok := importedMod.AbsoluteSource()
 	if ok {

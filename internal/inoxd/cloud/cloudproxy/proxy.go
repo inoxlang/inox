@@ -16,6 +16,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core/slog"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/globals/ws_ns"
@@ -139,9 +140,9 @@ func (p *cloudProxy) run() error {
 		return err
 	}
 
-	p.accountLogger = p.ctx.Logger().With().Str(core.SOURCE_LOG_FIELD_NAME, ACCOUT_MANAGEMENT_LOG_SRC).Logger()
-	p.proxyLogger = p.ctx.Logger().With().Str(core.SOURCE_LOG_FIELD_NAME, PROXY_LOG_SRC).Logger()
-	p.inoxdConnLogger = p.ctx.Logger().With().Str(core.SOURCE_LOG_FIELD_NAME, INOXD_CONN_LOG_SRC).Logger()
+	p.accountLogger = p.ctx.Logger().With().Str(slog.SOURCE_FIELD_NAME, ACCOUT_MANAGEMENT_LOG_SRC).Logger()
+	p.proxyLogger = p.ctx.Logger().With().Str(slog.SOURCE_FIELD_NAME, PROXY_LOG_SRC).Logger()
+	p.inoxdConnLogger = p.ctx.Logger().With().Str(slog.SOURCE_FIELD_NAME, INOXD_CONN_LOG_SRC).Logger()
 
 	//create a http server, register teardown callbacks and start listening.
 

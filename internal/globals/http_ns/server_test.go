@@ -23,6 +23,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/inoxmod"
 	"github.com/inoxlang/inox/internal/core/permbase"
+	"github.com/inoxlang/inox/internal/core/slog"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/html_ns"
 	"github.com/inoxlang/inox/internal/globals/http_ns/spec"
@@ -850,7 +851,7 @@ func setupTestCase(t *testing.T, testCase serverTestCase) (*core.GlobalState, *c
 	state.Out = out
 
 	if testCase.outWriter != nil {
-		state.LogLevels = core.NewLogLevels(core.LogLevelsInitialization{
+		state.LogLevels = slog.NewLevels(slog.LevelsInitialization{
 			DefaultLevel:            zerolog.DebugLevel,
 			EnableInternalDebugLogs: true,
 		})

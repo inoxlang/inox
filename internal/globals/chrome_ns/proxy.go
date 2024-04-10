@@ -9,6 +9,7 @@ import (
 
 	"github.com/elazarl/goproxy"
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core/slog"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -47,7 +48,7 @@ func StartSharedProxy(ctx *core.Context) error {
 	if !proxyStarted.CompareAndSwap(false, true) {
 		return nil
 	}
-	logger := ctx.Logger().With().Str(core.SOURCE_LOG_FIELD_NAME, BROWSER_PROXY_SRC_NAME).Logger()
+	logger := ctx.Logger().With().Str(slog.SOURCE_FIELD_NAME, BROWSER_PROXY_SRC_NAME).Logger()
 
 	proxyServer, err := http_ns.MakeHTTPProxy(ctx, http_ns.HTTPProxyParams{
 		Port: BROWSER_PROXY_PORT,

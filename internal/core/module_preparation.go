@@ -19,6 +19,7 @@ import (
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core/inoxmod"
 	"github.com/inoxlang/inox/internal/core/permbase"
+	"github.com/inoxlang/inox/internal/core/slog"
 	"github.com/inoxlang/inox/internal/core/staticcheck"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/globalnames"
@@ -113,7 +114,7 @@ type ModulePreparationArgs struct {
 	//defaults to Out, ignored if .Logger is set
 	LogOut    io.Writer
 	Logger    zerolog.Logger
-	LogLevels *LogLevels
+	LogLevels *slog.Levels
 
 	//used during the preinit
 	PreinitFilesystem afs.Filesystem

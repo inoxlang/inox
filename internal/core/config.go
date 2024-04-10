@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/inoxlang/inox/internal/afs"
+	"github.com/inoxlang/inox/internal/core/slog"
 	"github.com/rs/zerolog"
 
 	"io"
@@ -37,7 +38,7 @@ type DefaultGlobalStateConfig struct {
 	LogOut io.Writer //ignore if .Logger is set
 	Logger zerolog.Logger
 
-	LogLevels *LogLevels
+	LogLevels *slog.Levels
 }
 
 type NewDefaultGlobalStateFn func(ctx *Context, conf DefaultGlobalStateConfig) (*GlobalState, error)

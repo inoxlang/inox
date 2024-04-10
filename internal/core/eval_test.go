@@ -28,6 +28,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/inoxmod"
 	"github.com/inoxlang/inox/internal/core/permbase"
+	"github.com/inoxlang/inox/internal/core/slog"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/globalnames"
 	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
@@ -6766,8 +6767,8 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := core.NewGlobalState(ctx)
 			state.Out = io.Discard
 			state.Logger = zerolog.New(logBuf)
-			state.LogLevels = core.NewLogLevels(core.LogLevelsInitialization{
-				DefaultLevel: zerolog.DebugLevel,
+			state.LogLevels = slog.NewLevels(slog.LevelsInitialization{
+				DefaultLevel: slog.DebugLevel,
 			})
 			state.OutputFieldsInitialized.Store(true)
 
@@ -6844,10 +6845,10 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := core.NewGlobalState(ctx)
 			state.Out = io.Discard
 			state.Logger = zerolog.New(logBuf)
-			state.LogLevels = core.NewLogLevels(core.LogLevelsInitialization{
-				DefaultLevel: zerolog.DebugLevel,
-				ByPath: map[core.Path]zerolog.Level{
-					"/imported_mod.ix": zerolog.InfoLevel,
+			state.LogLevels = slog.NewLevels(slog.LevelsInitialization{
+				DefaultLevel: slog.DebugLevel,
+				ByPath: map[string]zerolog.Level{
+					"/imported_mod.ix": slog.InfoLevel,
 				},
 			})
 			state.OutputFieldsInitialized.Store(true)

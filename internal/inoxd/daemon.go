@@ -13,7 +13,7 @@ import (
 
 	"github.com/containerd/cgroups/v3"
 	"github.com/gorilla/websocket"
-	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core/slog"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/inoxd/cloud/cloudproxy"
 	"github.com/inoxlang/inox/internal/inoxd/cloud/cloudproxy/inoxdconn"
@@ -51,7 +51,7 @@ type InoxdArgs struct {
 func Inoxd(args InoxdArgs) {
 	config := args.Config
 	goCtx := args.GoCtx
-	logger := args.Logger.With().Str(core.SOURCE_LOG_FIELD_NAME, INOXD_LOG_SRC).Logger()
+	logger := args.Logger.With().Str(slog.SOURCE_FIELD_NAME, INOXD_LOG_SRC).Logger()
 
 	serverConfig := config.Server
 	mode, modeName := getCgroupMode()

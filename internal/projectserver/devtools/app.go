@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core/slog"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/mod"
@@ -67,7 +68,7 @@ func (inst *Instance) StartWebApp() error {
 
 			Out:    io.Discard,
 			Logger: zerolog.Nop(),
-			LogLevels: core.NewLogLevels(core.LogLevelsInitialization{
+			LogLevels: slog.NewLevels(slog.LevelsInitialization{
 				DefaultLevel:            zerolog.WarnLevel,
 				EnableInternalDebugLogs: false,
 			}),

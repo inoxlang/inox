@@ -18,6 +18,7 @@ import (
 	"github.com/inoxlang/inox/internal/config"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/permbase"
+	"github.com/inoxlang/inox/internal/core/slog"
 	"github.com/inoxlang/inox/internal/css/tailwind"
 	"github.com/inoxlang/inox/internal/deno"
 	denobinary "github.com/inoxlang/inox/internal/deno/binary"
@@ -121,10 +122,10 @@ func ProjectServer(mainSubCommand string, mainSubCommandArgs []string, outW, err
 	go func() {
 		defer utils.Recover()
 
-		logger := zerolog.New(out).With().Str(core.SOURCE_LOG_FIELD_NAME, "temp-dir-cleanup").Logger()
+		logger := zerolog.New(out).With().Str(slog.SOURCE_FIELD_NAME, "temp-dir-cleanup").Logger()
 		fs_ns.DeleteDeadProcessTempDirs(logger, TEMP_DIR_CLEANUP_TIMEOUT)
 
-		logger = zerolog.New(out).With().Str(core.SOURCE_LOG_FIELD_NAME, "temp-db-dir-cleanup").Logger()
+		logger = zerolog.New(out).With().Str(slog.SOURCE_FIELD_NAME, "temp-db-dir-cleanup").Logger()
 		localdb.DeleteTempDatabaseDirsOfDeadProcesses(logger, TEMP_DB_DIR_CLEANUP_TIMEOUT)
 	}()
 
@@ -251,7 +252,7 @@ func ProjectServer(mainSubCommand string, mainSubCommandArgs []string, outW, err
 		// Start the node agent in the same process (temporary solution).
 		nodeAgent, err := nodeimpl.NewAgent(nodeimpl.AgentParameters{
 			GoCtx:  ctx,
-			Logger: zerolog.New(out).With().Str(core.SOURCE_LOG_FIELD_NAME, "node-agent").Logger(),
+			Logger: zerolog.New(out).With().Str(slog.SOURCE_FIELD_NAME, "node-agent").Logger(),
 			Config: nodeimpl.AgentConfig{
 				OsProdDir:                       prodDir,
 				TemporaryOptionRunInSameProcess: true,
@@ -396,7 +397,7 @@ func determineProjectServerPermissions(projectServerConfig projectserver.Individ
 func downloadChromeBrowser(out io.Writer, projectServerConfig projectserver.IndividualServerConfig) {
 	defer utils.Recover()
 
-	logger := zerolog.New(out).With().Str(core.SOURCE_LOG_FIELD_NAME, "browser-installation").Logger()
+	logger := zerolog.New(out).With().Str(slog.SOURCE_FIELD_NAME, "browser-installation").Logger()
 	downloadCtx, cancel := context.WithTimeout(context.Background(), BROWSER_DOWNLOAD_TIMEOUT)
 	defer cancel()
 

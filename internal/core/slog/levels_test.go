@@ -1,4 +1,4 @@
-package core
+package slog
 
 import (
 	"testing"
@@ -11,7 +11,7 @@ func TestNewLogLevels(t *testing.T) {
 
 	t.Run("internal debug logs should be enabled if the setting is set and the default level is == debug", func(t *testing.T) {
 
-		levels := NewLogLevels(LogLevelsInitialization{
+		levels := NewLevels(LevelsInitialization{
 			DefaultLevel:            zerolog.DebugLevel,
 			EnableInternalDebugLogs: true,
 		})
@@ -21,7 +21,7 @@ func TestNewLogLevels(t *testing.T) {
 
 	t.Run("internal debug logs should be disabled if the default level is > debug", func(t *testing.T) {
 
-		levels := NewLogLevels(LogLevelsInitialization{
+		levels := NewLevels(LevelsInitialization{
 			DefaultLevel:            zerolog.InfoLevel,
 			EnableInternalDebugLogs: true,
 		})

@@ -7,17 +7,19 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core/slog"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/hack"
 	"github.com/inoxlang/inox/internal/projectserver/devtools"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/utils"
+	"github.com/inoxlang/inox/internal/utils/pathutils"
 	"github.com/rs/zerolog"
 )
 
 type debuggedProgramLaunch struct {
 	programPath      string
-	logLevels        *core.LogLevels
+	logLevels        *slog.Levels
 	rpcSession       *jsonrpc.Session
 	debugSession     *DebugSession
 	devtoolsInstance *devtools.Instance
@@ -117,7 +119,7 @@ func launchDebuggedProgram(args debuggedProgramLaunch) {
 			return
 		}
 
-		s, ok := hack.GetLogEventStringFieldValue(e, core.QUOTED_SOURCE_LOG_FIELD_NAME)
+		s, ok := hack.GetLogEventStringFieldValue(e, slog.QUOTED_SOURCE_FIELD_NAME)
 		if !ok {
 			return
 		}
@@ -152,7 +154,7 @@ func launchDebuggedProgram(args debuggedProgramLaunch) {
 
 // readLogLevelSettings converts loosely-typed log level settings from the launch arguments
 // to a core.LogLevels.
-func readLogLevelSettings(launchArgs DebugLaunchArgs) (*core.LogLevels, error) {
+func readLogLevelSettings(launchArgs DebugLaunchArgs) (*slog.Levels, error) {
 	const (
 		DEFAULT_FIELD               = "default"
 		ENABLE_INTERNAL_DEBUG_FIELD = "enableInternalDebug"
@@ -160,7 +162,7 @@ func readLogLevelSettings(launchArgs DebugLaunchArgs) (*core.LogLevels, error) {
 
 	var (
 		defaultLogLevel         zerolog.Level = DEFAULT_LOG_LEVEL
-		logLevelByPath                        = map[core.Path]zerolog.Level{}
+		logLevelByPath                        = map[string]zerolog.Level{}
 		enableInternalDebugLogs               = false
 	)
 
@@ -211,11 +213,11 @@ func readLogLevelSettings(launchArgs DebugLaunchArgs) (*core.LogLevels, error) {
 			if err != nil {
 				return nil, fmt.Errorf("invalid default log level: %q", level)
 			}
-			logLevelByPath[core.NonDirPathFrom(key)] = parsedLogLevel
+			logLevelByPath[pathutils.StripTrailingSlash(key)] = parsedLogLevel
 		}
 	}
 
-	return core.NewLogLevels(core.LogLevelsInitialization{
+	return slog.NewLevels(slog.LevelsInitialization{
 		DefaultLevel:            defaultLogLevel,
 		ByPath:                  logLevelByPath,
 		EnableInternalDebugLogs: enableInternalDebugLogs,

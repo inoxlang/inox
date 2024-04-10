@@ -15,6 +15,7 @@ import (
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/permbase"
+	"github.com/inoxlang/inox/internal/core/slog"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/parse"
@@ -73,7 +74,7 @@ func TestPrepareLocalModule(t *testing.T) {
 			ParentContext:             ctx,
 			ParentContextRequired:     true,
 			Out:                       outBuf,
-			LogLevels:                 core.NewLogLevels(core.LogLevelsInitialization{DefaultLevel: logLevel}),
+			LogLevels:                 slog.NewLevels(slog.LevelsInitialization{DefaultLevel: logLevel}),
 			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
 		})
 
@@ -1020,7 +1021,7 @@ func TestPrepareLocalModule(t *testing.T) {
 			ParentContext:             ctx,
 			ParentContextRequired:     true,
 			Out:                       outBuf,
-			LogLevels:                 core.NewLogLevels(core.LogLevelsInitialization{DefaultLevel: logLevel}),
+			LogLevels:                 slog.NewLevels(slog.LevelsInitialization{DefaultLevel: logLevel}),
 			ScriptContextFileSystem:   fs_ns.GetOsFilesystem(),
 		})
 

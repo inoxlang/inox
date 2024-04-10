@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 
 	"github.com/inoxlang/inox/internal/core/mem"
+	"github.com/inoxlang/inox/internal/core/slog"
 	"github.com/inoxlang/inox/internal/core/staticcheck"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/utils"
@@ -43,7 +44,7 @@ type GlobalState struct {
 
 	Out                     io.Writer      //io.Discard by default
 	Logger                  zerolog.Logger //zerolog.Nop() by default
-	LogLevels               *LogLevels     //DEFAULT_LOG_LEVELS by default
+	LogLevels               *slog.Levels   //DEFAULT_LOG_LEVELS by default
 	OutputFieldsInitialized atomic.Bool    //should be set to true by the state's creator, even if the default values are kept.
 
 	//Most relevant components
@@ -115,7 +116,7 @@ func NewGlobalState(ctx *Context, constants ...map[string]Value) *GlobalState {
 
 		Out:       io.Discard,
 		Logger:    zerolog.Nop(),
-		LogLevels: DEFAULT_LOG_LEVELS,
+		LogLevels: slog.DEFAULT_LEVELS,
 
 		GetBasePatternsForImportedModule: func() (map[string]Pattern, map[string]*PatternNamespace) {
 			return nil, nil

@@ -18,6 +18,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/permbase"
+	"github.com/inoxlang/inox/internal/core/slog"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/globals/ws_ns"
 	netaddr "github.com/inoxlang/inox/internal/netaddr"
@@ -84,7 +85,7 @@ func NewControlServer(ctx *core.Context, config ControlServerConfig) (*ControlSe
 	}
 
 	s.logger = ctx.Logger().With().
-		Str(core.SOURCE_LOG_FIELD_NAME, CONTROL_SERVER_LOG_SRC+"/"+s.port).Logger()
+		Str(slog.SOURCE_FIELD_NAME, CONTROL_SERVER_LOG_SRC+"/"+s.port).Logger()
 
 	websocketServer, err := ws_ns.NewWebsocketServer(ctx)
 	if err != nil {
