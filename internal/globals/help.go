@@ -75,11 +75,11 @@ func registerHelp() {
 
 		//functional
 		globalnames.MAP_ITERABLE_FN:    core.MapIterable,
-		globalnames.FILTER_ITERABLE_FN: core.Filter,
-		globalnames.GET_AT_MOST_FN:     core.GetAtMost,
-		globalnames.SOME_FN:            core.Some,
-		globalnames.ALL_FN:             core.All,
-		globalnames.NONE_FN:            core.None,
+		globalnames.FILTER_ITERABLE_FN: Filter,
+		globalnames.GET_AT_MOST_FN:     GetAtMost,
+		globalnames.SOME_FN:            Some,
+		globalnames.ALL_FN:             All,
+		globalnames.NONE_FN:            None,
 		globalnames.RAND_FN:            _rand,
 		globalnames.FIND_FN:            _find,
 

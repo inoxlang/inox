@@ -1,13 +1,14 @@
-package core
+package globals
 
 import (
 	"fmt"
 
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 )
 
 func init() {
-	RegisterSymbolicGoFunctions([]any{
+	core.RegisterSymbolicGoFunctions([]any{
 		Filter, func(ctx *symbolic.Context, iterable symbolic.Iterable, cond symbolic.Value) *symbolic.List {
 			return symbolic.NewListOf(symbolic.ANY_SERIALIZABLE)
 		},
@@ -33,92 +34,92 @@ func init() {
 }
 
 // Filter is the value of the 'filter' global.
-func Filter(ctx *Context, iterable Iterable, condition Value) *List {
-	result := ValueList{}
+func Filter(ctx *core.Context, iterable core.Iterable, condition core.Value) *core.List {
+	var elements []core.Serializable
 
 	switch fil := condition.(type) {
-	case AstNode:
+	case core.AstNode:
 		state := ctx.MustGetClosestState()
-		treeWalkState := NewTreeWalkStateWithGlobal(state)
+		treeWalkState := core.NewTreeWalkStateWithGlobal(state)
 
 		treeWalkState.PushScope()
 		defer treeWalkState.PopScope()
 
-		it := iterable.Iterator(ctx, IteratorConfiguration{})
+		it := iterable.Iterator(ctx, core.IteratorConfiguration{})
 		for it.Next(ctx) {
 			e := it.Value(ctx)
 			treeWalkState.CurrentLocalScope()[""] = e
-			res, err := TreeWalkEval(fil.Node, treeWalkState)
+			res, err := core.TreeWalkEval(fil.Node, treeWalkState)
 			if err != nil {
 				panic(err)
 			}
-			if res.(Bool) {
-				result.elements = append(result.elements, e.(Serializable))
+			if res.(core.Bool) {
+				elements = append(elements, e.(core.Serializable))
 			}
 		}
-	case Pattern:
-		it := iterable.Iterator(ctx, IteratorConfiguration{})
+	case core.Pattern:
+		it := iterable.Iterator(ctx, core.IteratorConfiguration{})
 		for it.Next(ctx) {
 			e := it.Value(ctx)
 			if fil.Test(ctx, e) {
-				result.elements = append(result.elements, e.(Serializable))
+				elements = append(elements, e.(core.Serializable))
 			}
 		}
 	default:
 		panic(fmt.Errorf("invalid filter : type is %T", fil))
 	}
 
-	return WrapUnderlyingList(&result)
+	return core.NewWrappedValueListFrom(elements)
 }
 
 // GetAtMost is the value of the 'get_at_most' global.
-func GetAtMost(ctx *Context, maxCount Int, iterable SerializableIterable) *List {
-	var elements []Serializable
+func GetAtMost(ctx *core.Context, maxCount core.Int, iterable core.SerializableIterable) *core.List {
+	var elements []core.Serializable
 	count := 0
 
-	if indexable, ok := iterable.(Indexable); ok {
+	if indexable, ok := iterable.(core.Indexable); ok {
 		end := min(int(maxCount), indexable.Len())
 		for i := 0; i < end; i++ {
-			elements = append(elements, indexable.At(ctx, i).(Serializable))
+			elements = append(elements, indexable.At(ctx, i).(core.Serializable))
 		}
 	} else {
-		it := iterable.Iterator(ctx, IteratorConfiguration{
+		it := iterable.Iterator(ctx, core.IteratorConfiguration{
 			KeysNeverRead: true,
 		})
 		for count < int(maxCount) && it.Next(ctx) {
-			elements = append(elements, it.Value(ctx).(Serializable))
+			elements = append(elements, it.Value(ctx).(core.Serializable))
 			count++
 		}
 	}
 
-	return NewWrappedValueListFrom(elements)
+	return core.NewWrappedValueListFrom(elements)
 }
 
 // Some is the value  of the 'some' global.
-func Some(ctx *Context, iterable Iterable, condition Value) Bool {
+func Some(ctx *core.Context, iterable core.Iterable, condition core.Value) core.Bool {
 
 	state := ctx.MustGetClosestState()
-	treeWalkState := NewTreeWalkStateWithGlobal(state)
+	treeWalkState := core.NewTreeWalkStateWithGlobal(state)
 
 	treeWalkState.PushScope()
 	defer treeWalkState.PopScope()
 
 	switch cond := condition.(type) {
-	case AstNode:
-		it := iterable.Iterator(ctx, IteratorConfiguration{})
+	case core.AstNode:
+		it := iterable.Iterator(ctx, core.IteratorConfiguration{})
 		for it.Next(ctx) {
 			e := it.Value(ctx)
 			treeWalkState.CurrentLocalScope()[""] = e
-			res, err := TreeWalkEval(cond.Node, treeWalkState)
+			res, err := core.TreeWalkEval(cond.Node, treeWalkState)
 			if err != nil {
 				panic(err)
 			}
-			if res.(Bool) {
+			if res.(core.Bool) {
 				return true
 			}
 		}
-	case Pattern:
-		it := iterable.Iterator(ctx, IteratorConfiguration{})
+	case core.Pattern:
+		it := iterable.Iterator(ctx, core.IteratorConfiguration{})
 		for it.Next(ctx) {
 			e := it.Value(ctx)
 			if cond.Test(ctx, e) {
@@ -131,31 +132,31 @@ func Some(ctx *Context, iterable Iterable, condition Value) Bool {
 }
 
 // All is the value of the 'all' global.
-func All(ctx *Context, iterable Iterable, condition Value) Bool {
+func All(ctx *core.Context, iterable core.Iterable, condition core.Value) core.Bool {
 
 	state := ctx.MustGetClosestState()
-	treeWalkState := NewTreeWalkStateWithGlobal(state)
+	treeWalkState := core.NewTreeWalkStateWithGlobal(state)
 
 	treeWalkState.PushScope()
 	defer treeWalkState.PopScope()
 
 	switch cond := condition.(type) {
-	case AstNode:
-		it := iterable.Iterator(ctx, IteratorConfiguration{})
+	case core.AstNode:
+		it := iterable.Iterator(ctx, core.IteratorConfiguration{})
 		for it.Next(ctx) {
 			e := it.Value(ctx)
 
 			treeWalkState.CurrentLocalScope()[""] = e
-			res, err := TreeWalkEval(cond.Node, treeWalkState)
+			res, err := core.TreeWalkEval(cond.Node, treeWalkState)
 			if err != nil {
 				panic(err)
 			}
-			if !res.(Bool) {
+			if !res.(core.Bool) {
 				return false
 			}
 		}
-	case Pattern:
-		it := iterable.Iterator(ctx, IteratorConfiguration{})
+	case core.Pattern:
+		it := iterable.Iterator(ctx, core.IteratorConfiguration{})
 		for it.Next(ctx) {
 			e := it.Value(ctx)
 			if !cond.Test(ctx, e) {
@@ -168,30 +169,30 @@ func All(ctx *Context, iterable Iterable, condition Value) Bool {
 }
 
 // None is the value of the 'none' global.
-func None(ctx *Context, iterable Iterable, condition Value) Bool {
+func None(ctx *core.Context, iterable core.Iterable, condition core.Value) core.Bool {
 
 	state := ctx.MustGetClosestState()
-	treeWalkState := NewTreeWalkStateWithGlobal(state)
+	treeWalkState := core.NewTreeWalkStateWithGlobal(state)
 
 	treeWalkState.PushScope()
 	defer treeWalkState.PopScope()
 
 	switch cond := condition.(type) {
-	case AstNode:
-		it := iterable.Iterator(ctx, IteratorConfiguration{})
+	case core.AstNode:
+		it := iterable.Iterator(ctx, core.IteratorConfiguration{})
 		for it.Next(ctx) {
 			e := it.Value(ctx)
 			treeWalkState.CurrentLocalScope()[""] = e
-			res, err := TreeWalkEval(cond.Node, treeWalkState)
+			res, err := core.TreeWalkEval(cond.Node, treeWalkState)
 			if err != nil {
 				panic(err)
 			}
-			if res.(Bool) {
+			if res.(core.Bool) {
 				return false
 			}
 		}
-	case Pattern:
-		it := iterable.Iterator(ctx, IteratorConfiguration{})
+	case core.Pattern:
+		it := iterable.Iterator(ctx, core.IteratorConfiguration{})
 		for it.Next(ctx) {
 			e := it.Value(ctx)
 			if cond.Test(ctx, e) {

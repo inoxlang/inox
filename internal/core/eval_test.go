@@ -30,6 +30,7 @@ import (
 	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/core/slog"
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/globals"
 	"github.com/inoxlang/inox/internal/globals/globalnames"
 	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/parse"
@@ -5935,7 +5936,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			"idt": core.ValOf(func(ctx *core.Context, v core.Value) core.Value {
 				return v
 			}),
-			"filter": core.ValOf(core.Filter),
+			"filter": core.ValOf(globals.Filter),
 		})
 		state.Ctx.AddNamedPattern("int", core.INT_PATTERN)
 
