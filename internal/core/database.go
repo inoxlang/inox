@@ -521,7 +521,7 @@ func (db *DatabaseIL) GetOrLoad(ctx *Context, path Path) (Serializable, error) {
 				return ErrInvalidDBValuePropRetrieval
 			}
 			switch propVal.(type) {
-			case *InoxFunction, *DynamicValue:
+			case *InoxFunction:
 				return ErrInvalidDBValuePropRetrieval
 			}
 			current = propVal

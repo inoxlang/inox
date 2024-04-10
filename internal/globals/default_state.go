@@ -222,8 +222,6 @@ func NewDefaultGlobalState(ctx *core.Context, conf core.DefaultGlobalStateConfig
 		// watch
 		globalnames.WATCH_RECEIVED_MESSAGES_FN: core.ValOf(core.WatchReceivedMessages),
 		globalnames.VALUE_HISTORY_FN:           core.WrapGoFunction(core.NewValueHistory),
-		globalnames.DYNIF_FN:                   core.WrapGoFunction(core.NewDynamicIf),
-		globalnames.DYNCALL_FN:                 core.WrapGoFunction(core.NewDynamicCall),
 		globalnames.GET_SYSTEM_GRAPH_FN:        core.WrapGoFunction(_get_system_graph),
 
 		// send & receive values

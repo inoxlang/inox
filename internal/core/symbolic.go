@@ -1460,14 +1460,6 @@ func (r *TestCaseResult) ToSymbolicValue(ctx *Context, encountered map[uintptr]s
 	return symbolic.ANY, nil
 }
 
-func (d *DynamicValue) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	symbVal, err := d.Resolve(ctx).ToSymbolicValue(ctx, encountered)
-	if err != nil {
-		return nil, err
-	}
-	return symbolic.NewDynamicValue(symbVal), nil
-}
-
 func (e *Event) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	symbVal, err := e.value.ToSymbolicValue(ctx, encountered)
 	if err != nil {

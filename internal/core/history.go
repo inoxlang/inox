@@ -63,6 +63,8 @@ func NewValueHistory(ctx *Context, v InMemorySnapshotable, config *Object) *Valu
 
 	var handle CallbackHandle
 
+	_ = handle
+
 	registerMutationCallback := func(ctx *Context) {
 		var err error
 		handle, err = current.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
@@ -78,25 +80,6 @@ func NewValueHistory(ctx *Context, v InMemorySnapshotable, config *Object) *Valu
 		if err != nil {
 			panic(err)
 		}
-	}
-
-	if dyn, ok := v.(*DynamicValue); ok {
-		current = dyn.Resolve(ctx).(InMemorySnapshotable)
-
-		dyn.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
-			registerAgain = true
-
-			newVal := dyn.Resolve(ctx).(InMemorySnapshotable)
-			if current != newVal {
-				if handle.Valid() {
-					current.RemoveMutationCallback(ctx, handle)
-				}
-				current = newVal
-				registerMutationCallback(ctx)
-			}
-
-			return
-		}, MutationWatchingConfiguration{Depth: ShallowWatching})
 	}
 
 	history.startValue = utils.Must(TakeSnapshot(ctx, current, false))

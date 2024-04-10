@@ -1917,12 +1917,6 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		}
 
 		return iprops.Prop(state.Global.Ctx, propName), nil
-	case *parse.DynamicMemberExpression:
-		left, err := TreeWalkEval(n.Left, state)
-		if err != nil {
-			return nil, err
-		}
-		return NewDynamicMemberValue(state.Global.Ctx, left, n.PropertyName.Name)
 	case *parse.ExtractionExpression:
 		left, err := TreeWalkEval(n.Object, state)
 		if err != nil {

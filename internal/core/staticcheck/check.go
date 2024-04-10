@@ -640,10 +640,6 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 		return c.checkPatternNamespaceMember(node, closestModule)
 	case *parse.RuntimeTypeCheckExpression:
 		return c.checkRuntimeTypeCheckExpr(node, parent)
-	case *parse.DynamicMemberExpression:
-		if node.Optional {
-			c.addError(node, text.OPTIONAL_DYN_MEMB_EXPR_NOT_SUPPORTED_YET)
-		}
 	case *parse.ExtendStatement:
 		if _, ok := parent.(*parse.Chunk); !ok {
 			c.addError(node, text.MISPLACED_EXTEND_STATEMENT_TOP_LEVEL_STMT)
@@ -2493,11 +2489,6 @@ func (c *checker) checkIdentifier(ident *parse.IdentifierLiteral, parent, scopeN
 
 		}
 	case *parse.IdentifierMemberExpression:
-		if ident != p.Left {
-			return parse.ContinueTraversal
-
-		}
-	case *parse.DynamicMemberExpression:
 		if ident != p.Left {
 			return parse.ContinueTraversal
 

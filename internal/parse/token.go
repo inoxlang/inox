@@ -765,22 +765,6 @@ func GetTokens(node Node, chunk *Chunk, addMeta bool) []Token {
 			}
 
 			return ContinueTraversal, nil
-		case *DynamicMemberExpression:
-			i := n.Left.Base().Span.End
-
-			tokens = append(tokens, Token{
-				Type: DOT_LESS_THAN,
-				Span: NodeSpan{i, i + 2},
-			})
-
-			if n.Optional {
-				tokens = append(tokens, Token{
-					Type: QUESTION_MARK,
-					Span: NodeSpan{i + 2, i + 3},
-				})
-			}
-
-			return ContinueTraversal, nil
 		case *IdentifierMemberExpression:
 			for _, ident := range n.PropertyNames {
 				i := ident.Base().Span.Start - 1

@@ -9,7 +9,7 @@ var (
 	ANY_WATCHER   = &Watcher{}
 
 	_ = []Watchable{
-		(*Object)(nil), (*Dictionary)(nil), (*List)(nil), (*RuneSlice)(nil), (*ByteSlice)(nil), (*DynamicValue)(nil),
+		(*Object)(nil), (*Dictionary)(nil), (*List)(nil), (*RuneSlice)(nil), (*ByteSlice)(nil),
 		(*InoxFunction)(nil), (*SynchronousMessageHandler)(nil),
 
 		(*watchableMultivalue)(nil),

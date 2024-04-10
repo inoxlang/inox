@@ -674,18 +674,6 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		state.SetMostSpecificNodeValue(prevIdent, v)
 
 		return v, nil
-	case *parse.DynamicMemberExpression:
-		left, err := symbolicEval(n.Left, state)
-		if err != nil {
-			return nil, err
-		}
-		iprops, ok := AsIprops(left).(IProps)
-		if !ok {
-			state.addError(makeSymbolicEvalError(node, state, fmtCannotGetDynamicMemberOfValueWithNoProps(left)))
-			return ANY, nil
-		}
-
-		return NewDynamicValue(symbolicMemb(iprops, n.PropertyName.Name, unspecifiedMemberAccess, n, state)), nil
 	case *parse.ExtractionExpression:
 		return evalExtractionExpression(n, state, options)
 	case *parse.DoubleColonExpression:
@@ -5386,9 +5374,6 @@ func evalExtractionExpression(n *parse.ExtractionExpression, state *State, optio
 	ignoreProps := false
 
 	switch AsIprops(left).(type) {
-	case *DynamicValue:
-		state.addError(makeSymbolicEvalError(n.Object, state, EXTRACTION_DOES_NOT_SUPPORT_DYNAMIC_VALUES))
-		ignoreProps = true
 	case IProps:
 	default:
 		ignoreProps = true

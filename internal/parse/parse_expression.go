@@ -765,7 +765,6 @@ func (p *parser) parseMemberLike(_start int32, first, left Node, isDoubleColon b
 		continueLoop = true
 		return
 	default:
-		isDynamic := false
 		isComputed := false
 		spanStart := left.Base().Span.Start
 		var computedPropertyNode Node
@@ -774,10 +773,6 @@ func (p *parser) parseMemberLike(_start int32, first, left Node, isDoubleColon b
 
 		if !isOptional && p.i < p.len {
 			switch p.s[p.i] {
-			case '<':
-				isDynamic = true
-				p.i++
-				propNameStart++
 			case '(':
 				isComputed = true
 				p.i++
@@ -786,18 +781,6 @@ func (p *parser) parseMemberLike(_start int32, first, left Node, isDoubleColon b
 		}
 
 		newMemberExpression := func(err *ParsingError) Node {
-			if isDynamic {
-				return &DynamicMemberExpression{
-					NodeBase: NodeBase{
-						NodeSpan{spanStart, p.i},
-						err,
-						false,
-					},
-					Left:         left,
-					PropertyName: propertyNameIdent,
-					Optional:     isOptional,
-				}
-			}
 			if isComputed {
 				return &ComputedMemberExpression{
 					NodeBase: NodeBase{
@@ -823,10 +806,6 @@ func (p *parser) parseMemberLike(_start int32, first, left Node, isDoubleColon b
 		}
 
 		if !isComputed {
-			if isDynamic && p.i >= p.len {
-				result = newMemberExpression(&ParsingError{UnspecifiedParsingError, UNTERMINATED_DYN_MEMB_OR_INDEX_EXPR})
-				return
-			}
 
 			//member expression with invalid property name
 			if !isAlpha(p.s[p.i]) && p.s[p.i] != '_' {

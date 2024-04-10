@@ -2091,17 +2091,6 @@ func (UnquotedRegion) Kind() NodeKind {
 	return Expr
 }
 
-type DynamicMemberExpression struct {
-	NodeBase
-	Left         Node
-	PropertyName *IdentifierLiteral
-	Optional     bool
-}
-
-func (DynamicMemberExpression) Kind() NodeKind {
-	return Expr
-}
-
 type SpawnExpression struct {
 	NodeBase
 	//GroupVar Node //can be nil

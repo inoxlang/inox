@@ -1729,10 +1729,6 @@ func (patt *ModuleParamsPattern) Iterator(ctx *Context, config IteratorConfigura
 	return NewEmptyPatternIterator()
 }
 
-func (dyn *DynamicValue) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
-	return dyn.Resolve(ctx).(Iterable).Iterator(ctx, config)
-}
-
 func (n *SystemGraphNodes) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
 	graph := n.graph.takeSnapshot(ctx)
 

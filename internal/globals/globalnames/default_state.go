@@ -40,8 +40,6 @@ const (
 	// watch
 	WATCH_RECEIVED_MESSAGES_FN = "watch_received_messages"
 	VALUE_HISTORY_FN           = "ValueHistory"
-	DYNIF_FN                   = "dynif"
-	DYNCALL_FN                 = "dyncall"
 	GET_SYSTEM_GRAPH_FN        = "get_system_graph"
 
 	// send & receive values

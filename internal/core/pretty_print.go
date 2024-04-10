@@ -2105,15 +2105,6 @@ func (r *TestCaseResult) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig,
 	}
 }
 
-func (d *DynamicValue) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
-	utils.Must(w.Write([]byte{'d', 'y', 'n', '('}))
-
-	d.Resolve(config.Context).PrettyPrint(w, config, depth, parentIndentCount)
-
-	utils.Must(w.Write([]byte{')'}))
-
-}
-
 func (e *Event) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, e)
 }

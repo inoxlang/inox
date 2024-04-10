@@ -1043,41 +1043,6 @@ func (s *ByteSlice) RemoveMutationCallback(ctx *Context, handle CallbackHandle) 
 	s.mutationCallbacks.RemoveMicrotask(handle)
 }
 
-func (dyn *DynamicValue) OnMutation(ctx *Context, microtask MutationCallbackMicrotask, config MutationWatchingConfiguration) (CallbackHandle, error) {
-	dyn.lock.Lock()
-	defer dyn.lock.Unlock()
-
-	if config.Depth == UnspecifiedWatchingDepth {
-		config.Depth = DeepWatching
-	}
-
-	if dyn.mutationCallbacks == nil {
-		dyn.mutationCallbacks = NewMutationCallbacks()
-	}
-
-	handle := dyn.mutationCallbacks.AddMicrotask(microtask, config)
-
-	return handle, nil
-}
-
-func (dyn *DynamicValue) RemoveMutationCallbackMicrotasks(ctx *Context) {
-	dyn.lock.Lock()
-	defer dyn.lock.Unlock()
-
-	if dyn.mutationCallbacks == nil {
-		return
-	}
-
-	dyn.mutationCallbacks.RemoveMicrotasks()
-}
-
-func (dyn *DynamicValue) RemoveMutationCallback(ctx *Context, handle CallbackHandle) {
-	dyn.lock.Lock()
-	defer dyn.lock.Unlock()
-
-	dyn.mutationCallbacks.RemoveMicrotask(handle)
-}
-
 func (g *SystemGraph) OnMutation(ctx *Context, microtask MutationCallbackMicrotask, config MutationWatchingConfiguration) (CallbackHandle, error) {
 	g.nodes.lock.Lock()
 	defer g.nodes.lock.Unlock()

@@ -1137,7 +1137,6 @@ func (p *parser) parseIdentStartingExpression(allowUnprefixedPatternNamespaceIde
 		firstIdent.Err = &ParsingError{UnspecifiedParsingError, IDENTIFIER_LITERAL_MUST_NO_END_WITH_A_HYPHEN}
 	}
 
-	isDynamic := false
 	lastDotIndex := int32(-1)
 
 	//identifier member expression
@@ -1183,10 +1182,6 @@ func (p *parser) parseIdentStartingExpression(allowUnprefixedPatternNamespaceIde
 			}
 
 			switch {
-			case p.s[p.i] == '<':
-				isDynamic = true
-				p.i++
-				nameStart = p.i
 			case p.s[p.i] == '(':
 				isComputed = true
 			case p.s[p.i] == '{':
@@ -1209,7 +1204,7 @@ func (p *parser) parseIdentStartingExpression(allowUnprefixedPatternNamespaceIde
 					Keys:     keyList,
 				}
 			case isAlpha(p.s[p.i]) || p.s[p.i] == '_':
-				isDynamic = false
+				//
 			case isValidUnquotedStringChar(p.s, p.i):
 				return p.parseUnquotedStringLiteral(start)
 				//memberExpr.NodeBase.Err = &ParsingError{UnspecifiedParsingError, makePropNameShouldStartWithAletterNot(p.s[p.i])}
@@ -1241,57 +1236,32 @@ func (p *parser) parseIdentStartingExpression(allowUnprefixedPatternNamespaceIde
 				}
 			}
 
-			if isDynamic {
-				identMemberExpr, ok := memberExpr.(*IdentifierMemberExpression)
+			identMemberExpr, ok := memberExpr.(*IdentifierMemberExpression)
+			if ok && !isOptional && !isComputed {
+				identMemberExpr.PropertyNames = append(identMemberExpr.PropertyNames, propNameNode.(*IdentifierLiteral))
+			} else {
+				if ok {
+					identMemberExpr.BasePtr().Span.End = lastDotIndex
+				}
 
-				if ok && len32(identMemberExpr.PropertyNames) == 0 {
-					memberExpr = &DynamicMemberExpression{
-						NodeBase:     NodeBase{Span: NodeSpan{firstIdent.Span.Start, p.i}},
-						Left:         firstIdent,
-						PropertyName: propNameNode.(*IdentifierLiteral),
-						Optional:     isOptional,
-					}
-				} else {
-					left := memberExpr
-					if ok && len(identMemberExpr.PropertyNames) == 0 {
-						left = firstIdent
-					}
+				left := memberExpr
+				if ok && len(identMemberExpr.PropertyNames) == 0 {
+					left = firstIdent
+				}
 
-					memberExpr = &DynamicMemberExpression{
+				if !isComputed {
+					memberExpr = &MemberExpression{
 						NodeBase:     NodeBase{Span: NodeSpan{firstIdent.Span.Start, p.i}},
 						Left:         left,
 						PropertyName: propNameNode.(*IdentifierLiteral),
 						Optional:     isOptional,
 					}
-				}
-			} else {
-				identMemberExpr, ok := memberExpr.(*IdentifierMemberExpression)
-				if ok && !isOptional && !isComputed {
-					identMemberExpr.PropertyNames = append(identMemberExpr.PropertyNames, propNameNode.(*IdentifierLiteral))
 				} else {
-					if ok {
-						identMemberExpr.BasePtr().Span.End = lastDotIndex
-					}
-
-					left := memberExpr
-					if ok && len(identMemberExpr.PropertyNames) == 0 {
-						left = firstIdent
-					}
-
-					if !isComputed {
-						memberExpr = &MemberExpression{
-							NodeBase:     NodeBase{Span: NodeSpan{firstIdent.Span.Start, p.i}},
-							Left:         left,
-							PropertyName: propNameNode.(*IdentifierLiteral),
-							Optional:     isOptional,
-						}
-					} else {
-						memberExpr = &ComputedMemberExpression{
-							NodeBase:     NodeBase{Span: NodeSpan{firstIdent.Span.Start, p.i}},
-							Left:         left,
-							PropertyName: propNameNode,
-							Optional:     isOptional,
-						}
+					memberExpr = &ComputedMemberExpression{
+						NodeBase:     NodeBase{Span: NodeSpan{firstIdent.Span.Start, p.i}},
+						Left:         left,
+						PropertyName: propNameNode,
+						Optional:     isOptional,
 					}
 				}
 			}

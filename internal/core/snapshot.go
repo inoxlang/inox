@@ -13,7 +13,7 @@ var (
 	ErrFailedToSnapshot           = errors.New("failed to snapshot value")
 	ErrAttemptToMutateFrozenValue = errors.New("attempt to mutate a frozen value")
 
-	_ = []InMemorySnapshotable{(*RuneSlice)(nil), (*SystemGraph)(nil), (*DynamicValue)(nil)}
+	_ = []InMemorySnapshotable{(*RuneSlice)(nil), (*SystemGraph)(nil)}
 )
 
 // Snapshot holds either the serialized representation of a Value or a in-memory FROZEN value.
@@ -152,21 +152,6 @@ func (r *RuneSlice) IsFrozen() bool {
 
 func (r *RuneSlice) Unfreeze(ctx *Context) error {
 	r.frozen = false
-	return nil
-}
-
-func (d *DynamicValue) TakeInMemorySnapshot(ctx *Context) (*Snapshot, error) {
-	if v, ok := d.Resolve(ctx).(InMemorySnapshotable); ok {
-		return v.TakeInMemorySnapshot(ctx)
-	}
-	return nil, fmt.Errorf("%w: value to which dynamic value resolve is not an in memory snapshotable", ErrFailedToSnapshot)
-}
-
-func (d *DynamicValue) IsFrozen() bool {
-	return false
-}
-
-func (d *DynamicValue) Unfreeze(ctx *Context) error {
 	return nil
 }
 

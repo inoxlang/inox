@@ -534,9 +534,6 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 		}
 	case *UnquotedRegion:
 		walk(n.Expression, node, ancestorChain, fn, afterFn)
-	case *DynamicMemberExpression:
-		walk(n.Left, node, ancestorChain, fn, afterFn)
-		walk(n.PropertyName, node, ancestorChain, fn, afterFn)
 	case *UnaryExpression:
 		walk(n.Operand, node, ancestorChain, fn, afterFn)
 	case *BinaryExpression:

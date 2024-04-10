@@ -15,7 +15,7 @@ const (
 
 var (
 	_ = []Watchable{
-		(*Object)(nil), (*Dictionary)(nil), (*List)(nil), (*RuneSlice)(nil), (*ByteSlice)(nil), (*DynamicValue)(nil),
+		(*Object)(nil), (*Dictionary)(nil), (*List)(nil), (*RuneSlice)(nil), (*ByteSlice)(nil),
 		(*InoxFunction)(nil), (*SynchronousMessageHandler)(nil),
 	}
 	_                               = []Watcher{stoppedWatcher{}, (*GenericWatcher)(nil), (*joinedWatchers)(nil), (*PeriodicWatcher)(nil)}
@@ -467,42 +467,6 @@ func (s *ByteSlice) Watcher(ctx *Context, config WatcherConfiguration) Watcher {
 	}
 
 	s.watchers.Add(watcher)
-
-	return watcher
-}
-
-// Watcher creates a watcher that watches deeply by default, the watcher only watches mutations.
-func (dyn *DynamicValue) Watcher(ctx *Context, config WatcherConfiguration) Watcher {
-	depth := config.Depth
-	if depth == UnspecifiedWatchingDepth {
-		depth = DeepWatching
-	}
-
-	watcher := NewGenericWatcher(config)
-
-	_, err := dyn.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
-		if watcher.IsStopped() {
-			registerAgain = false
-			return
-		}
-
-		registerAgain = true
-
-		if !config.Filter.Test(ctx, mutation) {
-			return
-		}
-
-		watcher.InformAboutAsync(ctx, Mutation{
-			Kind:  UnspecifiedMutation,
-			Path:  config.Path,
-			Depth: ShallowWatching,
-		})
-		return
-	}, MutationWatchingConfiguration{Depth: config.Depth})
-
-	if err != nil {
-		panic(err)
-	}
 
 	return watcher
 }

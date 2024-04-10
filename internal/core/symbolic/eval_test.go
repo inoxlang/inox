@@ -2508,88 +2508,6 @@ func TestSymbolicEval(t *testing.T) {
 		})
 	})
 
-	t.Run("dynamic member expression", func(t *testing.T) {
-		t.Run("object", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				v = {"name": "foo"}
-				return $v.<name
-			`)
-			res, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Empty(t, state.errors())
-			assert.Equal(t, NewDynamicValue(NewString("foo")), res)
-		})
-
-		t.Run("record", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				v = #{"name": "foo"}
-				return $v.<name
-			`)
-			res, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Empty(t, state.errors())
-			assert.Equal(t, NewDynamicValue(NewString("foo")), res)
-		})
-
-		t.Run("dynamic value", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				v = {a: {b: int}}
-				return $v.<a.b
-			`)
-			res, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Empty(t, state.errors())
-			assert.Equal(t, NewDynamicValue(ANY_INT), res)
-		})
-
-		t.Run("inexisting field of GoValue", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				return v.<XYZ
-			`)
-			memberExpr := n.Statements[0].(*parse.ReturnStatement).Expr
-
-			goVal := ANY_LTHREAD
-			state.setGlobal("v", goVal, GlobalConst)
-
-			res, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(memberExpr, state, fmtPropOfDoesNotExist("XYZ", goVal, "")),
-			}, state.errors())
-			assert.Equal(t, NewAnyDynamicValue(), res)
-		})
-
-		t.Run("existing method of GoValue", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				return v.<cancel
-			`)
-
-			goVal := ANY_LTHREAD
-			state.setGlobal("v", goVal, GlobalConst)
-
-			res, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Empty(t, state.errors())
-			assert.NotNil(t, res)
-		})
-
-		t.Run("inexisting method of GoValue", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				return v.<XYZ
-			`)
-			memberExpr := n.Statements[0].(*parse.ReturnStatement).Expr
-			goVal := ANY_LTHREAD
-			state.setGlobal("v", goVal, GlobalConst)
-
-			res, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(memberExpr, state, fmtPropOfDoesNotExist("XYZ", goVal, "")),
-			}, state.errors())
-			assert.Equal(t, NewAnyDynamicValue(), res)
-		})
-	})
-
 	t.Run("identifier member expression", func(t *testing.T) {
 		t.Run("object property", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
@@ -2919,23 +2837,7 @@ func TestSymbolicEval(t *testing.T) {
 				},
 			}, res)
 		})
-		t.Run("dynamic values are not supported", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				v = {a: {b: 1}}
-				return $v.<a.{b}
-			`)
-			dynamicMemberExpr := parse.FindNode(n, (*parse.DynamicMemberExpression)(nil), nil)
-			res, err := symbolicEval(n, state)
 
-			assert.NoError(t, err)
-			assert.Equal(t, []SymbolicEvaluationError{
-				makeSymbolicEvalError(dynamicMemberExpr, state, EXTRACTION_DOES_NOT_SUPPORT_DYNAMIC_VALUES),
-			}, state.errors())
-			assert.Equal(t, &Object{
-				entries: map[string]Serializable{"b": ANY_SERIALIZABLE},
-				static:  map[string]Pattern{"b": &TypePattern{val: ANY_SERIALIZABLE}},
-			}, res)
-		})
 	})
 
 	t.Run("binary expression", func(t *testing.T) {
@@ -14487,39 +14389,6 @@ func TestSymbolicEval(t *testing.T) {
 					static: map[string]Pattern{
 						"a": ANY_INT.Static(),
 						"f": getStatic(expectedFunc),
-					},
-				}, res)
-			})
-
-			t.Run("method returning a dynamic member", func(t *testing.T) {
-				n, state := MakeTestStateAndChunk(`
-					{
-						f: fn() => self.<a,
-						a: int,
-					}
-				`)
-
-				fnExpr := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
-
-				res, err := symbolicEval(n, state)
-
-				assert.NoError(t, err)
-				assert.Empty(t, state.errors())
-
-				expectedFunction := &InoxFunction{
-					node:      fnExpr,
-					nodeChunk: n,
-					result:    NewDynamicValue(ANY_INT),
-				}
-
-				assert.Equal(t, &Object{
-					entries: map[string]Serializable{
-						"a": ANY_INT,
-						"f": expectedFunction,
-					},
-					static: map[string]Pattern{
-						"a": ANY_INT.Static(),
-						"f": getStatic(expectedFunction),
 					},
 				}, res)
 			})

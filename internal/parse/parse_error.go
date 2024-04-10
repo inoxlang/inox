@@ -238,7 +238,6 @@ const (
 
 	UNTERMINATED_MEMB_OR_INDEX_EXPR                          = "unterminated member/index expression"
 	UNTERMINATED_IDENT_MEMB_EXPR                             = "unterminated identifier member expression"
-	UNTERMINATED_DYN_MEMB_OR_INDEX_EXPR                      = "unterminated dynamic member/index expression"
 	UNTERMINATED_INDEX_OR_SLICE_EXPR                         = "unterminated index/slice/double-colon expression"
 	INVALID_SLICE_EXPR_SINGLE_COLON                          = "invalid slice expression, a single colon should be present"
 	UNTERMINATED_SLICE_EXPR_MISSING_END_INDEX                = "unterminated slice expression, missing end index"

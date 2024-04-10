@@ -503,10 +503,6 @@ func (c *TestCaseResult) IsMutable() bool {
 	return false
 }
 
-func (c *DynamicValue) IsMutable() bool {
-	return true
-}
-
 func (e *Event) IsMutable() bool {
 	return false
 }
