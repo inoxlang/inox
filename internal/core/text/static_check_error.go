@@ -184,6 +184,15 @@ const (
 
 	//return statements
 	MISPLACED_RETURN_STATEMENT = "misplaced return statement"
+
+	//markup patterns
+	ONLY_X_ARE_SUPPORTED_AS_PATTERNS_FOR_MARKUP_PATTERN_ATTRIBUTES = //
+	"only pattern-names (e.g. int), pattern namespace members (e.g. mynamespace.int), variables (e.g. $varname) and member expressions " +
+		"(e.g. $varname.property) are supported as patterns for markup pattern attributes"
+
+	ONLY_X_ARE_SUPPORTED_IN_MARKUP_PATTERN_INTERPOLATIONS = //
+	"only pattern-names (e.g. int), pattern namespace members (e.g. mynamespace.int), variables (e.g. $varname) and member expressions are " +
+		"(e.g. $varname.property) are supported in markup pattern interpolations"
 )
 
 var (
@@ -255,6 +264,10 @@ func FmtUnexpectedPropOfInvocationDescription(name string) string {
 
 func FmtFollowingNodeTypeNotAllowedInAssertions(n parse.Node) string {
 	return fmt.Sprintf("following node type is not allowed in assertion: %T", n)
+}
+
+func FmtFollowingNodeTypeNotAllowedInMarkupPatterns(n parse.Node) string {
+	return fmt.Sprintf("following node type is not allowed in markup patterns: %T", n)
 }
 
 func FmtFollowingNodeTypeNotAllowedInGlobalConstantDeclarations(n parse.Node) string {

@@ -4592,11 +4592,10 @@ func TestCheck(t *testing.T) {
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
 				makeError(callNode, src, text.FmtFollowingNodeTypeNotAllowedInAssertions(callNode)),
-				makeError(callNode, src, text.FmtVarIsNotDeclared("sideEffect")),
+				//makeError(callNode, src, text.FmtVarIsNotDeclared("sideEffect")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
-
 	})
 
 	t.Run("lifetimejob expression", func(t *testing.T) {
@@ -5232,6 +5231,79 @@ func TestCheck(t *testing.T) {
 			n, src, _ := parseCode(`%<div a=>*</div>`)
 
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("named patterns are allowed as patterns for attributes and in interpolations", func(t *testing.T) {
+			n, src := mustParseCode(`%<div a=int>{int}</div>`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{
+				Node:     n,
+				Chunk:    src,
+				Patterns: map[string]struct{}{"int": {}},
+			}))
+		})
+
+		t.Run("pattern members are allowed as pattern for attributes and in interpolations", func(t *testing.T) {
+			n, src := mustParseCode(`%<div a=mynamespace.int>{mynamespace.int}</div>`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{
+				Node:  n,
+				Chunk: src,
+				PatternNamespaces: map[string][]string{
+					"mynamespace": {"int"},
+				},
+			}))
+		})
+
+		t.Run("named patterns are allowed as pattern for attributes and in interpolations", func(t *testing.T) {
+			n, src := mustParseCode(`%<div a=int>{int}</div>`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{
+				Node:     n,
+				Chunk:    src,
+				Patterns: map[string]struct{}{"int": {}},
+			}))
+		})
+
+		t.Run("variables are allowed as pattern for attributes and in interpolations", func(t *testing.T) {
+			n, src := mustParseCode(`
+				$int_pattern = %int
+				%<div a=$int_pattern>{$int_pattern}</div>
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{
+				Node:     n,
+				Chunk:    src,
+				Patterns: map[string]struct{}{"int": {}},
+			}))
+		})
+
+		t.Run("member expressions are allowed as pattern for attributes and in interpolations", func(t *testing.T) {
+			n, src := mustParseCode(`
+				$patterns = {
+					int: %int
+				}
+				%<div a=$patterns.int>{$patterns.int}</div>
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{
+				Node:     n,
+				Chunk:    src,
+				Patterns: map[string]struct{}{"int": {}},
+			}))
+		})
+
+		t.Run("forbidden node as pattern for attributes", func(t *testing.T) {
+			n, src := mustParseCode(`%<div a=mypattern()>{mypattern()}</div>`)
+			patternCalls := parse.FindNodes(n, (*parse.PatternCallExpression)(nil), nil)
+
+			err := staticCheckNoData(StaticCheckInput{
+				Node:  n,
+				Chunk: src,
+				Patterns: map[string]struct{}{
+					"mypattern": {},
+				},
+			})
+			expectedErr := utils.CombineErrors(
+				makeError(patternCalls[0], src, text.ONLY_X_ARE_SUPPORTED_AS_PATTERNS_FOR_MARKUP_PATTERN_ATTRIBUTES),
+				makeError(patternCalls[1], src, text.ONLY_X_ARE_SUPPORTED_IN_MARKUP_PATTERN_INTERPOLATIONS),
+			)
+			assert.Equal(t, expectedErr, err)
 		})
 	})
 

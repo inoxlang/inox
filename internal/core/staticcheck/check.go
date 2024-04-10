@@ -136,12 +136,15 @@ func Check(input Input) (*Data, error) {
 
 // see Check function.
 type checker struct {
-	currentModule            *inoxmod.Module //can be nil
-	chunk                    *parse.ParsedChunkSource
-	inclusionImportStatement *parse.InclusionImportStatement // can be nil
-	moduleImportStatement    *parse.ImportStatement          //can be nil
-	parentChecker            *checker                        //can be nil
-	checkInput               Input
+	currentModule             *inoxmod.Module //can be nil
+	chunk                     *parse.ParsedChunkSource
+	inclusionImportStatement  *parse.InclusionImportStatement // can be nil
+	moduleImportStatement     *parse.ImportStatement          //can be nil
+	parentChecker             *checker                        //can be nil
+	checkInput                Input
+	furthestAssertionStmt     *parse.AssertionStatement
+	furthestPreinitStmt       *parse.PreinitStatement
+	furthestMarkupPatternExpr *parse.MarkupPatternExpression
 
 	//key: *parse.Chunk|*parse.EmbeddedModule
 	fnDecls map[parse.Node]map[string]*fnDeclInfo
@@ -490,57 +493,35 @@ func findClosestScopeContainerNode(ancestorChain []parse.Node) parse.Node {
 
 // checkSingleNode perform checks on a single node.
 func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain []parse.Node, _ bool) parse.TraversalAction {
-	closestModule := findClosestModule(ancestorChain)
-	closestAssertion := findClosest[*parse.AssertionStatement](ancestorChain)
-	inPreinitBlock := findClosest[*parse.PreinitStatement](ancestorChain) != nil
+	var (
+		closestModule  = findClosestModule(ancestorChain)
+		inPreinitBlock bool
+	)
 
-	//Check that the node is allowed in assertions.
+	if c.furthestAssertionStmt != nil && n.Base().Err == nil {
+		closestAssertion := findClosest[*parse.AssertionStatement](ancestorChain)
 
-	if closestAssertion != nil {
-		switch n := n.(type) {
-		case
-			//variables
-			*parse.Variable, *parse.IdentifierLiteral,
+		//Check that the node is allowed in assertions.
 
-			*parse.BinaryExpression, *parse.UnaryExpression, *parse.URLExpression,
-			parse.SimpleValueLiteral, *parse.IntegerRangeLiteral, *parse.FloatRangeLiteral,
-
-			//data structure literals
-			*parse.ObjectLiteral, *parse.ObjectProperty, *parse.ListLiteral, *parse.RecordLiteral,
-
-			//member-like expressions
-			*parse.MemberExpression, *parse.IdentifierMemberExpression, *parse.DoubleColonExpression,
-			*parse.IndexExpression, *parse.SliceExpression,
-
-			//patterns
-			*parse.PatternIdentifierLiteral,
-			*parse.ObjectPatternLiteral, *parse.ObjectPatternProperty, *parse.RecordPatternLiteral,
-			*parse.ListPatternLiteral, *parse.TuplePatternLiteral,
-			*parse.FunctionPatternExpression,
-			*parse.PatternNamespaceIdentifierLiteral, *parse.PatternNamespaceMemberExpression,
-			*parse.OptionPatternLiteral, *parse.OptionalPatternExpression,
-			*parse.ComplexStringPatternPiece, *parse.PatternPieceElement, *parse.PatternGroupName,
-			*parse.PatternUnion,
-			*parse.PatternCallExpression:
-		case *parse.CallExpression:
-			allowed := false
-
-			ident, ok := n.Callee.(*parse.IdentifierLiteral)
-			if ok {
-				switch ident.Name {
-				case globalnames.LEN_FN:
-					allowed = true
-				}
-			}
-
+		if closestAssertion != nil {
+			allowed := c.isNodeAllowedInAssertions(n)
 			if !allowed {
 				c.addError(n, text.FmtFollowingNodeTypeNotAllowedInAssertions(n))
-			}
-		default:
-			if !parse.NodeIsSimpleValueLiteral(n) {
-				c.addError(n, text.FmtFollowingNodeTypeNotAllowedInAssertions(n))
+				return parse.Prune
 			}
 		}
+	}
+
+	if c.furthestMarkupPatternExpr != nil && n.Base().Err == nil {
+		//Check that the node is allowed in markup patterns.
+
+		closestMarkupPatternExpr := findClosest[*parse.MarkupPatternExpression](ancestorChain)
+		if closestMarkupPatternExpr != nil {
+			c.checkNodeInMarkupPattern(n, parent)
+		}
+	}
+	if c.furthestPreinitStmt != nil {
+		inPreinitBlock = findClosest[*parse.PreinitStatement](ancestorChain) != nil
 	}
 
 	//Actually check the node.
@@ -689,6 +670,18 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 		return c.checkTestCaseExpr(node, ancestorChain)
 	case *parse.EmbeddedModule:
 		return c.checkEmbeddedModule(node, parent, closestModule, ancestorChain)
+	case *parse.AssertionStatement:
+		if c.furthestAssertionStmt == nil {
+			c.furthestAssertionStmt = node
+		}
+	case *parse.PreinitStatement:
+		if c.furthestPreinitStmt == nil {
+			c.furthestPreinitStmt = node
+		}
+	case *parse.MarkupPatternExpression:
+		if c.furthestMarkupPatternExpr == nil {
+			c.furthestMarkupPatternExpr = node
+		}
 	}
 
 	return parse.ContinueTraversal
@@ -731,6 +724,102 @@ func (c *checker) precheckTopLevelStatements(module parse.Node) {
 			}
 		}
 	}
+}
+
+func (c *checker) isNodeAllowedInAssertions(n parse.Node) (allowed bool) {
+	switch n := n.(type) {
+	case
+		//variables
+		*parse.Variable, *parse.IdentifierLiteral,
+
+		*parse.BinaryExpression, *parse.UnaryExpression, *parse.URLExpression,
+		parse.SimpleValueLiteral, *parse.IntegerRangeLiteral, *parse.FloatRangeLiteral,
+
+		//data structure literals
+		*parse.ObjectLiteral, *parse.ObjectProperty, *parse.ListLiteral, *parse.RecordLiteral,
+
+		//member-like expressions
+		*parse.MemberExpression, *parse.IdentifierMemberExpression, *parse.DoubleColonExpression,
+		*parse.IndexExpression, *parse.SliceExpression,
+
+		//patterns
+		*parse.PatternIdentifierLiteral,
+		*parse.ObjectPatternLiteral, *parse.ObjectPatternProperty, *parse.RecordPatternLiteral,
+		*parse.ListPatternLiteral, *parse.TuplePatternLiteral,
+		*parse.FunctionPatternExpression,
+		*parse.PatternNamespaceIdentifierLiteral, *parse.PatternNamespaceMemberExpression,
+		*parse.OptionPatternLiteral, *parse.OptionalPatternExpression,
+		*parse.ComplexStringPatternPiece, *parse.PatternPieceElement, *parse.PatternGroupName,
+		*parse.PatternUnion,
+		*parse.PatternCallExpression:
+		allowed = true
+	case *parse.CallExpression:
+		ident, ok := n.Callee.(*parse.IdentifierLiteral)
+		if ok {
+			switch ident.Name {
+			case globalnames.LEN_FN:
+				allowed = true
+			}
+		}
+	}
+
+	return
+}
+
+func (c *checker) checkNodeInMarkupPattern(n, parent parse.Node) {
+
+	switch parent := parent.(type) {
+	case *parse.MarkupPatternAttribute:
+		if n != parent.Type {
+			return
+		}
+		switch n.(type) {
+		case
+			parse.SimpleValueLiteral,
+
+			//variables
+			*parse.Variable, *parse.MemberExpression,
+
+			//patterns
+			*parse.PatternIdentifierLiteral, *parse.PatternNamespaceMemberExpression:
+		default:
+			c.addError(n, text.ONLY_X_ARE_SUPPORTED_AS_PATTERNS_FOR_MARKUP_PATTERN_ATTRIBUTES)
+			return
+		}
+	case *parse.MarkupPatternInterpolation:
+		switch n.(type) {
+		case
+			parse.SimpleValueLiteral,
+
+			//variables
+			*parse.Variable, *parse.MemberExpression,
+
+			//patterns
+			*parse.PatternIdentifierLiteral, *parse.PatternNamespaceMemberExpression:
+		default:
+			c.addError(n, text.ONLY_X_ARE_SUPPORTED_IN_MARKUP_PATTERN_INTERPOLATIONS)
+			return
+		}
+	}
+
+	switch n.(type) {
+	case
+		//markup
+		*parse.MarkupPatternElement, *parse.MarkupPatternOpeningTag, *parse.MarkupPatternClosingTag,
+		*parse.MarkupPatternAttribute, *parse.MarkupPatternWildcard, *parse.MarkupPatternInterpolation,
+		*parse.MarkupText,
+
+		parse.SimpleValueLiteral,
+
+		//variables
+		*parse.Variable, *parse.IdentifierLiteral, *parse.MemberExpression,
+
+		//patterns
+		*parse.PatternIdentifierLiteral, *parse.PatternNamespaceIdentifierLiteral, *parse.PatternNamespaceMemberExpression:
+	default:
+		c.addError(n, text.FmtFollowingNodeTypeNotAllowedInMarkupPatterns(n))
+	}
+
 }
 
 func (c *checker) checkQuantityLiteral(node *parse.QuantityLiteral) parse.TraversalAction {
@@ -2435,17 +2524,26 @@ func (c *checker) checkIdentifier(ident *parse.IdentifierLiteral, parent, scopeN
 	case *parse.MarkupOpeningTag:
 		if ident == p.Name {
 			return parse.ContinueTraversal
-
+		}
+	case *parse.MarkupPatternOpeningTag:
+		if ident == p.Name {
+			return parse.ContinueTraversal
 		}
 	case *parse.MarkupClosingTag:
 		if ident == p.Name {
 			return parse.ContinueTraversal
-
+		}
+	case *parse.MarkupPatternClosingTag:
+		if ident == p.Name {
+			return parse.ContinueTraversal
 		}
 	case *parse.MarkupAttribute:
 		if ident == p.Name {
 			return parse.ContinueTraversal
-
+		}
+	case *parse.MarkupPatternAttribute:
+		if ident == p.Name {
+			return parse.ContinueTraversal
 		}
 	}
 
@@ -3041,7 +3139,7 @@ func (c *checker) checkEmbeddedModule(node *parse.EmbeddedModule, parent, parent
 }
 
 // checkSingleNode perform post checks on a single node.
-func (checker *checker) postCheckSingleNode(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, _ bool) parse.TraversalAction {
+func (c *checker) postCheckSingleNode(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, _ bool) parse.TraversalAction {
 
 	closestModule := findClosestModule(ancestorChain)
 	_ = closestModule
@@ -3052,7 +3150,7 @@ func (checker *checker) postCheckSingleNode(node, parent, scopeNode parse.Node, 
 
 		if utils.Implements[*parse.Manifest](parent) {
 			if len(ancestorChain) < 3 {
-				checker.addError(parent, text.CANNOT_CHECK_MANIFEST_WITHOUT_PARENT)
+				c.addError(parent, text.CANNOT_CHECK_MANIFEST_WITHOUT_PARENT)
 				break
 			}
 
@@ -3079,18 +3177,30 @@ func (checker *checker) postCheckSingleNode(node, parent, scopeNode parse.Node, 
 					IgnoreUnknownSections: true,
 					ModuleKind:            moduleKind,
 					OnError: func(n parse.Node, msg string) {
-						checker.addError(n, msg)
+						c.addError(n, msg)
 					},
 				})
 			} //else: the manifest of regular modules is already checked during the pre-init phase
 		}
 	case *parse.ForStatement, *parse.ForExpression, *parse.WalkStatement:
-		varsBefore := checker.store[node].(map[string]localVarInfo)
-		checker.setScopeLocalVars(scopeNode, varsBefore)
+		varsBefore := c.store[node].(map[string]localVarInfo)
+		c.setScopeLocalVars(scopeNode, varsBefore)
 	case *parse.SwitchStatement, *parse.MatchStatement:
-		varsBefore, ok := checker.store[node]
+		varsBefore, ok := c.store[node]
 		if ok {
-			checker.setScopeLocalVars(scopeNode, varsBefore.(map[string]localVarInfo))
+			c.setScopeLocalVars(scopeNode, varsBefore.(map[string]localVarInfo))
+		}
+	case *parse.PreinitStatement:
+		if c.furthestPreinitStmt == n {
+			c.furthestPreinitStmt = nil
+		}
+	case *parse.AssertionStatement:
+		if c.furthestAssertionStmt == n {
+			c.furthestAssertionStmt = nil
+		}
+	case *parse.MarkupPatternExpression:
+		if c.furthestMarkupPatternExpr == n {
+			c.furthestMarkupPatternExpr = nil
 		}
 	}
 	return parse.ContinueTraversal
