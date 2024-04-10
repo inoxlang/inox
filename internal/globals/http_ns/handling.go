@@ -8,6 +8,7 @@ import (
 	"slices"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/globals/html_ns"
 	"github.com/inoxlang/inox/internal/globals/http_ns/spec"
 	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/mimeconsts"
@@ -170,7 +171,6 @@ func respondWithMappingResult(h handlingArguments) {
 	state := h.state
 	logger := h.logger
 	server := h.server
-	renderingConfig := core.RenderingInput{Mime: mimeconsts.HTML_CTYPE}
 
 	statusIfAccepted := http.StatusOK
 
@@ -326,7 +326,6 @@ func respondWithMappingResult(h handlingArguments) {
 	}
 
 	// rendering | event stream
-loop:
 	for {
 		switch v := value.(type) {
 		case core.NilT, nil:
@@ -365,76 +364,23 @@ loop:
 
 			//write body
 			rw.DetachBodyWriter().Write(v.UnderlyingBytes())
-		case core.Renderable:
+		case *html_ns.HTMLNode:
+			if !req.ParsedAcceptHeader.Match(mimeconsts.HTML_CTYPE) {
+				rw.writeHeaders(http.StatusNotAcceptable)
+				return
+			}
 
-			if !v.IsRecursivelyRenderable(state.Ctx, renderingConfig) { // get or create view
-				logger.Print("result is not recursively renderable, attempt to get .view() for", req.Path)
+			//finalize and send headers
+			rw.SetContentType(mimeconsts.HTML_CTYPE)
 
-				model, ok := v.(*core.Object)
-				if !ok {
-					if streamable, ok := v.(core.StreamSource); ok {
-						value = streamable
-						continue
-					}
+			cspHeaderValue := core.String(server.defaultCSP.HeaderValue(CSPHeaderValueParams{ScriptsNonce: h.scriptsNonce}))
+			rw.AddHeader(state.Ctx, CSP_HEADER_NAME, cspHeaderValue)
+			rw.writeHeaders(statusIfAccepted)
 
-					rw.writeHeaders(http.StatusNotFound)
-					break loop
-				}
-
-				if !req.ParsedAcceptHeader.Match(mimeconsts.HTML_CTYPE) && !req.ParsedAcceptHeader.Match(mimeconsts.EVENT_STREAM_CTYPE) {
-					rw.writeHeaders(http.StatusNotAcceptable)
-					return
-				}
-
-				//TODO: pause parallel identical requests then give them the created view
-
-				properties := model.PropertyNames(state.Ctx)
-				var renderFn core.Value
-				for _, p := range properties {
-					if p == "render" {
-						renderFn = model.Prop(state.Ctx, "render")
-					}
-				}
-
-				fn, ok := renderFn.(*core.InoxFunction)
-				if !ok {
-					if streamable, ok := v.(core.StreamSource); ok {
-						value = streamable
-						continue
-					}
-
-					rw.writeHeaders(http.StatusNotFound)
-					break loop
-				}
-
-				result, err := fn.Call(state, model, nil, nil)
-				if err != nil {
-					logger.Print("failed to create new view(): ", err.Error())
-					rw.writeHeaders(http.StatusInternalServerError)
-					return
-				} else {
-					//TODO: prevent recursion
-					value = result
-					continue
-				}
-			} else {
-				if !req.ParsedAcceptHeader.Match(mimeconsts.HTML_CTYPE) {
-					rw.writeHeaders(http.StatusNotAcceptable)
-					return
-				}
-
-				//finalize and send headers
-				rw.SetContentType(mimeconsts.HTML_CTYPE)
-
-				cspHeaderValue := core.String(server.defaultCSP.HeaderValue(CSPHeaderValueParams{ScriptsNonce: h.scriptsNonce}))
-				rw.AddHeader(state.Ctx, CSP_HEADER_NAME, cspHeaderValue)
-				rw.writeHeaders(statusIfAccepted)
-
-				//write body
-				_, err := core.Render(state.Ctx, rw.DetachBodyWriter(), v, renderingConfig)
-				if err != nil {
-					logger.Print(err.Error())
-				}
+			//write body
+			_, err := v.Render(state.Ctx, rw.DetachBodyWriter())
+			if err != nil {
+				logger.Print(err.Error())
 			}
 		case core.StreamSource, core.ReadableStream:
 

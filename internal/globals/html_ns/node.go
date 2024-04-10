@@ -7,7 +7,6 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
-	"github.com/inoxlang/inox/internal/mimeconsts"
 	"golang.org/x/net/html"
 
 	_html_symbolic "github.com/inoxlang/inox/internal/globals/html_ns/symbolic"
@@ -62,10 +61,6 @@ func (n *HTMLNode) GetGoMethod(name string) (*core.GoFunction, bool) {
 
 func (n *HTMLNode) PropertyNames(ctx *core.Context) []string {
 	return _html_symbolic.HTML_NODE_PROPNAMES
-}
-
-func (n *HTMLNode) IsRecursivelyRenderable(ctx *core.Context, input core.RenderingInput) bool {
-	return input.Mime == mimeconsts.HTML_CTYPE
 }
 
 //

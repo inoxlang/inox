@@ -1361,6 +1361,40 @@ func (patt *MutationPattern) StringPattern() (StringPattern, bool) {
 	return nil, false
 }
 
+type MarkupPattern struct {
+	topElement *MarkupPatternElement
+}
+
+type MarkupPatternElement struct {
+}
+
+func NewMarkupPatternFromExpression(node *parse.MarkupPatternExpression) (*MarkupPattern, error) {
+	pattern := &MarkupPattern{}
+	elem, err := newMarkupPatternElementFromNode(node.Element)
+	if err != nil {
+		return nil, err
+	}
+	pattern.topElement = elem
+	return pattern, nil
+}
+
+func newMarkupPatternElementFromNode(node *parse.MarkupPatternElement) (*MarkupPatternElement, error) {
+
+	elem := &MarkupPatternElement{}
+
+	for _, child := range node.Children {
+		switch child := child.(type) {
+		case *parse.MarkupText:
+		case *parse.MarkupPatternWildcard:
+		case *parse.MarkupPatternElement:
+			return nil, fmt.Errorf("cannot evalute AST node in markup pattern: %T", child)
+		case *parse.MarkupPatternInterpolation:
+		}
+	}
+
+	return elem, nil
+}
+
 func isFloatPattern(p Pattern) bool {
 	switch pattern := p.(type) {
 	case *TypePattern:

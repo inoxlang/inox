@@ -5,15 +5,10 @@ import (
 	"io"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/mimeconsts"
 	"golang.org/x/net/html"
 )
 
-func (n *HTMLNode) Render(ctx *core.Context, w io.Writer, config core.RenderingInput) (int, error) {
-	if !n.IsRecursivelyRenderable(ctx, config) {
-		return 0, core.ErrNotRenderable
-	}
-
+func (n *HTMLNode) Render(ctx *core.Context, w io.Writer) (int, error) {
 	if n.render != nil {
 		return w.Write(n.render)
 	}
@@ -28,20 +23,13 @@ func (n *HTMLNode) Render(ctx *core.Context, w io.Writer, config core.RenderingI
 	return int(i64), err
 }
 
-func Render(ctx *core.Context, v core.Value) *core.ByteSlice {
+func Render(ctx *core.Context, n *HTMLNode) *core.ByteSlice {
 	buf := bytes.NewBuffer(nil)
-	renderToWriter(ctx, buf, v)
+	n.Render(ctx, buf)
 
 	return core.NewMutableByteSlice(buf.Bytes(), "")
 }
 
-func renderToWriter(ctx *core.Context, w io.Writer, v core.Value) {
-	_, err := v.(core.Renderable).Render(ctx, w, core.RenderingInput{Mime: mimeconsts.HTML_CTYPE})
-	if err != nil {
-		panic(err)
-	}
-}
-
-func RenderToString(ctx *core.Context, v core.Value) core.String {
-	return core.String(Render(ctx, v).UnderlyingBytes())
+func RenderToString(ctx *core.Context, n *HTMLNode) core.String {
+	return core.String(Render(ctx, n).UnderlyingBytes())
 }

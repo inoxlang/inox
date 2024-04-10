@@ -27,10 +27,10 @@ func init() {
 			return symbolic.NewListOf(_html_symbolic.NewHTMLNode())
 		},
 		NewNode, symbolicElement,
-		Render, func(ctx *symbolic.Context, arg symbolic.Value) *symbolic.ByteSlice {
-			return &symbolic.ByteSlice{}
+		Render, func(ctx *symbolic.Context, arg *_html_symbolic.HTMLNode) *symbolic.ByteSlice {
+			return symbolic.ANY_BYTE_SLICE
 		},
-		RenderToString, func(ctx *symbolic.Context, arg symbolic.Value) *symbolic.String {
+		RenderToString, func(ctx *symbolic.Context, arg *_html_symbolic.HTMLNode) *symbolic.String {
 			return symbolic.ANY_STRING
 		},
 		EscapeString, func(ctx *symbolic.Context, s symbolic.StringLike) *symbolic.String {
