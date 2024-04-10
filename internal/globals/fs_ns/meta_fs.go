@@ -20,6 +20,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/memds"
 	"github.com/inoxlang/inox/internal/utils"
+	"github.com/inoxlang/inox/internal/utils/pathutils"
 	"github.com/oklog/ulid/v2"
 )
 
@@ -1069,7 +1070,7 @@ func (fls *MetaFilesystem) Rename(from, to string) error {
 
 			//TODO: remove if unecessary
 			if metadata.mode.IsDir() {
-				event.path = core.AppendTrailingSlashIfNotPresent(event.path)
+				event.path = pathutils.AppendTrailingSlashIfNotPresent(event.path)
 			}
 
 			//add event and remove old events.

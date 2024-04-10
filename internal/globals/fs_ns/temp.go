@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/utils/pathutils"
 	"github.com/rs/zerolog"
 	processutils "github.com/shirou/gopsutil/v3/process"
 )
@@ -36,7 +37,7 @@ func CreateDirInProcessTempDir(namePrefix string) core.Path {
 	if err := fls.MkdirAll(string(path), 0o700); err != nil {
 		panic(err)
 	}
-	return core.AppendTrailingSlashIfNotPresent(path)
+	return pathutils.AppendTrailingSlashIfNotPresent(path)
 }
 
 func DeleteDirInProcessTempDir(path core.Path) error {

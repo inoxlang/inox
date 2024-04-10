@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/utils/pathutils"
 )
 
 func (fs *MemFilesystem) TakeFilesystemSnapshot(config core.FilesystemSnapshotConfig) (core.FilesystemSnapshot, error) {
@@ -62,7 +63,7 @@ func (fs *MemFilesystem) TakeFilesystemSnapshot(config core.FilesystemSnapshotCo
 
 		absPath := f.absPath
 		if info.Mode_.FileMode().IsDir() {
-			absPath = core.AppendTrailingSlashIfNotPresent(absPath)
+			absPath = pathutils.AppendTrailingSlashIfNotPresent(absPath)
 		}
 
 		metadata := &core.EntrySnapshotMetadata{

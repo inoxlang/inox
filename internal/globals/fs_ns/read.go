@@ -13,6 +13,7 @@ import (
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/utils/pathutils"
 
 	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/utils"
@@ -87,7 +88,7 @@ func ReadDir(ctx *core.Context, pth core.Path) ([]fs.DirEntry, error) {
 
 func makeFileInfo(info fs.FileInfo, pth string, fls afs.Filesystem) core.FileInfo {
 	if info.IsDir() {
-		pth = core.AppendTrailingSlashIfNotPresent(pth)
+		pth = pathutils.AppendTrailingSlashIfNotPresent(pth)
 	}
 
 	absPath, err := core.Path(pth).ToAbs(fls)

@@ -24,6 +24,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/config"
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/utils/pathutils"
 
 	"github.com/rs/zerolog"
 
@@ -1494,7 +1495,7 @@ func _cd(ctx *core.Context, newdir core.Path) error {
 }
 func _pwd(ctx *core.Context) core.Path {
 	dir, _ := os.Getwd()
-	return core.Path(core.AppendTrailingSlashIfNotPresent(dir))
+	return core.Path(pathutils.AppendTrailingSlashIfNotPresent(dir))
 }
 
 func _whoami(ctx *core.Context) core.String {

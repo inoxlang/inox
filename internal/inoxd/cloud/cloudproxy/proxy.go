@@ -26,6 +26,7 @@ import (
 	"github.com/inoxlang/inox/internal/inoxprocess"
 	netaddr "github.com/inoxlang/inox/internal/netaddr"
 	"github.com/inoxlang/inox/internal/utils"
+	"github.com/inoxlang/inox/internal/utils/pathutils"
 	"github.com/oklog/ulid/v2"
 	"github.com/rs/zerolog"
 )
@@ -66,7 +67,7 @@ func Run(args CloudProxyArgs) error {
 		args.Config.AnonymousAccountDatabasePath = filepath.Join(args.Config.CloudDataDir, consts.DEFAULT_ANON_ACCOUNT_DB_BASENAME)
 	}
 
-	if !strings.HasPrefix(args.Config.AnonymousAccountDatabasePath, core.AppendTrailingSlashIfNotPresent(args.Config.CloudDataDir)) {
+	if !strings.HasPrefix(args.Config.AnonymousAccountDatabasePath, pathutils.AppendTrailingSlashIfNotPresent(args.Config.CloudDataDir)) {
 		return errors.New("invalid cloud-proxy configuration: the anonymous account database should be located in the cloud data directory")
 	}
 

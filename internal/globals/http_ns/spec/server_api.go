@@ -17,6 +17,7 @@ import (
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
+	"github.com/inoxlang/inox/internal/utils/pathutils"
 )
 
 const (
@@ -129,8 +130,8 @@ func addFsDirEndpoints(dir string, urlDirPath string, state *fsRoutingAPIConstru
 
 	//Normalize the directory and the URL directory.
 
-	dir = core.AppendTrailingSlashIfNotPresent(dir)
-	urlDirPath = core.AppendTrailingSlashIfNotPresent(urlDirPath)
+	dir = pathutils.AppendTrailingSlashIfNotPresent(dir)
+	urlDirPath = pathutils.AppendTrailingSlashIfNotPresent(urlDirPath)
 
 	//Recursively handle entries.
 

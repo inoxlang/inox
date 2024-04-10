@@ -518,13 +518,6 @@ func (Path) SetProp(ctx *Context, name string, value Value) error {
 	return ErrCannotSetProp
 }
 
-func AppendTrailingSlashIfNotPresent[S ~string](s S) S {
-	if s[len(s)-1] != '/' {
-		return s + "/"
-	}
-	return s
-}
-
 type PathPattern string
 
 // NewPathPattern creates a PathPattern in a secure way.
@@ -1002,7 +995,7 @@ func (u URL) DirURL() (URL, bool) {
 	}
 
 	path := filepath.Dir(url.Path)
-	path = AppendTrailingSlashIfNotPresent(path)
+	path = pathutils.AppendTrailingSlashIfNotPresent(path)
 	url.Path = path
 	return URL(url.String()), true
 }

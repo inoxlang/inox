@@ -11,6 +11,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/inoxconsts"
+	"github.com/inoxlang/inox/internal/utils/pathutils"
 )
 
 const (
@@ -68,7 +69,7 @@ func (img *Image) Zip(ctx *core.Context, w io.Writer) error {
 
 		relativePath := inoxconsts.FS_DIR_SLASH_IN_IMG_ZIP + string(m.AbsolutePath[1:])
 		if m.IsDir() {
-			relativePath = core.AppendTrailingSlashIfNotPresent(relativePath)
+			relativePath = pathutils.AppendTrailingSlashIfNotPresent(relativePath)
 		}
 
 		contentWriter, err := archive.Create(relativePath)

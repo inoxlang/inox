@@ -15,6 +15,7 @@ import (
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/utils/pathutils"
 	"github.com/minio/minio-go/v7"
 )
 
@@ -199,7 +200,7 @@ func (fls *S3Filesystem) Stat(filename string) (os.FileInfo, error) {
 		}
 		//check if dir by listing files
 		channel := client.ListObjects(ctx, fls.bucketName(), minio.ListObjectsOptions{
-			Prefix:    core.AppendTrailingSlashIfNotPresent(key),
+			Prefix:    pathutils.AppendTrailingSlashIfNotPresent(key),
 			Recursive: true,
 		})
 

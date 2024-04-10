@@ -19,6 +19,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/memds"
 	"github.com/inoxlang/inox/internal/utils"
+	"github.com/inoxlang/inox/internal/utils/pathutils"
 )
 
 const (
@@ -208,7 +209,7 @@ func (s *inMemStorage) newNoLock(path string, mode os.FileMode, flag int, ignore
 			}
 
 			if f.mode.IsDir() {
-				event.path = core.AppendTrailingSlashIfNotPresent(event.path)
+				event.path = pathutils.AppendTrailingSlashIfNotPresent(event.path)
 			}
 
 			//add event and remove old events.
@@ -363,7 +364,7 @@ func (s *inMemStorage) moveNoLock(from, to string, ignoreEvent bool) error {
 			}
 
 			if f.mode.IsDir() {
-				event.path = core.AppendTrailingSlashIfNotPresent(event.path)
+				event.path = pathutils.AppendTrailingSlashIfNotPresent(event.path)
 			}
 
 			//add event and remove old events.
@@ -415,7 +416,7 @@ func (s *inMemStorage) Remove(path string) error {
 		}
 
 		if isDir {
-			event.path = core.AppendTrailingSlashIfNotPresent(event.path)
+			event.path = pathutils.AppendTrailingSlashIfNotPresent(event.path)
 		}
 
 		//add event and remove old events.

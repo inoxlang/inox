@@ -10,13 +10,14 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/utils"
+	"github.com/inoxlang/inox/internal/utils/pathutils"
 	"github.com/rs/zerolog"
 )
 
 func getScriptDir(fpath string) string {
 	dir := filepath.Dir(fpath)
 	dir, _ = filepath.Abs(dir)
-	dir = core.AppendTrailingSlashIfNotPresent(dir)
+	dir = pathutils.AppendTrailingSlashIfNotPresent(dir)
 	return dir
 }
 

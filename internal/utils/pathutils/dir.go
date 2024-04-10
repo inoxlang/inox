@@ -6,3 +6,10 @@ func StripTrailingSlash[S ~string](s S) S {
 	}
 	return s
 }
+
+func AppendTrailingSlashIfNotPresent[S ~string](s S) S {
+	if s[len(s)-1] != '/' {
+		return s + "/"
+	}
+	return s
+}
