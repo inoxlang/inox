@@ -34725,13 +34725,13 @@ func testParse(
 									Unprefixed: true,
 								},
 								Attributes: []Node{
-									&MarkupAttribute{
+									&MarkupPatternAttribute{
 										NodeBase: NodeBase{Span: NodeSpan{6, 11}},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 											Name:     "a",
 										},
-										Value: &DoubleQuotedStringLiteral{
+										Type: &DoubleQuotedStringLiteral{
 											NodeBase: NodeBase{NodeSpan{8, 11}, nil, false},
 											Raw:      `"b"`,
 											Value:    "b",
@@ -34779,13 +34779,13 @@ func testParse(
 									Unprefixed: true,
 								},
 								Attributes: []Node{
-									&MarkupAttribute{
+									&MarkupPatternAttribute{
 										NodeBase: NodeBase{Span: NodeSpan{6, 11}},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 											Name:     "a",
 										},
-										Value: &DoubleQuotedStringLiteral{
+										Type: &DoubleQuotedStringLiteral{
 											NodeBase: NodeBase{NodeSpan{8, 11}, nil, false},
 											Raw:      `"b"`,
 											Value:    "b",
@@ -34833,7 +34833,7 @@ func testParse(
 										Unprefixed: true,
 									},
 									Attributes: []Node{
-										&MarkupAttribute{
+										&MarkupPatternAttribute{
 											NodeBase: NodeBase{Span: NodeSpan{8, 17}},
 											Name: &UnquotedRegion{
 												NodeBase: NodeBase{Span: NodeSpan{8, 13}},
@@ -34842,7 +34842,7 @@ func testParse(
 													Name:     "a",
 												},
 											},
-											Value: &DoubleQuotedStringLiteral{
+											Type: &DoubleQuotedStringLiteral{
 												NodeBase: NodeBase{NodeSpan{14, 17}, nil, false},
 												Raw:      `"b"`,
 												Value:    "b",
@@ -34891,13 +34891,13 @@ func testParse(
 										Unprefixed: true,
 									},
 									Attributes: []Node{
-										&MarkupAttribute{
+										&MarkupPatternAttribute{
 											NodeBase: NodeBase{Span: NodeSpan{8, 15}},
 											Name: &IdentifierLiteral{
 												NodeBase: NodeBase{NodeSpan{8, 9}, nil, false},
 												Name:     "a",
 											},
-											Value: &UnquotedRegion{
+											Type: &UnquotedRegion{
 												NodeBase: NodeBase{Span: NodeSpan{10, 15}},
 												Expression: &IdentifierLiteral{
 													NodeBase: NodeBase{NodeSpan{12, 13}, nil, false},
@@ -34946,7 +34946,7 @@ func testParse(
 									Unprefixed: true,
 								},
 								Attributes: []Node{
-									&MarkupAttribute{
+									&MarkupPatternAttribute{
 										NodeBase: NodeBase{Span: NodeSpan{6, 7}},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
@@ -34993,7 +34993,7 @@ func testParse(
 									Unprefixed: true,
 								},
 								Attributes: []Node{
-									&MarkupAttribute{
+									&MarkupPatternAttribute{
 										NodeBase: NodeBase{
 											NodeSpan{6, 11},
 											nil,
@@ -35003,7 +35003,7 @@ func testParse(
 											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 											Name:     "a",
 										},
-										Value: &DoubleQuotedStringLiteral{
+										Type: &DoubleQuotedStringLiteral{
 											NodeBase: NodeBase{NodeSpan{8, 11}, nil, false},
 											Raw:      `"b"`,
 											Value:    "b",
@@ -35034,13 +35034,13 @@ func testParse(
 									Unprefixed: true,
 								},
 								Attributes: []Node{
-									&MarkupAttribute{
+									&MarkupPatternAttribute{
 										NodeBase: NodeBase{Span: NodeSpan{6, 11}},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 											Name:     "a",
 										},
-										Value: &DoubleQuotedStringLiteral{
+										Type: &DoubleQuotedStringLiteral{
 											NodeBase: NodeBase{NodeSpan{8, 11}, nil, false},
 											Raw:      `"b"`,
 											Value:    "b",
@@ -35103,7 +35103,7 @@ func testParse(
 									Unprefixed: true,
 								},
 								Attributes: []Node{
-									&MarkupAttribute{
+									&MarkupPatternAttribute{
 										NodeBase: NodeBase{
 											NodeSpan{6, 13},
 											nil,
@@ -35118,7 +35118,7 @@ func testParse(
 											Raw:   `"a"`,
 											Value: "a",
 										},
-										Value: &DoubleQuotedStringLiteral{
+										Type: &DoubleQuotedStringLiteral{
 											NodeBase: NodeBase{NodeSpan{10, 13}, nil, false},
 											Raw:      `"b"`,
 											Value:    "b",
@@ -35173,7 +35173,7 @@ func testParse(
 									Unprefixed: true,
 								},
 								Attributes: []Node{
-									&MarkupAttribute{
+									&MarkupPatternAttribute{
 										NodeBase: NodeBase{
 											NodeSpan{6, 8},
 											nil,
@@ -35183,7 +35183,7 @@ func testParse(
 											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 											Name:     "a",
 										},
-										Value: &MissingExpression{
+										Type: &MissingExpression{
 											NodeBase: NodeBase{
 												NodeSpan{8, 9},
 												&ParsingError{MissingExpr, fmtExprExpectedHere([]rune("%<div a=></div>"), 8, true)},
@@ -35240,13 +35240,13 @@ func testParse(
 									Unprefixed: true,
 								},
 								Attributes: []Node{
-									&MarkupAttribute{
+									&MarkupPatternAttribute{
 										NodeBase: NodeBase{Span: NodeSpan{6, 8}},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 											Name:     "a",
 										},
-										Value: &MissingExpression{
+										Type: &MissingExpression{
 											NodeBase: NodeBase{
 												NodeSpan{8, 9},
 												&ParsingError{MissingExpr, fmtExprExpectedHere([]rune("%<div a=></div>"), 8, true)},
@@ -35302,7 +35302,7 @@ func testParse(
 									Unprefixed: true,
 								},
 								Attributes: []Node{
-									&MarkupAttribute{
+									&MarkupPatternAttribute{
 										NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
@@ -35362,7 +35362,7 @@ func testParse(
 									Unprefixed: true,
 								},
 								Attributes: []Node{
-									&MarkupAttribute{
+									&MarkupPatternAttribute{
 										NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
@@ -35394,7 +35394,7 @@ func testParse(
 									Unprefixed: true,
 								},
 								Attributes: []Node{
-									&MarkupAttribute{
+									&MarkupPatternAttribute{
 										NodeBase: NodeBase{
 											NodeSpan{6, 11},
 											nil,
@@ -35404,13 +35404,13 @@ func testParse(
 											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 											Name:     "a",
 										},
-										Value: &DoubleQuotedStringLiteral{
+										Type: &DoubleQuotedStringLiteral{
 											NodeBase: NodeBase{NodeSpan{8, 11}, nil, false},
 											Raw:      `"b"`,
 											Value:    "b",
 										},
 									},
-									&MarkupAttribute{
+									&MarkupPatternAttribute{
 										NodeBase: NodeBase{
 											NodeSpan{12, 17},
 											nil,
@@ -35420,7 +35420,7 @@ func testParse(
 											NodeBase: NodeBase{NodeSpan{12, 13}, nil, false},
 											Name:     "c",
 										},
-										Value: &DoubleQuotedStringLiteral{
+										Type: &DoubleQuotedStringLiteral{
 											NodeBase: NodeBase{NodeSpan{14, 17}, nil, false},
 											Raw:      `"d"`,
 											Value:    "d",
@@ -35914,7 +35914,7 @@ func testParse(
 									Unprefixed: true,
 								},
 								Attributes: []Node{
-									&MarkupAttribute{
+									&MarkupPatternAttribute{
 										NodeBase: NodeBase{NodeSpan{9, 10}, nil, false},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{9, 10}, nil, false},
@@ -35958,13 +35958,13 @@ func testParse(
 									Unprefixed: true,
 								},
 								Attributes: []Node{
-									&MarkupAttribute{
+									&MarkupPatternAttribute{
 										NodeBase: NodeBase{NodeSpan{9, 32}, nil, false},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{9, 13}, nil, false},
 											Name:     "type",
 										},
-										Value: &DoubleQuotedStringLiteral{
+										Type: &DoubleQuotedStringLiteral{
 											NodeBase: NodeBase{NodeSpan{14, 32}, nil, false},
 											Value:    "text/hyperscript",
 											Raw:      `"text/hyperscript"`,
@@ -36007,19 +36007,19 @@ func testParse(
 									Unprefixed: true,
 								},
 								Attributes: []Node{
-									&MarkupAttribute{
+									&MarkupPatternAttribute{
 										NodeBase: NodeBase{NodeSpan{9, 32}, nil, false},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{9, 13}, nil, false},
 											Name:     "type",
 										},
-										Value: &DoubleQuotedStringLiteral{
+										Type: &DoubleQuotedStringLiteral{
 											NodeBase: NodeBase{NodeSpan{14, 32}, nil, false},
 											Value:    "text/hyperscript",
 											Raw:      `"text/hyperscript"`,
 										},
 									},
-									&MarkupAttribute{
+									&MarkupPatternAttribute{
 										NodeBase: NodeBase{NodeSpan{33, 34}, nil, false},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{33, 34}, nil, false},

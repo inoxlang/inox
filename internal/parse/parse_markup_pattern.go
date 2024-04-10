@@ -133,7 +133,7 @@ func (p *parser) parseMarkupPatternElement(start int32) (_ *MarkupPatternElement
 		p.inPattern = true
 
 		if isMissingExpr {
-			openingTag.Attributes = append(openingTag.Attributes, &MarkupAttribute{
+			openingTag.Attributes = append(openingTag.Attributes, &MarkupPatternAttribute{
 				NodeBase: NodeBase{
 					Span: name.Base().Span,
 				},
@@ -167,12 +167,12 @@ func (p *parser) parseMarkupPatternElement(start int32) (_ *MarkupPatternElement
 
 			value, isMissingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
 
-			openingTag.Attributes = append(openingTag.Attributes, &MarkupAttribute{
+			openingTag.Attributes = append(openingTag.Attributes, &MarkupPatternAttribute{
 				NodeBase: NodeBase{
 					Span: NodeSpan{name.Base().Span.Start, p.i},
 				},
-				Name:  name,
-				Value: value,
+				Name: name,
+				Type: value,
 			})
 
 			if isMissingExpr {
@@ -185,7 +185,7 @@ func (p *parser) parseMarkupPatternElement(start int32) (_ *MarkupPatternElement
 			}
 		} else {
 
-			openingTag.Attributes = append(openingTag.Attributes, &MarkupAttribute{
+			openingTag.Attributes = append(openingTag.Attributes, &MarkupPatternAttribute{
 				NodeBase: NodeBase{
 					Span: NodeSpan{name.Base().Span.Start, p.i},
 				},
