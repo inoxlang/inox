@@ -1,10 +1,12 @@
-package core
+package mod
 
 import (
 	"path/filepath"
 	"reflect"
 	"slices"
 	"strconv"
+
+	"github.com/inoxlang/inox/internal/core"
 
 	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/utils"
@@ -28,7 +30,7 @@ func (s RiskScore) ValueAndLevel() string {
 
 type BasePermissionRiskScore struct {
 	Type  reflect.Type
-	Kind  PermissionKind
+	Kind  core.PermissionKind
 	Score RiskScore
 }
 
@@ -64,11 +66,11 @@ const (
 )
 
 var (
-	HTTP_PERM_TYPE    = reflect.TypeOf(HttpPermission{})
-	WS_PERM_TYPE      = reflect.TypeOf(WebsocketPermission{})
-	FS_PERM_TYPE      = reflect.TypeOf(FilesystemPermission{})
-	ROUTINE_PERM_TYPE = reflect.TypeOf(LThreadPermission{})
-	CMD_PERM_TYPE     = reflect.TypeOf(CommandPermission{})
+	HTTP_PERM_TYPE    = reflect.TypeOf(core.HttpPermission{})
+	WS_PERM_TYPE      = reflect.TypeOf(core.WebsocketPermission{})
+	FS_PERM_TYPE      = reflect.TypeOf(core.FilesystemPermission{})
+	ROUTINE_PERM_TYPE = reflect.TypeOf(core.LThreadPermission{})
+	CMD_PERM_TYPE     = reflect.TypeOf(core.CommandPermission{})
 
 	DEFAULT_PERM_RISK_SCORES = map[reflect.Type][]BasePermissionRiskScore{
 		HTTP_PERM_TYPE: {
@@ -100,7 +102,7 @@ var (
 	//TODO: move constants to an embedded file.
 	//TODO: handle case where the a virtual system is used.
 	FILE_SENSITIVITY_MULTIPLIERS = []struct {
-		PathPattern
+		core.PathPattern
 		Multiplier int
 	}{
 		{"/home/*/.*", 3},      //dot files in home directories
@@ -116,7 +118,7 @@ var (
 // ComputeProgramRiskScore computes the risk score for a prepared program. First the risk score for each permission
 // is computed, then scores of permissions of the same type are summed and finally the remaining scores are multiplied together.
 // The current logic is intended to be a starting point, it may be adjusted based on additional research and feedback.
-func ComputeProgramRiskScore(mod *Module, manifest *Manifest) (totalScore RiskScore, requiredPerms []Permission) {
+func ComputeProgramRiskScore(mod *core.Module, manifest *core.Manifest) (totalScore RiskScore, requiredPerms []core.Permission) {
 	permTypeRiskScores := map[reflect.Type]RiskScore{}
 	requiredPerms = slices.Clone(manifest.RequiredPermissions)
 
@@ -125,7 +127,7 @@ func ComputeProgramRiskScore(mod *Module, manifest *Manifest) (totalScore RiskSc
 	}
 
 	for _, requiredPerm := range requiredPerms {
-		if _, ok := requiredPerm.(GlobalVarPermission); ok { //ignore
+		if _, ok := requiredPerm.(core.GlobalVarPermission); ok { //ignore
 			continue
 		}
 		permRisk := ComputePermissionRiskScore(requiredPerm)
@@ -164,7 +166,7 @@ func ComputeProgramRiskScore(mod *Module, manifest *Manifest) (totalScore RiskSc
 	return totalScore, requiredPerms
 }
 
-func ComputePermissionRiskScore(perm Permission) RiskScore {
+func ComputePermissionRiskScore(perm core.Permission) RiskScore {
 	majorPermKind := perm.Kind().Major()
 	permType := reflect.TypeOf(perm)
 
@@ -182,56 +184,56 @@ func ComputePermissionRiskScore(perm Permission) RiskScore {
 	}
 
 	switch p := perm.(type) {
-	case GlobalVarPermission:
+	case core.GlobalVarPermission:
 		return 1
-	case HttpPermission:
+	case core.HttpPermission:
 		if p.AnyEntity {
 			score *= HOST_PATTERN_RISK_MULTIPLIER
 			break
 		}
 
 		switch p.Entity.(type) {
-		case HostPattern:
+		case core.HostPattern:
 			score *= HOST_PATTERN_RISK_MULTIPLIER
 			//TODO: if subdomains: is the domain trustable ?
-		case Host:
+		case core.Host:
 			score *= HOST_RISK_MULTIPLIER
 			//TODO: is the domain trustable ?
-		case URLPattern:
+		case core.URLPattern:
 			score *= URL_PATTERN_RISK_MULTIPLIER
 			//TODO: is the domain trustable ?
-		case URL:
+		case core.URL:
 			score *= URL_RISK_MULTIPLIER
 			//TODO: is the domain trustable ?
 		default:
-			panic(ErrUnreachable)
+			panic(core.ErrUnreachable)
 		}
-	case WebsocketPermission:
+	case core.WebsocketPermission:
 		switch p.Endpoint.(type) {
-		case Host:
+		case core.Host:
 			score *= HOST_RISK_MULTIPLIER
 			//TODO: is the domain trustable ?
-		case URL:
+		case core.URL:
 			score *= URL_RISK_MULTIPLIER
 			//TODO: is the domain trustable ?
 		default:
-			panic(ErrUnreachable)
+			panic(core.ErrUnreachable)
 		}
-	case FilesystemPermission:
+	case core.FilesystemPermission:
 		switch entity := p.Entity.(type) {
-		case PathPattern:
+		case core.PathPattern:
 			score *= RiskScore(GetPathPatternSensitivityMultiplier(entity))
-		case Path:
+		case core.Path:
 			score *= RiskScore(GetPathSensitivityMultiplier(entity))
 		default:
-			panic(ErrUnreachable)
+			panic(core.ErrUnreachable)
 		}
 	}
 
 	return score
 }
 
-func GetPathSensitivityMultiplier(pth Path) int {
+func GetPathSensitivityMultiplier(pth core.Path) int {
 	for _, sensitivity := range FILE_SENSITIVITY_MULTIPLIERS {
 		if utils.Must(filepath.Match(string(sensitivity.PathPattern), string(pth))) {
 			return sensitivity.Multiplier
@@ -241,7 +243,7 @@ func GetPathSensitivityMultiplier(pth Path) int {
 	return UNKNOW_FILE_SENSITIVITY_MULTIPLIER
 }
 
-func GetPathPatternSensitivityMultiplier(patt PathPattern) int {
+func GetPathPatternSensitivityMultiplier(patt core.PathPattern) int {
 	var maxMultiplier int = UNKNOW_FILE_PATTERN_SENSITIVITY_MUTLIPLIER
 	for _, sensitivity := range FILE_SENSITIVITY_MULTIPLIERS {
 		if sensitivity.PathPattern == patt {

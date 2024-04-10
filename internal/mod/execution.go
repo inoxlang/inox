@@ -202,7 +202,7 @@ func RunPreparedModule(args RunPreparedModuleArgs) (
 	// 	return nil, nil, nil, true, ErrExecutionAbortedTooManyWarnings
 	// }
 
-	riskScore, requiredPerms := core.ComputeProgramRiskScore(mod, manifest)
+	riskScore, requiredPerms := ComputeProgramRiskScore(mod, manifest)
 
 	// if the program is risky ask the user to confirm the execution
 	if !args.IgnoreHighRiskScore && riskScore > config.DEFAULT_TRUSTED_RISK_SCORE {

@@ -1,8 +1,9 @@
-package core
+package mod
 
 import (
 	"testing"
 
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
@@ -10,15 +11,15 @@ import (
 
 func TestComputeProgramRiskScore(t *testing.T) {
 	t.Run("empty manifest, empty code", func(t *testing.T) {
-		ctx := NewContext(ContextConfig{})
+		ctx := core.NewContext(core.ContextConfig{})
 		defer ctx.CancelGracefully()
 
-		mod := utils.Must(ParseInMemoryModule("manifest {}", InMemoryModuleParsingConfig{
+		mod := utils.Must(core.ParseInMemoryModule("manifest {}", core.InMemoryModuleParsingConfig{
 			Name:    "",
 			Context: ctx,
 		}))
 
-		manifest, _, _, _ := mod.PreInit(PreinitArgs{
+		manifest, _, _, _ := mod.PreInit(core.PreinitArgs{
 			GlobalConsts: mod.MainChunk.Node.GlobalConstantDeclarations,
 		})
 
@@ -26,19 +27,19 @@ func TestComputeProgramRiskScore(t *testing.T) {
 	})
 
 	t.Run("read /home/user/**/* permission", func(t *testing.T) {
-		ctx := NewContext(ContextConfig{})
+		ctx := core.NewContext(core.ContextConfig{})
 		defer ctx.CancelGracefully()
 
-		mod := utils.Must(ParseInMemoryModule(`
+		mod := utils.Must(core.ParseInMemoryModule(`
 			manifest {
 				permissions: {read: %/home/user/**/*}
 			}
-		`, InMemoryModuleParsingConfig{
+		`, core.InMemoryModuleParsingConfig{
 			Name:    "",
 			Context: ctx,
 		}))
 
-		manifest, _, _, _ := mod.PreInit(PreinitArgs{
+		manifest, _, _, _ := mod.PreInit(core.PreinitArgs{
 			GlobalConsts: mod.MainChunk.Node.GlobalConstantDeclarations,
 		})
 
@@ -47,21 +48,21 @@ func TestComputeProgramRiskScore(t *testing.T) {
 	})
 
 	t.Run("read /home/user/**/* permission & read https://** permission", func(t *testing.T) {
-		ctx := NewContext(ContextConfig{})
+		ctx := core.NewContext(core.ContextConfig{})
 		defer ctx.CancelGracefully()
 
-		mod := utils.Must(ParseInMemoryModule(`
+		mod := utils.Must(core.ParseInMemoryModule(`
 			manifest {
 				permissions: {
 					read: {%/home/user/**/*, %https://**}
 				}
 			}
-		`, InMemoryModuleParsingConfig{
+		`, core.InMemoryModuleParsingConfig{
 			Name:    "",
 			Context: ctx,
 		}))
 
-		manifest, _, _, _ := mod.PreInit(PreinitArgs{
+		manifest, _, _, _ := mod.PreInit(core.PreinitArgs{
 			GlobalConsts: mod.MainChunk.Node.GlobalConstantDeclarations,
 		})
 
@@ -73,21 +74,21 @@ func TestComputeProgramRiskScore(t *testing.T) {
 	})
 
 	t.Run("https://example.com/ permission for HTTP & Websocket", func(t *testing.T) {
-		ctx := NewContext(ContextConfig{})
+		ctx := core.NewContext(core.ContextConfig{})
 		defer ctx.CancelGracefully()
 
-		mod := utils.Must(ParseInMemoryModule(`
+		mod := utils.Must(core.ParseInMemoryModule(`
 			manifest {
 				permissions: {
 					read: {wss://example.com/, https://example.com/}
 				}
 			}
-		`, InMemoryModuleParsingConfig{
+		`, core.InMemoryModuleParsingConfig{
 			Name:    "",
 			Context: ctx,
 		}))
 
-		manifest, _, _, _ := mod.PreInit(PreinitArgs{
+		manifest, _, _, _ := mod.PreInit(core.PreinitArgs{
 			GlobalConsts: mod.MainChunk.Node.GlobalConstantDeclarations,
 		})
 
@@ -97,39 +98,39 @@ func TestComputeProgramRiskScore(t *testing.T) {
 	})
 
 	t.Run("any-entity read http permission", func(t *testing.T) {
-		ctx := NewContext(ContextConfig{})
+		ctx := core.NewContext(core.ContextConfig{})
 		defer ctx.CancelGracefully()
 
-		mod := utils.Must(ParseInMemoryModule(`
+		mod := utils.Must(core.ParseInMemoryModule(`
 			manifest {
 				permissions: {}
 			}
-		`, InMemoryModuleParsingConfig{
+		`, core.InMemoryModuleParsingConfig{
 			Name:    "",
 			Context: ctx,
 		}))
 
-		ComputeProgramRiskScore(mod, &Manifest{
-			RequiredPermissions: []Permission{
-				HttpPermission{Kind_: permbase.Read, AnyEntity: true},
+		ComputeProgramRiskScore(mod, &core.Manifest{
+			RequiredPermissions: []core.Permission{
+				core.HttpPermission{Kind_: permbase.Read, AnyEntity: true},
 			},
 		})
 	})
 
 	t.Run("create threads permission", func(t *testing.T) {
-		ctx := NewContext(ContextConfig{})
+		ctx := core.NewContext(core.ContextConfig{})
 		defer ctx.CancelGracefully()
 
-		mod := utils.Must(ParseInMemoryModule(`
+		mod := utils.Must(core.ParseInMemoryModule(`
 			manifest {
 				permissions: {create: {threads: {}}}
 			}
-		`, InMemoryModuleParsingConfig{
+		`, core.InMemoryModuleParsingConfig{
 			Name:    "",
 			Context: ctx,
 		}))
 
-		manifest, _, _, _ := mod.PreInit(PreinitArgs{
+		manifest, _, _, _ := mod.PreInit(core.PreinitArgs{
 			GlobalConsts: mod.MainChunk.Node.GlobalConstantDeclarations,
 		})
 
@@ -138,10 +139,10 @@ func TestComputeProgramRiskScore(t *testing.T) {
 	})
 
 	t.Run("many permissions", func(t *testing.T) {
-		ctx := NewContext(ContextConfig{})
+		ctx := core.NewContext(core.ContextConfig{})
 		defer ctx.CancelGracefully()
 
-		mod := utils.Must(ParseInMemoryModule(`
+		mod := utils.Must(core.ParseInMemoryModule(`
 			manifest {
 				permissions: {
 					read: {%/home/user/**/*, %https://**}
@@ -149,12 +150,12 @@ func TestComputeProgramRiskScore(t *testing.T) {
 					provide: %https://**
 				}
 			}
-		`, InMemoryModuleParsingConfig{
+		`, core.InMemoryModuleParsingConfig{
 			Name:    "",
 			Context: ctx,
 		}))
 
-		manifest, _, _, _ := mod.PreInit(PreinitArgs{
+		manifest, _, _, _ := mod.PreInit(core.PreinitArgs{
 			GlobalConsts: mod.MainChunk.Node.GlobalConstantDeclarations,
 		})
 

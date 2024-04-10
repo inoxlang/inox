@@ -61,6 +61,7 @@ _From more relevant to less relevant._
 
 [mod](./mod/execution.go)
 - Module execution
+- Risk score computation
 
 [third_party_stable](./third_party_stable/README.md)
 
