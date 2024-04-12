@@ -46,7 +46,7 @@ func isPseudoHtmxAttribute(name string) bool {
 	return index < len(PSEUDO_HTMX_ATTR_NAMES) && PSEUDO_HTMX_ATTR_NAMES[index] == name
 }
 
-func transpilePseudoHtmxAttribute(attr core.MarkupAttribute, currentOutput *[]html.Attribute) error {
+func transpilePseudoHtmxAttribute(attr core.NonInterpretedMarkupAttribute, currentOutput *[]html.Attribute) error {
 	trimmedName := strings.TrimPrefix(attr.Name(), "hx-")
 
 	switch trimmedName {

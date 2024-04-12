@@ -521,8 +521,6 @@ func (s *WritableStream) IsMutable() bool {
 	return true
 }
 
-
-
 func (r *RingBuffer) IsMutable() bool {
 	return true
 }
@@ -611,8 +609,16 @@ func (*SecretPattern) IsMutable() bool {
 	return false
 }
 
-func (*MarkupElement) IsMutable() bool {
+func (*MarkupPattern) IsMutable() bool {
 	return false
+}
+
+func (*NonInterpretedMarkupElement) IsMutable() bool {
+	return false
+}
+
+func (*AnyMarkupNode) IsMutable() bool {
+	return true
 }
 
 func (*DatabaseIL) IsMutable() bool {

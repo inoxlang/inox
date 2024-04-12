@@ -13486,7 +13486,7 @@ func TestSymbolicEval(t *testing.T) {
 		t.Run("namespace's factory is valid", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`html<div></div>`)
 			state.setGlobal("html", NewNamespace(map[string]Value{
-				FROM_MARKUP_FACTORY_NAME: WrapGoFunction(func(ctx *Context, elem *MarkupElement) *Identifier {
+				FROM_MARKUP_FACTORY_NAME: WrapGoFunction(func(ctx *Context, elem *NonInterpretedMarkupElement) *Identifier {
 					return &Identifier{name: elem.name}
 				}),
 			}), GlobalConst)
@@ -13513,7 +13513,7 @@ func TestSymbolicEval(t *testing.T) {
 		t.Run("self-closing element", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`html<div/>`)
 			state.setGlobal("html", NewNamespace(map[string]Value{
-				FROM_MARKUP_FACTORY_NAME: WrapGoFunction(func(ctx *Context, elem *MarkupElement) *Identifier {
+				FROM_MARKUP_FACTORY_NAME: WrapGoFunction(func(ctx *Context, elem *NonInterpretedMarkupElement) *Identifier {
 					return &Identifier{name: elem.name}
 				}),
 			}), GlobalConst)
@@ -13527,7 +13527,7 @@ func TestSymbolicEval(t *testing.T) {
 		t.Run("interpolation", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`html<div>{int}</div>`)
 			state.setGlobal("html", NewNamespace(map[string]Value{
-				FROM_MARKUP_FACTORY_NAME: WrapGoFunction(func(ctx *Context, elem *MarkupElement) *MarkupElement {
+				FROM_MARKUP_FACTORY_NAME: WrapGoFunction(func(ctx *Context, elem *NonInterpretedMarkupElement) *NonInterpretedMarkupElement {
 					return elem
 				}),
 			}), GlobalConst)
@@ -13535,7 +13535,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
-			assert.Equal(t, &MarkupElement{
+			assert.Equal(t, &NonInterpretedMarkupElement{
 				name:       "div",
 				children:   []Value{ANY_STRING, ANY_INT, ANY_STRING},
 				sourceNode: parse.FindNode(n, (*parse.MarkupElement)(nil), nil),
@@ -13544,7 +13544,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("interpolation with checking", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`html<div>{int}</div>`)
-			goFn := func(ctx *Context, elem *MarkupElement) *MarkupElement {
+			goFn := func(ctx *Context, elem *NonInterpretedMarkupElement) *NonInterpretedMarkupElement {
 				return elem
 			}
 
@@ -13562,7 +13562,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
-			assert.Equal(t, &MarkupElement{
+			assert.Equal(t, &NonInterpretedMarkupElement{
 				name:       "div",
 				children:   []Value{ANY_STRING, ANY_INT, ANY_STRING},
 				sourceNode: parse.FindNode(n, (*parse.MarkupElement)(nil), nil),
@@ -13571,7 +13571,7 @@ func TestSymbolicEval(t *testing.T) {
 
 		t.Run("interpolation with checking: unexpected value", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`html<div>{int}</div>`)
-			goFn := func(ctx *Context, elem *MarkupElement) *MarkupElement {
+			goFn := func(ctx *Context, elem *NonInterpretedMarkupElement) *NonInterpretedMarkupElement {
 				return elem
 			}
 
@@ -13587,7 +13587,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 
 			assert.NoError(t, err)
-			assert.Equal(t, &MarkupElement{
+			assert.Equal(t, &NonInterpretedMarkupElement{
 				name:       "div",
 				children:   []Value{ANY_STRING, ANY_INT, ANY_STRING},
 				sourceNode: parse.FindNode(n, (*parse.MarkupElement)(nil), nil),
@@ -13603,7 +13603,7 @@ func TestSymbolicEval(t *testing.T) {
 		t.Run("attribute with value", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`a = "a"; return html<div a=a></div>`)
 			state.setGlobal("html", NewNamespace(map[string]Value{
-				FROM_MARKUP_FACTORY_NAME: WrapGoFunction(func(ctx *Context, elem *MarkupElement) *MarkupElement {
+				FROM_MARKUP_FACTORY_NAME: WrapGoFunction(func(ctx *Context, elem *NonInterpretedMarkupElement) *NonInterpretedMarkupElement {
 					return elem
 				}),
 			}), GlobalConst)
@@ -13611,7 +13611,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
-			assert.Equal(t, &MarkupElement{
+			assert.Equal(t, &NonInterpretedMarkupElement{
 				name:       "div",
 				attributes: map[string]Value{"a": NewString("a")},
 				children:   []Value{ANY_STRING},
@@ -13622,7 +13622,7 @@ func TestSymbolicEval(t *testing.T) {
 		t.Run("attribute without value", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`a = "a"; return html<div a></div>`)
 			state.setGlobal("html", NewNamespace(map[string]Value{
-				FROM_MARKUP_FACTORY_NAME: WrapGoFunction(func(ctx *Context, elem *MarkupElement) *MarkupElement {
+				FROM_MARKUP_FACTORY_NAME: WrapGoFunction(func(ctx *Context, elem *NonInterpretedMarkupElement) *NonInterpretedMarkupElement {
 					return elem
 				}),
 			}), GlobalConst)
@@ -13630,7 +13630,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
-			assert.Equal(t, &MarkupElement{
+			assert.Equal(t, &NonInterpretedMarkupElement{
 				name:       "div",
 				attributes: map[string]Value{"a": ANY_STRING},
 				children:   []Value{ANY_STRING},
@@ -13641,7 +13641,7 @@ func TestSymbolicEval(t *testing.T) {
 		t.Run("error during factory call", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`return html<div></div>`)
 			state.setGlobal("html", NewNamespace(map[string]Value{
-				FROM_MARKUP_FACTORY_NAME: WrapGoFunction(func(ctx *Context, elem *MarkupElement) *MarkupElement {
+				FROM_MARKUP_FACTORY_NAME: WrapGoFunction(func(ctx *Context, elem *NonInterpretedMarkupElement) *NonInterpretedMarkupElement {
 					ctx.AddSymbolicGoFunctionError("factory error")
 					return elem
 				}),
@@ -13649,7 +13649,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 
 			assert.NoError(t, err)
-			assert.Equal(t, &MarkupElement{
+			assert.Equal(t, &NonInterpretedMarkupElement{
 				name:       "div",
 				children:   []Value{ANY_STRING},
 				sourceNode: parse.FindNode(n, (*parse.MarkupElement)(nil), nil),

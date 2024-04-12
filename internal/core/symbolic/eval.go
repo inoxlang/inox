@@ -5851,7 +5851,7 @@ func evalMarkupElement(n *parse.MarkupElement, state *State, options evalOptions
 		children = append(children, child)
 	}
 
-	markupElem := NewMarkupElement(name, attrs, children)
+	markupElem := NewNonInterpretedMarkupElement(name, attrs, children)
 	markupElem.sourceNode = n
 
 	state.SetMostSpecificNodeValue(n.Opening.Name, markupElem)

@@ -1,57 +1,82 @@
 package core
 
+import "sync"
+
 const DEFAULT_MARKUP_ATTR_VALUE = String("")
 
-// A MarkupElement represents the result of the evaluation of an MarkupElement node in Inox code.
-type MarkupElement struct {
+// A NonInterpretedMarkupElement represents the result of the evaluation of an NonInterpretedMarkupElement node in Inox code.
+type NonInterpretedMarkupElement struct {
 	name       string //if "" matches any node value
-	attributes []MarkupAttribute
+	attributes []NonInterpretedMarkupAttribute
 	children   []Value
 	rawContent string //only set for raw text elements
 }
 
-func (e *MarkupElement) Name() string {
+func (e *NonInterpretedMarkupElement) Name() string {
 	return e.name
 }
 
 // result should not be modified.
-func (e *MarkupElement) Children() []Value {
+func (e *NonInterpretedMarkupElement) Children() []Value {
 	return e.children[0:len(e.children):len(e.children)]
 }
 
-func (e *MarkupElement) RawContent() string {
+func (e *NonInterpretedMarkupElement) RawContent() string {
 	return e.rawContent
 }
 
 // result should not be modified.
-func (e *MarkupElement) Attributes() []MarkupAttribute {
+func (e *NonInterpretedMarkupElement) Attributes() []NonInterpretedMarkupAttribute {
 	return e.attributes[0:len(e.attributes):len(e.attributes)]
 }
 
-type MarkupAttribute struct {
+type NonInterpretedMarkupAttribute struct {
 	name  string
 	value Value
 }
 
-func NewMarkupAttribute(name string, value Value) MarkupAttribute {
-	return MarkupAttribute{
+func NewMarkupAttribute(name string, value Value) NonInterpretedMarkupAttribute {
+	return NonInterpretedMarkupAttribute{
 		name:  name,
 		value: value,
 	}
 }
 
-func (a MarkupAttribute) Name() string {
+func (a NonInterpretedMarkupAttribute) Name() string {
 	return a.name
 }
 
-func (a MarkupAttribute) Value() Value {
+func (a NonInterpretedMarkupAttribute) Value() Value {
 	return a.value
 }
 
-func NewMarkupElement(name string, attributes []MarkupAttribute, children []Value) *MarkupElement {
-	return &MarkupElement{name: name, children: children, attributes: attributes}
+func NewNonInterpretedMarkupElement(name string, attributes []NonInterpretedMarkupAttribute, children []Value) *NonInterpretedMarkupElement {
+	return &NonInterpretedMarkupElement{name: name, children: children, attributes: attributes}
 }
 
-func NewRawTextMarkupElement(name string, attributes []MarkupAttribute, rawContent string) *MarkupElement {
-	return &MarkupElement{name: name, rawContent: rawContent, attributes: attributes}
+func NewNonInterpretedRawTextMarkupElement(name string, attributes []NonInterpretedMarkupAttribute, rawContent string) *NonInterpretedMarkupElement {
+	return &NonInterpretedMarkupElement{name: name, rawContent: rawContent, attributes: attributes}
+}
+
+type MarkupNode interface {
+	//ImmutableMarkupNode should return a snapshot of the markup node.
+	ImmutableMarkupNode() (ImmutableMarkupNode, *sync.Pool)
+}
+
+type ImmutableMarkupNode interface {
+	IsMarkupElement() bool
+
+	MarkupTagName() (string, bool)
+
+	MarkupAttributeCount() int
+
+	MarkupAttributeValue(name string) (value string, present bool)
+
+	MarkupChildNodeCount() int
+
+	MarkupChild(childIndex int) ImmutableMarkupNode
+
+	MarkupText() (string, bool)
+
+	ImmutableMarkupNode_()
 }

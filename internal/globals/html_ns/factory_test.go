@@ -15,7 +15,7 @@ func TestCreateHTMLNodeFromMarkupElement(t *testing.T) {
 		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		element := CreateHTMLNodeFromMarkupElement(ctx, core.NewMarkupElement("div", nil, []core.Value{
+		element := CreateHTMLNodeFromMarkupElement(ctx, core.NewNonInterpretedMarkupElement("div", nil, []core.Value{
 			core.Host("https://localhost"),
 		}))
 
@@ -29,8 +29,8 @@ func TestCreateHTMLNodeFromMarkupElement(t *testing.T) {
 		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		attrs := []core.MarkupAttribute{core.NewMarkupAttribute("a", core.Host("https://localhost"))}
-		element := CreateHTMLNodeFromMarkupElement(ctx, core.NewMarkupElement("div", attrs, nil))
+		attrs := []core.NonInterpretedMarkupAttribute{core.NewMarkupAttribute("a", core.Host("https://localhost"))}
+		element := CreateHTMLNodeFromMarkupElement(ctx, core.NewNonInterpretedMarkupElement("div", attrs, nil))
 
 		bytes := Render(ctx, element)
 		s := string(bytes.UnderlyingBytes())
@@ -42,7 +42,7 @@ func TestCreateHTMLNodeFromMarkupElement(t *testing.T) {
 		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		element := CreateHTMLNodeFromMarkupElement(ctx, core.NewRawTextMarkupElement("script", nil, "<a>"))
+		element := CreateHTMLNodeFromMarkupElement(ctx, core.NewNonInterpretedRawTextMarkupElement("script", nil, "<a>"))
 
 		bytes := Render(ctx, element)
 		s := string(bytes.UnderlyingBytes())
@@ -54,8 +54,8 @@ func TestCreateHTMLNodeFromMarkupElement(t *testing.T) {
 		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
 
-		attributes := []core.MarkupAttribute{core.NewMarkupAttribute("h", core.String(""))}
-		element := CreateHTMLNodeFromMarkupElement(ctx, core.NewRawTextMarkupElement("script", attributes, "<a>"))
+		attributes := []core.NonInterpretedMarkupAttribute{core.NewMarkupAttribute("h", core.String(""))}
+		element := CreateHTMLNodeFromMarkupElement(ctx, core.NewNonInterpretedRawTextMarkupElement("script", attributes, "<a>"))
 
 		bytes := Render(ctx, element)
 		s := string(bytes.UnderlyingBytes())
@@ -68,8 +68,8 @@ func TestCreateHTMLNodeFromMarkupElement(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		t.Run("hx-lazy-load", func(t *testing.T) {
-			attributes := []core.MarkupAttribute{core.NewMarkupAttribute("hx-lazy-load", core.String("/data"))}
-			element := CreateHTMLNodeFromMarkupElement(ctx, core.NewMarkupElement("div", attributes, nil))
+			attributes := []core.NonInterpretedMarkupAttribute{core.NewMarkupAttribute("hx-lazy-load", core.String("/data"))}
+			element := CreateHTMLNodeFromMarkupElement(ctx, core.NewNonInterpretedMarkupElement("div", attributes, nil))
 
 			bytes := Render(ctx, element)
 			s := string(bytes.UnderlyingBytes())
@@ -78,8 +78,8 @@ func TestCreateHTMLNodeFromMarkupElement(t *testing.T) {
 		})
 
 		t.Run("hx-post-json", func(t *testing.T) {
-			attributes := []core.MarkupAttribute{core.NewMarkupAttribute("hx-post-json", core.String("/data"))}
-			element := CreateHTMLNodeFromMarkupElement(ctx, core.NewMarkupElement("div", attributes, nil))
+			attributes := []core.NonInterpretedMarkupAttribute{core.NewMarkupAttribute("hx-post-json", core.String("/data"))}
+			element := CreateHTMLNodeFromMarkupElement(ctx, core.NewNonInterpretedMarkupElement("div", attributes, nil))
 
 			bytes := Render(ctx, element)
 			s := string(bytes.UnderlyingBytes())
@@ -88,8 +88,8 @@ func TestCreateHTMLNodeFromMarkupElement(t *testing.T) {
 		})
 
 		t.Run("hx-patch-json", func(t *testing.T) {
-			attributes := []core.MarkupAttribute{core.NewMarkupAttribute("hx-patch-json", core.String("/data"))}
-			element := CreateHTMLNodeFromMarkupElement(ctx, core.NewMarkupElement("div", attributes, nil))
+			attributes := []core.NonInterpretedMarkupAttribute{core.NewMarkupAttribute("hx-patch-json", core.String("/data"))}
+			element := CreateHTMLNodeFromMarkupElement(ctx, core.NewNonInterpretedMarkupElement("div", attributes, nil))
 
 			bytes := Render(ctx, element)
 			s := string(bytes.UnderlyingBytes())
@@ -98,8 +98,8 @@ func TestCreateHTMLNodeFromMarkupElement(t *testing.T) {
 		})
 
 		t.Run("hx-put-json", func(t *testing.T) {
-			attributes := []core.MarkupAttribute{core.NewMarkupAttribute("hx-put-json", core.String("/data"))}
-			element := CreateHTMLNodeFromMarkupElement(ctx, core.NewMarkupElement("div", attributes, nil))
+			attributes := []core.NonInterpretedMarkupAttribute{core.NewMarkupAttribute("hx-put-json", core.String("/data"))}
+			element := CreateHTMLNodeFromMarkupElement(ctx, core.NewNonInterpretedMarkupElement("div", attributes, nil))
 
 			bytes := Render(ctx, element)
 			s := string(bytes.UnderlyingBytes())

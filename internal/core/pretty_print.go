@@ -2153,7 +2153,6 @@ func (s *ConfluenceStream) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfi
 	InspectPrint(w, s)
 }
 
-
 func (r *RingBuffer) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	PrintType(w, r)
 }
@@ -2226,7 +2225,11 @@ func (s *SecretPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, 
 	PrintType(w, s)
 }
 
-func (s *MarkupElement) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (s *MarkupPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	PrintType(w, s)
+}
+
+func (s *NonInterpretedMarkupElement) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	PrintType(w, s)
 }
 

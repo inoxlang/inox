@@ -2587,10 +2587,10 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 	case *parse.MarkupElement:
 		name := n.Opening.GetName()
 
-		var attrs []MarkupAttribute
+		var attrs []NonInterpretedMarkupAttribute
 
 		for _, attrNode := range n.Opening.Attributes {
-			var attr MarkupAttribute
+			var attr NonInterpretedMarkupAttribute
 			if regularAttr, ok := attrNode.(*parse.MarkupAttribute); ok {
 				attr.name = regularAttr.GetName()
 				if regularAttr.Value != nil {
@@ -2614,7 +2614,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		var children []Value
 
 		if n.RawElementContent != "" {
-			return NewRawTextMarkupElement(name, attrs, n.RawElementContent), nil
+			return NewNonInterpretedRawTextMarkupElement(name, attrs, n.RawElementContent), nil
 		}
 
 		for _, child := range n.Children {
@@ -2625,7 +2625,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			children = append(children, childValue)
 		}
 
-		return NewMarkupElement(name, attrs, children), nil
+		return NewNonInterpretedMarkupElement(name, attrs, children), nil
 	case *parse.MarkupText:
 		//we assume factories will properly escape the string.
 		return String(n.Value), nil

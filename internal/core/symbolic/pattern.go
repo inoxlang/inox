@@ -33,6 +33,7 @@ var (
 		(*FunctionPattern)(nil),
 		(*DifferencePattern)(nil),
 		(*IntersectionPattern)(nil),
+		(*MarkupPattern)(nil),
 	}
 	_ = []GroupPattern{
 		(*NamedSegmentPathPattern)(nil),

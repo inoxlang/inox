@@ -8,14 +8,16 @@ import (
 
 var (
 	HTML_NODE_PROPNAMES = []string{"first-child", "data"}
+	ANY_HTML_NODE       = &HTMLNode{}
 
-	_             symbolic.Watchable = (*HTMLNode)(nil)
-	ANY_HTML_NODE                    = &HTMLNode{}
+	_ symbolic.Watchable  = (*HTMLNode)(nil)
+	_ symbolic.MarkupNode = (*HTMLNode)(nil)
 )
 
 type HTMLNode struct {
 	symbolic.UnassignablePropsMixin
 	symbolic.SerializableMixin
+	symbolic.MarkupNodeMixin
 }
 
 func NewHTMLNode() *HTMLNode {

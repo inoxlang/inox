@@ -12,7 +12,10 @@ const (
 )
 
 var (
-	ANY_MARKUP_ELEM = &MarkupElement{}
+	ANY_MARKUP_ELEM = &NonInterpretedMarkupElement{}
+	ANY_MARKUP_NODE = &AnyMarkupNode{}
+
+	_ MarkupNode = ANY_MARKUP_NODE
 
 	markupInterpolationCheckingFunctions = map[uintptr] /* go symbolic function pointer*/ MarkupInterpolationCheckingFunction{}
 )
@@ -27,8 +30,8 @@ func UnregisterMarkupCheckingFunction(factory any) {
 	delete(markupInterpolationCheckingFunctions, reflect.ValueOf(factory).Pointer())
 }
 
-// A MarkupElement represents a symbolic MarkupElement.
-type MarkupElement struct {
+// A NonInterpretedMarkupElement represents a symbolic NonInterpretedMarkupElement.
+type NonInterpretedMarkupElement struct {
 	name       string //if "" matches any node value
 	attributes map[string]Value
 	children   []Value
@@ -36,33 +39,33 @@ type MarkupElement struct {
 	sourceNode *parse.MarkupElement
 }
 
-func NewMarkupElement(name string, attributes map[string]Value, children []Value) *MarkupElement {
-	return &MarkupElement{name: name, children: children, attributes: attributes}
+func NewNonInterpretedMarkupElement(name string, attributes map[string]Value, children []Value) *NonInterpretedMarkupElement {
+	return &NonInterpretedMarkupElement{name: name, children: children, attributes: attributes}
 }
 
-func (e *MarkupElement) Name() string {
+func (e *NonInterpretedMarkupElement) Name() string {
 	return e.name
 }
 
 // result should not be modified.
-func (e *MarkupElement) Attributes() map[string]Value {
+func (e *NonInterpretedMarkupElement) Attributes() map[string]Value {
 	return e.attributes
 }
 
 // result should not be modified.
-func (e *MarkupElement) Children() []Value {
+func (e *NonInterpretedMarkupElement) Children() []Value {
 	return e.children
 }
 
 // result should not be modified.
-func (e *MarkupElement) SourceNode() (*parse.MarkupElement, bool) {
+func (e *NonInterpretedMarkupElement) SourceNode() (*parse.MarkupElement, bool) {
 	if e.sourceNode == nil {
 		return nil, false
 	}
 	return e.sourceNode, true
 }
 
-func (r *MarkupElement) Test(v Value, state RecTestCallState) bool {
+func (r *NonInterpretedMarkupElement) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
@@ -74,14 +77,45 @@ func (r *MarkupElement) Test(v Value, state RecTestCallState) bool {
 	}
 }
 
-func (r *MarkupElement) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
-	w.WriteName("markup-element")
+func (r *NonInterpretedMarkupElement) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("non-interpreted-markup-element")
 }
 
-func (r *MarkupElement) Writer() *Writer {
+func (r *NonInterpretedMarkupElement) Writer() *Writer {
 	return &Writer{}
 }
 
-func (r *MarkupElement) WidestOfType() Value {
+func (r *NonInterpretedMarkupElement) WidestOfType() Value {
 	return ANY_MARKUP_ELEM
+}
+
+type MarkupNode interface {
+	Value
+	_MarkupNode()
+}
+
+type AnyMarkupNode struct {
+	MarkupNodeMixin
+}
+
+func (n *AnyMarkupNode) Test(v Value, state RecTestCallState) bool {
+	state.StartCall()
+	defer state.FinishCall()
+
+	return ImplementsOrIsMultivalueWithAllValuesImplementing[MarkupNode](v)
+}
+
+func (n *AnyMarkupNode) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w.WriteName("markup-node")
+}
+
+func (n *AnyMarkupNode) WidestOfType() Value {
+	return ANY_MARKUP_NODE
+}
+
+type MarkupNodeMixin struct {
+}
+
+func (MarkupNodeMixin) _MarkupNode() {
+
 }

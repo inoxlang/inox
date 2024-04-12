@@ -11907,7 +11907,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	t.Run("markup expression", func(t *testing.T) {
 		testconfig.AllowParallelization(t)
 
-		__idt := core.WrapGoFunction(func(ctx *core.Context, e *core.MarkupElement) *core.MarkupElement {
+		__idt := core.WrapGoFunction(func(ctx *core.Context, e *core.NonInterpretedMarkupElement) *core.NonInterpretedMarkupElement {
 			return e
 		})
 
@@ -11927,7 +11927,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, core.NewMarkupElement("div", nil, []core.Value{core.String("")}), val)
+			assert.Equal(t, core.NewNonInterpretedMarkupElement("div", nil, []core.Value{core.String("")}), val)
 		})
 
 		t.Run("self-closing element", func(t *testing.T) {
@@ -11942,7 +11942,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, core.NewMarkupElement("div", nil, nil), val)
+			assert.Equal(t, core.NewNonInterpretedMarkupElement("div", nil, nil), val)
 		})
 
 		t.Run("implicit namespace", func(t *testing.T) {
@@ -11957,7 +11957,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, core.NewMarkupElement("div", nil, []core.Value{core.String("")}), val)
+			assert.Equal(t, core.NewNonInterpretedMarkupElement("div", nil, []core.Value{core.String("")}), val)
 		})
 
 		t.Run("integer attribute", func(t *testing.T) {
@@ -11972,9 +11972,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, core.NewMarkupElement(
+			assert.Equal(t, core.NewNonInterpretedMarkupElement(
 				"div",
-				[]core.MarkupAttribute{core.NewMarkupAttribute("a", core.Int(1))},
+				[]core.NonInterpretedMarkupAttribute{core.NewMarkupAttribute("a", core.Int(1))},
 				[]core.Value{core.String("")},
 			), val)
 		})
@@ -11991,7 +11991,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, core.NewMarkupElement("div", []core.MarkupAttribute{core.NewMarkupAttribute("a", core.String("b"))}, []core.Value{core.String("")}), val)
+			assert.Equal(t, core.NewNonInterpretedMarkupElement("div", []core.NonInterpretedMarkupAttribute{core.NewMarkupAttribute("a", core.String("b"))}, []core.Value{core.String("")}), val)
 		})
 
 		t.Run("attribute without value", func(t *testing.T) {
@@ -12006,7 +12006,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, core.NewMarkupElement("div", []core.MarkupAttribute{core.NewMarkupAttribute("a", core.DEFAULT_MARKUP_ATTR_VALUE)}, []core.Value{core.String("")}), val)
+			assert.Equal(t, core.NewNonInterpretedMarkupElement("div", []core.NonInterpretedMarkupAttribute{core.NewMarkupAttribute("a", core.DEFAULT_MARKUP_ATTR_VALUE)}, []core.Value{core.String("")}), val)
 		})
 
 		t.Run("value of attribute should be HTML escaped", func(t *testing.T) {
@@ -12021,7 +12021,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, core.NewMarkupElement("div", []core.MarkupAttribute{core.NewMarkupAttribute("a", core.String("<"))}, []core.Value{core.String("")}), val)
+			assert.Equal(t, core.NewNonInterpretedMarkupElement("div", []core.NonInterpretedMarkupAttribute{core.NewMarkupAttribute("a", core.String("<"))}, []core.Value{core.String("")}), val)
 		})
 
 		t.Run("linefeed", func(t *testing.T) {
@@ -12036,7 +12036,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, core.NewMarkupElement("div", nil, []core.Value{core.String("\n")}), val)
+			assert.Equal(t, core.NewNonInterpretedMarkupElement("div", nil, []core.Value{core.String("\n")}), val)
 		})
 
 		t.Run("raw text element", func(t *testing.T) {
@@ -12051,7 +12051,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, core.NewRawTextMarkupElement("script", nil, "<a>"), val)
+			assert.Equal(t, core.NewNonInterpretedRawTextMarkupElement("script", nil, "<a>"), val)
 		})
 
 		t.Run("empty child", func(t *testing.T) {
@@ -12066,9 +12066,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, core.NewMarkupElement("div", nil, []core.Value{
+			assert.Equal(t, core.NewNonInterpretedMarkupElement("div", nil, []core.Value{
 				core.String(""),
-				core.NewMarkupElement("span", nil, []core.Value{core.String("")}),
+				core.NewNonInterpretedMarkupElement("span", nil, []core.Value{core.String("")}),
 				core.String(""),
 			}), val)
 		})
@@ -12085,11 +12085,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, core.NewMarkupElement("div",
-				[]core.MarkupAttribute{core.NewMarkupAttribute("a", core.Int(1))},
+			assert.Equal(t, core.NewNonInterpretedMarkupElement("div",
+				[]core.NonInterpretedMarkupAttribute{core.NewMarkupAttribute("a", core.Int(1))},
 				[]core.Value{
 					core.String(""),
-					core.NewMarkupElement("span", nil, []core.Value{core.String("")}),
+					core.NewNonInterpretedMarkupElement("span", nil, []core.Value{core.String("")}),
 					core.String(""),
 				}), val)
 		})
@@ -12106,14 +12106,14 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, core.NewMarkupElement("div",
-				[]core.MarkupAttribute{
+			assert.Equal(t, core.NewNonInterpretedMarkupElement("div",
+				[]core.NonInterpretedMarkupAttribute{
 					core.NewMarkupAttribute("a", core.Int(1)),
 					core.NewMarkupAttribute("b", core.Int(2)),
 				},
 				[]core.Value{
 					core.String(""),
-					core.NewMarkupElement("span", nil, []core.Value{core.String("")}),
+					core.NewNonInterpretedMarkupElement("span", nil, []core.Value{core.String("")}),
 					core.String(""),
 				}), val)
 		})
@@ -12130,9 +12130,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, core.NewMarkupElement("div", nil, []core.Value{
+			assert.Equal(t, core.NewNonInterpretedMarkupElement("div", nil, []core.Value{
 				core.String("\n"),
-				core.NewMarkupElement("span", nil, []core.Value{core.String("")}),
+				core.NewNonInterpretedMarkupElement("span", nil, []core.Value{core.String("")}),
 				core.String(""),
 			}), val)
 		})
@@ -12149,9 +12149,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, core.NewMarkupElement("div", nil, []core.Value{
+			assert.Equal(t, core.NewNonInterpretedMarkupElement("div", nil, []core.Value{
 				core.String(""),
-				core.NewMarkupElement("span", nil, []core.Value{core.String("1")}),
+				core.NewNonInterpretedMarkupElement("span", nil, []core.Value{core.String("1")}),
 				core.String(""),
 			}), val)
 		})
@@ -12168,11 +12168,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, core.NewMarkupElement("div", nil, []core.Value{
+			assert.Equal(t, core.NewNonInterpretedMarkupElement("div", nil, []core.Value{
 				core.String(""),
-				core.NewMarkupElement("span", nil, []core.Value{core.String("")}),
+				core.NewNonInterpretedMarkupElement("span", nil, []core.Value{core.String("")}),
 				core.String(""),
-				core.NewMarkupElement("span", nil, []core.Value{core.String("")}),
+				core.NewNonInterpretedMarkupElement("span", nil, []core.Value{core.String("")}),
 				core.String(""),
 			}), val)
 		})
@@ -12189,11 +12189,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, core.NewMarkupElement("div", nil, []core.Value{
+			assert.Equal(t, core.NewNonInterpretedMarkupElement("div", nil, []core.Value{
 				core.String(""),
-				core.NewMarkupElement("span", nil, []core.Value{
+				core.NewNonInterpretedMarkupElement("span", nil, []core.Value{
 					core.String(""),
-					core.NewMarkupElement("span", nil, []core.Value{core.String("")}),
+					core.NewNonInterpretedMarkupElement("span", nil, []core.Value{core.String("")}),
 					core.String(""),
 				}),
 				core.String(""),
@@ -12229,9 +12229,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, core.NewMarkupElement("div", nil, []core.Value{
+			assert.Equal(t, core.NewNonInterpretedMarkupElement("div", nil, []core.Value{
 				core.String(""),
-				core.NewMarkupElement("span", nil, []core.Value{core.String("")}),
+				core.NewNonInterpretedMarkupElement("span", nil, []core.Value{core.String("")}),
 				core.String(""),
 			}), val)
 		})
@@ -12248,7 +12248,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, core.NewMarkupElement("div", nil, []core.Value{
+			assert.Equal(t, core.NewNonInterpretedMarkupElement("div", nil, []core.Value{
 				core.String(""),
 				core.String("a"),
 				core.String(""),

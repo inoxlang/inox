@@ -2072,9 +2072,19 @@ func (s *SecretPattern) Equal(ctx *Context, other Value, alreadyCompared map[uin
 	return s == otherPattern
 }
 
-func (e *MarkupElement) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+func (p *MarkupPattern) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
+	otherPattern, ok := other.(*MarkupPattern)
+	if !ok {
+		return false
+	}
+
+	//TODO: implement equality ?
+	return p == otherPattern
+}
+
+func (e *NonInterpretedMarkupElement) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
 	//TODO: implement
-	otherElem, ok := other.(*MarkupElement)
+	otherElem, ok := other.(*NonInterpretedMarkupElement)
 	if !ok {
 		return false
 	}

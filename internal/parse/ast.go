@@ -2584,7 +2584,7 @@ type MarkupPatternOpeningTag struct {
 }
 
 func (attr MarkupPatternOpeningTag) GetName() string {
-	return attr.Name.(*IdentifierLiteral).Name
+	return attr.Name.(*PatternIdentifierLiteral).Name
 }
 
 type MarkupPatternClosingTag struct {

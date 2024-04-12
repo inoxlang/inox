@@ -59,10 +59,10 @@ func checkInterpolationValue(value symbolic.Value) (errMsg string) {
 	return INTERPOLATION_LIMITATION_ERROR_MSG
 }
 
-func CreateHTMLNodeFromMarkupElement(ctx *symbolic.Context, elem *symbolic.MarkupElement) *HTMLNode {
+func CreateHTMLNodeFromMarkupElement(ctx *symbolic.Context, elem *symbolic.NonInterpretedMarkupElement) *HTMLNode {
 
-	var checkElem func(e *symbolic.MarkupElement)
-	checkElem = func(e *symbolic.MarkupElement) {
+	var checkElem func(e *symbolic.NonInterpretedMarkupElement)
+	checkElem = func(e *symbolic.NonInterpretedMarkupElement) {
 		for name, val := range e.Attributes() {
 			switch val.(type) {
 			case symbolic.GoString, symbolic.StringLike, *symbolic.Int:
@@ -79,7 +79,7 @@ func CreateHTMLNodeFromMarkupElement(ctx *symbolic.Context, elem *symbolic.Marku
 
 		for _, child := range e.Children() {
 			switch c := child.(type) {
-			case *symbolic.MarkupElement:
+			case *symbolic.NonInterpretedMarkupElement:
 				checkElem(c)
 			default:
 				//already checked during interpolation checks

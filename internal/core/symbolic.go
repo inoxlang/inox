@@ -1592,8 +1592,6 @@ func (s *ConfluenceStream) ToSymbolicValue(ctx *Context, encountered map[uintptr
 	return symbolic.NewWritableStream(symbolic.ANY), nil
 }
 
-
-
 func (r *RingBuffer) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.ANY_RING_BUFFER, nil
 }
@@ -1679,11 +1677,15 @@ func (p *SecretPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]sy
 	return symbolic.NewSecretPattern(stringPattern.(symbolic.StringPattern)), nil
 }
 
-func (p *MarkupElement) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+func (p *MarkupPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+	return symbolic.ANY_MARKUP_PATTERN, nil
+}
 
-	attributes := make(map[string]symbolic.Value, len(p.attributes))
+func (e *NonInterpretedMarkupElement) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 
-	for _, attr := range p.attributes {
+	attributes := make(map[string]symbolic.Value, len(e.attributes))
+
+	for _, attr := range e.attributes {
 		symbolicVal, err := attr.value.ToSymbolicValue(ctx, encountered)
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert value of attribute '%s' to symbolic: %w", attr.name, err)
@@ -1691,8 +1693,8 @@ func (p *MarkupElement) ToSymbolicValue(ctx *Context, encountered map[uintptr]sy
 		attributes[attr.name] = symbolicVal
 	}
 
-	children := make([]symbolic.Value, len(p.children))
-	for i, child := range p.children {
+	children := make([]symbolic.Value, len(e.children))
+	for i, child := range e.children {
 		symbolicVal, err := child.ToSymbolicValue(ctx, encountered)
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert value of a child at index %d to symbolic: %w", i, err)
@@ -1700,7 +1702,7 @@ func (p *MarkupElement) ToSymbolicValue(ctx *Context, encountered map[uintptr]sy
 		children = append(children, symbolicVal)
 	}
 
-	return symbolic.NewMarkupElement(p.name, attributes, children), nil
+	return symbolic.NewNonInterpretedMarkupElement(e.name, attributes, children), nil
 }
 
 func (db *DatabaseIL) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
