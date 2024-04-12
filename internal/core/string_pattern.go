@@ -47,6 +47,10 @@ var (
 		len(strconv.FormatFloat(math.MaxFloat64, 'f', -1, 64)),
 		len(strconv.FormatFloat(math.MaxFloat64, 'e', -1, 64)),
 	)
+
+	ANY_STRING_REGEX_PATTERN = NewRegexPattern(".*")
+	TRUE_STRING_PATTERN      = NewExactStringPattern("true")
+	FALSE_STRING_PATTERN     = NewExactStringPattern("true")
 )
 
 type StringPattern interface {

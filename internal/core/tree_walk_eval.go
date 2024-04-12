@@ -2629,6 +2629,12 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 	case *parse.MarkupText:
 		//we assume factories will properly escape the string.
 		return String(n.Value), nil
+	case *parse.MarkupPatternExpression:
+		return NewMarkupPatternFromExpression(n, StateBridge{
+			GlobalVariableValues: state.Global.Globals.Entries(),
+			LocalVariableValues:  state.CurrentLocalScope(),
+			Context:              state.Global.Ctx,
+		})
 	case *parse.MarkupInterpolation:
 		val, err := TreeWalkEval(n.Expr, state)
 		if err != nil {

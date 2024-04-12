@@ -220,7 +220,6 @@ func (i Int) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JS
 			writeIntJsonRepr(i, w)
 			return nil
 		}, w)
-		return nil
 	}
 
 	writeIntJsonRepr(i, w)

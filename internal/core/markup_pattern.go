@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -16,82 +17,148 @@ type MarkupPattern struct {
 }
 
 func NewMarkupPatternFromExpression(node *parse.MarkupPatternExpression, bridge StateBridge) (*MarkupPattern, error) {
-	pattern := &MarkupPattern{}
 	elem, err := newMarkupPatternElementFromNode(node.Element, bridge)
 	if err != nil {
 		return nil, err
 	}
-	pattern.topElement = elem
-	return pattern, nil
+	return NewMarkupPattern(elem), nil
+}
+
+func NewMarkupPattern(topElement *MarkupPatternElement) *MarkupPattern {
+	return &MarkupPattern{
+		topElement: topElement,
+	}
 }
 
 func newMarkupPatternElementFromNode(node *parse.MarkupPatternElement, bridge StateBridge) (*MarkupPatternElement, error) {
 
-	elem := &MarkupPatternElement{
-		quantifier: node.Opening.Quantifier,
-		tagName:    node.Opening.GetName(),
-		attributes: map[string]StringPattern{},
-	}
+	attributes := map[string]StringPattern{}
+	var children []MarkupPatternNode
 
-	//Get attributes.
+	//Evaluate attributes.
 
 	for _, attr := range node.Opening.Attributes {
 		patternAttribute := attr.(*parse.MarkupPatternAttribute)
 		name := patternAttribute.GetName()
-		val, err := evalNodeInMarkupPattern(patternAttribute, &bridge)
-		if err != nil {
-			return nil, err
+
+		var stringPattern StringPattern
+
+		if patternAttribute.Type != nil {
+			val, err := evalNodeInMarkupPattern(patternAttribute.Type, bridge)
+			if err != nil {
+				return nil, err
+			}
+
+			switch val := val.(type) {
+			case Pattern:
+				strPattern, ok := val.StringPattern()
+				if !ok {
+					return nil, fmt.Errorf("pattern provided for the attribute '%s' does not have a corresponding string pattern", name)
+				}
+				stringPattern = strPattern
+			case Bool:
+				stringPattern = FALSE_STRING_PATTERN
+				if val {
+					stringPattern = TRUE_STRING_PATTERN
+				}
+			case Int:
+				stringified := String(strconv.FormatInt(int64(val), 10))
+				stringPattern = NewExactStringPattern(stringified)
+			case GoString:
+				stringPattern = NewExactStringPattern(String(val.UnderlyingString()))
+			case Rune:
+				stringPattern = NewExactStringPattern(String(val))
+			default:
+				//Note: floats are not supported because they do not have a unique representation.
+				return nil, fmt.Errorf("unexpected value of type %T was found for the attribute '%s', a pattern was expected", val, name)
+			}
+
+		} else {
+			stringPattern = ANY_STRING_REGEX_PATTERN
 		}
 
-		pattern, ok := val.(Pattern)
-		if !ok {
-			return nil, fmt.Errorf("unexpected value of type %T was found for the attribute '%s', a pattern was expected", val, name)
-		}
-
-		stringPattern, ok := val.(StringPattern)
-		if !ok {
-			return nil, fmt.Errorf("pattern provided for the attribute '%s' does not have a corresponding string pattern", name)
-		}
-		pattern.StringPattern()
-		elem.attributes[name] = stringPattern
+		attributes[name] = stringPattern
 	}
 
 	//Get children nodes.
 
-	for _, child := range node.Children {
-		switch child := child.(type) {
-		case *parse.MarkupText:
-			value := strings.TrimSpace(child.Value)
-			if value != "" {
-				elem.children = append(elem.children, &MarkupPatternConstText{
-					value: value,
-				})
+	if node.RawElementContent != "" {
+		children = append(children, utils.Must(NewMarkupPatternConstText(node.RawElementContent)))
+	} else {
+		for _, child := range node.Children {
+			switch child := child.(type) {
+			case *parse.MarkupText:
+				value := strings.TrimSpace(child.Value)
+				if value != "" {
+					children = append(children, utils.Must(NewMarkupPatternConstText(value)))
+				}
+			case *parse.MarkupPatternWildcard:
+				children = append(children, &MarkupPatternWildcard{})
+			case *parse.MarkupPatternElement:
+				childElement, err := newMarkupPatternElementFromNode(child, bridge)
+				if err != nil {
+					return nil, err
+				}
+				children = append(children, childElement)
+			case *parse.MarkupPatternInterpolation:
+				val, err := evalNodeInMarkupPattern(child.Expr, bridge)
+				if err != nil {
+					return nil, err
+				}
+
+				switch val := val.(type) {
+				case *MarkupPattern:
+					children = append(children, val.topElement)
+				case Bool:
+					text := "false"
+					if val {
+						text = "true"
+					}
+					children = append(children, utils.Must(NewMarkupPatternConstText(text)))
+				case Int:
+					stringified := strconv.FormatInt(int64(val), 10)
+					children = append(children, utils.Must(NewMarkupPatternConstText(stringified)))
+				case GoString:
+					text := strings.TrimSpace(val.UnderlyingString())
+					if text != "" {
+						children = append(children, utils.Must(NewMarkupPatternConstText(text)))
+					}
+				case Rune:
+					children = append(children, utils.Must(NewMarkupPatternConstText(string(val))))
+				default:
+					return nil, fmt.Errorf(
+						"unexpected value of type %T was found for the attribute '%s', a markup pattern or a value convertible to text was expected",
+						val, val)
+				}
 			}
-		case *parse.MarkupPatternWildcard:
-			elem.children = append(elem.children, &MarkupPatternWildcard{})
-		case *parse.MarkupPatternElement:
-			childElement, err := newMarkupPatternElementFromNode(child, bridge)
-			if err != nil {
-				return nil, err
-			}
-			elem.children = append(elem.children, childElement)
-		case *parse.MarkupPatternInterpolation:
-			val, err := evalNodeInMarkupPattern(child.Expr, &bridge)
-			if err != nil {
-				return nil, err
-			}
-			markupPattern, ok := val.(*MarkupPattern)
-			if !ok {
-				return nil, fmt.Errorf("unexpected value of type %T was found for the attribute '%s', a markup pattern was expected", val, val)
-			}
-			elem.children = append(elem.children, markupPattern.topElement)
 		}
 	}
 
-	return elem, nil
+	return NewMarkupPatternElement(NewMarkupPatternElementParameters{
+		TagName:    node.Opening.GetName(),
+		Quantifier: node.Opening.Quantifier,
+		Attributes: attributes,
+		Children:   children,
+	}), nil
 }
 
-func evalNodeInMarkupPattern(e parse.Node, bridge *StateBridge) (Value, error) {
+type NewMarkupPatternElementParameters struct {
+	TagName    string
+	Quantifier parse.MarkupPatternElementQuantifier
+	Attributes map[string]StringPattern
+	Children   []MarkupPatternNode
+}
+
+func NewMarkupPatternElement(params NewMarkupPatternElementParameters) *MarkupPatternElement {
+	return &MarkupPatternElement{
+		tagName:    params.TagName,
+		quantifier: params.Quantifier,
+		attributes: params.Attributes,
+		children:   params.Children,
+	}
+}
+
+func evalNodeInMarkupPattern(e parse.Node, bridge StateBridge) (Value, error) {
 	switch e := e.(type) {
 	case *parse.MemberExpression:
 		left, err := evalNodeInMarkupPattern(e.Left, bridge)
@@ -114,6 +181,12 @@ func evalNodeInMarkupPattern(e parse.Node, bridge *StateBridge) (Value, error) {
 			return nil, fmt.Errorf("pattern namespace %s does not have a member %s", e.Namespace.Name, e.MemberName.Name)
 		}
 		return pattern, nil
+	case *parse.IdentifierLiteral:
+		return nil, fmt.Errorf("cannot evaluate node of type %T in markup pattern: not supported", e)
+	case parse.SimpleValueLiteral:
+		return EvalSimpleValueLiteral(e, nil)
+	case *parse.MarkupPatternExpression:
+		return NewMarkupPatternFromExpression(e, bridge)
 	default:
 		return nil, fmt.Errorf("cannot evaluate node of type %T in markup pattern: not supported", e)
 	}
@@ -359,6 +432,18 @@ children_checked:
 
 type MarkupPatternConstText struct {
 	value string //trimmed
+}
+
+func NewMarkupPatternConstText(value string) (*MarkupPatternConstText, error) {
+	value = strings.TrimSpace(value)
+
+	if value == "" {
+		return nil, fmt.Errorf("text only contains white space")
+	}
+
+	return &MarkupPatternConstText{
+		value: value,
+	}, nil
 }
 
 func (patt *MarkupPatternConstText) Test(

@@ -15,6 +15,16 @@ func TestMarkupPattern(t *testing.T) {
 	ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 	defer ctx.CancelGracefully()
 
+	ctx.AddNamedPattern("int", core.INT_PATTERN)
+
+	patternExpr := parse.MustParseExpression("%<div></div>").(*parse.MarkupPatternExpression)
+	pattern, err := core.NewMarkupPatternFromExpression(patternExpr, core.StateBridge{})
+	if !assert.NoError(t, err) {
+		return
+	}
+
+	ctx.AddNamedPattern("empty_div", pattern)
+
 	type patternTestCases struct {
 		markup      string
 		shouldMatch bool

@@ -12256,6 +12256,449 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		})
 	})
 
+	t.Run("markup pattern expression", func(t *testing.T) {
+		testconfig.AllowParallelization(t)
+
+		t.Run("element", func(t *testing.T) {
+			code := `%<div></div>`
+			state := core.NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			pattern, err := Eval(code, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			expectedPattern := core.NewMarkupPattern(core.NewMarkupPatternElement(
+				core.NewMarkupPatternElementParameters{
+					TagName:    "div",
+					Quantifier: parse.OneMarkupElement,
+					Attributes: map[string]core.StringPattern{},
+				},
+			))
+
+			assert.Equal(t, expectedPattern, pattern)
+		})
+
+		t.Run("self-closing element", func(t *testing.T) {
+			code := `%<div/>`
+			state := core.NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			pattern, err := Eval(code, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			expectedPattern := core.NewMarkupPattern(core.NewMarkupPatternElement(
+				core.NewMarkupPatternElementParameters{
+					TagName:    "div",
+					Quantifier: parse.OneMarkupElement,
+					Attributes: map[string]core.StringPattern{},
+				},
+			))
+
+			assert.Equal(t, expectedPattern, pattern)
+		})
+
+		t.Run("attribute with constant integer value", func(t *testing.T) {
+			code := `%<div a=1></div>`
+			state := core.NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			pattern, err := Eval(code, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			expectedPattern := core.NewMarkupPattern(core.NewMarkupPatternElement(
+				core.NewMarkupPatternElementParameters{
+					TagName:    "div",
+					Quantifier: parse.OneMarkupElement,
+					Attributes: map[string]core.StringPattern{
+						"a": core.NewExactStringPattern("1"),
+					},
+				},
+			))
+
+			assert.Equal(t, expectedPattern, pattern)
+		})
+
+		t.Run("attribute with constant string value", func(t *testing.T) {
+			code := `%<div a="b"></div>`
+			state := core.NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			pattern, err := Eval(code, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			expectedPattern := core.NewMarkupPattern(core.NewMarkupPatternElement(
+				core.NewMarkupPatternElementParameters{
+					TagName:    "div",
+					Quantifier: parse.OneMarkupElement,
+					Attributes: map[string]core.StringPattern{
+						"a": core.NewExactStringPattern("b"),
+					},
+				},
+			))
+
+			assert.Equal(t, expectedPattern, pattern)
+		})
+
+		t.Run("attribute with a pattern", func(t *testing.T) {
+			code := `%<div a=int></div>`
+			state := core.NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			state.Ctx.AddNamedPattern("int", core.INT_PATTERN)
+
+			pattern, err := Eval(code, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			expectedPattern := core.NewMarkupPattern(core.NewMarkupPatternElement(
+				core.NewMarkupPatternElementParameters{
+					TagName:    "div",
+					Quantifier: parse.OneMarkupElement,
+					Attributes: map[string]core.StringPattern{
+						"a": utils.MustGet(core.INT_PATTERN.StringPattern()),
+					},
+				},
+			))
+
+			assert.Equal(t, expectedPattern, pattern)
+		})
+
+		t.Run("attribute without pattern", func(t *testing.T) {
+			code := `%<div a></div>`
+			state := core.NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			pattern, err := Eval(code, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			expectedPattern := core.NewMarkupPattern(core.NewMarkupPatternElement(
+				core.NewMarkupPatternElementParameters{
+					TagName:    "div",
+					Quantifier: parse.OneMarkupElement,
+					Attributes: map[string]core.StringPattern{
+						"a": core.ANY_STRING_REGEX_PATTERN,
+					},
+				},
+			))
+
+			assert.Equal(t, expectedPattern, pattern)
+		})
+
+		t.Run("text nodes only containing white space should not be present", func(t *testing.T) {
+			code := "%<div>\n</div>"
+			state := core.NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			pattern, err := Eval(code, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			expectedPattern := core.NewMarkupPattern(core.NewMarkupPatternElement(
+				core.NewMarkupPatternElementParameters{
+					TagName:    "div",
+					Quantifier: parse.OneMarkupElement,
+					Attributes: map[string]core.StringPattern{},
+				},
+			))
+
+			assert.Equal(t, expectedPattern, pattern)
+		})
+
+		t.Run("raw text element", func(t *testing.T) {
+			code := "%<script><a></script>"
+			state := core.NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			pattern, err := Eval(code, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			expectedPattern := core.NewMarkupPattern(core.NewMarkupPatternElement(
+				core.NewMarkupPatternElementParameters{
+					TagName:    "script",
+					Quantifier: parse.OneMarkupElement,
+					Attributes: map[string]core.StringPattern{},
+					Children: []core.MarkupPatternNode{
+						utils.Must(core.NewMarkupPatternConstText("<a>")),
+					},
+				},
+			))
+
+			assert.Equal(t, expectedPattern, pattern)
+		})
+
+		t.Run("empty child element", func(t *testing.T) {
+			code := "%<div><span></span></div>"
+			state := core.NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			pattern, err := Eval(code, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			expectedPattern := core.NewMarkupPattern(core.NewMarkupPatternElement(
+				core.NewMarkupPatternElementParameters{
+					TagName:    "div",
+					Quantifier: parse.OneMarkupElement,
+					Attributes: map[string]core.StringPattern{},
+					Children: []core.MarkupPatternNode{
+						core.NewMarkupPatternElement(core.NewMarkupPatternElementParameters{
+							TagName:    "span",
+							Attributes: map[string]core.StringPattern{},
+						}),
+					},
+				},
+			))
+
+			assert.Equal(t, expectedPattern, pattern)
+		})
+
+		t.Run("single attribute + empty child element", func(t *testing.T) {
+			code := "%<div a=1><span></span></div>"
+			state := core.NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			pattern, err := Eval(code, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			expectedPattern := core.NewMarkupPattern(core.NewMarkupPatternElement(
+				core.NewMarkupPatternElementParameters{
+					TagName:    "div",
+					Quantifier: parse.OneMarkupElement,
+					Attributes: map[string]core.StringPattern{
+						"a": core.NewExactStringPattern("1"),
+					},
+					Children: []core.MarkupPatternNode{
+						core.NewMarkupPatternElement(core.NewMarkupPatternElementParameters{
+							TagName:    "span",
+							Attributes: map[string]core.StringPattern{},
+						}),
+					},
+				},
+			))
+
+			assert.Equal(t, expectedPattern, pattern)
+		})
+
+		t.Run("two attributes + empty child element", func(t *testing.T) {
+			code := "%<div a=1 b=2><span></span></div>"
+			state := core.NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			pattern, err := Eval(code, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			expectedPattern := core.NewMarkupPattern(core.NewMarkupPatternElement(
+				core.NewMarkupPatternElementParameters{
+					TagName:    "div",
+					Quantifier: parse.OneMarkupElement,
+					Attributes: map[string]core.StringPattern{
+						"a": core.NewExactStringPattern("1"),
+						"b": core.NewExactStringPattern("2"),
+					},
+					Children: []core.MarkupPatternNode{
+						core.NewMarkupPatternElement(core.NewMarkupPatternElementParameters{
+							TagName:    "span",
+							Attributes: map[string]core.StringPattern{},
+						}),
+					},
+				},
+			))
+
+			assert.Equal(t, expectedPattern, pattern)
+		})
+
+		t.Run("linefeed followed by empty child element", func(t *testing.T) {
+			code := "%<div>\n<span></span></div>"
+			state := core.NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			pattern, err := Eval(code, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			expectedPattern := core.NewMarkupPattern(core.NewMarkupPatternElement(
+				core.NewMarkupPatternElementParameters{
+					TagName:    "div",
+					Quantifier: parse.OneMarkupElement,
+					Attributes: map[string]core.StringPattern{},
+					Children: []core.MarkupPatternNode{
+						core.NewMarkupPatternElement(core.NewMarkupPatternElementParameters{
+							TagName:    "span",
+							Attributes: map[string]core.StringPattern{},
+						}),
+					},
+				},
+			))
+
+			assert.Equal(t, expectedPattern, pattern)
+		})
+
+		t.Run("non-empty child element", func(t *testing.T) {
+			code := "%<div><span>1</span></div>"
+			state := core.NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			pattern, err := Eval(code, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			expectedPattern := core.NewMarkupPattern(core.NewMarkupPatternElement(
+				core.NewMarkupPatternElementParameters{
+					TagName:    "div",
+					Quantifier: parse.OneMarkupElement,
+					Attributes: map[string]core.StringPattern{},
+					Children: []core.MarkupPatternNode{
+						core.NewMarkupPatternElement(core.NewMarkupPatternElementParameters{
+							TagName:    "span",
+							Attributes: map[string]core.StringPattern{},
+							Children: []core.MarkupPatternNode{
+								utils.Must(core.NewMarkupPatternConstText("1")),
+							},
+						}),
+					},
+				},
+			))
+
+			assert.Equal(t, expectedPattern, pattern)
+		})
+
+		t.Run("two empty child elements", func(t *testing.T) {
+			code := "%<div><span></span><span></span></div>"
+			state := core.NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			pattern, err := Eval(code, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			expectedPattern := core.NewMarkupPattern(core.NewMarkupPatternElement(
+				core.NewMarkupPatternElementParameters{
+					TagName:    "div",
+					Quantifier: parse.OneMarkupElement,
+					Attributes: map[string]core.StringPattern{},
+					Children: []core.MarkupPatternNode{
+						core.NewMarkupPatternElement(core.NewMarkupPatternElementParameters{
+							TagName:    "span",
+							Attributes: map[string]core.StringPattern{},
+						}),
+						core.NewMarkupPatternElement(core.NewMarkupPatternElementParameters{
+							TagName:    "span",
+							Attributes: map[string]core.StringPattern{},
+						}),
+					},
+				},
+			))
+
+			assert.Equal(t, expectedPattern, pattern)
+		})
+
+		t.Run("child + grandchild elements", func(t *testing.T) {
+			code := "%<div><span><span></span></span></div>"
+			state := core.NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			pattern, err := Eval(code, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			expectedPattern := core.NewMarkupPattern(core.NewMarkupPatternElement(
+				core.NewMarkupPatternElementParameters{
+					TagName:    "div",
+					Quantifier: parse.OneMarkupElement,
+					Attributes: map[string]core.StringPattern{},
+					Children: []core.MarkupPatternNode{
+						core.NewMarkupPatternElement(core.NewMarkupPatternElementParameters{
+							TagName:    "span",
+							Attributes: map[string]core.StringPattern{},
+							Children: []core.MarkupPatternNode{
+								core.NewMarkupPatternElement(core.NewMarkupPatternElementParameters{
+									TagName:    "span",
+									Attributes: map[string]core.StringPattern{},
+								}),
+							},
+						}),
+					},
+				},
+			))
+
+			assert.Equal(t, expectedPattern, pattern)
+		})
+
+		t.Run("interpolation: markup pattern", func(t *testing.T) {
+			code := "%<div>{%<span></span>}</div>"
+			state := core.NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			pattern, err := Eval(code, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			expectedPattern := core.NewMarkupPattern(core.NewMarkupPatternElement(
+				core.NewMarkupPatternElementParameters{
+					TagName:    "div",
+					Quantifier: parse.OneMarkupElement,
+					Attributes: map[string]core.StringPattern{},
+					Children: []core.MarkupPatternNode{
+						core.NewMarkupPatternElement(core.NewMarkupPatternElementParameters{
+							TagName:    "span",
+							Attributes: map[string]core.StringPattern{},
+						}),
+					},
+				},
+			))
+
+			assert.Equal(t, expectedPattern, pattern)
+		})
+
+		t.Run("interpolation: string", func(t *testing.T) {
+			code := "%<div>{\"<a></a>\"}</div>"
+			state := core.NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			pattern, err := Eval(code, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			expectedPattern := core.NewMarkupPattern(core.NewMarkupPatternElement(
+				core.NewMarkupPatternElementParameters{
+					TagName:    "div",
+					Quantifier: parse.OneMarkupElement,
+					Attributes: map[string]core.StringPattern{},
+					Children: []core.MarkupPatternNode{
+						utils.Must(core.NewMarkupPatternConstText("<a></a>")),
+					},
+				},
+			))
+
+			assert.Equal(t, expectedPattern, pattern)
+		})
+	})
+
 	t.Run("new expression", func(t *testing.T) {
 		t.Run("without init", func(t *testing.T) {
 			code := `
