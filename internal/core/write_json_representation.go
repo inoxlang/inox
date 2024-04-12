@@ -1720,6 +1720,13 @@ func (patt *MutationPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.S
 	return ErrNotImplementedYet
 }
 
+func (patt *MarkupPattern) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
+	if depth > MAX_JSON_REPR_WRITING_DEPTH {
+		return ErrMaximumJSONReprWritingDepthReached
+	}
+	return ErrNotImplementedYet
+}
+
 // end of pattern serialization methods.
 
 func (mt Mimetype) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
@@ -1741,8 +1748,6 @@ func (c *StringConcatenation) WriteJSONRepresentation(ctx *Context, w *jsoniter.
 func (c *BytesConcatenation) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	return ErrNotImplementedYet
 }
-
-
 
 func (g *SystemGraph) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	if depth > MAX_JSON_REPR_WRITING_DEPTH {

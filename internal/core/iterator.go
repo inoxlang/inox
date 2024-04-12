@@ -1725,6 +1725,10 @@ func (patt *SecretPattern) Iterator(ctx *Context, config IteratorConfiguration) 
 	return NewEmptyPatternIterator()
 }
 
+func (patt *MarkupPattern) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
+	return NewEmptyPatternIterator()
+}
+
 func (patt *ModuleParamsPattern) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
 	return NewEmptyPatternIterator()
 }

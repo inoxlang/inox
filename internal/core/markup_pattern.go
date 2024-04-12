@@ -12,6 +12,7 @@ import (
 // A MarkupPattern does not depend on a specific markup language. It tests implementations of the MarkupNode interface.
 type MarkupPattern struct {
 	topElement *MarkupPatternElement
+	NotCallablePatternMixin
 }
 
 func NewMarkupPatternFromExpression(node *parse.MarkupPatternExpression, bridge StateBridge) (*MarkupPattern, error) {

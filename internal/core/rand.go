@@ -532,6 +532,10 @@ func (pattern *PathStringPattern) Random(ctx *Context, options ...Option) Value 
 	panic(ErrNotImplementedYet)
 }
 
+func (pattern MarkupPattern) Random(ctx *Context, options ...Option) Value {
+	panic(ErrNotImplementedYet)
+}
+
 func (patt *ModuleParamsPattern) Random(ctx *Context, options ...Option) Value {
 	panic(ErrNotImplemented)
 }
