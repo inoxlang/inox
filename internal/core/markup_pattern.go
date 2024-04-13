@@ -56,6 +56,8 @@ func newMarkupPatternElementFromNode(node *parse.MarkupPatternElement, bridge St
 					return nil, fmt.Errorf("pattern provided for the attribute '%s' does not have a corresponding string pattern", name)
 				}
 				stringPattern = strPattern
+			case StringLike:
+				stringPattern = NewExactStringPattern(String(val.GetOrBuildString()))
 			case Bool:
 				stringPattern = FALSE_STRING_PATTERN
 				if val {
@@ -64,7 +66,7 @@ func newMarkupPatternElementFromNode(node *parse.MarkupPatternElement, bridge St
 			case Int:
 				stringified := String(strconv.FormatInt(int64(val), 10))
 				stringPattern = NewExactStringPattern(stringified)
-			case GoString:
+			case ResourceName:
 				stringPattern = NewExactStringPattern(String(val.UnderlyingString()))
 			case Rune:
 				stringPattern = NewExactStringPattern(String(val))
@@ -109,6 +111,11 @@ func newMarkupPatternElementFromNode(node *parse.MarkupPatternElement, bridge St
 				switch val := val.(type) {
 				case *MarkupPattern:
 					children = append(children, val.topElement)
+				case StringLike:
+					text := strings.TrimSpace(val.GetOrBuildString())
+					if text != "" {
+						children = append(children, utils.Must(NewMarkupPatternConstText(text)))
+					}
 				case Bool:
 					text := "false"
 					if val {
@@ -118,7 +125,7 @@ func newMarkupPatternElementFromNode(node *parse.MarkupPatternElement, bridge St
 				case Int:
 					stringified := strconv.FormatInt(int64(val), 10)
 					children = append(children, utils.Must(NewMarkupPatternConstText(stringified)))
-				case GoString:
+				case ResourceName:
 					text := strings.TrimSpace(val.UnderlyingString())
 					if text != "" {
 						children = append(children, utils.Must(NewMarkupPatternConstText(text)))

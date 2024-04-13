@@ -13710,7 +13710,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, ANY_MARKUP_PATTERN, res)
 		})
 
-		t.Run("attribute with a supported value: go string", func(t *testing.T) {
+		t.Run("attribute with a supported value: resource name", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`%<div a=$a></div>`)
 			state.setGlobal("a", ANY_PATH, GlobalConst)
 			res, err := symbolicEval(n, state)
@@ -13812,8 +13812,8 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, ANY_MARKUP_PATTERN, res)
 		})
 
-		t.Run("interpolation with supported value: go string", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`%<div>{/a}</div>`)
+		t.Run("interpolation with supported value: resource name", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`path = /a; return %<div>{$path}</div>`)
 			res, err := symbolicEval(n, state)
 
 			assert.NoError(t, err)

@@ -5909,11 +5909,13 @@ func evalMarkupPatternElement(node *parse.MarkupPatternElement, state *State) er
 						break check_all_attr_values
 					}
 					stringPattern = strPattern
+				case StringLike:
+					stringPattern = ANY_EXACT_STR_PATTERN
 				case *Bool:
 					stringPattern = ANY_EXACT_STR_PATTERN
 				case *Int:
 					stringPattern = ANY_EXACT_STR_PATTERN
-				case GoString:
+				case ResourceName:
 					stringPattern = ANY_EXACT_STR_PATTERN
 				case *Rune:
 					stringPattern = ANY_EXACT_STR_PATTERN
@@ -5960,7 +5962,7 @@ func evalMarkupPatternElement(node *parse.MarkupPatternElement, state *State) er
 			check_all_values:
 				for _, v := range values {
 					switch v.(type) {
-					case *MarkupPattern, *Bool, *Int, GoString, *Rune: //ok
+					case *MarkupPattern, StringLike, *Bool, *Int, ResourceName, *Rune: //ok
 					default:
 						state.addError(makeSymbolicEvalError(child.Expr, state, UNEXPECTED_VAL_FOR_MARKUP_PATTERN_INTERP))
 						break check_all_values

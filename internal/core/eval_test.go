@@ -12697,6 +12697,33 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 			assert.Equal(t, expectedPattern, pattern)
 		})
+
+		t.Run("interpolation: resource name", func(t *testing.T) {
+			code := `
+				path = /a
+				return %<div>{$path}</div>
+			`
+			state := core.NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			pattern, err := Eval(code, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			expectedPattern := core.NewMarkupPattern(core.NewMarkupPatternElement(
+				core.NewMarkupPatternElementParameters{
+					TagName:    "div",
+					Quantifier: parse.OneMarkupElement,
+					Attributes: map[string]core.StringPattern{},
+					Children: []core.MarkupPatternNode{
+						utils.Must(core.NewMarkupPatternConstText("/a")),
+					},
+				},
+			))
+
+			assert.Equal(t, expectedPattern, pattern)
+		})
 	})
 
 	t.Run("new expression", func(t *testing.T) {

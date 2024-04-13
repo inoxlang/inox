@@ -87,7 +87,8 @@ const (
 	HTML_NS_IS_NOT_DEFINED                                          = globalnames.HTML_NS + " is not defined"
 
 	//markup pattern expressions
-	UNEXPECTED_VAL_FOR_MARKUP_PATTERN_INTERP = "unexpected value for interpolation, a pattern or a value with a unique string representation was expected"
+	UNEXPECTED_VAL_FOR_MARKUP_PATTERN_INTERP = "unexpected value for interpolation: " +
+		"a markup pattern or a value of type string-like|bool|int|rune|resource-name was expected"
 
 	//exact value pattern
 	ONLY_SERIALIZABLE_IMMUT_VALS_ALLOWED_IN_EXACT_VAL_PATTERN = "only serializable immutable values are allowed in an exact value pattern"
@@ -747,5 +748,6 @@ func fmtPatternForAttributeDoesNotHaveCorrespStrPattern(name string) string {
 }
 
 func fmtUnexpectedValForAttrX(attrName string) string {
-	return fmt.Sprintf("unexpected value for the attribute '%s', a pattern or a value with a unique string representation was expected", attrName)
+	return fmt.Sprintf("unexpected value for the attribute '%s': "+
+		"a string pattern, a pattern with a corresponding string pattern, or a value of type string-like|bool|int|rune|resource-name was expected", attrName)
 }
