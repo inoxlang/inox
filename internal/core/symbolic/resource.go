@@ -138,27 +138,29 @@ func (p *Path) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrin
 	}
 
 	if p.pattern != nil {
-
 		s := ""
-		switch {
-		case p.pattern.absoluteness == UnspecifiedPathAbsoluteness && p.pattern.dirConstraint == UnspecifiedDirOrFilePath:
-			s = "%path"
-		case p.pattern.absoluteness == UnspecifiedPathAbsoluteness && p.pattern.dirConstraint == DirPath:
-			s = "%dir-path"
-		case p.pattern.absoluteness == UnspecifiedPathAbsoluteness && p.pattern.dirConstraint == NonDirPath:
-			s = "%non-dir-path"
-		case p.pattern.absoluteness == AbsolutePath && p.pattern.dirConstraint == UnspecifiedDirOrFilePath:
-			s = "%absolute-path"
-		case p.pattern.absoluteness == AbsolutePath && p.pattern.dirConstraint == DirPath:
-			s = "%absolute-dir-path"
-		case p.pattern.absoluteness == AbsolutePath && p.pattern.dirConstraint == NonDirPath:
-			s = "%absolute-non-dir-path"
-		case p.pattern.absoluteness == RelativePath && p.pattern.dirConstraint == UnspecifiedDirOrFilePath:
-			s = "%relative-path"
-		case p.pattern.absoluteness == RelativePath && p.pattern.dirConstraint == DirPath:
-			s = "%relative-dir-path"
-		case p.pattern.absoluteness == RelativePath && p.pattern.dirConstraint == NonDirPath:
-			s = "%relative-non-dir-path"
+
+		if !p.pattern.hasValue {
+			switch {
+			case p.pattern.absoluteness == UnspecifiedPathAbsoluteness && p.pattern.dirConstraint == UnspecifiedDirOrFilePath:
+				s = "%path"
+			case p.pattern.absoluteness == UnspecifiedPathAbsoluteness && p.pattern.dirConstraint == DirPath:
+				s = "%dir-path"
+			case p.pattern.absoluteness == UnspecifiedPathAbsoluteness && p.pattern.dirConstraint == NonDirPath:
+				s = "%non-dir-path"
+			case p.pattern.absoluteness == AbsolutePath && p.pattern.dirConstraint == UnspecifiedDirOrFilePath:
+				s = "%absolute-path"
+			case p.pattern.absoluteness == AbsolutePath && p.pattern.dirConstraint == DirPath:
+				s = "%absolute-dir-path"
+			case p.pattern.absoluteness == AbsolutePath && p.pattern.dirConstraint == NonDirPath:
+				s = "%absolute-non-dir-path"
+			case p.pattern.absoluteness == RelativePath && p.pattern.dirConstraint == UnspecifiedDirOrFilePath:
+				s = "%relative-path"
+			case p.pattern.absoluteness == RelativePath && p.pattern.dirConstraint == DirPath:
+				s = "%relative-dir-path"
+			case p.pattern.absoluteness == RelativePath && p.pattern.dirConstraint == NonDirPath:
+				s = "%relative-non-dir-path"
+			}
 		}
 
 		if s != "" {
@@ -166,7 +168,7 @@ func (p *Path) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrin
 			return
 		}
 
-		w.WriteName("patch(matching ")
+		w.WriteName("path(matching ")
 
 		if p.pattern.node != nil {
 			w.WriteString(p.pattern.stringifiedNode)
