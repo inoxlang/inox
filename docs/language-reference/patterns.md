@@ -8,16 +8,20 @@
 - [Object patterns](#object-patterns)
 - [List patterns](#list-patterns)
 - [String patterns](#string-patterns)
+  - [Regexp patterns](#regexp-patterns)
+  - [Exact string patterns](#exact-string-patterns)
+  - [Sequence string patterns](#sequence-string-patterns)
 - [Union Patterns](#union-patterns)
 - [Pattern namespaces](#pattern-namespaces)
 - [Path Patterns](#path-patterns)
 - [Host and URL Patterns](#host-and-url-patterns)
 - [Function Patterns](#function-patterns)
+- [Markup Patterns](#markup-patterns)
 
 In Inox a pattern is a **runtime value** that matches values of a given kind and
 shape.\
-Besides the pattern [literals](./literals.md), there are other kinds of patterns in
-Inox such as object patterns `%{a: int}`.\
+Besides the pattern [literals](./literals.md), there are other kinds of patterns
+in Inox such as object patterns `%{a: int}`.\
 Even though patterns are created at run time, they can act as types:
 
 ```
@@ -82,7 +86,9 @@ my_pattern = %user
 
 <summary>Forbidden definition locations</summary>
 
-Patterns can only be defined at the top level before any function declaration, and before any reference to a function declared further below.
+Patterns can only be defined at the top level before any function declaration,
+and before any reference to a function declared further below.
+
 ```
 # ok
 pattern a = {a: 1}
@@ -215,8 +221,51 @@ pattern two_pairs = [ [int, str], [int, str] ]
 
 ## String Patterns
 
+String patterns encompass regular expression patterns (regexp patterns), exact string patterns, and
+sequence string patterns.
+
+### Regexp Patterns
+
+```
+regex = %`a+`
+```
+
+Like most pattern literals, regexp literals do not need a '%' prefix 
+inside pattern definitions, type annotations and in binary match operations:
+```
+("a" match `a+`)
+
+pattern name = `a+`
+
+("a" match name)
+```
+ 
+⚠️ A string matches a regexp if the **whole string** matches it.
+
+```
+("a"  match `a+`) # true
+("ba" match `a+`) # false
+```
+
+### Exact String Patterns
+
+Exact string patterns match a **single string value**.
+
+```
+pattern name = "Sam"
+
+pattern user = {
+  name: "Sam"
+}
+```
+
+⚠️ Make sure to not quote the string using backticks (`) as these are used for [regexp](#regexp-patterns) literals.
+
+### Sequence String Patterns
+
 Inox allows you to describe string patterns that are easier to read than regex
 expressions.
+
 
 ```
 # matches empty strings and strings containing only the 'a' character.
@@ -245,8 +294,9 @@ pattern email-address = (("user1" | "user2") domain)
 ### Recursive String Patterns
 
 Recursive string patterns are defined by putting a `@` symbol in front of the
-pattern. ⚠️ This feature still needs some bug fixes. Also **recursive string patterns are pretty limited and slow: don't use
-them to check/parse complex strings, use real parsers instead.**
+pattern. ⚠️ This feature still needs some bug fixes. Also **recursive string
+patterns are pretty limited and slow: don't use them to check/parse complex
+strings, use real parsers instead.**
 
 ```
 pattern json-list = @ str( 
@@ -318,7 +368,9 @@ namespace = %ints.
 
 <summary>Forbidden definition locations</summary>
 
-Pattern namespaces can only be defined at the top level before any function declaration, and before any reference to a function declared further below.
+Pattern namespaces can only be defined at the top level before any function
+declaration, and before any reference to a function declared further below.
+
 ```
 # ok
 pnamespace a. = {int: %int}
@@ -348,7 +400,8 @@ var path_pattern = %/*
 pattern p = /*  # The '%' prefix is not needed here.
 ```
 
-- Always starts with `%/`, `%./` or `%../`, the `%` prefix is not needed in pattern regions.
+- Always starts with `%/`, `%./` or `%../`, the `%` prefix is not needed in
+  pattern regions.
 - Path patterns that end with `/...` are **prefix patterns**, all the other
   patterns are **glob patterns**.
 - If a pattern contains special characters such as `'['` or `'{'`, it should be
@@ -562,5 +615,124 @@ URL patterns always have at least a path, a query or a fragment.
 # like for most patterns the '%' prefix is not required in pattern definitions.
 pattern int-fn = fn(int) int
 ```
+
+## Markup Patterns
+
+Markup patterns matches markup elements, they do not depend on a specific markup
+language.
+
+```
+markup = <div></div> # HTML 
+
+(markup match <div></div>) # true
+
+(markup match <div>text</div>) # false
+```
+
+Markup patterns need to be prefixed with a `%` symbol when not in a pattern
+region:
+
+```
+mypattern = %<div></div>
+```
+
+### Attributes
+
+Attributes in markup patterns are optionally followed by a **pattern**:
+
+```
+(<div a="1"></div> match <div a=int></div>) # true
+
+(<div a="a"></div> match <div a=int></div>) # false
+
+(<div></div> match <div a=int></div>)       # false (missing attribute)
+```
+
+An attribute that do not have a pattern matches any value.
+
+```
+(<div a="1"></div> match <div a></div>) # true
+
+(<div a="a"></div> match <div a></div>) # true
+
+(<div></div> match <div a></div>)       # false (missing attribute)
+```
+
+All **string patterns** (regexps, sequences, exact strings, ...) and patterns with a corresponding string pattern are supported,
+as well as the following exact value types:
+
+- Integer, e.g. `a=1` 
+- Boolean, e.g. `a=true` 
+- Rune, e.g. `a='a'` 
+- Resource names, e.g. `a=%(/file.txt)`, `a=%(https://example.com/)`
+
+### White Space
+
+In markup patterns **leading** and **trailing** white space is not significant.
+
+```
+pattern p = (
+    <div>
+    1
+    </di>
+)
+
+# true
+(<div>1</div> match p)
+```
+
+### Quantifiers
+
+Markup pattern elements can have a **quantifier**:
+
+For example the following markup pattern matches any `ul` element containing one
+or more `<li>` elements:
+
+```
+pattern ul = (
+  <ul> 
+    <li+>*</li> 
+  <ul>
+)
+```
+
+| Quantifier | Meaning      |
+| ---------- | ------------ |
+| `?`        | zero or one  |
+| `+`        | one or more  |
+| `*`        | zero or more |
+
+### Wildcards
+
+### Interpolations
+
+Interpolations allow you to insert markup patterns or text.
+
+**Element interpolation**
+
+```
+pattern non-empty-ul = (
+  <ul> 
+    <li+>*</li> 
+  <ul>
+)
+
+%<div>{non-empty-ul}</div>
+```
+
+**Text interpolation**
+```
+text = "world"
+
+%<div>Hello {text}</div>
+```
+
+Here is the list of supported exact value types for text interpolations:
+
+- Strings, e.g. `a="a"` 
+- Integers, e.g. `a=1` 
+- Booleans, e.g. `a=true` 
+- Runes, e.g. `a='a'` 
+- Resource names, e.g. `a=%(/file.txt)`, `a=%(https://example.com/)`
 
 [Back to top](#patterns)
