@@ -26,6 +26,8 @@ const (
 	STRUCT_KEYWORD_STRING          = "struct"
 	NEW_KEYWORD_STRING             = "new"
 	INCLUDABLE_FILE_KEYWORD_STRING = "includable-file"
+	FN_KEYWORD_STRING              = "fn"
+	READONLY_KEYWORD_STRING        = "readonly"
 
 	COYIELD_KEYWORD_STRING = "coyield"
 	YIELD_KEYWORD_STRING   = "yield"
@@ -327,7 +329,7 @@ func (m TokenMeta) Strings() ([16]string, int) {
 		i++
 	}
 	if m&DeclFnName != 0 {
-		strings[i] = "fn"
+		strings[i] = READONLY_KEYWORD_STRING
 		i++
 	}
 	return strings, i
@@ -341,7 +343,7 @@ var tokenStrings = [...]string{
 	INCLUDABLE_FILE_KEYWORD:           INCLUDABLE_FILE_KEYWORD_STRING,
 	DROP_PERMS_KEYWORD:                "drop-perms",
 	ASSIGN_KEYWORD:                    "assign",
-	READONLY_KEYWORD:                  "readonly",
+	READONLY_KEYWORD:                  READONLY_KEYWORD_STRING,
 	CONST_KEYWORD:                     "const",
 	VAR_KEYWORD:                       "var",
 	GLOBALVAR_KEYWORD:                 "globalvar",
@@ -350,7 +352,7 @@ var tokenStrings = [...]string{
 	IN_KEYWORD:                        "in",
 	GO_KEYWORD:                        "go",
 	IMPORT_KEYWORD:                    "import",
-	FN_KEYWORD:                        "fn",
+	FN_KEYWORD:                        FN_KEYWORD_STRING,
 	SWITCH_KEYWORD:                    SWITCH_KEYWORD_STRING,
 	MATCH_KEYWORD:                     MATCH_KEYWORD_STRING,
 	DEFAULTCASE_KEYWORD:               "defaultcase",

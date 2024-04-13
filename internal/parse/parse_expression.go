@@ -361,15 +361,53 @@ func (p *parser) parseUnderscoreAlphaStartingExpression(precedingOpeningParen in
 	switch v := identStartingExpr.(type) {
 	case *IdentifierLiteral:
 		name = v.Name
+
+		if p.inPattern {
+			switch name {
+			case FN_KEYWORD_STRING:
+				node = p.parseFunctionPattern(identStartingExpr.Base().Span.Start, false)
+				return
+			case READONLY_KEYWORD_STRING:
+				node = p.parseReadonlyPatternExpression(v)
+				return
+			}
+
+			result := &PatternIdentifierLiteral{
+				NodeBase:   v.NodeBase,
+				Unprefixed: true,
+				Name:       v.Name,
+			}
+			if p.i < p.len {
+				switch p.s[p.i] {
+				case '(', '{':
+					if v.Name == "str" && p.s[p.i] == '(' {
+						p.i++
+						node = p.parseComplexStringPatternPiece(result.Span.Start, rootSequencePatternPiece, result)
+						return
+					}
+
+					node = p.parsePatternCall(result)
+					return
+				case '?':
+					p.i++
+					node = &OptionalPatternExpression{
+						NodeBase: NodeBase{
+							Span: NodeSpan{result.Base().Span.Start, p.i},
+						},
+						Pattern: result,
+					}
+					return
+				}
+			}
+			node = result
+			return
+		}
+
 		switch name {
 		case tokenStrings[GO_KEYWORD]:
 			node = p.parseSpawnExpression(identStartingExpr)
 			return
-		case tokenStrings[FN_KEYWORD]:
-			if p.inPattern {
-				node = p.parseFunctionPattern(identStartingExpr.Base().Span.Start, false)
-				return
-			}
+		case FN_KEYWORD_STRING:
 			node = p.parseFunction(identStartingExpr.Base().Span.Start)
 			return
 		case "s":
@@ -402,11 +440,6 @@ func (p *parser) parseUnderscoreAlphaStartingExpression(precedingOpeningParen in
 		case tokenStrings[SENDVAL_KEYWORD]:
 			node = p.parseSendValueExpression(v)
 			return
-		case tokenStrings[READONLY_KEYWORD]:
-			if p.inPattern {
-				node = p.parseReadonlyPatternExpression(v)
-				return
-			}
 		case NEW_KEYWORD_STRING:
 			node = p.parseNewExpression(v)
 			return
@@ -421,40 +454,9 @@ func (p *parser) parseUnderscoreAlphaStartingExpression(precedingOpeningParen in
 				return
 			}
 		}
+
 		if isKeyword(name) {
 			node = v
-			return
-		}
-
-		if p.inPattern {
-			result := &PatternIdentifierLiteral{
-				NodeBase:   v.NodeBase,
-				Unprefixed: true,
-				Name:       v.Name,
-			}
-			if p.i < p.len {
-				switch p.s[p.i] {
-				case '(', '{':
-					if v.Name == "str" && p.s[p.i] == '(' {
-						p.i++
-						node = p.parseComplexStringPatternPiece(result.Span.Start, rootSequencePatternPiece, result)
-						return
-					}
-
-					node = p.parsePatternCall(result)
-					return
-				case '?':
-					p.i++
-					node = &OptionalPatternExpression{
-						NodeBase: NodeBase{
-							Span: NodeSpan{result.Base().Span.Start, p.i},
-						},
-						Pattern: result,
-					}
-					return
-				}
-			}
-			node = result
 			return
 		}
 	case *IdentifierMemberExpression:

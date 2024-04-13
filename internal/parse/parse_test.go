@@ -1197,6 +1197,37 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("single declaration without parenthesis and with unprefixed named pattern with a keyword name", func(t *testing.T) {
+			n := mustparseChunk(t, "var a for = 1")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 13}, nil, false},
+				Statements: []Node{
+					&LocalVariableDeclarations{
+						NodeBase: NodeBase{Span: NodeSpan{0, 13}},
+						Declarations: []*LocalVariableDeclarator{
+							{
+								NodeBase: NodeBase{Span: NodeSpan{4, 13}},
+								Left: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{4, 5}, nil, false},
+									Name:     "a",
+								},
+								Type: &PatternIdentifierLiteral{
+									NodeBase:   NodeBase{NodeSpan{6, 9}, nil, false},
+									Unprefixed: true,
+									Name:       "for",
+								},
+								Right: &IntLiteral{
+									NodeBase: NodeBase{NodeSpan{12, 13}, nil, false},
+									Raw:      "1",
+									Value:    1,
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("single declaration without parenthesis and with unprefixed pattern namespace member", func(t *testing.T) {
 			n := mustparseChunk(t, "var a x.y = 1")
 			assert.EqualValues(t, &Chunk{
@@ -19496,16 +19527,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 10}, nil, false},
 				Statements: []Node{
 					&FunctionPatternExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 10},
-							nil,
-							false,
-							/*[]Token{
-								{Type: PERCENT_FN, Span: NodeSpan{0, 3}},
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{3, 4}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{9, 10}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 10}},
 						Parameters: []*FunctionParameter{
 							{
 								NodeBase: NodeBase{NodeSpan{4, 9}, nil, false},
@@ -25651,15 +25673,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 6}, nil, false},
 				Statements: []Node{
 					&ListPatternLiteral{
-						NodeBase: NodeBase{
-							NodeSpan{0, 6},
-							nil,
-							false,
-							/*[]Token{
-								{Type: OPENING_LIST_PATTERN_BRACKET, Span: NodeSpan{0, 2}},
-								{Type: CLOSING_BRACKET, Span: NodeSpan{2, 3}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 6}},
 						Elements: nil,
 						GeneralElement: &PatternIdentifierLiteral{
 							NodeBase:   NodeBase{NodeSpan{3, 6}, nil, false},
@@ -25677,15 +25691,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 18}, nil, false},
 				Statements: []Node{
 					&ListPatternLiteral{
-						NodeBase: NodeBase{
-							NodeSpan{0, 18},
-							nil,
-							false,
-							/*[]Token{
-								{Type: OPENING_LIST_PATTERN_BRACKET, Span: NodeSpan{0, 2}},
-								{Type: CLOSING_BRACKET, Span: NodeSpan{2, 3}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 18}},
 						Elements: nil,
 						GeneralElement: &ObjectPatternLiteral{
 							NodeBase: NodeBase{
@@ -25918,6 +25924,50 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("RHS is an unprefixed pattern identifier literal", func(t *testing.T) {
+			n := mustparseChunk(t, "pattern i = int")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
+				Statements: []Node{
+					&PatternDefinition{
+						NodeBase: NodeBase{Span: NodeSpan{0, 15}},
+						Left: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+							Name:       "i",
+							Unprefixed: true,
+						},
+						Right: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{NodeSpan{12, 15}, nil, false},
+							Name:       "int",
+							Unprefixed: true,
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("RHS is an unprefixed pattern identifier literal with a keyword name", func(t *testing.T) {
+			n := mustparseChunk(t, "pattern i = for")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
+				Statements: []Node{
+					&PatternDefinition{
+						NodeBase: NodeBase{Span: NodeSpan{0, 15}},
+						Left: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+							Name:       "i",
+							Unprefixed: true,
+						},
+						Right: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{NodeSpan{12, 15}, nil, false},
+							Name:       "for",
+							Unprefixed: true,
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("lazy", func(t *testing.T) {
 			n := mustparseChunk(t, "pattern i = @ 1")
 			assert.EqualValues(t, &Chunk{
@@ -25947,30 +25997,14 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
 				Statements: []Node{
 					&PatternDefinition{
-						NodeBase: NodeBase{
-							NodeSpan{0, 21},
-							nil,
-							false,
-							/*[]Token{
-								{Type: PATTERN_KEYWORD, Span: NodeSpan{0, 7}},
-								{Type: EQUAL, Span: NodeSpan{10, 11}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 21}},
 						Left: &PatternIdentifierLiteral{
 							NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
 							Name:       "i",
 							Unprefixed: true,
 						},
 						Right: &ObjectPatternLiteral{
-							NodeBase: NodeBase{
-								NodeSpan{12, 21},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_OBJECT_PATTERN_BRACKET, Span: NodeSpan{12, 14}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{20, 21}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{12, 21}},
 							Properties: []*ObjectPatternProperty{
 								{
 									NodeBase: NodeBase{
@@ -26001,30 +26035,14 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
 				Statements: []Node{
 					&PatternDefinition{
-						NodeBase: NodeBase{
-							NodeSpan{0, 21},
-							nil,
-							false,
-							/*[]Token{
-								{Type: PATTERN_KEYWORD, Span: NodeSpan{0, 7}},
-								{Type: EQUAL, Span: NodeSpan{10, 11}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 21}},
 						Left: &PatternIdentifierLiteral{
 							NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
 							Name:       "i",
 							Unprefixed: true,
 						},
 						Right: &ObjectPatternLiteral{
-							NodeBase: NodeBase{
-								NodeSpan{12, 21},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_OBJECT_PATTERN_BRACKET, Span: NodeSpan{12, 14}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{20, 21}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{12, 21}},
 							Properties: []*ObjectPatternProperty{
 								{
 									NodeBase: NodeBase{
@@ -26060,10 +26078,6 @@ func testParse(
 							NodeSpan{0, 11},
 							&ParsingError{UnterminatedPatternDefinition, UNTERMINATED_PATT_DEF_MISSING_RHS},
 							false,
-							/*[]Token{
-								{Type: PATTERN_KEYWORD, Span: NodeSpan{0, 7}},
-								{Type: EQUAL, Span: NodeSpan{10, 11}},
-							},*/
 						},
 						Left: &PatternIdentifierLiteral{
 							NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
@@ -26083,30 +26097,14 @@ func testParse(
 			NodeBase: NodeBase{NodeSpan{0, 28}, nil, false},
 			Statements: []Node{
 				&PatternNamespaceDefinition{
-					NodeBase: NodeBase{
-						NodeSpan{0, 28},
-						nil,
-						false,
-						/*[]Token{
-							{Type: PNAMESPACE_KEYWORD, Span: NodeSpan{0, 10}},
-							{Type: EQUAL, Span: NodeSpan{24, 25}},
-						},*/
-					},
+					NodeBase: NodeBase{Span: NodeSpan{0, 28}},
 					Left: &PatternNamespaceIdentifierLiteral{
 						NodeBase:   NodeBase{NodeSpan{11, 23}, nil, false},
 						Name:       "mynamespace",
 						Unprefixed: true,
 					},
 					Right: &ObjectLiteral{
-						NodeBase: NodeBase{
-							NodeSpan{26, 28},
-							nil,
-							false,
-							/*[]Token{
-								{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{26, 27}},
-								{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{27, 28}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{26, 28}},
 					},
 				},
 			},
@@ -26121,30 +26119,14 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 25}, nil, false},
 				Statements: []Node{
 					&PatternDefinition{
-						NodeBase: NodeBase{
-							NodeSpan{0, 25},
-							nil,
-							false,
-							/*[]Token{
-								{Type: PATTERN_KEYWORD, Span: NodeSpan{0, 7}},
-								{Type: EQUAL, Span: NodeSpan{10, 11}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 25}},
 						Left: &PatternIdentifierLiteral{
 							NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
 							Name:       "p",
 							Unprefixed: true,
 						},
 						Right: &RecordPatternLiteral{
-							NodeBase: NodeBase{
-								NodeSpan{12, 25},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_RECORD_BRACKET, Span: NodeSpan{12, 14}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{24, 25}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{12, 25}},
 
 							SpreadElements: []*PatternPropertySpreadElement{
 								{
@@ -26193,16 +26175,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 9}, nil, false},
 				Statements: []Node{
 					&ComplexStringPatternPiece{
-						NodeBase: NodeBase{
-							NodeSpan{0, 9},
-							nil,
-							false,
-							/*[]Token{
-								{Type: PERCENT_STR, Span: NodeSpan{0, 4}},
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{4, 5}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{8, 9}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 9}},
 						Elements: []*PatternPieceElement{
 							{
 								NodeBase:   NodeBase{NodeSpan{5, 8}, nil, false},
@@ -26225,17 +26198,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 10}, nil, false},
 				Statements: []Node{
 					&ComplexStringPatternPiece{
-						NodeBase: NodeBase{
-							NodeSpan{0, 10},
-							nil,
-							false,
-							/*[]Token{
-								{Type: PERCENT_STR, Span: NodeSpan{0, 4}},
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{4, 5}},
-								{Type: NEWLINE, Span: NodeSpan{8, 9}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{9, 10}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 10}},
 						Elements: []*PatternPieceElement{
 							{
 								NodeBase:   NodeBase{NodeSpan{5, 8}, nil, false},
@@ -26259,16 +26222,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 7}, nil, false},
 				Statements: []Node{
 					&ComplexStringPatternPiece{
-						NodeBase: NodeBase{
-							NodeSpan{0, 7},
-							nil,
-							false,
-							/*[]Token{
-								{Type: PERCENT_STR, Span: NodeSpan{0, 4}},
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{4, 5}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{6, 7}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 7}},
 						Elements: []*PatternPieceElement{
 							{
 								NodeBase:   NodeBase{NodeSpan{5, 6}, nil, false},
@@ -26293,16 +26247,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 9}, nil, false},
 				Statements: []Node{
 					&ComplexStringPatternPiece{
-						NodeBase: NodeBase{
-							NodeSpan{0, 9},
-							nil,
-							false,
-							/*[]Token{
-								{Type: PERCENT_STR, Span: NodeSpan{0, 4}},
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{4, 5}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{8, 9}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 9}},
 						Elements: []*PatternPieceElement{
 							{
 								NodeBase:   NodeBase{NodeSpan{5, 8}, nil, false},
@@ -26324,16 +26269,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
 				Statements: []Node{
 					&ComplexStringPatternPiece{
-						NodeBase: NodeBase{
-							NodeSpan{0, 12},
-							nil,
-							false,
-							/*[]Token{
-								{Type: PERCENT_STR, Span: NodeSpan{0, 4}},
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{4, 5}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{11, 12}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 12}},
 						Elements: []*PatternPieceElement{
 							{
 								NodeBase: NodeBase{
@@ -26343,15 +26279,7 @@ func testParse(
 								},
 								Quantifier: ZeroOrMoreOccurrences,
 								Expr: &ComplexStringPatternPiece{
-									NodeBase: NodeBase{
-										NodeSpan{5, 10},
-										nil,
-										false,
-										/*[]Token{
-											{Type: OPENING_PARENTHESIS, Span: NodeSpan{5, 6}},
-											{Type: CLOSING_PARENTHESIS, Span: NodeSpan{9, 10}},
-										},*/
-									},
+									NodeBase: NodeBase{Span: NodeSpan{5, 10}},
 									Elements: []*PatternPieceElement{
 										{
 											NodeBase:   NodeBase{NodeSpan{6, 9}, nil, false},

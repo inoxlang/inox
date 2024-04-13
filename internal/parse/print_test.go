@@ -438,6 +438,8 @@ func TestPrint(t *testing.T) {
 		//pattern declarations
 		"pattern p =",
 		"pattern p = 1",
+		"pattern p = a",
+		"pattern p = for",
 		"pattern p = #{}",
 		"pattern p = #{a: 1}",
 		"pattern p = #{a",
