@@ -16485,11 +16485,6 @@ func testParse(
 							NodeSpan{0, 16},
 							nil,
 							true,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
-								{Type: OR_KEYWORD, Span: NodeSpan{7, 9}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{15, 16}},
-							},*/
 						},
 						Operator: Or,
 						Left: &BinaryExpression{
@@ -18112,14 +18107,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 2}, nil, false},
 				Statements: []Node{
 					&RuntimeTypeCheckExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 2},
-							nil,
-							false,
-							/*[]Token{
-								{Type: TILDE, Span: NodeSpan{0, 1}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 2}},
 						Expr: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{1, 2}, nil, false},
 							Name:     "a",
@@ -19708,35 +19696,40 @@ func testParse(
 	})
 
 	t.Run("pattern conversion expression", func(t *testing.T) {
-		n := mustparseChunk(t, "%(1)")
-		assert.EqualValues(t, &Chunk{
-			NodeBase: NodeBase{NodeSpan{0, 4}, nil, false},
-			Statements: []Node{
-				&PatternConversionExpression{
-					NodeBase: NodeBase{
-						NodeSpan{0, 3},
-						nil,
-						false,
-						/*[]Token{
-							{Type: PERCENT_SYMBOL, Span: NodeSpan{0, 1}},
-						},*/
-					},
-					Value: &IntLiteral{
-						NodeBase: NodeBase{
-							NodeSpan{2, 3},
-							nil,
-							true,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{1, 2}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{3, 4}},
-							},*/
+		t.Run("base case", func(t *testing.T) {
+			n := mustparseChunk(t, "%(1)")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 4}, nil, false},
+				Statements: []Node{
+					&PatternConversionExpression{
+						NodeBase: NodeBase{Span: NodeSpan{0, 3}},
+						Value: &IntLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{2, 3}, IsParenthesized: true},
+							Raw:      "1",
+							Value:    1,
 						},
-						Raw:   "1",
-						Value: 1,
 					},
 				},
-			},
-		}, n)
+			}, n)
+		})
+
+		t.Run("special and bad cases", func(t *testing.T) {
+			n, err := parseChunk(t, "(%(1)>1)", "")
+			assert.NoError(t, err)
+			assert.NotNil(t, n)
+
+			n, err = parseChunk(t, "a = %(1)>1", "")
+			assert.NoError(t, err)
+			assert.NotNil(t, n)
+
+			n, err = parseChunk(t, "<div a=%(1)>1</div>", "")
+			assert.NoError(t, err)
+			assert.NotNil(t, n)
+
+			n, err = parseChunk(t, "%(1)>1", "")
+			assert.Error(t, err)
+			assert.NotNil(t, n)
+		})
 	})
 
 	t.Run("quoted expression", func(t *testing.T) {

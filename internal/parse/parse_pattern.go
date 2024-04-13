@@ -67,7 +67,10 @@ func (p *parser) parsePercentPrefixedPattern(precededByOpeningParen bool) Node {
 	case '(': //pattern conversion expresison
 		prev := p.inPattern
 		p.inPattern = false
-		e, _ := p.parseExpression()
+		e, _ := p.parseExpression(exprParsingConfig{
+			disallowUnparenthesizedBinForExpr:       true,
+			disallowParsingSeveralPatternUnionCases: true,
+		})
 
 		p.inPattern = prev
 		p.tokens = append(p.tokens, percentSymbol)
