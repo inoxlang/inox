@@ -78,12 +78,16 @@ const (
 	NESTED_RECURSIVE_FUNCTION_DECLARATION = "nested recursive function declarations are not allowed"
 	THIS_EXPR_STMT_SYNTAX_IS_NOT_ALLOWED  = "this expression/statement/syntax element is not allowed in this function"
 
+	//markup expressions
 	NAMESPACE_APPLIED_TO_MARKUP_ELEMENT_SHOUD_BE_A_RECORD           = "namespace applied to markup element should be an Inox namespace such as html"
 	MISSING_FACTORY_IN_NAMESPACE_APPLIED_TO_MARKUP_ELEMENT          = "namespace applied to markup has not a " + FROM_MARKUP_FACTORY_NAME + " property"
 	FROM_MARKUP_FACTORY_IS_NOT_A_GO_FUNCTION                        = "factory ." + FROM_MARKUP_FACTORY_NAME + " is not a Go function"
 	FROM_MARKUP_FACTORY_SHOULD_NOT_BE_A_SHARED_FUNCTION             = "factory ." + FROM_MARKUP_FACTORY_NAME + " should not be a shared function"
 	FROM_MARKUP_FACTORY_SHOULD_HAVE_AT_LEAST_ONE_NON_VARIADIC_PARAM = "factory ." + FROM_MARKUP_FACTORY_NAME + " should have at least one non variadic parameter"
 	HTML_NS_IS_NOT_DEFINED                                          = globalnames.HTML_NS + " is not defined"
+
+	//markup pattern expressions
+	UNEXPECTED_VAL_FOR_MARKUP_PATTERN_INTERP = "unexpected value for interpolation, a pattern or a value with a unique string representation was expected"
 
 	//exact value pattern
 	ONLY_SERIALIZABLE_IMMUT_VALS_ALLOWED_IN_EXACT_VAL_PATTERN = "only serializable immutable values are allowed in an exact value pattern"
@@ -736,4 +740,12 @@ func fmtDidYouMeanDollarName(name string) string {
 
 func fmtUnexpectedRhsOfObjectDestructuration(rhs Value) string {
 	return fmt.Sprintf("unexpected right hand side of object destructuration: %s; an Inox value containing properties is expected", Stringify(rhs))
+}
+
+func fmtPatternForAttributeDoesNotHaveCorrespStrPattern(name string) string {
+	return fmt.Sprintf("pattern provided for the attribute '%s' does not have a corresponding string pattern", name)
+}
+
+func fmtUnexpectedValForAttrX(attrName string) string {
+	return fmt.Sprintf("unexpected value for the attribute '%s', a pattern or a value with a unique string representation was expected", attrName)
 }

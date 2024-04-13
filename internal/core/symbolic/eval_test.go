@@ -13663,6 +13663,187 @@ func TestSymbolicEval(t *testing.T) {
 		})
 	})
 
+	t.Run("markup pattern expression", func(t *testing.T) {
+
+		t.Run("empty element", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`%<div></div>`)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_MARKUP_PATTERN, res)
+		})
+
+		t.Run("self-closing element", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`%<div/>`)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_MARKUP_PATTERN, res)
+		})
+
+		t.Run("attribute with a supported value: string", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`%<div a="a"></div>`)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_MARKUP_PATTERN, res)
+		})
+
+		t.Run("attribute with a supported value: boolean", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`%<div a=true></div>`)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_MARKUP_PATTERN, res)
+		})
+
+		t.Run("attribute with a supported value: integer", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`%<div a=1></div>`)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_MARKUP_PATTERN, res)
+		})
+
+		t.Run("attribute with a supported value: go string", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`%<div a=$a></div>`)
+			state.setGlobal("a", ANY_PATH, GlobalConst)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_MARKUP_PATTERN, res)
+		})
+
+		t.Run("attribute with a supported value: rune", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`%<div a='a'></div>`)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_MARKUP_PATTERN, res)
+		})
+
+		t.Run("attribute with a non-supported value: float", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`%<div a=1.0></div>`)
+			res, err := symbolicEval(n, state)
+			patternIdent := parse.FindNode(n, (*parse.FloatLiteral)(nil), nil)
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(patternIdent, state, fmtUnexpectedValForAttrX("a")),
+			}, state.errors())
+			assert.Equal(t, ANY_MARKUP_PATTERN, res)
+		})
+
+		t.Run("attribute without a pattern/value", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`%<div a></div>`)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_MARKUP_PATTERN, res)
+		})
+
+		t.Run("attribute with a pattern without a corresponding string pattern", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`%<div a=pattern></div>`)
+			state.ctx.AddNamedPattern("pattern", &TypePattern{val: ANY_INT}, false)
+
+			res, err := symbolicEval(n, state)
+			patternIdent := parse.FindPatternIdentWithName(n, "pattern")
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(patternIdent, state, fmtPatternForAttributeDoesNotHaveCorrespStrPattern("a")),
+			}, state.errors())
+			assert.Equal(t, ANY_MARKUP_PATTERN, res)
+		})
+
+		t.Run("interpolation with supported value: markup pattern", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`%<div>{%<div></div>}</div>`)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_MARKUP_PATTERN, res)
+		})
+
+		t.Run("interpolation with supported value: markup pattern (named pattern)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				pattern p = <div></div>
+				return %<div>{p}</div>
+			`)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_MARKUP_PATTERN, res)
+		})
+
+		t.Run("interpolation with supported value: string", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`%<div>{"a"}</div>`)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_MARKUP_PATTERN, res)
+		})
+
+		t.Run("interpolation with supported value: boolean", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`%<div>{true}</div>`)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_MARKUP_PATTERN, res)
+		})
+
+		t.Run("interpolation with supported value: integer", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`%<div>{true}</div>`)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_MARKUP_PATTERN, res)
+		})
+
+		t.Run("interpolation with supported value: go string", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`%<div>{/a}</div>`)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_MARKUP_PATTERN, res)
+		})
+
+		t.Run("interpolation with supported value: rune", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`%<div>{'a'}</div>`)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_MARKUP_PATTERN, res)
+		})
+
+		t.Run("interpolation with non-supported value: float", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`%<div>{1.0}</div>`)
+			floatLiteral := parse.FindNode(n, (*parse.FloatLiteral)(nil), nil)
+
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(floatLiteral, state, UNEXPECTED_VAL_FOR_MARKUP_PATTERN_INTERP),
+			}, state.errors())
+			assert.Equal(t, ANY_MARKUP_PATTERN, res)
+		})
+	})
+
 	t.Run("module parameters ", func(t *testing.T) {
 		n, state := MakeTestStateAndChunk(strings.ReplaceAll(`
 			manifest {

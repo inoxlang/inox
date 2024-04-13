@@ -895,20 +895,9 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 	case *parse.MarkupElement:
 		return evalMarkupElement(n, state, options)
 	case *parse.MarkupInterpolation:
-
-		val, err := symbolicEval(n.Expr, state)
-		if err != nil {
-			return nil, err
-		}
-
-		if state.checkMarkupInterpolation != nil {
-			msg := state.checkMarkupInterpolation(n.Expr, val)
-			if msg != "" {
-				state.addError(makeSymbolicEvalError(n.Expr, state, msg))
-			}
-		}
-
-		return val, err
+		return evalMarkupInterpolation(n, state, options)
+	case *parse.MarkupPatternExpression:
+		return evalMarkupPatternExpression(n, state, options)
 	case *parse.MarkupText:
 		return ANY_STRING, nil
 	case *parse.ExtendStatement:
@@ -5860,6 +5849,128 @@ func evalMarkupElement(n *parse.MarkupElement, state *State, options evalOptions
 	}
 
 	return markupElem, nil
+}
+
+func evalMarkupInterpolation(n *parse.MarkupInterpolation, state *State, options evalOptions) (Value, error) {
+	val, err := symbolicEval(n.Expr, state)
+	if err != nil {
+		return nil, err
+	}
+
+	if state.checkMarkupInterpolation != nil {
+		msg := state.checkMarkupInterpolation(n.Expr, val)
+		if msg != "" {
+			state.addError(makeSymbolicEvalError(n.Expr, state, msg))
+		}
+	}
+
+	return val, err
+}
+
+func evalMarkupPatternExpression(n *parse.MarkupPatternExpression, state *State, options evalOptions) (Value, error) {
+	return ANY_MARKUP_PATTERN, evalMarkupPatternElement(n.Element, state)
+}
+
+func evalMarkupPatternElement(node *parse.MarkupPatternElement, state *State) error {
+
+	attributes := map[string]StringPattern{}
+
+	//Evaluate attributes.
+
+	for _, attr := range node.Opening.Attributes {
+		patternAttribute := attr.(*parse.MarkupPatternAttribute)
+		attrName := patternAttribute.GetName()
+
+		var stringPattern StringPattern
+
+		if patternAttribute.Type != nil {
+			val, err := symbolicEval(patternAttribute.Type, state)
+			if err != nil {
+				return err
+			}
+
+			var values []Value
+			if mv, ok := val.(IMultivalue); ok {
+				values = mv.OriginalMultivalue().getValues()
+			} else {
+				values = []Value{val}
+			}
+
+		check_all_attr_values:
+			for _, v := range values {
+				switch v := v.(type) {
+				case StringPattern:
+					stringPattern = v
+				case Pattern:
+					strPattern, ok := v.StringPattern()
+					if !ok {
+						msg := fmtPatternForAttributeDoesNotHaveCorrespStrPattern(attrName)
+						state.addError(makeSymbolicEvalError(patternAttribute.Type, state, msg))
+						break check_all_attr_values
+					}
+					stringPattern = strPattern
+				case *Bool:
+					stringPattern = ANY_EXACT_STR_PATTERN
+				case *Int:
+					stringPattern = ANY_EXACT_STR_PATTERN
+				case GoString:
+					stringPattern = ANY_EXACT_STR_PATTERN
+				case *Rune:
+					stringPattern = ANY_EXACT_STR_PATTERN
+				default:
+					//Note: floats are not supported because they do not have a unique representation.
+					msg := fmtUnexpectedValForAttrX(attrName)
+					state.addError(makeSymbolicEvalError(patternAttribute.Type, state, msg))
+					break check_all_attr_values
+				}
+
+			}
+		} else {
+			stringPattern = ANY_REGEX_PATTERN
+		}
+
+		attributes[attrName] = stringPattern
+	}
+
+	//Evaluate children nodes.
+
+	if node.RawElementContent == "" {
+		for _, child := range node.Children {
+			switch child := child.(type) {
+			case *parse.MarkupText: //ok
+			case *parse.MarkupPatternWildcard: //ok
+			case *parse.MarkupPatternElement:
+				err := evalMarkupPatternElement(child, state)
+				if err != nil {
+					return err
+				}
+			case *parse.MarkupPatternInterpolation:
+				val, err := symbolicEval(child.Expr, state)
+				if err != nil {
+					return err
+				}
+
+				var values []Value
+				if mv, ok := val.(IMultivalue); ok {
+					values = mv.OriginalMultivalue().getValues()
+				} else {
+					values = []Value{val}
+				}
+
+			check_all_values:
+				for _, v := range values {
+					switch v.(type) {
+					case *MarkupPattern, *Bool, *Int, GoString, *Rune: //ok
+					default:
+						state.addError(makeSymbolicEvalError(child.Expr, state, UNEXPECTED_VAL_FOR_MARKUP_PATTERN_INTERP))
+						break check_all_values
+					}
+				}
+			}
+		}
+	}
+
+	return nil
 }
 
 func evalDoubleColonExpression(n *parse.DoubleColonExpression, state *State, options evalOptions) (Value, error) {
