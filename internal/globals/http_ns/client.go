@@ -237,8 +237,23 @@ func (c *Client) MakeRequest(ctx *core.Context, method string, u core.URL, body 
 	return wrapped, nil
 }
 
+// DoRequest calls Client.DoStdlibRequest, and adds an 'on done' callback on $ctx that closes the response's body.
 func (c *Client) DoRequest(ctx *core.Context, req *Request) (*Response, error) {
-	return c.DoStdlibRequest(ctx, req.Request())
+	resp, err := c.DoStdlibRequest(ctx, req.Request())
+	if resp != nil {
+		ctx.OnDone(func(timeoutCtx context.Context, teardownStatus core.GracefulTeardownStatus) error {
+			if !resp.markedClosed.Load() {
+				// Close the body in a goroutine because the microtask should return very quickly.
+				go func() {
+					defer utils.Recover()
+					resp.wrapped.Body.Close()
+				}()
+			}
+
+			return nil
+		})
+	}
+	return resp, err
 }
 
 func (c *Client) DoStdlibRequest(ctx *core.Context, req *http.Request) (*Response, error) {

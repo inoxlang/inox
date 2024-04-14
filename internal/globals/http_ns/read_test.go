@@ -1,8 +1,12 @@
 package http_ns
 
 import (
+	"bytes"
+	"context"
+	"io"
 	"net/http"
 	"strconv"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -16,14 +20,18 @@ import (
 func TestHttpGet(t *testing.T) {
 	testconfig.AllowParallelization(t)
 
-	makeServer := func() (*http.Server, core.URL) {
-		var ADDR = "localhost:" + strconv.Itoa(int(port.Add(1)))
+	makeServer := func(checkReq func(*http.Request, http.ResponseWriter)) (*http.Server, core.URL) {
+		var ADDR = "localhost:" + nextPort()
 		var URL = core.URL("http://" + ADDR + "/")
 
 		server := &http.Server{
 			Addr: ADDR,
 			Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				//always ok
+
+				if checkReq != nil {
+					checkReq(r, w)
+				}
 			}),
 		}
 
@@ -35,7 +43,7 @@ func TestHttpGet(t *testing.T) {
 	t.Run("missing permission", func(t *testing.T) {
 		testconfig.AllowParallelization(t)
 
-		server, URL := makeServer()
+		server, URL := makeServer(nil)
 		defer server.Close()
 
 		ctx := core.NewContext(core.ContextConfig{
@@ -56,7 +64,7 @@ func TestHttpGet(t *testing.T) {
 	t.Run("the request rate limit should be met", func(t *testing.T) {
 		testconfig.AllowParallelization(t)
 
-		server, URL := makeServer()
+		server, URL := makeServer(nil)
 		defer server.Close()
 
 		//create a context that allows up to one request per second
@@ -88,6 +96,63 @@ func TestHttpGet(t *testing.T) {
 		}
 
 		assert.WithinDuration(t, start.Add(time.Second), time.Now(), 150*time.Millisecond)
+	})
+
+	t.Run("the response's body should be closed when the context is done", func(t *testing.T) {
+		testconfig.AllowParallelization(t)
+
+		var sentByteCount atomic.Int32
+
+		server, URL := makeServer(func(r *http.Request, w http.ResponseWriter) {
+			byteSlice := bytes.Repeat([]byte{'a'}, 100)
+
+			for {
+				select {
+				case <-r.Context().Done():
+					return
+				default:
+					w.Write(byteSlice)
+					sentByteCount.Add(int32(len(byteSlice)))
+					time.Sleep(25 * time.Millisecond)
+				}
+			}
+		})
+		defer server.Close()
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: []core.Permission{
+				core.HttpPermission{Kind_: permbase.Read, Entity: URL},
+			},
+			Limits: []core.Limit{
+				{Name: HTTP_REQUEST_RATE_LIMIT_NAME, Kind: core.FrequencyLimit, Value: 1 * core.FREQ_LIMIT_SCALE},
+			},
+		})
+		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
+
+		resp, err := HttpGet(ctx, URL)
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		go func() {
+			time.Sleep(100 * time.Millisecond)
+			ctx.CancelGracefully()
+		}()
+
+		bytes, err := io.ReadAll(resp.Body(ctx))
+
+		if !assert.ErrorIs(t, err, context.Canceled) {
+			return
+		}
+
+		maxReceivedCount := int(sentByteCount.Load())
+		assert.InDelta(t, maxReceivedCount, len(bytes), float64(maxReceivedCount/8))
 	})
 }
 

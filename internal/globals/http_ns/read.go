@@ -89,7 +89,7 @@ func HttpRead(ctx *core.Context, u core.URL, args ...core.Value) (result core.Va
 	if err != nil {
 		return nil, fmt.Errorf("http network error: %w", err)
 	}
-	defer resp.wrapped.Body.Close()
+	defer resp.CloseBody()
 
 	if resp.StatusCode(ctx) >= 400 {
 		return nil, fmt.Errorf("http: status code %d: %s", resp.StatusCode(ctx), resp.Status(ctx))
@@ -149,7 +149,7 @@ func httpExists(ctx *core.Context, args ...core.Value) core.Bool {
 	}
 	resp, err := client.DoRequest(ctx, req)
 	if err == nil {
-		defer resp.wrapped.Body.Close()
+		defer resp.CloseBody()
 	}
 
 	return err == nil && resp.wrapped.StatusCode <= 399

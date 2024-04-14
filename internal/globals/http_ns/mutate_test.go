@@ -1,6 +1,8 @@
 package http_ns
 
 import (
+	"bytes"
+	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -20,7 +22,7 @@ import (
 func TestHttpPost(t *testing.T) {
 	testconfig.AllowParallelization(t)
 
-	makeServer := func(checkReq func(*http.Request)) (*http.Server, core.URL) {
+	makeServer := func(checkReq func(*http.Request, http.ResponseWriter)) (*http.Server, core.URL) {
 		var ADDR = "localhost:" + nextPort()
 		var URL = core.URL("http://" + ADDR + "/")
 
@@ -30,7 +32,7 @@ func TestHttpPost(t *testing.T) {
 				//always ok
 
 				if checkReq != nil {
-					checkReq(r)
+					checkReq(r, w)
 				}
 			}),
 		}
@@ -141,7 +143,7 @@ func TestHttpPost(t *testing.T) {
 		var cType atomic.Value
 		var body atomic.Value
 
-		server, URL := makeServer(func(r *http.Request) {
+		server, URL := makeServer(func(r *http.Request, _ http.ResponseWriter) {
 			cType.Store(r.Header.Get("Content-Type"))
 
 			bytes, err := io.ReadAll(r.Body)
@@ -181,7 +183,7 @@ func TestHttpPost(t *testing.T) {
 		var cType atomic.Value
 		var body atomic.Value
 
-		server, URL := makeServer(func(r *http.Request) {
+		server, URL := makeServer(func(r *http.Request, _ http.ResponseWriter) {
 			cType.Store(r.Header.Get("Content-Type"))
 
 			bytes, err := io.ReadAll(r.Body)
@@ -213,6 +215,59 @@ func TestHttpPost(t *testing.T) {
 
 		assert.Equal(t, mimeconsts.JSON_CTYPE, cType.Load())
 		assert.Equal(t, `[]`, body.Load())
+	})
+
+	t.Run("the response's body should be closed when the context is done", func(t *testing.T) {
+		testconfig.AllowParallelization(t)
+
+		var sentByteCount atomic.Int32
+
+		server, URL := makeServer(func(r *http.Request, w http.ResponseWriter) {
+			byteSlice := bytes.Repeat([]byte{'a'}, 100)
+
+			for {
+				select {
+				case <-r.Context().Done():
+					return
+				default:
+					w.Write(byteSlice)
+					sentByteCount.Add(int32(len(byteSlice)))
+					time.Sleep(25 * time.Millisecond)
+				}
+			}
+		})
+		defer server.Close()
+
+		ctx := core.NewContext(core.ContextConfig{
+			Permissions: []core.Permission{
+				core.HttpPermission{Kind_: permbase.Write, Entity: URL},
+			},
+			Limits: []core.Limit{
+				{Name: HTTP_REQUEST_RATE_LIMIT_NAME, Kind: core.FrequencyLimit, Value: 1 * core.FREQ_LIMIT_SCALE},
+			},
+		})
+		core.NewGlobalState(ctx)
+		defer ctx.CancelGracefully()
+
+		resp, err := HttpPost(ctx, URL, core.NewObject())
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		go func() {
+			time.Sleep(100 * time.Millisecond)
+			ctx.CancelGracefully()
+		}()
+
+		bytes, err := io.ReadAll(resp.Body(ctx))
+
+		if !assert.ErrorIs(t, err, context.Canceled) {
+			return
+		}
+
+		maxReceivedCount := int(sentByteCount.Load())
+		assert.InDelta(t, maxReceivedCount, len(bytes), float64(maxReceivedCount/8))
 	})
 }
 
@@ -256,6 +311,7 @@ func TestHttpDelete(t *testing.T) {
 		assert.Equal(t, core.HttpPermission{Kind_: permbase.Delete, Entity: URL}, err.(*core.NotAllowedError).Permission)
 		assert.Nil(t, resp)
 	})
+
 }
 
 func TestServeFile(t *testing.T) {

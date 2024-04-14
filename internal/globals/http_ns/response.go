@@ -3,6 +3,7 @@ package http_ns
 import (
 	"io"
 	"net/http"
+	"sync/atomic"
 
 	"github.com/inoxlang/inox/internal/core"
 
@@ -10,8 +11,9 @@ import (
 )
 
 type Response struct {
-	wrapped *http.Response
-	cookies []core.Serializable
+	wrapped      *http.Response
+	cookies      []core.Serializable
+	markedClosed atomic.Bool
 }
 
 func (resp *Response) GetGoMethod(name string) (*core.GoFunction, bool) {
@@ -84,4 +86,9 @@ func (resp *Response) Status(ctx *core.Context) string {
 
 func (resp *Response) StdlibResponse() *http.Response {
 	return resp.wrapped
+}
+
+func (resp *Response) CloseBody() error {
+	defer resp.markedClosed.Store(true)
+	return resp.wrapped.Body.Close()
 }
