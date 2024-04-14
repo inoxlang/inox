@@ -696,6 +696,16 @@ shell_loop:
 			sh.runeSequence = append(sh.runeSequence, r)
 			action := getTermAction(sh.runeSequence)
 
+			if action == EndOfTransmission {
+				if sh.foregroundTask == nil && len(sh.input) == 0 {
+					fmt.Fprint(sh.preOut, "\n")
+					break shell_loop
+				} else {
+					sh.runeSequence = nil
+					continue
+				}
+			}
+
 			if sh.foregroundTask != nil {
 				// we stop the foreground task and continue the shell loop
 				if action == Stop {

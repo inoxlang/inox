@@ -25,6 +25,7 @@ const (
 	EscapeNext
 	Delete
 	ClearScreen
+	EndOfTransmission
 )
 
 func (code termAction) String() string {
@@ -45,6 +46,9 @@ func (code termAction) String() string {
 		SuggestComplete:    "SuggestComplete",
 		Escape:             "Escape",
 		EscapeNext:         "EscapeNext",
+		Delete:             "Delete",
+		ClearScreen:        "ClearScreen",
+		EndOfTransmission:  "EndOfTransmission",
 	}
 	return mp[code]
 }
@@ -54,12 +58,13 @@ func (code termAction) String() string {
 func getTermAction(runeSlice []rune) termAction {
 
 	const (
-		BACKSPACE_CODE      = 8
-		TAB_CODE            = 9
-		CTRL_L_CODE         = 12
-		CTRL_BACKSPACE_CODE = 23
-		ESCAPE_CODE         = 27
-		DEL_CODE            = 127
+		END_OF_TRANSMISSION_CODE = 4
+		BACKSPACE_CODE           = 8
+		TAB_CODE                 = 9
+		CTRL_L_CODE              = 12
+		CTRL_BACKSPACE_CODE      = 23
+		ESCAPE_CODE              = 27
+		DEL_CODE                 = 127
 
 		ARROW_UP_FINAL_CODE    = 65
 		ARROW_DOWN_FINAL_CODE  = 66
@@ -80,6 +85,8 @@ func getTermAction(runeSlice []rune) termAction {
 			return DeleteWordBackward
 		case CTRL_L_CODE:
 			return ClearScreen
+		case END_OF_TRANSMISSION_CODE:
+			return EndOfTransmission
 		case ENTER_CODE:
 			return Enter
 		case CTRL_C_CODE:
