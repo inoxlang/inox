@@ -12301,6 +12301,29 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			assert.Equal(t, expectedPattern, pattern)
 		})
 
+		t.Run("attribute with a string pattern", func(t *testing.T) {
+			code := "%<div a=`a+`></div>"
+			state := core.NewGlobalState(NewDefaultTestContext())
+			defer state.Ctx.CancelGracefully()
+
+			pattern, err := Eval(code, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			expectedPattern := core.NewMarkupPattern(core.NewMarkupPatternElement(
+				core.NewMarkupPatternElementParameters{
+					TagName:    "div",
+					Quantifier: parse.OneMarkupElement,
+					Attributes: map[string]core.StringPattern{
+						"a": core.NewRegexPattern("a+"),
+					},
+				},
+			))
+
+			assert.Equal(t, expectedPattern, pattern)
+		})
+
 		t.Run("attribute with constant integer value", func(t *testing.T) {
 			code := `%<div a=1></div>`
 			state := core.NewGlobalState(NewDefaultTestContext())

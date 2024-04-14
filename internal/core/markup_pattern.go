@@ -50,6 +50,8 @@ func newMarkupPatternElementFromNode(node *parse.MarkupPatternElement, bridge St
 			}
 
 			switch val := val.(type) {
+			case StringPattern:
+				stringPattern = val
 			case Pattern:
 				strPattern, ok := val.StringPattern()
 				if !ok {
