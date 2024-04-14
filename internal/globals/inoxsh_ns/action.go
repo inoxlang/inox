@@ -24,6 +24,7 @@ const (
 	Escape
 	EscapeNext
 	Delete
+	ClearScreen
 )
 
 func (code termAction) String() string {
@@ -54,10 +55,11 @@ func getTermAction(runeSlice []rune) termAction {
 
 	const (
 		BACKSPACE_CODE      = 8
-		DEL_CODE            = 127
-		CTRL_BACKSPACE_CODE = 23
 		TAB_CODE            = 9
+		CTRL_L_CODE         = 12
+		CTRL_BACKSPACE_CODE = 23
 		ESCAPE_CODE         = 27
+		DEL_CODE            = 127
 
 		ARROW_UP_FINAL_CODE    = 65
 		ARROW_DOWN_FINAL_CODE  = 66
@@ -76,6 +78,8 @@ func getTermAction(runeSlice []rune) termAction {
 			return Back
 		case CTRL_BACKSPACE_CODE:
 			return DeleteWordBackward
+		case CTRL_L_CODE:
+			return ClearScreen
 		case ENTER_CODE:
 			return Enter
 		case CTRL_C_CODE:

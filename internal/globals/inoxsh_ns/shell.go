@@ -823,6 +823,10 @@ func (sh *shell) handleAction(action termAction) (stop bool) {
 		restoreCursorPosition(sh.preOut)
 
 		sh.backspaceCount -= 1
+	case ClearScreen:
+		sh.resetInput()
+		clearScreen(sh.preOut)
+		sh.promptLen = printPrompt(sh.preOut, sh.state, sh.config)
 	case Back:
 
 		if len(sh.input) == 0 || sh.backspaceCount >= len(sh.input) {
