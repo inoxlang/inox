@@ -30,11 +30,11 @@ func EstimateIndentationUnit(code []rune, chunk *Chunk) string {
 			for _, stmt := range n.Statements {
 				update(GetFirstToken(stmt, chunk).Span.Start)
 			}
-		case *GlobalConstantDeclaration:
-			update(n.Span.Start)
-		case *Chunk, *GlobalConstantDeclarations, *Manifest, *FunctionDeclaration, *FunctionExpression:
+		case *GlobalConstantDeclaration, *SwitchStatementCase, *MatchStatementCase:
+			update(node.Base().Span.Start)
+		case *Chunk, *GlobalConstantDeclarations, *Manifest, *FunctionDeclaration, *FunctionExpression,
+			*ForStatement, *WalkStatement, *SwitchStatement, *MatchStatement:
 			return ContinueTraversal, nil
-
 		}
 		return Prune, nil
 	}, nil)
