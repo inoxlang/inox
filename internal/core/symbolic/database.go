@@ -357,6 +357,11 @@ func (db *DatabaseIL) GetPseudoPathCompletions(pseudoPath string, isPattern bool
 
 func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, additionalArgs ...*Object) {
 
+	if ctx.HaveArgumentsErrors() {
+		//Avoid reporting irrelevant errors.
+		return
+	}
+
 	if !db.schemaUpdateExpected {
 		ctx.AddSymbolicGoFunctionError("no schema update is expected for this database: did you forget to set the expected-schema-update property in the database description ?")
 		return

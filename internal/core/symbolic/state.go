@@ -48,6 +48,7 @@ type State struct {
 
 	//temporary fields storing information provided by symbolic Go functions during calls
 
+	tempGoFunctionArgErrors              bool
 	tempSymbolicGoFunctionErrors         []symbolicGoFunctionError
 	tempSymbolicGoFunctionWarnings       []string
 	tempSymbolicGoFunctionParameters     *[]Value

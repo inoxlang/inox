@@ -244,6 +244,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 		//evaluation of the Inox function is performed further in the code
 	case *GoFunction:
 
+		state.tempGoFunctionArgErrors = true
 		result, multipleResults, enoughArgs, err := f.Call(goFunctionCallInput{
 			symbolicArgs:      args,
 			nonSpreadArgCount: nonSpreadArgCount,
@@ -254,6 +255,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 			must:              must,
 			callLikeNode:      callNode,
 		})
+		state.tempGoFunctionArgErrors = false
 
 		state.consumeSymbolicGoFunctionErrors(func(msg string, optionalLocation parse.Node) {
 			var location parse.Node = callNode
