@@ -187,10 +187,6 @@ func (ctx *Context) CopyTypeExtensions(destCtx *Context) {
 	}
 }
 
-func (ctx *Context) HaveArgumentsErrors() bool {
-	return ctx.associatedState.tempGoFunctionArgErrors
-}
-
 func (ctx *Context) AddSymbolicGoFunctionError(msg string) {
 	ctx.associatedState.addSymbolicGoFunctionError(msg)
 }

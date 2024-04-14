@@ -108,7 +108,8 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 		return ANY, nil
 	}
 
-	//evaluation of arguments
+	//Evaluate arguments.
+	//Expected values are passed to _symbolicEval for non-spread argument nodes.
 
 	args := make([]Value, 0)
 	nonSpreadArgCount := 0
@@ -157,10 +158,10 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 				state.addError(makeSymbolicEvalError(argNode, state, fmtSpreadArgumentShouldBeIterable(v)))
 			}
 
-		} else {
+		} else { //Regular argument.
 			nonSpreadArgCount++
 
-			if ident, ok := argNode.(*parse.IdentifierLiteral); ok && cmdLineSyntax {
+			if ident, ok := argNode.(*parse.IdentifierLiteral); ok && cmdLineSyntax { //Identifier literal interpreted as an identifier value.
 				args = append(args, &Identifier{name: ident.Name})
 
 				//add warning if the identifier has the same name as a variable
@@ -180,7 +181,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 					}
 				}
 
-			} else {
+			} else { //Argument interpreted in the regular way.
 				//we assume that Go functions don't modify their arguments so
 				//we are (almost) certain that the object will not get additional properties.
 				//TODO: track Go functions that mutate their arguments.
@@ -217,13 +218,17 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 
 	errorsInArguments := len(state.errors()) - errCountBeforeEvaluationOfArguments
 
-	//execution
+	//Execution
 
 	var fnExpr *parse.FunctionExpression
 	var capturedLocals map[string]Value
 
 	switch f := callee.(type) {
 	case *InoxFunction:
+		//For Inox functions we do not care about errors in arguments since incorrect argument values
+		//are replaced by correct ones, and additional errors are reported at the corresponding positions
+		//(argument nodes).
+
 		if f.node == nil {
 			state.addError(makeSymbolicEvalError(callNode, state, CALLEE_HAS_NODE_BUT_NOT_DEFINED))
 			return ANY, nil
@@ -244,7 +249,6 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 		//evaluation of the Inox function is performed further in the code
 	case *GoFunction:
 
-		state.tempGoFunctionArgErrors = true
 		result, multipleResults, enoughArgs, err := f.Call(goFunctionCallInput{
 			symbolicArgs:      args,
 			nonSpreadArgCount: nonSpreadArgCount,
@@ -255,7 +259,6 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 			must:              must,
 			callLikeNode:      callNode,
 		})
-		state.tempGoFunctionArgErrors = false
 
 		state.consumeSymbolicGoFunctionErrors(func(msg string, optionalLocation parse.Node) {
 			var location parse.Node = callNode
@@ -263,11 +266,17 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 				location = optionalLocation
 			}
 
-			state.addError(makeSymbolicEvalError(location, state, msg))
+			if errorsInArguments == 0 {
+				state.addError(makeSymbolicEvalError(location, state, msg))
+			}
 		})
 		state.consumeSymbolicGoFunctionWarnings(func(msg string) {
 			state.addWarning(makeSymbolicEvalWarning(callNode, state, msg))
 		})
+
+		if errorsInArguments != 0 {
+			return result, err
+		}
 
 		updatedSelf, ok := state.consumeUpdatedSelf()
 		if ok && self != nil {
