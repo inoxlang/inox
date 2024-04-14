@@ -65,7 +65,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("unexpected char", func(t *testing.T) {
+		t.Run("unexpected char: ]", func(t *testing.T) {
 			n, err := parseChunk(t, "]", "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
@@ -75,6 +75,23 @@ func testParse(
 						NodeBase: NodeBase{
 							NodeSpan{0, 1},
 							&ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInBlockOrModule(']')},
+							false,
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("unexpected char: <", func(t *testing.T) {
+			n, err := parseChunk(t, "<", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+				Statements: []Node{
+					&UnknownNode{
+						NodeBase: NodeBase{
+							NodeSpan{0, 1},
+							&ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInBlockOrModule('<')},
 							false,
 						},
 					},

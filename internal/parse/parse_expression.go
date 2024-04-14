@@ -225,7 +225,7 @@ func (p *parser) parseExpression(config ...exprParsingConfig) (expr Node, isMiss
 			}
 		}
 	case '<':
-		if p.i < p.len {
+		if p.i+1 < p.len {
 			switch {
 			case isAlpha(p.s[p.i+1]): //markup expression without namespace.
 				if p.inPattern {
