@@ -4,8 +4,7 @@
 
 # Markup Expressions
 
-A markup expression produces a value by passing an XML-like markup to a
-namespace that interprets it:
+A markup expression produces a value by passing markup to an Inox namespace that interprets it.
 
 ```
 # The markup is passed to the html namespace.
@@ -22,7 +21,8 @@ element = <div> Hello {string} ! </div>
 <img src="..."/>
 ```
 
-In the `<script>` and `<style>` tags, anything inside single brackets is treated as text:
+
+In `<script>` and `<style>` elements, anything inside single brackets is treated as text:
 
 ```
 <html>
@@ -36,5 +36,7 @@ In the `<script>` and `<style>` tags, anything inside single brackets is treated
     </script>
 </html>
 ```
+
+> Any Inox namespace having a member `from_markup_elem` (function) can be used to interpret a markup expression.
 
 [Back to top](#markup-expressions)

@@ -618,6 +618,10 @@ pattern int-fn = fn(int) int
 
 ## Markup Patterns
 
+*Work in progress*
+
+<!--
+
 Markup patterns matches markup elements, they do not depend on a specific markup
 language.
 
@@ -704,6 +708,80 @@ pattern ul = (
 
 ### Wildcards
 
+The wildcard __*__ matches text and zero or more elements.
+It is unrelated to [quantifiers](#quantifiers).
+
+The markup pattern ```<div>*</div>``` matches the following markup elements:
+
+```
+<div></div>
+
+<div>1</div>
+
+<div> 
+  <span></span> 
+</div>
+
+<div>
+  <span></span> 
+  <span></span> 
+</div>
+```
+
+The wildcard __*__ is **lazy**: it matches as little as possible. It 'stops' matching when the text or element following it
+matches. 
+
+The markup pattern ```<div> * <span myattr></span> </div>``` matches the following markup elements:
+
+<details>
+
+```
+<div> 
+  <span myattr="x"></span>   This element is matched by the element following the wildcard.
+</div>
+
+<div> 
+  <div> </div>               This element is matched by the wildcard. 
+  <span myattr="x"></span>   This element is matched by the element following the wildcard. 
+</div>
+
+<div> 
+  <span> </span>             This element is matched by the wildcard. 
+  <span myattr="x"></span>   This element is matched by the element following the wildcard. 
+</div>
+
+<div> 
+  <span> </span>             This element is matched by the wildcard. 
+  <span> </span>             This element is matched by the wildcard. 
+
+  <span myattr="x"></span>   This element is matched by the element following the wildcard. 
+</div>
+```
+
+</details>
+
+The markup pattern ```<div> * world </div>``` matches the following markup elements:
+
+<details>
+
+```
+<div> 
+  world   This piece of text is matched by the text following the wildcard.
+</div>
+
+<div> 
+  Hello   This piece of text is matched by the wildcard.
+  world   This piece of text is matched by the text following the wildcard.
+</div>
+
+<div> 
+  <span>Hello</span>  This element is matched by the wildcard.
+  world               This piece of text is matched by the text following the wildcard.
+</div>
+```
+
+</details>
+
 ### Interpolations
 
 Interpolations allow you to insert markup patterns or text.
@@ -734,5 +812,9 @@ Here is the list of supported exact value types for text interpolations:
 - Booleans, e.g. `a=true` 
 - Runes, e.g. `a='a'` 
 - Resource names, e.g. `a=%(/file.txt)`, `a=%(https://example.com/)`
+
+### Self-closed Tags
+
+-->
 
 [Back to top](#patterns)
