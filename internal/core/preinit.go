@@ -233,7 +233,7 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 			}
 		}
 
-		//evalute preinit block
+		//Evalute the preinit block.
 		if preinitArgs.PreinitStatement != nil {
 			_, err := TreeWalkEval(preinitArgs.PreinitStatement.Block, state)
 			if err != nil {
@@ -243,14 +243,12 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 			}
 		}
 
-		// pre evaluate the preinit-files section of the manifest
+		// Pre evaluate the preinit-files section of the manifest.
 		preinitFilesSection, ok := manifestObjLiteral.PropValue(inoxconsts.MANIFEST_PREINIT_FILES_SECTION_NAME)
 		if ok {
 			v, err := TreeWalkEval(preinitFilesSection, state)
 			if err != nil {
-				if err != nil {
-					return nil, nil, nil, fmt.Errorf("%s: failed to pre-evaluate the %s section: %w", m.Name(), inoxconsts.MANIFEST_PREINIT_FILES_SECTION_NAME, err)
-				}
+				return nil, nil, nil, fmt.Errorf("%s: failed to pre-evaluate the %s section: %w", m.Name(), inoxconsts.MANIFEST_PREINIT_FILES_SECTION_NAME, err)
 			}
 
 			obj := v.(*Object)
@@ -308,15 +306,15 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 				return nil, nil, nil, fmt.Errorf("%s: failed to pre-evaluate the %s section: %w", m.Name(), inoxconsts.MANIFEST_PREINIT_FILES_SECTION_NAME, err)
 			}
 
-			//read & parse preinit files
-			atLeastOneReadParseError := false
+			//Read & parse preinit files.
+			var errs []error
 			for _, file := range preinitFiles {
 				content, err := ReadFileInFS(preinitArgs.PreinitFilesystem, string(file.Path), MAX_PREINIT_FILE_SIZE)
 				file.Content = content
 				file.ReadParseError = err
 
 				if err != nil {
-					atLeastOneReadParseError = true
+					errs = append(errs, fmt.Errorf("%s: %w", file.Path, err))
 					continue
 				}
 
@@ -335,13 +333,13 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 				}
 
 				if file.ReadParseError != nil {
-					atLeastOneReadParseError = true
+					errs = append(errs, file.ReadParseError)
 				}
 			}
 
-			if atLeastOneReadParseError {
+			if len(errs) > 0 {
 				//not very explicative on purpose.
-				return nil, nil, nil, fmt.Errorf("%s: at least one error when reading & parsing preinit files", m.Name())
+				return nil, nil, nil, fmt.Errorf("%s: errors when reading & parsing preinit files: %w", m.Name(), errors.Join(errs...))
 			}
 		}
 
@@ -357,12 +355,10 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 		state = preinitArgs.RunningState
 	}
 
-	// evaluate object literal
+	// Evaluate object literal.
 	v, err := TreeWalkEval(m.ManifestTemplate.Object, state)
 	if err != nil {
-		if err != nil {
-			return nil, nil, nil, fmt.Errorf("%s: failed to evaluate manifest object: %w", m.Name(), err)
-		}
+		return nil, nil, nil, fmt.Errorf("%s: failed to evaluate manifest object: %w", m.Name(), err)
 	}
 
 	manifestObj := v.(*Object)
