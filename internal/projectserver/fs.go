@@ -44,6 +44,9 @@ func (fs *Filesystem) OpenFile(filename string, flag int, perm os.FileMode) (bil
 		if os.IsNotExist(err) {
 			return fs.Filesystem.OpenFile(filename, flag, 0)
 		}
+		if err != nil {
+			return nil, err
+		}
 		return f, nil
 	}
 	return fs.Filesystem.OpenFile(filename, flag, perm)
