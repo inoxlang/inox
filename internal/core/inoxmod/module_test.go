@@ -806,7 +806,7 @@ func TestParseLocalModule(t *testing.T) {
 			}
 		})
 
-		t.Run("imported module with a parsing error", func(t *testing.T) {
+		t.Run("imported module has a parsing error", func(t *testing.T) {
 			modpath := "/" + moduleName
 			fls := newMemFilesystem()
 			util.WriteFile(fls, modpath, []byte(`
@@ -853,6 +853,68 @@ func TestParseLocalModule(t *testing.T) {
 
 			assert.Equal(t, mod.FileLevelParsingErrors, importedMod.FileLevelParsingErrors)
 			assert.Equal(t, mod.Errors, importedMod.Errors)
+		})
+
+		t.Run("imported module does not exist, with RecoverFromNonExistingIncludedFiles: false", func(t *testing.T) {
+			modpath := "/" + moduleName
+			fls := newMemFilesystem()
+			util.WriteFile(fls, modpath, []byte(`
+				manifest {}
+				import res ./lib.ix {}
+			`), 0600)
+
+			parsingCtx := NewContextWithEmptyState(ContextConfig{
+				Permissions: []Permission{
+					CreateFsReadPerm(Path(modpath)),
+					CreateFsReadPerm(Path("/lib.ix")),
+				},
+				Filesystem: fls,
+			}, nil)
+			defer parsingCtx.CancelGracefully()
+
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: parsingCtx, RecoverFromNonExistingIncludedFiles: false})
+			if !assert.Error(t, err) {
+				return
+			}
+
+			assert.Nil(t, mod)
+		})
+
+		t.Run("imported module does not exist, with RecoverFromNonExistingIncludedFiles: true", func(t *testing.T) {
+			modpath := "/" + moduleName
+			fls := newMemFilesystem()
+			util.WriteFile(fls, modpath, []byte(`
+				manifest {}
+				import res ./lib.ix {}
+			`), 0600)
+
+			parsingCtx := NewContextWithEmptyState(ContextConfig{
+				Permissions: []Permission{
+					CreateFsReadPerm(Path(modpath)),
+					CreateFsReadPerm(Path("/lib.ix")),
+				},
+				Filesystem: fls,
+			}, nil)
+			defer parsingCtx.CancelGracefully()
+
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: parsingCtx, RecoverFromNonExistingIncludedFiles: true})
+			if !assert.Error(t, err) {
+				return
+			}
+
+			if !assert.NotNil(t, mod) {
+				return
+			}
+
+			assert.Empty(t, mod.FileLevelParsingErrors)
+			assert.Len(t, mod.Errors, 1)
+
+			assert.NotNil(t, mod.MainChunk)
+			assert.Len(t, mod.IncludedChunkForest, 0)
+			assert.NotNil(t, mod.ManifestTemplate)
+
+			assert.Empty(t, mod.DirectlyImportedModules, 1)
+			assert.NotContains(t, mod.DirectlyImportedModules, "/lib.ix")
 		})
 
 		t.Run("imported module includes a file", func(t *testing.T) {
@@ -1490,4 +1552,3 @@ func newMemFilesystemRootWD() afs.Filesystem {
 		return "", errors.New("not implemented")
 	})
 }
-

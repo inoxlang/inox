@@ -25,6 +25,10 @@ import (
 	"github.com/inoxlang/inox/internal/parse"
 )
 
+var (
+	ErrImportedModulesDotExist = errors.New("imported module does not exist")
+)
+
 type importedModulesFetchConfig struct {
 	recoverFromNonExistingFiles, ignoreBadlyConfiguredImports bool
 	timeout                                                   time.Duration
@@ -114,7 +118,7 @@ func fetchParseImportedModules(parentMod *Module, ctx Context, fls afs.Filesyste
 		lock                        sync.Mutex
 		importedModules             = map[string]*Module{}
 		importedModulesByImportStmt = map[*parse.ImportStatement]*Module{}
-		errs                        []error
+		importErrors                []Error
 		unrecoverableErors          []error
 	)
 
@@ -139,14 +143,19 @@ func fetchParseImportedModules(parentMod *Module, ctx Context, fls afs.Filesyste
 				} else if e == nil {
 					lock.Lock()
 
+					importStmt := stmtSources[src]
+					importStmtPosition := parentMod.MainChunk.GetSourcePosition(importStmt.Source.Base().Span)
+
 					if importedMod != nil {
 						importedModules[importedMod.Name()] = importedMod
-						importedModulesByImportStmt[stmtSources[src]] = importedMod
-						if err != nil {
-							errs = append(errs, err)
-						}
+						importedModulesByImportStmt[importStmt] = importedMod
+					} else if config.recoverFromNonExistingFiles {
+						importErrors = append(importErrors, Error{
+							Position:  importStmtPosition,
+							BaseError: err,
+						})
 					} else {
-						unrecoverableErors = append(unrecoverableErors, err)
+						unrecoverableErors = append(unrecoverableErors, fmt.Errorf("%s: %w", importStmtPosition, err))
 					}
 					lock.Unlock()
 				}
@@ -181,6 +190,8 @@ func fetchParseImportedModules(parentMod *Module, ctx Context, fls afs.Filesyste
 		parentMod.FileLevelParsingErrors = append(parentMod.FileLevelParsingErrors, importedMod.FileLevelParsingErrors...)
 		parentMod.Errors = append(parentMod.Errors, importedMod.Errors...)
 	}
+
+	parentMod.Errors = append(parentMod.Errors, importErrors...)
 
 	return nil
 }
@@ -227,10 +238,6 @@ func fetchParseImportedModule(ctx Context, resolvedImportedSrc ResourceName, con
 	deadline := time.Now().Add(timeout)
 
 	var b []byte
-	var modString string
-	var ok bool
-	var absScriptDir string
-	var isResourceURL bool
 	fls := ctx.GetFileSystem()
 
 	moduleCacheLock.Lock()
@@ -241,7 +248,12 @@ func fetchParseImportedModule(ctx Context, resolvedImportedSrc ResourceName, con
 		}
 	}()
 
-	if modString, ok = moduleCache[config.validation]; !ok || config.validation == "" {
+	source := parse.SourceFile{
+		NameString: resolvedImportedSrc.ResourceName(),
+		Resource:   resolvedImportedSrc.ResourceName(),
+	}
+
+	if content, ok := moduleCache[config.validation]; !ok || config.validation == "" {
 		switch {
 		case resolvedImportedSrc.IsPath():
 			name := resolvedImportedSrc.ResourceName()
@@ -250,7 +262,9 @@ func fetchParseImportedModule(ctx Context, resolvedImportedSrc ResourceName, con
 			if err != nil {
 				return nil, err
 			}
-			absScriptDir = filepath.Dir(absSrc)
+
+			source.ResourceDir = filepath.Dir(absSrc)
+
 			file, err := ctx.GetFileSystem().OpenFile(name, os.O_RDONLY, 0)
 			if err != nil {
 				return nil, err
@@ -261,7 +275,7 @@ func fetchParseImportedModule(ctx Context, resolvedImportedSrc ResourceName, con
 			}
 			b = content
 		case resolvedImportedSrc.IsURL():
-			isResourceURL = true
+			source.IsResourceURL = true
 
 			urlString := resolvedImportedSrc.ResourceName()
 			u, err := url.Parse(urlString)
@@ -283,7 +297,7 @@ func fetchParseImportedModule(ctx Context, resolvedImportedSrc ResourceName, con
 
 			{
 				lastSlashIndex := strings.LastIndex(string(pth), "/")
-				absScriptDir = string(u.Host) + string(pth)[:lastSlashIndex+1]
+				source.ResourceDir = string(u.Host) + string(pth)[:lastSlashIndex+1]
 			}
 
 			transport := &http.Transport{
@@ -328,7 +342,8 @@ func fetchParseImportedModule(ctx Context, resolvedImportedSrc ResourceName, con
 			b, bodyErr = io.ReadAll(resp.Body)
 
 			if resp.StatusCode != 200 {
-				return nil, &ModuleRetrievalError{message: fmt.Sprintf("failed to get %s: status %d: %s", urlString, resp.StatusCode, resp.Status)}
+				err := fmt.Errorf("failed to get %s: status %d: %s", urlString, resp.StatusCode, resp.Status)
+				return nil, err
 			}
 
 			// ctype := resp.Header.Get("Content-Type")
@@ -337,33 +352,30 @@ func fetchParseImportedModule(ctx Context, resolvedImportedSrc ResourceName, con
 			// }
 
 			if bodyErr != nil {
-				return nil, &ModuleRetrievalError{message: fmt.Sprintf("failed to get %s: failed to read body: %s", urlString, err.Error())}
+				return nil, fmt.Errorf("failed to get %s: failed to read body: %s", urlString, bodyErr.Error())
 			}
 		}
+
+		//Validate the content.
 
 		array := sha256.Sum256(b)
 		hash := array[:]
 
 		if config.validation != "" && !bytes.Equal(hash, []byte(config.validation)) {
-			return nil, &ModuleRetrievalError{message: fmt.Sprintf("failed to get %s: validation failed", resolvedImportedSrc.ResourceName())}
+			return nil, fmt.Errorf("failed to get %s: validation failed", resolvedImportedSrc.ResourceName())
 		}
 
-		modString = string(b)
-		moduleCache[string(hash)] = modString
+		content = string(b)
+		moduleCache[string(hash)] = content
+		source.CodeString = content
 
 		//TODO: limit cache size
+	} else {
+		source.CodeString = content
 	}
 
 	unlock = false
 	moduleCacheLock.Unlock()
-
-	source := parse.SourceFile{
-		NameString:    resolvedImportedSrc.ResourceName(),
-		Resource:      resolvedImportedSrc.ResourceName(),
-		ResourceDir:   absScriptDir,
-		IsResourceURL: isResourceURL,
-		CodeString:    modString,
-	}
 
 	return ParseModuleFromSource(source, resolvedImportedSrc, config.subModuleParsing)
 }

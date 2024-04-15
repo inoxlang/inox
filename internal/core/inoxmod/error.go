@@ -17,14 +17,6 @@ func (err Error) Error() string {
 	return fmt.Sprintf("%s %s", err.Position.String(), err.BaseError)
 }
 
-type ModuleRetrievalError struct {
-	message string
-}
-
-func (err ModuleRetrievalError) Error() string {
-	return err.message
-}
-
 // CombineErrors combines errors into a single error with a multiline message.
 func CombineErrors(errs []Error) error {
 

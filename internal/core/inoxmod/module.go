@@ -82,7 +82,7 @@ type Module struct {
 	//errors
 
 	Errors                 []Error
-	FileLevelParsingErrors []*parse.ParsingError //len(.OriginalErrors) <= len(.ParsingErrors)
+	FileLevelParsingErrors []*parse.ParsingError //len(.FileLevelParsingErrors) <= len(.Errors)
 
 }
 
