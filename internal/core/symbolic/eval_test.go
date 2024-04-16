@@ -5854,6 +5854,39 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, ANY_INT, res)
 		})
 
+		t.Run("specific function called after another specific function that is called with errors in arguments", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				f({
+					a: go do {} # error 
+				})
+				return g(1)
+			`)
+
+			objProp := parse.FindNode(n, (*parse.ObjectProperty)(nil), nil)
+
+			f := &GoFunction{
+				fn: func(ctx *Context, _ Value) {
+					ctx.SetSymbolicGoFunctionParameters(&[]Value{ANY_OBJ}, []string{"object"})
+				},
+			}
+			g := &GoFunction{
+				fn: func(ctx *Context, _ Value) *Int {
+					ctx.SetSymbolicGoFunctionParameters(&[]Value{ANY_INT}, []string{"int"})
+					return ANY_INT
+				},
+			}
+
+			state.setGlobal("f", f, GlobalConst)
+			state.setGlobal("g", g, GlobalConst)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(objProp, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE),
+			}, state.errors())
+			assert.Equal(t, ANY_INT, res)
+		})
+
 		t.Run("useless deep mutation of a shared object property's value should be an error - member expression", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				shared.list.append(1)

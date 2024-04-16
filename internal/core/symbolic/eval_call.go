@@ -260,23 +260,22 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 			callLikeNode:      callNode,
 		})
 
+		if errorsInArguments != 0 {
+			state.resetGoFunctionRelatedFields()
+			return result, err
+		}
+
 		state.consumeSymbolicGoFunctionErrors(func(msg string, optionalLocation parse.Node) {
 			var location parse.Node = callNode
 			if optionalLocation != nil {
 				location = optionalLocation
 			}
 
-			if errorsInArguments == 0 {
-				state.addError(makeSymbolicEvalError(location, state, msg))
-			}
+			state.addError(makeSymbolicEvalError(location, state, msg))
 		})
 		state.consumeSymbolicGoFunctionWarnings(func(msg string) {
 			state.addWarning(makeSymbolicEvalWarning(callNode, state, msg))
 		})
-
-		if errorsInArguments != 0 {
-			return result, err
-		}
 
 		updatedSelf, ok := state.consumeUpdatedSelf()
 		if ok && self != nil {

@@ -845,6 +845,14 @@ func (state *State) consumeSymbolicGoFunctionParameters() (paramTypes []Value, p
 	return *state.tempSymbolicGoFunctionParameters, state.tempSymbolicGoFunctionParameterNames, state.tempSymbolicGoFunctionIsVariadic, true
 }
 
+func (state *State) resetGoFunctionRelatedFields() {
+	state.tempSymbolicGoFunctionErrors = state.tempSymbolicGoFunctionErrors[:0]
+	state.tempSymbolicGoFunctionWarnings = state.tempSymbolicGoFunctionWarnings[:0]
+	state.tempSymbolicGoFunctionParameters = nil
+	state.tempSymbolicGoFunctionParameterNames = nil
+	state.tempSymbolicGoFunctionIsVariadic = false
+}
+
 func (state *State) setUpdatedSelf(v Value) {
 	if state.tempUpdatedSelf != nil {
 		panic(errors.New("an updated self is already present"))
