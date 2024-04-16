@@ -1543,10 +1543,20 @@ func (ctx *Context) gracefullyTearDown() (ignore bool) {
 	return
 }
 
-func (ctx *Context) ToSymbolicValue() (*symbolic.Context, error) {
+type ContextSymbolicConversionParams struct {
+	doNotIncludePatternsFromPreinit bool
+	patternsFromPreinit             map[string]struct{}
+	patternNamespacesFromPreinit    map[string]struct{}
+}
+
+func (ctx *Context) ToSymbolicValue(conversionParams ContextSymbolicConversionParams) (*symbolic.Context, error) {
 	symbolicCtx := symbolic.NewSymbolicContext(ctx, ctx, nil)
 
 	for k, v := range ctx.namedPatterns {
+		if _, ok := conversionParams.patternsFromPreinit[k]; ok && conversionParams.doNotIncludePatternsFromPreinit {
+			continue
+		}
+
 		symbolicVal, err := ToSymbolicValue(ctx, v, false)
 		if err != nil {
 			return nil, fmt.Errorf("cannot convert named pattern %s: %s", k, err)
@@ -1556,6 +1566,10 @@ func (ctx *Context) ToSymbolicValue() (*symbolic.Context, error) {
 	}
 
 	for k, v := range ctx.patternNamespaces {
+		if _, ok := conversionParams.patternNamespacesFromPreinit[k]; ok && conversionParams.doNotIncludePatternsFromPreinit {
+			continue
+		}
+
 		symbolicVal, err := ToSymbolicValue(ctx, v, false)
 		if err != nil {
 			return nil, fmt.Errorf("cannot convert '%s' pattern namespace: %s", k, err)

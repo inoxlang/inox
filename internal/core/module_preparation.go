@@ -573,8 +573,15 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 		state.Globals.Set(globalnames.PROJECT_SECRETS, record)
 	}
 
-	//pass patterns of the preinit state to the state
+	var patternsFromPreinit map[string]struct{}
+	var patternNamespacesFromPreinit map[string]struct{}
+
+	//Pass patterns defined by the preinit statement to the state.
+
 	if preinitState != nil {
+		patternsFromPreinit = make(map[string]struct{})
+		patternNamespacesFromPreinit = make(map[string]struct{})
+
 		state.Ctx.Update(func(ctxData LockedContextData) error {
 			preinitCtx := preinitState.Global.Ctx
 
@@ -583,6 +590,7 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 					return nil
 				}
 				ctxData.NamedPatterns[name] = pattern
+				patternsFromPreinit[name] = struct{}{}
 				return nil
 			})
 
@@ -591,6 +599,7 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 					return nil
 				}
 				ctxData.PatternNamespaces[name] = namespace
+				patternNamespacesFromPreinit[name] = struct{}{}
 				return nil
 			})
 
@@ -706,7 +715,11 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 			globalnames.MOD_ARGS_VARNAME: manifest.Parameters.GetSymbolicArguments(ctx),
 		}
 
-		symbolicCtx, err := state.Ctx.ToSymbolicValue()
+		symbolicCtx, err := state.Ctx.ToSymbolicValue(ContextSymbolicConversionParams{
+			doNotIncludePatternsFromPreinit: true,
+			patternsFromPreinit:             patternsFromPreinit,
+			patternNamespacesFromPreinit:    patternNamespacesFromPreinit,
+		})
 		if err != nil {
 			finalErr = parsingErr
 			return
@@ -948,7 +961,7 @@ func PrepareExtractionModeIncludableFile(args IncludableFilePreparationArgs) (st
 		return nil
 	})
 
-	symbolicCtx, symbolicCheckError := state.Ctx.ToSymbolicValue()
+	symbolicCtx, symbolicCheckError := state.Ctx.ToSymbolicValue(ContextSymbolicConversionParams{})
 	if symbolicCheckError != nil {
 		finalErr = parsingErr
 		return

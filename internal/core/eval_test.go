@@ -151,7 +151,7 @@ func bytecodeTest(t *testing.T, optimize bool) {
 				return nil
 			})
 
-			symbCtx, err := s.Ctx.ToSymbolicValue()
+			symbCtx, err := s.Ctx.ToSymbolicValue(core.ContextSymbolicConversionParams{})
 			if !assert.NoError(t, err) {
 				return nil, err
 			}
@@ -13252,7 +13252,7 @@ func _makeTreeWalkEvalFunc(t *testing.T, recycle bool) func(c any, s *core.Globa
 				return nil
 			})
 
-			symbCtx, err := s.Ctx.ToSymbolicValue()
+			symbCtx, err := s.Ctx.ToSymbolicValue(core.ContextSymbolicConversionParams{})
 			if !assert.NoError(t, err) {
 				return nil, err
 			}

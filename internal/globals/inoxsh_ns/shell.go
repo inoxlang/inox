@@ -1245,7 +1245,7 @@ func (sh *shell) checkModule(mod *core.Module) (*core.StaticCheckData, *symbolic
 		return nil, nil, checkErr
 	}
 
-	symbolicContext, err := sh.state.Global.Ctx.ToSymbolicValue()
+	symbolicContext, err := sh.state.Global.Ctx.ToSymbolicValue(core.ContextSymbolicConversionParams{})
 
 	if err != nil {
 		return nil, nil, err

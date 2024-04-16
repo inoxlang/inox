@@ -85,7 +85,7 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 				Globals:                        globals,
 				AdditionalSymbolicGlobalConsts: additional,
 				IsShellChunk:                   false,
-				Context:                        utils.Must(state.Ctx.ToSymbolicValue()),
+				Context:                        utils.Must(state.Ctx.ToSymbolicValue(core.ContextSymbolicConversionParams{})),
 			})
 			if data != nil {
 				state.SymbolicData.AddData(data)

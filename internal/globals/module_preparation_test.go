@@ -45,7 +45,7 @@ func TestPrepareLocalModule(t *testing.T) {
 
 	t.Run("specified log level", func(t *testing.T) {
 		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
+		file := filepath.Join(dir, "main.ix")
 		compilationCtx := createCompilationCtx(dir)
 		defer compilationCtx.CancelGracefully()
 
@@ -101,7 +101,7 @@ func TestPrepareLocalModule(t *testing.T) {
 	t.Run("preinit block defines a pattern used in the manifest", func(t *testing.T) {
 
 		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
+		file := filepath.Join(dir, "main.ix")
 		compilationCtx := createCompilationCtx(dir)
 		defer compilationCtx.CancelGracefully()
 
@@ -156,13 +156,24 @@ func TestPrepareLocalModule(t *testing.T) {
 			return
 		}
 
-		// symbolic check should have been performed
-		assert.False(t, state.SymbolicData.IsEmpty())
+		// Symbolic check should have been performed.
+		if !assert.False(t, state.SymbolicData.IsEmpty()) {
+			return
+		}
+
+		// The location the pattern definition should be present.
+		patternIdent, ancestors := parse.FindNodeAndChain(mod.MainChunk.Node, (*parse.PatternIdentifierLiteral)(nil), nil)
+		position, ok := state.SymbolicData.GetNamedPatternOrPatternNamespacePositionDefinition(patternIdent, ancestors)
+
+		if !assert.True(t, ok) {
+			return
+		}
+		assert.Contains(t, position.SourceName, "/main.ix")
 	})
 
 	t.Run("the manifest contains a URL expression using a global constant", func(t *testing.T) {
 		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
+		file := filepath.Join(dir, "main.ix")
 		compilationCtx := createCompilationCtx(dir)
 		defer compilationCtx.CancelGracefully()
 
@@ -225,7 +236,7 @@ func TestPrepareLocalModule(t *testing.T) {
 
 	t.Run("preinit-files", func(t *testing.T) {
 		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
+		file := filepath.Join(dir, "main.ix")
 		compilationCtx := createCompilationCtx(dir)
 		defer compilationCtx.CancelGracefully()
 
@@ -308,7 +319,7 @@ func TestPrepareLocalModule(t *testing.T) {
 	t.Run("manifest checks", func(t *testing.T) {
 
 		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
+		file := filepath.Join(dir, "main.ix")
 		compilationCtx := createCompilationCtx(dir)
 		defer compilationCtx.CancelGracefully()
 
@@ -362,7 +373,7 @@ func TestPrepareLocalModule(t *testing.T) {
 
 	t.Run("manifest eval & symbolic eval should be ignored when there is a preinit check error: data extraction mode", func(t *testing.T) {
 		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
+		file := filepath.Join(dir, "main.ix")
 		compilationCtx := createCompilationCtx(dir)
 		defer compilationCtx.CancelGracefully()
 
@@ -500,7 +511,7 @@ func TestPrepareLocalModule(t *testing.T) {
 
 		fs := fs_ns.NewMemFilesystem(10000)
 
-		util.WriteFile(fs, "/script.ix", []byte(`
+		util.WriteFile(fs, "/main.ix", []byte(`
 			manifest {
 				permissions: {}
 			}
@@ -513,7 +524,7 @@ func TestPrepareLocalModule(t *testing.T) {
 		}, nil)
 
 		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
-			Fpath:                     "/script.ix",
+			Fpath:                     "/main.ix",
 			ParsingCompilationContext: ctx,
 			ParentContext:             ctx,
 			ParentContextRequired:     true,
@@ -554,7 +565,7 @@ func TestPrepareLocalModule(t *testing.T) {
 
 	t.Run("manifest & symbolic eval should be ignored when there is a preinit check error: regular mode", func(t *testing.T) {
 		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
+		file := filepath.Join(dir, "main.ix")
 		compilationCtx := createCompilationCtx(dir)
 		defer compilationCtx.CancelGracefully()
 
@@ -603,7 +614,7 @@ func TestPrepareLocalModule(t *testing.T) {
 
 	t.Run("manifest & symbolic eval should be ignored when there is a manifest check error: data extraction mode", func(t *testing.T) {
 		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
+		file := filepath.Join(dir, "main.ix")
 		compilationCtx := createCompilationCtx(dir)
 		defer compilationCtx.CancelGracefully()
 
@@ -676,7 +687,7 @@ func TestPrepareLocalModule(t *testing.T) {
 
 	t.Run("manifest & symbolic eval should be ignored when there is a manifest check error: regular mode", func(t *testing.T) {
 		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
+		file := filepath.Join(dir, "main.ix")
 		compilationCtx := createCompilationCtx(dir)
 		defer compilationCtx.CancelGracefully()
 
@@ -942,7 +953,7 @@ func TestPrepareLocalModule(t *testing.T) {
 
 	t.Run("if the OS filesystem used the IWD should be the current working directory", func(t *testing.T) {
 		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
+		file := filepath.Join(dir, "main.ix")
 		compilationCtx := createCompilationCtx(dir)
 		defer compilationCtx.CancelGracefully()
 
@@ -991,7 +1002,7 @@ func TestPrepareLocalModule(t *testing.T) {
 
 	t.Run("function requiring an early declaration", func(t *testing.T) {
 		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
+		file := filepath.Join(dir, "main.ix")
 		compilationCtx := createCompilationCtx(dir)
 		defer compilationCtx.CancelGracefully()
 
@@ -1051,7 +1062,7 @@ func TestPrepareLocalModuleWithInvalidInputs(t *testing.T) {
 
 	t.Run(".ParentContext & .StdlibCtx should not be both set", func(t *testing.T) {
 		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
+		file := filepath.Join(dir, "main.ix")
 		compilationCtx := createCompilationCtx(dir)
 		defer compilationCtx.CancelGracefully()
 
@@ -1089,7 +1100,7 @@ func TestPrepareLocalModuleWithInvalidInputs(t *testing.T) {
 
 	t.Run("recoverable parsing error not supported by symbolic evaluation", func(t *testing.T) {
 		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
+		file := filepath.Join(dir, "main.ix")
 		compilationCtx := createCompilationCtx(dir)
 		defer compilationCtx.CancelGracefully()
 
@@ -1150,7 +1161,7 @@ func TestPrepareLocalModuleWithInvalidInputs(t *testing.T) {
 
 	t.Run("recoverable parsing error supported by symbolic evaluation", func(t *testing.T) {
 		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
+		file := filepath.Join(dir, "main.ix")
 		compilationCtx := createCompilationCtx(dir)
 		defer compilationCtx.CancelGracefully()
 
@@ -1212,7 +1223,7 @@ func TestPrepareLocalModuleWithInvalidInputs(t *testing.T) {
 	t.Run("invalid CLI arguments: missing positional argument", func(t *testing.T) {
 
 		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
+		file := filepath.Join(dir, "main.ix")
 		compilationCtx := createCompilationCtx(dir)
 		defer compilationCtx.CancelGracefully()
 
@@ -1258,7 +1269,7 @@ func TestPrepareLocalModuleWithInvalidInputs(t *testing.T) {
 	t.Run("CLI: too many positional arguments", func(t *testing.T) {
 
 		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
+		file := filepath.Join(dir, "main.ix")
 		compilationCtx := createCompilationCtx(dir)
 		defer compilationCtx.CancelGracefully()
 
@@ -1302,7 +1313,7 @@ func TestPrepareLocalModuleWithInvalidInputs(t *testing.T) {
 	t.Run("CLI: unknown argument", func(t *testing.T) {
 
 		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
+		file := filepath.Join(dir, "main.ix")
 		compilationCtx := createCompilationCtx(dir)
 		defer compilationCtx.CancelGracefully()
 
@@ -1346,7 +1357,7 @@ func TestPrepareLocalModuleWithInvalidInputs(t *testing.T) {
 	t.Run("missing positional argument", func(t *testing.T) {
 
 		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
+		file := filepath.Join(dir, "main.ix")
 		compilationCtx := createCompilationCtx(dir)
 		defer compilationCtx.CancelGracefully()
 
@@ -1392,7 +1403,7 @@ func TestPrepareLocalModuleWithInvalidInputs(t *testing.T) {
 	t.Run("missing non positional argument", func(t *testing.T) {
 
 		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
+		file := filepath.Join(dir, "main.ix")
 		compilationCtx := createCompilationCtx(dir)
 		defer compilationCtx.CancelGracefully()
 
@@ -1440,7 +1451,7 @@ func TestPrepareLocalModuleWithInvalidInputs(t *testing.T) {
 	t.Run("invalid value for positional argument", func(t *testing.T) {
 
 		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
+		file := filepath.Join(dir, "main.ix")
 		compilationCtx := createCompilationCtx(dir)
 		defer compilationCtx.CancelGracefully()
 
@@ -1488,7 +1499,7 @@ func TestPrepareLocalModuleWithInvalidInputs(t *testing.T) {
 	t.Run("too many positional arguments", func(t *testing.T) {
 
 		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
+		file := filepath.Join(dir, "main.ix")
 		compilationCtx := createCompilationCtx(dir)
 		defer compilationCtx.CancelGracefully()
 
@@ -1534,7 +1545,7 @@ func TestPrepareLocalModuleWithInvalidInputs(t *testing.T) {
 	t.Run("invalid value for non positional argument", func(t *testing.T) {
 
 		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
+		file := filepath.Join(dir, "main.ix")
 		compilationCtx := createCompilationCtx(dir)
 		defer compilationCtx.CancelGracefully()
 
@@ -1584,7 +1595,7 @@ func TestPrepareLocalModuleWithInvalidInputs(t *testing.T) {
 	t.Run("unknown non positional argument", func(t *testing.T) {
 
 		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
+		file := filepath.Join(dir, "main.ix")
 		compilationCtx := createCompilationCtx(dir)
 		defer compilationCtx.CancelGracefully()
 
@@ -1632,7 +1643,7 @@ func TestPrepareLocalModuleWithInvalidInputs(t *testing.T) {
 	t.Run("unknown argument", func(t *testing.T) {
 
 		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
+		file := filepath.Join(dir, "main.ix")
 		compilationCtx := createCompilationCtx(dir)
 		defer compilationCtx.CancelGracefully()
 
@@ -1707,7 +1718,7 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 		//
 
 		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
+		file := filepath.Join(dir, "main.ix")
 		compilationCtx := createCompilationCtx(dir)
 		defer compilationCtx.CancelGracefully()
 
@@ -1807,7 +1818,7 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 		//
 
 		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
+		file := filepath.Join(dir, "main.ix")
 		compilationCtx := createCompilationCtx(dir)
 		defer compilationCtx.CancelGracefully()
 
@@ -1885,7 +1896,7 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 		//
 
 		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
+		file := filepath.Join(dir, "main.ix")
 		compilationCtx := createCompilationCtx(dir)
 		defer compilationCtx.CancelGracefully()
 
@@ -1994,7 +2005,7 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 		//
 
 		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
+		file := filepath.Join(dir, "main.ix")
 		compilationCtx := createCompilationCtx(dir)
 		defer compilationCtx.CancelGracefully()
 
@@ -2087,7 +2098,7 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 		//
 
 		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
+		file := filepath.Join(dir, "main.ix")
 		compilationCtx := createCompilationCtx(dir)
 		defer compilationCtx.CancelGracefully()
 
@@ -2297,7 +2308,7 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 
 		s3Host := randS3Host()
 		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
+		file := filepath.Join(dir, "main.ix")
 		compilationCtx := createCompilationCtx(dir)
 		defer compilationCtx.CancelGracefully()
 
@@ -2411,7 +2422,7 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 
 		s3Host := randS3Host()
 		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
+		file := filepath.Join(dir, "main.ix")
 		compilationCtx := createCompilationCtx(dir)
 		defer compilationCtx.CancelGracefully()
 
@@ -2577,7 +2588,7 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 		fs := fs_ns.NewMemFilesystem(10000)
 		s3Host := randS3Host()
 
-		util.WriteFile(fs, "/script.ix", []byte(`
+		util.WriteFile(fs, "/main.ix", []byte(`
 			manifest {
 				permissions: {}
 				host-definitions: :{
@@ -2601,7 +2612,7 @@ func TestPrepareLocalModuleWithDatabases(t *testing.T) {
 		}, nil)
 
 		state, mod, _, err := core.PrepareLocalModule(core.ModulePreparationArgs{
-			Fpath:                     "/script.ix",
+			Fpath:                     "/main.ix",
 			ParsingCompilationContext: ctx,
 			ParentContext:             ctx,
 			ParentContextRequired:     true,
@@ -2652,7 +2663,7 @@ func TestPrepareLocalModuleWithCache(t *testing.T) {
 
 	t.Run("module only: manual cache entry creation", func(t *testing.T) {
 		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
+		file := filepath.Join(dir, "main.ix")
 		compilationCtx := createCompilationCtx(dir)
 		defer compilationCtx.CancelGracefully()
 
@@ -2764,7 +2775,7 @@ func TestPrepareLocalModuleWithCache(t *testing.T) {
 
 	t.Run("module only: automatic cache update", func(t *testing.T) {
 		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
+		file := filepath.Join(dir, "main.ix")
 		compilationCtx := createCompilationCtx(dir)
 		defer compilationCtx.CancelGracefully()
 
@@ -2884,7 +2895,7 @@ func TestPrepareLocalModuleWithCache(t *testing.T) {
 
 	t.Run("module and static check data", func(t *testing.T) {
 		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
+		file := filepath.Join(dir, "main.ix")
 		compilationCtx := createCompilationCtx(dir)
 		defer compilationCtx.CancelGracefully()
 
@@ -2994,7 +3005,7 @@ func TestPrepareLocalModuleWithCache(t *testing.T) {
 
 	t.Run("module and static check data", func(t *testing.T) {
 		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
+		file := filepath.Join(dir, "main.ix")
 		compilationCtx := createCompilationCtx(dir)
 		defer compilationCtx.CancelGracefully()
 
@@ -3106,7 +3117,7 @@ func TestPrepareLocalModuleWithCache(t *testing.T) {
 
 	t.Run("cache has an unexpected path", func(t *testing.T) {
 		dir := t.TempDir()
-		file := filepath.Join(dir, "script.ix")
+		file := filepath.Join(dir, "main.ix")
 		otherFile := filepath.Join(dir, "script2.ix")
 
 		compilationCtx := createCompilationCtx(dir)
