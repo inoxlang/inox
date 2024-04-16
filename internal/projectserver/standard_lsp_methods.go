@@ -730,6 +730,7 @@ func handleDidChangeDocument(callCtx context.Context, req *defines.DidChangeText
 	fls := session.filesystem
 	chunkCache := session.inoxChunkCache
 	memberAuthToken := session.memberAuthToken
+	session.diagPullDisablingWindowStartTimes[req.TextDocument.Uri] = time.Now()
 
 	fpath, err := getFilePath(req.TextDocument.Uri, projectMode)
 	if err != nil {

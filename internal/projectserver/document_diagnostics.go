@@ -22,11 +22,12 @@ const (
 	//Duration before computing and publishing diagnostics after the user stops making edits.
 	POST_EDIT_DIAGNOSTIC_DEBOUNCE_DURATION = 400 * time.Millisecond
 
-	MIN_DURATION_BEFORE_LOW_PRIORITY_DOC_DIAG_RECOMPUTATION = 250 * time.Millisecond
+	MIN_DURATION_BEFORE_LOW_PRIORITY_DOC_DIAG_RECOMPUTATION = time.Second
 )
 
 // This handler does not return any diagnostics. Instead it spawns a goroutine that will compute, and push them using textDocument/publisDiagnostics.
 // This is a bit of a hack, but unexpected bugs and issues arose when mixing the two diagnostic retrieval models (push and pull) was tried.
+// Diagnostics may not be computed if a computation has happened very recently.
 func handleDocumentDiagnostic(ctx context.Context, req *defines.DocumentDiagnosticParams) (any, error) {
 	rpcSession := jsonrpc.GetSession(ctx)
 	//sessionCtx := session.Context()
@@ -55,9 +56,9 @@ func handleDocumentDiagnostic(ctx context.Context, req *defines.DocumentDiagnost
 	go func() {
 		defer utils.Recover()
 		computeNotifyDocumentDiagnostics(diagnosticNotificationParams{
-			isLowPriority: true,
-			docURI:        req.TextDocument.Uri,
-			usingInoxFS:   projectMode,
+			triggeredByPull: true, //low priority
+			docURI:          req.TextDocument.Uri,
+			usingInoxFS:     projectMode,
 
 			rpcSession:      rpcSession,
 			fls:             fls,
@@ -98,10 +99,10 @@ func handleDocumentDiagnostic(ctx context.Context, req *defines.DocumentDiagnost
 }
 
 type diagnosticNotificationParams struct {
-	rpcSession    *jsonrpc.Session
-	docURI        defines.DocumentUri
-	usingInoxFS   bool
-	isLowPriority bool
+	rpcSession      *jsonrpc.Session
+	docURI          defines.DocumentUri
+	usingInoxFS     bool
+	triggeredByPull bool
 
 	fls             *Filesystem
 	project         *project.Project
@@ -110,15 +111,15 @@ type diagnosticNotificationParams struct {
 }
 
 // computeNotifyDocumentDiagnostics diagnostics a document and notifies the LSP client (textDocument/publishDiagnostics).
-// If $isLowPriority is true and a call to computeNotifyDocumentDiagnostics has happened very recently the function does nothing.
+// If $ignoreIfVeryRecentComputation is true and a call to computeNotifyDocumentDiagnostics has happened very recently the function does nothing.
 func computeNotifyDocumentDiagnostics(params diagnosticNotificationParams) error {
 	startTime := time.Now()
 
 	projSession := getCreateLockedProjectSession(params.rpcSession)
-	lastDiagnosticComputationStartTimes := projSession.lastDiagnosticComputationStartTimes
+	windowStartTimes := projSession.diagPullDisablingWindowStartTimes
 
-	if params.isLowPriority {
-		timeSincePrevComputationStart := startTime.Sub(lastDiagnosticComputationStartTimes[params.docURI])
+	if params.triggeredByPull {
+		timeSincePrevComputationStart := startTime.Sub(windowStartTimes[params.docURI])
 
 		if timeSincePrevComputationStart < MIN_DURATION_BEFORE_LOW_PRIORITY_DOC_DIAG_RECOMPUTATION {
 			projSession.lock.Unlock()
@@ -126,7 +127,7 @@ func computeNotifyDocumentDiagnostics(params diagnosticNotificationParams) error
 		}
 	}
 
-	lastDiagnosticComputationStartTimes[params.docURI] = startTime
+	windowStartTimes[params.docURI] = startTime
 	projSession.lock.Unlock()
 
 	diagnostics, err := computeDocumentDiagnostics(params)
