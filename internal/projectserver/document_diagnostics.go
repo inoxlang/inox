@@ -21,6 +21,8 @@ import (
 const (
 	//Duration before computing and publishing diagnostics after the user stops making edits.
 	POST_EDIT_DIAGNOSTIC_DEBOUNCE_DURATION = 400 * time.Millisecond
+
+	MIN_DURATION_BEFORE_LOW_PRIORITY_DOC_DIAG_RECOMPUTATION = 250 * time.Millisecond
 )
 
 // This handler does not return any diagnostics. Instead it spawns a goroutine that will compute, and push them using textDocument/publisDiagnostics.
@@ -53,8 +55,9 @@ func handleDocumentDiagnostic(ctx context.Context, req *defines.DocumentDiagnost
 	go func() {
 		defer utils.Recover()
 		computeNotifyDocumentDiagnostics(diagnosticNotificationParams{
-			docURI:      req.TextDocument.Uri,
-			usingInoxFS: projectMode,
+			isLowPriority: true,
+			docURI:        req.TextDocument.Uri,
+			usingInoxFS:   projectMode,
 
 			rpcSession:      rpcSession,
 			fls:             fls,
@@ -95,9 +98,10 @@ func handleDocumentDiagnostic(ctx context.Context, req *defines.DocumentDiagnost
 }
 
 type diagnosticNotificationParams struct {
-	rpcSession  *jsonrpc.Session
-	docURI      defines.DocumentUri
-	usingInoxFS bool
+	rpcSession    *jsonrpc.Session
+	docURI        defines.DocumentUri
+	usingInoxFS   bool
+	isLowPriority bool
 
 	fls             *Filesystem
 	project         *project.Project
@@ -106,7 +110,25 @@ type diagnosticNotificationParams struct {
 }
 
 // computeNotifyDocumentDiagnostics diagnostics a document and notifies the LSP client (textDocument/publishDiagnostics).
+// If $isLowPriority is true and a call to computeNotifyDocumentDiagnostics has happened very recently the function does nothing.
 func computeNotifyDocumentDiagnostics(params diagnosticNotificationParams) error {
+	startTime := time.Now()
+
+	projSession := getCreateLockedProjectSession(params.rpcSession)
+	lastDiagnosticComputationStartTimes := projSession.lastDiagnosticComputationStartTimes
+
+	if params.isLowPriority {
+		timeSincePrevComputationStart := startTime.Sub(lastDiagnosticComputationStartTimes[params.docURI])
+
+		if timeSincePrevComputationStart < MIN_DURATION_BEFORE_LOW_PRIORITY_DOC_DIAG_RECOMPUTATION {
+			projSession.lock.Unlock()
+			return nil
+		}
+	}
+
+	lastDiagnosticComputationStartTimes[params.docURI] = startTime
+	projSession.lock.Unlock()
+
 	diagnostics, err := computeDocumentDiagnostics(params)
 	if err != nil {
 		return err
@@ -129,15 +151,22 @@ func computeDocumentDiagnostics(params diagnosticNotificationParams) (result *do
 	session, docURI, usingInoxFS, fls, project, memberAuthToken :=
 		params.rpcSession, params.docURI, params.usingInoxFS, params.fls, params.project, params.memberAuthToken
 
-	sessionCtx := session.Context()
-	ctx := sessionCtx.BoundChildWithOptions(core.BoundChildContextOptions{
-		Filesystem: fls,
-	})
-
 	fpath, err := getFilePath(docURI, usingInoxFS)
 	if err != nil {
 		return nil, err
 	}
+
+	sessionCtx := session.Context()
+	handlingCtx := sessionCtx.BoundChildWithOptions(core.BoundChildContextOptions{
+		Filesystem: fls,
+	})
+
+	defer func() {
+		go func() {
+			defer utils.Recover()
+			handlingCtx.CancelGracefully()
+		}()
+	}()
 
 	defer func() {
 		if result != nil {
@@ -148,7 +177,7 @@ func computeDocumentDiagnostics(params diagnosticNotificationParams) (result *do
 				result.items = []defines.Diagnostic{}
 			}
 
-			// //Save the result in the session.
+			// Save the result in the session.
 			projSession := getCreateLockedProjectSession(params.rpcSession)
 			defer projSession.lock.Unlock()
 			projSession.documentDiagnostics[fpath] = result
@@ -158,7 +187,7 @@ func computeDocumentDiagnostics(params diagnosticNotificationParams) (result *do
 	errSeverity := defines.DiagnosticSeverityError
 	warningSeverity := defines.DiagnosticSeverityWarning
 
-	preparationResult, ok := prepareSourceFileInExtractionMode(ctx, filePreparationParams{
+	preparationResult, ok := prepareSourceFileInExtractionMode(handlingCtx, filePreparationParams{
 		fpath:         fpath,
 		requiresState: false,
 		ignoreCache:   true,
