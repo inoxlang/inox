@@ -261,6 +261,15 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 		})
 
 		if errorsInArguments != 0 {
+			//If there are errors at argument nodes, there is a high chance that the
+			//errors and updated self reported by the Go function call are irrelevant.
+			//Hence we just get information about more specific parameters and return early.
+
+			params, _, _, hasMoreSpecificParams := state.consumeSymbolicGoFunctionParameters()
+			if hasMoreSpecificParams {
+				setAllowedNonPresentProperties(argNodes, nonSpreadArgCount, params, state)
+			}
+
 			state.resetGoFunctionRelatedFields()
 			return result, err
 		}

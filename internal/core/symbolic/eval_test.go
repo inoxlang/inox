@@ -5887,6 +5887,34 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, ANY_INT, res)
 		})
 
+		t.Run("allowed non-present properties should be saved even in the function is called with errors in arguments", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				f({
+					otherprop: go do {} # error 
+				})
+			`)
+			objLit := parse.FindFirstNode(n, (*parse.ObjectLiteral)(nil))
+
+			f := &GoFunction{
+				fn: func(ctx *Context, _ Value) {
+					obj := NewInexactObject2(map[string]Serializable{"prop": ANY_INT})
+					ctx.SetSymbolicGoFunctionParameters(&[]Value{obj}, []string{"object"})
+				},
+			}
+
+			state.setGlobal("f", f, GlobalConst)
+			_, err := symbolicEval(n, state)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Len(t, state.Errors(), 1)
+
+			allowedProps, ok := state.symbolicData.GetAllowedNonPresentProperties(objLit)
+			assert.True(t, ok)
+			assert.Equal(t, []string{"prop"}, allowedProps)
+		})
+
 		t.Run("useless deep mutation of a shared object property's value should be an error - member expression", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				shared.list.append(1)
