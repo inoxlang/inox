@@ -132,7 +132,7 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 		return _findCompletions(state, chunk, cursorIndex, false, nil)
 	}
 
-	t.Run("variables", func(t *testing.T) {
+	t.Run("identifiers and variables", func(t *testing.T) {
 		if mode != LspCompletions {
 			t.Skip()
 			return
@@ -324,6 +324,38 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 					ReplacedRange:         parse.SourcePositionRange{Span: parse.NodeSpan{Start: 0, End: 3}},
 					MarkdownDocumentation: utils.MustGet(help.HelpFor("sleep", helpMessageConfig)),
 				},
+			}, completions)
+		})
+
+		t.Run("property name from prefix in object literal", func(t *testing.T) {
+			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			defer state.Global.Ctx.CancelGracefully()
+
+			chunk, _ := parseChunkSource("pattern o = {prop: int}; var o o = {p} # error at p (not declared)", "")
+
+			doSymbolicCheck(chunk, state.Global)
+			completions := findCompletions(state, chunk, 37)
+			assert.EqualValues(t, []Completion{
+				{
+					ShownString:   "prop",
+					Value:         "prop",
+					ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 36, End: 37}}},
+			}, completions)
+		})
+
+		t.Run("property name from prefix in object literal: linefeed before prefix", func(t *testing.T) {
+			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			defer state.Global.Ctx.CancelGracefully()
+
+			chunk, _ := parseChunkSource("pattern o = {prop: int}; var o o = {\np} # error at p (not declared)", "")
+
+			doSymbolicCheck(chunk, state.Global)
+			completions := findCompletions(state, chunk, 38)
+			assert.EqualValues(t, []Completion{
+				{
+					ShownString:   "prop",
+					Value:         "prop",
+					ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 37, End: 38}}},
 			}, completions)
 		})
 	})
