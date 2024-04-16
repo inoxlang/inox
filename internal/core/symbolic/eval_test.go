@@ -11515,7 +11515,46 @@ func TestSymbolicEval(t *testing.T) {
 				inexact: true,
 			}, res)
 
-			//check context data
+			//Check context data.
+
+			pattern := state.ctx.ResolveNamedPattern("p")
+			lhsNode := parse.FindFirstNode(n, (*parse.PatternIdentifierLiteral)(nil))
+			returnStmt, ancestors := parse.FindNodeAndChain(n, (*parse.ReturnStatement)(nil), nil)
+
+			data, ok := state.symbolicData.GetContextData(returnStmt, ancestors)
+			if !assert.True(t, ok) {
+				return
+			}
+
+			assert.Contains(t, data.Patterns, NamedPatternData{
+				Name:               "p",
+				Value:              pattern,
+				DefinitionPosition: state.currentChunk().GetSourcePosition(lhsNode.Span),
+			})
+		})
+
+		t.Run("in included file in preinit block", func(t *testing.T) {
+			n, state := MakeTestStateAndChunks(`
+				preinit {
+					import ./lib.ix
+				}
+				manifest {}
+				return %p
+			`, map[string]string{
+				"./lib.ix": `
+					pattern p = %{}
+				`,
+			})
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, &ObjectPattern{
+				entries: map[string]Pattern{},
+				inexact: true,
+			}, res)
+
+			//Check context data.
 
 			pattern := state.ctx.ResolveNamedPattern("p")
 			returnStmt, ancestors := parse.FindNodeAndChain(n, (*parse.ReturnStatement)(nil), nil)
@@ -11525,15 +11564,21 @@ func TestSymbolicEval(t *testing.T) {
 				return
 			}
 
-			//ignore definition positions
-			for i := range data.Patterns {
-				data.Patterns[i].DefinitionPosition = parse.SourcePositionRange{}
+			includedFile := state.Module.inclusionStatementMap[parse.FindFirstNode(n, (*parse.InclusionImportStatement)(nil))]
+			lhsNode := parse.FindFirstNode(includedFile.Node, (*parse.PatternIdentifierLiteral)(nil))
+
+			for _, data := range data.Patterns {
+				if data.Name == "p" {
+					assert.Equal(t, NamedPatternData{
+						Name:               "p",
+						Value:              pattern,
+						DefinitionPosition: includedFile.GetSourcePosition(lhsNode.Span),
+					}, data)
+					return
+				}
 			}
 
-			assert.Contains(t, data.Patterns, NamedPatternData{
-				Name:  "p",
-				Value: pattern,
-			})
+			assert.FailNow(t, "pattern data should have been found")
 		})
 	})
 
