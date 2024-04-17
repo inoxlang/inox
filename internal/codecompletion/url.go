@@ -159,38 +159,77 @@ func findURLPatternCompletions(ctx *core.Context, node *parse.URLPatternLiteral,
 	return
 }
 
-func findHostCompletions(ctx *core.Context, prefix string, parent parse.Node) []Completion {
+func findHostCompletions(ctx *core.Context, node parse.Node, search completionSearch) []Completion {
+	value := ""
+	scheme := ""
+	hostPrefix := ""
+	isHostPattern := false
+
+	switch node := node.(type) {
+	case *parse.HostLiteral:
+		var ok bool
+		value = node.Value
+		scheme, hostPrefix, ok = strings.Cut(node.Value, "://")
+
+		if !ok {
+			return nil
+		}
+	case *parse.HostPatternLiteral:
+		var ok bool
+		value = node.Value
+		scheme, hostPrefix, ok = strings.Cut(node.Value, "://")
+		isHostPattern = true
+
+		if !ok || strings.Contains(hostPrefix, "*") {
+			return nil
+		}
+	case *parse.SchemeLiteral:
+		value = node.Name
+		scheme = node.Name
+	default:
+		return nil
+	}
+
 	var completions []Completion
 
 	allDefinitions := ctx.GetAllHostDefinitions()
 
 	for host := range allDefinitions {
 		hostStr := string(host)
-		if strings.HasPrefix(hostStr, prefix) {
+		if strings.HasPrefix(hostStr, value) {
+			labelDetail := ""
+			if isHostPattern {
+				hostStr = "%" + hostStr
+				labelDetail = "%" + core.HOSTPATTERN_PATTERN.Name
+				//Adding '%' makes VSCode more likely to list the completions.
+			} else {
+				labelDetail = "%" + core.HOST_PATTERN.Name
+			}
+
 			completions = append(completions, Completion{
-				ShownString: hostStr,
-				Value:       hostStr,
-				Kind:        defines.CompletionItemKindConstant,
-				LabelDetail: "%" + core.HOST_PATTERN.Name,
+				ShownString:   hostStr,
+				Value:         hostStr,
+				Kind:          defines.CompletionItemKindConstant,
+				LabelDetail:   labelDetail,
+				ReplacedRange: search.chunk.GetSourcePosition(node.Base().Span),
 			})
 		}
 	}
 
-	{ //localhost
-		scheme, realHost, ok := strings.Cut(prefix, "://")
-
-		var schemes = []string{"http", "https", "file", "ws", "wss"}
-
-		if ok && utils.SliceContains(schemes, scheme) && len(realHost) > 0 && strings.HasPrefix("localhost", realHost) {
-			s := strings.Replace(prefix, realHost, "localhost", 1)
+	switch scheme {
+	case inoxconsts.LDB_SCHEME_NAME:
+		//Nothing to suggest since databases should be in host definitions (suggested above).
+	case "http", "https", "ws", "wss":
+		if len(hostPrefix) > 0 && strings.HasPrefix("localhost", hostPrefix) {
+			s := strings.Replace(value, hostPrefix, "localhost", 1)
 			completions = append(completions, Completion{
-				ShownString: s,
-				Value:       s,
-				Kind:        defines.CompletionItemKindConstant,
-				LabelDetail: "%" + core.HOST_PATTERN.Name,
+				ShownString:   s,
+				Value:         s,
+				Kind:          defines.CompletionItemKindConstant,
+				LabelDetail:   "%" + core.HOST_PATTERN.Name,
+				ReplacedRange: search.chunk.GetSourcePosition(node.Base().Span),
 			})
 		}
-
 	}
 
 	return completions

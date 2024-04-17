@@ -1066,6 +1066,67 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 		}, completions)
 	})
 
+	t.Run("host suggestions", func(t *testing.T) {
+		t.Run("scheme literal", func(t *testing.T) {
+			state := newState()
+			chunk, _ := parseChunkSource("ldb://", "")
+
+			state.Global.Ctx.AddHostDefinition("ldb://main", core.Host("ldb://main"))
+
+			doSymbolicCheck(chunk, state.Global)
+			completions := findCompletions(state, chunk, 6)
+			assert.EqualValues(t, []Completion{
+				{
+					ShownString: "ldb://main",
+					Value:       "ldb://main",
+					ReplacedRange: parse.SourcePositionRange{
+						Span: parse.NodeSpan{Start: 0, End: 6},
+					},
+				},
+			}, completions)
+		})
+
+		t.Run("host literal", func(t *testing.T) {
+			state := newState()
+			chunk, _ := parseChunkSource("ldb://m", "")
+
+			state.Global.Ctx.AddHostDefinition("ldb://main", core.Host("ldb://main"))
+			state.Global.Ctx.AddHostDefinition("ldb://secondary", core.Host("ldb://secondary"))
+
+			doSymbolicCheck(chunk, state.Global)
+			completions := findCompletions(state, chunk, 7)
+			assert.EqualValues(t, []Completion{
+				{
+					ShownString: "ldb://main",
+					Value:       "ldb://main",
+					ReplacedRange: parse.SourcePositionRange{
+						Span: parse.NodeSpan{Start: 0, End: 7},
+					},
+				},
+			}, completions)
+		})
+
+		t.Run("host pattern literal", func(t *testing.T) {
+			state := newState()
+			chunk, _ := parseChunkSource("%ldb://m", "")
+
+			state.Global.Ctx.AddHostDefinition("ldb://main", core.Host("ldb://main"))
+			state.Global.Ctx.AddHostDefinition("ldb://secondary", core.Host("ldb://secondary"))
+
+			doSymbolicCheck(chunk, state.Global)
+			completions := findCompletions(state, chunk, 8)
+			assert.EqualValues(t, []Completion{
+				{
+					ShownString: "%ldb://main",
+					Value:       "%ldb://main",
+					ReplacedRange: parse.SourcePositionRange{
+						Span: parse.NodeSpan{Start: 0, End: 8},
+					},
+				},
+			}, completions)
+		})
+	})
+
 	t.Run("break", func(t *testing.T) {
 
 		t.Run("in for statement's block", func(t *testing.T) {

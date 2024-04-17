@@ -140,10 +140,8 @@ func FindCompletions(args SearchArgs) []Completion {
 			completions = findURLCompletions(state.Global.Ctx, n, search)
 		case *parse.URLPatternLiteral:
 			completions = findURLPatternCompletions(state.Global.Ctx, n, search)
-		case *parse.HostLiteral:
-			completions = findHostCompletions(state.Global.Ctx, n.Value, parent)
-		case *parse.SchemeLiteral:
-			completions = findHostCompletions(state.Global.Ctx, n.Name, parent)
+		case *parse.HostLiteral, *parse.HostPatternLiteral, *parse.SchemeLiteral:
+			completions = findHostCompletions(state.Global.Ctx, n, search)
 		case *parse.InvalidAliasRelatedNode:
 			if len(n.Raw) > 0 && !strings.Contains(n.Raw, "/") {
 				completions = findHostAliasCompletions(state.Global.Ctx, n.Raw[1:], parent)
