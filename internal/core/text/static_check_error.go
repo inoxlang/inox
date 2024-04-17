@@ -20,32 +20,45 @@ const (
 	CALLED_NOT_ALLOWED_INSIDE_GLOBAL_CONST_DECLS                         = "this callee is not allowed inside global constant declarations"
 	CALL_EXPRS_NOT_ALLOWED_INSIDE_GLOBAL_CONST_DECLS_OF_INCLUDABLE_FILES = "call expressions are not allowed inside the global constant declarations of includable files"
 
-	//manifest
+	//Manifest
+
 	NO_SPREAD_IN_MANIFEST            = "objects & lists in the manifest cannot contain spread elements"
 	ELEMENTS_NOT_ALLOWED_IN_MANIFEST = "elements (valus without a key) are not allowed in the manifest object"
 
-	//kind section
-	KIND_SECTION_SHOULD_BE_A_STRING_LITERAL             = "the '" + inoxconsts.MANIFEST_KIND_SECTION_NAME + "' section of the manifest should have a string value (string literal)"
-	INVALID_KIND_SECTION_EMBEDDED_MOD_KINDS_NOT_ALLOWED = "invalid '" + inoxconsts.MANIFEST_KIND_SECTION_NAME + "' section: embedded module kinds are not allowed"
+	//Kind section
 
-	//permissions section
+	KIND_SECTION_SHOULD_BE_A_STRING_LITERAL                      = "the '" + inoxconsts.MANIFEST_KIND_SECTION_NAME + "' section of the manifest should have a string value (string literal)"
+	INVALID_KIND_SECTION_EMBEDDED_MOD_KINDS_NOT_ALLOWED          = "invalid '" + inoxconsts.MANIFEST_KIND_SECTION_NAME + "' section: embedded module kinds are not allowed"
+	THE_UNSPECIFIED_MOD_KIND_NAME_CANNOT_BE_USED_IN_THE_MANIFEST = "the '" + inoxconsts.UNSPECIFIED_MODULE_KIND_NAME +
+		"' module kind name cannot be used in the manifest"
+	MOD_KIND_NOT_EQUAL_TO_KIND_DETERMINED_DURING_PARSING = "module kind not equal to the kind determined during parsing, " +
+		"the kind inferred from the filename may be conflicting with the kind specified in the manifest"
+	MOD_KIND_SPECIFIED_IN_MANIFEST_SHOULD_BE_SPEC_OR_SHOULD_BE_OMITTED = "the module is inferred as a specification module, " +
+		"so the kind specified in the manifest should be '" + inoxconsts.SPEC_MODULE_KIND_NAME + "' or should be omitted"
+
+	//Permissions section
+
 	PERMS_SECTION_SHOULD_BE_AN_OBJECT     = "the '" + inoxconsts.MANIFEST_PERMS_SECTION_NAME + "' section of the manifest should be an object"
 	ELEMENTS_NOT_ALLOWED_IN_PERMS_SECTION = "elements are not allowed in the 'permissions' section"
 
-	//limits section
+	//Limits section
+
 	LIMITS_SECTION_SHOULD_BE_AN_OBJECT = "the '" + inoxconsts.MANIFEST_LIMITS_SECTION_NAME + "' section of the manifest should be an object"
 
-	//env section
+	//Env section
+
 	ENV_SECTION_SHOULD_BE_AN_OBJECT_PATTERN                = "the '" + inoxconsts.MANIFEST_ENV_SECTION_NAME + "' section of the manifest should be an object pattern literal"
 	ENV_SECTION_NOT_AVAILABLE_IN_EMBEDDED_MODULE_MANIFESTS = "the '" + inoxconsts.MANIFEST_ENV_SECTION_NAME + "' section is not available in embedded module manifests"
 
-	//params section
+	//Parameters section
+
 	PARAMS_SECTION_SHOULD_BE_AN_OBJECT                        = "the '" + inoxconsts.MANIFEST_PARAMS_SECTION_NAME + "' section of the manifest should be an object literal"
 	PARAMS_SECTION_NOT_AVAILABLE_IN_EMBEDDED_MODULE_MANIFESTS = "the '" + inoxconsts.MANIFEST_PARAMS_SECTION_NAME + "' section is not available in embedded module manifests"
 
 	FORBIDDEN_NODE_TYPE_IN_INCLUDABLE_CHUNK_IMPORTED_BY_PREINIT = "forbidden node type in includable file imported by preinit"
 
-	//permissions
+	//Permissions
+
 	NO_PERM_DESCRIBED_BY_THIS_TYPE_OF_VALUE         = "there is no permission described by this type of value"
 	NO_PERM_DESCRIBED_BY_STRINGS                    = "there is no permission described by strings"
 	MAYBE_YOU_MEANT_TO_WRITE_A_PATH_LITERAL         = "maybe you meant to write a path literal such as /dir/ or /data.json (always unquoted)"

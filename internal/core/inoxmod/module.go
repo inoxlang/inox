@@ -30,12 +30,12 @@ const (
 
 var (
 	MODULE_KIND_NAMES = [...]string{
-		UnspecifiedModuleKind: "unspecified",
-		SpecModule:            "spec",
-		UserLThreadModule:     "userlthread",
-		TestSuiteModule:       "testsuite",
-		TestCaseModule:        "testcase",
-		ApplicationModule:     "application",
+		UnspecifiedModuleKind: inoxconsts.UNSPECIFIED_MODULE_KIND_NAME,
+		SpecModule:            inoxconsts.SPEC_MODULE_KIND_NAME,
+		UserLThreadModule:     inoxconsts.LTHREAD_MODULE_KIND_NAME,
+		TestSuiteModule:       inoxconsts.TESTSUITE_MODULE_KIND_NAME,
+		TestCaseModule:        inoxconsts.TESTCASE_MODULE_KIND_NAME,
+		ApplicationModule:     inoxconsts.APP_MODULE_KIND_NAME,
 	}
 
 	ErrFileToIncludeDoesNotExist       = errors.New("file to include does not exist")
@@ -457,12 +457,13 @@ func ParseModuleFromSource(src parse.ChunkSource, resource ResourceName, config 
 	} else {
 		//attempt to determine the module kind, we don't report errors because the static checker will.
 		objLit := code.Node.Manifest.Object.(*parse.ObjectLiteral)
-		node, ok := objLit.PropValue(inoxconsts.MANIFEST_KIND_SECTION_NAME)
-		if ok {
+		node, hasKindProp := objLit.PropValue(inoxconsts.MANIFEST_KIND_SECTION_NAME)
+		if hasKindProp {
 			kindName, ok := GetUncheckedModuleKindNameFromNode(node)
 			if ok {
 				kind, err := ParseModuleKind(kindName)
-				if err == nil {
+				//Update the module kind if the specified kind is valid and the kind has not been inferred from the filename.
+				if err == nil && mod.Kind == UnspecifiedModuleKind {
 					mod.Kind = kind
 				}
 			}

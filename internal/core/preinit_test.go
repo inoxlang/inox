@@ -131,6 +131,16 @@ func TestPreInit(t *testing.T) {
 			moduleKind:         ApplicationModule,
 		},
 		{
+			name: "kind: unspecified is not allowed to be specified in the manifest",
+			module: `
+				manifest {
+					kind: "unspecified"
+				}`,
+			expectedLimits:            []Limit{minLimitA, minLimitB, threadLimit},
+			error:                     true,
+			expectedStaticCheckErrors: []string{text.THE_UNSPECIFIED_MOD_KIND_NAME_CANNOT_BE_USED_IN_THE_MANIFEST},
+		},
+		{
 			name: "kind: module kind should be a string literal",
 			module: `
 				manifest {
@@ -159,6 +169,18 @@ func TestPreInit(t *testing.T) {
 			expectedLimits:            []Limit{minLimitA, minLimitB, threadLimit},
 			error:                     true,
 			expectedStaticCheckErrors: []string{ErrInvalidModuleKind.Error()},
+		},
+
+		{
+			name:       "the kind specified in the manifest should not conflict with the inferred module kind: spec module and 'application' specified",
+			moduleKind: SpecModule,
+			module: `
+				manifest {
+					kind: "application"
+				}`,
+			error:                     true,
+			expectedStaticCheckErrors: []string{text.MOD_KIND_SPECIFIED_IN_MANIFEST_SHOULD_BE_SPEC_OR_SHOULD_BE_OMITTED},
+			expectedLimits:            []Limit{},
 		},
 		{
 			name: "parameters: non positional with named pattern",
@@ -1331,7 +1353,7 @@ func TestPreInit(t *testing.T) {
 			},
 		},
 
-		//check the parameters section is forbidden in most modules.
+		//Check that the parameters section is forbidden in most modules.
 
 		{
 			name:       "the parameters section is not allowed in spec modules",
@@ -1380,7 +1402,7 @@ func TestPreInit(t *testing.T) {
 			expectedLimits:            []Limit{},
 		},
 
-		//check the databases section is forbidden in most modules.
+		//Check that the databases section is forbidden in most modules.
 
 		{
 			name:       "the databases section is not allowed in spec modules",
@@ -1429,7 +1451,7 @@ func TestPreInit(t *testing.T) {
 			expectedLimits:            []Limit{},
 		},
 
-		//check the parameters section is forbidden in most modules.
+		//Check that the parameters section is forbidden in most modules.
 
 		{
 			name:       "the parameters section is not allowed in spec modules",
@@ -1478,7 +1500,7 @@ func TestPreInit(t *testing.T) {
 			expectedLimits:            []Limit{},
 		},
 
-		//check the invocation section is forbidden in most modules.
+		//Check that the invocation section is forbidden in most modules.
 
 		{
 			name:       "the invocation section is not allowed in spec modules",
@@ -1527,7 +1549,7 @@ func TestPreInit(t *testing.T) {
 			expectedLimits:            []Limit{},
 		},
 
-		//check the preinit-files section is forbidden in most modules.
+		//Check that the preinit-files section is forbidden in most modules.
 
 		{
 			name:       "the preinit-files section is not allowed in spec modules",
@@ -1576,7 +1598,7 @@ func TestPreInit(t *testing.T) {
 			expectedLimits:            []Limit{},
 		},
 
-		//check the env section is forbidden in most modules.
+		//Check that the env section is forbidden in most modules.
 
 		{
 			name:       "the env section is not allowed in spec modules",

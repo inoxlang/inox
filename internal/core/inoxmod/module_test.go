@@ -163,7 +163,7 @@ func TestParseLocalModule(t *testing.T) {
 		assert.Len(t, mod.Errors, 1)
 		assert.Len(t, mod.FileLevelParsingErrors, 1)
 		assert.Empty(t, mod.IncludedChunkForest)
-		assert.Nil(t, mod.ManifestTemplate)
+		assert.NotNil(t, mod.ManifestTemplate)
 	})
 
 	t.Run("application kind", func(t *testing.T) {

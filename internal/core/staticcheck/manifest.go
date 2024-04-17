@@ -82,14 +82,33 @@ func CheckManifestObject(args ManifestStaticCheckArguments) {
 				continue
 			}
 
-			kind, err := inoxmod.ParseModuleKind(kindName)
+			kindInManifest, err := inoxmod.ParseModuleKind(kindName)
 			if err != nil {
 				onError(p.Key, inoxmod.ErrInvalidModuleKind.Error())
 				continue
 			}
-			if kind.IsEmbedded() {
+
+			if kindInManifest.IsEmbedded() {
 				onError(p.Key, text.INVALID_KIND_SECTION_EMBEDDED_MOD_KINDS_NOT_ALLOWED)
 				continue
+			}
+
+			if kindInManifest == inoxmod.UnspecifiedModuleKind {
+				onError(p.Key, text.THE_UNSPECIFIED_MOD_KIND_NAME_CANNOT_BE_USED_IN_THE_MANIFEST)
+				continue
+			}
+
+			switch args.ModuleKind {
+			case inoxmod.SpecModule:
+				if kindInManifest != args.ModuleKind {
+					onError(p.Value, text.MOD_KIND_SPECIFIED_IN_MANIFEST_SHOULD_BE_SPEC_OR_SHOULD_BE_OMITTED)
+				}
+			case inoxmod.UnspecifiedModuleKind:
+				//ok
+			default:
+				if kindInManifest != args.ModuleKind {
+					onError(p.Value, text.MOD_KIND_NOT_EQUAL_TO_KIND_DETERMINED_DURING_PARSING)
+				}
 			}
 		case inoxconsts.MANIFEST_PERMS_SECTION_NAME:
 			if obj, ok := p.Value.(*parse.ObjectLiteral); ok {
