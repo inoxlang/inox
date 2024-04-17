@@ -500,6 +500,7 @@ func TestPrint(t *testing.T) {
 		"pattern p = http://",
 		//host patterns
 		"%https://**",
+		"%https://",
 		//unprefixed host patterns
 		"pattern p = https://example.com",
 		//URL patterns

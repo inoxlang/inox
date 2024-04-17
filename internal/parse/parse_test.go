@@ -6703,6 +6703,25 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("missing hostname", func(t *testing.T) {
+			n, err := parseChunk(t, `%https://`, "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 9}, nil, false},
+				Statements: []Node{
+					&HostPatternLiteral{
+						NodeBase: NodeBase{
+							NodeSpan{0, 9},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_HOST_PATT_MISSING_HOSTNAME},
+							false,
+						},
+						Value: "https://",
+						Raw:   "%https://",
+					},
+				},
+			}, n)
+		})
+
 		t.Run("unprefixed", func(t *testing.T) {
 			n := mustparseChunk(t, "pattern p = https://**")
 			assert.EqualValues(t, &Chunk{

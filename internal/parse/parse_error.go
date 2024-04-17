@@ -160,6 +160,7 @@ const (
 	NET_PORT_INVALID_OR_OUT_OR_RANGE                           = "network port is invalid or out of range"
 	URL_EXPR_CANNOT_CONTAIN_INTERP_NEXT_TO_EACH_OTHER          = "an URL expression cannot contain interpolations next to each others"
 	URL_EXPR_CANNOT_END_WITH_SLASH_3DOTS                       = "an URL expression cannot end with /..."
+	UNTERMINATED_HOST_PATT_MISSING_HOSTNAME                    = "unterminated host pattern: hostname is missing"
 	INVALID_HOST_PATT                                          = "invalid host pattern"
 	INVALID_HOST_PATT_SUGGEST_DOUBLE_STAR                      = "invalid host pattern: maybe you wanted to write '**' instead of '*'"
 	INVALID_HOST_PATT_AT_MOST_ONE_DOUBLE_STAR                  = "invalid host pattern: at most one '**' can be used"

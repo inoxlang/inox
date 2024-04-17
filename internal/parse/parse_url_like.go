@@ -534,24 +534,29 @@ loop:
 	}
 	span := NodeSpan{start, p.i}
 
-	if LOOSE_HOST_PATTERN_REGEX.MatchString(u) {
+	var parsingErr *ParsingError
 
-		parsingErr := CheckHostPattern(u)
-
+	switch {
+	case LOOSE_HOST_PATTERN_REGEX.MatchString(u):
 		return &HostPatternLiteral{
 			NodeBase: NodeBase{
 				Span: span,
-				Err:  parsingErr,
+				Err:  CheckHostPattern(u),
 			},
 			Value:      u,
 			Raw:        raw,
 			Unprefixed: !percentPrefixed,
 		}
-	}
-
-	var parsingErr *ParsingError
-
-	switch {
+	case percentPrefixed && strings.HasSuffix(raw, "://"):
+		return &HostPatternLiteral{
+			NodeBase: NodeBase{
+				Span: span,
+				Err:  &ParsingError{UnspecifiedParsingError, UNTERMINATED_HOST_PATT_MISSING_HOSTNAME},
+			},
+			Value:      u,
+			Raw:        raw,
+			Unprefixed: !percentPrefixed,
+		}
 	case !percentPrefixed && strings.HasSuffix(raw, "://"):
 		return &SchemeLiteral{
 			NodeBase: NodeBase{
