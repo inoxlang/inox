@@ -1,6 +1,9 @@
 package parse
 
-import "errors"
+import (
+	"errors"
+	"strings"
+)
 
 // See ParseExpression.
 func MustParseExpression(str string, opts ...ParserOptions) Node {
@@ -89,7 +92,7 @@ func ParsePathPattern(pth string) (ok bool) {
 }
 
 // ParsePath parses $pth as a URL literal, leading and trailing space is not allowed.
-func ParseURL(u string) (path string, ok bool) {
+func ParseURL(u string) (urlString string, ok bool) {
 	if len(u) > MAX_MODULE_BYTE_LEN {
 		return "", false
 	}
@@ -97,7 +100,16 @@ func ParseURL(u string) (path string, ok bool) {
 	p := newParser([]rune(u))
 	defer p.cancel()
 
+	index := int32(strings.Index(u, "://"))
+	if index < 0 || index == 0 {
+		return "", false
+	}
+	p.i = index
+
 	url, ok := p.parseURLLike(0, nil).(*URLLiteral)
 
-	return url.Value, ok && p.i >= p.len
+	if ok && p.i >= p.len {
+		return url.Value, true
+	}
+	return "", false
 }

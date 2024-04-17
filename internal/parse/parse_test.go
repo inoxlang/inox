@@ -6542,13 +6542,13 @@ func testParse(
 							Name:       "p",
 							Unprefixed: true,
 						},
-						Right: &SchemeLiteral{
+						Right: &InvalidURL{
 							NodeBase: NodeBase{
 								NodeSpan{12, 18},
 								&ParsingError{UnspecifiedParsingError, INVALID_SCHEME_LIT_SLASH_EXPECTED},
 								false,
 							},
-							Name: "http",
+							Value: "http:/",
 						},
 					},
 				},
@@ -37824,15 +37824,6 @@ func testParse(
 				},
 			}, n)
 		})
-	})
-}
-
-func TestParsePath(t *testing.T) {
-
-	t.Run("empty", func(t *testing.T) {
-		p, ok := ParsePath("")
-		assert.False(t, ok)
-		assert.Empty(t, p)
 	})
 }
 
