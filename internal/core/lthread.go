@@ -232,6 +232,8 @@ func SpawnLthreadWithState(args LthreadWithStateSpawnArgs) (*LThread, error) {
 		var err error
 
 		defer func() {
+			isSpawnerDone := args.SpawnerState.Ctx.IsDoneSlowCheck()
+
 			e := recover()
 			if v, ok := e.(error); ok {
 				err = v
@@ -253,7 +255,9 @@ func SpawnLthreadWithState(args LthreadWithStateSpawnArgs) (*LThread, error) {
 			}
 
 			if err != nil {
-				modState.Logger.Print("a lthread failed or was cancelled: " + utils.AddCarriageReturnAfterNewlines(err.Error()))
+				if !isSpawnerDone || !errors.Is(err, context.Canceled) { //do not log if the error is about an "expected" cancellation.
+					modState.Logger.Print("a lthread failed or was cancelled: " + utils.AddCarriageReturnAfterNewlines(err.Error()))
+				}
 				lthread.result = Nil
 				lthread.err = ValOf(err).(Error)
 				lthread.wait_result <- struct{}{}
@@ -309,7 +313,13 @@ func SpawnLthreadWithState(args LthreadWithStateSpawnArgs) (*LThread, error) {
 				modState.Debugger.Store(debugger)
 
 				defer func() {
-					debugger.ControlChan() <- DebugCommandCloseDebugger{}
+					if !debugger.Closed() {
+						select {
+						case debugger.ControlChan() <- DebugCommandCloseDebugger{}:
+						default:
+							//Debugger just closed.
+						}
+					}
 				}()
 			}
 

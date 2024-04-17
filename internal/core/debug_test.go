@@ -1,6 +1,7 @@
 package core_test
 
 import (
+	"context"
 	"io"
 	"sync"
 	"sync/atomic"
@@ -2630,6 +2631,55 @@ func testDebugModeEval(
 			}, stackTraces)
 		})
 
+		t.Run("lthread should properly stop on root debugger closing with cancellation", func(t *testing.T) {
+			state, ctx, chunk, debugger := setup(`
+				r = go {globals: {sleep: sleep}} do {
+					sleep 2s
+					return 0
+				}
+
+				return r.wait_result!()
+			`)
+
+			ctx.MustGetClosestState().Globals.Set("sleep", core.WrapGoFunction(core.Sleep))
+
+			controlChan := debugger.ControlChan()
+			var callbackCalled atomic.Bool
+
+			var routineDebugger_ atomic.Value
+
+			defer ctx.CancelGracefully()
+
+			go func() {
+				secondaryEvent := <-debugger.SecondaryEventsChan()
+
+				threadId := secondaryEvent.(core.LThreadSpawnedEvent).StateId
+				lthreadDebugger := debugger.GetDebuggerOfThread(threadId)
+				routineDebugger_.Store(lthreadDebugger)
+
+				//Stop the root debugger.
+
+				controlChan <- core.DebugCommandCloseDebugger{
+					CancelExecution: true,
+					Done: func() {
+						callbackCalled.Store(true)
+					},
+				}
+			}()
+
+			_, err := eval(chunk.Node, state)
+
+			if !assert.True(t, callbackCalled.Load()) {
+				return
+			}
+
+			if !assert.ErrorIs(t, err, context.Canceled) {
+				return
+			}
+
+			routineDebugger := routineDebugger_.Load().(*core.Debugger)
+			assert.True(t, routineDebugger.Closed())
+		})
 	})
 
 	t.Run("lthread creation inside lthread", func(t *testing.T) {
