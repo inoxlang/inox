@@ -14786,6 +14786,30 @@ func testParse(
 					},
 				},
 			},
+			{
+				input:    `:{?}`,
+				hasError: true,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 4}, nil, false},
+					Statements: []Node{
+						&DictionaryLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{0, 4}},
+							Entries: []*DictionaryEntry{
+								{
+									NodeBase: NodeBase{Span: NodeSpan{2, 3}},
+									Key: &UnknownNode{
+										NodeBase: NodeBase{
+											NodeSpan{2, 3},
+											&ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInDictionary('?')},
+											false,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 		}
 
 		for _, testCase := range testCases {

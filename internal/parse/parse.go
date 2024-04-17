@@ -1538,9 +1538,23 @@ dictionary_literal_top_loop:
 		entry.Key = key
 
 		if isMissingExpr {
+			if p.i < p.len && p.s[p.i] != '}' {
+				p.i++
+				p.tokens = append(p.tokens, Token{Type: UNEXPECTED_CHAR, Span: key.Base().Span, Raw: string(p.s[p.i-1])})
+
+				entry.Key = &UnknownNode{
+					NodeBase: NodeBase{
+						key.Base().Span,
+						&ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInDictionary(p.s[p.i-1])},
+						false,
+					},
+				}
+				p.eatSpaceNewlineCommaComment()
+				continue
+			}
+
 			p.i++
 			entry.Span.End = key.Base().Span.End
-			entries = append(entries, entry)
 			p.eatSpaceNewlineCommaComment()
 			continue
 		}
@@ -1587,7 +1601,6 @@ dictionary_literal_top_loop:
 			if p.s[p.i] != ',' {
 				entry.Span.End = p.i
 				entry.Err = &ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInDictionary(p.s[p.i])}
-				entries = append(entries, entry)
 				p.i++
 				p.eatSpaceNewlineCommaComment()
 				continue
