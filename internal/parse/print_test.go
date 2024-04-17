@@ -495,6 +495,9 @@ func TestPrint(t *testing.T) {
 		"pattern p = /",
 		"pattern p = ./",
 		"pattern p = ../",
+		//scheme literals
+		"http://",
+		"pattern p = http://",
 		//host patterns
 		"%https://**",
 		//unprefixed host patterns

@@ -492,7 +492,6 @@ func (p *parser) parseURLLikePattern(start int32, percentPrefixed bool) Node {
 	}
 
 	if c != 2 {
-
 		return &InvalidURLPattern{
 			NodeBase: NodeBase{
 				Span: NodeSpan{start, p.i},
@@ -552,9 +551,18 @@ loop:
 
 	var parsingErr *ParsingError
 
-	if !LOOSE_URL_REGEX.MatchString(u) {
+	switch {
+	case !percentPrefixed && strings.HasSuffix(raw, "://"):
+		return &SchemeLiteral{
+			NodeBase: NodeBase{
+				Span: span,
+				Err:  parsingErr,
+			},
+			Name: raw[:int32(len(u))-3],
+		}
+	case !LOOSE_URL_REGEX.MatchString(u):
 		parsingErr = &ParsingError{UnspecifiedParsingError, INVALID_URL_PATT}
-	} else {
+	default:
 		parsingErr = CheckURLPattern(u)
 	}
 

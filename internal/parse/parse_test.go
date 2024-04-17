@@ -6478,7 +6478,28 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("host with no scheme", func(t *testing.T) {
+		t.Run("in pattern region", func(t *testing.T) {
+			n := mustparseChunk(t, `pattern p = http://`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
+				Statements: []Node{
+					&PatternDefinition{
+						NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
+						Left: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+							Name:       "p",
+							Unprefixed: true,
+						},
+						Right: &SchemeLiteral{
+							NodeBase: NodeBase{NodeSpan{12, 19}, nil, false},
+							Name:     "http",
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("missing scheme name", func(t *testing.T) {
 			n, err := parseChunk(t, `://`, "")
 			assert.Error(t, err)
 			assert.EqualValues(t, &Chunk{
