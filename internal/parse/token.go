@@ -210,6 +210,7 @@ const (
 	INVALID_INTERP_SLICE
 	INVALID_UNQUOTED_REGION_SLICE
 	INVALID_URL_LIT
+	INVALID_URL_PATT_LIT
 	INVALID_HOST_ALIAS
 	COMMENT
 	INT_LITERAL
@@ -636,6 +637,7 @@ var tokenTypenames = [...]string{
 	INVALID_INTERP_SLICE:                  "INVALID_INTERP_SLICE",
 	INVALID_UNQUOTED_REGION_SLICE:         "INVALID_UNQUOTED_REGION_SLICE",
 	INVALID_URL_LIT:                       "INVALID_URL_LIT",
+	INVALID_URL_PATT_LIT:                  "INVALID_URL_PATT_LIT",
 	INVALID_HOST_ALIAS:                    "INVALID_HOST_ALIAS",
 	COMMENT:                               "COMMENT",
 	INT_LITERAL:                           "INT_LITERAL",
@@ -1115,6 +1117,9 @@ func GetTokens(node Node, chunk *Chunk, addMeta bool) []Token {
 			raw = n.Value
 		case *InvalidURL:
 			tokenType = INVALID_URL_LIT
+			raw = n.Value
+		case *InvalidURLPattern:
+			tokenType = INVALID_URL_PATT_LIT
 			raw = n.Value
 		case *InvalidAliasRelatedNode:
 			tokenType = INVALID_HOST_ALIAS

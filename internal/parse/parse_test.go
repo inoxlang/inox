@@ -6374,6 +6374,36 @@ func testParse(
 					},
 				},
 			},
+			`https:/`: {
+				err: true,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 7}, nil, false},
+					Statements: []Node{
+						&InvalidURL{
+							NodeBase: NodeBase{
+								Span: NodeSpan{0, 7},
+								Err:  &ParsingError{UnspecifiedParsingError, INVALID_SCHEME_HOST_OR_URL_SLASH_EXPECTED},
+							},
+							Value: "https:/",
+						},
+					},
+				},
+			},
+			`https:/a`: {
+				err: true,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
+					Statements: []Node{
+						&InvalidURL{
+							NodeBase: NodeBase{
+								Span: NodeSpan{0, 8},
+								Err:  &ParsingError{UnspecifiedParsingError, INVALID_SCHEME_HOST_OR_URL_SLASH_EXPECTED},
+							},
+							Value: "https:/a",
+						},
+					},
+				},
+			},
 			`https://*.com`: {
 				err: true,
 				result: &Chunk{
@@ -6493,6 +6523,32 @@ func testParse(
 						Right: &SchemeLiteral{
 							NodeBase: NodeBase{NodeSpan{12, 19}, nil, false},
 							Name:     "http",
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("in pattern region, one slash missing", func(t *testing.T) {
+			n, err := parseChunk(t, `pattern p = http:/`, "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 18}, nil, false},
+				Statements: []Node{
+					&PatternDefinition{
+						NodeBase: NodeBase{NodeSpan{0, 18}, nil, false},
+						Left: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+							Name:       "p",
+							Unprefixed: true,
+						},
+						Right: &SchemeLiteral{
+							NodeBase: NodeBase{
+								NodeSpan{12, 18},
+								&ParsingError{UnspecifiedParsingError, INVALID_SCHEME_LIT_SLASH_EXPECTED},
+								false,
+							},
+							Name: "http",
 						},
 					},
 				},
@@ -6722,6 +6778,32 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("missing one slash after scheme", func(t *testing.T) {
+			n, err := parseChunk(t, `pattern p = http:/*.com`, "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
+				Statements: []Node{
+					&PatternDefinition{
+						NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
+						Left: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+							Name:       "p",
+							Unprefixed: true,
+						},
+						Right: &InvalidURLPattern{
+							NodeBase: NodeBase{
+								NodeSpan{12, 23},
+								&ParsingError{UnspecifiedParsingError, INVALID_URL_OR_HOST_PATT_SCHEME_SHOULD_BE_FOLLOWED_BY_COLON_SLASH_SLASH},
+								false,
+							},
+							Value: "http:/*.com",
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("unprefixed", func(t *testing.T) {
 			n := mustparseChunk(t, "pattern p = https://**")
 			assert.EqualValues(t, &Chunk{
@@ -6739,6 +6821,32 @@ func testParse(
 							Raw:        "https://**",
 							Value:      "https://**",
 							Unprefixed: true,
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("unprefixed, missing one slash after scheme", func(t *testing.T) {
+			n, err := parseChunk(t, `pattern p = http:/*.com`, "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
+				Statements: []Node{
+					&PatternDefinition{
+						NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
+						Left: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+							Name:       "p",
+							Unprefixed: true,
+						},
+						Right: &InvalidURLPattern{
+							NodeBase: NodeBase{
+								NodeSpan{12, 23},
+								&ParsingError{UnspecifiedParsingError, INVALID_URL_OR_HOST_PATT_SCHEME_SHOULD_BE_FOLLOWED_BY_COLON_SLASH_SLASH},
+								false,
+							},
+							Value: "http:/*.com",
 						},
 					},
 				},

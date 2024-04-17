@@ -118,6 +118,7 @@ func (p *parser) parseExpression(config ...exprParsingConfig) (expr Node, isMiss
 			if p.i >= p.len-2 || p.s[p.i+2] != '/' {
 				break
 			}
+			//Scheme-less
 			return p.parseURLLike(p.i, nil), false
 		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
 			return p.parsePortLiteral(), false

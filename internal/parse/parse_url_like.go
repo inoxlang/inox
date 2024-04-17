@@ -60,8 +60,15 @@ var (
 func (p *parser) parseURLLike(start int32, hostVariable *Variable) Node {
 	p.panicIfContextDone()
 
+	missingSlashAfterScheme := false
+
 	if hostVariable == nil {
-		p.i += 3 // ://
+		if p.i == p.len-2 || p.s[p.i+2] != '/' {
+			p.i += 2 // :/
+			missingSlashAfterScheme = true
+		} else {
+			p.i += 3 // ://
+		}
 	}
 	afterSchemeIndex := p.i
 
@@ -98,6 +105,16 @@ loop:
 
 	u := string(p.s[start:p.i])
 	span := NodeSpan{start, p.i}
+
+	if missingSlashAfterScheme {
+		return &InvalidURL{
+			NodeBase: NodeBase{
+				Span: NodeSpan{start, p.i},
+				Err:  &ParsingError{UnspecifiedParsingError, INVALID_SCHEME_HOST_OR_URL_SLASH_EXPECTED},
+			},
+			Value: string(p.s[start:p.i]),
+		}
+	}
 
 	//scheme literal
 	if hostVariable == nil && p.i == afterSchemeIndex {
@@ -485,19 +502,10 @@ func (p *parser) parseQueryParameterValueSlices(start int32, exclEnd int32) []No
 func (p *parser) parseURLLikePattern(start int32, percentPrefixed bool) Node {
 	p.panicIfContextDone()
 
-	c := int32(0)
+	leadingSlashCount := int32(0)
 	for p.i < p.len && p.s[p.i] == '/' {
 		p.i++
-		c++
-	}
-
-	if c != 2 {
-		return &InvalidURLPattern{
-			NodeBase: NodeBase{
-				Span: NodeSpan{start, p.i},
-				Err:  &ParsingError{UnspecifiedParsingError, INVALID_URL_OR_HOST_PATT_SCHEME_SHOULD_BE_FOLLOWED_BY_COLON_SLASH_SLASH},
-			},
-		}
+		leadingSlashCount++
 	}
 
 	//we eat until we encounter a space or a delimiter different from ':' and '{'
@@ -533,6 +541,25 @@ loop:
 		u = u[1:]
 	}
 	span := NodeSpan{start, p.i}
+
+	if leadingSlashCount != 2 {
+		if !percentPrefixed && strings.HasSuffix(u, ":/") && strings.Count(u, "/") == 1 {
+			return &InvalidURL{
+				NodeBase: NodeBase{
+					Span: NodeSpan{start, p.i},
+					Err:  &ParsingError{UnspecifiedParsingError, INVALID_SCHEME_LIT_SLASH_EXPECTED},
+				},
+				Value: u,
+			}
+		}
+		return &InvalidURLPattern{
+			NodeBase: NodeBase{
+				Span: NodeSpan{start, p.i},
+				Err:  &ParsingError{UnspecifiedParsingError, INVALID_URL_OR_HOST_PATT_SCHEME_SHOULD_BE_FOLLOWED_BY_COLON_SLASH_SLASH},
+			},
+			Value: u,
+		}
+	}
 
 	var parsingErr *ParsingError
 

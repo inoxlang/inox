@@ -1281,7 +1281,7 @@ func (p *parser) parseIdentStartingExpression(allowUnprefixedPatternNamespaceIde
 		return memberExpr
 	}
 
-	isProtocol := p.i < p.len-2 && string(p.s[p.i:p.i+3]) == "://"
+	isProtocol := p.i < p.len-1 && string(p.s[p.i:p.i+2]) == ":/"
 
 	if !isProtocol && p.i < p.len && (p.s[p.i] == '\\' || (isValidUnquotedStringChar(p.s, p.i) && p.s[p.i] != ':')) {
 		return p.parseUnquotedStringLiteral(start)
