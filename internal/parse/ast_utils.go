@@ -29,6 +29,7 @@ func NodeIsPattern(node Node) bool {
 	case *PatternCallExpression,
 		*ListPatternLiteral, *TuplePatternLiteral,
 		*ObjectPatternLiteral, *RecordPatternLiteral,
+		*DictionaryPatternLiteral,
 		*PatternIdentifierLiteral, *PatternNamespaceMemberExpression,
 		*ComplexStringPatternPiece, //not 100% correct since it can be included in another *ComplexStringPatternPiece,
 		*PatternConversionExpression,
@@ -357,6 +358,13 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 		}
 	case *OtherPropsExpr:
 		walk(n.Pattern, node, ancestorChain, fn, afterFn)
+	case *DictionaryPatternLiteral:
+		for _, entry := range n.Entries {
+			walk(entry, node, ancestorChain, fn, afterFn)
+		}
+	case *DictionaryPatternEntry:
+		walk(n.Key, node, ancestorChain, fn, afterFn)
+		walk(n.Value, node, ancestorChain, fn, afterFn)
 	case *ListPatternLiteral:
 		for _, elem := range n.Elements {
 			walk(elem, node, ancestorChain, fn, afterFn)

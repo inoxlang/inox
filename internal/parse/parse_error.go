@@ -134,12 +134,22 @@ const (
 	UNTERMINATED_OBJ_PATT_MISSING_CLOSING_BRACE = "unterminated object pattern literal, missing closing brace '}'"
 	ONLY_IDENTS_AND_STRINGS_VALID_OBJ_PATT_KEYS = "Only identifiers and strings are valid object pattern keys"
 
-	INVALID_PATT_UNION_ELEMENT_SEPARATOR_EXPLANATION         = "invalid pattern union: elements should be separated by '|'"
-	INVALID_PATTERN_INVALID_OCCURENCE_COUNT                  = "invalid pattern: invalid exact ocurrence count"
-	UNTERMINATED_DICT_MISSING_CLOSING_BRACE                  = "unterminated dictionary literal, missing closing brace '}'"
-	INVALID_DICT_KEY_ONLY_SIMPLE_VALUE_LITS                  = "invalid key for dictionary literal, only simple value literals are allowed"
-	INVALID_DICT_ENTRY_MISSING_COLON_AFTER_KEY               = "invalid dictionary entry: missing colon ':' after key"
-	INVALID_DICT_ENTRY_MISSING_SPACE_BETWEEN_KEY_AND_COLON   = "invalid dictionary entry: missing space between key and ':'"
+	INVALID_PATT_UNION_ELEMENT_SEPARATOR_EXPLANATION = "invalid pattern union: elements should be separated by '|'"
+	INVALID_PATTERN_INVALID_OCCURENCE_COUNT          = "invalid pattern: invalid exact ocurrence count"
+
+	//dictionary literal
+	UNTERMINATED_DICT_MISSING_CLOSING_BRACE                = "unterminated dictionary literal, missing closing brace '}'"
+	INVALID_DICT_KEY_ONLY_SIMPLE_VALUE_LITS                = "invalid key for dictionary literal, only simple value literals are allowed"
+	INVALID_DICT_ENTRY_MISSING_COLON_AFTER_KEY             = "invalid dictionary entry: missing colon ':' after key"
+	INVALID_DICT_ENTRY_MISSING_SPACE_BETWEEN_KEY_AND_COLON = "invalid dictionary entry: missing space between key and ':'"
+	INVALID_DICT_LIT_ENTRY_SEPARATION                      = "invalid dictionary literal, each entry should be followed by '}', newline, or ','."
+
+	//dictionary pattern literal
+	UNTERMINATED_DICT_PATT_MISSING_CLOSING_BRACE                = "unterminated dictionary pattern literal, missing closing brace '}'"
+	INVALID_DICT_PATT_ENTRY_MISSING_COLON_AFTER_KEY             = "invalid dictionary pattern entry: missing colon ':' after key"
+	INVALID_DICT_PATT_ENTRY_MISSING_SPACE_BETWEEN_KEY_AND_COLON = "invalid dictionary pattern entry: missing space between key and ':'"
+	INVALID_DICT_PATT_LIT_ENTRY_SEPARATION                      = "invalid dictionary pattern literal, each entry should be followed by '}', newline, or ','."
+
 	UNTERMINATED_PATT_UNTERMINATED_EXACT_OCURRENCE_COUNT     = "unterminated pattern: unterminated exact ocurrence count: missing count after '='"
 	UNTERMINATED_PAREN_PATTERN_MISSING_PAREN                 = "unterminated parenthesized pattern, missing closing parenthesis"
 	UNTERMINATED_PAREN_PATTERN                               = "unterminated parenthesized pattern"
@@ -507,7 +517,6 @@ const (
 	UNTERMINATED_REC_PATTERN_MISSING_CLOSING_BRACE       = "unterminated record pattern literal, missing closing brace '}'"
 	SPREAD_SHOULD_BE_LOCATED_AT_THE_START                = "spread should be located at the start"
 
-	INVALID_DICT_LIT_ENTRY_SEPARATION             = "invalid dictionary literal, each entry should be followed by '}', newline, or ','."
 	UNTERMINATED_IF_STMT_MISSING_BLOCK_AFTER_ELSE = "unterminated if statement, missing block after 'else'"
 
 	//if expressions
@@ -802,6 +811,10 @@ func fmtUnexpectedCharInConcatenationExpression(r rune) string {
 
 func fmtUnexpectedCharInDictionary(r rune) string {
 	return fmt.Sprintf("unexpected char %s in dictionary", fmtRuneInfo(r))
+}
+
+func fmtUnexpectedCharInDictionaryPattern(r rune) string {
+	return fmt.Sprintf("unexpected char %s in dictionary pattern", fmtRuneInfo(r))
 }
 
 func fmtUnexpectedCharInObjectRecord(r rune) string {

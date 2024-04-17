@@ -1228,6 +1228,21 @@ type OtherPropsExpr struct {
 	Pattern Node
 }
 
+type DictionaryPatternLiteral struct {
+	NodeBase
+	Entries []*DictionaryPatternEntry
+}
+
+func (DictionaryPatternLiteral) Kind() NodeKind {
+	return Expr
+}
+
+type DictionaryPatternEntry struct {
+	NodeBase
+	Key   Node
+	Value Node
+}
+
 type ListPatternLiteral struct {
 	NodeBase
 	Elements       []Node

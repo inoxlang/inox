@@ -123,6 +123,9 @@ func (p *parser) parseExpression(config ...exprParsingConfig) (expr Node, isMiss
 		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
 			return p.parsePortLiteral(), false
 		case '{':
+			if p.inPattern {
+				return p.parseDictionaryPatternLiteral(), false
+			}
 			return p.parseDictionaryLiteral(), false
 		}
 

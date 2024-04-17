@@ -2,6 +2,7 @@ package parse
 
 import (
 	"regexp"
+	"strings"
 	"unicode"
 
 	"github.com/inoxlang/inox/internal/utils"
@@ -688,6 +689,158 @@ func (p *parser) parseListTuplePatternLiteral(percentPrefixed, isTuplePattern bo
 		},
 		Elements:       elements,
 		GeneralElement: generalElement,
+	}
+}
+
+func (p *parser) parseDictionaryPatternLiteral() *DictionaryPatternLiteral {
+	p.panicIfContextDone()
+
+	{
+		inPattern := p.inPattern
+		p.inPattern = true
+		defer func() {
+			p.inPattern = inPattern
+		}()
+	}
+
+	openingIndex := p.i
+	p.i += 2
+
+	var parsingErr *ParsingError
+	var entries []*DictionaryPatternEntry
+	p.tokens = append(p.tokens, Token{Type: OPENING_DICTIONARY_BRACKET, Span: NodeSpan{p.i - 2, p.i}})
+
+	p.eatSpaceNewlineCommaComment()
+
+dictionary_pattern_literal_top_loop:
+	for p.i < p.len && p.s[p.i] != '}' && !isClosingDelim(p.s[p.i]) { //one iteration == one entry (that can be invalid)
+
+		if p.s[p.i] == '}' {
+			break dictionary_pattern_literal_top_loop
+		}
+
+		entry := &DictionaryPatternEntry{
+			NodeBase: NodeBase{
+				NodeSpan{p.i, p.i + 1},
+				nil,
+				false,
+			},
+		}
+		entries = append(entries, entry)
+
+		key, isMissingExpr := p.parseExpression()
+		entry.Key = key
+
+		if isMissingExpr {
+			if p.i < p.len && p.s[p.i] != '}' {
+				p.i++
+				p.tokens = append(p.tokens, Token{Type: UNEXPECTED_CHAR, Span: key.Base().Span, Raw: string(p.s[p.i-1])})
+
+				entry.Key = &UnknownNode{
+					NodeBase: NodeBase{
+						key.Base().Span,
+						&ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInDictionaryPattern(p.s[p.i-1])},
+						false,
+					},
+				}
+				p.eatSpaceNewlineCommaComment()
+				continue
+			}
+
+			p.i++
+			entry.Span.End = key.Base().Span.End
+			p.eatSpaceNewlineCommaComment()
+			continue
+		}
+
+		colonInLiteral := false
+
+		if key.Base().Err == nil || NodeIs(key, (*InvalidURL)(nil)) {
+			var literalVal string
+			switch k := key.(type) {
+			case *InvalidURL:
+				literalVal = k.Value
+			default:
+				valueLit, ok := key.(SimpleValueLiteral)
+				if ok {
+					literalVal = valueLit.ValueString()
+				}
+			}
+
+			if literalVal != "" {
+				if lastColonIndex := strings.LastIndex(literalVal, ":"); lastColonIndex > 0 && strings.Index(literalVal, "://") < lastColonIndex {
+					colonInLiteral = true
+				}
+			}
+		}
+
+		p.eatSpace()
+
+		if p.i >= p.len || p.s[p.i] == '}' {
+			if entry.Err == nil {
+				msg := INVALID_DICT_PATT_ENTRY_MISSING_COLON_AFTER_KEY
+				if colonInLiteral {
+					msg = INVALID_DICT_PATT_ENTRY_MISSING_SPACE_BETWEEN_KEY_AND_COLON
+				}
+
+				entry.Err = &ParsingError{UnspecifiedParsingError, msg}
+				entry.Span.End = p.i
+			}
+			break
+		}
+
+		if p.s[p.i] != ':' {
+			if p.s[p.i] != ',' {
+				entry.Span.End = p.i
+				entry.Err = &ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInDictionaryPattern(p.s[p.i])}
+				p.i++
+				p.eatSpaceNewlineCommaComment()
+				continue
+			}
+		} else {
+			p.tokens = append(p.tokens, Token{Type: COLON, Span: NodeSpan{p.i, p.i + 1}})
+			p.i++
+		}
+
+		p.eatSpace()
+
+		value, isMissingExpr := p.parseExpression()
+		entry.Value = value
+		entry.Span.End = value.Base().Span.End
+
+		if isMissingExpr && p.i < p.len && p.s[p.i] != '}' && p.s[p.i] != ',' {
+			char := p.s[p.i]
+			if isClosingDelim(char) {
+				break dictionary_pattern_literal_top_loop //No need to add the the entry since it is already added .
+			}
+			if entry.Err == nil {
+				entry.Err = &ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInDictionaryPattern(char)}
+			}
+			p.i++
+		}
+
+		p.eatSpace()
+
+		if p.i < p.len && !isValidEntryEnd(p.s, p.i) && entry.Err == nil {
+			entry.Err = &ParsingError{UnspecifiedParsingError, INVALID_DICT_PATT_LIT_ENTRY_SEPARATION}
+		}
+
+		p.eatSpaceNewlineCommaComment()
+	}
+
+	if p.i < p.len && p.s[p.i] == '}' {
+		p.tokens = append(p.tokens, Token{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{p.i, p.i + 1}})
+		p.i++
+	} else {
+		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_DICT_PATT_MISSING_CLOSING_BRACE}
+	}
+
+	return &DictionaryPatternLiteral{
+		NodeBase: NodeBase{
+			Span: NodeSpan{openingIndex, p.i},
+			Err:  parsingErr,
+		},
+		Entries: entries,
 	}
 }
 

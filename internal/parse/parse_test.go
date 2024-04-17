@@ -12345,15 +12345,7 @@ func testParse(
 					NodeBase: NodeBase{NodeSpan{0, 3}, nil, false},
 					Statements: []Node{
 						&RecordLiteral{
-							NodeBase: NodeBase{
-								NodeSpan{0, 3},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_RECORD_BRACKET, Span: NodeSpan{0, 2}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{2, 3}},
-								},*/
-							},
+							NodeBase:   NodeBase{Span: NodeSpan{0, 3}},
 							Properties: nil,
 						},
 					},
@@ -12365,15 +12357,7 @@ func testParse(
 					NodeBase: NodeBase{NodeSpan{0, 4}, nil, false},
 					Statements: []Node{
 						&RecordLiteral{
-							NodeBase: NodeBase{
-								NodeSpan{0, 4},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_RECORD_BRACKET, Span: NodeSpan{0, 2}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{3, 4}},
-								},*/
-							},
+							NodeBase:   NodeBase{Span: NodeSpan{0, 4}},
 							Properties: nil,
 						},
 					},
@@ -12386,16 +12370,7 @@ func testParse(
 					NodeBase: NodeBase{NodeSpan{0, 4}, nil, false},
 					Statements: []Node{
 						&RecordLiteral{
-							NodeBase: NodeBase{
-								NodeSpan{0, 4},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_RECORD_BRACKET, Span: NodeSpan{0, 2}},
-									{Type: NEWLINE, Span: NodeSpan{2, 3}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{3, 4}},
-								},*/
-							},
+							NodeBase:   NodeBase{Span: NodeSpan{0, 4}},
 							Properties: nil,
 						},
 					},
@@ -12408,22 +12383,10 @@ func testParse(
 					NodeBase: NodeBase{NodeSpan{0, 9}, nil, false},
 					Statements: []Node{
 						&RecordLiteral{
-							NodeBase: NodeBase{
-								NodeSpan{0, 9},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_RECORD_BRACKET, Span: NodeSpan{0, 2}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{8, 9}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{0, 9}},
 							Properties: []*ObjectProperty{
 								{
-									NodeBase: NodeBase{
-										NodeSpan{3, 7},
-										nil,
-										false,
-									},
+									NodeBase: NodeBase{Span: NodeSpan{3, 7}},
 									Key: &IdentifierLiteral{
 										NodeBase: NodeBase{NodeSpan{3, 4}, nil, false},
 										Name:     "a",
@@ -12446,22 +12409,10 @@ func testParse(
 					NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
 					Statements: []Node{
 						&RecordLiteral{
-							NodeBase: NodeBase{
-								NodeSpan{0, 8},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_RECORD_BRACKET, Span: NodeSpan{0, 2}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{7, 8}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{0, 8}},
 							Properties: []*ObjectProperty{
 								{
-									NodeBase: NodeBase{
-										NodeSpan{3, 6},
-										nil,
-										false,
-									},
+									NodeBase: NodeBase{Span: NodeSpan{3, 6}},
 									Key: &IdentifierLiteral{
 										NodeBase: NodeBase{NodeSpan{3, 4}, nil, false},
 										Name:     "a",
@@ -12484,22 +12435,10 @@ func testParse(
 					NodeBase: NodeBase{NodeSpan{0, 10}, nil, false},
 					Statements: []Node{
 						&RecordLiteral{
-							NodeBase: NodeBase{
-								NodeSpan{0, 10},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_RECORD_BRACKET, Span: NodeSpan{0, 2}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{0, 10}},
 							Properties: []*ObjectProperty{
 								{
-									NodeBase: NodeBase{
-										NodeSpan{3, 8},
-										nil,
-										false,
-									},
+									NodeBase: NodeBase{Span: NodeSpan{3, 8}},
 									Key: &IdentifierLiteral{
 										NodeBase: NodeBase{NodeSpan{3, 4}, nil, false},
 										Name:     "a",
@@ -12522,23 +12461,10 @@ func testParse(
 					NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
 					Statements: []Node{
 						&RecordLiteral{
-							NodeBase: NodeBase{
-								NodeSpan{0, 14},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_RECORD_BRACKET, Span: NodeSpan{0, 2}},
-									{Type: COMMA, Span: NodeSpan{7, 8}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{13, 14}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{0, 14}},
 							Properties: []*ObjectProperty{
 								{
-									NodeBase: NodeBase{
-										NodeSpan{3, 7},
-										nil,
-										false,
-									},
+									NodeBase: NodeBase{Span: NodeSpan{3, 7}},
 									Key: &IdentifierLiteral{
 										NodeBase: NodeBase{NodeSpan{3, 4}, nil, false},
 										Name:     "a",
@@ -12577,16 +12503,7 @@ func testParse(
 					NodeBase: NodeBase{NodeSpan{0, 10}, nil, false},
 					Statements: []Node{
 						&RecordLiteral{
-							NodeBase: NodeBase{
-								NodeSpan{0, 10},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_RECORD_BRACKET, Span: NodeSpan{0, 2}},
-									{Type: NEWLINE, Span: NodeSpan{6, 7}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{0, 10}},
 							Properties: []*ObjectProperty{
 								{
 									NodeBase: NodeBase{
@@ -12620,24 +12537,13 @@ func testParse(
 					NodeBase: NodeBase{NodeSpan{0, 6}, nil, false},
 					Statements: []Node{
 						&RecordLiteral{
-							NodeBase: NodeBase{
-								NodeSpan{0, 6},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_RECORD_BRACKET, Span: NodeSpan{0, 2}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{5, 6}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{0, 6}},
 							Properties: []*ObjectProperty{
 								{
 									NodeBase: NodeBase{
 										NodeSpan{3, 5},
 										&ParsingError{MissingObjectPropertyValue, MISSING_PROPERTY_VALUE},
 										false,
-										/*[]Token{
-											{Type: COLON, Span: NodeSpan{4, 5}},
-										},*/
 									},
 									Key: &IdentifierLiteral{
 										NodeBase: NodeBase{NodeSpan{3, 4}, nil, false},
@@ -12656,17 +12562,7 @@ func testParse(
 					NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
 					Statements: []Node{
 						&RecordLiteral{
-							NodeBase: NodeBase{
-								NodeSpan{0, 15},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_RECORD_BRACKET, Span: NodeSpan{0, 2}},
-									{Type: COMMENT, Span: NodeSpan{3, 13}, Raw: "# comment "},
-									{Type: NEWLINE, Span: NodeSpan{13, 14}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{14, 15}},
-								},*/
-							},
+							NodeBase:   NodeBase{Span: NodeSpan{0, 15}},
 							Properties: nil,
 						},
 					},
@@ -12679,17 +12575,7 @@ func testParse(
 					NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
 					Statements: []Node{
 						&RecordLiteral{
-							NodeBase: NodeBase{
-								NodeSpan{0, 21},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_RECORD_BRACKET, Span: NodeSpan{0, 2}},
-									{Type: COMMENT, Span: NodeSpan{9, 19}, Raw: "# comment "},
-									{Type: NEWLINE, Span: NodeSpan{19, 20}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{20, 21}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{0, 21}},
 							Properties: []*ObjectProperty{
 								{
 									NodeBase: NodeBase{
@@ -12719,24 +12605,10 @@ func testParse(
 					NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
 					Statements: []Node{
 						&RecordLiteral{
-							NodeBase: NodeBase{
-								NodeSpan{0, 21},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_RECORD_BRACKET, Span: NodeSpan{0, 2}},
-									{Type: COMMENT, Span: NodeSpan{3, 13}, Raw: "# comment "},
-									{Type: NEWLINE, Span: NodeSpan{13, 14}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{20, 21}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{0, 21}},
 							Properties: []*ObjectProperty{
 								{
-									NodeBase: NodeBase{
-										NodeSpan{15, 20},
-										nil,
-										false,
-									},
+									NodeBase: NodeBase{Span: NodeSpan{15, 20}},
 									Key: &IdentifierLiteral{
 										NodeBase: NodeBase{NodeSpan{15, 16}, nil, false},
 										Name:     "a",
@@ -12759,26 +12631,13 @@ func testParse(
 					NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
 					Statements: []Node{
 						&RecordLiteral{
-							NodeBase: NodeBase{
-								NodeSpan{0, 21},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_RECORD_BRACKET, Span: NodeSpan{0, 2}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{20, 21}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{0, 21}},
 							Properties: []*ObjectProperty{
 								{
 									NodeBase: NodeBase{
 										NodeSpan{3, 20},
 										&ParsingError{UnspecifiedParsingError, fmtInvalidObjRecordKeyCommentBeforeValueOfKey("a")},
 										false,
-										/*[]Token{
-											{Type: COLON, Span: NodeSpan{5, 6}},
-											{Type: COMMENT, Span: NodeSpan{7, 17}, Raw: "# comment "},
-											{Type: NEWLINE, Span: NodeSpan{17, 18}},
-										},*/
 									},
 									Key: &IdentifierLiteral{
 										NodeBase: NodeBase{NodeSpan{3, 4}, nil, false},
@@ -12802,15 +12661,7 @@ func testParse(
 					NodeBase: NodeBase{NodeSpan{0, 6}, nil, false},
 					Statements: []Node{
 						&RecordLiteral{
-							NodeBase: NodeBase{
-								NodeSpan{0, 6},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_RECORD_BRACKET, Span: NodeSpan{0, 2}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{5, 6}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{0, 6}},
 							Properties: []*ObjectProperty{
 								{
 									NodeBase: NodeBase{NodeSpan{3, 5}, nil, false},
@@ -12833,15 +12684,7 @@ func testParse(
 					NodeBase: NodeBase{NodeSpan{0, 10}, nil, false},
 					Statements: []Node{
 						&RecordLiteral{
-							NodeBase: NodeBase{
-								NodeSpan{0, 10},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_RECORD_BRACKET, Span: NodeSpan{0, 2}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{0, 10}},
 							Properties: []*ObjectProperty{
 								{
 									NodeBase: NodeBase{NodeSpan{4, 9}, nil, false},
@@ -12851,10 +12694,6 @@ func testParse(
 											NodeSpan{4, 7},
 											nil,
 											true,
-											/*[]Token{
-												{Type: OPENING_PARENTHESIS, Span: NodeSpan{3, 4}},
-												{Type: CLOSING_PARENTHESIS, Span: NodeSpan{7, 8}},
-											},*/
 										},
 										Raw:   `"1"`,
 										Value: "1",
@@ -12872,15 +12711,7 @@ func testParse(
 					NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
 					Statements: []Node{
 						&RecordLiteral{
-							NodeBase: NodeBase{
-								NodeSpan{0, 8},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_RECORD_BRACKET, Span: NodeSpan{0, 2}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{7, 8}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{0, 8}},
 							Properties: []*ObjectProperty{
 								{
 									NodeBase: NodeBase{
@@ -12965,23 +12796,10 @@ func testParse(
 					NodeBase: NodeBase{NodeSpan{0, 18}, nil, false},
 					Statements: []Node{
 						&RecordLiteral{
-							NodeBase: NodeBase{
-								NodeSpan{0, 18},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_RECORD_BRACKET, Span: NodeSpan{0, 2}},
-									{Type: COMMA, Span: NodeSpan{9, 10}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{17, 18}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{0, 18}},
 							Properties: []*ObjectProperty{
 								{
-									NodeBase: NodeBase{
-										NodeSpan{3, 8},
-										nil,
-										false,
-									},
+									NodeBase: NodeBase{Span: NodeSpan{3, 8}},
 									Key: &IdentifierLiteral{
 										NodeBase: NodeBase{NodeSpan{3, 4}, nil, false},
 										Name:     "a",
@@ -12993,11 +12811,7 @@ func testParse(
 									},
 								},
 								{
-									NodeBase: NodeBase{
-										NodeSpan{11, 16},
-										nil,
-										false,
-									},
+									NodeBase: NodeBase{Span: NodeSpan{11, 16}},
 									Key: &IdentifierLiteral{
 										NodeBase: NodeBase{NodeSpan{11, 12}, nil, false},
 										Name:     "b",
@@ -13020,23 +12834,10 @@ func testParse(
 					NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
 					Statements: []Node{
 						&RecordLiteral{
-							NodeBase: NodeBase{
-								NodeSpan{0, 12},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_RECORD_BRACKET, Span: NodeSpan{0, 2}},
-									{Type: NEWLINE, Span: NodeSpan{9, 10}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{11, 12}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{0, 12}},
 							Properties: []*ObjectProperty{
 								{
-									NodeBase: NodeBase{
-										NodeSpan{3, 8},
-										nil,
-										false,
-									},
+									NodeBase: NodeBase{Span: NodeSpan{3, 8}},
 									Key: &IdentifierLiteral{
 										NodeBase: NodeBase{NodeSpan{3, 4}, nil, false},
 										Name:     "a",
@@ -13058,23 +12859,10 @@ func testParse(
 					NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
 					Statements: []Node{
 						&RecordLiteral{
-							NodeBase: NodeBase{
-								NodeSpan{0, 12},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_RECORD_BRACKET, Span: NodeSpan{0, 2}},
-									{Type: NEWLINE, Span: NodeSpan{3, 4}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{11, 12}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{0, 12}},
 							Properties: []*ObjectProperty{
 								{
-									NodeBase: NodeBase{
-										NodeSpan{5, 10},
-										nil,
-										false,
-									},
+									NodeBase: NodeBase{Span: NodeSpan{5, 10}},
 									Key: &IdentifierLiteral{
 										NodeBase: NodeBase{NodeSpan{5, 6}, nil, false},
 										Name:     "a",
@@ -13097,23 +12885,10 @@ func testParse(
 					NodeBase: NodeBase{NodeSpan{0, 18}, nil, false},
 					Statements: []Node{
 						&RecordLiteral{
-							NodeBase: NodeBase{
-								NodeSpan{0, 18},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_RECORD_BRACKET, Span: NodeSpan{0, 2}},
-									{Type: NEWLINE, Span: NodeSpan{9, 10}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{17, 18}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{0, 18}},
 							Properties: []*ObjectProperty{
 								{
-									NodeBase: NodeBase{
-										NodeSpan{3, 8},
-										nil,
-										false,
-									},
+									NodeBase: NodeBase{Span: NodeSpan{3, 8}},
 									Key: &IdentifierLiteral{
 										NodeBase: NodeBase{NodeSpan{3, 4}, nil, false},
 										Name:     "a",
@@ -13125,11 +12900,7 @@ func testParse(
 									},
 								},
 								{
-									NodeBase: NodeBase{
-										NodeSpan{11, 16},
-										nil,
-										false,
-									},
+									NodeBase: NodeBase{Span: NodeSpan{11, 16}},
 									Key: &IdentifierLiteral{
 										NodeBase: NodeBase{NodeSpan{11, 12}, nil, false},
 										Name:     "b",
@@ -13152,15 +12923,7 @@ func testParse(
 					NodeBase: NodeBase{NodeSpan{0, 10}, nil, false},
 					Statements: []Node{
 						&RecordLiteral{
-							NodeBase: NodeBase{
-								NodeSpan{0, 10},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_RECORD_BRACKET, Span: NodeSpan{0, 2}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{0, 10}},
 							Properties: []*ObjectProperty{
 								{
 									NodeBase: NodeBase{NodeSpan{3, 9}, nil, false},
@@ -13181,23 +12944,11 @@ func testParse(
 					NodeBase: NodeBase{NodeSpan{0, 18}, nil, false},
 					Statements: []Node{
 						&RecordLiteral{
-							NodeBase: NodeBase{
-								NodeSpan{0, 18},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_RECORD_BRACKET, Span: NodeSpan{0, 2}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{17, 18}},
-								},*/
-							},
+							NodeBase:   NodeBase{Span: NodeSpan{0, 18}},
 							Properties: nil,
 							SpreadElements: []*PropertySpreadElement{
 								{
-									NodeBase: NodeBase{
-										NodeSpan{3, 16},
-										nil,
-										false,
-									},
+									NodeBase: NodeBase{Span: NodeSpan{3, 16}},
 									Expr: &ExtractionExpression{
 										NodeBase: NodeBase{NodeSpan{7, 16}, nil, false},
 										Object: &Variable{
@@ -13205,15 +12956,7 @@ func testParse(
 											Name:     "e",
 										},
 										Keys: &KeyListExpression{
-											NodeBase: NodeBase{
-												NodeSpan{9, 16},
-												nil,
-												false,
-												/*[]Token{
-													{Type: OPENING_KEYLIST_BRACKET, Span: NodeSpan{9, 11}},
-													{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{15, 16}},
-												},*/
-											},
+											NodeBase: NodeBase{Span: NodeSpan{9, 16}},
 											Keys: []Node{
 												&IdentifierLiteral{
 													NodeBase: NodeBase{NodeSpan{11, 15}, nil, false},
@@ -13235,15 +12978,7 @@ func testParse(
 					NodeBase: NodeBase{NodeSpan{0, 11}, nil, false},
 					Statements: []Node{
 						&RecordLiteral{
-							NodeBase: NodeBase{
-								NodeSpan{0, 11},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_RECORD_BRACKET, Span: NodeSpan{0, 2}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{10, 11}},
-								},*/
-							},
+							NodeBase:   NodeBase{Span: NodeSpan{0, 11}},
 							Properties: nil,
 							SpreadElements: []*PropertySpreadElement{
 								{
@@ -13269,15 +13004,7 @@ func testParse(
 					NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
 					Statements: []Node{
 						&RecordLiteral{
-							NodeBase: NodeBase{
-								NodeSpan{0, 20},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_RECORD_BRACKET, Span: NodeSpan{0, 2}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{19, 20}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{0, 20}},
 							Properties: []*ObjectProperty{
 								{
 									NodeBase: NodeBase{NodeSpan{17, 19}, nil, false},
@@ -13303,15 +13030,7 @@ func testParse(
 											Name:     "e",
 										},
 										Keys: &KeyListExpression{
-											NodeBase: NodeBase{
-												NodeSpan{9, 16},
-												nil,
-												false,
-												/*[]Token{
-													{Type: OPENING_KEYLIST_BRACKET, Span: NodeSpan{9, 11}},
-													{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{15, 16}},
-												},*/
-											},
+											NodeBase: NodeBase{Span: NodeSpan{9, 16}},
 											Keys: []Node{
 												&IdentifierLiteral{
 													NodeBase: NodeBase{NodeSpan{11, 15}, nil, false},
@@ -14802,6 +14521,858 @@ func testParse(
 											NodeSpan{2, 3},
 											&ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInDictionary('?')},
 											false,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		for _, testCase := range testCases {
+			t.Run(testCase.input, func(t *testing.T) {
+				n, err := parseChunk(t, testCase.input, "")
+				if testCase.hasError {
+					assert.Error(t, err)
+				} else {
+					assert.NoError(t, err)
+				}
+
+				if testCase.result != nil {
+					assert.Equal(t, testCase.result, n)
+				}
+			})
+		}
+	})
+
+	t.Run("dictionary pattern literal", func(t *testing.T) {
+
+		testCases := []struct {
+			input    string
+			hasError bool
+			result   Node
+		}{
+			{
+				input:    "pattern p = :{}",
+				hasError: false,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
+					Statements: []Node{
+						&PatternDefinition{
+							NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
+							Left: &PatternIdentifierLiteral{
+								NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+								Unprefixed: true,
+								Name:       "p",
+							},
+							Right: &DictionaryPatternLiteral{
+								NodeBase: NodeBase{Span: NodeSpan{12, 15}},
+							},
+						},
+					},
+				},
+			},
+			{
+				input:    "pattern p = :{ }",
+				hasError: false,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
+					Statements: []Node{
+						&PatternDefinition{
+							NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
+							Left: &PatternIdentifierLiteral{
+								NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+								Unprefixed: true,
+								Name:       "p",
+							},
+							Right: &DictionaryPatternLiteral{
+								NodeBase: NodeBase{Span: NodeSpan{12, 16}},
+							},
+						},
+					},
+				},
+			},
+			{
+				input:    `pattern p = :{ "a" : 1 }`,
+				hasError: false,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 24}, nil, false},
+					Statements: []Node{
+						&PatternDefinition{
+							NodeBase: NodeBase{NodeSpan{0, 24}, nil, false},
+							Left: &PatternIdentifierLiteral{
+								NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+								Unprefixed: true,
+								Name:       "p",
+							},
+							Right: &DictionaryPatternLiteral{
+								NodeBase: NodeBase{Span: NodeSpan{12, 24}},
+								Entries: []*DictionaryPatternEntry{
+									{
+										NodeBase: NodeBase{Span: NodeSpan{15, 22}},
+										Key: &DoubleQuotedStringLiteral{
+											NodeBase: NodeBase{NodeSpan{15, 18}, nil, false},
+											Raw:      `"a"`,
+											Value:    "a",
+										},
+										Value: &IntLiteral{
+											NodeBase: NodeBase{NodeSpan{21, 22}, nil, false},
+											Raw:      "1",
+											Value:    1,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				input: `pattern p = :{ https://aa/: 1 }`,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 31}, nil, false},
+					Statements: []Node{
+						&PatternDefinition{
+							NodeBase: NodeBase{NodeSpan{0, 31}, nil, false},
+							Left: &PatternIdentifierLiteral{
+								NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+								Unprefixed: true,
+								Name:       "p",
+							},
+							Right: &DictionaryPatternLiteral{
+								NodeBase: NodeBase{Span: NodeSpan{12, 31}},
+								Entries: []*DictionaryPatternEntry{
+									{
+										NodeBase: NodeBase{Span: NodeSpan{15, 29}},
+										Key: &URLPatternLiteral{
+											NodeBase:   NodeBase{Span: NodeSpan{15, 26}},
+											Value:      "https://aa/",
+											Raw:        "https://aa/",
+											Unprefixed: true,
+										},
+										Value: &IntLiteral{
+											NodeBase: NodeBase{NodeSpan{28, 29}, nil, false},
+											Raw:      "1",
+											Value:    1,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				input: `pattern p = :{ /aa: 1 }`,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
+					Statements: []Node{
+						&PatternDefinition{
+							NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
+							Left: &PatternIdentifierLiteral{
+								NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+								Unprefixed: true,
+								Name:       "p",
+							},
+							Right: &DictionaryPatternLiteral{
+								NodeBase: NodeBase{Span: NodeSpan{12, 23}},
+								Entries: []*DictionaryPatternEntry{
+									{
+										NodeBase: NodeBase{Span: NodeSpan{15, 21}},
+										Key: &AbsolutePathPatternLiteral{
+											NodeBase:   NodeBase{Span: NodeSpan{15, 18}},
+											Value:      "/aa",
+											Raw:        "/aa",
+											Unprefixed: true,
+										},
+										Value: &IntLiteral{
+											NodeBase: NodeBase{NodeSpan{20, 21}, nil, false},
+											Raw:      "1",
+											Value:    1,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				input:    `pattern p = :{ /aa:1 }`,
+				hasError: true,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 22}, nil, false},
+					Statements: []Node{
+						&PatternDefinition{
+							NodeBase: NodeBase{NodeSpan{0, 22}, nil, false},
+							Left: &PatternIdentifierLiteral{
+								NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+								Unprefixed: true,
+								Name:       "p",
+							},
+							Right: &DictionaryPatternLiteral{
+								NodeBase: NodeBase{Span: NodeSpan{12, 22}},
+								Entries: []*DictionaryPatternEntry{
+									{
+										NodeBase: NodeBase{
+											Span: NodeSpan{15, 21},
+											Err:  &ParsingError{UnspecifiedParsingError, INVALID_DICT_PATT_ENTRY_MISSING_SPACE_BETWEEN_KEY_AND_COLON},
+										},
+										Key: &AbsolutePathPatternLiteral{
+											NodeBase:   NodeBase{Span: NodeSpan{15, 20}},
+											Value:      "/aa:1",
+											Raw:        "/aa:1",
+											Unprefixed: true,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				input: `pattern p = :{ %/aa: 1 }`,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 24}, nil, false},
+					Statements: []Node{
+						&PatternDefinition{
+							NodeBase: NodeBase{NodeSpan{0, 24}, nil, false},
+							Left: &PatternIdentifierLiteral{
+								NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+								Unprefixed: true,
+								Name:       "p",
+							},
+							Right: &DictionaryPatternLiteral{
+								NodeBase: NodeBase{Span: NodeSpan{12, 24}},
+								Entries: []*DictionaryPatternEntry{
+									{
+										NodeBase: NodeBase{Span: NodeSpan{15, 22}},
+										Key: &AbsolutePathPatternLiteral{
+											NodeBase: NodeBase{Span: NodeSpan{15, 19}},
+											Value:    "/aa",
+											Raw:      "%/aa",
+										},
+										Value: &IntLiteral{
+											NodeBase: NodeBase{NodeSpan{21, 22}, nil, false},
+											Raw:      "1",
+											Value:    1,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				input: `pattern p = :{ %https://aa/: 1 }`,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 32}, nil, false},
+					Statements: []Node{
+						&PatternDefinition{
+							NodeBase: NodeBase{NodeSpan{0, 32}, nil, false},
+							Left: &PatternIdentifierLiteral{
+								NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+								Unprefixed: true,
+								Name:       "p",
+							},
+							Right: &DictionaryPatternLiteral{
+								NodeBase: NodeBase{Span: NodeSpan{12, 32}},
+								Entries: []*DictionaryPatternEntry{
+									{
+										NodeBase: NodeBase{Span: NodeSpan{15, 30}},
+										Key: &URLPatternLiteral{
+											NodeBase: NodeBase{Span: NodeSpan{15, 27}},
+											Value:    "https://aa/",
+											Raw:      "%https://aa/",
+										},
+										Value: &IntLiteral{
+											NodeBase: NodeBase{NodeSpan{29, 30}, nil, false},
+											Raw:      "1",
+											Value:    1,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				input: `pattern p = :{ https://aa: 1 }`,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 30}, nil, false},
+					Statements: []Node{
+						&PatternDefinition{
+							NodeBase: NodeBase{NodeSpan{0, 30}, nil, false},
+							Left: &PatternIdentifierLiteral{
+								NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+								Unprefixed: true,
+								Name:       "p",
+							},
+							Right: &DictionaryPatternLiteral{
+								NodeBase: NodeBase{Span: NodeSpan{12, 30}},
+								Entries: []*DictionaryPatternEntry{
+									{
+										NodeBase: NodeBase{Span: NodeSpan{15, 28}},
+										Key: &HostPatternLiteral{
+											NodeBase:   NodeBase{Span: NodeSpan{15, 25}},
+											Value:      "https://aa",
+											Raw:        "https://aa",
+											Unprefixed: true,
+										},
+										Value: &IntLiteral{
+											NodeBase: NodeBase{NodeSpan{27, 28}, nil, false},
+											Raw:      "1",
+											Value:    1,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				input:    `pattern p = :{ https://aa:1 }`,
+				hasError: true,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 29}, nil, false},
+					Statements: []Node{
+						&PatternDefinition{
+							NodeBase: NodeBase{NodeSpan{0, 29}, nil, false},
+							Left: &PatternIdentifierLiteral{
+								NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+								Unprefixed: true,
+								Name:       "p",
+							},
+							Right: &DictionaryPatternLiteral{
+								NodeBase: NodeBase{Span: NodeSpan{12, 29}},
+								Entries: []*DictionaryPatternEntry{
+									{
+										NodeBase: NodeBase{
+											Span: NodeSpan{15, 28},
+											Err:  &ParsingError{UnspecifiedParsingError, INVALID_DICT_PATT_ENTRY_MISSING_SPACE_BETWEEN_KEY_AND_COLON},
+										},
+										Key: &HostPatternLiteral{
+											NodeBase:   NodeBase{Span: NodeSpan{15, 27}},
+											Value:      "https://aa:1",
+											Raw:        "https://aa:1",
+											Unprefixed: true,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				input:    `pattern p = :{ https://aa:1:1 }`,
+				hasError: true,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 31}, nil, false},
+					Statements: []Node{
+						&PatternDefinition{
+							NodeBase: NodeBase{NodeSpan{0, 31}, nil, false},
+							Left: &PatternIdentifierLiteral{
+								NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+								Unprefixed: true,
+								Name:       "p",
+							},
+							Right: &DictionaryPatternLiteral{
+								NodeBase: NodeBase{Span: NodeSpan{12, 31}},
+								Entries: []*DictionaryPatternEntry{
+									{
+										NodeBase: NodeBase{
+											Span: NodeSpan{15, 30},
+											Err:  &ParsingError{UnspecifiedParsingError, INVALID_DICT_PATT_ENTRY_MISSING_COLON_AFTER_KEY},
+										},
+										Key: &URLPatternLiteral{
+											NodeBase: NodeBase{
+												Span: NodeSpan{15, 29},
+												Err:  &ParsingError{UnspecifiedParsingError, INVALID_URL_PATT},
+											},
+											Value:      "https://aa:1:1",
+											Raw:        "https://aa:1:1",
+											Unprefixed: true,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				input: `pattern p = :{ %https://aa: 1 }`,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 31}, nil, false},
+					Statements: []Node{
+						&PatternDefinition{
+							NodeBase: NodeBase{NodeSpan{0, 31}, nil, false},
+							Left: &PatternIdentifierLiteral{
+								NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+								Unprefixed: true,
+								Name:       "p",
+							},
+							Right: &DictionaryPatternLiteral{
+								NodeBase: NodeBase{Span: NodeSpan{12, 31}},
+								Entries: []*DictionaryPatternEntry{
+									{
+										NodeBase: NodeBase{Span: NodeSpan{15, 29}},
+										Key: &HostPatternLiteral{
+											NodeBase: NodeBase{Span: NodeSpan{15, 26}},
+											Value:    "https://aa",
+											Raw:      "%https://aa",
+										},
+										Value: &IntLiteral{
+											NodeBase: NodeBase{NodeSpan{28, 29}, nil, false},
+											Raw:      "1",
+											Value:    1,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				input:    `pattern p = :{ "a" :   }`,
+				hasError: true,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 24}, nil, false},
+					Statements: []Node{
+						&PatternDefinition{
+							NodeBase: NodeBase{NodeSpan{0, 24}, nil, false},
+							Left: &PatternIdentifierLiteral{
+								NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+								Unprefixed: true,
+								Name:       "p",
+							},
+							Right: &DictionaryPatternLiteral{
+								NodeBase: NodeBase{Span: NodeSpan{12, 24}},
+								Entries: []*DictionaryPatternEntry{
+									{
+										NodeBase: NodeBase{Span: NodeSpan{15, 24}},
+										Key: &DoubleQuotedStringLiteral{
+											NodeBase: NodeBase{NodeSpan{15, 18}, nil, false},
+											Raw:      `"a"`,
+											Value:    "a",
+										},
+										Value: &MissingExpression{
+											NodeBase: NodeBase{
+												NodeSpan{23, 24},
+												&ParsingError{
+													MissingExpr,
+													fmtExprExpectedHere([]rune(`:{ "a" :   }`), 11, true),
+												},
+												false,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				input:    `pattern p = (:{ "a":)`,
+				hasError: true,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
+					Statements: []Node{
+						&PatternDefinition{
+							NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
+							Left: &PatternIdentifierLiteral{
+								NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+								Unprefixed: true,
+								Name:       "p",
+							},
+							Right: &DictionaryPatternLiteral{
+								NodeBase: NodeBase{
+									NodeSpan{13, 20},
+									&ParsingError{UnspecifiedParsingError, UNTERMINATED_DICT_PATT_MISSING_CLOSING_BRACE},
+									true,
+								},
+								Entries: []*DictionaryPatternEntry{
+									{
+										NodeBase: NodeBase{Span: NodeSpan{16, 21}},
+										Key: &DoubleQuotedStringLiteral{
+											NodeBase: NodeBase{NodeSpan{16, 19}, nil, false},
+											Raw:      `"a"`,
+											Value:    "a",
+										},
+										Value: &MissingExpression{
+											NodeBase: NodeBase{
+												NodeSpan{20, 21},
+												&ParsingError{MissingExpr, fmtExprExpectedHere([]rune(`(:{ "a":)`), 8, true)},
+												false,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				input:    `pattern p = :{ "a"   }`,
+				hasError: true,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 22}, nil, false},
+					Statements: []Node{
+						&PatternDefinition{
+							NodeBase: NodeBase{NodeSpan{0, 22}, nil, false},
+							Left: &PatternIdentifierLiteral{
+								NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+								Unprefixed: true,
+								Name:       "p",
+							},
+							Right: &DictionaryPatternLiteral{
+								NodeBase: NodeBase{Span: NodeSpan{12, 22}},
+								Entries: []*DictionaryPatternEntry{
+									{
+										NodeBase: NodeBase{
+											NodeSpan{15, 21},
+											&ParsingError{UnspecifiedParsingError, INVALID_DICT_PATT_ENTRY_MISSING_COLON_AFTER_KEY},
+											false,
+										},
+										Key: &DoubleQuotedStringLiteral{
+											NodeBase: NodeBase{NodeSpan{15, 18}, nil, false},
+											Raw:      `"a"`,
+											Value:    "a",
+										},
+										Value: nil,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				input:    `pattern p = :{ a   }`,
+				hasError: true,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
+					Statements: []Node{
+						&PatternDefinition{
+							NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
+							Left: &PatternIdentifierLiteral{
+								NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+								Unprefixed: true,
+								Name:       "p",
+							},
+							Right: &DictionaryPatternLiteral{
+								NodeBase: NodeBase{Span: NodeSpan{12, 20}},
+								Entries: []*DictionaryPatternEntry{
+									{
+										NodeBase: NodeBase{
+											NodeSpan{15, 19},
+											&ParsingError{UnspecifiedParsingError, INVALID_DICT_PATT_ENTRY_MISSING_COLON_AFTER_KEY},
+											false,
+										},
+										Key: &PatternIdentifierLiteral{
+											NodeBase:   NodeBase{NodeSpan{15, 16}, nil, false},
+											Name:       "a",
+											Unprefixed: true,
+										},
+										Value: nil,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				input:    `pattern p = :{ a  `,
+				hasError: true,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 18}, nil, false},
+					Statements: []Node{
+						&PatternDefinition{
+							NodeBase: NodeBase{NodeSpan{0, 18}, nil, false},
+							Left: &PatternIdentifierLiteral{
+								NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+								Unprefixed: true,
+								Name:       "p",
+							},
+							Right: &DictionaryPatternLiteral{
+								NodeBase: NodeBase{
+									NodeSpan{12, 18},
+									&ParsingError{UnspecifiedParsingError, UNTERMINATED_DICT_PATT_MISSING_CLOSING_BRACE},
+									false,
+								},
+								Entries: []*DictionaryPatternEntry{
+									{
+										NodeBase: NodeBase{
+											NodeSpan{15, 18},
+											&ParsingError{UnspecifiedParsingError, INVALID_DICT_PATT_ENTRY_MISSING_COLON_AFTER_KEY},
+											false,
+										},
+										Key: &PatternIdentifierLiteral{
+											NodeBase:   NodeBase{NodeSpan{15, 16}, nil, false},
+											Name:       "a",
+											Unprefixed: true,
+										},
+										Value: nil,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{ //
+				input:    `pattern p = :{ "a" : 1  "b" : 2 }`,
+				hasError: true,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 33}, nil, false},
+					Statements: []Node{
+						&PatternDefinition{
+							NodeBase: NodeBase{NodeSpan{0, 33}, nil, false},
+							Left: &PatternIdentifierLiteral{
+								NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+								Unprefixed: true,
+								Name:       "p",
+							},
+							Right: &DictionaryPatternLiteral{
+								NodeBase: NodeBase{Span: NodeSpan{12, 33}},
+								Entries: []*DictionaryPatternEntry{
+									{
+										NodeBase: NodeBase{
+											NodeSpan{15, 22},
+											&ParsingError{UnspecifiedParsingError, INVALID_DICT_PATT_LIT_ENTRY_SEPARATION},
+											false,
+										},
+										Key: &DoubleQuotedStringLiteral{
+											NodeBase: NodeBase{NodeSpan{15, 18}, nil, false},
+											Raw:      `"a"`,
+											Value:    "a",
+										},
+										Value: &IntLiteral{
+											NodeBase: NodeBase{NodeSpan{21, 22}, nil, false},
+											Raw:      "1",
+											Value:    1,
+										},
+									},
+									{
+										NodeBase: NodeBase{Span: NodeSpan{24, 31}},
+										Key: &DoubleQuotedStringLiteral{
+											NodeBase: NodeBase{NodeSpan{24, 27}, nil, false},
+											Raw:      `"b"`,
+											Value:    "b",
+										},
+										Value: &IntLiteral{
+											NodeBase: NodeBase{NodeSpan{30, 31}, nil, false},
+											Raw:      "2",
+											Value:    2,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				input:    `pattern p = :{ "a" : 1 , "b" : 2 }`,
+				hasError: false,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 34}, nil, false},
+					Statements: []Node{
+						&PatternDefinition{
+							NodeBase: NodeBase{NodeSpan{0, 34}, nil, false},
+							Left: &PatternIdentifierLiteral{
+								NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+								Unprefixed: true,
+								Name:       "p",
+							},
+							Right: &DictionaryPatternLiteral{
+								NodeBase: NodeBase{Span: NodeSpan{12, 34}},
+								Entries: []*DictionaryPatternEntry{
+									{
+										NodeBase: NodeBase{Span: NodeSpan{15, 22}},
+										Key: &DoubleQuotedStringLiteral{
+											NodeBase: NodeBase{NodeSpan{15, 18}, nil, false},
+											Raw:      `"a"`,
+											Value:    "a",
+										},
+										Value: &IntLiteral{
+											NodeBase: NodeBase{NodeSpan{21, 22}, nil, false},
+											Raw:      "1",
+											Value:    1,
+										},
+									},
+									{
+										NodeBase: NodeBase{Span: NodeSpan{25, 32}},
+										Key: &DoubleQuotedStringLiteral{
+											NodeBase: NodeBase{NodeSpan{25, 28}, nil, false},
+											Raw:      `"b"`,
+											Value:    "b",
+										},
+										Value: &IntLiteral{
+											NodeBase: NodeBase{NodeSpan{31, 32}, nil, false},
+											Raw:      "2",
+											Value:    2,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				input:    "pattern p = :{ \"a\" : 1 \n }",
+				hasError: false,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 26}, nil, false},
+					Statements: []Node{
+						&PatternDefinition{
+							NodeBase: NodeBase{NodeSpan{0, 26}, nil, false},
+							Left: &PatternIdentifierLiteral{
+								NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+								Unprefixed: true,
+								Name:       "p",
+							},
+							Right: &DictionaryPatternLiteral{
+								NodeBase: NodeBase{Span: NodeSpan{12, 26}},
+								Entries: []*DictionaryPatternEntry{
+									{
+										NodeBase: NodeBase{Span: NodeSpan{15, 22}},
+										Key: &DoubleQuotedStringLiteral{
+											NodeBase: NodeBase{NodeSpan{15, 18}, nil, false},
+											Raw:      `"a"`,
+											Value:    "a",
+										},
+										Value: &IntLiteral{
+											NodeBase: NodeBase{NodeSpan{21, 22}, nil, false},
+											Raw:      "1",
+											Value:    1,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				input:    "pattern p = :{ \n \"a\" : 1 }",
+				hasError: false,
+				result: &Chunk{
+					NodeBase: NodeBase{Span: NodeSpan{0, 26}},
+					Statements: []Node{
+						&PatternDefinition{
+							NodeBase: NodeBase{NodeSpan{0, 26}, nil, false},
+							Left: &PatternIdentifierLiteral{
+								NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+								Unprefixed: true,
+								Name:       "p",
+							},
+							Right: &DictionaryPatternLiteral{
+								NodeBase: NodeBase{Span: NodeSpan{12, 26}},
+								Entries: []*DictionaryPatternEntry{
+									{
+										NodeBase: NodeBase{Span: NodeSpan{17, 24}},
+										Key: &DoubleQuotedStringLiteral{
+											NodeBase: NodeBase{NodeSpan{17, 20}, nil, false},
+											Raw:      `"a"`,
+											Value:    "a",
+										},
+										Value: &IntLiteral{
+											NodeBase: NodeBase{NodeSpan{23, 24}, nil, false},
+											Raw:      "1",
+											Value:    1,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				input:    "pattern p = :{ \"a\" : 1 \n \"b\" : 2 }",
+				hasError: false,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 34}, nil, false},
+					Statements: []Node{
+						&PatternDefinition{
+							NodeBase: NodeBase{NodeSpan{0, 34}, nil, false},
+							Left: &PatternIdentifierLiteral{
+								NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+								Unprefixed: true,
+								Name:       "p",
+							},
+							Right: &DictionaryPatternLiteral{
+								NodeBase: NodeBase{Span: NodeSpan{12, 34}},
+								Entries: []*DictionaryPatternEntry{
+									{
+										NodeBase: NodeBase{Span: NodeSpan{15, 22}},
+										Key: &DoubleQuotedStringLiteral{
+											NodeBase: NodeBase{NodeSpan{15, 18}, nil, false},
+											Raw:      `"a"`,
+											Value:    "a",
+										},
+										Value: &IntLiteral{
+											NodeBase: NodeBase{NodeSpan{21, 22}, nil, false},
+											Raw:      "1",
+											Value:    1,
+										},
+									},
+									{
+										NodeBase: NodeBase{Span: NodeSpan{25, 32}},
+										Key: &DoubleQuotedStringLiteral{
+											NodeBase: NodeBase{NodeSpan{25, 28}, nil, false},
+											Raw:      `"b"`,
+											Value:    "b",
+										},
+										Value: &IntLiteral{
+											NodeBase: NodeBase{NodeSpan{31, 32}, nil, false},
+											Raw:      "2",
+											Value:    2,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				input:    `pattern p = :{?}`,
+				hasError: true,
+				result: &Chunk{
+					NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
+					Statements: []Node{
+						&PatternDefinition{
+							NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
+							Left: &PatternIdentifierLiteral{
+								NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+								Unprefixed: true,
+								Name:       "p",
+							},
+							Right: &DictionaryPatternLiteral{
+								NodeBase: NodeBase{Span: NodeSpan{12, 16}},
+								Entries: []*DictionaryPatternEntry{
+									{
+										NodeBase: NodeBase{Span: NodeSpan{14, 15}},
+										Key: &UnknownNode{
+											NodeBase: NodeBase{
+												NodeSpan{14, 15},
+												&ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInDictionaryPattern('?')},
+												false,
+											},
 										},
 									},
 								},
@@ -19675,16 +20246,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
 				Statements: []Node{
 					&FunctionPatternExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 20},
-							nil,
-							false,
-							/*[]Token{
-								{Type: PERCENT_FN, Span: NodeSpan{0, 3}},
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{3, 4}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{19, 20}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 20}},
 						Parameters: []*FunctionParameter{
 							{
 								NodeBase: NodeBase{Span: NodeSpan{4, 19}},
@@ -32941,15 +33503,7 @@ func testParse(
 										},
 									},
 									Closing: &MarkupClosingTag{
-										NodeBase: NodeBase{
-											NodeSpan{13, 20},
-											nil,
-											false,
-											/*[]Token{
-												{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{13, 15}},
-												{Type: GREATER_THAN, Span: NodeSpan{19, 20}},
-											},*/
-										},
+										NodeBase: NodeBase{Span: NodeSpan{13, 20}},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{15, 19}, nil, false},
 											Name:     "span",

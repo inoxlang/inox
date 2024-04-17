@@ -210,6 +210,12 @@ func TestPrint(t *testing.T) {
 		":{./a: 1, ./b",
 		":{?}",
 		":{?:?}",
+		//dictionary pattenrn literals
+		"pattern p = :{}",
+		"pattern p = :{s3://aa: 1}",
+		"pattern p = :{s3://aa/: 1}",
+		"pattern p = :{int:int}",
+		"pattern p = :{?}",
 		//call
 		"f()",
 		"f(1)",
