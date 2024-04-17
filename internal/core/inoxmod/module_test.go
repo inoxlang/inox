@@ -147,6 +147,25 @@ func TestParseLocalModule(t *testing.T) {
 		assert.Nil(t, mod.ManifestTemplate)
 	})
 
+	t.Run("parsing error", func(t *testing.T) {
+		modpath := writeModuleAndIncludedFiles(t, moduleName, `manifest {};a =`, nil)
+
+		parsingCtx := NewContextWithEmptyState(ContextConfig{
+			Permissions: []Permission{CreateFsReadPerm(Path(modpath))},
+			Filesystem:  newOsFilesystem(),
+		}, nil)
+		defer parsingCtx.CancelGracefully()
+
+		mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: parsingCtx})
+
+		assert.Error(t, err)
+		assert.NotNil(t, mod.MainChunk)
+		assert.Len(t, mod.Errors, 1)
+		assert.Len(t, mod.FileLevelParsingErrors, 1)
+		assert.Empty(t, mod.IncludedChunkForest)
+		assert.Nil(t, mod.ManifestTemplate)
+	})
+
 	t.Run("application kind", func(t *testing.T) {
 		fls := newMemFilesystem()
 		util.WriteFile(fls, "/mod.ix", []byte(`manifest {kind:"application"}`), 0400)
