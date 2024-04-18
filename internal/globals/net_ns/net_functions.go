@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	TCP_SIMUL_CONN_TOTAL_LIMIT_NAME = "tcp/simul-connection"
+	TCP_SIMUL_CONN_TOTAL_LIMIT_NAME = "tcp/simul-connections"
 
 	DEFAULT_TCP_DIAL_TIMEOUT        = 10 * time.Second
 	DEFAULT_TCP_KEEP_ALIVE_INTERVAL = 10 * time.Second
