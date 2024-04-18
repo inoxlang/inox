@@ -393,8 +393,35 @@ func (p *parser) parseHyperscriptAttribute(start int32) (attr *HyperscriptAttrib
 	end := int32(-1)
 	closingCurlyBracketPosition := int32(-1)
 
+eat_hyperscript_code:
 	for p.i < p.len {
-		if p.s[p.i] == '}' {
+		switch p.s[p.i] {
+		case '`', '\'', '"':
+			delim := p.s[p.i]
+			p.i++
+
+			//Eat string literal.
+			//TODO: add check involving isValidSingleQuoteStringStart (hyperscript lexer)
+			for p.i < p.len {
+				switch p.s[p.i] {
+				case '\\':
+					p.i += 2
+				case '\n':
+					if delim != '`' {
+						//Unterminated
+						continue eat_hyperscript_code
+					}
+					p.i++
+				case delim:
+					p.i++
+					continue eat_hyperscript_code
+				default:
+					p.i++
+				}
+			}
+			//Unterminated string literal.
+			break eat_hyperscript_code
+		case '}':
 			closingCurlyBracketPosition = p.i
 			end = p.i + 1 //potential end
 			p.i++
@@ -419,12 +446,13 @@ func (p *parser) parseHyperscriptAttribute(start int32) (attr *HyperscriptAttrib
 					})
 					p.i++
 				}
-				break
+				break eat_hyperscript_code
 			}
 			end = -1
 			closingCurlyBracketPosition = -1
+		default:
+			p.i++
 		}
-		p.i++
 	}
 
 	terminated = end >= 0

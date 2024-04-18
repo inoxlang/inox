@@ -31311,15 +31311,7 @@ func testParse(
 						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 24}, nil, false},
 							Opening: &MarkupOpeningTag{
-								NodeBase: NodeBase{
-									NodeSpan{1, 18},
-									nil,
-									false,
-									/*[]Token{
-										{Type: LESS_THAN, Span: NodeSpan{1, 2}},
-										{Type: GREATER_THAN, Span: NodeSpan{17, 18}},
-									},*/
-								},
+								NodeBase: NodeBase{Span: NodeSpan{1, 18}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
 									Name:     "div",
@@ -31563,6 +31555,274 @@ func testParse(
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{12, 15}, nil, false},
 									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("hyperscript attribute shorthand with a '}>' sequence inside a single-quoted hyperscript string literal", func(t *testing.T) {
+			n := mustparseChunk(t, `h<div {'}>'}></div>`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
+				Statements: []Node{
+					&MarkupExpression{
+						NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "h",
+						},
+						Element: &MarkupElement{
+							NodeBase: NodeBase{NodeSpan{1, 19}, nil, false},
+							Opening: &MarkupOpeningTag{
+								NodeBase: NodeBase{Span: NodeSpan{1, 13}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:     "div",
+								},
+								Attributes: []Node{
+									&HyperscriptAttributeShorthand{
+										NodeBase: NodeBase{Span: NodeSpan{6, 12}},
+										Value:    "'}>'",
+									},
+								},
+							},
+							Children: []Node{
+								&MarkupText{
+									NodeBase: NodeBase{NodeSpan{13, 13}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &MarkupClosingTag{
+								NodeBase: NodeBase{Span: NodeSpan{13, 19}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{15, 18}, nil, false},
+									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("hyperscript attribute shorthand with a '}>' sequence inside a single-quoted hyperscript string literal that contains an escaped '", func(t *testing.T) {
+			n := mustparseChunk(t, `h<div {'\'}>'}></div>`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
+				Statements: []Node{
+					&MarkupExpression{
+						NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "h",
+						},
+						Element: &MarkupElement{
+							NodeBase: NodeBase{NodeSpan{1, 21}, nil, false},
+							Opening: &MarkupOpeningTag{
+								NodeBase: NodeBase{Span: NodeSpan{1, 15}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:     "div",
+								},
+								Attributes: []Node{
+									&HyperscriptAttributeShorthand{
+										NodeBase: NodeBase{Span: NodeSpan{6, 14}},
+										Value:    `'\'}>'`,
+									},
+								},
+							},
+							Children: []Node{
+								&MarkupText{
+									NodeBase: NodeBase{NodeSpan{15, 15}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &MarkupClosingTag{
+								NodeBase: NodeBase{Span: NodeSpan{15, 21}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{17, 20}, nil, false},
+									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("hyperscript attribute shorthand with a '}>' sequence inside a double-quoted hyperscript string literal", func(t *testing.T) {
+			n := mustparseChunk(t, `h<div {"}>"}></div>`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
+				Statements: []Node{
+					&MarkupExpression{
+						NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "h",
+						},
+						Element: &MarkupElement{
+							NodeBase: NodeBase{NodeSpan{1, 19}, nil, false},
+							Opening: &MarkupOpeningTag{
+								NodeBase: NodeBase{Span: NodeSpan{1, 13}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:     "div",
+								},
+								Attributes: []Node{
+									&HyperscriptAttributeShorthand{
+										NodeBase: NodeBase{Span: NodeSpan{6, 12}},
+										Value:    `"}>"`,
+									},
+								},
+							},
+							Children: []Node{
+								&MarkupText{
+									NodeBase: NodeBase{NodeSpan{13, 13}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &MarkupClosingTag{
+								NodeBase: NodeBase{Span: NodeSpan{13, 19}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{15, 18}, nil, false},
+									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("hyperscript attribute shorthand with a '}>' sequence inside a double-quoted hyperscript string literal that contains an escaped \"", func(t *testing.T) {
+			n := mustparseChunk(t, `h<div {"\"}>"}></div>`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
+				Statements: []Node{
+					&MarkupExpression{
+						NodeBase: NodeBase{NodeSpan{0, 21}, nil, false},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "h",
+						},
+						Element: &MarkupElement{
+							NodeBase: NodeBase{NodeSpan{1, 21}, nil, false},
+							Opening: &MarkupOpeningTag{
+								NodeBase: NodeBase{Span: NodeSpan{1, 15}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:     "div",
+								},
+								Attributes: []Node{
+									&HyperscriptAttributeShorthand{
+										NodeBase: NodeBase{Span: NodeSpan{6, 14}},
+										Value:    `"\"}>"`,
+									},
+								},
+							},
+							Children: []Node{
+								&MarkupText{
+									NodeBase: NodeBase{NodeSpan{15, 15}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &MarkupClosingTag{
+								NodeBase: NodeBase{Span: NodeSpan{15, 21}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{17, 20}, nil, false},
+									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("hyperscript attribute shorthand with a '}>' sequence inside a hyperscript string template literal", func(t *testing.T) {
+			n := mustparseChunk(t, "h<div {`}>`}></div>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
+				Statements: []Node{
+					&MarkupExpression{
+						NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "h",
+						},
+						Element: &MarkupElement{
+							NodeBase: NodeBase{NodeSpan{1, 19}, nil, false},
+							Opening: &MarkupOpeningTag{
+								NodeBase: NodeBase{Span: NodeSpan{1, 13}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:     "div",
+								},
+								Attributes: []Node{
+									&HyperscriptAttributeShorthand{
+										NodeBase: NodeBase{Span: NodeSpan{6, 12}},
+										Value:    "`}>`",
+									},
+								},
+							},
+							Children: []Node{
+								&MarkupText{
+									NodeBase: NodeBase{NodeSpan{13, 13}, nil, false},
+									Raw:      "",
+									Value:    "",
+								},
+							},
+							Closing: &MarkupClosingTag{
+								NodeBase: NodeBase{Span: NodeSpan{13, 19}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{15, 18}, nil, false},
+									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("hyperscript attribute shorthand with an unterminated hyperscript string template literal", func(t *testing.T) {
+			n, err := parseChunk(t, "h<div {`}></div>", "")
+			assert.Error(t, err)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
+				Statements: []Node{
+					&MarkupExpression{
+						NodeBase: NodeBase{NodeSpan{0, 16}, nil, false},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "h",
+						},
+						Element: &MarkupElement{
+							NodeBase: NodeBase{NodeSpan{1, 16}, nil, false},
+							Opening: &MarkupOpeningTag{
+								NodeBase: NodeBase{Span: NodeSpan{1, 16}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:     "div",
+								},
+								Attributes: []Node{
+									&HyperscriptAttributeShorthand{
+										NodeBase: NodeBase{
+											NodeSpan{6, 16},
+											&ParsingError{UnspecifiedParsingError, UNTERMINATED_HYPERSCRIPT_ATTRIBUTE_SHORTHAND},
+											false,
+										},
+										Value:          "`}></div>",
+										IsUnterminated: true,
+									},
 								},
 							},
 						},
