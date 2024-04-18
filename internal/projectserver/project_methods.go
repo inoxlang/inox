@@ -47,10 +47,11 @@ type CreateProjectResponse struct {
 }
 
 type OpenProjectParams struct {
-	ProjectID     string                       `json:"projectId"`
-	MemberID      string                       `json:"memberId"`
-	DevSideConfig project.DevSideProjectConfig `json:"config"`
-	TempTokens    *project.TempProjectTokens   `json:"tempTokens,omitempty"`
+	ProjectID                               string                       `json:"projectId"`
+	MemberID                                string                       `json:"memberId"`
+	DevSideConfig                           project.DevSideProjectConfig `json:"config"`
+	TempTokens                              *project.TempProjectTokens   `json:"tempTokens,omitempty"`
+	IsProjectServerAccessedThroughLocalhost bool                         `json:"isProjectServerAccessedThroughLocalhost,omitempty"`
 }
 
 type OpenProjectResponse struct {
@@ -417,6 +418,24 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 		Microtask: func() {
 			go analyzeCodebaseAndRegen(false, session)
 		},
+	})
+
+	//Update the fallback session key of development servers.
+
+	if params.IsProjectServerAccessedThroughLocalhost {
+		http_ns.SetFallbackDevSessionKey(devSessionKey)
+	} else {
+		//If at least one developer does not access the project server through localhost
+		//we remove the fallback key.
+		http_ns.RemoveFallbackDevSessionKey(devSessionKey)
+	}
+
+	rpcSession.Context().OnDone(func(timeoutCtx context.Context, teardownStatus core.GracefulTeardownStatus) error {
+		go func() {
+			defer utils.Recover()
+			http_ns.RemoveFallbackDevSessionKey(devSessionKey)
+		}()
+		return nil
 	})
 
 	return OpenProjectResponse{

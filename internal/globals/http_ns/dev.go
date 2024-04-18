@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"net/http"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
@@ -25,6 +26,9 @@ const (
 var (
 	devServers     = map[ /*port*/ string]*DevServer{}
 	devServersLock sync.Mutex
+
+	//Session key used if the header is missing.
+	fallbackDevSessionKey atomic.Value
 )
 
 type DevServer struct {
@@ -164,29 +168,35 @@ func (s *DevServer) Handle(rw http.ResponseWriter, req *http.Request) {
 	const ERROR_MSG_PREFIX_FMT = "[Dev server on port %s]\n" + DEV_SERVER_EXPLANATION_MESSAGE_FOR_BROWSER + "\n\n"
 
 	keys := req.Header.Values(inoxconsts.DEV_SESSION_KEY_HEADER)
+	var devSessionKey DevSessionKey
+
 	switch len(keys) {
 	case 0:
+		key, ok := fallbackDevSessionKey.Load().(DevSessionKey)
+		if ok && key != "" {
+			devSessionKey = key
+			break
+		}
 		rw.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(rw, ERROR_MSG_PREFIX_FMT+"Missing %s header.", s.port, inoxconsts.DEV_SESSION_KEY_HEADER)
 		return
 	case 1:
-		break //ok
+		key, err := DevSessionKeyFrom(keys[0])
+		if err != nil {
+			rw.WriteHeader(http.StatusBadRequest)
+			fmt.Fprintf(rw, ERROR_MSG_PREFIX_FMT+"Invalid %s header.", s.port, inoxconsts.DEV_SESSION_KEY_HEADER)
+			return
+		}
+		devSessionKey = key
 	default:
 		rw.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(rw, ERROR_MSG_PREFIX_FMT+"Duplicate %s header.", s.port, inoxconsts.DEV_SESSION_KEY_HEADER)
 		return
 	}
 
-	key, err := DevSessionKeyFrom(keys[0])
-	if err != nil {
-		rw.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(rw, ERROR_MSG_PREFIX_FMT+"Invalid %s header.", s.port, inoxconsts.DEV_SESSION_KEY_HEADER)
-		return
-	}
-
 	s.lock.Lock()
 	s.removeDeadTargetServersNoLock()
-	targetServer, ok := s.targetServers[key]
+	targetServer, ok := s.targetServers[devSessionKey]
 	s.lock.Unlock()
 
 	if !ok {
@@ -258,4 +268,12 @@ func DevSessionKeyFrom(s string) (DevSessionKey, error) {
 	}
 
 	return DevSessionKey(s), nil
+}
+
+func SetFallbackDevSessionKey(key DevSessionKey) {
+	fallbackDevSessionKey.Store(key)
+}
+
+func RemoveFallbackDevSessionKey(key DevSessionKey) {
+	fallbackDevSessionKey.Store(DevSessionKey(""))
 }
