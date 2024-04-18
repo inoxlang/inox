@@ -19,8 +19,7 @@ const (
 	DEV_SERVER_DIR_PERMS          = fs.FileMode(0o700)
 	DEV_SESSION_KEY_BYTE_COUNT    = 16
 
-	CTX_DATA_KEY_FOR_DEV_SESSION_KEY           = core.Path("/dev-session-key") //TODO: should the session have a random name in order to not be retrievable ?
-	DEV_SERVER_EXPLANATION_MESSAGE_FOR_BROWSER = "This server is not expected to receive requests from a browser."
+	CTX_DATA_KEY_FOR_DEV_SESSION_KEY = core.Path("/dev-session-key") //TODO: should the session have a random name in order to not be retrievable ?
 )
 
 var (
@@ -165,7 +164,7 @@ func GetDevServer(port string) (*DevServer, bool) {
 
 func (s *DevServer) Handle(rw http.ResponseWriter, req *http.Request) {
 
-	const ERROR_MSG_PREFIX_FMT = "[Dev server on port %s]\n" + DEV_SERVER_EXPLANATION_MESSAGE_FOR_BROWSER + "\n\n"
+	const ERROR_MSG_PREFIX_FMT = "[Dev server on port %s]\n\n"
 
 	keys := req.Header.Values(inoxconsts.DEV_SESSION_KEY_HEADER)
 	var devSessionKey DevSessionKey
