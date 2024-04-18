@@ -18,13 +18,17 @@ import (
 )
 
 type debuggedProgramLaunch struct {
-	programPath      string
-	logLevels        *slog.Levels
-	rpcSession       *jsonrpc.Session
+	programPath string
+	logLevels   *slog.Levels
+	rpcSession  *jsonrpc.Session
+
 	debugSession     *DebugSession
 	devtoolsInstance *devtools.Instance
-	fls              *Filesystem
-	memberAuthToken  string
+	enableTesting    bool
+	testFilters      core.TestFilters
+
+	fls             *Filesystem
+	memberAuthToken string
 }
 
 func launchDebuggedProgram(args debuggedProgramLaunch) {
@@ -138,7 +142,10 @@ func launchDebuggedProgram(args debuggedProgramLaunch) {
 
 		PreinitFilesystem: fls,
 
-		Debugger:                      debugSession.debugger,
+		Debugger:      debugSession.debugger,
+		EnableTesting: args.enableTesting,
+		TestFilters:   args.testFilters,
+
 		ProgramOut:                    programOut,
 		Logger:                        logger,
 		LogLevels:                     logLevels,

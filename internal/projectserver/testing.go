@@ -25,7 +25,7 @@ type TestRunId string
 // testModuleAsync creates a goroutine that executes the module at $path in testing mode, testModuleAsync immediately returns
 // without waiting for the tests to finish. The goroutine notifies the LSP client with TEST_RUN_FINISHED_METHOD when it is done.
 // testModuleAsync should NOT be called while the session data is locked because it acquires the lock in order to
-// store the testRunId in additionalSessionData.testRuns.
+// store the testRunId in Session.testRuns.
 func testModuleAsync(
 	callCtx context.Context,
 	path string,

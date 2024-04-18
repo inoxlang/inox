@@ -22,6 +22,8 @@ type RunProgramParams struct {
 
 	PreinitFilesystem afs.Filesystem
 	Debugger          *core.Debugger
+	EnableTesting     bool
+	TestFilters       core.TestFilters
 
 	ProgramOut io.Writer
 	Logger     zerolog.Logger
@@ -63,6 +65,9 @@ func (inst *Instance) RunProgram(args RunProgramParams) (preparationOk bool, _ e
 
 		Debugger:     args.Debugger,
 		PreparedChan: args.ProgramPreparedOrFailedToChan,
+
+		EnableTesting: args.EnableTesting,
+		TestFilters:   args.TestFilters,
 
 		OnPrepared: func(state *core.GlobalState) error {
 			if args.Path != layout.MAIN_PROGRAM_PATH {

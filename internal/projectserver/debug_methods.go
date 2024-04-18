@@ -122,8 +122,9 @@ type DebugSetExceptionBreakpointsParams struct {
 }
 
 type DebugLaunchArgs struct {
-	Program   string                                                       `json:"program"`
-	LogLevels map[ /*'default' | 'enableInternalDebug' | path*/ string]any `json:"logLevels,omitempty"`
+	Program             string                                                       `json:"program"`
+	LogLevels           map[ /*'default' | 'enableInternalDebug' | path*/ string]any `json:"logLevels,omitempty"`
+	PositiveTestFilters []TestFilter                                                 `json:"positiveTestFilters,omitempty"`
 }
 
 type DebugDisconnectParams struct {
@@ -136,7 +137,7 @@ type DebugSecondaryEvent struct {
 	Body any `json:"body"`
 }
 
-func registerDebugMethodHandlers(server *lsp.Server, opts LSPServerConfiguration) {
+func registerDebugMethodHandlers(server *lsp.Server, _ LSPServerConfiguration) {
 
 	server.OnCustom(jsonrpc.MethodInfo{
 		Name: INITIALIZE_DEBUG_METHOD,
@@ -589,13 +590,13 @@ func handleDebugLaunch(callCtx context.Context, req interface{}) (interface{}, e
 		return makeDAPErrorResponse("failed to launch: configuration is not done"), nil
 	}
 
-	//check the program is not already running
+	//Check the program is not already running.
 
 	if debugSession.programDoneChan != nil {
 		return makeDAPErrorResponse("program is already running"), nil
 	}
 
-	//unmarshal user arguments
+	//Unmarshal user arguments.
 
 	var launchArgs DebugLaunchArgs
 	err = json.Unmarshal(([]byte(dapRequest.Arguments)), &launchArgs)
@@ -608,7 +609,7 @@ func handleDebugLaunch(callCtx context.Context, req interface{}) (interface{}, e
 		}
 	}
 
-	//check user arguments
+	//Check user arguments.
 
 	if launchArgs.Program == "" {
 		removeDebugSession(debugSession, rpcSession)
@@ -627,11 +628,11 @@ func handleDebugLaunch(callCtx context.Context, req interface{}) (interface{}, e
 		return makeDAPErrorResponse(err.Error()), nil
 	}
 
-	// inform the user about the log level configuration
+	// Inform the user about the log level configuration
 	logLevelConfigMessage := "log level config from your IDE: " + string(utils.Must(json.Marshal(launchArgs.LogLevels))) + "\n"
 	notifyOutputEvent(logLevelConfigMessage, ConsoleDebugEvent, debugSession, rpcSession)
 
-	// update the debug session
+	//Update the debug session.
 
 	logger := session.Logger()
 
@@ -648,7 +649,7 @@ func handleDebugLaunch(callCtx context.Context, req interface{}) (interface{}, e
 	debugSession.programDoneChan = make(chan error, 1)
 	debugSession.programPreparedOrFailedToChan = make(chan error)
 
-	//remove the debug session when either the LSP session is finished or the launched program is done.
+	//Remove the debug session when either the LSP session is finished or the launched program is done.
 	go func() {
 		defer func() {
 			if e := recover(); e != nil {
@@ -686,8 +687,12 @@ func handleDebugLaunch(callCtx context.Context, req interface{}) (interface{}, e
 		rpcSession:       rpcSession,
 		debugSession:     debugSession,
 		devtoolsInstance: session.devtools,
-		fls:              fls,
-		memberAuthToken:  memberAuthToken,
+		enableTesting:    len(launchArgs.PositiveTestFilters) > 0,
+		testFilters: core.TestFilters{
+			PositiveTestFilters: utils.MapSlice(launchArgs.PositiveTestFilters, TestFilter.Filter),
+		},
+		fls:             fls,
+		memberAuthToken: memberAuthToken,
 	})
 
 	err = <-debugSession.programPreparedOrFailedToChan
