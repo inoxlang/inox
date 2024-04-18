@@ -427,13 +427,13 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 	} else {
 		//If at least one developer does not access the project server through localhost
 		//we remove the fallback key.
-		http_ns.RemoveFallbackDevSessionKey(devSessionKey)
+		http_ns.RemoveFallbackDevSessionKey()
 	}
 
 	rpcSession.Context().OnDone(func(timeoutCtx context.Context, teardownStatus core.GracefulTeardownStatus) error {
 		go func() {
 			defer utils.Recover()
-			http_ns.RemoveFallbackDevSessionKey(devSessionKey)
+			http_ns.RemoveFallbackDevSessionKey()
 		}()
 		return nil
 	})

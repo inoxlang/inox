@@ -274,6 +274,6 @@ func SetFallbackDevSessionKey(key DevSessionKey) {
 	fallbackDevSessionKey.Store(key)
 }
 
-func RemoveFallbackDevSessionKey(key DevSessionKey) {
+func RemoveFallbackDevSessionKey() {
 	fallbackDevSessionKey.Store(DevSessionKey(""))
 }
