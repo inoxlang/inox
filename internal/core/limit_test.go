@@ -647,6 +647,68 @@ func TestThreadSimultaneousInstancesLimitIntegration(t *testing.T) {
 		assert.Less(t, time.Since(start), 10*time.Millisecond)
 	})
 
+	t.Run("thread count token should be given back after lthread is done because of the cancellation of the spawner", func(t *testing.T) {
+		//allow a single thread
+		threadCountLimit, err := core.GetLimit(nil, limitbase.THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, core.Int(1))
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		eval := makeTreeWalkEvalFunc(t)
+
+		//The root context has the token bucket.
+		rootCtx := core.NewContextWithEmptyState(core.ContextConfig{
+			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.LThreadPermission{
+				Kind_: permbase.Create,
+			}),
+			Limits: []limitbase.Limit{threadCountLimit},
+		}, nil)
+		defer rootCtx.CancelGracefully()
+
+		//The spawner context is a child of the root context.
+		spawnerCtx := core.NewContextWithEmptyState(core.ContextConfig{
+			Permissions: append(core.GetDefaultGlobalVarPermissions(), core.LThreadPermission{
+				Kind_: permbase.Create,
+			}),
+			ParentContext: rootCtx,
+		}, nil)
+		defer spawnerCtx.CancelGracefully()
+
+		spawnerState := spawnerCtx.MustGetClosestState()
+
+		lthreadSpawned := atomic.Bool{}
+
+		spawnerState.Globals.Set("sleep", core.ValOf(func(ctx *core.Context) {
+			assert.EqualValues(t, 0, utils.MustGet(rootCtx.AvailableTokens(limitbase.THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME)))
+
+			lthreadSpawned.Store(true)
+			core.Sleep(ctx, core.Duration(10*time.Second))
+		}))
+
+		go func() {
+			time.Sleep(100 * time.Millisecond)
+			spawnerCtx.CancelGracefully()
+			//The cancellatioin of the spawner context also causes the cancellation of the lthread.
+		}()
+
+		assert.EqualValues(t, 1, utils.MustGet(rootCtx.AvailableTokens(limitbase.THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME)))
+
+		_, err = eval(`
+			lthread = go {globals: .{sleep}} do {
+				sleep()
+			}
+			lthread.wait_result!()
+		`, spawnerState, false)
+
+		assert.EqualValues(t, 1, utils.MustGet(rootCtx.AvailableTokens(limitbase.THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME)))
+
+		if !assert.ErrorIs(t, err, context.Canceled) {
+			return
+		}
+
+		assert.True(t, lthreadSpawned.Load())
+	})
+
 	t.Run("module import should panic if there is no thread count token left", func(t *testing.T) {
 		//allow a single thread
 		threadCountLimit, err := core.GetLimit(nil, limitbase.THREADS_SIMULTANEOUS_INSTANCES_LIMIT_NAME, core.Int(1))

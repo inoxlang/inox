@@ -943,14 +943,17 @@ top:
 
 // Take takes an amount of tokens from the bucket associated with a limit.
 // The token count is scaled so the passed count is not the took amount.
+// The function panics if the context is done or if there is no limiter
+// for $limitName.
 func (ctx *Context) Take(limitName string, count int64) error {
 	if ctx.done.Load() {
-		return ctx.makeDoneContextError()
+		//We panic to make sure the execution of the module stops.
+		panic(ctx.makeDoneContextError())
 	}
 
 	limiter, ok := ctx.limiters[limitName]
 	if !ok {
-		//we panic to make sure the execution of the module stops.
+		//We panic to make sure the execution of the module stops.
 		panic(fmt.Errorf("%w: %s", ErrLimitNotPresentInContext, limitName))
 	}
 
@@ -962,21 +965,33 @@ func (ctx *Context) Take(limitName string, count int64) error {
 
 // GiveBack gives backs an amount of tokens from the bucket associated with a limit.
 // The token count is scaled so the passed count is not the given back amount.
+// An error is returned if the context is done and the token bucket is not owned by
+// the context. The function panics if there is no limiter for $limitName.
 func (ctx *Context) GiveBack(limitName string, count int64) error {
-	if ctx.done.Load() {
-		return ctx.makeDoneContextError()
-	}
-
 	scaledCount := limitbase.TOKEN_BUCKET_CAPACITY_SCALE * count
 
 	limiter, ok := ctx.limiters[limitName]
 	if !ok {
-		//we panic to make sure the execution of the module stops.
+		//We panic to make sure the execution of the module stops.
 		panic(fmt.Errorf("%w: %s", ErrLimitNotPresentInContext, limitName))
 	}
+	if ctx.done.Load() && limiter.ParentLimiter() == nil {
+		return ctx.makeDoneContextError()
+	}
+	//Note: if the context is done but the token bucket is owned by its parent
+	//we have to give back the tokens.
 
 	limiter.GiveBack(scaledCount)
 	return nil
+}
+
+func (ctx *Context) AvailableTokens(limitName string) (int64, bool) {
+	limiter, ok := ctx.limiters[limitName]
+	if !ok {
+		return 0, false
+	}
+
+	return limiter.Available(), true
 }
 
 func (ctx *Context) PauseTokenDepletion(limitName string) error {
