@@ -21,6 +21,7 @@ element = <div> Hello {string} ! </div>
 <img src="..."/>
 ```
 
+## Special Elements
 
 In `<script>` and `<style>` elements, anything inside single brackets is treated as text:
 
@@ -38,5 +39,38 @@ In `<script>` and `<style>` elements, anything inside single brackets is treated
 ```
 
 > Any Inox namespace having a member `from_markup_elem` (function) can be used to interpret a markup expression.
+
+## Hyperscript Attribute Shorthand
+
+In opening tags Hyperscript code can be written between curly braces instead of with a regular attribute (`_="..."`).
+
+```html
+<div {on click toggle .red on me}></div>
+      |
+interpreted as
+      |
+      v
+<div _="on click toggle .red on me"></div>
+```
+
+Hyperscript attribute shorthands can span several lines:
+
+```html
+<div {
+    on click toggle .red on me
+}>
+</div>
+```
+
+**If you want to write other attributes after the shorthand a dot '.' is required after the closing brace.**
+
+```html
+<div 
+    {on click toggle .red on me}.
+    class=""
+>
+    ...
+</div>
+```
 
 [Back to top](#markup-expressions)
