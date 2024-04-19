@@ -318,6 +318,10 @@ func FmtInvalidLocalVarDeclAlreadyDeclared(name string) string {
 	return fmt.Sprintf("invalid local variable declaration: '%s' is already declared", name)
 }
 
+func FmtVarIsAlreadyDeclared(name string) string {
+	return fmt.Sprintf("variable '%s' is already declared", name)
+}
+
 func FmtInvalidGlobalVarDeclAlreadyDeclared(name string) string {
 	return fmt.Sprintf("invalid global variable declaration: '%s' is already declared", name)
 }
@@ -354,12 +358,20 @@ func FmtParameterCannotShadowGlobalVariable(name string) string {
 	return fmt.Sprintf("a parameter cannot shadow global variable '%s', use another name instead", name)
 }
 
+func FmtParameterAlreadyDeclared(name string) string {
+	return fmt.Sprintf("parameter '%s' is already declared", name)
+}
+
 func FmtInvalidFnDeclAlreadyDeclared(name string) string {
 	return fmt.Sprintf("invalid function declaration: %s is already declared", name)
 }
 
 func FmtInvalidOrMisplacedFnDeclShouldBeAfterCapturedVarDeclaration(name string) string {
 	return fmt.Sprintf("invalid or misplaced function declaration: the function should be declared after the declaration of the local variable '%s'", name)
+}
+
+func FmtVarIsAlreadyCaptured(name string) string {
+	return fmt.Sprintf("variable '%s' is already captured", name)
 }
 
 func FmtInvalidFnDeclGlobVarExist(name string) string {

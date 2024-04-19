@@ -1276,7 +1276,20 @@ func TestCheck(t *testing.T) {
 			fnExprNode := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(fnExprNode, src, text.FmtCannotPassGlobalToFunction("a")),
+				makeError(fnExprNode.CaptureList[0], src, text.FmtCannotPassGlobalToFunction("a")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("duplicate variable capture", func(t *testing.T) {
+			n, src := mustParseCode(`
+				var a = 1
+				fn[a, a](){}
+			`)
+			fnExprNode := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(fnExprNode.CaptureList[1], src, text.FmtVarIsAlreadyCaptured("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -1480,7 +1493,7 @@ func TestCheck(t *testing.T) {
 			fnExpr := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(fnExpr, src, text.FmtCannotPassGlobalToFunction("a")),
+				makeError(fnExpr.CaptureList[0], src, text.FmtCannotPassGlobalToFunction("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -1996,7 +2009,20 @@ func TestCheck(t *testing.T) {
 			fnExprNode := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(fnExprNode, src, text.FmtCannotPassGlobalToFunction("a")),
+				makeError(fnExprNode.CaptureList[0], src, text.FmtCannotPassGlobalToFunction("a")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("duplicate variable capture", func(t *testing.T) {
+			n, src := mustParseCode(`
+				var a = 1
+				fn[a, a](){}
+			`)
+			fnExprNode := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(fnExprNode.CaptureList[1], src, text.FmtVarIsAlreadyCaptured("a")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -2007,6 +2033,19 @@ func TestCheck(t *testing.T) {
 				fn[a](){ return a }
 			`)
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("duplicate parameter declaration", func(t *testing.T) {
+			n, src := mustParseCode(`
+				var a = 1
+				fn(a, a){}
+			`)
+			fnExprNode := parse.FindNode(n, (*parse.FunctionExpression)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(fnExprNode.Parameters[1], src, text.FmtParameterAlreadyDeclared("a")),
+			)
+			assert.Equal(t, expectedErr, err)
 		})
 	})
 

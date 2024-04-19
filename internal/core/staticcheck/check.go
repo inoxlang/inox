@@ -1937,8 +1937,10 @@ func (c *checker) checkFuncDecl(node *parse.FunctionDeclaration, parent, closest
 		return parse.Prune
 	}
 
+	//Check location.
+
 	switch parent.(type) {
-	case *parse.Chunk, *parse.EmbeddedModule: //valid location
+	case *parse.Chunk, *parse.EmbeddedModule:
 		fnDecls := c.getModFunctionDecls(closestModule)
 		globalVars := c.getModGlobalVars(closestModule)
 		localVars := c.getLocalVarsInScope(closestModule)
@@ -1987,22 +1989,30 @@ func (c *checker) checkFuncDecl(node *parse.FunctionDeclaration, parent, closest
 func (c *checker) checkFuncExpr(node *parse.FunctionExpression, closestModule parse.Node, ancestorChain []parse.Node) parse.TraversalAction {
 	fnLocalVars := c.getLocalVarsInScope(node)
 
-	//we check that the captured variable exists & is a local
+	//Check the capture list.
+
 	for _, e := range node.CaptureList {
 		ident, ok := e.(*parse.IdentifierLiteral)
-		if !ok { //invalid
+		if !ok { //invalid (parsing error)
 			continue
 		}
 		name := ident.Name
 
+		//Check that the captured variable exists and is a local.
+
 		if !c.varExists(name, ancestorChain) {
 			c.addError(e, text.FmtVarIsNotDeclared(name))
 		} else if c.doGlobalVarExist(name, closestModule) {
-			c.addError(node, text.FmtCannotPassGlobalToFunction(name))
+			c.addError(e, text.FmtCannotPassGlobalToFunction(name))
+		} else if _, ok := fnLocalVars[name]; ok {
+			c.addError(ident, text.FmtVarIsAlreadyCaptured(name))
+			return parse.ContinueTraversal
 		}
 
 		fnLocalVars[name] = localVarInfo{}
 	}
+
+	//Check parameters.
 
 	for _, p := range node.Parameters {
 		paramNameIdent, ok := p.Var.(*parse.IdentifierLiteral)
@@ -2015,6 +2025,11 @@ func (c *checker) checkFuncExpr(node *parse.FunctionExpression, closestModule pa
 
 		if _, alreadyDefined := globalVariables[name]; alreadyDefined {
 			c.addError(p, text.FmtParameterCannotShadowGlobalVariable(name))
+			return parse.ContinueTraversal
+		}
+
+		if _, alreadyDefined := fnLocalVars[name]; alreadyDefined {
+			c.addError(p, text.FmtParameterAlreadyDeclared(name))
 			return parse.ContinueTraversal
 		}
 
