@@ -222,9 +222,10 @@ func findObjectPropertyNameCompletions(
 	if ok {
 		for _, name := range properties {
 			if hasPrefixCaseInsensitive(name, ident.Name) {
+				propNameAndColon := name + ": "
 				completions = append(completions, Completion{
-					ShownString: name,
-					Value:       name,
+					ShownString: propNameAndColon,
+					Value:       propNameAndColon,
 					Kind:        defines.CompletionItemKindProperty,
 				})
 			}

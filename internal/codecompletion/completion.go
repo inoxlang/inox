@@ -515,9 +515,10 @@ after_subcommand_completions:
 		if ok {
 			for _, name := range properties {
 				if hasPrefixCaseInsensitive(name, ident.Name) {
+					propNameAndColon := name + ": "
 					completions = append(completions, Completion{
-						ShownString: name,
-						Value:       name,
+						ShownString: propNameAndColon,
+						Value:       propNameAndColon,
 						Kind:        defines.CompletionItemKindProperty,
 					})
 				}
@@ -1220,9 +1221,10 @@ func findObjectInteriorCompletions(n *parse.ObjectLiteral, search completionSear
 	properties, ok := search.state.Global.SymbolicData.GetAllowedNonPresentProperties(n)
 	if ok {
 		for _, name := range properties {
+			propNameAndColon := name + ": "
 			completions = append(completions, Completion{
-				ShownString:   name,
-				Value:         name,
+				ShownString:   propNameAndColon,
+				Value:         propNameAndColon,
 				Kind:          defines.CompletionItemKindProperty,
 				ReplacedRange: pos,
 			})
@@ -1442,9 +1444,10 @@ func findRecordInteriorCompletions(n *parse.RecordLiteral, search completionSear
 	properties, ok := search.state.Global.SymbolicData.GetAllowedNonPresentProperties(n)
 	if ok {
 		for _, name := range properties {
+			propNameAndColon := name + ": "
 			completions = append(completions, Completion{
-				ShownString:   name,
-				Value:         name,
+				ShownString:   propNameAndColon,
+				Value:         propNameAndColon,
 				Kind:          defines.CompletionItemKindProperty,
 				ReplacedRange: pos,
 			})

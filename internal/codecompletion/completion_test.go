@@ -337,8 +337,8 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 			completions := findCompletions(state, chunk, 37)
 			assert.EqualValues(t, []Completion{
 				{
-					ShownString:   "prop",
-					Value:         "prop",
+					ShownString:   "prop: ",
+					Value:         "prop: ",
 					ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 36, End: 37}}},
 			}, completions)
 		})
@@ -353,8 +353,8 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 			completions := findCompletions(state, chunk, 38)
 			assert.EqualValues(t, []Completion{
 				{
-					ShownString:   "prop",
-					Value:         "prop",
+					ShownString:   "prop: ",
+					Value:         "prop: ",
 					ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 37, End: 38}}},
 			}, completions)
 		})
