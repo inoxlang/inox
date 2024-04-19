@@ -2143,6 +2143,29 @@ func TestSymbolicEval(t *testing.T) {
 			obj := res.(*Object)
 			assert.True(t, obj.readonly)
 		})
+
+		t.Run("mismatch between object and expected value", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				var obj {a: int} = {a: true}
+			`)
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			prop := parse.FindObjPropWithName(n, "a")
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(prop.Value, state, fmtNotAssignableToPropOfType(TRUE, ANY_INT)),
+			}, state.errors())
+		})
+
+		t.Run("mismatch between object and expected value: missing property value (parsing error)", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				var obj {a: int} = {a: }
+			`)
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+		})
 	})
 
 	t.Run("record", func(t *testing.T) {
@@ -2276,7 +2299,30 @@ func TestSymbolicEval(t *testing.T) {
 			}, res)
 		})
 
+		t.Run("mismatch between object and expected value", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				var obj #{a: int} = #{a: true}
+			`)
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			prop := parse.FindObjPropWithName(n, "a")
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				makeSymbolicEvalError(prop.Value, state, fmtNotAssignableToPropOfType(TRUE, ANY_INT)),
+			}, state.errors())
+		})
+
+		t.Run("mismatch between object and expected value: missing property value (parsing error)", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				var obj #{a: int} = #{a: }
+			`)
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+		})
 	})
+
 	t.Run("member expression", func(t *testing.T) {
 		t.Run("object property", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`

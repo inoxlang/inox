@@ -4353,6 +4353,10 @@ func evalObjectLiteral(n *parse.ObjectLiteral, state *State, options evalOptions
 		if p.Value == nil {
 			propVal = ANY_SERIALIZABLE
 			serializable = ANY_SERIALIZABLE
+
+			if expectedPropVal != nil && !IsAnySerializable(expectedPropVal) {
+				options.setActualValueMismatchIfNotNil()
+			}
 		} else {
 			propVal, err = _symbolicEval(p.Value, state, evalOptions{
 				expectedValue:       expectedPropVal,
@@ -4518,6 +4522,10 @@ func evalRecordLiteral(n *parse.RecordLiteral, state *State, options evalOptions
 
 		if p.Value == nil {
 			entries[key] = ANY_SERIALIZABLE
+
+			if expectedPropVal != nil && !IsAnySerializable(expectedPropVal) {
+				options.setActualValueMismatchIfNotNil()
+			}
 		} else {
 			v, err := _symbolicEval(p.Value, state, evalOptions{
 				expectedValue:       expectedPropVal,
