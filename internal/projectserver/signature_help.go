@@ -82,7 +82,7 @@ func getSignatureHelpAt(line, column int32, chunk *parse.ParsedChunkSource, stat
 
 	var (
 		closestCallExpr *parse.CallExpression
-		ancestorIndex   int = -1
+		callExprIndex   int = -1
 	)
 
 	closestCallExpr, ok = node.(*parse.CallExpression)
@@ -91,7 +91,7 @@ func getSignatureHelpAt(line, column int32, chunk *parse.ParsedChunkSource, stat
 		callExpr, index, ok := parse.FindClosestMaxDistance(ancestors, (*parse.CallExpression)(nil), 2)
 		if ok {
 			closestCallExpr = callExpr
-			ancestorIndex = index
+			callExprIndex = index
 		}
 	}
 
@@ -134,6 +134,7 @@ func getSignatureHelpAt(line, column int32, chunk *parse.ParsedChunkSource, stat
 		params := val.ParametersExceptCtx()
 		paramCount = len(params)
 	case *symbolic.Function:
+
 		goFunc, ok := val.OriginGoFunction()
 		if ok {
 			markdown, ok := help.HelpForSymbolicGoFunc(goFunc, help.HelpMessageConfig{Format: help.MarkdownFormat})
@@ -145,7 +146,7 @@ func getSignatureHelpAt(line, column int32, chunk *parse.ParsedChunkSource, stat
 			}
 		}
 
-		params := val.NonVariadicParameters()
+		params := val.Parameters()
 		paramCount = len(params)
 	case *symbolic.InoxFunction:
 		params := val.Parameters()
@@ -177,39 +178,8 @@ func getSignatureHelpAt(line, column int32, chunk *parse.ParsedChunkSource, stat
 	}
 
 	//Determine the active parameter.
-	activeParamIndex := -1
-	var argNode parse.Node
 
-	if closestCallExpr == ancestors[len(ancestors)-1] {
-		argNode = node
-	} else if ancestorIndex >= 0 {
-		argNode = ancestors[ancestorIndex+1]
-	}
-	if argNode != nil {
-		for i, n := range closestCallExpr.Arguments {
-			if n == argNode {
-				activeParamIndex = i
-				break
-			}
-		}
-	} else if len(closestCallExpr.Arguments) > 0 { //find the argument on the left of the cursor
-		for i, n := range closestCallExpr.Arguments {
-			if cursorSpan.Start >= n.Base().Span.End {
-				activeParamIndex = i
-
-				// increment argNodeIndex if the cursor is after a comma located after the current argument.
-				for _, token := range parse.GetTokens(closestCallExpr, chunk.Node, false) {
-					if cursorSpan.End >= token.Span.End && token.Type == parse.COMMA {
-						activeParamIndex++
-						break
-					}
-				}
-			}
-		}
-	} else {
-		activeParamIndex = 0
-	}
-
+	activeParamIndex := parse.DetermineActiveParameterIndex(cursorSpan, node, closestCallExpr, callExprIndex, ancestors)
 	activeParamIndex = min(activeParamIndex, paramCount-1)
 
 	//Add the active parameter index to the signature help.

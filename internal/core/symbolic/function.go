@@ -283,6 +283,11 @@ func (fn *GoFunction) ParametersExceptCtx() []Value {
 	return fn.parameters
 }
 
+func (fn *GoFunction) IsVariadic() bool {
+	utils.PanicIfErr(fn.LoadSignatureData())
+	return fn.isVariadic
+}
+
 type GoFunctionKind int
 
 const (
@@ -914,6 +919,11 @@ func (fn *Function) NonVariadicParameters() []Value {
 	if fn.variadic {
 		return fn.parameters[:len(fn.parameters)-1]
 	}
+	return fn.parameters
+}
+
+// returned slice should not be modified.
+func (fn *Function) Parameters() []Value {
 	return fn.parameters
 }
 

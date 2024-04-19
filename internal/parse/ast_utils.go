@@ -1080,3 +1080,68 @@ func getInteriorSpan(node Node, chunk *Chunk, openingToken, closingToken TokenTy
 
 	return
 }
+
+// DetermineActiveParameterIndex determines the index of the function parameter,
+// it returns -1 if the index cannot be determined or if $ancestors does not contain
+// a *Chunk. $callExprIndex should be -1 if $nodeAtSpan is $callExpr.
+func DetermineActiveParameterIndex(
+	cursorSpan NodeSpan,
+	nodeAtSpan Node,
+	callExpr *CallExpression,
+	callExprIndex int,
+	ancestors []Node,
+) int {
+	var argNode Node
+
+	//Find the chunk in ancestors.
+
+	var chunk *Chunk
+
+	for _, ancestor := range ancestors {
+		if c, ok := ancestor.(*Chunk); ok {
+			chunk = c
+			break
+		}
+	}
+
+	if chunk == nil {
+		return -1
+	}
+
+	if callExpr == ancestors[len(ancestors)-1] {
+		if nodeAtSpan != callExpr {
+			argNode = nodeAtSpan
+		}
+	} else if callExprIndex >= 0 {
+		argNode = ancestors[callExprIndex+1]
+	}
+
+	if argNode != nil {
+		for i, n := range callExpr.Arguments {
+			if n == argNode {
+				return i
+			}
+		}
+		return -1
+	} else if len(callExpr.Arguments) > 0 { //find the argument on the left of the cursor
+		activeParamIndex := -1
+		for i, currentArgNode := range callExpr.Arguments {
+			currentArgEnd := currentArgNode.Base().Span.End
+
+			if cursorSpan.Start >= currentArgEnd {
+				activeParamIndex = i
+
+				// increment argNodeIndex if the cursor is after a comma located after the current argument.
+				for _, token := range GetTokens(callExpr, chunk, false) {
+					if token.Type == COMMA && token.Span.Start >= currentArgEnd && cursorSpan.Start >= token.Span.End {
+						activeParamIndex++
+						break
+					}
+				}
+			}
+		}
+		return activeParamIndex
+	} else {
+		return 0
+	}
+}
