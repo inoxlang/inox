@@ -127,7 +127,7 @@ func FindCompletions(args SearchArgs) []Completion {
 		case *parse.DoubleColonExpression:
 			completions = handleDoubleColonExpressionCompletions(n, search)
 		case *parse.CallExpression: //if a call is the deepest node at cursor it means we are not in an argument
-			completions = handleNewCallArgumentCompletions(n, search)
+			completions = handleCallArgumentCompletions(n, search)
 		case *parse.DoubleQuotedStringLiteral:
 			completions = findStringCompletions(n, search)
 		case *parse.MultilineStringLiteral:
@@ -1112,91 +1112,6 @@ func suggestPropertyNames(
 				ReplacedRange:         replacedRange,
 				MarkdownDocumentation: markdownDocumentations[i],
 			})
-		}
-	}
-	return completions
-}
-
-func handleNewCallArgumentCompletions(n *parse.CallExpression, search completionSearch) []Completion {
-	cursorIndex := search.cursorIndex
-	state := search.state
-	chunk := search.chunk
-
-	var completions []Completion
-	calleeIdent, ok := n.Callee.(*parse.IdentifierLiteral)
-	if !ok {
-		return nil
-	}
-
-	subcommandIdentChain := make([]*parse.IdentifierLiteral, 0)
-	for _, arg := range n.Arguments {
-		idnt, ok := arg.(*parse.IdentifierLiteral)
-		if !ok {
-			break
-		}
-		subcommandIdentChain = append(subcommandIdentChain, idnt)
-	}
-
-	completionSet := make(map[Completion]bool)
-
-top_loop:
-	for _, perm := range state.Global.Ctx.GetGrantedPermissions() {
-		cmdPerm, ok := perm.(core.CommandPermission)
-		if !ok ||
-			cmdPerm.CommandName.UnderlyingString() != calleeIdent.Name ||
-			len(subcommandIdentChain) >= len(cmdPerm.SubcommandNameChain) ||
-			len(cmdPerm.SubcommandNameChain) == 0 {
-			continue
-		}
-
-		if len(subcommandIdentChain) == 0 {
-			name := cmdPerm.SubcommandNameChain[0]
-			span := parse.NodeSpan{Start: int32(cursorIndex), End: int32(cursorIndex + 1)}
-
-			completion := Completion{
-				ShownString:   name,
-				Value:         name,
-				ReplacedRange: chunk.GetSourcePosition(span),
-				Kind:          defines.CompletionItemKindEnum,
-			}
-			if !completionSet[completion] {
-				completions = append(completions, completion)
-				completionSet[completion] = true
-			}
-			continue
-		}
-
-		holeIndex := -1
-		identIndex := 0
-
-		for i, name := range cmdPerm.SubcommandNameChain {
-			if name != subcommandIdentChain[identIndex].Name {
-				if holeIndex >= 0 {
-					continue top_loop
-				}
-				holeIndex = i
-			} else {
-				if identIndex == len(subcommandIdentChain)-1 {
-					if holeIndex < 0 {
-						holeIndex = i + 1
-					}
-					break
-				}
-				identIndex++
-			}
-		}
-		subcommandName := cmdPerm.SubcommandNameChain[holeIndex]
-		span := parse.NodeSpan{Start: int32(cursorIndex), End: int32(cursorIndex + 1)}
-
-		completion := Completion{
-			ShownString:   subcommandName,
-			Value:         subcommandName,
-			ReplacedRange: chunk.GetSourcePosition(span),
-			Kind:          defines.CompletionItemKindEnum,
-		}
-		if !completionSet[completion] {
-			completions = append(completions, completion)
-			completionSet[completion] = true
 		}
 	}
 	return completions
