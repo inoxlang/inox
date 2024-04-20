@@ -1247,7 +1247,8 @@ func evalReturnStatement(n *parse.ReturnStatement, state *State) (_ Value, final
 
 	if state.returnType != nil && !state.returnType.Test(v, RecTestCallState{}) {
 		if !*deeperMismatch {
-			state.addError(MakeSymbolicEvalError(n, state, fmtInvalidReturnValue(v, state.returnType)))
+			msg, regions := fmtInvalidReturnValue(state.fmtHelper, v, state.returnType)
+			state.addError(MakeSymbolicEvalError(n, state, msg, regions...))
 		}
 		state.returnValue = state.returnType
 	}
@@ -1286,7 +1287,8 @@ func evalYieldStatement(n *parse.YieldStatement, state *State) (_ Value, finalEr
 
 	if state.yieldType != nil && !state.yieldType.Test(v, RecTestCallState{}) {
 		if !*deeperMismatch {
-			state.addError(MakeSymbolicEvalError(n, state, fmtInvalidReturnValue(v, state.yieldType)))
+			msg, regions := fmtInvalidReturnValue(state.fmtHelper, v, state.yieldType)
+			state.addError(MakeSymbolicEvalError(n, state, msg, regions...))
 		}
 		state.yieldedValue = state.yieldType
 	}
@@ -3564,7 +3566,8 @@ func evalFunctionExpression(n *parse.FunctionExpression, state *State, options e
 
 		if signatureReturnType != nil {
 			if !signatureReturnType.Test(storedReturnType, RecTestCallState{}) {
-				state.addError(MakeSymbolicEvalError(n.Body, state, fmtInvalidReturnValue(storedReturnType, signatureReturnType)))
+				msg, regions := fmtInvalidReturnValue(state.fmtHelper, storedReturnType, signatureReturnType)
+				state.addError(MakeSymbolicEvalError(n.Body, state, msg, regions...))
 			}
 			storedReturnType = signatureReturnType
 		}

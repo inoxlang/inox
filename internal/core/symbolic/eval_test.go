@@ -3561,8 +3561,10 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 
 			assert.NoError(t, err)
+			msg, regions := fmtInvalidReturnValue(state.fmtHelper, NewString("a"), ANY_INT)
+
 			assert.Equal(t, []SymbolicEvaluationError{
-				MakeSymbolicEvalError(returnStmt, state, fmtInvalidReturnValue(NewString("a"), ANY_INT)),
+				MakeSymbolicEvalError(returnStmt, state, msg, regions...),
 			}, state.errors())
 			assert.Nil(t, res)
 		})
@@ -3576,8 +3578,11 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 
 			assert.NoError(t, err)
+
+			msg, regions := fmtInvalidReturnValue(state.fmtHelper, NewString("a"), ANY_INT)
+
 			assert.Equal(t, []SymbolicEvaluationError{
-				MakeSymbolicEvalError(strLit, state, fmtInvalidReturnValue(NewString("a"), ANY_INT)),
+				MakeSymbolicEvalError(strLit, state, msg, regions...),
 			}, state.errors())
 			assert.Nil(t, res)
 		})
@@ -3593,8 +3598,11 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 
 			assert.NoError(t, err)
+
+			msg, regions := fmtInvalidReturnValue(state.fmtHelper, NewString("a"), ANY_INT)
+
 			assert.Equal(t, []SymbolicEvaluationError{
-				MakeSymbolicEvalError(returnStmt, state, fmtInvalidReturnValue(NewString("a"), ANY_INT)),
+				MakeSymbolicEvalError(returnStmt, state, msg, regions...),
 			}, state.errors())
 			assert.Nil(t, res)
 		})
@@ -3654,8 +3662,11 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 
 			assert.NoError(t, err)
+
+			errMsg, regions := fmtInvalidReturnValue(state.fmtHelper, NewString("a"), ANY_INT)
+
 			assert.Equal(t, []SymbolicEvaluationError{
-				MakeSymbolicEvalError(returnStmts[0], state, fmtInvalidReturnValue(NewString("a"), ANY_INT)),
+				MakeSymbolicEvalError(returnStmts[0], state, errMsg, regions...),
 			}, state.errors())
 			assert.Nil(t, res)
 		})
@@ -3676,8 +3687,11 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 
 			assert.NoError(t, err)
+
+			errMsg, regions := fmtInvalidReturnValue(state.fmtHelper, NewString("a"), ANY_INT)
+
 			assert.Equal(t, []SymbolicEvaluationError{
-				MakeSymbolicEvalError(returnStmts[0], state, fmtInvalidReturnValue(NewString("a"), ANY_INT)),
+				MakeSymbolicEvalError(returnStmts[0], state, errMsg, regions...),
 			}, state.errors())
 			assert.Nil(t, res)
 		})
@@ -4292,8 +4306,10 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 
 			assert.NoError(t, err)
+			errMsg, regions := fmtInvalidReturnValue(state.fmtHelper, NewString("a"), ANY_INT)
+
 			assert.Equal(t, []SymbolicEvaluationError{
-				MakeSymbolicEvalError(fnReturnStmt, state, fmtInvalidReturnValue(NewString("a"), ANY_INT)),
+				MakeSymbolicEvalError(fnReturnStmt, state, errMsg, regions...),
 			}, state.errors())
 			assert.Equal(t, ANY_INT, res)
 		})

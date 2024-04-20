@@ -594,8 +594,17 @@ func FmtInvalidArg(h *commonfmt.Helper, position int, actual, expected Value) (s
 	return h.Consume()
 }
 
-func fmtInvalidReturnValue(actual, expected Value) string {
-	return fmt.Sprintf("invalid return value: type is %v, but a value matching %v was expected", Stringify(actual), Stringify(expected))
+func fmtInvalidReturnValue(h *commonfmt.Helper, actual, expected Value) (string, []commonfmt.RegionInfo) {
+	if h == nil {
+		h = commonfmt.NewHelper()
+	}
+	h.AppendString("invalid return value: type is ")
+	fmtValue(h, actual)
+	h.AppendString(", but a value matching ")
+	fmtValue(h, expected)
+	h.AppendString(" was expected")
+
+	return h.Consume()
 }
 
 func fmtSeqExpectedButIs(value Value) string {
