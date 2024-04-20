@@ -120,7 +120,7 @@ func (args *ModuleArgs) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.P
 	for i, name := range propertyNames {
 
 		if !config.Compact {
-			w.WriteLFCR()
+			w.WriteEndOfLine()
 			w.WriteInnerIndent()
 		}
 
@@ -150,7 +150,7 @@ func (args *ModuleArgs) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.P
 	}
 
 	if !config.Compact && len(propertyNames) > 0 {
-		w.WriteLFCR()
+		w.WriteEndOfLine()
 	}
 
 	w.WriteOuterIndent()

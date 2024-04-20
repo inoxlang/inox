@@ -998,7 +998,7 @@ func (p *ExactValuePattern) PrettyPrint(w pprint.PrettyPrintWriter, config *ppri
 	w.WriteInnerIndent()
 	p.value.PrettyPrint(w.IncrIndent(), config)
 
-	w.WriteByte('\n')
+	w.WriteEndOfLine()
 	w.WriteOuterIndent()
 	w.WriteByte(')')
 
@@ -1430,7 +1430,7 @@ func (p *ObjectPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.P
 		for i, k := range keys {
 
 			if !config.Compact {
-				w.WriteLFCR()
+				w.WriteEndOfLine()
 				w.WriteInnerIndent()
 			}
 
@@ -1473,7 +1473,7 @@ func (p *ObjectPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.P
 		// }
 
 		if !config.Compact && len(keys) > 0 {
-			w.WriteLFCR()
+			w.WriteEndOfLine()
 			w.WriteOuterIndent()
 		}
 
@@ -1690,7 +1690,7 @@ func (p *RecordPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.P
 		for i, k := range keys {
 
 			if !config.Compact {
-				w.WriteLFCR()
+				w.WriteEndOfLine()
 				w.WriteInnerIndent()
 			}
 
@@ -1733,7 +1733,7 @@ func (p *RecordPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.P
 		// }
 
 		if !config.Compact && len(keys) > 0 {
-			w.WriteLFCR()
+			w.WriteEndOfLine()
 			w.WriteOuterIndent()
 		}
 
@@ -2079,7 +2079,7 @@ func prettyPrintListPattern(
 	for i, v := range elementPatterns {
 
 		if !config.Compact {
-			w.WriteLFCR()
+			w.WriteEndOfLine()
 			w.WriteInnerIndent()
 
 			//index
@@ -2113,7 +2113,7 @@ func prettyPrintListPattern(
 	}
 
 	if !config.Compact && len(elementPatterns) > 0 {
-		w.WriteLFCR()
+		w.WriteEndOfLine()
 		w.WriteOuterIndent()
 	}
 
@@ -2569,7 +2569,7 @@ func (p *UnionPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pr
 
 	for i, case_ := range p.cases {
 		if i > 0 {
-			w.WriteByte('\n')
+			w.WriteEndOfLine()
 			w.WriteInnerIndent()
 			w.WriteString("| ")
 		}
@@ -2737,7 +2737,7 @@ func (p *IntersectionPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pp
 
 	for i, case_ := range p.cases {
 		if i > 0 {
-			w.WriteByte('\n')
+			w.WriteEndOfLine()
 			w.WriteInnerIndent()
 			w.WriteString("& ")
 		}
@@ -3638,7 +3638,7 @@ func (ns *PatternNamespace) PrettyPrint(w pprint.PrettyPrintWriter, config *ppri
 		for i, k := range keys {
 
 			if !config.Compact {
-				w.WriteLFCR()
+				w.WriteEndOfLine()
 				w.WriteInnerIndent()
 			}
 
@@ -3668,7 +3668,7 @@ func (ns *PatternNamespace) PrettyPrint(w pprint.PrettyPrintWriter, config *ppri
 		}
 
 		if !config.Compact && len(keys) > 0 {
-			w.WriteLFCR()
+			w.WriteEndOfLine()
 		}
 
 		w.WriteOuterIndent()

@@ -695,7 +695,7 @@ func (obj *Object) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pretty
 		for i, k := range keys {
 
 			if !config.Compact {
-				w.WriteLFCR()
+				w.WriteEndOfLine()
 				w.WriteInnerIndent()
 			}
 
@@ -729,7 +729,7 @@ func (obj *Object) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pretty
 		}
 
 		if !config.Compact && len(keys) > 0 {
-			w.WriteLFCR()
+			w.WriteEndOfLine()
 			w.WriteOuterIndent()
 		}
 

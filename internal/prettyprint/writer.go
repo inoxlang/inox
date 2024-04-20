@@ -93,7 +93,7 @@ func (w PrettyPrintWriter) WriteManyBytes(b ...[]byte) {
 	}
 }
 
-func (w PrettyPrintWriter) WriteLFCR() {
+func (w PrettyPrintWriter) WriteEndOfLine() {
 	utils.PanicIfErr(w.writer.WriteByte('\n'))
 	*w.written++
 

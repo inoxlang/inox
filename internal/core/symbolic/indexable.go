@@ -92,7 +92,7 @@ func (a *Array) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPri
 			v := a.elements[i]
 
 			if !config.Compact {
-				w.WriteLFCR()
+				w.WriteEndOfLine()
 				w.WriteInnerIndent()
 
 				//index
@@ -378,7 +378,7 @@ func (list *List) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyP
 			v := list.elements[i]
 
 			if !config.Compact {
-				w.WriteLFCR()
+				w.WriteEndOfLine()
 				w.WriteInnerIndent()
 
 				//index

@@ -217,7 +217,7 @@ func (fn *InoxFunction) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.P
 			w.WriteString(", ")
 		}
 		if !config.Compact {
-			w.WriteByte('\n')
+			w.WriteEndOfLine()
 			w.WriteInnerIndent()
 		}
 		paramRegion := w.EnterRegion(pprint.ParamNameTypeRegion)
@@ -234,7 +234,7 @@ func (fn *InoxFunction) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.P
 	}
 
 	if !config.Compact {
-		w.WriteByte('\n')
+		w.WriteEndOfLine()
 		w.WriteOuterIndent()
 	}
 	w.WriteString(") ")
