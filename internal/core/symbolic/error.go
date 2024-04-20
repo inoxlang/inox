@@ -269,20 +269,29 @@ func (err SymbolicEvaluationError) ReformatNonLocated(w io.Writer, reformatting 
 			return err
 		}
 	}
+
 	var replacements []commonfmt.RegionReplacement
 	for _, region := range regions {
 		if region.Kind == INOX_VALUE_REGION_KIND {
-			before, after := reformatting.BeforeSmallReprInoxValue, reformatting.AfterSmallReprInoxValue
+
+			var replacement commonfmt.RegionReplacement
 
 			if region.ByteLen() >= longReprThreshold {
-				before, after = reformatting.BeforeLongReprInoxValue, reformatting.AfterLongReprInoxValue
+				replacement = commonfmt.RegionReplacement{
+					Region:   region,
+					Before:   reformatting.BeforeLongReprInoxValue,
+					After:    reformatting.AfterLongReprInoxValue,
+					ReFormat: reformatValue,
+				}
+			} else {
+				replacement = commonfmt.RegionReplacement{
+					Region: region,
+					Before: reformatting.BeforeSmallReprInoxValue,
+					After:  reformatting.AfterSmallReprInoxValue,
+					String: text[region.Start:region.End],
+				}
 			}
-			replacements = append(replacements, commonfmt.RegionReplacement{
-				Region:   region,
-				Before:   before,
-				After:    after,
-				ReFormat: reformatValue,
-			})
+			replacements = append(replacements, replacement)
 		}
 	}
 
