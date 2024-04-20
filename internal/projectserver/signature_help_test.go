@@ -127,7 +127,7 @@ func TestSignatureHelpAt(t *testing.T) {
 		assert.EqualValues(t, "b int", (*signature.Parameters)[1].Label)
 	})
 
-	t.Run("call of a two-param function; single argument + comma", func(t *testing.T) {
+	t.Run("call of a two-param function; single argument + comma; cursor before comma", func(t *testing.T) {
 		state, ok := setup("manifest {}\nfn f(a int, b int){}\nf(1,)")
 		if !ok {
 			return
@@ -142,7 +142,27 @@ func TestSignatureHelpAt(t *testing.T) {
 		}
 		signature := help.Signatures[0]
 
-		assert.EqualValues(t, utils.New(uint(1)), help.ActiveParameter)
+		assert.EqualValues(t, 0, *help.ActiveParameter)
+		assert.EqualValues(t, "a int", (*signature.Parameters)[0].Label)
+		assert.EqualValues(t, "b int", (*signature.Parameters)[1].Label)
+	})
+
+	t.Run("call of a two-param function; single argument + comma; cursor after comma", func(t *testing.T) {
+		state, ok := setup("manifest {}\nfn f(a int, b int){}\nf(1,)")
+		if !ok {
+			return
+		}
+
+		help, ok := getSignatureHelpAt(3, 5, state.Module.MainChunk, state)
+		if !assert.True(t, ok) {
+			return
+		}
+		if !assert.NotEmpty(t, help.Signatures) {
+			return
+		}
+		signature := help.Signatures[0]
+
+		assert.EqualValues(t, 1, *help.ActiveParameter)
 		assert.EqualValues(t, "a int", (*signature.Parameters)[0].Label)
 		assert.EqualValues(t, "b int", (*signature.Parameters)[1].Label)
 	})

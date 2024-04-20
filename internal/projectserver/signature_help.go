@@ -158,7 +158,7 @@ func getSignatureHelpAt(line, column int32, chunk *parse.ParsedChunkSource, stat
 	var parameterInfos []defines.ParameterInformation
 
 	filter := prettyprint.RegionFilter{
-		ExactDepth: 0,
+		ExactDepth: 1,
 		Kind:       prettyprint.ParamNameTypeRegion,
 	}
 	stringifiedCalleeRegions.FilteredForEach(filter, func(r prettyprint.Region) error {
