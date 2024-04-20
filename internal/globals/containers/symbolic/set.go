@@ -200,10 +200,10 @@ func (s *Set) Get(ctx *symbolic.Context, k symbolic.StringLike) (symbolic.Value,
 
 func (s *Set) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	w.WriteName("Set(")
-	s.element.PrettyPrint(w, config)
+	s.element.PrettyPrint(w.IncrDepth().EnterPattern(), config)
 	if s.uniqueness != nil {
-		w.WriteByte(',')
-		s.uniqueness.ToSymbolicValue().PrettyPrint(w.ZeroIndent(), config)
+		w.WriteString(", ")
+		s.uniqueness.ToSymbolicValue().PrettyPrint(w, config)
 	}
 	w.WriteByte(')')
 }

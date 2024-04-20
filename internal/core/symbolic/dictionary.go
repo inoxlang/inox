@@ -1,7 +1,6 @@
 package symbolic
 
 import (
-	"bytes"
 	"errors"
 	"sort"
 
@@ -201,14 +200,13 @@ func (dict *Dictionary) WatcherElement() Value {
 }
 
 func (dict *Dictionary) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w = w.IncrDepth()
+
 	if dict.entries != nil {
 		if w.Depth > config.MaxDepth && len(dict.entries) > 0 {
 			w.WriteString(":{(...)}")
 			return
 		}
-
-		indentCount := w.ParentIndentCount + 1
-		indent := bytes.Repeat(config.Indent, indentCount)
 
 		w.WriteString(":{")
 
@@ -222,7 +220,7 @@ func (dict *Dictionary) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.P
 		for i, k := range keys {
 			if !config.Compact {
 				w.WriteLFCR()
-				w.WriteBytes(indent)
+				w.WriteInnerIndent()
 			}
 
 			//key
@@ -237,32 +235,29 @@ func (dict *Dictionary) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.P
 			}
 
 			//colon
-			w.WriteColonSpace()
+			w.WriteString(": ")
 
 			//value
 			v := dict.entries[k]
 
-			v.PrettyPrint(w.IncrDepthWithIndent(indentCount), config)
+			v.PrettyPrint(w.IncrIndent(), config)
 
 			//comma & indent
 			isLastEntry := i == len(keys)-1
 
 			if !isLastEntry {
-				w.WriteBytes([]byte{',', ' '})
-
+				w.WriteString(": ")
 			}
-
 		}
 
 		if !config.Compact && len(keys) > 0 {
 			w.WriteLFCR()
+			w.WriteOuterIndent()
 		}
-		w.WriteBytes(bytes.Repeat(config.Indent, w.Depth))
 		w.WriteByte('}')
 		return
 	}
 	w.WriteName("dictionary")
-	return
 }
 
 func (d *Dictionary) WidestOfType() Value {

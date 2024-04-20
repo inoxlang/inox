@@ -152,7 +152,7 @@ func PrettyPrint(args PrettyPrintArgs) (regions pprint.Regions, err error) {
 		}
 	}()
 
-	prettyPrintWriter := pprint.NewWriter(buffered, args.EnableRegions)
+	prettyPrintWriter := pprint.NewWriter(buffered, args.EnableRegions, string(args.Config.Indent))
 	prettyPrintWriter.Depth = args.Depth
 	prettyPrintWriter.ParentIndentCount = args.ParentIndentCount
 

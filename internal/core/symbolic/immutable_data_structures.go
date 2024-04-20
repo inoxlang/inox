@@ -1,7 +1,6 @@
 package symbolic
 
 import (
-	"bytes"
 	"fmt"
 	"sort"
 
@@ -112,6 +111,8 @@ func (t *Tuple) Static() Pattern {
 }
 
 func (t *Tuple) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w = w.IncrDepth()
+
 	if t.elements != nil {
 		lst := NewList(t.elements...)
 		w.WriteByte('#')
@@ -119,7 +120,7 @@ func (t *Tuple) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPri
 		return
 	}
 	w.WriteString("#[]")
-	t.generalElement.PrettyPrint(w.ZeroDepthIndent(), config)
+	t.generalElement.PrettyPrint(w.ZeroIndent(), config)
 }
 
 func (t *Tuple) append(element Value) {
@@ -272,14 +273,16 @@ func (t *OrderedPair) Static() Pattern {
 }
 
 func (t *OrderedPair) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w = w.IncrDepth()
 	w.WriteName("ordered-pair")
+
 	if t.elements[0] == nil || t.elements[1] == nil {
 		return
 	}
 
 	w.WriteString("(\n")
-	t.elements[0].PrettyPrint(w.IncrDepth(), config)
-	t.elements[1].PrettyPrint(w.IncrDepth(), config)
+	t.elements[0].PrettyPrint(w.IncrIndent(), config)
+	t.elements[1].PrettyPrint(w.IncrIndent(), config)
 }
 
 func (t *OrderedPair) HasKnownLen() bool {
@@ -410,19 +413,21 @@ func (list *KeyList) IteratorElementValue() Value {
 }
 
 func (list *KeyList) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w = w.IncrDepth()
+
 	if list.Keys != nil {
 		if w.Depth > config.MaxDepth && len(list.Keys) > 0 {
 			w.WriteString(".{(...)]}")
 			return
 		}
 
-		w.WriteDotOpeningCurlyBracket()
+		w.WriteString(".{")
 
 		first := true
 
 		for _, k := range list.Keys {
 			if !first {
-				w.WriteCommaSpace()
+				w.WriteString(", ")
 			}
 			first = false
 
@@ -683,14 +688,13 @@ func (rec *Record) Static() Pattern {
 }
 
 func (rec *Record) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w = w.IncrDepth()
+
 	if rec.entries != nil {
 		if w.Depth > config.MaxDepth && len(rec.entries) > 0 {
 			w.WriteString("#{(...)}")
 			return
 		}
-
-		indentCount := w.ParentIndentCount + 1
-		indent := bytes.Repeat(config.Indent, indentCount)
 
 		w.WriteString("#{")
 
@@ -701,7 +705,7 @@ func (rec *Record) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pretty
 
 			if !config.Compact {
 				w.WriteLFCR()
-				w.WriteBytes(indent)
+				w.WriteInnerIndent()
 			}
 
 			if config.Colorize {
@@ -719,25 +723,26 @@ func (rec *Record) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pretty
 			}
 
 			//colon
-			w.WriteColonSpace()
+			w.WriteString(": ")
 
 			//value
 			v := rec.entries[k]
-			v.PrettyPrint(w.IncrDepthWithIndent(indentCount), config)
+			v.PrettyPrint(w.IncrIndent(), config)
 
 			//comma & indent
 			isLastEntry := i == len(keys)-1
 
 			if !isLastEntry {
-				w.WriteCommaSpace()
+				w.WriteString(", ")
 			}
 		}
 
 		if !config.Compact && len(keys) > 0 {
 			w.WriteLFCR()
+			w.WriteOuterIndent()
 		}
 
-		w.WriteManyBytes(bytes.Repeat(config.Indent, w.Depth), []byte{'}'})
+		w.WriteByte('}')
 		return
 	}
 	if rec.valueOnly == nil {
@@ -745,7 +750,7 @@ func (rec *Record) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pretty
 		return
 	}
 	w.WriteString("#{ any -> ")
-	rec.valueOnly.PrettyPrint(w.ZeroDepth(), config)
+	rec.valueOnly.PrettyPrint(w.ZeroIndent(), config)
 	w.WriteString("}")
 }
 

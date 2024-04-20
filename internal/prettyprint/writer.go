@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"math"
+	"strings"
 
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/muesli/termenv"
@@ -11,21 +12,13 @@ import (
 
 var (
 	ANSI_RESET_SEQUENCE = []byte(termenv.CSI + termenv.ResetSeq + "m")
-
-	LF_CR                               = []byte{'\n', '\r'}
-	DASH_DASH                           = []byte{'-', '-'}
-	SHARP_OPENING_PAREN                 = []byte{'#', '('}
-	COLON_SPACE                         = []byte{':', ' '}
-	COMMA_SPACE                         = []byte{',', ' '}
-	CLOSING_BRACKET_CLOSING_PAREN       = []byte{']', ')'}
-	CLOSING_CURLY_BRACKET_CLOSING_PAREN = []byte{'}', ')'}
-	THREE_DOTS                          = []byte{'.', '.', '.'}
-	DOT_OPENING_CURLY_BRACKET           = []byte{'.', '{'}
 )
 
 type PrettyPrintWriter struct {
-	writer  *bufio.Writer
-	written *int //written bytecount
+	writer     *bufio.Writer
+	written    *int //written bytecount
+	indentUnit string
+	_20xindent string
 
 	Depth               int
 	ParentIndentCount   int
@@ -35,10 +28,12 @@ type PrettyPrintWriter struct {
 	regionDepth *int      //written bytecount
 }
 
-func NewWriter(writer *bufio.Writer, enableRegions bool) PrettyPrintWriter {
+func NewWriter(writer *bufio.Writer, enableRegions bool, indent string) PrettyPrintWriter {
 	w := PrettyPrintWriter{
-		writer:  writer,
-		written: utils.New(0),
+		writer:     writer,
+		written:    utils.New(0),
+		indentUnit: indent,
+		_20xindent: strings.Repeat(indent, 20),
 	}
 
 	if enableRegions {
@@ -47,6 +42,15 @@ func NewWriter(writer *bufio.Writer, enableRegions bool) PrettyPrintWriter {
 	}
 
 	return w
+}
+
+func (w PrettyPrintWriter) WritePercentString(str string) {
+	if !w.RemovePercentPrefix {
+		utils.PanicIfErr(w.writer.WriteByte('%'))
+		*w.written++
+	}
+	utils.Must(w.writer.Write(utils.StringAsBytes(str)))
+	*w.written += len(str)
 }
 
 func (w PrettyPrintWriter) WriteName(str string) {
@@ -102,34 +106,19 @@ func (w PrettyPrintWriter) WriteAnsiReset() {
 	*w.written += n
 }
 
-func (w PrettyPrintWriter) WriteColonSpace() {
-	n := utils.Must(w.writer.Write(COLON_SPACE))
-	*w.written += n
-}
-
-func (w PrettyPrintWriter) WriteCommaSpace() {
-	n := utils.Must(w.writer.Write(COMMA_SPACE))
-	*w.written += n
-}
-
-func (w PrettyPrintWriter) WriteClosingBracketClosingParen() {
-	n := utils.Must(w.writer.Write(CLOSING_CURLY_BRACKET_CLOSING_PAREN))
-	*w.written += n
-}
-
-func (w PrettyPrintWriter) WriteClosingbracketClosingParen() {
-	n := utils.Must(w.writer.Write(CLOSING_BRACKET_CLOSING_PAREN))
-	*w.written += n
-}
-
-func (w PrettyPrintWriter) WriteDotOpeningCurlyBracket() {
-	n := utils.Must(w.writer.Write(DOT_OPENING_CURLY_BRACKET))
-	*w.written += n
-}
-
 func (w PrettyPrintWriter) WriteByte(b byte) {
 	utils.PanicIfErr(w.writer.WriteByte(b))
 	*w.written++
+}
+
+func (w PrettyPrintWriter) WriteOuterIndent() {
+	indentCount := min(20, w.ParentIndentCount)
+	w.WriteString(w._20xindent[:indentCount*len(w.indentUnit)])
+}
+
+func (w PrettyPrintWriter) WriteInnerIndent() {
+	indentCount := min(20, w.ParentIndentCount+1)
+	w.WriteString(w._20xindent[:indentCount*len(w.indentUnit)])
 }
 
 func (w PrettyPrintWriter) AreRegionsDisabled() bool {
@@ -184,29 +173,9 @@ func (w *PrettyPrintWriter) Regions() []Region {
 	return regions
 }
 
-func (w PrettyPrintWriter) ZeroDepthIndent() PrettyPrintWriter {
-	new := w
-	new.Depth = 0
-	new.ParentIndentCount = 0
-	return new
-}
-
-func (w PrettyPrintWriter) ZeroDepth() PrettyPrintWriter {
-	new := w
-	new.Depth = 0
-	return new
-}
-
 func (w PrettyPrintWriter) ZeroIndent() PrettyPrintWriter {
 	new := w
 	new.ParentIndentCount = 0
-	return new
-}
-
-func (w PrettyPrintWriter) IncrDepthWithIndent(indentCount int) PrettyPrintWriter {
-	new := w
-	new.Depth++
-	new.ParentIndentCount = indentCount
 	return new
 }
 
@@ -216,15 +185,14 @@ func (w PrettyPrintWriter) IncrDepth() PrettyPrintWriter {
 	return new
 }
 
-func (w PrettyPrintWriter) WithDepth(depth int) PrettyPrintWriter {
+func (w PrettyPrintWriter) IncrIndent() PrettyPrintWriter {
 	new := w
-	new.Depth = depth
+	new.ParentIndentCount++
 	return new
 }
 
-func (w PrettyPrintWriter) WithDepthIndent(depth, indent int) PrettyPrintWriter {
+func (w PrettyPrintWriter) WithIndent(indent int) PrettyPrintWriter {
 	new := w
-	new.Depth = depth
 	new.ParentIndentCount = indent
 	return new
 }

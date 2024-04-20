@@ -1,7 +1,6 @@
 package symbolic
 
 import (
-	"bytes"
 	"fmt"
 	"sort"
 
@@ -101,14 +100,13 @@ func (ns *Namespace) PropertyNames() []string {
 }
 
 func (ns *Namespace) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w = w.IncrDepth()
+
 	if ns.entries != nil {
 		if w.Depth > config.MaxDepth && len(ns.entries) > 0 {
 			w.WriteString("(..namespace..)")
 			return
 		}
-
-		indentCount := w.ParentIndentCount + 1
-		indent := bytes.Repeat(config.Indent, indentCount)
 
 		w.WriteName("namespace{")
 
@@ -119,7 +117,7 @@ func (ns *Namespace) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pret
 
 			if !config.Compact {
 				w.WriteLFCR()
-				w.WriteBytes(indent)
+				w.WriteInnerIndent()
 			}
 
 			if config.Colorize {
@@ -133,17 +131,17 @@ func (ns *Namespace) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pret
 			}
 
 			//colon
-			w.WriteColonSpace()
+			w.WriteString(": ")
 
 			//value
 			v := ns.entries[k]
-			v.PrettyPrint(w.IncrDepthWithIndent(indentCount), config)
+			v.PrettyPrint(w.IncrIndent(), config)
 
 			//comma & indent
 			isLastEntry := i == len(keys)-1
 
 			if !isLastEntry {
-				w.WriteCommaSpace()
+				w.WriteString(", ")
 			}
 		}
 
@@ -151,7 +149,8 @@ func (ns *Namespace) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pret
 			w.WriteLFCR()
 		}
 
-		w.WriteManyBytes(bytes.Repeat(config.Indent, w.Depth), []byte{'}'})
+		w.WriteOuterIndent()
+		w.WriteByte('}')
 		return
 	}
 	w.WriteName("namespace")

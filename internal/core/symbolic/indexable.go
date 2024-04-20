@@ -1,7 +1,6 @@
 package symbolic
 
 import (
-	"bytes"
 	"strconv"
 
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
@@ -75,6 +74,8 @@ func (a *Array) Test(v Value, state RecTestCallState) bool {
 }
 
 func (a *Array) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w = w.IncrDepth()
+
 	if a.elements != nil {
 		length := a.KnownLen()
 
@@ -85,8 +86,6 @@ func (a *Array) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPri
 
 		w.WriteName("Array(")
 
-		indentCount := w.ParentIndentCount + 1
-		indent := bytes.Repeat(config.Indent, indentCount)
 		printIndices := !config.Compact && length > 10
 
 		for i := 0; i < length; i++ {
@@ -94,7 +93,7 @@ func (a *Array) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPri
 
 			if !config.Compact {
 				w.WriteLFCR()
-				w.WriteBytes(indent)
+				w.WriteInnerIndent()
 
 				//index
 				if printIndices {
@@ -105,7 +104,7 @@ func (a *Array) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPri
 						w.WriteByte(' ')
 					}
 					w.WriteString(strconv.FormatInt(int64(i), 10))
-					w.WriteColonSpace()
+					w.WriteString(": ")
 					if config.Colorize {
 						w.WriteAnsiReset()
 					}
@@ -113,25 +112,23 @@ func (a *Array) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPri
 			}
 
 			//element
-			v.PrettyPrint(w.IncrDepthWithIndent(indentCount), config)
+			v.PrettyPrint(w.IncrIndent(), config)
 
 			//comma & indent
 			isLastEntry := i == length-1
 
 			if !isLastEntry {
-				w.WriteCommaSpace()
+				w.WriteString(", ")
 			}
 
 		}
 
-		var end []byte
 		if !config.Compact && length > 0 {
-			end = append(end, '\n', '\r')
-			end = append(end, bytes.Repeat(config.Indent, w.Depth)...)
+			w.WriteString("\n\r")
+			w.WriteOuterIndent()
 		}
-		end = append(end, ')')
+		w.WriteByte(')')
 
-		w.WriteBytes(end)
 		return
 	}
 
@@ -359,6 +356,8 @@ func (list *List) PropertyNames() []string {
 }
 
 func (list *List) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w = w.IncrDepth()
+
 	if list.readonly {
 		w.WriteName("readonly ")
 	}
@@ -373,8 +372,6 @@ func (list *List) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyP
 
 		w.WriteByte('[')
 
-		indentCount := w.ParentIndentCount + 1
-		indent := bytes.Repeat(config.Indent, indentCount)
 		printIndices := !config.Compact && length > 10
 
 		for i := 0; i < length; i++ {
@@ -382,7 +379,7 @@ func (list *List) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyP
 
 			if !config.Compact {
 				w.WriteLFCR()
-				w.WriteBytes(indent)
+				w.WriteInnerIndent()
 
 				//index
 				if printIndices {
@@ -393,7 +390,7 @@ func (list *List) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyP
 						w.WriteByte(' ')
 					}
 					w.WriteBytes(utils.StringAsBytes(strconv.FormatInt(int64(i), 10)))
-					w.WriteColonSpace()
+					w.WriteString(": ")
 					if config.Colorize {
 						w.WriteAnsiReset()
 					}
@@ -401,25 +398,23 @@ func (list *List) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyP
 			}
 
 			//element
-			v.PrettyPrint(w.IncrDepthWithIndent(indentCount), config)
+			v.PrettyPrint(w.IncrIndent(), config)
 
 			//comma & indent
 			isLastEntry := i == length-1
 
 			if !isLastEntry {
-				w.WriteCommaSpace()
+				w.WriteString(", ")
 			}
 
 		}
 
-		var end []byte
 		if !config.Compact && length > 0 {
-			end = append(end, '\n', '\r')
-			end = append(end, bytes.Repeat(config.Indent, w.Depth)...)
+			w.WriteString("\n\r")
+			w.WriteOuterIndent()
 		}
-		end = append(end, ']')
+		w.WriteByte(']')
 
-		w.WriteBytes(end)
 		return
 	}
 	w.WriteString("[]")

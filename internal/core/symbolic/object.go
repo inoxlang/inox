@@ -1,7 +1,6 @@
 package symbolic
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"sort"
@@ -676,6 +675,8 @@ func (obj *Object) Static() Pattern {
 }
 
 func (obj *Object) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w = w.IncrDepth()
+
 	if obj.readonly {
 		w.WriteName("readonly ")
 	}
@@ -686,9 +687,6 @@ func (obj *Object) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pretty
 			return
 		}
 
-		indentCount := w.ParentIndentCount + 1
-		indent := bytes.Repeat(config.Indent, indentCount)
-
 		w.WriteString("{")
 
 		keys := maps.Keys(obj.entries)
@@ -698,7 +696,7 @@ func (obj *Object) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pretty
 
 			if !config.Compact {
 				w.WriteLFCR()
-				w.WriteBytes(indent)
+				w.WriteInnerIndent()
 			}
 
 			if config.Colorize {
@@ -716,25 +714,26 @@ func (obj *Object) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pretty
 			}
 
 			//colon
-			w.WriteColonSpace()
+			w.WriteString(": ")
 
 			//value
 			v := obj.entries[k]
-			v.PrettyPrint(w.IncrDepthWithIndent(indentCount), config)
+			v.PrettyPrint(w.IncrIndent(), config)
 
 			//comma & indent
 			isLastEntry := i == len(keys)-1
 
 			if !isLastEntry {
-				w.WriteCommaSpace()
+				w.WriteString(", ")
 			}
 		}
 
 		if !config.Compact && len(keys) > 0 {
 			w.WriteLFCR()
+			w.WriteOuterIndent()
 		}
 
-		w.WriteManyBytes(bytes.Repeat(config.Indent, w.Depth), []byte{'}'})
+		w.WriteByte('}')
 		return
 	}
 	w.WriteName("object")

@@ -85,6 +85,8 @@ func (f *Float) Static() Pattern {
 }
 
 func (f *Float) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w = w.IncrDepth()
+
 	w.WriteName("float")
 	if f.hasValue {
 		w.WriteByte('(')
@@ -96,7 +98,7 @@ func (f *Float) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPri
 		w.WriteByte(')')
 	} else if f.matchingPattern != nil {
 		w.WriteByte('(')
-		f.matchingPattern.floatRange.PrettyPrint(w.WithDepthIndent(w.Depth+1, 0), config)
+		f.matchingPattern.floatRange.PrettyPrint(w.WithIndent(0), config)
 		w.WriteByte(')')
 	}
 }
@@ -179,6 +181,8 @@ func (i *Int) Static() Pattern {
 }
 
 func (i *Int) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w = w.IncrDepth()
+
 	w.WriteName("int")
 	if i.hasValue {
 		w.WriteByte('(')
@@ -186,7 +190,7 @@ func (i *Int) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrint
 		w.WriteByte(')')
 	} else if i.matchingPattern != nil {
 		w.WriteByte('(')
-		i.matchingPattern.intRange.PrettyPrint(w.WithDepthIndent(w.Depth+1, 0), config)
+		i.matchingPattern.intRange.PrettyPrint(w.WithIndent(0), config)
 		w.WriteByte(')')
 	}
 }

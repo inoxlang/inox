@@ -90,8 +90,10 @@ func (pattern *SecretPattern) HasUnderlyingPattern() bool {
 }
 
 func (pattern *SecretPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w = w.IncrDepth()
+
 	w.WriteName("secret-pattern(")
-	pattern.stringPattern.PrettyPrint(w.ZeroDepthIndent(), config)
+	pattern.stringPattern.PrettyPrint(w.ZeroIndent(), config)
 	w.WriteString(")")
 }
 

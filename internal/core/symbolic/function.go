@@ -200,6 +200,8 @@ func (fn *InoxFunction) WatcherElement() Value {
 }
 
 func (fn *InoxFunction) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w = w.IncrDepth()
+
 	if fn.visitCheckNode != nil {
 		w.WriteString("[restricted stmts] ")
 	}
@@ -214,6 +216,10 @@ func (fn *InoxFunction) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.P
 		if i != 0 {
 			w.WriteString(", ")
 		}
+		if !config.Compact {
+			w.WriteByte('\n')
+			w.WriteInnerIndent()
+		}
 		paramRegion := w.EnterRegion(pprint.ParamNameTypeRegion)
 
 		w.WriteString(fn.parameterNames[i])
@@ -222,13 +228,17 @@ func (fn *InoxFunction) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.P
 		if fn.IsVariadic() && i == len(fn.parameters)-1 {
 			w.WriteString("...")
 		}
-		param.PrettyPrint(w.ZeroDepthIndent().EnterPattern(), config)
+		param.PrettyPrint(w.IncrIndent().EnterPattern(), config)
 
 		w.LeaveRegion(paramRegion)
 	}
 
+	if !config.Compact {
+		w.WriteByte('\n')
+		w.WriteOuterIndent()
+	}
 	w.WriteString(") ")
-	fn.result.PrettyPrint(w.ZeroDepthIndent().EnterPattern(), config)
+	fn.result.PrettyPrint(w.EnterPattern(), config)
 }
 
 func (fn *InoxFunction) WidestOfType() Value {
@@ -378,6 +388,8 @@ func (fn *GoFunction) IsShared() bool {
 }
 
 func (fn *GoFunction) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w = w.IncrDepth()
+
 	if fn.fn == nil {
 		w.WriteString("fn")
 	}
@@ -417,7 +429,7 @@ func (fn *GoFunction) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pre
 			if err != nil {
 				w.WriteString("???" + err.Error())
 			} else {
-				param.PrettyPrint(w.ZeroDepthIndent().EnterPattern(), config)
+				param.PrettyPrint(w.ZeroIndent().EnterPattern(), config)
 			}
 
 			w.WriteString(")")
@@ -431,7 +443,7 @@ func (fn *GoFunction) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pre
 				if isOptionalParam {
 					w.WriteString(prettyprint_OPTIONAL_PARAM_PREFIX)
 				}
-				param.PrettyPrint(w.ZeroDepthIndent().EnterPattern(), config)
+				param.PrettyPrint(w.ZeroIndent().EnterPattern(), config)
 			}
 		}
 
@@ -455,7 +467,7 @@ func (fn *GoFunction) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pre
 		if err != nil {
 			w.WriteString("???" + err.Error())
 		} else {
-			ret.PrettyPrint(w.ZeroDepthIndent().EnterPattern(), config)
+			ret.PrettyPrint(w.ZeroIndent().EnterPattern(), config)
 		}
 	}
 
@@ -1044,6 +1056,8 @@ func (f *Function) Test(v Value, state RecTestCallState) bool {
 }
 
 func (f *Function) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w = w.IncrDepth()
+
 	if f.results == nil {
 		w.WriteString("fn")
 		return
@@ -1073,7 +1087,7 @@ func (f *Function) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pretty
 			w.WriteString(prettyprint_OPTIONAL_PARAM_PREFIX)
 		}
 
-		param.PrettyPrint(w.ZeroDepthIndent().EnterPattern(), config)
+		param.PrettyPrint(w.ZeroIndent().EnterPattern(), config)
 		w.LeaveRegion(paramRegion)
 	}
 
@@ -1082,10 +1096,10 @@ func (f *Function) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pretty
 		w.WriteString(")")
 	case 1:
 		w.WriteString(") ")
-		f.results[0].PrettyPrint(w.ZeroDepthIndent().EnterPattern(), config)
+		f.results[0].PrettyPrint(w.ZeroIndent().EnterPattern(), config)
 	default:
 		w.WriteString(") ")
-		NewArray(f.results...).PrettyPrint(w.ZeroDepthIndent().EnterPattern(), config)
+		NewArray(f.results...).PrettyPrint(w.ZeroIndent().EnterPattern(), config)
 	}
 
 	if f.patternNode != nil {

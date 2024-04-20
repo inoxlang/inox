@@ -141,17 +141,19 @@ func (p *ExactStringPattern) IsConcretizable() bool {
 }
 
 func (p *ExactStringPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w = w.IncrDepth()
+
 	w.WriteName("exact-string-pattern")
 
 	if p.concretizable != nil {
 		w.WriteString("(")
-		p.concretizable.PrettyPrint(w.IncrDepth(), config)
+		p.concretizable.PrettyPrint(w.IncrIndent(), config)
 		w.WriteString(")")
 	}
 
 	if p.runTimeValue != nil {
 		w.WriteString("(")
-		p.runTimeValue.PrettyPrint(w.IncrDepth(), config)
+		p.runTimeValue.PrettyPrint(w.IncrIndent(), config)
 		w.WriteString(")")
 	}
 
@@ -383,7 +385,9 @@ func (p *SequenceStringPattern) Concretize(ctx ConcreteContext) any {
 }
 
 func (p *SequenceStringPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w = w.IncrDepth()
 	w.WriteName("sequence-string-pattern")
+
 	if p.node != nil {
 		w.WriteString("(")
 		w.WriteString(p.stringifiedNode)
@@ -521,11 +525,12 @@ func (p *IntRangeStringPattern) Test(v Value, state RecTestCallState) bool {
 }
 
 func (p *IntRangeStringPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w = w.IncrDepth()
 	w.WriteName("int-range-string-pattern")
 
 	if p.pattern != nil {
 		w.WriteString("(")
-		p.pattern.PrettyPrint(w.IncrDepth(), config)
+		p.pattern.PrettyPrint(w.IncrIndent(), config)
 		w.WriteString(")")
 	}
 }
@@ -605,11 +610,12 @@ func (p *FloatRangeStringPattern) Test(v Value, state RecTestCallState) bool {
 }
 
 func (p *FloatRangeStringPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w = w.IncrDepth()
 	w.WriteName("float-range-string-pattern")
 
 	if p.pattern != nil {
 		w.WriteString("(")
-		p.pattern.PrettyPrint(w.IncrDepth(), config)
+		p.pattern.PrettyPrint(w.IncrIndent(), config)
 		w.WriteString(")")
 	}
 }

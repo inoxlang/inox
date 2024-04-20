@@ -361,7 +361,6 @@ func fmtNotAssignableToVarOftype(h *commonfmt.Helper, a Value, b Pattern) (strin
 	fmtValue(h, a)
 	h.AppendString(" is not assignable to a variable of type ")
 	fmtValue(h, b.SymbolicValue())
-	h.AppendString(", try to have a less specific sequence on the left")
 
 	return h.Consume()
 }

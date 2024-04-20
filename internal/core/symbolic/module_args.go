@@ -1,7 +1,6 @@
 package symbolic
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 
@@ -104,6 +103,7 @@ func (args *ModuleArgs) WithExistingPropReplaced(state *State, name string, valu
 }
 
 func (args *ModuleArgs) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w = w.IncrDepth()
 	w.WriteName("module-arguments")
 
 	if w.Depth > config.MaxDepth {
@@ -116,15 +116,12 @@ func (args *ModuleArgs) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.P
 	}
 	w.WriteString("{ ")
 
-	indentCount := w.ParentIndentCount + 1
-	indent := bytes.Repeat(config.Indent, indentCount)
-
 	propertyNames := args.PropertyNames()
 	for i, name := range propertyNames {
 
 		if !config.Compact {
 			w.WriteLFCR()
-			w.WriteBytes(indent)
+			w.WriteInnerIndent()
 		}
 
 		if config.Colorize {
@@ -138,17 +135,17 @@ func (args *ModuleArgs) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.P
 		}
 
 		//colon
-		w.WriteColonSpace()
+		w.WriteString(": ")
 
 		//value
 		v := args.Prop(name)
-		v.PrettyPrint(w.IncrDepthWithIndent(indentCount), config)
+		v.PrettyPrint(w.IncrIndent(), config)
 
 		//comma & indent
 		isLastEntry := i == len(propertyNames)-1
 
 		if !isLastEntry {
-			w.WriteCommaSpace()
+			w.WriteString(", ")
 		}
 	}
 
@@ -156,7 +153,8 @@ func (args *ModuleArgs) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.P
 		w.WriteLFCR()
 	}
 
-	w.WriteManyBytes(bytes.Repeat(config.Indent, w.Depth), []byte{'}'})
+	w.WriteOuterIndent()
+	w.WriteByte(')')
 }
 
 func (args *ModuleArgs) WidestOfType() Value {

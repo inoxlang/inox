@@ -90,7 +90,9 @@ func (t *PointerType) SymbolicValue() Value {
 }
 
 func (t *PointerType) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w = w.IncrDepth()
+
 	w.WriteString("pointer-type(")
-	t.valueType.PrettyPrint(w.WithDepthIndent(w.Depth+1, 0), config)
+	t.valueType.PrettyPrint(w.ZeroIndent(), config)
 	w.WriteByte(')')
 }

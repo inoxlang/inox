@@ -226,10 +226,11 @@ func (mv *Multivalue) WidenSimpleValues() Value {
 }
 
 func (mv *Multivalue) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
+	w = w.IncrDepth()
 	w.WriteByte('(')
 
 	for i, val := range mv.values {
-		val.PrettyPrint(w.ZeroDepthIndent(), config)
+		val.PrettyPrint(w, config)
 		if i < len(mv.values)-1 {
 			w.WriteString(" | ")
 		}
