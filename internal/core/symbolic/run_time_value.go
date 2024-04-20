@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/inoxlang/inox/internal/parse"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
@@ -214,11 +215,11 @@ func (rv *ipropsRunTimeValue) Prop(name string) Value {
 	return rv.super.(IProps).Prop(name)
 }
 
-func (rv *ipropsRunTimeValue) SetProp(name string, value Value) (IProps, error) {
+func (rv *ipropsRunTimeValue) SetProp(state *State, node parse.Node, name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(rv))
 }
 
-func (rv *ipropsRunTimeValue) WithExistingPropReplaced(name string, value Value) (IProps, error) {
+func (rv *ipropsRunTimeValue) WithExistingPropReplaced(state *State, name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(rv))
 }
 
@@ -310,7 +311,7 @@ func (rv *strLikeRunTimeValue) Prop(name string) Value {
 	}
 }
 
-func (rv *strLikeRunTimeValue) WithExistingPropReplaced(name string, value Value) (StringLike, error) {
+func (rv *strLikeRunTimeValue) WithExistingPropReplaced(state *State, name string, value Value) (StringLike, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(rv))
 }
 

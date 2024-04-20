@@ -3,6 +3,7 @@ package symbolic
 import (
 	"errors"
 
+	"github.com/inoxlang/inox/internal/parse"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
@@ -47,11 +48,11 @@ func (d *StaticCheckData) Prop(name string) Value {
 	return GetGoMethodOrPanic(name, d)
 }
 
-func (d *StaticCheckData) SetProp(name string, value Value) (IProps, error) {
+func (d *StaticCheckData) SetProp(state *State, node parse.Node, name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(d))
 }
 
-func (d *StaticCheckData) WithExistingPropReplaced(name string, value Value) (IProps, error) {
+func (d *StaticCheckData) WithExistingPropReplaced(state *State, name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(d))
 }
 

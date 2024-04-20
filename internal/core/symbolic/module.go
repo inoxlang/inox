@@ -84,11 +84,11 @@ func (m *Module) Prop(name string) Value {
 	return GetGoMethodOrPanic(name, m)
 }
 
-func (m *Module) SetProp(name string, value Value) (IProps, error) {
+func (m *Module) SetProp(state *State, node parse.Node, name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(m))
 }
 
-func (m *Module) WithExistingPropReplaced(name string, value Value) (IProps, error) {
+func (m *Module) WithExistingPropReplaced(state *State, name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(m))
 }
 

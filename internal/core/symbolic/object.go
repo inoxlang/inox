@@ -7,6 +7,7 @@ import (
 	"sort"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
+	"github.com/inoxlang/inox/internal/parse"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/utils"
 	"golang.org/x/exp/maps"
@@ -466,7 +467,7 @@ func (obj *Object) SerializableEntryMap() map[string]Serializable {
 	return entries
 }
 
-func (obj *Object) SetProp(name string, value Value) (IProps, error) {
+func (obj *Object) SetProp(state *State, node parse.Node, name string, value Value) (IProps, error) {
 	if obj.readonly {
 		return nil, ErrReadonlyValueCannotBeMutated
 	}
@@ -478,11 +479,13 @@ func (obj *Object) SetProp(name string, value Value) (IProps, error) {
 
 		if static, ok := obj.static[name]; ok {
 			if !static.TestValue(value, RecTestCallState{}) {
-				return nil, errors.New(fmtNotAssignableToPropOfType(value, static))
+				msg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, value, static)
+				return nil, makeSymbolicEvalError(node, state, msg, regions...)
 			}
 		} else if prevValue, ok := obj.entries[name]; ok {
 			if !prevValue.Test(value, RecTestCallState{}) {
-				return nil, errors.New(fmtNotAssignableToPropOfType(value, &TypePattern{val: prevValue}))
+				msg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, value, &TypePattern{val: prevValue})
+				return nil, makeSymbolicEvalError(node, state, msg, regions...)
 			}
 		}
 
@@ -505,7 +508,7 @@ func (obj *Object) SetProp(name string, value Value) (IProps, error) {
 	return &modified, nil
 }
 
-func (obj *Object) WithExistingPropReplaced(name string, value Value) (IProps, error) {
+func (obj *Object) WithExistingPropReplaced(state *State, name string, value Value) (IProps, error) {
 	if obj.readonly {
 		return nil, ErrReadonlyValueCannotBeMutated
 	}

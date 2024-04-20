@@ -291,11 +291,11 @@ func (d *Data) Prop(name string) Value {
 	return GetGoMethodOrPanic(name, d)
 }
 
-func (d *Data) SetProp(name string, value Value) (IProps, error) {
+func (d *Data) SetProp(state *State, node parse.Node, name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(d))
 }
 
-func (d *Data) WithExistingPropReplaced(name string, value Value) (IProps, error) {
+func (d *Data) WithExistingPropReplaced(state *State, name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(d))
 }
 

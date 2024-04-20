@@ -351,7 +351,7 @@ switch_:
 				for i := len(ipropsList) - 1; i >= 0; i-- {
 					currentIprops := ipropsList[i]
 					currentPropertyName := node.PropertyNames[i].Name
-					newValue, err = currentIprops.WithExistingPropReplaced(currentPropertyName, newValue)
+					newValue, err = currentIprops.WithExistingPropReplaced(state, currentPropertyName, newValue)
 
 					if err == ErrUnassignablePropsMixin {
 						break switch_
@@ -363,7 +363,7 @@ switch_:
 
 				narrowChain(node.Left, setExactValue, newValue, state, 0)
 			} else {
-				newPropValue, err := iprops.WithExistingPropReplaced(propName, value)
+				newPropValue, err := iprops.WithExistingPropReplaced(state, propName, value)
 				if err == nil {
 					narrowChain(node.Left, setExactValue, newPropValue, state, 0)
 				} else if err != ErrUnassignablePropsMixin {
@@ -414,7 +414,7 @@ switch_:
 					currentIprops := ipropsList[i]
 					currentPropertyName := node.PropertyNames[i].Name
 
-					newPropValue, err = currentIprops.WithExistingPropReplaced(currentPropertyName, newPropValue)
+					newPropValue, err = currentIprops.WithExistingPropReplaced(state, currentPropertyName, newPropValue)
 
 					if err == ErrUnassignablePropsMixin {
 						break switch_
@@ -424,7 +424,7 @@ switch_:
 					}
 				}
 
-				newLeftmostValue, err := ipropsList[0].WithExistingPropReplaced(node.PropertyNames[0].Name, newPropValue)
+				newLeftmostValue, err := ipropsList[0].WithExistingPropReplaced(state, node.PropertyNames[0].Name, newPropValue)
 				if err == nil {
 					narrowChain(node.Left, setExactValue, newLeftmostValue, state, 0)
 				} else if err != ErrUnassignablePropsMixin {
@@ -434,7 +434,7 @@ switch_:
 				prevPropValue := iprops.Prop(propName)
 				newPropValue := narrowOut(value, prevPropValue)
 
-				newLeftmostValue, err := iprops.WithExistingPropReplaced(node.PropertyNames[0].Name, newPropValue)
+				newLeftmostValue, err := iprops.WithExistingPropReplaced(state, node.PropertyNames[0].Name, newPropValue)
 				if err == nil {
 					narrowChain(node.Left, setExactValue, newLeftmostValue, state, 0)
 				} else if err != ErrUnassignablePropsMixin {
@@ -456,7 +456,7 @@ switch_:
 				break
 			}
 
-			newPropValue, err := iprops.WithExistingPropReplaced(node.PropertyName.Name, value)
+			newPropValue, err := iprops.WithExistingPropReplaced(state, node.PropertyName.Name, value)
 			if err == nil {
 				narrowChain(node.Left, setExactValue, newPropValue, state, 0)
 			} else if err != ErrUnassignablePropsMixin {
@@ -478,7 +478,7 @@ switch_:
 			prevPropValue := iprops.Prop(node.PropertyName.Name)
 			newPropValue := narrowOut(value, prevPropValue)
 
-			newRecPrevPropValue, err := iprops.WithExistingPropReplaced(node.PropertyName.Name, newPropValue)
+			newRecPrevPropValue, err := iprops.WithExistingPropReplaced(state, node.PropertyName.Name, newPropValue)
 			if err == nil {
 				narrowChain(node.Left, setExactValue, newRecPrevPropValue, state, 0)
 			} else if err != ErrUnassignablePropsMixin {
@@ -501,7 +501,7 @@ switch_:
 				break
 			}
 
-			newPropValue, err := iprops.WithExistingPropReplaced(node.Element.Name, value)
+			newPropValue, err := iprops.WithExistingPropReplaced(state, node.Element.Name, value)
 			if err == nil {
 				narrowChain(node.Left, setExactValue, newPropValue, state, 0)
 			} else if err != ErrUnassignablePropsMixin {
@@ -523,7 +523,7 @@ switch_:
 			prevPropValue := iprops.Prop(node.Element.Name)
 			newPropValue := narrowOut(value, prevPropValue)
 
-			newRecPrevPropValue, err := iprops.WithExistingPropReplaced(node.Element.Name, newPropValue)
+			newRecPrevPropValue, err := iprops.WithExistingPropReplaced(state, node.Element.Name, newPropValue)
 			if err == nil {
 				narrowChain(node.Left, setExactValue, newRecPrevPropValue, state, 0)
 			} else if err != ErrUnassignablePropsMixin {

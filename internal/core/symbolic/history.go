@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
+	"github.com/inoxlang/inox/internal/parse"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
@@ -74,7 +75,7 @@ func (h *ValueHistory) Prop(name string) Value {
 	return method
 }
 
-func (h *ValueHistory) SetProp(name string, value Value) (IProps, error) {
+func (h *ValueHistory) SetProp(state *State, _ parse.Node, name string, value Value) (IProps, error) {
 	switch name {
 	case "selected-datetime":
 		_, ok := value.(*DateTime)
@@ -86,8 +87,13 @@ func (h *ValueHistory) SetProp(name string, value Value) (IProps, error) {
 	return nil, errors.New("unassignable properties")
 }
 
-func (h *ValueHistory) WithExistingPropReplaced(name string, value Value) (IProps, error) {
-	return h.SetProp(name, value)
+func (h *ValueHistory) WithExistingPropReplaced(state *State, name string, value Value) (IProps, error) {
+	history := *h
+	_, err := history.SetProp(state, nil, name, value)
+	if err != nil {
+		return nil, err
+	}
+	return &history, nil
 }
 
 func (*ValueHistory) PropertyNames() []string {

@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/go-git/go-billy/v5"
+	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 	"golang.org/x/exp/slices"
@@ -56,6 +57,7 @@ type State struct {
 	tempUpdatedSelf                      Value
 
 	lastErrorNode        parse.Node
+	fmtHelper            *commonfmt.Helper
 	symbolicData         *Data
 	shellTrustedCommands []string
 
@@ -130,6 +132,7 @@ func newSymbolicState(ctx *Context, chunk *parse.ParsedChunkSource) *State {
 		},
 		returnValue:     nil,
 		iterationChange: NoIterationChange,
+		fmtHelper:       commonfmt.NewHelper(),
 	}
 	ctx.associatedState = state
 
@@ -408,12 +411,13 @@ func (state *State) updateLocal2(
 		if !isNever(value) {
 			if !deeperMismatch && !info.static.TestValue(value, RecTestCallState{}) {
 				msg := ""
+				var regions []commonfmt.RegionInfo
 				if narrowing {
-					msg = fmtVarOfTypeCannotBeNarrowedToAn(info.static.SymbolicValue(), value)
+					msg, regions = fmtVarOfTypeCannotBeNarrowedToAn(state.fmtHelper, info.static.SymbolicValue(), value)
 				} else {
-					msg = fmtNotAssignableToVarOftype(value, info.static)
+					msg, regions = fmtNotAssignableToVarOftype(state.fmtHelper, value, info.static)
 				}
-				state.addError(makeSymbolicEvalError(node, state, msg))
+				state.addError(makeSymbolicEvalError(node, state, msg, regions...))
 				return false, nil
 			}
 		}
@@ -454,12 +458,13 @@ func (state *State) updateGlobal2(
 		if !isNever(value) {
 			if !deeperMismatch && !info.static.TestValue(value, RecTestCallState{}) {
 				msg := ""
+				var regions []commonfmt.RegionInfo
 				if narrowing {
-					msg = fmtVarOfTypeCannotBeNarrowedToAn(info.static.SymbolicValue(), value)
+					msg, regions = fmtVarOfTypeCannotBeNarrowedToAn(state.fmtHelper, info.static.SymbolicValue(), value)
 				} else {
-					msg = fmtNotAssignableToVarOftype(value, info.static)
+					msg, regions = fmtNotAssignableToVarOftype(state.fmtHelper, value, info.static)
 				}
-				state.addError(makeSymbolicEvalError(node, state, msg))
+				state.addError(makeSymbolicEvalError(node, state, msg, regions...))
 				return false, nil
 			}
 		}

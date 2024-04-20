@@ -3,6 +3,7 @@ package symbolic
 import (
 	"errors"
 
+	"github.com/inoxlang/inox/internal/parse"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
@@ -79,11 +80,11 @@ func (m *Mapping) Prop(name string) Value {
 	return GetGoMethodOrPanic(name, m)
 }
 
-func (m *Mapping) SetProp(name string, value Value) (IProps, error) {
+func (m *Mapping) SetProp(state *State, node parse.Node, name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(m))
 }
 
-func (m *Mapping) WithExistingPropReplaced(name string, value Value) (IProps, error) {
+func (m *Mapping) WithExistingPropReplaced(state *State, name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(m))
 }
 

@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
+	"github.com/inoxlang/inox/internal/parse"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -518,11 +519,11 @@ func (s *RuneSlice) Prop(name string) Value {
 	}
 }
 
-func (s *RuneSlice) SetProp(name string, value Value) (IProps, error) {
+func (s *RuneSlice) SetProp(state *State, node parse.Node, name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(s))
 }
 
-func (s *RuneSlice) WithExistingPropReplaced(name string, value Value) (IProps, error) {
+func (s *RuneSlice) WithExistingPropReplaced(state *State, name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(s))
 }
 

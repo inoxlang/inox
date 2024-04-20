@@ -7,6 +7,7 @@ import (
 	"io"
 	"runtime/debug"
 
+	"github.com/inoxlang/inox/internal/commonfmt"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
@@ -25,11 +26,10 @@ var (
 // Stringify calls PrettyPrint on the passed value
 func Stringify(v Value) string {
 	buff := &bytes.Buffer{}
-	w := bufio.NewWriterSize(buff, PRETTY_PRINT_BUFF_WRITER_SIZE)
 
 	_, err := PrettyPrint(PrettyPrintArgs{
 		Value:             v,
-		Writer:            w,
+		Writer:            buff,
 		Config:            STRINGIFY_PRETTY_PRINT_CONFIG,
 		Depth:             0,
 		ParentIndentCount: 0,
@@ -39,18 +39,16 @@ func Stringify(v Value) string {
 		panic(err)
 	}
 
-	w.Flush()
 	return buff.String()
 }
 
 // Stringify calls PrettyPrint on the passed value
 func StringifyComptimeType(t CompileTimeType) string {
 	buff := &bytes.Buffer{}
-	w := bufio.NewWriterSize(buff, PRETTY_PRINT_BUFF_WRITER_SIZE)
 
 	_, err := PrettyPrint(PrettyPrintArgs{
 		Value:             t,
-		Writer:            w,
+		Writer:            buff,
 		Config:            STRINGIFY_PRETTY_PRINT_CONFIG,
 		Depth:             0,
 		ParentIndentCount: 0,
@@ -60,7 +58,6 @@ func StringifyComptimeType(t CompileTimeType) string {
 		panic(err)
 	}
 
-	w.Flush()
 	return buff.String()
 }
 
@@ -83,6 +80,46 @@ func StringifyGetRegions(v Value) (string, pprint.Regions) {
 
 	w.Flush()
 	return buff.String(), regions
+}
+
+func writeValueToBuffer(w *bytes.Buffer, symbolicValue any) error {
+	v := symbolicValue.(Value)
+	_, err := PrettyPrint(PrettyPrintArgs{
+		Value:             v,
+		Writer:            w,
+		Config:            STRINGIFY_PRETTY_PRINT_CONFIG,
+		Depth:             0,
+		ParentIndentCount: 0,
+	})
+	return err
+}
+
+func fmtValue(h *commonfmt.Helper, v Value) {
+	h.AppendRegion(commonfmt.RegionParams{
+		Kind:            INOX_VALUE_REGION_KIND,
+		AssociatedValue: v,
+		Format:          writeValueToBuffer,
+	})
+}
+
+func writeComptimeTypeToBuffer(w *bytes.Buffer, comptimeType any) error {
+	t := comptimeType.(CompileTimeType)
+	_, err := PrettyPrint(PrettyPrintArgs{
+		Value:             t,
+		Writer:            w,
+		Config:            STRINGIFY_PRETTY_PRINT_CONFIG,
+		Depth:             0,
+		ParentIndentCount: 0,
+	})
+	return err
+}
+
+func fmtComptimeType(h *commonfmt.Helper, t CompileTimeType) {
+	h.AppendRegion(commonfmt.RegionParams{
+		Kind:            INOX_VALUE_REGION_KIND,
+		AssociatedValue: t,
+		Format:          writeComptimeTypeToBuffer,
+	})
 }
 
 type PrettyPrintArgs struct {

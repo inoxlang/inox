@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
+	"github.com/inoxlang/inox/internal/parse"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/utils"
 	"golang.org/x/exp/slices"
@@ -613,10 +614,10 @@ type IProps interface {
 
 	// SetProp should be equivalent to .SetProp of a concrete IProps, the difference being that the original IProps should
 	// not be modified since all symbolic values are immutable, an IProps with the modification should be returned.
-	SetProp(name string, value Value) (IProps, error)
+	SetProp(state *State, node parse.Node, name string, value Value) (IProps, error)
 
 	// WithExistingPropReplaced should return a version of the Iprops with the replacement value of the given property.
-	WithExistingPropReplaced(name string, value Value) (IProps, error)
+	WithExistingPropReplaced(state *State, name string, value Value) (IProps, error)
 
 	// returned slice should never be modified
 	PropertyNames() []string
@@ -625,11 +626,11 @@ type IProps interface {
 type UnassignablePropsMixin struct {
 }
 
-func (UnassignablePropsMixin) SetProp(name string, value Value) (IProps, error) {
+func (UnassignablePropsMixin) SetProp(state *State, node parse.Node, name string, value Value) (IProps, error) {
 	return nil, errors.New("unassignable properties")
 }
 
-func (UnassignablePropsMixin) WithExistingPropReplaced(name string, value Value) (IProps, error) {
+func (UnassignablePropsMixin) WithExistingPropReplaced(state *State, name string, value Value) (IProps, error) {
 	return nil, ErrUnassignablePropsMixin
 }
 

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"reflect"
 
+	"github.com/inoxlang/inox/internal/parse"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
@@ -367,11 +368,11 @@ func (mv *ipropsMultivalue) Prop(name string) Value {
 	return joinValues(props)
 }
 
-func (mv *ipropsMultivalue) SetProp(name string, value Value) (IProps, error) {
+func (mv *ipropsMultivalue) SetProp(state *State, node parse.Node, name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(mv))
 }
 
-func (mv *ipropsMultivalue) WithExistingPropReplaced(name string, value Value) (IProps, error) {
+func (mv *ipropsMultivalue) WithExistingPropReplaced(state *State, name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(mv))
 }
 

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
@@ -13,6 +14,8 @@ import (
 )
 
 const (
+	INOX_VALUE_REGION_KIND = "inox-value"
+
 	//calls
 
 	CALLEE_HAS_NODE_BUT_NOT_DEFINED                         = "callee is a node but has no defined type"
@@ -205,9 +208,10 @@ var (
 )
 
 type SymbolicEvaluationError struct {
-	Message        string
-	LocatedMessage string
-	Location       parse.SourcePositionStack
+	Message               string
+	Location              parse.SourcePositionStack
+	LocatedMessage        string
+	LocatedMessageRegions []commonfmt.RegionInfo
 }
 
 func (err SymbolicEvaluationError) Error() string {
@@ -290,25 +294,46 @@ func fmtTypeOfNetworkHostInterpolationIsAnXButYWasExpected(a Value, b Value) str
 	return fmt.Sprintf("type of the network host interpolation is %s but a(n) %s was expected", Stringify(a), Stringify(b))
 }
 
-func fmtNotAssignableToVarOftype(a Value, b Pattern) string {
-	return fmt.Sprintf("a(n) %s is not assignable to a variable of type %s", Stringify(a), Stringify(b.SymbolicValue()))
+func fmtNotAssignableToVarOftype(h *commonfmt.Helper, a Value, b Pattern) (string, []commonfmt.RegionInfo) {
+	h.AppendString("an() ")
+	fmtValue(h, a)
+	h.AppendString(" is not assignable to a variable of type ")
+	fmtValue(h, b.SymbolicValue())
+	h.AppendString(", try to have a less specific sequence on the left")
+
+	return h.Consume()
 }
 
-func fmtVarOfTypeCannotBeNarrowedToAn(variable Value, val Value) string {
-	return fmt.Sprintf("variable of type %s cannot be narrowed to a(n) %s", Stringify(variable), Stringify(val))
+func fmtVarOfTypeCannotBeNarrowedToAn(h *commonfmt.Helper, variable Value, val Value) (string, []commonfmt.RegionInfo) {
+	h.AppendString("variable of type ")
+	fmtValue(h, variable)
+	h.AppendString(" cannot be narrowed to a(n) ")
+	fmtValue(h, val)
+
+	return h.Consume()
 }
 
-func fmtNotAssignableToPropOfType(a Value, b Value) string {
+func fmtNotAssignableToPropOfType(h *commonfmt.Helper, a Value, b Value) (string, []commonfmt.RegionInfo) {
 	examples := GetExamples(b, ExampleComputationContext{NonMatchingValue: a})
 	examplesString := ""
 	if len(examples) > 0 {
 		examplesString = fmtExpectedValueExamples(examples)
 	}
 
-	return fmt.Sprintf("a(n) %s is not assignable to a property of type %s%s", Stringify(a), Stringify(b), examplesString)
+	if h == nil {
+		h = commonfmt.NewHelper()
+	}
+
+	h.AppendString("an() ")
+	fmtValue(h, a)
+	h.AppendString(" is not assignable to a property of type ")
+	fmtValue(h, b)
+	h.AppendString(examplesString)
+
+	return h.Consume()
 }
 
-func fmtNotAssignableToFieldOfType(v Value, typ CompileTimeType) string {
+func fmtNotAssignableToFieldOfType(h *commonfmt.Helper, v Value, typ CompileTimeType) (string, []commonfmt.RegionInfo) {
 	examples := GetExamples(typ.SymbolicValue(), ExampleComputationContext{NonMatchingValue: v})
 	examplesString := ""
 	if len(examples) > 0 {
@@ -320,25 +345,66 @@ func fmtNotAssignableToFieldOfType(v Value, typ CompileTimeType) string {
 		v = val.Static().SymbolicValue()
 	}
 
-	return fmt.Sprintf("a(n) %s is not assignable to a field of type %s%s", Stringify(v), StringifyComptimeType(typ), examplesString)
+	if h == nil {
+		h = commonfmt.NewHelper()
+	}
+
+	h.AppendString("a(n) ")
+	fmtValue(h, v)
+	h.AppendString(" is not assignable to a field of type ")
+	fmtComptimeType(h, typ)
+	h.AppendString(examplesString)
+
+	return h.Consume()
 }
 
-func fmtNotAssignableToEntryOfExpectedValue(a Value, b Value) string {
-	return fmt.Sprintf("a(n) %s is not assignable to an entry of expected value %s", Stringify(a), Stringify(b))
+func fmtNotAssignableToEntryOfExpectedValue(h *commonfmt.Helper, a Value, b Value) (string, []commonfmt.RegionInfo) {
+
+	if h == nil {
+		h = commonfmt.NewHelper()
+	}
+
+	h.AppendString("a(n) ")
+	fmtValue(h, a)
+	h.AppendString(" is not assignable to an entry of expected value ")
+	fmtValue(h, b)
+
+	return h.Consume()
 }
 
-func fmtNotAssignableToElementOfValue(a Value, b Value) string {
+func fmtNotAssignableToElementOfValue(h *commonfmt.Helper, a Value, b Value) (string, []commonfmt.RegionInfo) {
 	examples := GetExamples(b, ExampleComputationContext{NonMatchingValue: a})
 	examplesString := ""
 	if len(examples) > 0 {
 		examplesString = fmtExpectedValueExamples(examples)
 	}
 
-	return fmt.Sprintf("a(n) %s is not assignable to an element of value %s%s", Stringify(a), Stringify(b), examplesString)
+	if h == nil {
+		h = commonfmt.NewHelper()
+	}
+
+	h.AppendString("a(n) ")
+	fmtValue(h, a)
+	h.AppendString(" is not assignable to an element of value ")
+	fmtValue(h, b)
+	h.AppendString(examplesString)
+
+	return h.Consume()
 }
 
-func fmtSeqOfXNotAssignableToSliceOfTheValue(a Value, b Value) string {
-	return fmt.Sprintf("a sequence of %s is not assignable to a slice of value %s, try to have a less specific sequence on the left", Stringify(a), Stringify(b))
+func fmtSeqOfXNotAssignableToSliceOfTheValue(h *commonfmt.Helper, a Value, b Value) (string, []commonfmt.RegionInfo) {
+
+	if h == nil {
+		h = commonfmt.NewHelper()
+	}
+
+	h.AppendString("a sequence of ")
+	fmtValue(h, a)
+	h.AppendString(" is not assignable to a slice of value ")
+	fmtValue(h, b)
+	h.AppendString(", try to have a less specific sequence on the left")
+
+	return h.Consume()
 }
 
 func fmtHasElementsOfType(val Sequence, typ Value) string {

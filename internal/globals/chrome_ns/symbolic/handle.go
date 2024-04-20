@@ -65,7 +65,7 @@ func (h *Handle) Prop(name string) symbolic.Value {
 	return symbolic.GetGoMethodOrPanic(name, h)
 }
 
-func (h *Handle) WithExistingPropReplaced(name string, value symbolic.Value) (symbolic.IProps, error) {
+func (h *Handle) WithExistingPropReplaced(state *symbolic.State, name string, value symbolic.Value) (symbolic.IProps, error) {
 	return nil, errors.New(symbolic.FmtCannotAssignPropertyOf(h))
 }
 

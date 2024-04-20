@@ -7,7 +7,9 @@ import (
 
 	"maps"
 
+	"github.com/inoxlang/inox/internal/parse"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 var (
@@ -64,19 +66,20 @@ func (args *ModuleArgs) PropertyNames() []string {
 	return args.typ.keys
 }
 
-func (args *ModuleArgs) SetProp(name string, value Value) (IProps, error) {
+func (args *ModuleArgs) SetProp(state *State, node parse.Node, name string, value Value) (IProps, error) {
 	fieldType, ok := args.typ.typeOfField(name)
 	if !ok {
 		return nil, FormatErrPropertyDoesNotExist(name, args)
 	}
 	if !fieldType.TestValue(value, RecTestCallState{}) {
-		return nil, errors.New(fmtNotAssignableToPropOfType(value, fieldType))
+		msg := utils.Ret0(fmtNotAssignableToPropOfType(state.fmtHelper, value, fieldType))
+		return nil, errors.New(msg)
 	}
 
 	return args, nil
 }
 
-func (args *ModuleArgs) WithExistingPropReplaced(name string, value Value) (IProps, error) {
+func (args *ModuleArgs) WithExistingPropReplaced(state *State, name string, value Value) (IProps, error) {
 	fields := maps.Clone(args.fieldValues)
 	fields[name] = value
 

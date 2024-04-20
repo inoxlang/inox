@@ -11,6 +11,7 @@ import (
 	"slices"
 
 	"github.com/go-git/go-billy/v5"
+	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/inoxconsts"
@@ -237,7 +238,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 	case *parse.QuantityLiteral:
 		v, err := extData.GetQuantity(n.Values, n.Units)
 		if err != nil {
-			state.addError(makeSymbolicEvalError(node, state, err.Error()))
+			state.addError(makeSymbolicEvalErrorFromError(node, state, err))
 			return ANY, nil
 		}
 		return extData.ToSymbolicValue(state.ctx.startingConcreteContext, v, false)
@@ -250,7 +251,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 	case *parse.RateLiteral:
 		v, err := extData.GetRate(n.Values, n.Units, n.DivUnit)
 		if err != nil {
-			state.addError(makeSymbolicEvalError(node, state, err.Error()))
+			state.addError(makeSymbolicEvalErrorFromError(node, state, err))
 			return ANY, nil
 		}
 		return extData.ToSymbolicValue(state.ctx.startingConcreteContext, v, false)
@@ -598,7 +599,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		}
 		readonly, err := potentiallyReadonlyPattern.ToReadonlyPattern()
 		if err != nil {
-			state.addError(makeSymbolicEvalError(n.Pattern, state, err.Error()))
+			state.addError(makeSymbolicEvalErrorFromError(n.Pattern, state, err))
 			return pattern, nil
 		}
 		return readonly, nil
@@ -1384,7 +1385,8 @@ func evalLocalVariableDeclarations(n *parse.LocalVariableDeclarations, state *St
 			if static != nil {
 				if !static.TestValue(right, RecTestCallState{}) {
 					if !deeperMismatch {
-						state.addError(makeSymbolicEvalError(decl.Right, state, fmtNotAssignableToVarOftype(right, static)))
+						msg, regions := fmtNotAssignableToVarOftype(state.fmtHelper, right, static)
+						state.addError(makeSymbolicEvalError(decl.Right, state, msg, regions...))
 					}
 					right = ANY
 				} else if holder, ok := right.(StaticDataHolder); ok {
@@ -1467,7 +1469,8 @@ func evalGlobalVariableDeclarations(n *parse.GlobalVariableDeclarations, state *
 			if static != nil {
 				if !static.TestValue(right, RecTestCallState{}) {
 					if !deeperMismatch {
-						state.addError(makeSymbolicEvalError(decl.Right, state, fmtNotAssignableToVarOftype(right, static)))
+						msg, regions := fmtNotAssignableToVarOftype(state.fmtHelper, right, static)
+						state.addError(makeSymbolicEvalError(decl.Right, state, msg, regions...))
 					}
 					right = ANY
 				} else if holder, ok := right.(StaticDataHolder); ok {
@@ -1719,7 +1722,8 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 			if node.Operator.Int() && !utils.Implements[*IntType](field.Type) {
 				state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
 			} else if !field.Type.TestValue(rhs, RecTestCallState{}) {
-				state.addError(makeSymbolicEvalError(node, state, fmtNotAssignableToFieldOfType(rhs, field.Type)))
+				msg, regions := fmtNotAssignableToFieldOfType(state.fmtHelper, rhs, field.Type)
+				state.addError(makeSymbolicEvalError(node, state, msg, regions...))
 			}
 
 			return nil, nil
@@ -1800,9 +1804,9 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 			} else if badIntOperationRHS {
 
 			} else {
-				if newIprops, err := iprops.SetProp(propName, rhs); err != nil {
+				if newIprops, err := iprops.SetProp(state, node, propName, rhs); err != nil {
 					if !deeperMismatch {
-						state.addError(makeSymbolicEvalError(node, state, err.Error()))
+						state.addError(makeSymbolicEvalErrorFromError(node, state, err))
 					}
 				} else {
 					narrowChain(lhs.Left, setExactValue, newIprops, state, 0)
@@ -1825,9 +1829,9 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 				}
 			}
 
-			if newIprops, err := iprops.SetProp(propName, rhs); err != nil {
+			if newIprops, err := iprops.SetProp(state, node, propName, rhs); err != nil {
 				if !deeperMismatch {
-					state.addError(makeSymbolicEvalError(node, state, err.Error()))
+					state.addError(makeSymbolicEvalErrorFromError(node, state, err))
 				}
 			} else {
 				narrowChain(lhs.Left, setExactValue, newIprops, state, 0)
@@ -1875,7 +1879,8 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 			if node.Operator.Int() && !utils.Implements[*IntType](field.Type) {
 				state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
 			} else if !field.Type.TestValue(rhs, RecTestCallState{}) {
-				state.addError(makeSymbolicEvalError(node, state, fmtNotAssignableToFieldOfType(rhs, field.Type)))
+				msg, regions := fmtNotAssignableToFieldOfType(state.fmtHelper, rhs, field.Type)
+				state.addError(makeSymbolicEvalError(node, state, msg, regions...))
 			}
 			return nil, nil
 		}
@@ -1949,9 +1954,9 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 			if _, ok := prevValue.(*Int); !ok && node.Operator.Int() {
 				state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
 			} else {
-				if newIprops, err := iprops.SetProp(lastPropName, rhs); err != nil {
+				if newIprops, err := iprops.SetProp(state, node, lastPropName, rhs); err != nil {
 					if !deeperMismatch {
-						state.addError(makeSymbolicEvalError(node, state, err.Error()))
+						state.addError(makeSymbolicEvalErrorFromError(node, state, err))
 					}
 				} else {
 					narrowChain(lhs, setExactValue, newIprops, state, 1)
@@ -1975,9 +1980,9 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 				}
 			}
 
-			if newIprops, err := iprops.SetProp(lastPropName, rhs); err != nil {
+			if newIprops, err := iprops.SetProp(state, node, lastPropName, rhs); err != nil {
 				if !deeperMismatch {
-					state.addError(makeSymbolicEvalError(node, state, err.Error()))
+					state.addError(makeSymbolicEvalErrorFromError(node, state, err))
 				}
 			} else {
 				narrowChain(lhs, setExactValue, newIprops, state, 1)
@@ -2106,11 +2111,14 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 
 			add_assignability_error:
 				if !assignable && !ignoreNextAssignabilityError && !deeperMismatch {
+					var v Value
 					if staticSeq != nil {
-						state.addError(makeSymbolicEvalError(node.Right, state, fmtNotAssignableToElementOfValue(__rhs, staticSeqElement)))
+						v = staticSeqElement
 					} else {
-						state.addError(makeSymbolicEvalError(node.Right, state, fmtNotAssignableToElementOfValue(__rhs, seq.Element())))
+						v = seq.Element()
 					}
+					msg, regions := fmtNotAssignableToElementOfValue(state.fmtHelper, __rhs, v)
+					state.addError(makeSymbolicEvalError(node.Right, state, msg, regions...))
 				}
 			}
 		} else if isMutableSeq && intIndex != nil && intIndex.hasValue && seq.HasKnownLen() {
@@ -2271,11 +2279,12 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 
 		add_slice_assignability_error:
 			if !assignable && !ignoreNextAssignabilityError && !deeperMismatch {
+				b := seq
 				if staticSeq != nil {
-					state.addError(makeSymbolicEvalError(node.Right, state, fmtSeqOfXNotAssignableToSliceOfTheValue(rightSeqElement, staticSeq)))
-				} else {
-					state.addError(makeSymbolicEvalError(node.Right, state, fmtSeqOfXNotAssignableToSliceOfTheValue(rightSeqElement, seq)))
+					b = staticSeq
 				}
+				msg, regions := fmtSeqOfXNotAssignableToSliceOfTheValue(state.fmtHelper, rightSeqElement, b)
+				state.addError(makeSymbolicEvalError(node.Right, state, msg, regions...))
 			}
 
 		} else if isMutableSeq && startIntIndex != nil && startIntIndex.hasValue && seq.HasKnownLen() {
@@ -4375,14 +4384,20 @@ func evalObjectLiteral(n *parse.ObjectLiteral, state *State, options evalOptions
 				static = _propType.(Pattern)
 				if !static.TestValue(propVal, RecTestCallState{}) {
 					expected := static.SymbolicValue()
-					state.addErrorIf(!hasShallowError, makeSymbolicEvalError(p.Value, state, fmtNotAssignableToPropOfType(propVal, expected)))
+					if !hasShallowError {
+						msg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, propVal, expected)
+						state.addError(makeSymbolicEvalError(p.Value, state, msg, regions...))
+					}
 					propVal = expected
 				}
 			} else if deeperMismatch {
 				options.setActualValueMismatchIfNotNil()
 			} else if expectedPropVal != nil && !deeperMismatch && !expectedPropVal.Test(propVal, RecTestCallState{}) {
 				options.setActualValueMismatchIfNotNil()
-				state.addErrorIf(!hasShallowError, makeSymbolicEvalError(p.Value, state, fmtNotAssignableToPropOfType(propVal, expectedPropVal)))
+				if !hasShallowError {
+					msg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, propVal, expectedPropVal)
+					state.addError(makeSymbolicEvalError(p.Value, state, msg, regions...))
+				}
 			}
 
 			serializable, ok = AsSerializable(propVal).(Serializable)
@@ -4540,7 +4555,10 @@ func evalRecordLiteral(n *parse.RecordLiteral, state *State, options evalOptions
 				options.setActualValueMismatchIfNotNil()
 			} else if expectedPropVal != nil && !deeperMismatch && !expectedPropVal.Test(v, RecTestCallState{}) {
 				options.setActualValueMismatchIfNotNil()
-				state.addErrorIf(!hasShallowError, makeSymbolicEvalError(p.Value, state, fmtNotAssignableToPropOfType(v, expectedPropVal)))
+				if !hasShallowError {
+					msg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, v, expectedPropVal)
+					state.addError(makeSymbolicEvalError(p.Value, state, msg, regions...))
+				}
 			}
 
 			serializable, ok := AsSerializable(v).(Serializable)
@@ -4933,7 +4951,9 @@ func evalDictionaryLiteral(n *parse.DictionaryLiteral, state *State, options eva
 			options.setActualValueMismatchIfNotNil()
 		} else if expectedEntryValue != nil && !deeperMismatch && !expectedEntryValue.Test(entryValue, RecTestCallState{}) {
 			options.setActualValueMismatchIfNotNil()
-			state.addError(makeSymbolicEvalError(entry.Value, state, fmtNotAssignableToEntryOfExpectedValue(entryValue, expectedEntryValue)))
+
+			msg, regions := fmtNotAssignableToEntryOfExpectedValue(state.fmtHelper, entryValue, expectedEntryValue)
+			state.addError(makeSymbolicEvalError(entry.Value, state, msg, regions...))
 		}
 
 		serializable, ok := AsSerializable(entryValue).(Serializable)
@@ -6759,13 +6779,30 @@ func handleConstraints(obj *Object, block *parse.InitializationBlock, state *Sta
 	return nil
 }
 
-func makeSymbolicEvalError(node parse.Node, state *State, msg string) SymbolicEvaluationError {
+func makeSymbolicEvalError(node parse.Node, state *State, msg string, regions ...commonfmt.RegionInfo) SymbolicEvaluationError {
 	locatedMsg := msg
 	location := state.getErrorMesssageLocation(node)
 	if state.Module != nil {
 		locatedMsg = fmt.Sprintf("check(symbolic): %s: %s", location, msg)
+		prefixLen := len(locatedMsg) - len(msg)
+		for i := range regions {
+			regions[i].Start += int32(prefixLen)
+			regions[i].End += int32(prefixLen)
+		}
 	}
-	return SymbolicEvaluationError{msg, locatedMsg, location}
+	return SymbolicEvaluationError{
+		Message:               msg,
+		Location:              location,
+		LocatedMessageRegions: regions,
+		LocatedMessage:        locatedMsg,
+	}
+}
+
+func makeSymbolicEvalErrorFromError(node parse.Node, state *State, err error) SymbolicEvaluationError {
+	if e, ok := err.(SymbolicEvaluationError); ok {
+		return e
+	}
+	return makeSymbolicEvalError(node, state, err.Error())
 }
 
 func makeSymbolicEvalWarning(node parse.Node, state *State, msg string) SymbolicEvaluationWarning {

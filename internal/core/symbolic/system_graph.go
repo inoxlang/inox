@@ -3,6 +3,7 @@ package symbolic
 import (
 	"errors"
 
+	"github.com/inoxlang/inox/internal/parse"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
 
@@ -67,11 +68,11 @@ func (g *SystemGraph) Prop(memberName string) Value {
 	panic(FormatErrPropertyDoesNotExist(memberName, g))
 }
 
-func (g *SystemGraph) SetProp(name string, value Value) (IProps, error) {
+func (g *SystemGraph) SetProp(state *State, node parse.Node, name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(g))
 }
 
-func (g *SystemGraph) WithExistingPropReplaced(name string, value Value) (IProps, error) {
+func (g *SystemGraph) WithExistingPropReplaced(state *State, name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(g))
 }
 
@@ -182,11 +183,11 @@ func (n *SystemGraphNode) Prop(memberName string) Value {
 	panic(FormatErrPropertyDoesNotExist(memberName, n))
 }
 
-func (n *SystemGraphNode) SetProp(name string, value Value) (IProps, error) {
+func (n *SystemGraphNode) SetProp(state *State, node parse.Node, name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(n))
 }
 
-func (n *SystemGraphNode) WithExistingPropReplaced(name string, value Value) (IProps, error) {
+func (n *SystemGraphNode) WithExistingPropReplaced(state *State, name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(n))
 }
 
@@ -247,11 +248,11 @@ func (n *SystemGraphEvent) Prop(memberName string) Value {
 	panic(FormatErrPropertyDoesNotExist(memberName, n))
 }
 
-func (n *SystemGraphEvent) SetProp(name string, value Value) (IProps, error) {
+func (n *SystemGraphEvent) SetProp(state *State, node parse.Node, name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(n))
 }
 
-func (n *SystemGraphEvent) WithExistingPropReplaced(name string, value Value) (IProps, error) {
+func (n *SystemGraphEvent) WithExistingPropReplaced(state *State, name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(n))
 }
 
@@ -312,11 +313,11 @@ func (e *SystemGraphEdge) Prop(memberName string) Value {
 	panic(FormatErrPropertyDoesNotExist(memberName, e))
 }
 
-func (e *SystemGraphEdge) SetProp(name string, value Value) (IProps, error) {
+func (e *SystemGraphEdge) SetProp(state *State, node parse.Node, name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(e))
 }
 
-func (e *SystemGraphEdge) WithExistingPropReplaced(name string, value Value) (IProps, error) {
+func (e *SystemGraphEdge) WithExistingPropReplaced(state *State, name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(e))
 }
 

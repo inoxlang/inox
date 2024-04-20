@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/inoxlang/inox/internal/parse"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -47,11 +48,11 @@ func (s *EventSource) Prop(name string) Value {
 	return method
 }
 
-func (s *EventSource) SetProp(name string, value Value) (IProps, error) {
+func (s *EventSource) SetProp(state *State, node parse.Node, name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(s))
 }
 
-func (s *EventSource) WithExistingPropReplaced(name string, value Value) (IProps, error) {
+func (s *EventSource) WithExistingPropReplaced(state *State, name string, value Value) (IProps, error) {
 	return nil, errors.New(FmtCannotAssignPropertyOf(s))
 }
 

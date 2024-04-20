@@ -187,7 +187,7 @@ func TestObject(t *testing.T) {
 	t.Run("SetProp", func(t *testing.T) {
 		t.Run("should return an error if a new property is set in an  exact object", func(t *testing.T) {
 			obj := NewExactObject(map[string]Serializable{}, nil, nil)
-			updated, err := obj.SetProp("new-prop", NewInt(1))
+			updated, err := obj.SetProp(nil, nil, "new-prop", NewInt(1))
 			if !assert.ErrorContains(t, err, CANNOT_ADD_NEW_PROPERTY_TO_AN_EXACT_OBJECT) {
 				return
 			}
