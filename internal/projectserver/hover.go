@@ -205,11 +205,14 @@ func getHoverContent(handlingCtx *core.Context, params hoverContentParams) (*def
 	}
 
 	if diagnostics := params.diagnostics; diagnostics != nil {
-		codeBlockWriter.WriteString("\n__Reformatted errors:__\n")
 
 		diagnostics.lock.Lock()
 		checkErrors := slices.Clone(diagnostics.symbolicErrors[params.docURI])
 		diagnostics.lock.Unlock()
+
+		if len(checkErrors) > 0 {
+			codeBlockWriter.WriteString("\n__Reformatted errors:__\n")
+		}
 
 		for _, checkError := range checkErrors {
 			codeBlockWriter.WriteByte('\n')
