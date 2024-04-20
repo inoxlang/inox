@@ -212,14 +212,17 @@ func (fn *InoxFunction) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.P
 
 	w.WriteString("fn(")
 
+	writeParamsOnSeparateLines := !config.Compact && len(fn.parameters) > 1
+
 	for i, param := range fn.parameters {
 		if i != 0 {
 			w.WriteString(", ")
 		}
-		if !config.Compact {
+		if writeParamsOnSeparateLines {
 			w.WriteEndOfLine()
 			w.WriteInnerIndent()
 		}
+
 		paramRegion := w.EnterRegion(pprint.ParamNameTypeRegion)
 
 		w.WriteString(fn.parameterNames[i])
@@ -228,12 +231,18 @@ func (fn *InoxFunction) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.P
 		if fn.IsVariadic() && i == len(fn.parameters)-1 {
 			w.WriteString("...")
 		}
-		param.PrettyPrint(w.IncrIndent().EnterPattern(), config)
+
+		paramWriter := w.EnterPattern()
+		if writeParamsOnSeparateLines {
+			paramWriter = paramWriter.IncrIndent()
+		}
+
+		param.PrettyPrint(paramWriter, config)
 
 		w.LeaveRegion(paramRegion)
 	}
 
-	if !config.Compact {
+	if writeParamsOnSeparateLines {
 		w.WriteEndOfLine()
 		w.WriteOuterIndent()
 	}
@@ -1069,10 +1078,18 @@ func (f *Function) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pretty
 
 	w.WriteString("fn(")
 
+	writeParamsOnSeparateLines := !config.Compact && len(f.parameters) > 1
+
 	for i, param := range f.parameters {
 		if i != 0 {
 			w.WriteString(", ")
 		}
+
+		if writeParamsOnSeparateLines {
+			w.WriteEndOfLine()
+			w.WriteInnerIndent()
+		}
+
 		paramRegion := w.EnterRegion(pprint.ParamNameTypeRegion)
 
 		if len(f.parameterNames) > i {
@@ -1091,8 +1108,18 @@ func (f *Function) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pretty
 			w.WriteString(prettyprint_OPTIONAL_PARAM_PREFIX)
 		}
 
-		param.PrettyPrint(w.ZeroIndent().EnterPattern(), config)
+		paramWriter := w.EnterPattern()
+		if writeParamsOnSeparateLines {
+			paramWriter = paramWriter.IncrIndent()
+		}
+
+		param.PrettyPrint(paramWriter, config)
 		w.LeaveRegion(paramRegion)
+	}
+
+	if writeParamsOnSeparateLines {
+		w.WriteEndOfLine()
+		w.WriteOuterIndent()
 	}
 
 	switch len(f.results) {
