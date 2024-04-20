@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"slices"
-	"strings"
 	"time"
 
 	"github.com/bep/debounce"
@@ -16,15 +15,12 @@ import (
 	"github.com/rs/zerolog"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/projectserver/lsp"
 
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
 
 	"github.com/inoxlang/inox/internal/utils"
-
-	"net/url"
 
 	"github.com/inoxlang/inox/internal/parse"
 )
@@ -86,52 +82,6 @@ func registerStandardMethodHandlers(server *lsp.Server, serverConfig LSPServerCo
 
 	server.OnDocumentFormatting(handleFormatDocument)
 
-}
-
-func getFilePath(uri defines.DocumentUri, usingInoxFs bool) (string, error) {
-	u, err := url.Parse(string(uri))
-	if err != nil {
-		return "", fmt.Errorf("invalid URI: %s: %w", uri, err)
-	}
-	if usingInoxFs && u.Scheme != INOX_FS_SCHEME {
-		return "", fmt.Errorf("%w, URI is: %s", ErrInoxURIExpected, string(uri))
-	}
-	if !usingInoxFs && u.Scheme != "file" {
-		return "", fmt.Errorf("%w, URI is: %s", ErrFileURIExpected, string(uri))
-	}
-
-	clean := filepath.Clean(u.Path)
-	if !strings.HasSuffix(clean, inoxconsts.INOXLANG_FILE_EXTENSION) {
-		return "", fmt.Errorf("unxepected file extension: '%s'", filepath.Ext(clean))
-	}
-	return clean, nil
-}
-
-func getFileURI(path string, usingInoxFs bool) (defines.DocumentUri, error) {
-	if path == "" {
-		return "", errors.New("failed to get document URI: empty path")
-	}
-	if path[0] != '/' {
-		return "", fmt.Errorf("failed to get document URI: path is not absolute: %q", path)
-	}
-	if usingInoxFs {
-		return defines.DocumentUri(INOX_FS_SCHEME + "://" + path), nil
-	}
-	return defines.DocumentUri("file://" + path), nil
-}
-
-func getPath(uri defines.URI, usingInoxFS bool) (string, error) {
-	u, err := url.Parse(string(uri))
-	if err != nil {
-		return "", fmt.Errorf("invalid URI: %s: %w", uri, err)
-	}
-	if usingInoxFS && u.Scheme != INOX_FS_SCHEME {
-		return "", fmt.Errorf("%w, actual is: %s", ErrInoxURIExpected, string(uri))
-	}
-	if !usingInoxFS && u.Scheme != "file" {
-		return "", fmt.Errorf("%w, actual is: %s", ErrFileURIExpected, string(uri))
-	}
-	return filepath.Clean(u.Path), nil
 }
 
 func handleInitialize(
@@ -228,23 +178,29 @@ func handleHover(callCtx context.Context, req *defines.HoverParams) (result *def
 	rpcSession := jsonrpc.GetSession(callCtx)
 	rpcSessionCtx := rpcSession.Context()
 
+	//---------------------------------------------------
 	session := getCreateLockedProjectSession(rpcSession)
 	projectMode := session.inProjectMode
+	uri := normalizeURI(req.TextDocument.Uri)
+	fpath, err := getFilePath(uri, projectMode)
+	if err != nil {
+		session.lock.Unlock()
+		return nil, err
+	}
+
 	project := session.project
 	fls := session.filesystem
 	chunkCache := session.inoxChunkCache
 	memberAuthToken := session.memberAuthToken
 	lastCodebaseAnalysis := session.lastCodebaseAnalysis
+	docDiagnostics := session.documentDiagnostics[fpath]
 	session.lock.Unlock()
+	//---------------------------------------------------
 
 	if fls == nil {
 		return nil, errors.New(string(FsNoFilesystem))
 	}
 
-	fpath, err := getFilePath(req.TextDocument.Uri, projectMode)
-	if err != nil {
-		return nil, err
-	}
 	line, column := getLineColumn(req.Position)
 
 	handlingCtx := rpcSessionCtx.BoundChildWithOptions(core.BoundChildContextOptions{
@@ -256,9 +212,11 @@ func handleHover(callCtx context.Context, req *defines.HoverParams) (result *def
 
 	return getHoverContent(handlingCtx, hoverContentParams{
 		fpath:                fpath,
+		docURI:               uri,
 		line:                 line,
 		column:               column,
 		lastCodebaseAnalysis: lastCodebaseAnalysis,
+		diagnostics:          docDiagnostics,
 
 		rpcSession:      rpcSession,
 		fls:             fls,
@@ -290,7 +248,8 @@ func handleSignatureHelp(callCtx context.Context, req *defines.SignatureHelpPara
 		return nil, ErrMemberNotAuthenticated
 	}
 
-	fpath, err := getFilePath(req.TextDocument.Uri, projectMode)
+	uri := normalizeURI(req.TextDocument.Uri)
+	fpath, err := getFilePath(uri, projectMode)
 	if err != nil {
 		return nil, err
 	}
@@ -328,7 +287,8 @@ func handleCodeActionWithSliceCodeAction(callCtx context.Context, req *defines.C
 		return nil, nil
 	}
 
-	fpath, err := getFilePath(req.TextDocument.Uri, projectMode)
+	uri := normalizeURI(req.TextDocument.Uri)
+	fpath, err := getFilePath(uri, projectMode)
 	if err != nil {
 		return nil, err
 	}
@@ -369,7 +329,8 @@ func handleDefinition(callCtx context.Context, req *defines.DefinitionParams) (r
 		return nil, errors.New(string(FsNoFilesystem))
 	}
 
-	fpath, err := getFilePath(req.TextDocument.Uri, projectMode)
+	uri := normalizeURI(req.TextDocument.Uri)
+	fpath, err := getFilePath(uri, projectMode)
 	if err != nil {
 		return nil, err
 	}
@@ -511,7 +472,8 @@ func handleFormatDocument(callCtx context.Context, req *defines.DocumentFormatti
 		return nil, nil
 	}
 
-	fpath, err := getFilePath(req.TextDocument.Uri, projectMode)
+	uri := normalizeURI(req.TextDocument.Uri)
+	fpath, err := getFilePath(uri, projectMode)
 	if err != nil {
 		return nil, err
 	}
@@ -556,7 +518,8 @@ func handleDidOpenDocument(callCtx context.Context, req *defines.DidOpenTextDocu
 		return errors.New(string(FsNoFilesystem))
 	}
 
-	fpath, err := getFilePath(req.TextDocument.Uri, projectMode)
+	uri := normalizeURI(req.TextDocument.Uri)
+	fpath, err := getFilePath(uri, projectMode)
 	if err != nil {
 		return err
 	}
@@ -580,8 +543,8 @@ func handleDidOpenDocument(callCtx context.Context, req *defines.DidOpenTextDocu
 		}
 	}
 
-	if _, ok := session.didSaveCapabilityRegistrationIds[req.TextDocument.Uri]; !ok {
-		session.didSaveCapabilityRegistrationIds[req.TextDocument.Uri] = registrationId
+	if _, ok := session.didSaveCapabilityRegistrationIds[uri]; !ok {
+		session.didSaveCapabilityRegistrationIds[uri] = registrationId
 		session.lock.Unlock()
 
 		rpcSession.SendRequest(jsonrpc.RequestMessage{
@@ -610,7 +573,7 @@ func handleDidOpenDocument(callCtx context.Context, req *defines.DidOpenTextDocu
 
 	return computeNotifyDocumentDiagnostics(diagnosticNotificationParams{
 		rpcSession:  rpcSession,
-		docURI:      req.TextDocument.Uri,
+		docURI:      uri,
 		usingInoxFS: projectMode,
 
 		project:         project,
@@ -631,7 +594,8 @@ func handleDidSaveDocument(callCtx context.Context, req *defines.DidSaveTextDocu
 	chunkCache := session.inoxChunkCache
 	memberAuthToken := session.memberAuthToken
 
-	fpath, err := getFilePath(req.TextDocument.Uri, projectMode)
+	uri := normalizeURI(req.TextDocument.Uri)
+	fpath, err := getFilePath(uri, projectMode)
 	if err != nil {
 		session.lock.Unlock()
 		return err
@@ -661,12 +625,12 @@ func handleDidSaveDocument(callCtx context.Context, req *defines.DidSaveTextDocu
 		}
 
 		session := getCreateLockedProjectSession(rpcSession)
-		registrationId, ok := session.didSaveCapabilityRegistrationIds[req.TextDocument.Uri]
+		registrationId, ok := session.didSaveCapabilityRegistrationIds[uri]
 
 		if !ok {
 			session.lock.Unlock()
 		} else {
-			delete(session.didSaveCapabilityRegistrationIds, req.TextDocument.Uri)
+			delete(session.didSaveCapabilityRegistrationIds, uri)
 			session.lock.Unlock()
 
 			rpcSession.SendRequest(jsonrpc.RequestMessage{
@@ -710,7 +674,7 @@ func handleDidSaveDocument(callCtx context.Context, req *defines.DidSaveTextDocu
 
 	return computeNotifyDocumentDiagnostics(diagnosticNotificationParams{
 		rpcSession:  rpcSession,
-		docURI:      req.TextDocument.Uri,
+		docURI:      uri,
 		usingInoxFS: projectMode,
 
 		project:         project,
@@ -730,9 +694,11 @@ func handleDidChangeDocument(callCtx context.Context, req *defines.DidChangeText
 	fls := session.filesystem
 	chunkCache := session.inoxChunkCache
 	memberAuthToken := session.memberAuthToken
-	session.diagPullDisablingWindowStartTimes[req.TextDocument.Uri] = time.Now()
 
-	fpath, err := getFilePath(req.TextDocument.Uri, projectMode)
+	uri := normalizeURI(req.TextDocument.Uri)
+	session.diagPullDisablingWindowStartTimes[uri] = time.Now()
+
+	fpath, err := getFilePath(uri, projectMode)
 	if err != nil {
 		session.lock.Unlock()
 		return err
@@ -765,7 +731,7 @@ func handleDidChangeDocument(callCtx context.Context, req *defines.DidChangeText
 		defer utils.Recover()
 		computeNotifyDocumentDiagnostics(diagnosticNotificationParams{
 			rpcSession:  rpcSession,
-			docURI:      req.TextDocument.Uri,
+			docURI:      uri,
 			usingInoxFS: projectMode,
 
 			project:         project,
@@ -842,7 +808,7 @@ func handleDidChangeDocument(callCtx context.Context, req *defines.DidChangeText
 					Method: "workspace/applyEdit",
 					Params: utils.Must(json.Marshal(defines.ApplyWorkspaceEditParams{
 						Edit: defines.WorkspaceEdit{
-							Changes: &map[string][]defines.TextEdit{string(req.TextDocument.Uri): {textEdit}},
+							Changes: &map[string][]defines.TextEdit{string(uri): {textEdit}},
 						},
 					})),
 				})
@@ -885,7 +851,8 @@ func handleDidCloseDocument(ctx context.Context, req *defines.DidCloseTextDocume
 		return errors.New(string(FsNoFilesystem))
 	}
 
-	fpath, err := getFilePath(req.TextDocument.Uri, projectMode)
+	uri := normalizeURI(req.TextDocument.Uri)
+	fpath, err := getFilePath(uri, projectMode)
 	if err != nil {
 		session.lock.Unlock()
 		return err

@@ -24,7 +24,8 @@ func handleCompletion(ctx context.Context, req *defines.CompletionParams) (resul
 	session.lock.Unlock()
 	//--------------------------------------------------------
 
-	fpath, err := getFilePath(req.TextDocument.Uri, projectMode)
+	uri := normalizeURI(req.TextDocument.Uri)
+	fpath, err := getFilePath(uri, projectMode)
 	if err != nil {
 		return nil, err
 	}

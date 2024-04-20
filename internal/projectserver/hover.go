@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/inoxlang/inox/internal/codebase/analysis"
@@ -20,9 +21,11 @@ import (
 
 type hoverContentParams struct {
 	fpath                string
+	docURI               defines.DocumentUri
 	line, column         int32
 	rpcSession           *jsonrpc.Session
-	lastCodebaseAnalysis *analysis.Result //optional
+	lastCodebaseAnalysis *analysis.Result     //optional
+	diagnostics          *documentDiagnostics //may be nil
 
 	memberAuthToken string
 	fls             *Filesystem
@@ -193,15 +196,45 @@ func getHoverContent(handlingCtx *core.Context, params hoverContentParams) (*def
 		helpMessage += "\n\n" + tagOrAttrHelp
 	}
 
-	codeBlock := ""
+	codeBlockWriter := &strings.Builder{}
+
 	if stringifiedHoveredNodeValue != "" {
-		codeBlock = "```inox\n" + stringifiedHoveredNodeValue + "\n```"
+		codeBlockWriter.WriteString("```inox\n")
+		codeBlockWriter.WriteString(stringifiedHoveredNodeValue)
+		codeBlockWriter.WriteString("\n```")
+	}
+
+	if diagnostics := params.diagnostics; diagnostics != nil {
+		codeBlockWriter.WriteString("\n__Reformatted errors:__\n")
+
+		diagnostics.lock.Lock()
+		checkErrors := slices.Clone(diagnostics.symbolicErrors[params.docURI])
+		diagnostics.lock.Unlock()
+
+		for _, checkError := range checkErrors {
+			codeBlockWriter.WriteByte('\n')
+
+			err := checkError.ReformatNonLocated(codeBlockWriter, symbolic.ErrorReformatting{
+				BeforeSmallReprInoxValue: "```",
+				AfterSmallReprInoxValue:  "```",
+				BeforeLongReprInoxValue:  "\n```inox\n",
+				AfterLongReprInoxValue:   "\n```\n",
+				LongReprThreshold:        20,
+				ValuePrettyPringConfig:   HOVER_PRETTY_PRINT_CONFIG,
+			})
+			if err != nil {
+				return nil, jsonrpc.ResponseError{
+					Code:    jsonrpc.InternalError.Code,
+					Message: err.Error(),
+				}
+			}
+		}
 	}
 
 	return &defines.Hover{
 		Contents: defines.MarkupContent{
 			Kind:  defines.MarkupKindMarkdown,
-			Value: codeBlock + helpMessage,
+			Value: codeBlockWriter.String() + helpMessage,
 		},
 	}, nil
 }

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
@@ -48,7 +49,8 @@ func handleDocumentDiagnostic(ctx context.Context, req *defines.DocumentDiagnost
 		}, nil
 	}
 
-	_, err := getFilePath(req.TextDocument.Uri, projectMode)
+	uri := normalizeURI(req.TextDocument.Uri)
+	_, err := getFilePath(uri, projectMode)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +59,7 @@ func handleDocumentDiagnostic(ctx context.Context, req *defines.DocumentDiagnost
 		defer utils.Recover()
 		computeNotifyDocumentDiagnostics(diagnosticNotificationParams{
 			triggeredByPull: true, //low priority
-			docURI:          req.TextDocument.Uri,
+			docURI:          uri,
 			usingInoxFS:     projectMode,
 
 			rpcSession:      rpcSession,
@@ -76,7 +78,7 @@ func handleDocumentDiagnostic(ctx context.Context, req *defines.DocumentDiagnost
 
 	// diagostics, err := computeDocumentDiagnostics(diagnosticNotificationParams{
 	// 	session:         session,
-	// 	docURI:          req.TextDocument.Uri,
+	// 	docURI:          uri,
 	// 	usingInoxFS:     projectMode,
 	// 	fls:             fls,
 	// 	memberAuthToken: memberAuthToken,
@@ -220,6 +222,7 @@ func computeDocumentDiagnostics(params diagnosticNotificationParams) (result *do
 	//we need the diagnostics list to be present in the notification so diagnostics should not be nil
 	diagnostics := make([]defines.Diagnostic, 0)
 	otherDocumentDiagnostics := map[defines.DocumentUri][]defines.Diagnostic{}
+	symbolicErrors := make(map[defines.DocumentUri][]symbolic.SymbolicEvaluationError, 0)
 
 	if !ok {
 		return &documentDiagnostics{items: diagnostics}, nil
@@ -366,9 +369,14 @@ func computeDocumentDiagnostics(params diagnosticNotificationParams) (result *do
 		}
 
 		//Add symbolic check errors.
+
 		for _, err := range state.SymbolicData.Errors() {
 			pos := getPositionInPositionStackOrFirst(err.Location, fpath)
 			docURI, uriErr := getFileURI(pos.SourceName, usingInoxFS)
+
+			if uriErr == nil {
+				symbolicErrors[docURI] = append(symbolicErrors[docURI], err)
+			}
 
 			diagnostic := defines.Diagnostic{
 				Message:  err.Message,
@@ -402,7 +410,11 @@ func computeDocumentDiagnostics(params diagnosticNotificationParams) (result *do
 		}
 	}
 
-	return &documentDiagnostics{items: diagnostics, otherDocumentDiagnostics: otherDocumentDiagnostics}, nil
+	return &documentDiagnostics{
+		items:                    diagnostics,
+		otherDocumentDiagnostics: otherDocumentDiagnostics,
+		symbolicErrors:           symbolicErrors,
+	}, nil
 }
 
 func sendDocumentDiagnostics(rpcSession *jsonrpc.Session, docURI defines.DocumentUri, diagnostics []defines.Diagnostic) error {
@@ -437,6 +449,7 @@ type documentDiagnostics struct {
 	id                           DocDiagnosticId
 	items                        []defines.Diagnostic
 	otherDocumentDiagnostics     map[defines.DocumentUri][]defines.Diagnostic
+	symbolicErrors               map[defines.DocumentUri][]symbolic.SymbolicEvaluationError
 	containsWorkspaceDiagnostics bool
 	lock                         sync.Mutex
 }

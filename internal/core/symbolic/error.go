@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -208,7 +210,9 @@ var (
 )
 
 type SymbolicEvaluationError struct {
-	Message               string
+	Message        string
+	MessageRegions []commonfmt.RegionInfo
+
 	Location              parse.SourcePositionStack
 	LocatedMessage        string
 	LocatedMessageRegions []commonfmt.RegionInfo
@@ -224,6 +228,64 @@ func (err SymbolicEvaluationError) MessageWithoutLocation() string {
 
 func (err SymbolicEvaluationError) LocationStack() parse.SourcePositionStack {
 	return err.Location
+}
+
+type ErrorReformatting struct {
+	BeforeLongReprInoxValue  string                    //added before each Inox value region.
+	AfterLongReprInoxValue   string                    //added after each Inox value region.
+	BeforeSmallReprInoxValue string                    //added before each Inox value region.
+	AfterSmallReprInoxValue  string                    //added after each Inox value region.
+	LongReprThreshold        int32                     //defaults to 100
+	ValuePrettyPringConfig   *pprint.PrettyPrintConfig //values are not reformatted if nil
+}
+
+func (err SymbolicEvaluationError) ReformatNonLocated(w io.Writer, reformatting ErrorReformatting) error {
+	text := err.Message
+	regions := err.MessageRegions
+
+	if reformatting.BeforeLongReprInoxValue == "" && reformatting.AfterLongReprInoxValue == "" && reformatting.ValuePrettyPringConfig == nil {
+		w.Write(utils.StringAsBytes(text))
+		return nil
+	}
+
+	var reformatValue func(w io.Writer, value any) error
+
+	longReprThreshold := reformatting.LongReprThreshold
+	if longReprThreshold <= 0 {
+		longReprThreshold = 100
+	}
+
+	if reformatting.ValuePrettyPringConfig != nil {
+		reformatValue = func(w io.Writer, value any) error {
+			symbolicVal := value.(Value)
+			_, err := PrettyPrint(PrettyPrintArgs{
+				Value:             symbolicVal,
+				Writer:            w,
+				Config:            reformatting.ValuePrettyPringConfig,
+				Depth:             0,
+				ParentIndentCount: 0,
+			})
+			return err
+		}
+	}
+	var replacements []commonfmt.RegionReplacement
+	for _, region := range regions {
+		if region.Kind == INOX_VALUE_REGION_KIND {
+			before, after := reformatting.BeforeSmallReprInoxValue, reformatting.AfterSmallReprInoxValue
+
+			if region.ByteLen() >= longReprThreshold {
+				before, after = reformatting.BeforeLongReprInoxValue, reformatting.AfterLongReprInoxValue
+			}
+			replacements = append(replacements, commonfmt.RegionReplacement{
+				Region:   region,
+				Before:   before,
+				After:    after,
+				ReFormat: reformatValue,
+			})
+		}
+	}
+
+	return commonfmt.Reformat(w, text, replacements)
 }
 
 func fmtCannotCallNode(node parse.Node) string {
@@ -295,7 +357,7 @@ func fmtTypeOfNetworkHostInterpolationIsAnXButYWasExpected(a Value, b Value) str
 }
 
 func fmtNotAssignableToVarOftype(h *commonfmt.Helper, a Value, b Pattern) (string, []commonfmt.RegionInfo) {
-	h.AppendString("an() ")
+	h.AppendString("a(n) ")
 	fmtValue(h, a)
 	h.AppendString(" is not assignable to a variable of type ")
 	fmtValue(h, b.SymbolicValue())
@@ -324,7 +386,7 @@ func fmtNotAssignableToPropOfType(h *commonfmt.Helper, a Value, b Value) (string
 		h = commonfmt.NewHelper()
 	}
 
-	h.AppendString("an() ")
+	h.AppendString("a(n) ")
 	fmtValue(h, a)
 	h.AppendString(" is not assignable to a property of type ")
 	fmtValue(h, b)

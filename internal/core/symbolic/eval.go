@@ -196,6 +196,11 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		if !options.ignoreNodeValue && !options.reEval && finalErr == nil && result != nil && state.symbolicData != nil {
 			state.SetMostSpecificNodeValue(node, result)
 		}
+		if options.expectedValue != nil && state.symbolicData != nil {
+			state.symbolicData.SetExpectedNodeValueInfo(node, ExceptedValueInfo{
+				value: options.expectedValue,
+			})
+		}
 	}()
 
 	if state.ctx.noCheckFuel == 0 && state.ctx.startingConcreteContext != nil {
@@ -6782,18 +6787,25 @@ func handleConstraints(obj *Object, block *parse.InitializationBlock, state *Sta
 func makeSymbolicEvalError(node parse.Node, state *State, msg string, regions ...commonfmt.RegionInfo) SymbolicEvaluationError {
 	locatedMsg := msg
 	location := state.getErrorMesssageLocation(node)
+
+	var locatedMessageRegions []commonfmt.RegionInfo
+
 	if state.Module != nil {
 		locatedMsg = fmt.Sprintf("check(symbolic): %s: %s", location, msg)
 		prefixLen := len(locatedMsg) - len(msg)
-		for i := range regions {
-			regions[i].Start += int32(prefixLen)
-			regions[i].End += int32(prefixLen)
+
+		locatedMessageRegions := slices.Clone(locatedMessageRegions)
+		for i := range locatedMessageRegions {
+			locatedMessageRegions[i].Start += int32(prefixLen)
+			locatedMessageRegions[i].End += int32(prefixLen)
 		}
 	}
 	return SymbolicEvaluationError{
-		Message:               msg,
+		Message:        msg,
+		MessageRegions: regions,
+
 		Location:              location,
-		LocatedMessageRegions: regions,
+		LocatedMessageRegions: locatedMessageRegions,
 		LocatedMessage:        locatedMsg,
 	}
 }

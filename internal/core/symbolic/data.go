@@ -43,6 +43,7 @@ func (s *State) SetMostSpecificNodeValue(node parse.Node, v Value) {
 type Data struct {
 	mostSpecificNodeValues      map[parse.Node]Value
 	lessSpecificNodeValues      map[parse.Node]Value
+	expectedNodeValueInfo       map[parse.Node]ExceptedValueInfo
 	localScopeData              map[parse.Node]ScopeData
 	globalScopeData             map[parse.Node]ScopeData
 	contextData                 map[parse.Node]ContextData
@@ -69,7 +70,8 @@ func NewSymbolicData() *Data {
 		localScopeData:              make(map[parse.Node]ScopeData),
 		globalScopeData:             make(map[parse.Node]ScopeData),
 		allowedNonPresentProperties: make(map[parse.Node][]string, 0),
-		allowedNonPresentKeys:       make(map[parse.Node][]string),
+		allowedNonPresentKeys:       make(map[parse.Node][]string, 0),
+		expectedNodeValueInfo:       make(map[parse.Node]ExceptedValueInfo, 0),
 		contextData:                 make(map[parse.Node]ContextData),
 		runtimeTypeCheckPatterns:    make(map[parse.Node]any, 0),
 		usedTypeExtensions:          make(map[*parse.DoubleColonExpression]*TypeExtension, 0),
@@ -161,6 +163,26 @@ func (data *Data) PushNodeValue(node parse.Node, v Value) {
 	data.mostSpecificNodeValues[node] = v
 }
 
+func (data *Data) SetExpectedNodeValueInfo(node parse.Node, info ExceptedValueInfo) {
+	if data == nil {
+		return
+	}
+
+	_, ok := data.expectedNodeValueInfo[node]
+	if ok {
+		//TODO:
+		//panic(errors.New("node value already set"))
+		return
+	}
+
+	data.expectedNodeValueInfo[node] = info
+}
+
+func (data *Data) GetExpectedNodeValueInfo(node parse.Node) (ExceptedValueInfo, bool) {
+	v, ok := data.expectedNodeValueInfo[node]
+	return v, ok
+}
+
 func (data *Data) SetRuntimeTypecheckPattern(node parse.Node, pattern any) {
 	if data == nil {
 		return
@@ -220,6 +242,10 @@ func (data *Data) AddData(newData *Data) {
 
 	for k, v := range newData.lessSpecificNodeValues {
 		data.SetLessSpecificNodeValue(k, v)
+	}
+
+	for k, v := range newData.expectedNodeValueInfo {
+		data.SetExpectedNodeValueInfo(k, v)
 	}
 
 	for k, v := range newData.localScopeData {
