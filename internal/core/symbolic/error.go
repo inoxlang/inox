@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
@@ -366,6 +367,10 @@ func fmtTypeOfNetworkHostInterpolationIsAnXButYWasExpected(a Value, b Value) str
 }
 
 func fmtNotAssignableToVarOftype(h *commonfmt.Helper, a Value, b Pattern) (string, []commonfmt.RegionInfo) {
+	if h == nil {
+		h = commonfmt.NewHelper()
+	}
+
 	h.AppendString("a(n) ")
 	fmtValue(h, a)
 	h.AppendString(" is not assignable to a variable of type ")
@@ -375,6 +380,10 @@ func fmtNotAssignableToVarOftype(h *commonfmt.Helper, a Value, b Pattern) (strin
 }
 
 func fmtVarOfTypeCannotBeNarrowedToAn(h *commonfmt.Helper, variable Value, val Value) (string, []commonfmt.RegionInfo) {
+	if h == nil {
+		h = commonfmt.NewHelper()
+	}
+
 	h.AppendString("variable of type ")
 	fmtValue(h, variable)
 	h.AppendString(" cannot be narrowed to a(n) ")
@@ -384,6 +393,10 @@ func fmtVarOfTypeCannotBeNarrowedToAn(h *commonfmt.Helper, variable Value, val V
 }
 
 func fmtNotAssignableToPropOfType(h *commonfmt.Helper, a Value, b Value) (string, []commonfmt.RegionInfo) {
+	if h == nil {
+		h = commonfmt.NewHelper()
+	}
+
 	examples := GetExamples(b, ExampleComputationContext{NonMatchingValue: a})
 	examplesString := ""
 	if len(examples) > 0 {
@@ -565,8 +578,20 @@ func fmtInvalidNumberOfNonArgsAtLeastMandatoryMax(actual, mandatory int, max int
 	return fmt.Sprintf("invalid number of non-spread arguments: %v, at least %v were expected (max %v)", actual, mandatory, max)
 }
 
-func FmtInvalidArg(position int, actual, expected Value) string {
-	return fmt.Sprintf("invalid value for argument at position %d: type is %s, but %s was expected", position, Stringify(actual), Stringify(expected))
+func FmtInvalidArg(h *commonfmt.Helper, position int, actual, expected Value) (string, []commonfmt.RegionInfo) {
+	if h == nil {
+		h = commonfmt.NewHelper()
+	}
+	h.AppendString("invalid value for argument at position ")
+	h.AppendString(strconv.Itoa(position))
+	h.AppendString(": ")
+
+	fmtValue(h, actual)
+	h.AppendString(", but ")
+	fmtValue(h, expected)
+	h.AppendString(" was expected")
+
+	return h.Consume()
 }
 
 func fmtInvalidReturnValue(actual, expected Value) string {

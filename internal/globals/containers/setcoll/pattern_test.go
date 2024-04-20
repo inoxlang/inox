@@ -200,7 +200,7 @@ func TestSymbolicSetPattern(t *testing.T) {
 	t.Run("valid", func(t *testing.T) {
 		intPattern := utils.Must(core.INT_PATTERN.ToSymbolicValue(ctx, map[uintptr]symbolic.Value{}))
 		patt, err := SET_PATTERN.SymbolicCallImpl(symbolicCtx,
-			[]symbolic.Value{intPattern, symbolic.NewIdentifier("repr")})
+			[]symbolic.Value{intPattern, symbolic.NewIdentifier("repr")}, nil)
 
 		if assert.NoError(t, err) {
 			uniqueness := common.UniquenessConstraint{
@@ -217,7 +217,7 @@ func TestSymbolicSetPattern(t *testing.T) {
 	t.Run("invalid", func(t *testing.T) {
 		mutableValuePattern := symbolic.NewInexactObjectPattern(map[string]symbolic.Pattern{}, nil)
 		patt, err := SET_PATTERN.SymbolicCallImpl(symbolicCtx,
-			[]symbolic.Value{mutableValuePattern, common.REPR_UNIQUENESS_SYMB_IDENT})
+			[]symbolic.Value{mutableValuePattern, common.REPR_UNIQUENESS_SYMB_IDENT}, nil)
 
 		if !assert.Error(t, err) {
 			return

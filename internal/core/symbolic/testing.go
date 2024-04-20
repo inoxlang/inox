@@ -182,17 +182,17 @@ func checkTestItemMeta(node parse.Node, state *State, isTestCase bool) (currentT
 
 		if !hasProgram {
 			if hasMainDatabaseSchema {
-				state.addError(makeSymbolicEvalError(node, state, MAIN_DB_SCHEMA_CAN_ONLY_BE_SPECIFIED_WHEN_TESTING_A_PROGRAM))
+				state.addError(MakeSymbolicEvalError(node, state, MAIN_DB_SCHEMA_CAN_ONLY_BE_SPECIFIED_WHEN_TESTING_A_PROGRAM))
 			}
 			if hasMainDatabaseMigrations {
-				state.addError(makeSymbolicEvalError(node, state, MAIN_DB_MIGRATIONS_CAN_ONLY_BE_SPECIFIED_WHEN_TESTING_A_PROGRAM))
+				state.addError(MakeSymbolicEvalError(node, state, MAIN_DB_MIGRATIONS_CAN_ONLY_BE_SPECIFIED_WHEN_TESTING_A_PROGRAM))
 			}
 			return
 		}
 		//else if the test item tests a program
 
 		if state.projectFilesystem == nil {
-			state.addError(makeSymbolicEvalError(node, state, PROGRAM_TESTING_ONLY_SUPPORTED_IN_PROJECTS))
+			state.addError(MakeSymbolicEvalError(node, state, PROGRAM_TESTING_ONLY_SUPPORTED_IN_PROJECTS))
 			return
 		}
 
@@ -203,7 +203,7 @@ func checkTestItemMeta(node parse.Node, state *State, isTestCase bool) (currentT
 
 		if hasMainDatabaseSchema {
 			if !hasMainDatabaseMigrations {
-				state.addError(makeSymbolicEvalError(node, state, MISSING_MAIN_DB_MIGRATIONS_PROPERTY))
+				state.addError(MakeSymbolicEvalError(node, state, MISSING_MAIN_DB_MIGRATIONS_PROPERTY))
 			}
 
 			schema, ok := m.Prop(TEST_ITEM_META__MAIN_DB_SCHEMA).(*ObjectPattern)
@@ -229,7 +229,7 @@ func checkTestItemMeta(node parse.Node, state *State, isTestCase bool) (currentT
 				return nil, nil, fmt.Errorf("failed to get info of file %s: %w", program.value, err)
 			}
 			if !info.Mode().IsRegular() {
-				state.addError(makeSymbolicEvalError(node, state, fmtNotRegularFile(program.value)))
+				state.addError(MakeSymbolicEvalError(node, state, fmtNotRegularFile(program.value)))
 			}
 		}
 	case StringLike:
@@ -246,7 +246,7 @@ func checkTestItemMeta(node parse.Node, state *State, isTestCase bool) (currentT
 		if isTestCase {
 			msg = META_VAL_OF_TEST_CASE_SHOULD_EITHER_BE_A_STRING_OR_A_RECORD
 		}
-		state.addError(makeSymbolicEvalError(node, state, msg))
+		state.addError(MakeSymbolicEvalError(node, state, msg))
 	}
 
 	return

@@ -55,7 +55,7 @@ func defineStructs(chunk *parse.ParsedChunkSource, statements []parse.Node, stat
 				}
 
 				if len(methodDeclarations) >= 32 {
-					state.addError(makeSymbolicEvalError(def, state, "too many methods (max 32)"))
+					state.addError(MakeSymbolicEvalError(def, state, "too many methods (max 32)"))
 					continue
 				}
 
@@ -218,13 +218,13 @@ func handleStructFieldDefinition(
 		typeName := typeNode.Name
 		patt := state.ctx.ResolveNamedPattern(typeName)
 		if patt != nil && !IsNameOfBuiltinComptimeType(typeName) {
-			state.addError(makeSymbolicEvalError(typeNode, state, ONLY_COMPILE_TIME_TYPES_CAN_BE_USED_AS_STRUCT_FIELD_TYPES))
+			state.addError(MakeSymbolicEvalError(typeNode, state, ONLY_COMPILE_TIME_TYPES_CAN_BE_USED_AS_STRUCT_FIELD_TYPES))
 			return nil
 		}
 
 		comptimeType, ok := comptimeTypes.GetType(typeName)
 		if !ok {
-			state.addError(makeSymbolicEvalError(typeNode, state, fmtCompileTimeTypeIsNotDefined(typeName)))
+			state.addError(MakeSymbolicEvalError(typeNode, state, fmtCompileTimeTypeIsNotDefined(typeName)))
 			return nil
 		}
 
@@ -238,13 +238,13 @@ func handleStructFieldDefinition(
 		}
 		ptrType, ok := comptimeTypes.GetPointerType(patternIdent.Name)
 		if !ok {
-			state.addError(makeSymbolicEvalError(typeNode, state, fmtCompileTimeTypeIsNotDefined(patternIdent.Name)))
+			state.addError(MakeSymbolicEvalError(typeNode, state, fmtCompileTimeTypeIsNotDefined(patternIdent.Name)))
 			return nil
 		}
 		fieldType = ptrType
 	// case *parse.PatternCallExpression: //TODO: support integers in a given range
 	default:
-		state.addError(makeSymbolicEvalError(typeNode, state, ONLY_COMPILE_TIME_TYPES_CAN_BE_USED_AS_STRUCT_FIELD_TYPES))
+		state.addError(MakeSymbolicEvalError(typeNode, state, ONLY_COMPILE_TIME_TYPES_CAN_BE_USED_AS_STRUCT_FIELD_TYPES))
 	}
 
 	structType.fields = append(structType.fields, StructField{

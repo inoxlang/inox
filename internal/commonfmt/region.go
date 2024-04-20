@@ -55,7 +55,7 @@ func Reformat(w io.Writer, text string, replacements []RegionReplacement) error 
 			return err
 		}
 
-		originalTextIndex += replacement.Region.End
+		originalTextIndex = replacement.Region.End
 	}
 	if originalTextIndex < int32(len(text)) {
 		_, err := w.Write(utils.StringAsBytes(text[originalTextIndex:]))

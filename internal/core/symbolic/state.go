@@ -417,7 +417,7 @@ func (state *State) updateLocal2(
 				} else {
 					msg, regions = fmtNotAssignableToVarOftype(state.fmtHelper, value, info.static)
 				}
-				state.addError(makeSymbolicEvalError(node, state, msg, regions...))
+				state.addError(MakeSymbolicEvalError(node, state, msg, regions...))
 				return false, nil
 			}
 		}
@@ -464,7 +464,7 @@ func (state *State) updateGlobal2(
 				} else {
 					msg, regions = fmtNotAssignableToVarOftype(state.fmtHelper, value, info.static)
 				}
-				state.addError(makeSymbolicEvalError(node, state, msg, regions...))
+				state.addError(MakeSymbolicEvalError(node, state, msg, regions...))
 				return false, nil
 			}
 		}
@@ -588,7 +588,7 @@ func (state *State) currentGlobalScopeData() ScopeData {
 func (state *State) pushInoxCall(call inoxCallInfo) bool {
 	for _, c := range state.callStack {
 		if call.calleeFnExpr == c.calleeFnExpr {
-			state.addError(makeSymbolicEvalError(call.callNode, state, FUNCS_CALLED_RECU_SHOULD_HAVE_RET_TYPE))
+			state.addError(MakeSymbolicEvalError(call.callNode, state, FUNCS_CALLED_RECU_SHOULD_HAVE_RET_TYPE))
 			return false
 		}
 	}
@@ -888,6 +888,10 @@ func (state *State) Errors() []SymbolicEvaluationError {
 
 func (state *State) Warnings() []SymbolicEvaluationWarning {
 	return slices.Clone(state.symbolicData.warnings)
+}
+
+func (state *State) FormatHelper() *commonfmt.Helper {
+	return state.FormatHelper()
 }
 
 type varSymbolicInfo struct {

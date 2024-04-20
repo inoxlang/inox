@@ -8,6 +8,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	coll_symbolic "github.com/inoxlang/inox/internal/globals/containers/symbolic"
+	"github.com/inoxlang/inox/internal/parse"
 )
 
 var (
@@ -46,7 +47,7 @@ var (
 				valuePattern: valuePattern,
 			}, nil
 		},
-		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value) (symbolic.Pattern, error) {
+		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value, optionalNode parse.Node) (symbolic.Pattern, error) {
 			return coll_symbolic.NewTreeNodePattern(symbolic.ANY_PATTERN)
 		},
 	}

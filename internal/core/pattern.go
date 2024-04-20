@@ -186,7 +186,7 @@ type TypePattern struct {
 	RandomImpl    func(options ...Option) Value
 
 	CallImpl         func(ctx *Context, pattern *TypePattern, values []Serializable) (Pattern, error)
-	SymbolicCallImpl func(ctx *symbolic.Context, values []symbolic.Value) (symbolic.Pattern, error)
+	SymbolicCallImpl func(ctx *symbolic.Context, values []symbolic.Value, optionalNode parse.Node) (symbolic.Pattern, error)
 
 	stringPattern         func() (StringPattern, bool)
 	symbolicStringPattern func() (symbolic.StringPattern, bool)

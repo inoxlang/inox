@@ -466,7 +466,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		}
 
 		if !IsSimpleSymbolicInoxVal(v) {
-			state.addError(makeSymbolicEvalError(n.Arg, state, INVALID_KEY_IN_COMPUTE_EXPRESSION_ONLY_SIMPLE_VALUE_ARE_SUPPORTED))
+			state.addError(MakeSymbolicEvalError(n.Arg, state, INVALID_KEY_IN_COMPUTE_EXPRESSION_ONLY_SIMPLE_VALUE_ARE_SUPPORTED))
 		}
 
 		return ANY, nil
@@ -576,7 +576,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 			}
 
 			if !element.Test(upperBound, RecTestCallState{}) {
-				state.addError(makeSymbolicEvalError(n.UpperBound, state, UPPER_BOUND_OF_QTY_RANGE_LIT_SHOULD_OF_SAME_TYPE_AS_LOWER_BOUND))
+				state.addError(MakeSymbolicEvalError(n.UpperBound, state, UPPER_BOUND_OF_QTY_RANGE_LIT_SHOULD_OF_SAME_TYPE_AS_LOWER_BOUND))
 			}
 		}
 
@@ -599,7 +599,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 
 		potentiallyReadonlyPattern, ok := pattern.(PotentiallyReadonlyPattern)
 		if !ok {
-			state.addError(makeSymbolicEvalError(n.Pattern, state, PATTERN_IS_NOT_CONVERTIBLE_TO_READONLY_VERSION))
+			state.addError(MakeSymbolicEvalError(n.Pattern, state, PATTERN_IS_NOT_CONVERTIBLE_TO_READONLY_VERSION))
 			return pattern, nil
 		}
 		readonly, err := potentiallyReadonlyPattern.ToReadonlyPattern()
@@ -652,7 +652,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		}
 
 		if _, ok := computedPropertyName.(StringLike); !ok {
-			state.addError(makeSymbolicEvalError(n.PropertyName, state, fmtComputedPropNameShouldBeAStringNotA(computedPropertyName)))
+			state.addError(MakeSymbolicEvalError(n.PropertyName, state, fmtComputedPropNameShouldBeAStringNotA(computedPropertyName)))
 		}
 
 		return ANY, nil
@@ -723,7 +723,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 				}
 			}
 
-			state.addError(makeSymbolicEvalError(node, state, msg))
+			state.addError(MakeSymbolicEvalError(node, state, msg))
 			return ANY_PATTERN, nil
 		} else {
 			return patt, nil
@@ -752,7 +752,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 	case *parse.PatternNamespaceIdentifierLiteral:
 		namespace := state.ctx.ResolvePatternNamespace(n.Name)
 		if namespace == nil {
-			state.addError(makeSymbolicEvalError(node, state, fmtPatternNamespaceIsNotDeclared(n.Name)))
+			state.addError(MakeSymbolicEvalError(node, state, fmtPatternNamespaceIsNotDeclared(n.Name)))
 			return ANY_PATTERN_NAMESPACE, nil
 		}
 		return namespace, nil
@@ -783,7 +783,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		patt := namespace.entries[memberName] //it's not an issue if namespace.entries is nil
 
 		if patt == nil {
-			state.addError(makeSymbolicEvalError(n.MemberName, state, fmtPatternNamespaceHasNotMember(namespaceName, memberName)))
+			state.addError(MakeSymbolicEvalError(n.MemberName, state, fmtPatternNamespaceHasNotMember(namespaceName, memberName)))
 			return ANY_PATTERN, nil
 		}
 		return patt, nil
@@ -795,7 +795,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 
 		patt := v.(Pattern)
 		if patt.TestValue(Nil, RecTestCallState{}) {
-			state.addError(makeSymbolicEvalError(node, state, CANNOT_CREATE_OPTIONAL_PATTERN_WITH_PATT_MATCHING_NIL))
+			state.addError(MakeSymbolicEvalError(node, state, CANNOT_CREATE_OPTIONAL_PATTERN_WITH_PATT_MATCHING_NIL))
 			return &AnyPattern{}, nil
 		}
 
@@ -840,7 +840,7 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 			return nil, err
 		}
 		if _, isBool := ok.(*Bool); !isBool {
-			state.addError(makeSymbolicEvalError(node, state, fmtAssertedValueShouldBeBoolNot(ok)))
+			state.addError(MakeSymbolicEvalError(node, state, fmtAssertedValueShouldBeBoolNot(ok)))
 		}
 
 		if binExpr, ok := n.Expr.(*parse.BinaryExpression); ok && state.symbolicData != nil {
@@ -1097,7 +1097,7 @@ func evalURLExpression(n *parse.URLExpression, state *State, options evalOptions
 		host = ANY_HOST
 
 		if strLike, ok := networkHost.(StringLike); !ok {
-			state.addError(makeSymbolicEvalError(hostExpr.Host, state, fmtTypeOfNetworkHostInterpolationIsAnXButYWasExpected(networkHost, ANY_STR_LIKE)))
+			state.addError(MakeSymbolicEvalError(hostExpr.Host, state, fmtTypeOfNetworkHostInterpolationIsAnXButYWasExpected(networkHost, ANY_STR_LIKE)))
 			options.setHasShallowErrors()
 		} else if s := strLike.GetOrBuildString(); s.IsConcretizable() {
 			host = NewHost(scheme.(*Scheme).value + "://" + s.Value())
@@ -1110,7 +1110,7 @@ func evalURLExpression(n *parse.URLExpression, state *State, options evalOptions
 	}
 
 	if !ImplementsOrIsMultivalueWithAllValuesImplementing[*Host](host) {
-		state.addError(makeSymbolicEvalError(n.HostPart, state, HOST_PART_SHOULD_HAVE_A_HOST_VALUE))
+		state.addError(MakeSymbolicEvalError(n.HostPart, state, HOST_PART_SHOULD_HAVE_A_HOST_VALUE))
 		state.SetMostSpecificNodeValue(n.HostPart, ANY_HOST)
 		options.setHasShallowErrors()
 	} else {
@@ -1146,7 +1146,7 @@ func evalURLExpression(n *parse.URLExpression, state *State, options evalOptions
 			switch val.(type) {
 			case StringLike, *Int, *Bool:
 			default:
-				state.addError(makeSymbolicEvalError(p, state, fmtValueNotStringifiableToQueryParamValue(val)))
+				state.addError(MakeSymbolicEvalError(p, state, fmtValueNotStringifiableToQueryParamValue(val)))
 				options.setHasShallowErrors()
 			}
 		}
@@ -1166,7 +1166,7 @@ func evalIdentifier(node *parse.IdentifierLiteral, state *State, evalOptions eva
 
 		evalOptions.setHasShallowErrors()
 
-		state.addError(makeSymbolicEvalError(node, state, msg))
+		state.addError(MakeSymbolicEvalError(node, state, msg))
 		return ANY, nil
 	}
 
@@ -1220,7 +1220,7 @@ func evalVariable(node *parse.Variable, state *State, evalOptions evalOptions) (
 	}
 
 	evalOptions.setHasShallowErrors()
-	state.addError(makeSymbolicEvalError(node, state, msg))
+	state.addError(MakeSymbolicEvalError(node, state, msg))
 	return ANY, nil
 }
 
@@ -1247,7 +1247,7 @@ func evalReturnStatement(n *parse.ReturnStatement, state *State) (_ Value, final
 
 	if state.returnType != nil && !state.returnType.Test(v, RecTestCallState{}) {
 		if !*deeperMismatch {
-			state.addError(makeSymbolicEvalError(n, state, fmtInvalidReturnValue(v, state.returnType)))
+			state.addError(MakeSymbolicEvalError(n, state, fmtInvalidReturnValue(v, state.returnType)))
 		}
 		state.returnValue = state.returnType
 	}
@@ -1286,7 +1286,7 @@ func evalYieldStatement(n *parse.YieldStatement, state *State) (_ Value, finalEr
 
 	if state.yieldType != nil && !state.yieldType.Test(v, RecTestCallState{}) {
 		if !*deeperMismatch {
-			state.addError(makeSymbolicEvalError(n, state, fmtInvalidReturnValue(v, state.yieldType)))
+			state.addError(MakeSymbolicEvalError(n, state, fmtInvalidReturnValue(v, state.yieldType)))
 		}
 		state.yieldedValue = state.yieldType
 	}
@@ -1321,21 +1321,21 @@ func evalPatternCallExpression(n *parse.PatternCallExpression, state *State) (_ 
 	}
 
 	if len(state.errors()) == errCount {
-		patt, err := callee.(Pattern).Call(state.ctx, args)
+		patt, err := callee.(Pattern).Call(state.ctx, args, n)
 		state.consumeSymbolicGoFunctionErrors(func(msg string, optionalLocation parse.Node) {
 			var location parse.Node = n
 			if optionalLocation != nil {
 				location = optionalLocation
 			}
 
-			state.addError(makeSymbolicEvalError(location, state, msg))
+			state.addError(MakeSymbolicEvalError(location, state, msg))
 		})
 		state.consumeSymbolicGoFunctionWarnings(func(msg string) {
 			state.addWarning(makeSymbolicEvalWarning(n, state, msg))
 		})
 
 		if err != nil {
-			state.addError(makeSymbolicEvalError(n, state, err.Error()))
+			state.addError(MakeSymbolicEvalError(n, state, err.Error()))
 			patt = ANY_PATTERN
 		}
 		return patt, nil
@@ -1354,7 +1354,7 @@ func evalLocalVariableDeclarations(n *parse.LocalVariableDeclarations, state *St
 		if decl.Type != nil {
 			_, ok := decl.Type.(*parse.PointerType)
 			if ok {
-				state.addError(makeSymbolicEvalError(decl.Type, state, "pointer types are not supported in variable declarations yet"))
+				state.addError(MakeSymbolicEvalError(decl.Type, state, "pointer types are not supported in variable declarations yet"))
 				return nil
 			}
 
@@ -1368,7 +1368,7 @@ func evalLocalVariableDeclarations(n *parse.LocalVariableDeclarations, state *St
 				static = pattern
 				staticMatching = static.SymbolicValue()
 			} else {
-				state.addError(makeSymbolicEvalError(decl.Type, state, VARIABLE_DECL_ANNOTATION_MUST_BE_A_PATTERN))
+				state.addError(MakeSymbolicEvalError(decl.Type, state, VARIABLE_DECL_ANNOTATION_MUST_BE_A_PATTERN))
 			}
 		}
 
@@ -1391,13 +1391,13 @@ func evalLocalVariableDeclarations(n *parse.LocalVariableDeclarations, state *St
 				if !static.TestValue(right, RecTestCallState{}) {
 					if !deeperMismatch {
 						msg, regions := fmtNotAssignableToVarOftype(state.fmtHelper, right, static)
-						state.addError(makeSymbolicEvalError(decl.Right, state, msg, regions...))
+						state.addError(MakeSymbolicEvalError(decl.Right, state, msg, regions...))
 					}
 					right = ANY
 				} else if holder, ok := right.(StaticDataHolder); ok {
 					right, err = holder.AddStatic(static) //TODO: use path narowing, values should never be modified directly
 					if err != nil {
-						state.addError(makeSymbolicEvalError(decl.Right, state, err.Error()))
+						state.addError(MakeSymbolicEvalError(decl.Right, state, err.Error()))
 					}
 				}
 			}
@@ -1441,7 +1441,7 @@ func evalGlobalVariableDeclarations(n *parse.GlobalVariableDeclarations, state *
 		if decl.Type != nil {
 			_, ok := decl.Type.(*parse.PointerType)
 			if ok {
-				state.addError(makeSymbolicEvalError(decl.Type, state, "pointer types are not supported in variable declarations yet"))
+				state.addError(MakeSymbolicEvalError(decl.Type, state, "pointer types are not supported in variable declarations yet"))
 				return nil
 			}
 
@@ -1455,7 +1455,7 @@ func evalGlobalVariableDeclarations(n *parse.GlobalVariableDeclarations, state *
 				static = pattern
 				staticMatching = static.SymbolicValue()
 			} else {
-				state.addError(makeSymbolicEvalError(decl.Type, state, VARIABLE_DECL_ANNOTATION_MUST_BE_A_PATTERN))
+				state.addError(MakeSymbolicEvalError(decl.Type, state, VARIABLE_DECL_ANNOTATION_MUST_BE_A_PATTERN))
 			}
 		}
 
@@ -1475,13 +1475,13 @@ func evalGlobalVariableDeclarations(n *parse.GlobalVariableDeclarations, state *
 				if !static.TestValue(right, RecTestCallState{}) {
 					if !deeperMismatch {
 						msg, regions := fmtNotAssignableToVarOftype(state.fmtHelper, right, static)
-						state.addError(makeSymbolicEvalError(decl.Right, state, msg, regions...))
+						state.addError(MakeSymbolicEvalError(decl.Right, state, msg, regions...))
 					}
 					right = ANY
 				} else if holder, ok := right.(StaticDataHolder); ok {
 					right, err = holder.AddStatic(static) //TODO: use path narowing, values should never be modified directly
 					if err != nil {
-						state.addError(makeSymbolicEvalError(decl.Right, state, err.Error()))
+						state.addError(MakeSymbolicEvalError(decl.Right, state, err.Error()))
 					}
 				}
 			}
@@ -1524,7 +1524,7 @@ func evalObjectDestructuration(
 	rightValue = AsIprops(rightValue)
 	iprops, ok := rightValue.(IProps)
 	if !ok {
-		state.addError(makeSymbolicEvalError(rightNode, state, fmtUnexpectedRhsOfObjectDestructuration(rightValue)))
+		state.addError(MakeSymbolicEvalError(rightNode, state, fmtUnexpectedRhsOfObjectDestructuration(rightValue)))
 	}
 
 	for _, prop := range destructuration.Properties {
@@ -1584,7 +1584,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 			// if the operation requires integer operands we check that RHS is an integer
 			if _, ok := result.(*Int); !ok {
 				badIntOperationRHS = true
-				state.addError(makeSymbolicEvalError(node.Right, state, INVALID_ASSIGN_INT_OPER_ASSIGN_RHS_NOT_INT))
+				state.addError(MakeSymbolicEvalError(node.Right, state, INVALID_ASSIGN_INT_OPER_ASSIGN_RHS_NOT_INT))
 			}
 			result = ANY_INT
 		}
@@ -1629,7 +1629,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 				lhsValue := MergeValuesWithSameStaticTypeInMultivalue(info.value)
 
 				if _, ok := lhsValue.(*Int); !ok {
-					state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
+					state.addError(MakeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
 				} else if !badIntOperationRHS {
 					state.updateLocal(name, rhs, node)
 				}
@@ -1669,7 +1669,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 				lhsValue := MergeValuesWithSameStaticTypeInMultivalue(info.value)
 
 				if _, ok := lhsValue.(*Int); !ok {
-					state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
+					state.addError(MakeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
 				} else if !badIntOperationRHS {
 					state.updateLocal(name, rhs, node)
 				}
@@ -1708,13 +1708,13 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 		if ok {
 			strct, ok := ptr.value.(*Struct)
 			if !ok {
-				state.addError(makeSymbolicEvalError(node, state, POINTED_VALUE_HAS_NO_PROPERTIES))
+				state.addError(MakeSymbolicEvalError(node, state, POINTED_VALUE_HAS_NO_PROPERTIES))
 				return ANY, nil
 			}
 			fieldName := lhs.PropertyName.Name
 			field, ok := strct.typ.FieldByName(fieldName)
 			if !ok {
-				state.addError(makeSymbolicEvalError(node, state, fmtStructDoesnotHaveField(fieldName)))
+				state.addError(MakeSymbolicEvalError(node, state, fmtStructDoesnotHaveField(fieldName)))
 				return nil, nil
 			}
 
@@ -1725,10 +1725,10 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 			rhs = MergeValuesWithSameStaticTypeInMultivalue(rhs)
 
 			if node.Operator.Int() && !utils.Implements[*IntType](field.Type) {
-				state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
+				state.addError(MakeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
 			} else if !field.Type.TestValue(rhs, RecTestCallState{}) {
 				msg, regions := fmtNotAssignableToFieldOfType(state.fmtHelper, rhs, field.Type)
-				state.addError(makeSymbolicEvalError(node, state, msg, regions...))
+				state.addError(MakeSymbolicEvalError(node, state, msg, regions...))
 			}
 
 			return nil, nil
@@ -1754,7 +1754,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 			case nil:
 				return nil, errors.New("nil value")
 			default:
-				state.addError(makeSymbolicEvalError(node, state, FmtCannotAssignPropertyOf(val)))
+				state.addError(MakeSymbolicEvalError(node, state, FmtCannotAssignPropertyOf(val)))
 				iprops = &Object{}
 			}
 		}
@@ -1774,7 +1774,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 		}
 
 		if _, ok := rhs.(Serializable); !ok && isAnySerializable {
-			state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_NON_SERIALIZABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_SERIALIZABLE))
+			state.addError(MakeSymbolicEvalError(node, state, INVALID_ASSIGN_NON_SERIALIZABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_SERIALIZABLE))
 			return nil, nil
 		}
 
@@ -1789,14 +1789,14 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 
 			if _, ok := iprops.(Serializable); ok {
 				if _, ok := rhs.(Serializable); !ok {
-					state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_NON_SERIALIZABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_SERIALIZABLE))
+					state.addError(MakeSymbolicEvalError(node, state, INVALID_ASSIGN_NON_SERIALIZABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_SERIALIZABLE))
 					return nil, nil
 				}
 			}
 
 			if _, ok := asWatchable(iprops).(Watchable); ok {
 				if _, ok := asWatchable(rhs).(Watchable); !ok && rhs.IsMutable() {
-					state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_MUTABLE_NON_WATCHABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_WATCHABLE))
+					state.addError(MakeSymbolicEvalError(node, state, INVALID_ASSIGN_MUTABLE_NON_WATCHABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_WATCHABLE))
 				}
 			}
 
@@ -1804,7 +1804,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 				widenedPrevValue := MergeValuesWithSameStaticTypeInMultivalue(prevValue)
 
 				if _, ok := widenedPrevValue.(*Int); !ok {
-					state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
+					state.addError(MakeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
 				}
 			} else if badIntOperationRHS {
 
@@ -1823,14 +1823,14 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 			if _, ok := iprops.(Serializable); ok {
 				if _, ok := rhs.(Serializable); !ok {
 					nonSerializableErr = true
-					state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_NON_SERIALIZABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_SERIALIZABLE))
+					state.addError(MakeSymbolicEvalError(node, state, INVALID_ASSIGN_NON_SERIALIZABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_SERIALIZABLE))
 					rhs = ANY_SERIALIZABLE
 				}
 			}
 
 			if _, ok := asWatchable(iprops).(Watchable); ok && !nonSerializableErr {
 				if _, ok := asWatchable(rhs).(Watchable); !ok && rhs.IsMutable() {
-					state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_MUTABLE_NON_WATCHABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_WATCHABLE))
+					state.addError(MakeSymbolicEvalError(node, state, INVALID_ASSIGN_MUTABLE_NON_WATCHABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_WATCHABLE))
 				}
 			}
 
@@ -1865,13 +1865,13 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 		if ok {
 			strct, ok := ptr.value.(*Struct)
 			if !ok {
-				state.addError(makeSymbolicEvalError(node, state, POINTED_VALUE_HAS_NO_PROPERTIES))
+				state.addError(MakeSymbolicEvalError(node, state, POINTED_VALUE_HAS_NO_PROPERTIES))
 				return ANY, nil
 			}
 			fieldName := lastPropName
 			field, ok := strct.typ.FieldByName(fieldName)
 			if !ok {
-				state.addError(makeSymbolicEvalError(node, state, fmtStructDoesnotHaveField(fieldName)))
+				state.addError(MakeSymbolicEvalError(node, state, fmtStructDoesnotHaveField(fieldName)))
 				return nil, nil
 			}
 
@@ -1882,10 +1882,10 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 			rhs = MergeValuesWithSameStaticTypeInMultivalue(rhs)
 
 			if node.Operator.Int() && !utils.Implements[*IntType](field.Type) {
-				state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
+				state.addError(MakeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
 			} else if !field.Type.TestValue(rhs, RecTestCallState{}) {
 				msg, regions := fmtNotAssignableToFieldOfType(state.fmtHelper, rhs, field.Type)
-				state.addError(makeSymbolicEvalError(node, state, msg, regions...))
+				state.addError(MakeSymbolicEvalError(node, state, msg, regions...))
 			}
 			return nil, nil
 		}
@@ -1910,7 +1910,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 			case nil:
 				return nil, errors.New("nil value")
 			default:
-				state.addError(makeSymbolicEvalError(node, state, FmtCannotAssignPropertyOf(val)))
+				state.addError(MakeSymbolicEvalError(node, state, FmtCannotAssignPropertyOf(val)))
 				iprops = &Object{}
 			}
 		}
@@ -1932,7 +1932,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 		}
 
 		if _, ok := rhs.(Serializable); !ok && isAnySerializable {
-			state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_NON_SERIALIZABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_SERIALIZABLE))
+			state.addError(MakeSymbolicEvalError(node, state, INVALID_ASSIGN_NON_SERIALIZABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_SERIALIZABLE))
 			return nil, nil
 		}
 
@@ -1945,19 +1945,19 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 			if _, ok := iprops.(Serializable); ok {
 
 				if _, ok := rhs.(Serializable); !ok {
-					state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_NON_SERIALIZABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_SERIALIZABLE))
+					state.addError(MakeSymbolicEvalError(node, state, INVALID_ASSIGN_NON_SERIALIZABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_SERIALIZABLE))
 					return nil, nil
 				}
 			}
 
 			if _, ok := asWatchable(iprops).(Watchable); ok {
 				if _, ok := asWatchable(rhs).(Watchable); !ok && rhs.IsMutable() {
-					state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_MUTABLE_NON_WATCHABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_WATCHABLE))
+					state.addError(MakeSymbolicEvalError(node, state, INVALID_ASSIGN_MUTABLE_NON_WATCHABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_WATCHABLE))
 				}
 			}
 
 			if _, ok := prevValue.(*Int); !ok && node.Operator.Int() {
-				state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
+				state.addError(MakeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
 			} else {
 				if newIprops, err := iprops.SetProp(state, node, lastPropName, rhs); err != nil {
 					if !deeperMismatch {
@@ -1974,14 +1974,14 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 			if _, ok := iprops.(Serializable); ok {
 				if _, ok := rhs.(Serializable); !ok {
 					nonSerializableErr = true
-					state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_NON_SERIALIZABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_SERIALIZABLE))
+					state.addError(MakeSymbolicEvalError(node, state, INVALID_ASSIGN_NON_SERIALIZABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_SERIALIZABLE))
 					rhs = ANY_SERIALIZABLE
 				}
 			}
 
 			if _, ok := asWatchable(iprops).(Watchable); ok && !nonSerializableErr {
 				if _, ok := asWatchable(rhs).(Watchable); !ok && rhs.IsMutable() {
-					state.addError(makeSymbolicEvalError(node, state, INVALID_ASSIGN_MUTABLE_NON_WATCHABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_WATCHABLE))
+					state.addError(MakeSymbolicEvalError(node, state, INVALID_ASSIGN_MUTABLE_NON_WATCHABLE_VALUE_NOT_ALLOWED_AS_PROPS_OF_WATCHABLE))
 				}
 			}
 
@@ -2001,7 +2001,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 
 		intIndex, ok := index.(*Int)
 		if !ok {
-			state.addError(makeSymbolicEvalError(node, state, fmtIndexIsNotAnIntButA(index)))
+			state.addError(MakeSymbolicEvalError(node, state, fmtIndexIsNotAnIntButA(index)))
 		}
 
 		slice, err := _symbolicEval(lhs.Indexed, state, evalOptions{
@@ -2025,7 +2025,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 			}
 
 			if IsReadonly(seq) {
-				state.addError(makeSymbolicEvalError(node.Left, state, ErrReadonlyValueCannotBeMutated.Error()))
+				state.addError(MakeSymbolicEvalError(node.Left, state, ErrReadonlyValueCannotBeMutated.Error()))
 				break
 			}
 
@@ -2045,14 +2045,14 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 			//-----------------------------------------
 			if _, ok := slice.(Serializable); ok {
 				if _, ok := __rhs.(Serializable); !ok {
-					state.addError(makeSymbolicEvalError(node, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
+					state.addError(MakeSymbolicEvalError(node, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
 					break
 				}
 			}
 
 			if _, ok := asWatchable(slice).(Watchable); ok {
 				if _, ok := asWatchable(__rhs).(Watchable); !ok && __rhs.IsMutable() {
-					state.addError(makeSymbolicEvalError(node, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE))
+					state.addError(MakeSymbolicEvalError(node, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE))
 					break
 				}
 			}
@@ -2064,14 +2064,14 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 					widenedSeqElementAtIndex := MergeValuesWithSameStaticTypeInMultivalue(seqElementAtIndex)
 
 					if !ANY_INT.Test(widenedSeqElementAtIndex, RecTestCallState{}) {
-						state.addError(makeSymbolicEvalError(lhs, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
+						state.addError(MakeSymbolicEvalError(lhs, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
 						ignoreNextAssignabilityError = true
 					}
 					//note: the element is widened in order to support multivalues such as (1 | 2)
 				} else {
 					widenedSeqElement := MergeValuesWithSameStaticTypeInMultivalue(seq.Element())
 					if !ANY_INT.Test(widenedSeqElement, RecTestCallState{}) {
-						state.addError(makeSymbolicEvalError(lhs, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
+						state.addError(MakeSymbolicEvalError(lhs, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
 						ignoreNextAssignabilityError = true
 					}
 				}
@@ -2101,7 +2101,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 								narrowChain(lhs.Indexed, setExactValue, staticSeq, state, 0)
 							}
 						} else {
-							state.addError(makeSymbolicEvalError(node.Right, state, IMPOSSIBLE_TO_KNOW_UPDATED_ELEMENT))
+							state.addError(MakeSymbolicEvalError(node.Right, state, IMPOSSIBLE_TO_KNOW_UPDATED_ELEMENT))
 							ignoreNextAssignabilityError = true
 							staticSeqElement = staticSeq.Element()
 						}
@@ -2123,13 +2123,13 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 						v = seq.Element()
 					}
 					msg, regions := fmtNotAssignableToElementOfValue(state.fmtHelper, __rhs, v)
-					state.addError(makeSymbolicEvalError(node.Right, state, msg, regions...))
+					state.addError(MakeSymbolicEvalError(node.Right, state, msg, regions...))
 				}
 			}
 		} else if isMutableSeq && intIndex != nil && intIndex.hasValue && seq.HasKnownLen() {
-			state.addError(makeSymbolicEvalError(lhs.Index, state, INDEX_IS_OUT_OF_BOUNDS))
+			state.addError(MakeSymbolicEvalError(lhs.Index, state, INDEX_IS_OUT_OF_BOUNDS))
 		} else {
-			state.addError(makeSymbolicEvalError(lhs.Indexed, state, fmtXisNotAMutableSequence(slice)))
+			state.addError(MakeSymbolicEvalError(lhs.Indexed, state, fmtXisNotAMutableSequence(slice)))
 			slice = NewListOf(ANY_SERIALIZABLE)
 		}
 
@@ -2147,17 +2147,17 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 
 		startIntIndex, ok := startIndex.(*Int)
 		if !ok {
-			state.addError(makeSymbolicEvalError(node, state, fmtStartIndexIsNotAnIntButA(startIndex)))
+			state.addError(MakeSymbolicEvalError(node, state, fmtStartIndexIsNotAnIntButA(startIndex)))
 		}
 
 		endIntIndex, ok := endIndex.(*Int)
 		if !ok {
-			state.addError(makeSymbolicEvalError(node, state, fmtEndIndexIsNotAnIntButA(endIndex)))
+			state.addError(MakeSymbolicEvalError(node, state, fmtEndIndexIsNotAnIntButA(endIndex)))
 		}
 
 		if startIntIndex != nil && endIntIndex != nil && startIntIndex.hasValue && endIntIndex.hasValue &&
 			endIntIndex.value < startIntIndex.value {
-			state.addError(makeSymbolicEvalError(lhs.EndIndex, state, END_INDEX_SHOULD_BE_LESS_OR_EQUAL_START_INDEX))
+			state.addError(MakeSymbolicEvalError(lhs.EndIndex, state, END_INDEX_SHOULD_BE_LESS_OR_EQUAL_START_INDEX))
 		}
 
 		slice, err := _symbolicEval(lhs.Indexed, state, evalOptions{
@@ -2176,7 +2176,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 			(startIntIndex.value >= 0 && startIntIndex.value < int64(seq.KnownLen()))) {
 
 			if IsReadonly(seq) {
-				state.addError(makeSymbolicEvalError(node.Left, state, ErrReadonlyValueCannotBeMutated.Error()))
+				state.addError(MakeSymbolicEvalError(node.Left, state, ErrReadonlyValueCannotBeMutated.Error()))
 				break
 			}
 
@@ -2236,21 +2236,21 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 
 				rightSeq, ok := __rhs.(Sequence)
 				if !ok {
-					state.addError(makeSymbolicEvalError(node.Right, state, fmtSequenceExpectedButIs(__rhs)))
+					state.addError(MakeSymbolicEvalError(node.Right, state, fmtSequenceExpectedButIs(__rhs)))
 					break
 				}
 
 				//---------------------------
 				if _, ok := slice.(Serializable); ok {
 					if _, ok := __rhs.(Serializable); !ok {
-						state.addError(makeSymbolicEvalError(node, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
+						state.addError(MakeSymbolicEvalError(node, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
 						break
 					}
 				}
 
 				if _, ok := asWatchable(slice).(Watchable); ok {
 					if _, ok := asWatchable(__rhs).(Watchable); !ok && __rhs.IsMutable() {
-						state.addError(makeSymbolicEvalError(node, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE))
+						state.addError(MakeSymbolicEvalError(node, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE))
 						break
 					}
 				}
@@ -2260,7 +2260,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 					endIntIndex.value >= startIntIndex.value && endIntIndex.value-startIntIndex.value != int64(rightSeq.KnownLen()) {
 					expectedLength := endIntIndex.value - startIntIndex.value
 					invalidRHSLength = true
-					state.addError(makeSymbolicEvalError(node.Right, state, fmtRHSSequenceShouldHaveLenOf(int(expectedLength))))
+					state.addError(MakeSymbolicEvalError(node.Right, state, fmtRHSSequenceShouldHaveLenOf(int(expectedLength))))
 				}
 
 				rightSeqElement = rightSeq.Element()
@@ -2271,7 +2271,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 					staticSeq.KnownLen() > int(startIntIndex.value) {
 					//conservatively assume not assignable
 				} else {
-					state.addError(makeSymbolicEvalError(node.Right, state, IMPOSSIBLE_TO_KNOW_UPDATED_ELEMENTS))
+					state.addError(MakeSymbolicEvalError(node.Right, state, IMPOSSIBLE_TO_KNOW_UPDATED_ELEMENTS))
 					ignoreNextAssignabilityError = true
 				}
 			} else {
@@ -2289,13 +2289,13 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 					b = staticSeq
 				}
 				msg, regions := fmtSeqOfXNotAssignableToSliceOfTheValue(state.fmtHelper, rightSeqElement, b)
-				state.addError(makeSymbolicEvalError(node.Right, state, msg, regions...))
+				state.addError(MakeSymbolicEvalError(node.Right, state, msg, regions...))
 			}
 
 		} else if isMutableSeq && startIntIndex != nil && startIntIndex.hasValue && seq.HasKnownLen() {
-			state.addError(makeSymbolicEvalError(lhs.StartIndex, state, START_INDEX_IS_OUT_OF_BOUNDS))
+			state.addError(MakeSymbolicEvalError(lhs.StartIndex, state, START_INDEX_IS_OUT_OF_BOUNDS))
 		} else {
-			state.addError(makeSymbolicEvalError(lhs.Indexed, state, fmtMutableSequenceExpectedButIs(slice)))
+			state.addError(MakeSymbolicEvalError(lhs.Indexed, state, fmtMutableSequenceExpectedButIs(slice)))
 			slice = NewListOf(ANY_SERIALIZABLE)
 		}
 
@@ -2318,7 +2318,7 @@ func evalMultiAssignment(n *parse.MultiAssignment, state *State) (_ Value, final
 
 	seq, ok := right.(Sequence)
 	if !ok {
-		state.addError(makeSymbolicEvalError(n, state, fmtSeqExpectedButIs(startRight)))
+		state.addError(MakeSymbolicEvalError(n, state, fmtSeqExpectedButIs(startRight)))
 		right = &List{generalElement: ANY_SERIALIZABLE}
 
 		for _, var_ := range n.Variables {
@@ -2331,7 +2331,7 @@ func evalMultiAssignment(n *parse.MultiAssignment, state *State) (_ Value, final
 		}
 	} else {
 		if seq.HasKnownLen() && seq.KnownLen() < len(n.Variables) && !isNillable {
-			state.addError(makeSymbolicEvalError(n, state, fmtSequenceShouldHaveLengthGreaterOrEqualTo(len(n.Variables))))
+			state.addError(MakeSymbolicEvalError(n, state, fmtSequenceShouldHaveLengthGreaterOrEqualTo(len(n.Variables))))
 		}
 
 		for i, var_ := range n.Variables {
@@ -2362,7 +2362,7 @@ func evalIfStatement(n *parse.IfStatement, state *State) (_ Value, finalErr erro
 	}
 
 	if _, ok := test.(*Bool); !ok {
-		state.addError(makeSymbolicEvalError(n.Test, state, fmtIfStmtTestShouldBeBoolBut(test)))
+		state.addError(MakeSymbolicEvalError(n.Test, state, fmtIfStmtTestShouldBeBoolBut(test)))
 	}
 
 	if n.Consequent != nil {
@@ -2438,7 +2438,7 @@ func evalIfExpression(n *parse.IfExpression, state *State, options evalOptions) 
 
 		if options.expectedValue != nil && !deeperValueMismatch && !options.expectedValue.Test(consequentValue, RecTestCallState{}) {
 			options.setActualValueMismatchIfNotNil()
-			state.addError(makeSymbolicEvalError(n.Consequent, state, fmtValueIsAnXButYWasExpected(consequentValue, options.expectedValue)))
+			state.addError(MakeSymbolicEvalError(n.Consequent, state, fmtValueIsAnXButYWasExpected(consequentValue, options.expectedValue)))
 		} else if deeperValueMismatch {
 			options.setActualValueMismatchIfNotNil()
 			deeperValueMismatch = false //reset so that we can use the variable for the alternate value.
@@ -2462,7 +2462,7 @@ func evalIfExpression(n *parse.IfExpression, state *State, options evalOptions) 
 
 			if options.expectedValue != nil && !deeperValueMismatch && !options.expectedValue.Test(alternateValue, RecTestCallState{}) {
 				options.setActualValueMismatchIfNotNil()
-				state.addError(makeSymbolicEvalError(n.Alternate, state, fmtValueIsAnXButYWasExpected(alternateValue, options.expectedValue)))
+				state.addError(MakeSymbolicEvalError(n.Alternate, state, fmtValueIsAnXButYWasExpected(alternateValue, options.expectedValue)))
 			} else if deeperValueMismatch {
 				options.setActualValueMismatchIfNotNil()
 			}
@@ -2484,7 +2484,7 @@ func evalIfExpression(n *parse.IfExpression, state *State, options evalOptions) 
 
 	options.setHasShallowErrors()
 
-	state.addError(makeSymbolicEvalError(n.Test, state, fmtIfExprTestShouldBeBoolBut(test)))
+	state.addError(MakeSymbolicEvalError(n.Test, state, fmtIfExprTestShouldBeBoolBut(test)))
 	return ANY, nil
 }
 
@@ -2548,7 +2548,7 @@ func evalForStatementAndExpr(n parse.Node, state *State) (_ Value, finalErr erro
 
 	if iterable, ok := asIterable(iteratedValue).(Iterable); ok {
 		if chunked {
-			state.addError(makeSymbolicEvalError(n, state, "chunked iteration of iterables is not supported yet"))
+			state.addError(MakeSymbolicEvalError(n, state, "chunked iteration of iterables is not supported yet"))
 		}
 
 		keyType = iterable.IteratorElementKey()
@@ -2565,7 +2565,7 @@ func evalForStatementAndExpr(n parse.Node, state *State) (_ Value, finalErr erro
 
 	} else if streamable, ok := asStreamable(iteratedValue).(StreamSource); ok {
 		if keyIndexIdent != nil {
-			state.addError(makeSymbolicEvalError(keyIndexIdent, state, KEY_VAR_SHOULD_BE_PROVIDED_ONLY_WHEN_ITERATING_OVER_AN_ITERABLE))
+			state.addError(MakeSymbolicEvalError(keyIndexIdent, state, KEY_VAR_SHOULD_BE_PROVIDED_ONLY_WHEN_ITERATING_OVER_AN_ITERABLE))
 		}
 		if chunked {
 			valueType = streamable.ChunkedStreamElement()
@@ -2573,7 +2573,7 @@ func evalForStatementAndExpr(n parse.Node, state *State) (_ Value, finalErr erro
 			valueType = streamable.StreamElement()
 		}
 	} else {
-		state.addError(makeSymbolicEvalError(iteratedValueNode, state, fmtXisNotIterable(iteratedValue)))
+		state.addError(MakeSymbolicEvalError(iteratedValueNode, state, fmtXisNotIterable(iteratedValue)))
 	}
 
 	if body != nil && evaluateBody {
@@ -2613,7 +2613,7 @@ func evalForStatementAndExpr(n parse.Node, state *State) (_ Value, finalErr erro
 			if stepResult != nil {
 				elem, ok := AsSerializable(stepResult).(Serializable)
 				if !ok {
-					state.addError(makeSymbolicEvalError(body, state, ELEMENTS_PRODUCED_BY_A_FOR_EXPR_SHOULD_BE_SERIALIZABLE))
+					state.addError(MakeSymbolicEvalError(body, state, ELEMENTS_PRODUCED_BY_A_FOR_EXPR_SHOULD_BE_SERIALIZABLE))
 					elem = ANY_SERIALIZABLE
 				}
 				forExprListElement = elem
@@ -2652,7 +2652,7 @@ func evalWalkStatement(n *parse.WalkStatement, state *State) (_ Value, finalErr 
 		entry = walkable.WalkerElement()
 		nodeMeta = walkable.WalkerNodeMeta()
 	} else {
-		state.addError(makeSymbolicEvalError(n.Walked, state, fmtXisNotWalkable(walkedValue)))
+		state.addError(MakeSymbolicEvalError(n.Walked, state, fmtXisNotWalkable(walkedValue)))
 		entry = ANY
 		nodeMeta = ANY
 	}
@@ -2786,7 +2786,7 @@ func evalSwitchExpression(n *parse.SwitchExpression, state *State, options evalO
 
 			if options.expectedValue != nil && !deeperValueMismatch && !options.expectedValue.Test(result, RecTestCallState{}) {
 				options.setActualValueMismatchIfNotNil()
-				state.addError(makeSymbolicEvalError(switchCase.Result, state, fmtValueIsAnXButYWasExpected(result, options.expectedValue)))
+				state.addError(MakeSymbolicEvalError(switchCase.Result, state, fmtValueIsAnXButYWasExpected(result, options.expectedValue)))
 			} else if deeperValueMismatch {
 				options.setActualValueMismatchIfNotNil()
 				deeperValueMismatch = false //reset so that we can use the variable for other results.
@@ -2818,7 +2818,7 @@ func evalSwitchExpression(n *parse.SwitchExpression, state *State, options evalO
 
 		if options.expectedValue != nil && !deeperValueMismatch && !options.expectedValue.Test(result, RecTestCallState{}) {
 			options.setActualValueMismatchIfNotNil()
-			state.addError(makeSymbolicEvalError(defaultCase.Result, state, fmtValueIsAnXButYWasExpected(result, options.expectedValue)))
+			state.addError(MakeSymbolicEvalError(defaultCase.Result, state, fmtValueIsAnXButYWasExpected(result, options.expectedValue)))
 		} else if deeperValueMismatch {
 			options.setActualValueMismatchIfNotNil()
 			deeperValueMismatch = false //reset so that we can use the variable for other results.
@@ -2870,7 +2870,7 @@ func evalMatchStatement(n *parse.MatchStatement, state *State) (_ Value, finalEr
 
 				if !ok {
 					if !newEvalErr {
-						state.addError(makeSymbolicEvalError(valNode, state, AN_EXACT_VALUE_USED_AS_MATCH_CASE_SHOULD_BE_SERIALIZABLE))
+						state.addError(MakeSymbolicEvalError(valNode, state, AN_EXACT_VALUE_USED_AS_MATCH_CASE_SHOULD_BE_SERIALIZABLE))
 					}
 					continue
 				} else {
@@ -2878,7 +2878,7 @@ func evalMatchStatement(n *parse.MatchStatement, state *State) (_ Value, finalEr
 					if err == nil {
 						pattern = patt
 					} else {
-						state.addError(makeSymbolicEvalError(valNode, state, err.Error()))
+						state.addError(MakeSymbolicEvalError(valNode, state, err.Error()))
 						continue
 					}
 				}
@@ -2900,7 +2900,7 @@ func evalMatchStatement(n *parse.MatchStatement, state *State) (_ Value, finalEr
 				groupPattern, ok := pattern.(GroupPattern)
 
 				if !ok {
-					state.addError(makeSymbolicEvalError(valNode, state, fmtXisNotAGroupMatchingPattern(pattern)))
+					state.addError(MakeSymbolicEvalError(valNode, state, fmtXisNotAGroupMatchingPattern(pattern)))
 				} else {
 					_, possible, groups := groupPattern.MatchGroups(discriminant)
 					if possible {
@@ -2988,7 +2988,7 @@ func evalMatchExpression(n *parse.MatchExpression, state *State, options evalOpt
 
 				if !ok {
 					if !newEvalErr {
-						state.addError(makeSymbolicEvalError(valNode, state, AN_EXACT_VALUE_USED_AS_MATCH_CASE_SHOULD_BE_SERIALIZABLE))
+						state.addError(MakeSymbolicEvalError(valNode, state, AN_EXACT_VALUE_USED_AS_MATCH_CASE_SHOULD_BE_SERIALIZABLE))
 					}
 					continue
 				} else {
@@ -2996,7 +2996,7 @@ func evalMatchExpression(n *parse.MatchExpression, state *State, options evalOpt
 					if err == nil {
 						pattern = patt
 					} else {
-						state.addError(makeSymbolicEvalError(valNode, state, err.Error()))
+						state.addError(MakeSymbolicEvalError(valNode, state, err.Error()))
 						continue
 					}
 				}
@@ -3020,7 +3020,7 @@ func evalMatchExpression(n *parse.MatchExpression, state *State, options evalOpt
 				groupPattern, ok := pattern.(GroupPattern)
 
 				if !ok {
-					state.addError(makeSymbolicEvalError(valNode, state, fmtXisNotAGroupMatchingPattern(pattern)))
+					state.addError(MakeSymbolicEvalError(valNode, state, fmtXisNotAGroupMatchingPattern(pattern)))
 				} else {
 					_, possible, groups := groupPattern.MatchGroups(discriminant)
 					if possible {
@@ -3052,7 +3052,7 @@ func evalMatchExpression(n *parse.MatchExpression, state *State, options evalOpt
 
 			if options.expectedValue != nil && !deeperValueMismatch && !options.expectedValue.Test(result, RecTestCallState{}) {
 				options.setActualValueMismatchIfNotNil()
-				state.addError(makeSymbolicEvalError(matchCase.Result, state, fmtValueIsAnXButYWasExpected(result, options.expectedValue)))
+				state.addError(MakeSymbolicEvalError(matchCase.Result, state, fmtValueIsAnXButYWasExpected(result, options.expectedValue)))
 			} else if deeperValueMismatch {
 				options.setActualValueMismatchIfNotNil()
 				deeperValueMismatch = false //reset so that we can use the variable for other results.
@@ -3088,7 +3088,7 @@ func evalMatchExpression(n *parse.MatchExpression, state *State, options evalOpt
 
 		if options.expectedValue != nil && !deeperValueMismatch && !options.expectedValue.Test(result, RecTestCallState{}) {
 			options.setActualValueMismatchIfNotNil()
-			state.addError(makeSymbolicEvalError(defaultCase.Result, state, fmtValueIsAnXButYWasExpected(result, options.expectedValue)))
+			state.addError(MakeSymbolicEvalError(defaultCase.Result, state, fmtValueIsAnXButYWasExpected(result, options.expectedValue)))
 		} else if deeperValueMismatch {
 			options.setActualValueMismatchIfNotNil()
 			deeperValueMismatch = false //reset so that we can use the variable for other results.
@@ -3119,14 +3119,14 @@ func evalUnaryExpression(n *parse.UnaryExpression, state *State, options evalOpt
 		case ImplementsOrIsMultivalueWithAllValuesImplementing[*Float](operand):
 			return ANY_FLOAT, nil
 		default:
-			state.addError(makeSymbolicEvalError(n, state, fmtOperandOfNumberNegateShouldBeIntOrFloat(operand)))
+			state.addError(MakeSymbolicEvalError(n, state, fmtOperandOfNumberNegateShouldBeIntOrFloat(operand)))
 		}
 
 		return ANY, nil
 	case parse.BoolNegate:
 		_, ok := operand.(*Bool)
 		if !ok {
-			state.addError(makeSymbolicEvalError(n, state, fmtOperandOfBoolNegateShouldBeBool(operand)))
+			state.addError(MakeSymbolicEvalError(n, state, fmtOperandOfBoolNegateShouldBeBool(operand)))
 		}
 
 		return ANY_BOOL, nil
@@ -3161,23 +3161,23 @@ func evalBinaryExpression(n *parse.BinaryExpression, state *State, options evalO
 	case parse.GreaterThan, parse.LessThan, parse.LessOrEqual, parse.GreaterOrEqual:
 		_, ok := left.(Comparable)
 		if !ok {
-			state.addError(makeSymbolicEvalError(n, state, LEFT_OPERAND_DOES_NOT_IMPL_COMPARABLE_))
+			state.addError(MakeSymbolicEvalError(n, state, LEFT_OPERAND_DOES_NOT_IMPL_COMPARABLE_))
 			return ANY_BOOL, nil
 		}
 		_, ok = right.(Comparable)
 		if !ok {
-			state.addError(makeSymbolicEvalError(n, state, RIGHT_OPERAND_DOES_NOT_IMPL_COMPARABLE_))
+			state.addError(MakeSymbolicEvalError(n, state, RIGHT_OPERAND_DOES_NOT_IMPL_COMPARABLE_))
 			return ANY_BOOL, nil
 		}
 
 		if !haveSameGoTypes(left, right) {
-			state.addError(makeSymbolicEvalError(n, state, OPERANDS_NOT_COMPARABLE_BECAUSE_DIFFERENT_TYPES))
+			state.addError(MakeSymbolicEvalError(n, state, OPERANDS_NOT_COMPARABLE_BECAUSE_DIFFERENT_TYPES))
 		}
 		return ANY_BOOL, nil
 	case parse.Add, parse.Sub, parse.Mul, parse.Div:
 		return evalArithmeticBinaryExpression(left, right, n, state)
 	case parse.AddDot, parse.SubDot, parse.MulDot, parse.DivDot, parse.GreaterThanDot, parse.GreaterOrEqualDot, parse.LessThanDot, parse.LessOrEqualDot:
-		state.addError(makeSymbolicEvalError(n, state, "operator not implemented yet"))
+		state.addError(MakeSymbolicEvalError(n, state, "operator not implemented yet"))
 		return ANY, nil
 	case parse.Equal, parse.NotEqual, parse.Is, parse.IsNot:
 		return ANY_BOOL, nil
@@ -3185,39 +3185,39 @@ func evalBinaryExpression(n *parse.BinaryExpression, state *State, options evalO
 		switch right.(type) {
 		case Container:
 		default:
-			state.addError(makeSymbolicEvalError(n.Right, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "container", Stringify(right))))
+			state.addError(MakeSymbolicEvalError(n.Right, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "container", Stringify(right))))
 		}
 		_, ok := AsSerializable(left).(Serializable)
 		if !ok {
-			state.addError(makeSymbolicEvalError(n.Left, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "serializable", Stringify(left))))
+			state.addError(MakeSymbolicEvalError(n.Left, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "serializable", Stringify(left))))
 		}
 		return ANY_BOOL, nil
 	case parse.NotIn:
 		switch right.(type) {
 		case Container:
 		default:
-			state.addError(makeSymbolicEvalError(n.Right, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "container", Stringify(right))))
+			state.addError(MakeSymbolicEvalError(n.Right, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "container", Stringify(right))))
 		}
 		_, ok := AsSerializable(left).(Serializable)
 		if !ok {
-			state.addError(makeSymbolicEvalError(n.Left, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "serializable", Stringify(left))))
+			state.addError(MakeSymbolicEvalError(n.Left, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "serializable", Stringify(left))))
 		}
 		return ANY_BOOL, nil
 	case parse.Keyof:
 		_, ok := left.(*String)
 		if !ok {
-			state.addError(makeSymbolicEvalError(n.Left, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "string", Stringify(left))))
+			state.addError(MakeSymbolicEvalError(n.Left, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "string", Stringify(left))))
 		}
 
 		switch rightVal := right.(type) {
 		case *Object:
 		default:
-			state.addError(makeSymbolicEvalError(n.Right, state, fmtInvalidBinExprCannnotCheckNonObjectHasKey(rightVal)))
+			state.addError(MakeSymbolicEvalError(n.Right, state, fmtInvalidBinExprCannnotCheckNonObjectHasKey(rightVal)))
 		}
 		return ANY_BOOL, nil
 	case parse.Urlof:
 		if !ImplementsOrIsMultivalueWithAllValuesImplementing[*URL](left) {
-			state.addError(makeSymbolicEvalError(n.Left, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "url", Stringify(left))))
+			state.addError(MakeSymbolicEvalError(n.Left, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "url", Stringify(left))))
 		}
 
 		switch right.(type) {
@@ -3233,7 +3233,7 @@ func evalBinaryExpression(n *parse.BinaryExpression, state *State, options evalO
 		case *Int:
 			if !ANY_INT.Test(right, RecTestCallState{}) {
 				msg := fmtRightOperandOfBinaryShouldBeLikeLeftOperand(n.Operator, Stringify(left), Stringify(ANY_INT))
-				state.addError(makeSymbolicEvalError(n.Right, state, msg))
+				state.addError(MakeSymbolicEvalError(n.Right, state, msg))
 				return ANY_INT_RANGE, nil
 			}
 
@@ -3254,7 +3254,7 @@ func evalBinaryExpression(n *parse.BinaryExpression, state *State, options evalO
 		case *Float:
 			if !ANY_FLOAT.Test(right, RecTestCallState{}) {
 				msg := fmtRightOperandOfBinaryShouldBeLikeLeftOperand(n.Operator, Stringify(left), Stringify(ANY_FLOAT))
-				state.addError(makeSymbolicEvalError(n.Right, state, msg))
+				state.addError(MakeSymbolicEvalError(n.Right, state, msg))
 				return ANY_FLOAT_RANGE, nil
 			}
 
@@ -3268,13 +3268,13 @@ func evalBinaryExpression(n *parse.BinaryExpression, state *State, options evalO
 			}, nil
 		default:
 			if _, ok := left.(Serializable); !ok {
-				state.addError(makeSymbolicEvalError(n.Right, state, OPERANDS_OF_BINARY_RANGE_EXPRS_SHOULD_BE_SERIALIZABLE))
+				state.addError(MakeSymbolicEvalError(n.Right, state, OPERANDS_OF_BINARY_RANGE_EXPRS_SHOULD_BE_SERIALIZABLE))
 				return ANY_QUANTITY_RANGE, nil
 			}
 
 			if !left.WidestOfType().Test(right, RecTestCallState{}) {
 				msg := fmtRightOperandOfBinaryShouldBeLikeLeftOperand(n.Operator, Stringify(left.WidestOfType()), Stringify(right))
-				state.addError(makeSymbolicEvalError(n.Right, state, msg))
+				state.addError(MakeSymbolicEvalError(n.Right, state, msg))
 			}
 
 			return &QuantityRange{element: left.WidestOfType().(Serializable)}, nil
@@ -3283,18 +3283,18 @@ func evalBinaryExpression(n *parse.BinaryExpression, state *State, options evalO
 		_, ok := left.(*Bool)
 
 		if !ok {
-			state.addError(makeSymbolicEvalError(n.Left, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "boolean", Stringify(left))))
+			state.addError(MakeSymbolicEvalError(n.Left, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "boolean", Stringify(left))))
 		}
 
 		_, ok = right.(*Bool)
 		if !ok {
-			state.addError(makeSymbolicEvalError(n.Right, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "boolean", Stringify(right))))
+			state.addError(MakeSymbolicEvalError(n.Right, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "boolean", Stringify(right))))
 		}
 		return ANY_BOOL, nil
 	case parse.Match, parse.NotMatch:
 		_, ok := right.(Pattern)
 		if !ok {
-			state.addError(makeSymbolicEvalError(n.Right, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "pattern", Stringify(right))))
+			state.addError(MakeSymbolicEvalError(n.Right, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "pattern", Stringify(right))))
 		}
 
 		return ANY_BOOL, nil
@@ -3304,7 +3304,7 @@ func evalBinaryExpression(n *parse.BinaryExpression, state *State, options evalO
 		case BytesLike, StringLike:
 		default:
 			if _, ok := left.(StringLike); !ok {
-				state.addError(makeSymbolicEvalError(n.Left, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "string-like or bytes-like", Stringify(left))))
+				state.addError(MakeSymbolicEvalError(n.Left, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "string-like or bytes-like", Stringify(left))))
 			}
 		}
 
@@ -3312,14 +3312,14 @@ func evalBinaryExpression(n *parse.BinaryExpression, state *State, options evalO
 		case BytesLike, StringLike:
 		default:
 			if _, ok := right.(StringLike); !ok {
-				state.addError(makeSymbolicEvalError(n.Right, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "string-like", Stringify(right))))
+				state.addError(MakeSymbolicEvalError(n.Right, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "string-like", Stringify(right))))
 			}
 		}
 
 		return ANY_BOOL, nil
 	case parse.SetDifference:
 		if _, ok := left.(Pattern); !ok {
-			state.addError(makeSymbolicEvalError(n.Left, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "pattern", Stringify(left))))
+			state.addError(MakeSymbolicEvalError(n.Left, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "pattern", Stringify(left))))
 		}
 		return &DifferencePattern{
 			Base:    ANY_PATTERN,
@@ -3330,19 +3330,19 @@ func evalBinaryExpression(n *parse.BinaryExpression, state *State, options evalO
 	case parse.PairComma:
 		leftSerializable, ok := AsSerializable(left).(Serializable)
 		if !ok {
-			state.addError(makeSymbolicEvalError(n.Left, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "serializable", Stringify(left))))
+			state.addError(MakeSymbolicEvalError(n.Left, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "serializable", Stringify(left))))
 			leftSerializable = ANY_SERIALIZABLE
 		} else if leftSerializable.IsMutable() {
-			state.addError(makeSymbolicEvalError(n.Left, state, fmtLeftOperandOfBinaryShouldBeImmutable(n.Operator)))
+			state.addError(MakeSymbolicEvalError(n.Left, state, fmtLeftOperandOfBinaryShouldBeImmutable(n.Operator)))
 			leftSerializable = ANY_SERIALIZABLE
 		}
 
 		rightSerializable, ok := AsSerializable(right).(Serializable)
 		if !ok {
-			state.addError(makeSymbolicEvalError(n.Right, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "serializable", Stringify(right))))
+			state.addError(MakeSymbolicEvalError(n.Right, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "serializable", Stringify(right))))
 			rightSerializable = ANY_SERIALIZABLE
 		} else if rightSerializable.IsMutable() {
-			state.addError(makeSymbolicEvalError(n.Right, state, fmtRightOperandOfBinaryShouldBeImmutable(n.Operator)))
+			state.addError(MakeSymbolicEvalError(n.Right, state, fmtRightOperandOfBinaryShouldBeImmutable(n.Operator)))
 			rightSerializable = ANY_SERIALIZABLE
 		}
 
@@ -3357,14 +3357,14 @@ func evalArithmeticBinaryExpression(left, right Value, n *parse.BinaryExpression
 	if _, ok := left.(*Int); ok {
 		_, ok = right.(*Int)
 		if !ok {
-			state.addError(makeSymbolicEvalError(n.Right, state, fmtRightOperandForIntArithmetic(right, n.Operator)))
+			state.addError(MakeSymbolicEvalError(n.Right, state, fmtRightOperandForIntArithmetic(right, n.Operator)))
 		}
 
 		return ANY_INT, nil
 	} else if _, ok := left.(*Float); ok {
 		_, ok = right.(*Float)
 		if !ok {
-			state.addError(makeSymbolicEvalError(n.Right, state, fmtRightOperandForFloatArithmetic(right, n.Operator)))
+			state.addError(MakeSymbolicEvalError(n.Right, state, fmtRightOperandForFloatArithmetic(right, n.Operator)))
 		}
 		return ANY_FLOAT, nil
 	}
@@ -3382,7 +3382,7 @@ func evalArithmeticBinaryExpression(left, right Value, n *parse.BinaryExpression
 	case parse.Add:
 		iadd, ok := left.(IPseudoAdd)
 		if !ok {
-			err := makeSymbolicEvalError(n.Left, state, fmtExpectedLeftOperandForArithmetic(left, n.Operator))
+			err := MakeSymbolicEvalError(n.Left, state, fmtExpectedLeftOperandForArithmetic(left, n.Operator))
 			state.addError(err)
 			return failureResult, nil
 		}
@@ -3391,18 +3391,18 @@ func evalArithmeticBinaryExpression(left, right Value, n *parse.BinaryExpression
 	case parse.Sub:
 		isub, ok := left.(IPseudoSub)
 		if !ok {
-			err := makeSymbolicEvalError(n.Left, state, fmtExpectedLeftOperandForArithmetic(left, n.Operator))
+			err := MakeSymbolicEvalError(n.Left, state, fmtExpectedLeftOperandForArithmetic(left, n.Operator))
 			state.addError(err)
 			return failureResult, nil
 		}
 
 		return isub.Sub(right, n, state)
 	case parse.Mul:
-		err := makeSymbolicEvalError(n.Left, state, fmtExpectedLeftOperandForArithmetic(left, n.Operator))
+		err := MakeSymbolicEvalError(n.Left, state, fmtExpectedLeftOperandForArithmetic(left, n.Operator))
 		state.addError(err)
 		return failureResult, nil
 	case parse.Div:
-		err := makeSymbolicEvalError(n.Left, state, fmtExpectedLeftOperandForArithmetic(left, n.Operator))
+		err := MakeSymbolicEvalError(n.Left, state, fmtExpectedLeftOperandForArithmetic(left, n.Operator))
 		state.addError(err)
 		return failureResult, nil
 	default:
@@ -3501,7 +3501,7 @@ func evalFunctionExpression(n *parse.FunctionExpression, state *State, options e
 		} else {
 			stateFork.setLocal(name, ANY, nil, e)
 			capturedLocals[name] = ANY
-			state.addError(makeSymbolicEvalError(e, state, fmtLocalVarIsNotDeclared(name)))
+			state.addError(MakeSymbolicEvalError(e, state, fmtLocalVarIsNotDeclared(name)))
 		}
 	}
 
@@ -3564,7 +3564,7 @@ func evalFunctionExpression(n *parse.FunctionExpression, state *State, options e
 
 		if signatureReturnType != nil {
 			if !signatureReturnType.Test(storedReturnType, RecTestCallState{}) {
-				state.addError(makeSymbolicEvalError(n.Body, state, fmtInvalidReturnValue(storedReturnType, signatureReturnType)))
+				state.addError(MakeSymbolicEvalError(n.Body, state, fmtInvalidReturnValue(storedReturnType, signatureReturnType)))
 			}
 			storedReturnType = signatureReturnType
 		}
@@ -3584,9 +3584,9 @@ func evalFunctionExpression(n *parse.FunctionExpression, state *State, options e
 		if signatureReturnType != nil {
 			storedReturnType = signatureReturnType
 			if retValue == nil {
-				stateFork.addError(makeSymbolicEvalError(n, stateFork, MISSING_RETURN_IN_FUNCTION))
+				stateFork.addError(MakeSymbolicEvalError(n, stateFork, MISSING_RETURN_IN_FUNCTION))
 			} else if stateFork.conditionalReturn {
-				stateFork.addError(makeSymbolicEvalError(n, stateFork, MISSING_UNCONDITIONAL_RETURN_IN_FUNCTION))
+				stateFork.addError(MakeSymbolicEvalError(n, stateFork, MISSING_UNCONDITIONAL_RETURN_IN_FUNCTION))
 			}
 		} else if retValue == nil {
 			storedReturnType = Nil
@@ -3619,7 +3619,7 @@ func evalFunctionExpression(n *parse.FunctionExpression, state *State, options e
 					if expectedFunction.forbiddenNodeExplanation != "" {
 						msg += "; " + expectedFunction.forbiddenNodeExplanation
 					}
-					state.addError(makeSymbolicEvalError(node, state, msg))
+					state.addError(MakeSymbolicEvalError(node, state, msg))
 					options.setActualValueMismatchIfNotNil()
 					return parse.Prune, nil
 				}
@@ -3671,7 +3671,7 @@ func evalFunctionDeclaration(n *parse.FunctionDeclaration, state *State, options
 	}
 
 	if state.recursiveFunctionName != "" {
-		state.addError(makeSymbolicEvalError(n, state, NESTED_RECURSIVE_FUNCTION_DECLARATION))
+		state.addError(MakeSymbolicEvalError(n, state, NESTED_RECURSIVE_FUNCTION_DECLARATION))
 	} else {
 		state.recursiveFunctionName = funcName
 	}
@@ -3805,7 +3805,7 @@ func evalSynchronizedBlockStatement(n *parse.SynchronizedBlockStatement, state *
 		}
 
 		if potentiallySharable, ok := val.(PotentiallySharable); !ok || !utils.Ret0(potentiallySharable.IsSharable()) {
-			state.addError(makeSymbolicEvalError(n, state, fmtSynchronizedValueShouldBeASharableValueOrImmutableNot(val)))
+			state.addError(MakeSymbolicEvalError(n, state, fmtSynchronizedValueShouldBeASharableValueOrImmutableNot(val)))
 		}
 	}
 
@@ -3860,7 +3860,7 @@ func evalImportStatement(n *parse.ImportStatement, state *State) (_ Value, final
 	}
 
 	if !strings.HasSuffix(pathOrURL, inoxconsts.INOXLANG_FILE_EXTENSION) {
-		state.addError(makeSymbolicEvalError(n.Source, state, IMPORTED_MOD_PATH_MUST_END_WITH_IX))
+		state.addError(MakeSymbolicEvalError(n.Source, state, IMPORTED_MOD_PATH_MUST_END_WITH_IX))
 		return nil, nil
 	}
 
@@ -3981,7 +3981,7 @@ func evalSpawnExpression(node *parse.SpawnExpression, state *State) (_ Value, fi
 		case LTHREAD_META_GROUP_SECTION:
 			_, ok := v.(*LThreadGroup)
 			if !ok {
-				state.addError(makeSymbolicEvalError(node.Meta, state, fmtGroupPropertyNotLThreadGroup(v)))
+				state.addError(MakeSymbolicEvalError(node.Meta, state, fmtGroupPropertyNotLThreadGroup(v)))
 			}
 		case LTHREAD_META_ALLOW_SECTION:
 		default:
@@ -3994,7 +3994,7 @@ func evalSpawnExpression(node *parse.SpawnExpression, state *State) (_ Value, fi
 		for k, v := range g {
 			symVal, err := ShareOrClone(v, state)
 			if err != nil {
-				state.addError(makeSymbolicEvalError(node.Meta, state, err.Error()))
+				state.addError(MakeSymbolicEvalError(node.Meta, state, err.Error()))
 				symVal = ANY
 			}
 			actualGlobals[k] = symVal
@@ -4024,11 +4024,11 @@ func evalSpawnExpression(node *parse.SpawnExpression, state *State) (_ Value, fi
 			embeddedModule = embeddedMod
 		} else {
 			varname := parse.GetVariableName(node.Module)
-			state.addError(makeSymbolicEvalError(node, state, fmtValueOfVarShouldBeAModuleNode(varname)))
+			state.addError(MakeSymbolicEvalError(node, state, fmtValueOfVarShouldBeAModuleNode(varname)))
 		}
 	} else {
 		varname := parse.GetVariableName(node.Module)
-		state.addError(makeSymbolicEvalError(node, state, fmtValueOfVarShouldBeAModuleNode(varname)))
+		state.addError(MakeSymbolicEvalError(node, state, fmtValueOfVarShouldBeAModuleNode(varname)))
 	}
 
 	var concreteCtx ConcreteContext = state.ctx.startingConcreteContext
@@ -4080,7 +4080,7 @@ func evalSpawnExpression(node *parse.SpawnExpression, state *State) (_ Value, fi
 
 			_, ok = varInfo.value.(*Namespace)
 			if !ok || len(calleeNode.PropertyNames) != 1 {
-				state.addError(makeSymbolicEvalError(calleeNode.Left, state, INVALID_SPAWN_EXPR_WITH_SHORTHAND_SYNTAX_CALLEE_SHOULD_BE_AN_FN_IDENTIFIER_OR_A_NAMESPACE_METHOD))
+				state.addError(MakeSymbolicEvalError(calleeNode.Left, state, INVALID_SPAWN_EXPR_WITH_SHORTHAND_SYNTAX_CALLEE_SHOULD_BE_AN_FN_IDENTIFIER_OR_A_NAMESPACE_METHOD))
 				return ANY_LTHREAD, nil
 			}
 		}
@@ -4155,9 +4155,9 @@ func evalTreedataLiteral(n *parse.TreedataLiteral, state *State, options evalOpt
 	}
 
 	if value.IsMutable() {
-		state.addError(makeSymbolicEvalError(n.Root, state, VALUES_INSIDE_A_TREEDATA_SHOULD_BE_IMMUTABLE))
+		state.addError(MakeSymbolicEvalError(n.Root, state, VALUES_INSIDE_A_TREEDATA_SHOULD_BE_IMMUTABLE))
 	} else if _, ok := AsSerializable(value).(Serializable); !ok {
-		state.addError(makeSymbolicEvalError(n.Root, state, VALUES_INSIDE_A_TREEDATA_SHOULD_BE_SERIALIZABLE))
+		state.addError(MakeSymbolicEvalError(n.Root, state, VALUES_INSIDE_A_TREEDATA_SHOULD_BE_SERIALIZABLE))
 	}
 
 	for _, child := range n.Children {
@@ -4176,9 +4176,9 @@ func evalTreedataEntry(n *parse.TreedataEntry, state *State, options evalOptions
 	}
 
 	if value.IsMutable() {
-		state.addError(makeSymbolicEvalError(n.Value, state, VALUES_INSIDE_A_TREEDATA_SHOULD_BE_IMMUTABLE))
+		state.addError(MakeSymbolicEvalError(n.Value, state, VALUES_INSIDE_A_TREEDATA_SHOULD_BE_IMMUTABLE))
 	} else if _, ok := AsSerializable(value).(Serializable); !ok {
-		state.addError(makeSymbolicEvalError(n.Value, state, VALUES_INSIDE_A_TREEDATA_SHOULD_BE_SERIALIZABLE))
+		state.addError(MakeSymbolicEvalError(n.Value, state, VALUES_INSIDE_A_TREEDATA_SHOULD_BE_SERIALIZABLE))
 	}
 
 	for _, child := range n.Children {
@@ -4203,12 +4203,12 @@ func evalTreedataPair(n *parse.TreedataPair, state *State, options evalOptions) 
 	)
 
 	if value.IsMutable() {
-		state.addError(makeSymbolicEvalError(n.Key, state, VALUES_INSIDE_A_TREEDATA_SHOULD_BE_IMMUTABLE))
+		state.addError(MakeSymbolicEvalError(n.Key, state, VALUES_INSIDE_A_TREEDATA_SHOULD_BE_IMMUTABLE))
 		first = ANY_SERIALIZABLE
 	} else if serializable, ok := AsSerializable(value).(Serializable); ok {
 		first = serializable
 	} else {
-		state.addError(makeSymbolicEvalError(n.Key, state, VALUES_INSIDE_A_TREEDATA_SHOULD_BE_SERIALIZABLE))
+		state.addError(MakeSymbolicEvalError(n.Key, state, VALUES_INSIDE_A_TREEDATA_SHOULD_BE_SERIALIZABLE))
 		first = ANY_SERIALIZABLE
 	}
 
@@ -4219,12 +4219,12 @@ func evalTreedataPair(n *parse.TreedataPair, state *State, options evalOptions) 
 		}
 
 		if value.IsMutable() {
-			state.addError(makeSymbolicEvalError(n.Value, state, VALUES_INSIDE_A_TREEDATA_SHOULD_BE_IMMUTABLE))
+			state.addError(MakeSymbolicEvalError(n.Value, state, VALUES_INSIDE_A_TREEDATA_SHOULD_BE_IMMUTABLE))
 			second = ANY_SERIALIZABLE
 		} else if serializable, ok := AsSerializable(value).(Serializable); ok {
 			second = serializable
 		} else {
-			state.addError(makeSymbolicEvalError(n.Value, state, VALUES_INSIDE_A_TREEDATA_SHOULD_BE_SERIALIZABLE))
+			state.addError(MakeSymbolicEvalError(n.Value, state, VALUES_INSIDE_A_TREEDATA_SHOULD_BE_SERIALIZABLE))
 			second = ANY_SERIALIZABLE
 		}
 	}
@@ -4294,10 +4294,10 @@ func evalObjectLiteral(n *parse.ObjectLiteral, state *State, options evalOptions
 
 			serializable, ok := AsSerializable(v).(Serializable)
 			if !ok {
-				state.addError(makeSymbolicEvalError(el, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE))
+				state.addError(MakeSymbolicEvalError(el, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE))
 				serializable = ANY_SERIALIZABLE
 			} else if _, ok := asWatchable(v).(Watchable); !ok && v.IsMutable() {
-				state.addError(makeSymbolicEvalError(el, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_WATCHABLE))
+				state.addError(MakeSymbolicEvalError(el, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_WATCHABLE))
 			}
 
 			entries[name] = serializable
@@ -4354,7 +4354,7 @@ func evalObjectLiteral(n *parse.ObjectLiteral, state *State, options evalOptions
 				msg = fmtUnexpectedProperty(key)
 			}
 
-			state.addError(makeSymbolicEvalError(p.Key, state, msg))
+			state.addError(MakeSymbolicEvalError(p.Key, state, msg))
 		}
 
 		var (
@@ -4391,7 +4391,7 @@ func evalObjectLiteral(n *parse.ObjectLiteral, state *State, options evalOptions
 					expected := static.SymbolicValue()
 					if !hasShallowError {
 						msg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, propVal, expected)
-						state.addError(makeSymbolicEvalError(p.Value, state, msg, regions...))
+						state.addError(MakeSymbolicEvalError(p.Value, state, msg, regions...))
 					}
 					propVal = expected
 				}
@@ -4401,21 +4401,21 @@ func evalObjectLiteral(n *parse.ObjectLiteral, state *State, options evalOptions
 				options.setActualValueMismatchIfNotNil()
 				if !hasShallowError {
 					msg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, propVal, expectedPropVal)
-					state.addError(makeSymbolicEvalError(p.Value, state, msg, regions...))
+					state.addError(MakeSymbolicEvalError(p.Value, state, msg, regions...))
 				}
 			}
 
 			serializable, ok = AsSerializable(propVal).(Serializable)
 			if !ok {
-				state.addErrorIf(!hasShallowError, makeSymbolicEvalError(p, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE))
+				state.addErrorIf(!hasShallowError, MakeSymbolicEvalError(p, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE))
 				serializable = ANY_SERIALIZABLE
 			} else if _, ok := asWatchable(propVal).(Watchable); !ok && propVal.IsMutable() {
-				state.addErrorIf(!hasShallowError, makeSymbolicEvalError(p, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_WATCHABLE))
+				state.addErrorIf(!hasShallowError, MakeSymbolicEvalError(p, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_WATCHABLE))
 			}
 
 			//additional checks if expected object is readonly
 			if expectedObj.readonly && !IsReadonlyOrImmutable(propVal) {
-				state.addErrorIf(!hasShallowError, makeSymbolicEvalError(p.Key, state, PROPERTY_VALUES_OF_READONLY_OBJECTS_SHOULD_BE_READONLY_OR_IMMUTABLE))
+				state.addErrorIf(!hasShallowError, MakeSymbolicEvalError(p.Key, state, PROPERTY_VALUES_OF_READONLY_OBJECTS_SHOULD_BE_READONLY_OR_IMMUTABLE))
 			}
 		}
 
@@ -4435,16 +4435,16 @@ func evalObjectLiteral(n *parse.ObjectLiteral, state *State, options evalOptions
 		//additional checks if expected object is readonly
 		if expectedObj.readonly {
 			if !IsReadonlyOrImmutable(propVal) {
-				state.addError(makeSymbolicEvalError(p.Key, state, PROPERTY_VALUES_OF_READONLY_OBJECTS_SHOULD_BE_READONLY_OR_IMMUTABLE))
+				state.addError(MakeSymbolicEvalError(p.Key, state, PROPERTY_VALUES_OF_READONLY_OBJECTS_SHOULD_BE_READONLY_OR_IMMUTABLE))
 			}
 		}
 
 		serializable, ok := AsSerializable(propVal).(Serializable)
 		if !ok {
-			state.addError(makeSymbolicEvalError(p, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE))
+			state.addError(MakeSymbolicEvalError(p, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE))
 			serializable = ANY_SERIALIZABLE
 		} else if _, ok := asWatchable(propVal).(Watchable); !ok && propVal.IsMutable() {
-			state.addError(makeSymbolicEvalError(p, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_WATCHABLE))
+			state.addError(MakeSymbolicEvalError(p, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_WATCHABLE))
 		}
 
 		noKeyValues = append(noKeyValues, serializable)
@@ -4470,7 +4470,7 @@ func evalObjectLiteral(n *parse.ObjectLiteral, state *State, options evalOptions
 		case inoxconsts.VISIBILITY_KEY:
 			//
 		default:
-			state.addError(makeSymbolicEvalError(p, state, fmtCannotInitializedMetaProp(p.Name())))
+			state.addError(MakeSymbolicEvalError(p, state, fmtCannotInitializedMetaProp(p.Name())))
 		}
 	}
 
@@ -4562,16 +4562,16 @@ func evalRecordLiteral(n *parse.RecordLiteral, state *State, options evalOptions
 				options.setActualValueMismatchIfNotNil()
 				if !hasShallowError {
 					msg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, v, expectedPropVal)
-					state.addError(makeSymbolicEvalError(p.Value, state, msg, regions...))
+					state.addError(MakeSymbolicEvalError(p.Value, state, msg, regions...))
 				}
 			}
 
 			serializable, ok := AsSerializable(v).(Serializable)
 			if !ok {
-				state.addErrorIf(!hasShallowError, makeSymbolicEvalError(p, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE))
+				state.addErrorIf(!hasShallowError, MakeSymbolicEvalError(p, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE))
 				entries[key] = ANY_SERIALIZABLE
 			} else if v.IsMutable() {
-				state.addErrorIf(!hasShallowError, makeSymbolicEvalError(p.Value, state, fmtValuesOfRecordShouldBeImmutablePropHasMutable(key)))
+				state.addErrorIf(!hasShallowError, MakeSymbolicEvalError(p.Value, state, fmtValuesOfRecordShouldBeImmutablePropHasMutable(key)))
 				entries[key] = ANY_SERIALIZABLE
 			} else {
 				entries[key] = serializable
@@ -4593,10 +4593,10 @@ func evalRecordLiteral(n *parse.RecordLiteral, state *State, options evalOptions
 
 		serializable, ok := AsSerializable(propVal).(Serializable)
 		if !ok {
-			state.addErrorIf(!hasShallowError, makeSymbolicEvalError(p, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE))
+			state.addErrorIf(!hasShallowError, MakeSymbolicEvalError(p, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE))
 			serializable = ANY_SERIALIZABLE
 		} else if propVal.IsMutable() {
-			state.addErrorIf(!hasShallowError, makeSymbolicEvalError(p.Value, state, INVALID_ELEM_ELEMS_OF_RECORD_SHOULD_BE_IMMUTABLE))
+			state.addErrorIf(!hasShallowError, MakeSymbolicEvalError(p.Value, state, INVALID_ELEM_ELEMS_OF_RECORD_SHOULD_BE_IMMUTABLE))
 			serializable = ANY_SERIALIZABLE
 		}
 
@@ -4608,7 +4608,7 @@ func evalRecordLiteral(n *parse.RecordLiteral, state *State, options evalOptions
 	}
 
 	for _, el := range n.SpreadElements {
-		state.addError(makeSymbolicEvalError(el, state, PROP_SPREAD_IN_REC_NOT_SUPP_YET))
+		state.addError(MakeSymbolicEvalError(el, state, PROP_SPREAD_IN_REC_NOT_SUPP_YET))
 		break
 		// evaluatedElement, err := symbolicEval(el.Expr, state)
 		// if err != nil {
@@ -4663,7 +4663,7 @@ func evalListLiteral(n *parse.ListLiteral, state *State, options evalOptions) (V
 				if isList {
 					e = list.Element()
 				} else {
-					state.addErrorIf(!hasShallowError, makeSymbolicEvalError(spreadElemNode.Expr, state, SPREAD_ELEMENT_SHOULD_BE_A_LIST))
+					state.addErrorIf(!hasShallowError, MakeSymbolicEvalError(spreadElemNode.Expr, state, SPREAD_ELEMENT_SHOULD_BE_A_LIST))
 					e = generalElem
 				}
 			} else {
@@ -4682,16 +4682,16 @@ func evalListLiteral(n *parse.ListLiteral, state *State, options evalOptions) (V
 			}
 
 			if !generalElem.Test(e, RecTestCallState{}) && !deeperMismatch {
-				state.addErrorIf(!hasShallowError, makeSymbolicEvalError(elemNode, state, fmtUnexpectedElemInListAnnotated(e, generalElemPattern.(Pattern))))
+				state.addErrorIf(!hasShallowError, MakeSymbolicEvalError(elemNode, state, fmtUnexpectedElemInListAnnotated(e, generalElemPattern.(Pattern))))
 			}
 
 			e = AsSerializable(e)
 			_, ok = e.(Serializable)
 			if !ok {
-				state.addErrorIf(!hasShallowError, makeSymbolicEvalError(elemNode, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
+				state.addErrorIf(!hasShallowError, MakeSymbolicEvalError(elemNode, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
 				e = ANY_SERIALIZABLE
 			} else if _, ok := asWatchable(e).(Watchable); !ok && e.IsMutable() {
-				state.addErrorIf(!hasShallowError, makeSymbolicEvalError(elemNode, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE))
+				state.addErrorIf(!hasShallowError, MakeSymbolicEvalError(elemNode, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE))
 			}
 		}
 
@@ -4736,7 +4736,7 @@ func evalListLiteral(n *parse.ListLiteral, state *State, options evalOptions) (V
 			if isList {
 				e = list.Element()
 			} else {
-				state.addErrorIf(!hasShallowError, makeSymbolicEvalError(spreadElemNode.Expr, state, SPREAD_ELEMENT_SHOULD_BE_A_LIST))
+				state.addErrorIf(!hasShallowError, MakeSymbolicEvalError(spreadElemNode.Expr, state, SPREAD_ELEMENT_SHOULD_BE_A_LIST))
 				if expectedElement != nil {
 					e = expectedElement
 				} else {
@@ -4759,16 +4759,16 @@ func evalListLiteral(n *parse.ListLiteral, state *State, options evalOptions) (V
 			options.setActualValueMismatchIfNotNil()
 		} else if expectedElement != nil && !expectedElement.Test(e, RecTestCallState{}) && !deeperMismatch {
 			options.setActualValueMismatchIfNotNil()
-			state.addErrorIf(!hasShallowError, makeSymbolicEvalError(elemNode, state, fmtUnexpectedElemInListofValues(e, expectedElement)))
+			state.addErrorIf(!hasShallowError, MakeSymbolicEvalError(elemNode, state, fmtUnexpectedElemInListofValues(e, expectedElement)))
 		}
 
 		e = AsSerializable(e)
 		_, ok = e.(Serializable)
 		if !ok {
-			state.addErrorIf(!hasShallowError, makeSymbolicEvalError(elemNode, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
+			state.addErrorIf(!hasShallowError, MakeSymbolicEvalError(elemNode, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
 			e = ANY_SERIALIZABLE
 		} else if _, ok := asWatchable(e).(Watchable); !ok && e.IsMutable() {
-			state.addErrorIf(!hasShallowError, makeSymbolicEvalError(elemNode, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE))
+			state.addErrorIf(!hasShallowError, MakeSymbolicEvalError(elemNode, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE))
 		}
 
 		elements = append(elements, AsSerializableChecked(e))
@@ -4807,7 +4807,7 @@ func evalTupleLiteral(n *parse.TupleLiteral, state *State, options evalOptions) 
 				if isTuple {
 					e = tuple.Element()
 				} else {
-					state.addErrorIf(!hasShallowError, makeSymbolicEvalError(spreadElemNode.Expr, state, SPREAD_ELEMENT_SHOULD_BE_A_TUPLE))
+					state.addErrorIf(!hasShallowError, MakeSymbolicEvalError(spreadElemNode.Expr, state, SPREAD_ELEMENT_SHOULD_BE_A_TUPLE))
 					e = generalElem
 				}
 			} else {
@@ -4818,19 +4818,19 @@ func evalTupleLiteral(n *parse.TupleLiteral, state *State, options evalOptions) 
 			}
 
 			if e.IsMutable() {
-				state.addErrorIf(!hasShallowError, makeSymbolicEvalError(elemNode, state, ELEMS_OF_TUPLE_SHOUD_BE_IMMUTABLE))
+				state.addErrorIf(!hasShallowError, MakeSymbolicEvalError(elemNode, state, ELEMS_OF_TUPLE_SHOUD_BE_IMMUTABLE))
 				e = ANY_SERIALIZABLE
 			}
 
 			e = AsSerializable(e)
 			_, ok = e.(Serializable)
 			if !ok {
-				state.addErrorIf(!hasShallowError, makeSymbolicEvalError(elemNode, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
+				state.addErrorIf(!hasShallowError, MakeSymbolicEvalError(elemNode, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
 				e = ANY_SERIALIZABLE
 			}
 
 			if !generalElem.Test(e, RecTestCallState{}) {
-				state.addErrorIf(!hasShallowError, makeSymbolicEvalError(elemNode, state, fmtUnexpectedElemInTupleAnnotated(e, generalElemPattern.(Pattern))))
+				state.addErrorIf(!hasShallowError, MakeSymbolicEvalError(elemNode, state, fmtUnexpectedElemInTupleAnnotated(e, generalElemPattern.(Pattern))))
 			}
 		}
 
@@ -4873,7 +4873,7 @@ func evalTupleLiteral(n *parse.TupleLiteral, state *State, options evalOptions) 
 			if isTuple {
 				e = tuple.Element()
 			} else {
-				state.addErrorIf(!hasShallowError, makeSymbolicEvalError(spreadElemNode.Expr, state, SPREAD_ELEMENT_SHOULD_BE_A_TUPLE))
+				state.addErrorIf(!hasShallowError, MakeSymbolicEvalError(spreadElemNode.Expr, state, SPREAD_ELEMENT_SHOULD_BE_A_TUPLE))
 				if expectedElement != nil {
 					e = expectedElement
 				} else {
@@ -4896,18 +4896,18 @@ func evalTupleLiteral(n *parse.TupleLiteral, state *State, options evalOptions) 
 			options.setActualValueMismatchIfNotNil()
 		} else if expectedElement != nil && !expectedElement.Test(e, RecTestCallState{}) && !deeperMismatch {
 			options.setActualValueMismatchIfNotNil()
-			state.addErrorIf(!hasShallowError, makeSymbolicEvalError(elemNode, state, fmtUnexpectedElemInListofValues(e, expectedElement)))
+			state.addErrorIf(!hasShallowError, MakeSymbolicEvalError(elemNode, state, fmtUnexpectedElemInListofValues(e, expectedElement)))
 		}
 
 		if e.IsMutable() {
-			state.addErrorIf(!hasShallowError, makeSymbolicEvalError(elemNode, state, ELEMS_OF_TUPLE_SHOUD_BE_IMMUTABLE))
+			state.addErrorIf(!hasShallowError, MakeSymbolicEvalError(elemNode, state, ELEMS_OF_TUPLE_SHOUD_BE_IMMUTABLE))
 			e = ANY_SERIALIZABLE
 		}
 
 		e = AsSerializable(e)
 		_, ok = e.(Serializable)
 		if !ok {
-			state.addErrorIf(!hasShallowError, makeSymbolicEvalError(elemNode, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
+			state.addErrorIf(!hasShallowError, MakeSymbolicEvalError(elemNode, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
 			e = ANY_SERIALIZABLE
 		}
 
@@ -4958,17 +4958,17 @@ func evalDictionaryLiteral(n *parse.DictionaryLiteral, state *State, options eva
 			options.setActualValueMismatchIfNotNil()
 
 			msg, regions := fmtNotAssignableToEntryOfExpectedValue(state.fmtHelper, entryValue, expectedEntryValue)
-			state.addError(makeSymbolicEvalError(entry.Value, state, msg, regions...))
+			state.addError(MakeSymbolicEvalError(entry.Value, state, msg, regions...))
 		}
 
 		serializable, ok := AsSerializable(entryValue).(Serializable)
 		if !ok {
-			state.addError(makeSymbolicEvalError(entry.Value, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
+			state.addError(MakeSymbolicEvalError(entry.Value, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
 			entryValue = ANY_SERIALIZABLE
 		} else {
 			entryValue = serializable
 			if _, ok := asWatchable(entryValue).(Watchable); !ok && entryValue.IsMutable() {
-				state.addError(makeSymbolicEvalError(entry.Value, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE))
+				state.addError(MakeSymbolicEvalError(entry.Value, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE))
 			}
 		}
 
@@ -4983,12 +4983,12 @@ func evalDictionaryLiteral(n *parse.DictionaryLiteral, state *State, options eva
 
 		serializable, ok = AsSerializable(entryKey).(Serializable)
 		if !ok {
-			state.addError(makeSymbolicEvalError(entry.Key, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
+			state.addError(MakeSymbolicEvalError(entry.Key, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_SERIALIZABLE))
 			entryKey = ANY_SERIALIZABLE
 		} else {
 			entryKey = serializable
 			if _, ok := asWatchable(entryKey).(Watchable); !ok && entryKey.IsMutable() {
-				state.addError(makeSymbolicEvalError(entry.Key, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE))
+				state.addError(MakeSymbolicEvalError(entry.Key, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_ELEMENTS_OF_WATCHABLE))
 			}
 		}
 
@@ -5015,11 +5015,11 @@ func evalObjectPatternLiteral(n *parse.ObjectPatternLiteral, state *State, optio
 
 		if objPattern, ok := compiledElement.(*ObjectPattern); ok {
 			if objPattern.entries == nil {
-				state.addError(makeSymbolicEvalError(el, state, CANNOT_SPREAD_OBJ_PATTERN_THAT_MATCHES_ANY_OBJECT))
+				state.addError(MakeSymbolicEvalError(el, state, CANNOT_SPREAD_OBJ_PATTERN_THAT_MATCHES_ANY_OBJECT))
 			} else {
 				for name, vpattern := range objPattern.entries {
 					if _, alreadyPresent := pattern.entries[name]; alreadyPresent {
-						state.addError(makeSymbolicEvalError(el, state, fmtPropertyShouldNotBePresentInSeveralSpreadPatterns(name)))
+						state.addError(MakeSymbolicEvalError(el, state, fmtPropertyShouldNotBePresentInSeveralSpreadPatterns(name)))
 						continue
 					}
 					pattern.entries[name] = vpattern
@@ -5030,7 +5030,7 @@ func evalObjectPatternLiteral(n *parse.ObjectPatternLiteral, state *State, optio
 			//
 
 		} else {
-			state.addError(makeSymbolicEvalError(el, state, fmtPatternSpreadInObjectPatternShouldBeAnObjectPatternNot(compiledElement)))
+			state.addError(MakeSymbolicEvalError(el, state, fmtPatternSpreadInObjectPatternShouldBeAnObjectPatternNot(compiledElement)))
 		}
 	}
 
@@ -5058,7 +5058,7 @@ func evalObjectPatternLiteral(n *parse.ObjectPatternLiteral, state *State, optio
 
 					propertyValuePattern = &TypePattern{val: ANY_SERIALIZABLE}
 				} else {
-					state.addError(makeSymbolicEvalError(p.Value, state, PROPERTY_PATTERNS_IN_OBJECT_AND_REC_PATTERNS_MUST_HAVE_SERIALIZABLE_VALUEs))
+					state.addError(MakeSymbolicEvalError(p.Value, state, PROPERTY_PATTERNS_IN_OBJECT_AND_REC_PATTERNS_MUST_HAVE_SERIALIZABLE_VALUEs))
 					propertyValuePattern = &TypePattern{val: ANY_SERIALIZABLE}
 				}
 			}
@@ -5096,18 +5096,18 @@ func evalRecordPatternLiteral(n *parse.RecordPatternLiteral, state *State, optio
 
 		if recPattern, ok := compiledElement.(*RecordPattern); ok {
 			if recPattern.entries == nil {
-				state.addError(makeSymbolicEvalError(el, state, CANNOT_SPREAD_REC_PATTERN_THAT_MATCHES_ANY_RECORD))
+				state.addError(MakeSymbolicEvalError(el, state, CANNOT_SPREAD_REC_PATTERN_THAT_MATCHES_ANY_RECORD))
 			} else {
 				for name, vpattern := range recPattern.entries {
 					if _, alreadyPresent := pattern.entries[name]; alreadyPresent {
-						state.addError(makeSymbolicEvalError(el, state, fmtPropertyShouldNotBePresentInSeveralSpreadPatterns(name)))
+						state.addError(MakeSymbolicEvalError(el, state, fmtPropertyShouldNotBePresentInSeveralSpreadPatterns(name)))
 						continue
 					}
 					pattern.entries[name] = vpattern
 				}
 			}
 		} else {
-			state.addError(makeSymbolicEvalError(el, state, fmtPatternSpreadInRecordPatternShouldBeAnRecordPatternNot(compiledElement)))
+			state.addError(MakeSymbolicEvalError(el, state, fmtPatternSpreadInRecordPatternShouldBeAnRecordPatternNot(compiledElement)))
 		}
 	}
 
@@ -5131,7 +5131,7 @@ func evalRecordPatternLiteral(n *parse.RecordPatternLiteral, state *State, optio
 				//we handle this case separately
 				pattern.entries[name] = &TypePattern{val: ANY_SERIALIZABLE}
 			} else if entryPattern.SymbolicValue().IsMutable() {
-				state.addError(makeSymbolicEvalError(p.Value, state, fmtEntriesOfRecordPatternShouldMatchOnlyImmutableValues(name)))
+				state.addError(MakeSymbolicEvalError(p.Value, state, fmtEntriesOfRecordPatternShouldMatchOnlyImmutableValues(name)))
 				pattern.entries[name] = &TypePattern{val: ANY_SERIALIZABLE}
 			} else {
 				//check that the pattern has serializable values
@@ -5143,7 +5143,7 @@ func evalRecordPatternLiteral(n *parse.RecordPatternLiteral, state *State, optio
 
 						entryPattern = &TypePattern{val: ANY_SERIALIZABLE}
 					} else {
-						state.addError(makeSymbolicEvalError(p.Value, state, PROPERTY_PATTERNS_IN_OBJECT_AND_REC_PATTERNS_MUST_HAVE_SERIALIZABLE_VALUEs))
+						state.addError(MakeSymbolicEvalError(p.Value, state, PROPERTY_PATTERNS_IN_OBJECT_AND_REC_PATTERNS_MUST_HAVE_SERIALIZABLE_VALUEs))
 						entryPattern = &TypePattern{val: ANY_SERIALIZABLE}
 					}
 				}
@@ -5181,7 +5181,7 @@ func evalListPatternLiteral(n *parse.ListPatternLiteral, state *State, options e
 		//TODO: cache .SymbolicValue() for big patterns
 		if _, ok := AsSerializable(pattern.generalElement.SymbolicValue()).(Serializable); !ok {
 			pattern.generalElement = &TypePattern{val: ANY_SERIALIZABLE}
-			state.addError(makeSymbolicEvalError(n.GeneralElement, state, ONLY_SERIALIZABLE_VALUE_PATTERNS_ARE_ALLOWED))
+			state.addError(MakeSymbolicEvalError(n.GeneralElement, state, ONLY_SERIALIZABLE_VALUE_PATTERNS_ARE_ALLOWED))
 		}
 	} else {
 		pattern.elements = make([]Pattern, 0)
@@ -5194,7 +5194,7 @@ func evalListPatternLiteral(n *parse.ListPatternLiteral, state *State, options e
 
 			if _, ok := AsSerializable(elemPattern.SymbolicValue()).(Serializable); !ok {
 				elemPattern = &TypePattern{val: ANY_SERIALIZABLE}
-				state.addError(makeSymbolicEvalError(e, state, ONLY_SERIALIZABLE_VALUE_PATTERNS_ARE_ALLOWED))
+				state.addError(MakeSymbolicEvalError(e, state, ONLY_SERIALIZABLE_VALUE_PATTERNS_ARE_ALLOWED))
 			}
 
 			pattern.elements = append(pattern.elements, elemPattern)
@@ -5217,11 +5217,11 @@ func evalTuplePatternLiteral(n *parse.TuplePatternLiteral, state *State, options
 		generalElement := pattern.generalElement.SymbolicValue()
 
 		if generalElement.IsMutable() {
-			state.addError(makeSymbolicEvalError(n.GeneralElement, state, ELEM_PATTERNS_OF_TUPLE_SHOUD_MATCH_ONLY_IMMUTABLES))
+			state.addError(MakeSymbolicEvalError(n.GeneralElement, state, ELEM_PATTERNS_OF_TUPLE_SHOUD_MATCH_ONLY_IMMUTABLES))
 			pattern.generalElement = &TypePattern{val: ANY_SERIALIZABLE}
 		} else if _, ok := AsSerializable(generalElement).(Serializable); !ok {
 			pattern.generalElement = &TypePattern{val: ANY_SERIALIZABLE}
-			state.addError(makeSymbolicEvalError(n.GeneralElement, state, ONLY_SERIALIZABLE_VALUE_PATTERNS_ARE_ALLOWED))
+			state.addError(MakeSymbolicEvalError(n.GeneralElement, state, ONLY_SERIALIZABLE_VALUE_PATTERNS_ARE_ALLOWED))
 		}
 
 	} else {
@@ -5236,11 +5236,11 @@ func evalTuplePatternLiteral(n *parse.TuplePatternLiteral, state *State, options
 			element := elemPattern.SymbolicValue()
 
 			if element.IsMutable() {
-				state.addError(makeSymbolicEvalError(e, state, ELEM_PATTERNS_OF_TUPLE_SHOUD_MATCH_ONLY_IMMUTABLES))
+				state.addError(MakeSymbolicEvalError(e, state, ELEM_PATTERNS_OF_TUPLE_SHOUD_MATCH_ONLY_IMMUTABLES))
 				elemPattern = &TypePattern{val: ANY_SERIALIZABLE}
 			} else if _, ok := AsSerializable(element).(Serializable); !ok {
 				elemPattern = &TypePattern{val: ANY_SERIALIZABLE}
-				state.addError(makeSymbolicEvalError(e, state, ONLY_SERIALIZABLE_VALUE_PATTERNS_ARE_ALLOWED))
+				state.addError(MakeSymbolicEvalError(e, state, ONLY_SERIALIZABLE_VALUE_PATTERNS_ARE_ALLOWED))
 			}
 
 			pattern.elements = append(pattern.elements, elemPattern)
@@ -5303,10 +5303,10 @@ func evalConcatenationExpression(n *parse.ConcatenationExpression, state *State,
 				values = append(values, iterableElemVal)
 				nodeIndexes = append(nodeIndexes, elemNodeIndex)
 			default:
-				state.addError(makeSymbolicEvalError(elemNode, state, CONCATENATION_SUPPORTED_TYPES_EXPLANATION))
+				state.addError(MakeSymbolicEvalError(elemNode, state, CONCATENATION_SUPPORTED_TYPES_EXPLANATION))
 			}
 		} else {
-			state.addError(makeSymbolicEvalError(n, state, SPREAD_ELEMENT_SHOULD_BE_ITERABLE))
+			state.addError(MakeSymbolicEvalError(n, state, SPREAD_ELEMENT_SHOULD_BE_ITERABLE))
 		}
 	}
 
@@ -5321,7 +5321,7 @@ func evalConcatenationExpression(n *parse.ConcatenationExpression, state *State,
 		}
 		for i, elem := range values {
 			if _, ok := elem.(StringLike); !ok {
-				state.addError(makeSymbolicEvalError(n.Elements[nodeIndexes[i]], state, fmtStringConcatInvalidElementOfType(elem)))
+				state.addError(MakeSymbolicEvalError(n.Elements[nodeIndexes[i]], state, fmtStringConcatInvalidElementOfType(elem)))
 			}
 		}
 		//We don't know if the result will be a String or a StringConcatenation.
@@ -5332,7 +5332,7 @@ func evalConcatenationExpression(n *parse.ConcatenationExpression, state *State,
 		}
 		for i, elem := range values {
 			if _, ok := elem.(BytesLike); !ok {
-				state.addError(makeSymbolicEvalError(n.Elements[nodeIndexes[i]], state, fmt.Sprintf("bytes concatenation: invalid element of type %T", elem)))
+				state.addError(MakeSymbolicEvalError(n.Elements[nodeIndexes[i]], state, fmt.Sprintf("bytes concatenation: invalid element of type %T", elem)))
 			}
 		}
 		//We don't know if the result will be a ByteSlice or a BytesConcatenation.
@@ -5353,7 +5353,7 @@ func evalConcatenationExpression(n *parse.ConcatenationExpression, state *State,
 					generalElements = append(generalElements, tuple.generalElement)
 				}
 			} else {
-				state.addError(makeSymbolicEvalError(n.Elements[nodeIndexes[i]], state, fmt.Sprintf("tuple concatenation: invalid element of type %T", concatElem)))
+				state.addError(MakeSymbolicEvalError(n.Elements[nodeIndexes[i]], state, fmt.Sprintf("tuple concatenation: invalid element of type %T", concatElem)))
 			}
 		}
 
@@ -5363,7 +5363,7 @@ func evalConcatenationExpression(n *parse.ConcatenationExpression, state *State,
 			return NewTuple(elements...), nil
 		}
 	default:
-		state.addError(makeSymbolicEvalError(n, state, CONCATENATION_SUPPORTED_TYPES_EXPLANATION))
+		state.addError(MakeSymbolicEvalError(n, state, CONCATENATION_SUPPORTED_TYPES_EXPLANATION))
 		return ANY, nil
 	}
 }
@@ -5385,7 +5385,7 @@ func evalExtractionExpression(n *parse.ExtractionExpression, state *State, optio
 	case IProps:
 	default:
 		ignoreProps = true
-		state.addError(makeSymbolicEvalError(n.Object, state, fmtValueHasNoProperties(left)))
+		state.addError(MakeSymbolicEvalError(n.Object, state, fmtValueHasNoProperties(left)))
 	}
 
 	for _, key := range n.Keys.Keys {
@@ -5417,18 +5417,18 @@ func evalIndexExpression(n *parse.IndexExpression, state *State, options evalOpt
 
 	intIndex, ok := index.(*Int)
 	if !ok {
-		state.addError(makeSymbolicEvalError(n, state, fmtIndexIsNotAnIntButA(index)))
+		state.addError(MakeSymbolicEvalError(n, state, fmtIndexIsNotAnIntButA(index)))
 		index = &Int{}
 	}
 
 	if indexable, ok := asIndexable(val).(Indexable); ok {
 		if intIndex != nil && intIndex.hasValue && indexable.HasKnownLen() && (intIndex.value < 0 || intIndex.value >= int64(indexable.KnownLen())) {
-			state.addError(makeSymbolicEvalError(n.Index, state, INDEX_IS_OUT_OF_BOUNDS))
+			state.addError(MakeSymbolicEvalError(n.Index, state, INDEX_IS_OUT_OF_BOUNDS))
 		}
 		return indexable.Element(), nil
 	}
 
-	state.addError(makeSymbolicEvalError(n, state, fmtXisNotIndexable(val)))
+	state.addError(MakeSymbolicEvalError(n, state, fmtXisNotIndexable(val)))
 	return ANY, nil
 }
 
@@ -5451,7 +5451,7 @@ func evalSliceExpression(n *parse.SliceExpression, state *State, options evalOpt
 		if i, ok := index.(*Int); ok {
 			startIndex = i
 		} else {
-			state.addError(makeSymbolicEvalError(n, state, fmtStartIndexIsNotAnIntButA(index)))
+			state.addError(MakeSymbolicEvalError(n, state, fmtStartIndexIsNotAnIntButA(index)))
 			startIndex = &Int{}
 		}
 	}
@@ -5464,24 +5464,24 @@ func evalSliceExpression(n *parse.SliceExpression, state *State, options evalOpt
 		if i, ok := index.(*Int); ok {
 			endIndex = i
 		} else {
-			state.addError(makeSymbolicEvalError(n, state, fmtEndIndexIsNotAnIntButA(index)))
+			state.addError(MakeSymbolicEvalError(n, state, fmtEndIndexIsNotAnIntButA(index)))
 			endIndex = &Int{}
 		}
 	}
 
 	if startIndex != nil && startIndex.hasValue {
 		if endIndex != nil && endIndex.hasValue && endIndex.value < startIndex.value {
-			state.addError(makeSymbolicEvalError(n.EndIndex, state, END_INDEX_SHOULD_BE_LESS_OR_EQUAL_START_INDEX))
+			state.addError(MakeSymbolicEvalError(n.EndIndex, state, END_INDEX_SHOULD_BE_LESS_OR_EQUAL_START_INDEX))
 		}
 	}
 
 	if seq, ok := slice.(Sequence); ok {
 		if startIndex != nil && startIndex.hasValue && seq.HasKnownLen() && (startIndex.value < 0 || startIndex.value >= int64(seq.KnownLen())) {
-			state.addError(makeSymbolicEvalError(n.StartIndex, state, START_INDEX_IS_OUT_OF_BOUNDS))
+			state.addError(MakeSymbolicEvalError(n.StartIndex, state, START_INDEX_IS_OUT_OF_BOUNDS))
 		}
 		return seq.slice(startIndex, endIndex), nil
 	} else {
-		state.addError(makeSymbolicEvalError(n, state, fmtSequenceExpectedButIs(slice)))
+		state.addError(MakeSymbolicEvalError(n, state, fmtSequenceExpectedButIs(slice)))
 		return ANY, nil
 	}
 
@@ -5509,7 +5509,7 @@ func evalPatternNamespaceDefinition(n *parse.PatternNamespaceDefinition, state *
 					v = exactValPatt
 				} else {
 					v = ANY_PATTERN
-					state.addError(makeSymbolicEvalError(n.Right, state, err.Error()))
+					state.addError(MakeSymbolicEvalError(n.Right, state, err.Error()))
 				}
 			}
 			namespace.entries[k] = v.(Pattern)
@@ -5529,7 +5529,7 @@ func evalPatternNamespaceDefinition(n *parse.PatternNamespaceDefinition, state *
 					v = exactValPatt
 				} else {
 					v = ANY_PATTERN
-					state.addError(makeSymbolicEvalError(n.Right, state, err.Error()))
+					state.addError(MakeSymbolicEvalError(n.Right, state, err.Error()))
 				}
 			}
 			namespace.entries[k] = v.(Pattern)
@@ -5539,7 +5539,7 @@ func evalPatternNamespaceDefinition(n *parse.PatternNamespaceDefinition, state *
 			namespaceName = name
 		}
 	default:
-		state.addError(makeSymbolicEvalError(n, state, fmtPatternNamespaceShouldBeInitWithNot(right)))
+		state.addError(MakeSymbolicEvalError(n, state, fmtPatternNamespaceShouldBeInitWithNot(right)))
 		name, ok := n.NamespaceName()
 		if ok {
 			namespaceName = name
@@ -5673,7 +5673,7 @@ func evalStringTemplateLiteral(n *parse.StringTemplateLiteral, state *State, opt
 	_, isPatternAnIdent := n.Pattern.(*parse.PatternIdentifierLiteral)
 
 	if isPatternAnIdent && n.HasInterpolations() {
-		state.addError(makeSymbolicEvalError(n, state, STR_TEMPL_LITS_WITH_INTERP_SHOULD_BE_PRECEDED_BY_PATTERN_WICH_NAME_HAS_PREFIX))
+		state.addError(MakeSymbolicEvalError(n, state, STR_TEMPL_LITS_WITH_INTERP_SHOULD_BE_PRECEDED_BY_PATTERN_WICH_NAME_HAS_PREFIX))
 		return &CheckedString{}, nil
 	}
 
@@ -5687,14 +5687,14 @@ func evalStringTemplateLiteral(n *parse.StringTemplateLiteral, state *State, opt
 			namespace = state.ctx.ResolvePatternNamespace(namespaceName)
 
 			if namespace == nil {
-				state.addError(makeSymbolicEvalError(n, state, fmtCannotInterpolatePatternNamespaceDoesNotExist(namespaceName)))
+				state.addError(MakeSymbolicEvalError(n, state, fmtCannotInterpolatePatternNamespaceDoesNotExist(namespaceName)))
 				return &CheckedString{}, nil
 			}
 
 			memberName := namespaceMembExpr.MemberName.Name
 			_, ok := namespace.entries[memberName]
 			if !ok {
-				state.addError(makeSymbolicEvalError(n, state, fmtCannotInterpolateMemberOfPatternNamespaceDoesNotExist(memberName, namespaceName)))
+				state.addError(MakeSymbolicEvalError(n, state, fmtCannotInterpolateMemberOfPatternNamespaceDoesNotExist(memberName, namespaceName)))
 				return &CheckedString{}, nil
 			}
 		}
@@ -5714,7 +5714,7 @@ func evalStringTemplateLiteral(n *parse.StringTemplateLiteral, state *State, opt
 				memberName := s.Type
 				_, ok := namespace.entries[memberName]
 				if !ok {
-					state.addError(makeSymbolicEvalError(slice, state, fmtCannotInterpolateMemberOfPatternNamespaceDoesNotExist(memberName, namespaceName)))
+					state.addError(MakeSymbolicEvalError(slice, state, fmtCannotInterpolateMemberOfPatternNamespaceDoesNotExist(memberName, namespaceName)))
 					return &CheckedString{}, nil
 				}
 			}
@@ -5729,9 +5729,9 @@ func evalStringTemplateLiteral(n *parse.StringTemplateLiteral, state *State, opt
 			case *Int:
 			default:
 				if n.Pattern == nil {
-					state.addError(makeSymbolicEvalError(slice, state, fmtUntypedInterpolationIsNotStringlikeOrIntBut(e)))
+					state.addError(MakeSymbolicEvalError(slice, state, fmtUntypedInterpolationIsNotStringlikeOrIntBut(e)))
 				} else {
-					state.addError(makeSymbolicEvalError(slice, state, fmtInterpolationIsNotStringlikeOrIntBut(e)))
+					state.addError(MakeSymbolicEvalError(slice, state, fmtInterpolationIsNotStringlikeOrIntBut(e)))
 				}
 			}
 		}
@@ -5761,7 +5761,7 @@ func evalMarkupExpression(n *parse.MarkupExpression, state *State, options evalO
 	} else {
 		varInfo, ok := state.getGlobal(globalnames.HTML_NS)
 		if !ok {
-			state.addError(makeSymbolicEvalError(n, state, HTML_NS_IS_NOT_DEFINED))
+			state.addError(MakeSymbolicEvalError(n, state, HTML_NS_IS_NOT_DEFINED))
 			return ANY, nil
 		}
 		namespace = varInfo.value
@@ -5774,29 +5774,29 @@ func evalMarkupExpression(n *parse.MarkupExpression, state *State, options evalO
 			return nil, err
 		}
 
-		state.addError(makeSymbolicEvalError(namespaceErrorNode, state, NAMESPACE_APPLIED_TO_MARKUP_ELEMENT_SHOUD_BE_A_RECORD))
+		state.addError(MakeSymbolicEvalError(namespaceErrorNode, state, NAMESPACE_APPLIED_TO_MARKUP_ELEMENT_SHOUD_BE_A_RECORD))
 		return ANY, nil
 	} else {
 		factory, ok := ns.entries[FROM_MARKUP_FACTORY_NAME]
 		if !ok {
-			state.addError(makeSymbolicEvalError(namespaceErrorNode, state, MISSING_FACTORY_IN_NAMESPACE_APPLIED_TO_MARKUP_ELEMENT))
+			state.addError(MakeSymbolicEvalError(namespaceErrorNode, state, MISSING_FACTORY_IN_NAMESPACE_APPLIED_TO_MARKUP_ELEMENT))
 			return ANY, nil
 		}
 		goFn, ok := factory.(*GoFunction)
 		if !ok {
-			state.addError(makeSymbolicEvalError(namespaceErrorNode, state, FROM_MARKUP_FACTORY_IS_NOT_A_GO_FUNCTION))
+			state.addError(MakeSymbolicEvalError(namespaceErrorNode, state, FROM_MARKUP_FACTORY_IS_NOT_A_GO_FUNCTION))
 			return ANY, nil
 		}
 
 		if goFn.IsShared() {
-			state.addError(makeSymbolicEvalError(namespaceErrorNode, state, FROM_MARKUP_FACTORY_SHOULD_NOT_BE_A_SHARED_FUNCTION))
+			state.addError(MakeSymbolicEvalError(namespaceErrorNode, state, FROM_MARKUP_FACTORY_SHOULD_NOT_BE_A_SHARED_FUNCTION))
 			return ANY, nil
 		}
 
 		utils.PanicIfErr(goFn.LoadSignatureData())
 
 		if len(goFn.NonVariadicParametersExceptCtx()) == 0 {
-			state.addError(makeSymbolicEvalError(namespaceErrorNode, state, FROM_MARKUP_FACTORY_SHOULD_HAVE_AT_LEAST_ONE_NON_VARIADIC_PARAM))
+			state.addError(MakeSymbolicEvalError(namespaceErrorNode, state, FROM_MARKUP_FACTORY_SHOULD_HAVE_AT_LEAST_ONE_NON_VARIADIC_PARAM))
 			return ANY, nil
 		}
 
@@ -5829,7 +5829,7 @@ func evalMarkupExpression(n *parse.MarkupExpression, state *State, options evalO
 				location = optionalLocation
 			}
 
-			state.addError(makeSymbolicEvalError(location, state, msg))
+			state.addError(MakeSymbolicEvalError(location, state, msg))
 		})
 		state.consumeSymbolicGoFunctionWarnings(func(msg string) {
 			state.addWarning(makeSymbolicEvalWarning(n, state, msg))
@@ -5893,7 +5893,7 @@ func evalMarkupInterpolation(n *parse.MarkupInterpolation, state *State, options
 	if state.checkMarkupInterpolation != nil {
 		msg := state.checkMarkupInterpolation(n.Expr, val)
 		if msg != "" {
-			state.addError(makeSymbolicEvalError(n.Expr, state, msg))
+			state.addError(MakeSymbolicEvalError(n.Expr, state, msg))
 		}
 	}
 
@@ -5938,7 +5938,7 @@ func evalMarkupPatternElement(node *parse.MarkupPatternElement, state *State) er
 					strPattern, ok := v.StringPattern()
 					if !ok {
 						msg := fmtPatternForAttributeDoesNotHaveCorrespStrPattern(attrName)
-						state.addError(makeSymbolicEvalError(patternAttribute.Type, state, msg))
+						state.addError(MakeSymbolicEvalError(patternAttribute.Type, state, msg))
 						break check_all_attr_values
 					}
 					stringPattern = strPattern
@@ -5955,7 +5955,7 @@ func evalMarkupPatternElement(node *parse.MarkupPatternElement, state *State) er
 				default:
 					//Note: floats are not supported because they do not have a unique representation.
 					msg := fmtUnexpectedValForAttrX(attrName)
-					state.addError(makeSymbolicEvalError(patternAttribute.Type, state, msg))
+					state.addError(MakeSymbolicEvalError(patternAttribute.Type, state, msg))
 					break check_all_attr_values
 				}
 
@@ -5997,7 +5997,7 @@ func evalMarkupPatternElement(node *parse.MarkupPatternElement, state *State) er
 					switch v.(type) {
 					case *MarkupPattern, StringLike, *Bool, *Int, ResourceName, *Rune: //ok
 					default:
-						state.addError(makeSymbolicEvalError(child.Expr, state, UNEXPECTED_VAL_FOR_MARKUP_PATTERN_INTERP))
+						state.addError(MakeSymbolicEvalError(child.Expr, state, UNEXPECTED_VAL_FOR_MARKUP_PATTERN_INTERP))
 						break check_all_values
 					}
 				}
@@ -6032,9 +6032,9 @@ func evalDoubleColonExpression(n *parse.DoubleColonExpression, state *State, opt
 		state.SetMostSpecificNodeValue(n.Element, memb)
 
 		if IsAnyOrAnySerializable(memb) || utils.Ret0(IsSharable(memb)) {
-			state.addError(makeSymbolicEvalError(n, state, RHS_OF_DOUBLE_COLON_EXPRS_WITH_OBJ_LHS_SHOULD_BE_THE_NAME_OF_A_MUTABLE_NON_SHARABLE_VALUE_PROPERTY))
+			state.addError(MakeSymbolicEvalError(n, state, RHS_OF_DOUBLE_COLON_EXPRS_WITH_OBJ_LHS_SHOULD_BE_THE_NAME_OF_A_MUTABLE_NON_SHARABLE_VALUE_PROPERTY))
 		} else if len(options.doubleColonExprAncestorChain) == 0 {
-			state.addError(makeSymbolicEvalError(n, state, MISPLACED_DOUBLE_COLON_EXPR))
+			state.addError(MakeSymbolicEvalError(n, state, MISPLACED_DOUBLE_COLON_EXPR))
 		} else {
 			ancestors := options.doubleColonExprAncestorChain
 			rootAncestor := ancestors[0]
@@ -6065,7 +6065,7 @@ func evalDoubleColonExpression(n *parse.DoubleColonExpression, state *State, opt
 			default:
 			}
 			if misplaced {
-				state.addError(makeSymbolicEvalError(n, state, MISPLACED_DOUBLE_COLON_EXPR))
+				state.addError(MakeSymbolicEvalError(n, state, MISPLACED_DOUBLE_COLON_EXPR))
 			}
 		}
 		return memb, nil
@@ -6074,13 +6074,13 @@ func evalDoubleColonExpression(n *parse.DoubleColonExpression, state *State, opt
 
 		valAtURL, err := GetValueAtURL(url, state)
 		if err != nil {
-			state.addError(makeSymbolicEvalError(n.Left, state, err.Error()))
+			state.addError(MakeSymbolicEvalError(n.Left, state, err.Error()))
 			return ANY_SERIALIZABLE, nil
 		}
 
 		iprops, ok := valAtURL.(IProps)
 		if !ok {
-			state.addError(makeSymbolicEvalError(n.Element, state, fmtValueAtURLHasNoProperties(valAtURL)))
+			state.addError(MakeSymbolicEvalError(n.Element, state, fmtValueAtURLHasNoProperties(valAtURL)))
 			state.SetMostSpecificNodeValue(n.Element, ANY_SERIALIZABLE)
 			return ANY_SERIALIZABLE, nil
 		}
@@ -6094,7 +6094,7 @@ func evalDoubleColonExpression(n *parse.DoubleColonExpression, state *State, opt
 		elementName := n.Element.Name
 
 		if !slices.Contains(iprops.PropertyNames(), elementName) {
-			state.addError(makeSymbolicEvalError(n.Element, state, fmtValueAtURLDoesNotHavePropX(valAtURL, elementName)))
+			state.addError(MakeSymbolicEvalError(n.Element, state, fmtValueAtURLDoesNotHavePropX(valAtURL, elementName)))
 			state.SetMostSpecificNodeValue(n.Element, ANY_SERIALIZABLE)
 			return ANY_SERIALIZABLE, nil
 		}
@@ -6131,7 +6131,7 @@ func evalDoubleColonExpression(n *parse.DoubleColonExpression, state *State, opt
 
 			if expr.Method != nil {
 				if len(options.doubleColonExprAncestorChain) == 0 {
-					state.addError(makeSymbolicEvalError(n, state, MISPLACED_DOUBLE_COLON_EXPR_EXT_METHOD_CAN_ONLY_BE_CALLED))
+					state.addError(MakeSymbolicEvalError(n, state, MISPLACED_DOUBLE_COLON_EXPR_EXT_METHOD_CAN_ONLY_BE_CALLED))
 					return ANY, nil
 				}
 
@@ -6145,7 +6145,7 @@ func evalDoubleColonExpression(n *parse.DoubleColonExpression, state *State, opt
 				default:
 				}
 				if misplaced {
-					state.addError(makeSymbolicEvalError(n, state, MISPLACED_DOUBLE_COLON_EXPR_EXT_METHOD_CAN_ONLY_BE_CALLED))
+					state.addError(MakeSymbolicEvalError(n, state, MISPLACED_DOUBLE_COLON_EXPR_EXT_METHOD_CAN_ONLY_BE_CALLED))
 				}
 
 				result = expr.Method
@@ -6189,7 +6189,7 @@ func evalDoubleColonExpression(n *parse.DoubleColonExpression, state *State, opt
 			suggestion = closest
 		}
 
-		state.addError(makeSymbolicEvalError(n, state, fmtExtensionsDoNotProvideTheXProp(elementName, suggestion)))
+		state.addError(MakeSymbolicEvalError(n, state, fmtExtensionsDoNotProvideTheXProp(elementName, suggestion)))
 		return ANY_SERIALIZABLE, nil
 	}
 }
@@ -6205,14 +6205,14 @@ func evalExtendStatement(n *parse.ExtendStatement, state *State, options evalOpt
 	}
 
 	if !IsConcretizable(pattern) {
-		state.addError(makeSymbolicEvalError(n.ExtendedPattern, state, EXTENDED_PATTERN_MUST_BE_CONCRETIZABLE_AT_CHECK_TIME))
+		state.addError(MakeSymbolicEvalError(n.ExtendedPattern, state, EXTENDED_PATTERN_MUST_BE_CONCRETIZABLE_AT_CHECK_TIME))
 		return nil, nil
 	}
 
 	extendedValue := pattern.SymbolicValue()
 
 	if _, ok := extendedValue.(Serializable); !ok {
-		state.addError(makeSymbolicEvalError(n.ExtendedPattern, state, ONLY_SERIALIZABLE_VALUE_PATTERNS_ARE_ALLOWED))
+		state.addError(MakeSymbolicEvalError(n.ExtendedPattern, state, ONLY_SERIALIZABLE_VALUE_PATTERNS_ARE_ALLOWED))
 		return nil, nil
 	}
 
@@ -6234,7 +6234,7 @@ func evalExtendStatement(n *parse.ExtendStatement, state *State, options evalOpt
 
 	for _, prop := range objLit.Properties {
 		if prop.HasNoKey() {
-			state.addError(makeSymbolicEvalError(prop, state, KEYS_OF_EXT_OBJ_MUST_BE_VALID_INOX_IDENTS))
+			state.addError(MakeSymbolicEvalError(prop, state, KEYS_OF_EXT_OBJ_MUST_BE_VALID_INOX_IDENTS))
 			continue
 		}
 
@@ -6243,13 +6243,13 @@ func evalExtendStatement(n *parse.ExtendStatement, state *State, options evalOpt
 		expr, ok := parse.ParseExpression(key)
 		_, isIdent := expr.(*parse.IdentifierLiteral)
 		if !ok || !isIdent {
-			state.addError(makeSymbolicEvalError(prop.Key, state, KEYS_OF_EXT_OBJ_MUST_BE_VALID_INOX_IDENTS))
+			state.addError(MakeSymbolicEvalError(prop.Key, state, KEYS_OF_EXT_OBJ_MUST_BE_VALID_INOX_IDENTS))
 			continue
 		}
 
 		if extendedValueIprops != nil {
 			if HasRequiredOrOptionalProperty(extendedValueIprops, key) {
-				state.addError(makeSymbolicEvalError(prop.Key, state, fmtExtendedValueAlreadyHasAnXProperty(key)))
+				state.addError(MakeSymbolicEvalError(prop.Key, state, fmtExtendedValueAlreadyHasAnXProperty(key)))
 				continue
 			}
 		}
@@ -6612,7 +6612,7 @@ func evalExtendStatement(n *parse.ExtendStatement, state *State, options evalOpt
 	// }
 
 	for _, metaProp := range objLit.MetaProperties {
-		state.addError(makeSymbolicEvalError(metaProp, state, META_PROPERTIES_NOT_ALLOWED_IN_EXTENSION_OBJECT))
+		state.addError(MakeSymbolicEvalError(metaProp, state, META_PROPERTIES_NOT_ALLOWED_IN_EXTENSION_OBJECT))
 	}
 
 	state.ctx.AddTypeExtension(extension)
@@ -6629,21 +6629,21 @@ func evalNewExpression(n *parse.NewExpression, state *State, options evalOptions
 		typeName := typeNode.Name
 		patt := state.ctx.ResolveNamedPattern(typeName)
 		if patt != nil && !IsNameOfBuiltinComptimeType(typeName) {
-			state.addError(makeSymbolicEvalError(typeNode, state, ONLY_COMPILE_TIME_TYPES_CAN_BE_USED_IN_NEW_EXPRS))
+			state.addError(MakeSymbolicEvalError(typeNode, state, ONLY_COMPILE_TIME_TYPES_CAN_BE_USED_IN_NEW_EXPRS))
 			return ANY, nil
 		}
 
 		comptimeType, ok := comptimeTypes.GetPointerType(typeName)
 		if !ok {
-			state.addError(makeSymbolicEvalError(typeNode, state, fmtCompileTimeTypeIsNotDefined(typeName)))
+			state.addError(MakeSymbolicEvalError(typeNode, state, fmtCompileTimeTypeIsNotDefined(typeName)))
 			return ANY, nil
 		}
 
 		return comptimeType.SymbolicValue(), nil
 	case *parse.PointerType:
-		state.addError(makeSymbolicEvalError(typeNode, state, POINTER_TYPES_CANNOT_BE_USED_IN_NEW_EXPRS_YET))
+		state.addError(MakeSymbolicEvalError(typeNode, state, POINTER_TYPES_CANNOT_BE_USED_IN_NEW_EXPRS_YET))
 	default:
-		state.addError(makeSymbolicEvalError(typeNode, state, ONLY_COMPILE_TIME_TYPES_CAN_BE_USED_AS_STRUCT_FIELD_TYPES))
+		state.addError(MakeSymbolicEvalError(typeNode, state, ONLY_COMPILE_TIME_TYPES_CAN_BE_USED_AS_STRUCT_FIELD_TYPES))
 	}
 	return ANY, nil
 }
@@ -6664,18 +6664,18 @@ func symbolicMemb(value Value, name string, accessKind memberAccessKind, node pa
 	if ok {
 		strct, ok := pointer.value.(*Struct)
 		if !ok {
-			state.addError(makeSymbolicEvalError(node, state, POINTED_VALUE_HAS_NO_PROPERTIES))
+			state.addError(MakeSymbolicEvalError(node, state, POINTED_VALUE_HAS_NO_PROPERTIES))
 			return ANY
 		}
 		if accessKind == optionalMemberAccess {
-			state.addError(makeSymbolicEvalError(node, state, OPTIONAL_MEMBER_EXPRS_NOT_ALLOWED_FOR_STRUCT_FIELDS))
+			state.addError(MakeSymbolicEvalError(node, state, OPTIONAL_MEMBER_EXPRS_NOT_ALLOWED_FOR_STRUCT_FIELDS))
 			return ANY
 		}
 		field, ok := strct.typ.FieldByName(name)
 		if ok {
 			return field.Type.SymbolicValue()
 		}
-		state.addError(makeSymbolicEvalError(node, state, fmtStructDoesnotHaveField(name)))
+		state.addError(MakeSymbolicEvalError(node, state, fmtStructDoesnotHaveField(name)))
 		return ANY
 	}
 
@@ -6683,7 +6683,7 @@ func symbolicMemb(value Value, name string, accessKind memberAccessKind, node pa
 
 	iprops, ok := AsIprops(value).(IProps)
 	if !ok {
-		state.addError(makeSymbolicEvalError(node, state, fmtValueHasNoProperties(value)))
+		state.addError(MakeSymbolicEvalError(node, state, fmtValueHasNoProperties(value)))
 		return ANY
 	}
 
@@ -6703,7 +6703,7 @@ func symbolicMemb(value Value, name string, accessKind memberAccessKind, node pa
 			}
 
 			if !isOptionalAccess {
-				state.addError(makeSymbolicEvalError(node, state, fmtPropOfDoesNotExist(name, value, closest)))
+				state.addError(MakeSymbolicEvalError(node, state, fmtPropOfDoesNotExist(name, value, closest)))
 			}
 			result = ANY
 		} else {
@@ -6715,7 +6715,7 @@ func symbolicMemb(value Value, name string, accessKind memberAccessKind, node pa
 					} else {
 						msg = fmtPropertyIsOptionalUseOptionalMembExpr(name)
 					}
-					state.addError(makeSymbolicEvalError(node, state, msg))
+					state.addError(MakeSymbolicEvalError(node, state, msg))
 				}
 			}
 		}
@@ -6724,7 +6724,7 @@ func symbolicMemb(value Value, name string, accessKind memberAccessKind, node pa
 	propValue := iprops.Prop(name)
 
 	if propValue == nil {
-		state.addError(makeSymbolicEvalError(node, state, "symbolic IProp should panic when a non-existing property is accessed"))
+		state.addError(MakeSymbolicEvalError(node, state, "symbolic IProp should panic when a non-existing property is accessed"))
 		return ANY
 	}
 	if isOptionalAccess {
@@ -6749,7 +6749,7 @@ func handleConstraints(obj *Object, block *parse.InitializationBlock, state *Sta
 		case *parse.MemberExpression:
 		case parse.SimpleValueLiteral:
 		default:
-			state.addError(makeSymbolicEvalError(node, state, CONSTRAINTS_INIT_BLOCK_EXPLANATION))
+			state.addError(MakeSymbolicEvalError(node, state, CONSTRAINTS_INIT_BLOCK_EXPLANATION))
 		}
 		return parse.ContinueTraversal, nil
 	}, nil)
@@ -6777,14 +6777,14 @@ func handleConstraints(obj *Object, block *parse.InitializationBlock, state *Sta
 
 			obj.complexPropertyConstraints = append(obj.complexPropertyConstraints, constraint)
 		default:
-			state.addError(makeSymbolicEvalError(stmt, state, CONSTRAINTS_INIT_BLOCK_EXPLANATION))
+			state.addError(MakeSymbolicEvalError(stmt, state, CONSTRAINTS_INIT_BLOCK_EXPLANATION))
 		}
 	}
 
 	return nil
 }
 
-func makeSymbolicEvalError(node parse.Node, state *State, msg string, regions ...commonfmt.RegionInfo) SymbolicEvaluationError {
+func MakeSymbolicEvalError(node parse.Node, state *State, msg string, regions ...commonfmt.RegionInfo) SymbolicEvaluationError {
 	locatedMsg := msg
 	location := state.getErrorMesssageLocation(node)
 
@@ -6814,7 +6814,7 @@ func makeSymbolicEvalErrorFromError(node parse.Node, state *State, err error) Sy
 	if e, ok := err.(SymbolicEvaluationError); ok {
 		return e
 	}
-	return makeSymbolicEvalError(node, state, err.Error())
+	return MakeSymbolicEvalError(node, state, err.Error())
 }
 
 func makeSymbolicEvalWarning(node parse.Node, state *State, msg string) SymbolicEvaluationWarning {

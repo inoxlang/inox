@@ -479,12 +479,12 @@ func (obj *Object) SetProp(state *State, node parse.Node, name string, value Val
 		if static, ok := obj.static[name]; ok {
 			if !static.TestValue(value, RecTestCallState{}) {
 				msg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, value, static)
-				return nil, makeSymbolicEvalError(node, state, msg, regions...)
+				return nil, MakeSymbolicEvalError(node, state, msg, regions...)
 			}
 		} else if prevValue, ok := obj.entries[name]; ok {
 			if !prevValue.Test(value, RecTestCallState{}) {
 				msg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, value, &TypePattern{val: prevValue})
-				return nil, makeSymbolicEvalError(node, state, msg, regions...)
+				return nil, MakeSymbolicEvalError(node, state, msg, regions...)
 			}
 		}
 

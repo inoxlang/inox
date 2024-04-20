@@ -125,7 +125,7 @@ type Pattern interface {
 	//equivalent of Test() for concrete patterns
 	TestValue(v Value, state RecTestCallState) bool
 
-	Call(ctx *Context, values []Value) (Pattern, error)
+	Call(ctx *Context, values []Value, optionalCallLocationNode parse.Node) (Pattern, error)
 
 	//returns a symbolic value that represent all concrete values that match against this pattern
 	SymbolicValue() Value
@@ -136,7 +136,7 @@ type Pattern interface {
 type NotCallablePatternMixin struct {
 }
 
-func (NotCallablePatternMixin) Call(ctx *Context, values []Value) (Pattern, error) {
+func (NotCallablePatternMixin) Call(ctx *Context, values []Value, optionalCallLocationNode parse.Node) (Pattern, error) {
 	return nil, ErrPatternNotCallable
 }
 
@@ -2886,18 +2886,18 @@ func evalPatternNode(n parse.Node, state *State) (Pattern, error) {
 		var exactValue Serializable
 
 		if v.IsMutable() {
-			state.addError(makeSymbolicEvalError(n, state, ONLY_SERIALIZABLE_IMMUT_VALS_ALLOWED_IN_EXACT_VAL_PATTERN))
+			state.addError(MakeSymbolicEvalError(n, state, ONLY_SERIALIZABLE_IMMUT_VALS_ALLOWED_IN_EXACT_VAL_PATTERN))
 			exactValue = ANY_SERIALIZABLE
 		} else if serializable, ok := AsSerializable(v).(Serializable); ok {
 			exactValue = serializable
 		} else {
 			exactValue = ANY_SERIALIZABLE
-			state.addError(makeSymbolicEvalError(n, state, ONLY_SERIALIZABLE_IMMUT_VALS_ALLOWED_IN_EXACT_VAL_PATTERN))
+			state.addError(MakeSymbolicEvalError(n, state, ONLY_SERIALIZABLE_IMMUT_VALS_ALLOWED_IN_EXACT_VAL_PATTERN))
 		}
 
 		pattern, err := NewMostAdaptedExactPattern(exactValue)
 		if err != nil {
-			state.addError(makeSymbolicEvalError(n, state, err.Error()))
+			state.addError(MakeSymbolicEvalError(n, state, err.Error()))
 			return ANY_PATTERN, nil
 		}
 		return pattern, nil
@@ -2906,7 +2906,7 @@ func evalPatternNode(n parse.Node, state *State) (Pattern, error) {
 
 type TypePattern struct {
 	val                 Value //symbolic value that represents concrete values matching, if nil any TypePattern is matched.
-	call                func(ctx *Context, values []Value) (Pattern, error)
+	call                func(ctx *Context, values []Value, optionalNode parse.Node) (Pattern, error)
 	stringPattern       func() (StringPattern, bool)
 	concreteTypePattern any //we play safe
 
@@ -2914,7 +2914,7 @@ type TypePattern struct {
 }
 
 func NewTypePattern(
-	value Value, call func(ctx *Context, values []Value) (Pattern, error),
+	value Value, call func(ctx *Context, values []Value, optionalNode parse.Node) (Pattern, error),
 	stringPattern func() (StringPattern, bool), concrete any,
 ) *TypePattern {
 	return &TypePattern{
@@ -2986,11 +2986,11 @@ func (p *TypePattern) TestValue(v Value, state RecTestCallState) bool {
 	return p.val.Test(v, state)
 }
 
-func (p *TypePattern) Call(ctx *Context, values []Value) (Pattern, error) {
+func (p *TypePattern) Call(ctx *Context, values []Value, optionalCallLocationNode parse.Node) (Pattern, error) {
 	if p.call == nil {
 		return nil, ErrPatternNotCallable
 	}
-	return p.call(ctx, values)
+	return p.call(ctx, values, optionalCallLocationNode)
 }
 
 func (p *TypePattern) SymbolicValue() Value {

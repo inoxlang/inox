@@ -24,7 +24,7 @@ func _makeStateAndChunk(code string, globals ...map[string]Value) (*parse.Chunk,
 
 	state.ctx.AddNamedPattern("int", &TypePattern{
 		val: ANY_INT,
-		call: func(ctx *Context, values []Value) (Pattern, error) {
+		call: func(ctx *Context, values []Value, _ parse.Node) (Pattern, error) {
 			if len(values) == 0 {
 				return nil, errors.New("missing argument")
 			}

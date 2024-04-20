@@ -54,7 +54,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 		case *parse.DoubleColonExpression:
 			_, ok := state.symbolicData.GetURLReferencedEntity(_c)
 			if ok {
-				state.addError(makeSymbolicEvalError(_c.Element, state, DIRECTLY_CALLING_METHOD_OF_URL_REF_ENTITY_NOT_ALLOWED))
+				state.addError(MakeSymbolicEvalError(_c.Element, state, DIRECTLY_CALLING_METHOD_OF_URL_REF_ENTITY_NOT_ALLOWED))
 			} else {
 				self, _ = state.symbolicData.GetMostSpecificNodeValue(_c.Left)
 				selfPartialNode = _c.Left
@@ -104,7 +104,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 	} else if function, ok := callee.(*Function); ok {
 		nonGoParameters = function.parameters
 	} else {
-		state.addError(makeSymbolicEvalError(calleeNode, state, fmtCannotCall(callee)))
+		state.addError(MakeSymbolicEvalError(calleeNode, state, fmtCannotCall(callee)))
 		return ANY, nil
 	}
 
@@ -147,7 +147,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 					if isSharedFunction {
 						shared, err := ShareOrClone(e, state)
 						if err != nil {
-							state.addError(makeSymbolicEvalError(argNode, state, err.Error()))
+							state.addError(MakeSymbolicEvalError(argNode, state, err.Error()))
 							shared = ANY
 						}
 						e = shared.(Serializable)
@@ -155,7 +155,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 					args = append(args, e)
 				}
 			} else {
-				state.addError(makeSymbolicEvalError(argNode, state, fmtSpreadArgumentShouldBeIterable(v)))
+				state.addError(MakeSymbolicEvalError(argNode, state, fmtSpreadArgumentShouldBeIterable(v)))
 			}
 
 		} else { //Regular argument.
@@ -205,7 +205,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 				if isSharedFunction {
 					shared, err := ShareOrClone(arg, state)
 					if err != nil {
-						state.addError(makeSymbolicEvalError(argNode, state, err.Error()))
+						state.addError(MakeSymbolicEvalError(argNode, state, err.Error()))
 						shared = ANY
 					}
 					arg = shared
@@ -230,7 +230,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 		//(argument nodes).
 
 		if f.node == nil {
-			state.addError(makeSymbolicEvalError(callNode, state, CALLEE_HAS_NODE_BUT_NOT_DEFINED))
+			state.addError(MakeSymbolicEvalError(callNode, state, CALLEE_HAS_NODE_BUT_NOT_DEFINED))
 			return ANY, nil
 		} else {
 
@@ -242,7 +242,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 			case *parse.FunctionDeclaration:
 				fnExpr = function.Function
 			default:
-				state.addError(makeSymbolicEvalError(callNode, state, fmtCannotCallNode(f.node)))
+				state.addError(MakeSymbolicEvalError(callNode, state, fmtCannotCallNode(f.node)))
 				return ANY, nil
 			}
 		}
@@ -280,7 +280,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 				location = optionalLocation
 			}
 
-			state.addError(makeSymbolicEvalError(location, state, msg))
+			state.addError(MakeSymbolicEvalError(location, state, msg))
 		})
 		state.consumeSymbolicGoFunctionWarnings(func(msg string) {
 			state.addWarning(makeSymbolicEvalWarning(callNode, state, msg))
@@ -293,7 +293,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 			if (static != nil && !static.TestValue(updatedSelf, RecTestCallState{})) ||
 				(static == nil && !self.Test(updatedSelf, RecTestCallState{})) {
 
-				state.addErrorIf(errorsInArguments == 0, makeSymbolicEvalError(callNode, state, INVALID_MUTATION))
+				state.addErrorIf(errorsInArguments == 0, MakeSymbolicEvalError(callNode, state, INVALID_MUTATION))
 			} else { //ok
 				narrowChain(selfPartialNode, setExactValue, updatedSelf, state, 0)
 				checkNotClonedObjectPropMutation(selfPartialNode, state, false)
@@ -388,7 +388,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 						if ok {
 							state.symbolicData.SetRuntimeTypecheckPattern(argNode, pattern)
 						} else {
-							state.addError(makeSymbolicEvalError(argNode, state, UNSUPPORTED_PARAM_TYPE_FOR_RUNTIME_TYPECHECK))
+							state.addError(MakeSymbolicEvalError(argNode, state, UNSUPPORTED_PARAM_TYPE_FOR_RUNTIME_TYPECHECK))
 						}
 					} else {
 						deeperMismatch := false
@@ -399,7 +399,8 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 						})
 
 						if !deeperMismatch {
-							state.addError(makeSymbolicEvalError(argNode, state, FmtInvalidArg(i, arg, paramType)))
+							msg, regions := FmtInvalidArg(state.fmtHelper, i, arg, paramType)
+							state.addError(MakeSymbolicEvalError(argNode, state, msg, regions...))
 						}
 					}
 				} else {
@@ -408,7 +409,8 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 					if node == nil {
 						node = callNode
 					}
-					state.addError(makeSymbolicEvalError(node, state, FmtInvalidArg(i, arg, paramType)))
+					msg, regions := FmtInvalidArg(state.fmtHelper, i, arg, paramType)
+					state.addError(MakeSymbolicEvalError(argNode, state, msg, regions...))
 				}
 
 				args[i] = paramType
@@ -465,7 +467,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 
 	if isVariadic {
 		if nonSpreadArgCount < nonVariadicParamCount {
-			state.addError(makeSymbolicEvalError(callNode, state, fmtInvalidNumberOfNonSpreadArgs(nonSpreadArgCount, nonVariadicParamCount)))
+			state.addError(MakeSymbolicEvalError(callNode, state, fmtInvalidNumberOfNonSpreadArgs(nonSpreadArgCount, nonVariadicParamCount)))
 			//if they are not enough arguments we use the parameter types to set their value
 
 			for i := len(args); i < nonVariadicParamCount; i++ {
@@ -474,9 +476,9 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 		}
 	} else if hasSpreadArg || len(args) != len(nonGoParameters) {
 		if hasSpreadArg {
-			state.addError(makeSymbolicEvalError(callNode, state, SPREAD_ARGS_NOT_SUPPORTED_FOR_NON_VARIADIC_FUNCS))
+			state.addError(MakeSymbolicEvalError(callNode, state, SPREAD_ARGS_NOT_SUPPORTED_FOR_NON_VARIADIC_FUNCS))
 		} else {
-			state.addError(makeSymbolicEvalError(callNode, state, fmtInvalidNumberOfArgs(len(args), len(nonGoParameters))))
+			state.addError(MakeSymbolicEvalError(callNode, state, fmtInvalidNumberOfArgs(len(args), len(nonGoParameters))))
 		}
 
 		if len(args) > len(nonGoParameters) {
@@ -525,7 +527,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 					if ok {
 						state.symbolicData.SetRuntimeTypecheckPattern(argNode, pattern)
 					} else {
-						state.addError(makeSymbolicEvalError(argNode, state, UNSUPPORTED_PARAM_TYPE_FOR_RUNTIME_TYPECHECK))
+						state.addError(MakeSymbolicEvalError(argNode, state, UNSUPPORTED_PARAM_TYPE_FOR_RUNTIME_TYPECHECK))
 					}
 				} else {
 					deeperMismatch := false
@@ -536,7 +538,8 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 					})
 
 					if !deeperMismatch {
-						state.addError(makeSymbolicEvalError(argNode, state, FmtInvalidArg(i, arg, paramType)))
+						msg, regions := FmtInvalidArg(state.fmtHelper, i, arg, paramType)
+						state.addError(MakeSymbolicEvalError(argNode, state, msg, regions...))
 					}
 				}
 			} else {
@@ -545,7 +548,8 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 				if node == nil {
 					node = callNode
 				}
-				state.addError(makeSymbolicEvalError(node, state, FmtInvalidArg(i, arg, paramType)))
+				msg, regions := FmtInvalidArg(state.fmtHelper, i, arg, paramType)
+				state.addError(MakeSymbolicEvalError(argNode, state, msg, regions...))
 			}
 
 			args[i] = paramType
@@ -657,7 +661,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 		if isSharedFunction {
 			shared, err := ShareOrClone(ret, state)
 			if err != nil {
-				state.addError(makeSymbolicEvalError(callNode, state, err.Error()))
+				state.addError(MakeSymbolicEvalError(callNode, state, err.Error()))
 				shared = ANY
 			}
 			ret = shared
@@ -775,7 +779,7 @@ outer:
 		return Nil
 	}
 
-	state.addError(makeSymbolicEvalError(callNode.Callee, state, INVALID_RETURN_TYPE_MSG))
+	state.addError(MakeSymbolicEvalError(callNode.Callee, state, INVALID_RETURN_TYPE_MSG))
 	return ret
 }
 

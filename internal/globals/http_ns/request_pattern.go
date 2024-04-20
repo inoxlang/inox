@@ -10,6 +10,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
+	"github.com/inoxlang/inox/internal/parse"
 
 	"github.com/inoxlang/inox/internal/globals/http_ns/spec"
 	http_symbolic "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
@@ -83,7 +84,7 @@ func createRequestPattern(ctx *core.Context, callee *core.TypePattern, values []
 	}, nil
 }
 
-func createSymbolicRequestPattern(ctx *symbolic.Context, values []symbolic.Value) (symbolic.Pattern, error) {
+func createSymbolicRequestPattern(ctx *symbolic.Context, values []symbolic.Value, optionalCallLocationNode parse.Node) (symbolic.Pattern, error) {
 	const OBJ_ARG_NAME = "description"
 
 	if len(values) != 1 {

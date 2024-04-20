@@ -13,6 +13,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/containers/common"
 	coll_symbolic "github.com/inoxlang/inox/internal/globals/containers/symbolic"
 	"github.com/inoxlang/inox/internal/jsoniter"
+	"github.com/inoxlang/inox/internal/parse"
 )
 
 const (
@@ -48,7 +49,7 @@ var (
 				Uniqueness: uniqueness,
 			}), nil
 		},
-		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value) (symbolic.Pattern, error) {
+		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value, optionalNode parse.Node) (symbolic.Pattern, error) {
 			switch len(values) {
 			case 0:
 				return nil, commonfmt.FmtMissingArgument("element pattern")

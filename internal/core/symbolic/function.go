@@ -625,7 +625,7 @@ type goFunctionCallInput struct {
 
 func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult Value, multipleResults bool, enoughArgs bool, finalErr error) {
 	if goFunc.fn == nil {
-		input.state.addError(makeSymbolicEvalError(input.callLikeNode, input.state, CANNOT_CALL_GO_FUNC_NO_CONCRETE_VALUE))
+		input.state.addError(MakeSymbolicEvalError(input.callLikeNode, input.state, CANNOT_CALL_GO_FUNC_NO_CONCRETE_VALUE))
 		return ANY, false, false, nil
 	}
 
@@ -640,7 +640,7 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult Value, mu
 	enoughArgs = true
 
 	if err := goFunc.LoadSignatureData(); err != nil {
-		err = makeSymbolicEvalError(callLikeNode, state, err.Error())
+		err = MakeSymbolicEvalError(callLikeNode, state, err.Error())
 		return nil, false, false, err
 	}
 
@@ -673,25 +673,25 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult Value, mu
 		}
 
 		if errMsg != "" {
-			state.addError(makeSymbolicEvalError(callLikeNode, state, errMsg))
+			state.addError(MakeSymbolicEvalError(callLikeNode, state, errMsg))
 		}
 
 	} else if hasSpreadArg {
-		state.addError(makeSymbolicEvalError(callLikeNode, state, SPREAD_ARGS_NOT_SUPPORTED_FOR_NON_VARIADIC_FUNCS))
+		state.addError(MakeSymbolicEvalError(callLikeNode, state, SPREAD_ARGS_NOT_SUPPORTED_FOR_NON_VARIADIC_FUNCS))
 
 	} else if len(args) > inoxLandNonVariadicParamCount { //too many arguments
-		state.addError(makeSymbolicEvalError(callLikeNode, state, fmtTooManyArgs(nonSpreadArgCount, inoxLandNonVariadicParamCount)))
+		state.addError(MakeSymbolicEvalError(callLikeNode, state, fmtTooManyArgs(nonSpreadArgCount, inoxLandNonVariadicParamCount)))
 		// remove additional arguments
 		args = args[:inoxLandNonVariadicParamCount]
 
 	} else if !goFunc.hasOptionalParams && len(args) < inoxLandNonVariadicParamCount { //not enough arguments
 		errMsg := fmtNotEnoughArgs(nonSpreadArgCount, inoxLandNonVariadicParamCount)
-		state.addError(makeSymbolicEvalError(callLikeNode, state, errMsg))
+		state.addError(MakeSymbolicEvalError(callLikeNode, state, errMsg))
 
 	} else if goFunc.hasOptionalParams && len(args) < inoxLandMandatoryParamCount { //not enough arguments
 
 		errMsg := fmtNotEnoughArgsAtLeastMandatoryMax(nonSpreadArgCount, inoxLandMandatoryParamCount, inoxLandNonVariadicParamCount)
-		state.addError(makeSymbolicEvalError(callLikeNode, state, errMsg))
+		state.addError(MakeSymbolicEvalError(callLikeNode, state, errMsg))
 	}
 
 	if goFunc.isfirstArgCtx {
@@ -749,14 +749,16 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult Value, mu
 					if ok {
 						state.symbolicData.SetRuntimeTypecheckPattern(argNode, pattern)
 					} else {
-						state.addError(makeSymbolicEvalError(argNode, state, UNSUPPORTED_PARAM_TYPE_FOR_RUNTIME_TYPECHECK))
+						state.addError(MakeSymbolicEvalError(argNode, state, UNSUPPORTED_PARAM_TYPE_FOR_RUNTIME_TYPECHECK))
 					}
 				} else {
 					// if the parameter is optional and the value is nil
 					// } else if goFunc.hasOptionalParams && paramIndex > goFunc.lastMandatoryParamIndex && Nil.Test(arg, RecTestCallState{}) {
 					//}
 
-					state.addError(makeSymbolicEvalError(argNode, state, FmtInvalidArg(position, arg, param)))
+					msg, regions := FmtInvalidArg(state.fmtHelper, position, arg, param)
+					state.addError(MakeSymbolicEvalError(argNode, state, msg, regions...))
+
 					args[paramIndex] = param //if argument does not match we use the symbolic parameter value as argument
 				}
 			} else {
@@ -791,7 +793,9 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult Value, mu
 				if goFunc.isfirstArgCtx {
 					position -= 1
 				}
-				state.addError(makeSymbolicEvalError(callLikeNode, state, FmtInvalidArg(position, arg.(Value), goFunc.variadicElem)))
+				msg, regions := FmtInvalidArg(state.fmtHelper, position, arg.(Value), goFunc.variadicElem)
+				state.addError(MakeSymbolicEvalError(callLikeNode, state, msg, regions...))
+
 				variadicArgs[i] = goFunc.variadicElem
 			} else {
 				variadicArgs[i] = arg
@@ -854,7 +858,7 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult Value, mu
 		if isExt {
 			shared, err := ShareOrClone(symbolicResultValues[0], extState)
 			if err != nil {
-				state.addError(makeSymbolicEvalError(callLikeNode, state, err.Error()))
+				state.addError(MakeSymbolicEvalError(callLikeNode, state, err.Error()))
 				shared = ANY
 			}
 			return shared, false, enoughArgs, nil
@@ -869,7 +873,7 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult Value, mu
 		for _, resultValue := range symbolicResultValues {
 			shared, err := ShareOrClone(resultValue, extState)
 			if err != nil {
-				state.addError(makeSymbolicEvalError(callLikeNode, state, err.Error()))
+				state.addError(MakeSymbolicEvalError(callLikeNode, state, err.Error()))
 				shared = ANY
 			}
 

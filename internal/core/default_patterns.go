@@ -11,6 +11,7 @@ import (
 	"github.com/inoxlang/inox/internal/core/patternnames"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/core/symbolicdev"
+	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -48,7 +49,7 @@ var (
 
 			return NewExactValuePattern(values[0]), nil
 		},
-		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value) (symbolic.Pattern, error) {
+		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value, optionalNode parse.Node) (symbolic.Pattern, error) {
 			var recordPattern *symbolic.RecordPattern
 
 			if len(values) != 1 {
@@ -88,14 +89,22 @@ var (
 
 			return stringPattern, nil
 		},
-		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value) (symbolic.Pattern, error) {
+		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value, optionalNode parse.Node) (symbolic.Pattern, error) {
 			if len(values) != 1 {
 				return nil, commonfmt.FmtErrNArgumentsExpected("1")
 			}
 
 			pattern, ok := values[0].(symbolic.Pattern)
 			if !ok {
-				return nil, errors.New(symbolic.FmtInvalidArg(0, values[0], symbolic.ANY_PATTERN))
+				if optionalNode != nil {
+					//Return a symbolic error.
+					state := ctx.EvalState()
+					msg, regions := symbolic.FmtInvalidArg(state.FormatHelper(), 0, values[0], symbolic.ANY_PATTERN)
+					return nil, symbolic.MakeSymbolicEvalError(optionalNode, state, msg, regions...)
+				}
+				//Return an error without any location or regions.
+				msg, _ := symbolic.FmtInvalidArg(nil, 0, values[0], symbolic.ANY_PATTERN)
+				return nil, errors.New(msg)
 			}
 
 			stringPattern, ok := pattern.StringPattern()
@@ -232,7 +241,7 @@ var (
 
 			return recordPattern, nil
 		},
-		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value) (symbolic.Pattern, error) {
+		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value, optionalNode parse.Node) (symbolic.Pattern, error) {
 			var recordPattern *symbolic.RecordPattern
 
 			for _, val := range values {
@@ -250,7 +259,15 @@ var (
 
 					recordPattern = v
 				default:
-					return nil, errors.New(symbolic.FmtInvalidArg(0, v, symbolic.NewAnyObjectPattern()))
+					if optionalNode != nil {
+						//Return a symbolic error.
+						state := ctx.EvalState()
+						msg, regions := symbolic.FmtInvalidArg(state.FormatHelper(), 0, v, symbolic.ANY_OBJECT_PATTERN)
+						return nil, symbolic.MakeSymbolicEvalError(optionalNode, state, msg, regions...)
+					}
+					//Return an error without any location or regions.
+					msg, _ := symbolic.FmtInvalidArg(nil, 0, values[0], symbolic.ANY_PATTERN)
+					return nil, errors.New(msg)
 				}
 			}
 
@@ -289,7 +306,7 @@ var (
 
 			return NewTuplePatternOf(elemPattern), nil
 		},
-		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value) (symbolic.Pattern, error) {
+		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value, optionalNode parse.Node) (symbolic.Pattern, error) {
 			var elemPattern symbolic.Pattern
 
 			for _, val := range values {
@@ -300,7 +317,15 @@ var (
 					}
 					elemPattern = v
 				default:
-					return nil, errors.New(symbolic.FmtInvalidArg(0, v, symbolic.ANY_TUPLE))
+					if optionalNode != nil {
+						//Return a symbolic error.
+						state := ctx.EvalState()
+						msg, regions := symbolic.FmtInvalidArg(state.FormatHelper(), 0, v, symbolic.ANY_TUPLE)
+						return nil, symbolic.MakeSymbolicEvalError(optionalNode, state, msg, regions...)
+					}
+					//Return an error without any location or regions.
+					msg, _ := symbolic.FmtInvalidArg(nil, 0, values[0], symbolic.ANY_PATTERN)
+					return nil, errors.New(msg)
 				}
 			}
 
@@ -373,7 +398,7 @@ var (
 				intRange: intRange,
 			}, nil
 		},
-		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value) (symbolic.Pattern, error) {
+		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value, optionalNode parse.Node) (symbolic.Pattern, error) {
 			if len(values) == 0 {
 				return nil, errors.New("missing argument")
 			}
@@ -427,7 +452,7 @@ var (
 				floatRange: floatRange,
 			}, nil
 		},
-		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value) (symbolic.Pattern, error) {
+		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value, optionalNode parse.Node) (symbolic.Pattern, error) {
 			if len(values) == 0 {
 				return nil, errors.New("missing argument")
 			}
@@ -464,7 +489,7 @@ var (
 
 			return NewOptionalPattern(ctx, pattern)
 		},
-		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value) (symbolic.Pattern, error) {
+		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value, optionalNode parse.Node) (symbolic.Pattern, error) {
 			if len(values) == 0 {
 				return nil, errors.New("missing argument")
 			}
@@ -641,7 +666,7 @@ var (
 			}
 			return NewEventPattern(valuePattern), nil
 		},
-		SymbolicCallImpl: func(ctx *symbolic.Context, args []symbolic.Value) (symbolic.Pattern, error) {
+		SymbolicCallImpl: func(ctx *symbolic.Context, args []symbolic.Value, _ parse.Node) (symbolic.Pattern, error) {
 			var valuePattern symbolic.Pattern
 
 			for _, arg := range args {
@@ -710,7 +735,7 @@ var (
 
 			return NewMutationPattern(kind, data0Pattern), nil
 		},
-		SymbolicCallImpl: func(ctx *symbolic.Context, args []symbolic.Value) (symbolic.Pattern, error) {
+		SymbolicCallImpl: func(ctx *symbolic.Context, args []symbolic.Value, _ parse.Node) (symbolic.Pattern, error) {
 			switch len(args) {
 			case 2:
 			case 1:
@@ -844,7 +869,7 @@ var (
 				stringPattern: stringPattern,
 			}, nil
 		},
-		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value) (symbolic.Pattern, error) {
+		SymbolicCallImpl: func(ctx *symbolic.Context, values []symbolic.Value, optionalNode parse.Node) (symbolic.Pattern, error) {
 			var stringPattern symbolic.StringPattern
 
 			if len(values) == 0 {
@@ -860,7 +885,15 @@ var (
 
 					stringPattern = v
 				default:
-					return nil, errors.New(symbolic.FmtInvalidArg(0, v, symbolic.ANY_STR_PATTERN))
+					if optionalNode != nil {
+						//Return a symbolic error.
+						state := ctx.EvalState()
+						msg, regions := symbolic.FmtInvalidArg(state.FormatHelper(), 0, v, symbolic.ANY_STR_PATTERN)
+						return nil, symbolic.MakeSymbolicEvalError(optionalNode, state, msg, regions...)
+					}
+					//Return an error without any location or regions.
+					msg, _ := symbolic.FmtInvalidArg(nil, 0, values[0], symbolic.ANY_PATTERN)
+					return nil, errors.New(msg)
 				}
 			}
 

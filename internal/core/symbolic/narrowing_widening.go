@@ -239,7 +239,7 @@ func narrow(positive bool, n parse.Node, state *State, targetState *State) {
 			} else if right.Test(left, RecTestCallState{}) {
 				narrowChain(binExpr.Right, setExactValue, left, targetState, 0)
 			} else {
-				state.addError(makeSymbolicEvalError(binExpr, state, fmtVal1Val2HaveNoOverlap(left, right)))
+				state.addError(MakeSymbolicEvalError(binExpr, state, fmtVal1Val2HaveNoOverlap(left, right)))
 			}
 
 		// (!=) or negated (==)
