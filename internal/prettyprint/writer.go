@@ -94,10 +94,10 @@ func (w PrettyPrintWriter) WriteManyBytes(b ...[]byte) {
 }
 
 func (w PrettyPrintWriter) WriteEndOfLine() {
-	utils.PanicIfErr(w.writer.WriteByte('\n'))
+	utils.PanicIfErr(w.writer.WriteByte('\r'))
 	*w.written++
 
-	utils.PanicIfErr(w.writer.WriteByte('\r'))
+	utils.PanicIfErr(w.writer.WriteByte('\n'))
 	*w.written++
 }
 
