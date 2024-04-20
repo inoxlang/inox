@@ -140,6 +140,23 @@ func getHoverContent(handlingCtx *core.Context, params hoverContentParams) (*def
 		}
 
 		rpcSession.LoggerPrintln("no data")
+
+		markdownWriter := &strings.Builder{}
+
+		atLeastOneError, err := writeReformattedSymbolicErrors(markdownWriter, cursorIndex, params)
+		if err != nil {
+			return nil, err
+		}
+
+		if atLeastOneError {
+			return &defines.Hover{
+				Contents: defines.MarkupContent{
+					Kind:  defines.MarkupKindMarkdown,
+					Value: markdownWriter.String(),
+				},
+			}, nil
+		}
+
 		return &defines.Hover{}, nil
 	}
 
@@ -204,34 +221,9 @@ func getHoverContent(handlingCtx *core.Context, params hoverContentParams) (*def
 		codeBlockWriter.WriteString("\n```")
 	}
 
-	if diagnostics := params.diagnostics; diagnostics != nil {
-
-		diagnostics.lock.Lock()
-		checkErrors := slices.Clone(diagnostics.symbolicErrors[params.docURI])
-		diagnostics.lock.Unlock()
-
-		if len(checkErrors) > 0 {
-			codeBlockWriter.WriteString("\n__Reformatted errors:__\n")
-		}
-
-		for _, checkError := range checkErrors {
-			codeBlockWriter.WriteByte('\n')
-
-			err := checkError.ReformatNonLocated(codeBlockWriter, symbolic.ErrorReformatting{
-				BeforeSmallReprInoxValue: "```",
-				AfterSmallReprInoxValue:  "```",
-				BeforeLongReprInoxValue:  "\n```inox\n",
-				AfterLongReprInoxValue:   "\n```\n",
-				LongReprThreshold:        20,
-				ValuePrettyPringConfig:   HOVER_PRETTY_PRINT_CONFIG,
-			})
-			if err != nil {
-				return nil, jsonrpc.ResponseError{
-					Code:    jsonrpc.InternalError.Code,
-					Message: err.Error(),
-				}
-			}
-		}
+	_, err := writeReformattedSymbolicErrors(codeBlockWriter, cursorIndex, params)
+	if err != nil {
+		return nil, err
 	}
 
 	return &defines.Hover{
@@ -313,4 +305,49 @@ func getSectionHelp(n parse.Node, ancestors []parse.Node) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+func writeReformattedSymbolicErrors(w *strings.Builder, cursorIndex int32, params hoverContentParams) (bool, error) {
+	diagnostics := params.diagnostics
+	if diagnostics == nil {
+		return false, nil
+	}
+
+	diagnostics.lock.Lock()
+	checkErrors := slices.Clone(diagnostics.symbolicErrors[params.docURI])
+	diagnostics.lock.Unlock()
+
+	isHeaderPrinted := false
+
+	for _, checkError := range checkErrors {
+		errorRange := checkError.Location[len(checkError.Location)-1]
+
+		if cursorIndex < errorRange.Span.Start || cursorIndex > errorRange.Span.End || !checkError.HasInoxValueRegions() {
+			continue
+		}
+
+		if !isHeaderPrinted {
+			w.WriteString("\n__Reformatted errors:__\n")
+			isHeaderPrinted = true
+		}
+
+		w.WriteByte('\n')
+
+		err := checkError.ReformatNonLocated(w, symbolic.ErrorReformatting{
+			BeforeSmallReprInoxValue: "```",
+			AfterSmallReprInoxValue:  "```",
+			BeforeLongReprInoxValue:  "\n```inox\n",
+			AfterLongReprInoxValue:   "\n```\n",
+			LongReprThreshold:        20,
+			ValuePrettyPringConfig:   HOVER_PRETTY_PRINT_CONFIG,
+		})
+		if err != nil {
+			return false, jsonrpc.ResponseError{
+				Code:    jsonrpc.InternalError.Code,
+				Message: err.Error(),
+			}
+		}
+	}
+
+	return isHeaderPrinted, nil //eat least one error has been printed
 }

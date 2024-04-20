@@ -288,6 +288,15 @@ func (err SymbolicEvaluationError) ReformatNonLocated(w io.Writer, reformatting 
 	return commonfmt.Reformat(w, text, replacements)
 }
 
+func (err SymbolicEvaluationError) HasInoxValueRegions() bool {
+	for _, region := range err.MessageRegions {
+		if region.Kind == INOX_VALUE_REGION_KIND {
+			return true
+		}
+	}
+	return false
+}
+
 func fmtCannotCallNode(node parse.Node) string {
 	return fmt.Sprintf("cannot call node of type %T", node)
 }
