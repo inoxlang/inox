@@ -1,7 +1,6 @@
 package projectserver
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
 	"slices"
@@ -161,13 +160,12 @@ func getHoverContent(handlingCtx *core.Context, params hoverContentParams) (*def
 	}
 
 	buff := &bytes.Buffer{}
-	w := bufio.NewWriterSize(buff, 1000)
 	var stringifiedHoveredNodeValue string
 
 	{
 		utils.Must(symbolic.PrettyPrint(symbolic.PrettyPrintArgs{
 			Value:             mostSpecificVal,
-			Writer:            w,
+			Writer:            buff,
 			Config:            HOVER_PRETTY_PRINT_CONFIG,
 			Depth:             0,
 			ParentIndentCount: 0,
@@ -175,18 +173,17 @@ func getHoverContent(handlingCtx *core.Context, params hoverContentParams) (*def
 		var ok bool
 		lessSpecificVal, ok = state.SymbolicData.GetLessSpecificNodeValue(hoveredNode)
 		if ok {
-			w.Write(utils.StringAsBytes("\n\n# less specific\n"))
+			buff.Write(utils.StringAsBytes("\n\n# less specific\n"))
 			utils.Must(symbolic.PrettyPrint(symbolic.PrettyPrintArgs{
 				Value:             lessSpecificVal,
-				Writer:            w,
+				Writer:            buff,
 				Config:            HOVER_PRETTY_PRINT_CONFIG,
 				Depth:             0,
 				ParentIndentCount: 0,
 			}))
 		}
 
-		w.Flush()
-		stringifiedHoveredNodeValue = strings.ReplaceAll(buff.String(), "\n\r", "\n")
+		stringifiedHoveredNodeValue = buff.String()
 	}
 
 	//help for most specific & less specific values
@@ -198,7 +195,7 @@ func getHoverContent(handlingCtx *core.Context, params hoverContentParams) (*def
 			case *symbolic.GoFunction:
 				markdown, ok := help.HelpForSymbolicGoFunc(val, help.HelpMessageConfig{Format: help.MarkdownFormat})
 				if ok {
-					helpMessage = "\n-----\n" + strings.ReplaceAll(markdown, "\n\r", "\n")
+					helpMessage = "\n-----\n" + markdown
 				}
 			}
 			if helpMessage == "" && val == mostSpecificVal && lessSpecificVal != nil {
