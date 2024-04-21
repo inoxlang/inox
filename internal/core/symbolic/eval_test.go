@@ -14522,7 +14522,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
-			assert.Equal(t, ANY, res)
+			assert.Equal(t, Nil, res)
 
 			//check scope data
 			stmt, ancestors := parse.FindNodeAndChain(n, (*parse.ReturnStatement)(nil), nil)
@@ -14539,6 +14539,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.Fail(t, "variable not found in scope data")
 		})
+
 		t.Run("base global", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				manifest {}
@@ -14564,7 +14565,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
-			assert.Equal(t, ANY, res)
+			assert.Equal(t, ANY_INT, res)
 		})
 
 		t.Run("error in imported module", func(t *testing.T) {
@@ -14614,7 +14615,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.Equal(t, fmtRightOperandOfBinaryShouldBe(parse.Add, "int", "\"a\""), evalErr.Message)
 
-			assert.Equal(t, ANY, res)
+			assert.Equal(t, ANY_INT, res)
 		})
 
 		t.Run("error in file included by imported module", func(t *testing.T) {
@@ -14684,7 +14685,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.Equal(t, fmtRightOperandOfBinaryShouldBe(parse.Add, "int", "\"a\""), evalErr.Message)
 
-			assert.Equal(t, ANY, res)
+			assert.Equal(t, Nil, res)
 		})
 	})
 

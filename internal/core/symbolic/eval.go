@@ -3861,11 +3861,14 @@ func evalInclusionImportStatement(n *parse.InclusionImportStatement, state *Stat
 }
 
 func evalImportStatement(n *parse.ImportStatement, state *State) (_ Value, finalErr error) {
-	value := ANY
-	state.setGlobal(n.Identifier.Name, value, GlobalConst)
 
-	state.SetMostSpecificNodeValue(n.Identifier, value)
-	state.SetGlobalScopeData(n, state.currentGlobalScopeData())
+	setResultAsAny := func() {
+		value := ANY
+		state.setGlobal(n.Identifier.Name, value, GlobalConst)
+
+		state.SetMostSpecificNodeValue(n.Identifier, value)
+		state.SetGlobalScopeData(n, state.currentGlobalScopeData())
+	}
 
 	var pathOrURL string
 
@@ -3882,11 +3885,13 @@ func evalImportStatement(n *parse.ImportStatement, state *State) (_ Value, final
 
 	if !strings.HasSuffix(pathOrURL, inoxconsts.INOXLANG_FILE_EXTENSION) {
 		state.addError(MakeSymbolicEvalError(n.Source, state, IMPORTED_MOD_PATH_MUST_END_WITH_IX))
+		setResultAsAny()
 		return nil, nil
 	}
 
 	importedModule, ok := state.Module.directlyImportedModules[n]
 	if !ok {
+		setResultAsAny()
 		return nil, nil
 	}
 
@@ -3921,6 +3926,15 @@ func evalImportStatement(n *parse.ImportStatement, state *State) (_ Value, final
 	if data == nil && err != nil {
 		return nil, err
 	}
+
+	result, ok := data.moduleResults[importedModule.mainChunk.Node]
+	if !ok {
+		result = ANY
+	}
+	state.setGlobal(n.Identifier.Name, result, GlobalConst)
+
+	state.SetMostSpecificNodeValue(n.Identifier, result)
+	state.SetGlobalScopeData(n, state.currentGlobalScopeData())
 
 	return nil, nil
 }
