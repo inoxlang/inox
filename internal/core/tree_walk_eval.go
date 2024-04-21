@@ -1113,8 +1113,10 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 	case *parse.SpawnExpression:
 		var (
 			group       *LThreadGroup
-			globalsDesc Value
 			permListing *Object
+			globalsDesc Value
+
+			explicitlyPassedGlobals = map[string]Value{}
 		)
 
 		if n.Meta != nil {
@@ -1126,12 +1128,8 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 					if propertyName == symbolic.LTHREAD_META_GLOBALS_SECTION {
 						globalsObjectLit, ok := property.Value.(*parse.ObjectLiteral)
-						//handle description separately if it's an object literal because non-serializable value are not accepted.
+						//Handle description separately if it's an object literal because non-serializable value are not accepted.
 						if ok {
-							globals := &ModuleArgs{}
-							var keys []string
-							var types []Pattern
-
 							for _, prop := range globalsObjectLit.Properties {
 								globalName := prop.Name() //okay since implicit-key properties are not allowed
 								globalVal, err := TreeWalkEval(prop.Value, state)
@@ -1139,12 +1137,8 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 									return nil, err
 								}
 
-								keys = append(keys, globalName)
-								globals.values = append(globals.values, globalVal)
-								types = append(types, ANYVAL_PATTERN)
+								explicitlyPassedGlobals[globalName] = globalVal
 							}
-							globals.pattern = NewModuleParamsPattern(keys, types)
-							meta[propertyName] = globals
 							continue
 						}
 					}
@@ -1159,7 +1153,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 				return nil, errors.New("meta should be an object")
 			}
 
-			group, globalsDesc, permListing, err = readLThreadMeta(meta, state.Global.Ctx)
+			group, globalsDesc, permListing, err = readLThreadMeta(meta, explicitlyPassedGlobals, state.Global.Ctx)
 			if err != nil {
 				return nil, err
 			}
@@ -1179,8 +1173,8 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		})
 
 		switch g := globalsDesc.(type) {
-		case *ModuleArgs:
-			for k, v := range g.ValueMap() {
+		case *Namespace:
+			for k, v := range g.entries {
 				actualGlobals[k] = v
 			}
 		case KeyList:

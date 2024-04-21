@@ -100,12 +100,14 @@ type IncludedChunk struct {
 	*parse.ParsedChunkSource
 }
 
-type moduleParameter struct {
-	name    string
-	pattern Pattern
+type ModuleParameter struct {
+	Name       string
+	Pattern    Pattern
+	Positional bool
+	Index      int //set if positional
 }
 
-func getModuleParameters(manifestObject *Object, manifestObjectLiteral *parse.ObjectLiteral) []moduleParameter {
+func getModuleParameters(manifestObject *Object, manifestObjectLiteral *parse.ObjectLiteral) []ModuleParameter {
 	parametersDesc, _, ok := manifestObject.GetProperty(extData.MANIFEST_PARAMS_SECTION_NAME)
 	if !ok {
 		return nil
@@ -116,7 +118,7 @@ func getModuleParameters(manifestObject *Object, manifestObjectLiteral *parse.Ob
 		return nil
 	}
 
-	moduleParams := []moduleParameter{}
+	moduleParams := []ModuleParameter{}
 
 	parametersNode, _ := manifestObjectLiteral.PropValue(extData.MANIFEST_PARAMS_SECTION_NAME)
 	parametersObjectNode, ok := parametersNode.(*parse.ObjectLiteral)
@@ -130,12 +132,13 @@ func getModuleParameters(manifestObject *Object, manifestObjectLiteral *parse.Ob
 		noKeyProperties = obj.Prop(inoxconsts.IMPLICIT_PROP_NAME).(*List)
 	}
 
-	var noKeyPropIndex = 0
+	var positionalParamIndex = 0
 
 	for _, prop := range parametersObjectNode.Properties {
 		if prop.HasNoKey() { //positional parameter
-			paramDesc, ok := noKeyProperties.ElementAt(noKeyPropIndex).(*Object)
-			noKeyPropIndex++
+			paramDesc, ok := noKeyProperties.ElementAt(positionalParamIndex).(*Object)
+			index := positionalParamIndex
+			positionalParamIndex++
 
 			if !ok {
 				return nil
@@ -154,9 +157,11 @@ func getModuleParameters(manifestObject *Object, manifestObjectLiteral *parse.Ob
 				return nil
 			}
 
-			moduleParams = append(moduleParams, moduleParameter{
-				name:    paramName.Name(),
-				pattern: paramPattern,
+			moduleParams = append(moduleParams, ModuleParameter{
+				Name:       paramName.Name(),
+				Pattern:    paramPattern,
+				Positional: true,
+				Index:      index,
 			})
 		} else { //non-positional parameter
 			paramName := prop.Name()
@@ -164,14 +169,14 @@ func getModuleParameters(manifestObject *Object, manifestObjectLiteral *parse.Ob
 
 			switch val := propValue.(type) {
 			case *OptionPattern:
-				moduleParams = append(moduleParams, moduleParameter{
-					name:    paramName,
-					pattern: val.pattern,
+				moduleParams = append(moduleParams, ModuleParameter{
+					Name:    paramName,
+					Pattern: val.pattern,
 				})
 			case Pattern:
-				moduleParams = append(moduleParams, moduleParameter{
-					name:    paramName,
-					pattern: val,
+				moduleParams = append(moduleParams, ModuleParameter{
+					Name:    paramName,
+					Pattern: val,
 				})
 			case *Object:
 				paramDesc := val
@@ -179,9 +184,9 @@ func getModuleParameters(manifestObject *Object, manifestObjectLiteral *parse.Ob
 				paramDesc.ForEachEntry(func(k string, v Value) error {
 					switch k {
 					case extData.MANIFEST_POSITIONAL_PARAM_PATTERN_FIELD:
-						moduleParams = append(moduleParams, moduleParameter{
-							name:    paramName,
-							pattern: v.(Pattern),
+						moduleParams = append(moduleParams, ModuleParameter{
+							Name:    paramName,
+							Pattern: v.(Pattern),
 						})
 					}
 					return nil

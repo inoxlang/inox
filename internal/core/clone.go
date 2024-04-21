@@ -261,25 +261,25 @@ func (c *BytesConcatenation) Clone(originState *GlobalState, sharableValues *[]P
 	}, nil
 }
 
-func (s *ModuleArgs) Clone(originState *GlobalState, sharableValues *[]PotentiallySharable, clones map[uintptr]Clonable, depth int) (Value, error) {
+func (args *ModuleArgs) Clone(originState *GlobalState, sharableValues *[]PotentiallySharable, clones map[uintptr]Clonable, depth int) (Value, error) {
 	if depth > MAX_CLONING_DEPTH {
 		return nil, ErrMaximumCloningDepthReached
 	}
 
-	ptr := reflect.ValueOf(s).Pointer()
+	ptr := reflect.ValueOf(args).Pointer()
 	clone, ok := clones[ptr]
 	if ok {
 		return clone, nil
 	}
 
 	argsClone := &ModuleArgs{
-		pattern: s.pattern,
-		values:  make([]Value, len(s.values)),
+		pattern: args.pattern,
+		values:  make(map[string]Value, len(args.values)),
 	}
 
 	clones[ptr] = argsClone
 
-	for i, val := range s.values {
+	for argName, val := range args.values {
 		var fieldClone Value
 		var err error
 
@@ -289,9 +289,9 @@ func (s *ModuleArgs) Clone(originState *GlobalState, sharableValues *[]Potential
 			fieldClone, err = CheckSharedOrClone(val, clones, depth+1)
 		}
 		if err != nil {
-			return nil, fmt.Errorf("failed to share/clone field %s: %w", s.pattern.keys[i], err)
+			return nil, fmt.Errorf("failed to share/clone field %s: %w", argName, err)
 		}
-		argsClone.values[i] = fieldClone
+		argsClone.values[argName] = fieldClone
 	}
 
 	return argsClone, nil

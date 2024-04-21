@@ -762,10 +762,20 @@ func (args *ModuleArgs) ToSymbolicValue(ctx *Context, encountered map[uintptr]sy
 
 	moduleParamsPattern, err := args.pattern.ToSymbolicValue(ctx, encountered)
 	if err != nil {
-		return nil, fmt.Errorf("failed to convert type of struct to symbolic: %w", err)
+		return nil, fmt.Errorf("failed to convert module parameters to symbolic: %w", err)
 	}
 
-	symbolicModuleArgs := symbolic.NewModuleArgs(moduleParamsPattern.(*symbolic.ModuleParamsPattern), nil)
+	symbolicValues := map[string]symbolic.Value{}
+
+	for argName, argValue := range args.values {
+		symbolicArgValue, err := argValue.ToSymbolicValue(ctx, encountered)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert value of argument %s to symbolic: %w", argName, err)
+		}
+		symbolicValues[argName] = symbolicArgValue
+	}
+
+	symbolicModuleArgs := symbolic.NewModuleArgs(moduleParamsPattern.(*symbolic.ModuleParamsPattern), symbolicValues)
 	encountered[ptr] = symbolicModuleArgs
 
 	return symbolicModuleArgs, nil
@@ -1771,27 +1781,46 @@ func (ns *Namespace) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbo
 	return result, nil
 }
 
-func (s *ModuleParamsPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	ptr := reflect.ValueOf(s).Pointer()
+func (p *ModuleParamsPattern) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+	ptr := reflect.ValueOf(p).Pointer()
 	if r, ok := encountered[ptr]; ok {
 		return r, nil
 	}
 
-	keys := slices.Clone(s.keys)
-	types := make([]symbolic.Pattern, len(keys))
+	var symbolicParams []symbolic.ModuleParameter
+
+	if p.hasSourceParams() {
+		for i, param := range p.sourceParams.PositionalParameters() {
+			symbolicPattern, err := param.pattern.ToSymbolicValue(ctx, encountered)
+			if err != nil {
+				return nil, fmt.Errorf("failed to convert pattern of parameter %s to symbolic: %w", param.name, err)
+			}
+
+			symbolicParams = append(symbolicParams, symbolic.ModuleParameter{
+				Name:       string(param.name),
+				Pattern:    symbolicPattern.(symbolic.Pattern),
+				Positional: param.positional,
+				Index:      i,
+			})
+		}
+
+		for _, param := range p.sourceParams.NonPositionalParameters() {
+			symbolicPattern, err := param.pattern.ToSymbolicValue(ctx, encountered)
+			if err != nil {
+				return nil, fmt.Errorf("failed to convert pattern of parameter %s to symbolic: %w", param.name, err)
+			}
+
+			symbolicParams = append(symbolicParams, symbolic.ModuleParameter{
+				Name:    string(param.name),
+				Pattern: symbolicPattern.(symbolic.Pattern),
+			})
+		}
+	}
 
 	symbolicModuleParamsPattern := new(symbolic.ModuleParamsPattern)
 	encountered[ptr] = symbolicModuleParamsPattern
 
-	for i, t := range s.types {
-		symbolicPattern, err := t.ToSymbolicValue(ctx, encountered)
-		if err != nil {
-			return nil, fmt.Errorf("failed to convert field type .%s to symbolic: %w", keys[i], err)
-		}
-		types[i] = symbolicPattern.(symbolic.Pattern)
-	}
-
-	*symbolicModuleParamsPattern = symbolic.CreateModuleParamsPattern(keys, types)
+	*symbolicModuleParamsPattern = symbolic.CreateModuleParamsPattern(symbolicParams)
 	return symbolicModuleParamsPattern, nil
 }
 

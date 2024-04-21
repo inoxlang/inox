@@ -589,7 +589,7 @@ func Sleep(ctx *Context, d Duration) {
 	ctx.Sleep(time.Duration(d))
 }
 
-func readLThreadMeta(meta map[string]Value, ctx *Context) (group *LThreadGroup, globalsDesc Value, permListing *Object, err error) {
+func readLThreadMeta(meta map[string]Value, explicitlyPassedGlobals map[string]Value, ctx *Context) (group *LThreadGroup, globalsDesc Value, permListing *Object, err error) {
 	if val, ok := meta[symbolic.LTHREAD_META_GROUP_SECTION]; ok {
 		if rtGroup, ok := val.(*LThreadGroup); ok {
 			group = rtGroup
@@ -599,6 +599,8 @@ func readLThreadMeta(meta map[string]Value, ctx *Context) (group *LThreadGroup, 
 	}
 	if val, ok := meta[symbolic.LTHREAD_META_GLOBALS_SECTION]; ok {
 		globalsDesc = val
+	} else {
+		globalsDesc = NewMutableEntriesNamespace("", explicitlyPassedGlobals)
 	}
 	if val, ok := meta[symbolic.LTHREAD_META_ALLOW_SECTION]; ok {
 		if obj, ok := val.(*Object); ok {

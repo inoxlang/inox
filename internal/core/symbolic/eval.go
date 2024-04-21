@@ -996,17 +996,11 @@ func evalChunk(n *parse.Chunk, state *State) (result Value, finalErr error) {
 		if object, ok := manifestObject.(*Object); ok && !state.hasGlobal(globalnames.MOD_ARGS_VARNAME) {
 			parameters := getModuleParameters(object, n.Manifest.Object.(*parse.ObjectLiteral))
 			args := make(map[string]Value)
-
-			var paramNames []string
-			var paramPatterns []Pattern
+			paramsPattern := NewModuleParamsPattern(parameters)
 
 			for _, param := range parameters {
-				paramNames = append(paramNames, param.name)
-				paramPatterns = append(paramPatterns, param.pattern)
-				args[param.name] = param.pattern.SymbolicValue()
+				args[param.Name] = param.Pattern.SymbolicValue()
 			}
-
-			paramsPattern := NewModuleParamsPattern(paramNames, paramPatterns)
 
 			if !state.setGlobal(globalnames.MOD_ARGS_VARNAME, NewModuleArgs(paramsPattern, args), GlobalConst) {
 				panic(ErrUnreachable)

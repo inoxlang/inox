@@ -17,6 +17,7 @@ import (
 	"github.com/inoxlang/inox/internal/parse"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/utils"
+	"golang.org/x/exp/maps"
 
 	"github.com/muesli/termenv"
 )
@@ -804,15 +805,17 @@ func (a *Array) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth in
 	utils.Must(w.Write(end))
 }
 
-func (s *ModuleArgs) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (args *ModuleArgs) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("module-arguments{")))
 
 	indentCount := parentIndentCount + 1
 	indent := bytes.Repeat(config.Indent, indentCount)
 
-	keys := s.pattern.keys
+	argNames := maps.Keys(args.values)
 
-	for i, k := range keys {
+	sort.Strings(argNames)
+
+	for i, argName := range argNames {
 
 		if !config.Compact {
 			utils.Must(w.Write(LF_CR))
@@ -824,7 +827,7 @@ func (s *ModuleArgs) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, dep
 
 		}
 
-		utils.Must(w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(k))))
+		utils.Must(w.Write(utils.Must(utils.MarshalJsonNoHTMLEspace(argName))))
 
 		if config.Colorize {
 			utils.Must(w.Write(ANSI_RESET_SEQUENCE))
@@ -834,18 +837,18 @@ func (s *ModuleArgs) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, dep
 		utils.Must(w.Write(COLON_SPACE))
 
 		//value
-		v := s.values[i]
+		v := args.values[argName]
 		v.PrettyPrint(w, config, depth+1, indentCount)
 
 		//comma & indent
-		isLastEntry := i == len(keys)-1
+		isLastEntry := i == len(argNames)-1
 
 		if !isLastEntry {
 			utils.Must(w.Write(COMMA_SPACE))
 		}
 	}
 
-	if !config.Compact && len(keys) > 0 {
+	if !config.Compact && len(argNames) > 0 {
 		utils.Must(w.Write(LF_CR))
 	}
 

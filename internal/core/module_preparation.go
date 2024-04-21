@@ -619,7 +619,7 @@ func PrepareLocalModule(args ModulePreparationArgs) (state *GlobalState, mod *Mo
 	}
 
 	if args.Args != nil {
-		modArgs, modArgsError = manifest.Parameters.GetArgumentsFromStruct(ctx, args.Args)
+		modArgs, modArgsError = manifest.Parameters.GetArgumentsFromModArgs(ctx, args.Args)
 	} else if args.CliArgs != nil {
 		args, err := manifest.Parameters.GetArgumentsFromCliArgs(ctx, args.CliArgs)
 		if err != nil {

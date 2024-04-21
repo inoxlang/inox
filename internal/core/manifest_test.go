@@ -14,7 +14,7 @@ func TestModuleParameters(t *testing.T) {
 	defer ctx.CancelGracefully()
 
 	t.Run("one non positional parameter with no default value", func(t *testing.T) {
-		params := &ModuleParameters{
+		params := ModuleParameters{
 			hasParamsRequiredOnCLI: true,
 			others: []ModuleParameter{
 				{
@@ -24,8 +24,8 @@ func TestModuleParameters(t *testing.T) {
 					pattern:                PATH_PATTERN,
 				},
 			},
-			paramsPattern: NewModuleParamsPattern([]string{"a"}, []Pattern{PATH_PATTERN}),
 		}
+		params.paramsPattern = NewModuleParamsPattern(map[string]Pattern{"a": PATH_PATTERN}, params)
 
 		//No argument provided.
 		args, err := params.GetArgumentsFromCliArgs(ctx, []string{})

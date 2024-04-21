@@ -14458,46 +14458,157 @@ func TestSymbolicEval(t *testing.T) {
 	})
 
 	t.Run("module parameters ", func(t *testing.T) {
-		n, state := MakeTestStateAndChunk(strings.ReplaceAll(`
-			manifest {
-				parameters: {
-					{
-						name: #a	
-						pattern: %bool
-					}
-					b: %str
-					c: {
-						pattern: %int
+		t.Run("one non-positional", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				manifest {
+					parameters: {
+						a: %str
 					}
 				}
+
+				return ` + globalnames.MOD_ARGS_VARNAME)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+
+			if !assert.IsType(t, (*ModuleArgs)(nil), res) {
+				return
 			}
 
-			return args
-		`, "args", globalnames.MOD_ARGS_VARNAME))
+			structVal := res.(*ModuleArgs)
+			structType := structVal.typ
 
-		res, err := symbolicEval(n, state)
-		assert.NoError(t, err)
-		assert.Empty(t, state.errors())
+			assert.Equal(t, NewModuleParamsPattern([]ModuleParameter{
+				{
+					Name:    "a",
+					Pattern: state.ctx.ResolveNamedPattern("str"),
+				},
+			}), structType)
 
-		if !assert.IsType(t, (*ModuleArgs)(nil), res) {
-			return
-		}
+			assert.Equal(t, NewModuleArgs(structType, map[string]Value{
+				"a": ANY_STR_LIKE,
+			}), structVal)
+		})
 
-		structVal := res.(*ModuleArgs)
-		structType := structVal.typ
+		t.Run("one positional, two non-positional", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(strings.ReplaceAll(`
+				manifest {
+					parameters: {
+						{
+							name: #a	
+							pattern: %bool
+						}
+						b: %str
+						c: {
+							pattern: %int
+						}
+					}
+				}
 
-		assert.Equal(t, NewModuleParamsPattern([]string{"a", "b", "c"}, []Pattern{
-			state.ctx.ResolveNamedPattern("bool"),
-			state.ctx.ResolveNamedPattern("str"),
-			state.ctx.ResolveNamedPattern("int"),
-		}), structType)
+				return args
+			`, "args", globalnames.MOD_ARGS_VARNAME))
 
-		assert.Equal(t, NewModuleArgs(structType, map[string]Value{
-			"a": ANY_BOOL,
-			"b": ANY_STR_LIKE,
-			"c": ANY_INT,
-		}), structVal)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+
+			if !assert.IsType(t, (*ModuleArgs)(nil), res) {
+				return
+			}
+
+			structVal := res.(*ModuleArgs)
+			structType := structVal.typ
+
+			assert.Equal(t, NewModuleParamsPattern([]ModuleParameter{
+				{
+					Name:       "a",
+					Pattern:    state.ctx.ResolveNamedPattern("bool"),
+					Positional: true,
+					Index:      0,
+				},
+				{
+					Name:    "b",
+					Pattern: state.ctx.ResolveNamedPattern("str"),
+				},
+				{
+					Name:    "c",
+					Pattern: state.ctx.ResolveNamedPattern("int"),
+				},
+			}), structType)
+
+			assert.Equal(t, NewModuleArgs(structType, map[string]Value{
+				"a": ANY_BOOL,
+				"b": ANY_STR_LIKE,
+				"c": ANY_INT,
+			}), structVal)
+		})
+
+		t.Run("one positional, two non-positional", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(strings.ReplaceAll(`
+				manifest {
+					parameters: {
+						{
+							name: #a	
+							pattern: %bool
+						}
+						{
+							name: #b
+							pattern: %int
+						}
+						c: %str
+						d: {
+							pattern: %int
+						}
+					}
+				}
+
+				return args
+			`, "args", globalnames.MOD_ARGS_VARNAME))
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+
+			if !assert.IsType(t, (*ModuleArgs)(nil), res) {
+				return
+			}
+
+			structVal := res.(*ModuleArgs)
+			structType := structVal.typ
+
+			assert.Equal(t, NewModuleParamsPattern([]ModuleParameter{
+				{
+					Name:       "a",
+					Pattern:    state.ctx.ResolveNamedPattern("bool"),
+					Positional: true,
+					Index:      0,
+				},
+				{
+					Name:       "b",
+					Pattern:    state.ctx.ResolveNamedPattern("int"),
+					Positional: true,
+					Index:      1,
+				},
+				{
+					Name:    "c",
+					Pattern: state.ctx.ResolveNamedPattern("str"),
+				},
+				{
+					Name:    "d",
+					Pattern: state.ctx.ResolveNamedPattern("int"),
+				},
+			}), structType)
+
+			assert.Equal(t, NewModuleArgs(structType, map[string]Value{
+				"a": ANY_BOOL,
+				"b": ANY_INT,
+				"c": ANY_STR_LIKE,
+				"d": ANY_INT,
+			}), structVal)
+		})
 	})
+
 	t.Run("module import statement ", func(t *testing.T) {
 
 		t.Run("base case", func(t *testing.T) {
@@ -14688,7 +14799,47 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, Nil, res)
 		})
 
-		t.Run("argument", func(t *testing.T) {
+		t.Run("one positional argument", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				manifest {}
+				import lib ./lib.ix {
+					arguments: {1}
+				}
+				return lib
+			`)
+			importStmt := parse.FindNode(n, (*parse.ImportStatement)(nil), nil)
+			state.Module.directlyImportedModules = map[*parse.ImportStatement]*Module{
+				importStmt: {
+					mainChunk: utils.Must(parse.ParseChunkSource(parse.SourceFile{
+						NameString:  "/lib.ix",
+						Resource:    "/lib.ix",
+						ResourceDir: "/",
+						CodeString: `
+							manifest {
+								parameters: {
+									{
+										name: #a
+										pattern: %int
+									}
+								}
+							} 
+							return mod-args.a
+						`,
+					})),
+				},
+			}
+			state.basePatterns = map[string]Pattern{
+				"int": state.ctx.ResolveNamedPattern("int"),
+			}
+
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_INT, res)
+		})
+
+		t.Run("one non-positional argument", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				manifest {}
 				import lib ./lib.ix {
@@ -14721,6 +14872,48 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
 			assert.Equal(t, ANY_INT, res)
+		})
+
+		t.Run("one positional argument and onne non-positinal argument", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				manifest {}
+				import lib ./lib.ix {
+					arguments: {1, b: "a"}
+				}
+				return lib
+			`)
+			importStmt := parse.FindNode(n, (*parse.ImportStatement)(nil), nil)
+			state.Module.directlyImportedModules = map[*parse.ImportStatement]*Module{
+				importStmt: {
+					mainChunk: utils.Must(parse.ParseChunkSource(parse.SourceFile{
+						NameString:  "/lib.ix",
+						Resource:    "/lib.ix",
+						ResourceDir: "/",
+						CodeString: `
+							manifest {
+								parameters: {
+									{
+										name: #a
+										pattern: %int
+									}
+									b: %str
+								}
+							}
+							return [mod-args.a, mod-args.b]
+						`,
+					})),
+				},
+			}
+			state.basePatterns = map[string]Pattern{
+				"int": state.ctx.ResolveNamedPattern("int"),
+				"str": state.ctx.ResolveNamedPattern("str"),
+			}
+
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewList(ANY_INT, ANY_STR_LIKE), res)
 		})
 
 		t.Run("missing argument", func(t *testing.T) {

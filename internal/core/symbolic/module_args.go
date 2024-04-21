@@ -3,9 +3,11 @@ package symbolic
 import (
 	"errors"
 	"fmt"
+	"sort"
 
 	"maps"
 
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/utils"
@@ -62,7 +64,7 @@ func (args *ModuleArgs) Prop(name string) Value {
 }
 
 func (args *ModuleArgs) PropertyNames() []string {
-	return args.typ.keys
+	return args.typ.paramNames
 }
 
 func (args *ModuleArgs) SetProp(state *State, node parse.Node, name string, value Value) (IProps, error) {
@@ -107,7 +109,7 @@ func (args *ModuleArgs) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.P
 	w.WriteName("module-arguments")
 
 	if w.Depth > config.MaxDepth {
-		if len(args.typ.keys) > 0 {
+		if len(args.typ.paramNames) > 0 {
 			w.WriteString("{(...)}")
 		} else {
 			w.WriteString("{ }")
@@ -163,26 +165,37 @@ func (args *ModuleArgs) WidestOfType() Value {
 
 // A ModuleParamsPattern represents a symbolic ModuleParamsPattern.
 type ModuleParamsPattern struct {
-	keys  []string //if nil matches any
-	types []Pattern
+	parameters []ModuleParameter //[ positional ..., non positional ...] if nil any ModuleParamsPattern is matched
+	paramNames []string
 }
 
-func NewModuleParamsPattern(keys []string, types []Pattern) *ModuleParamsPattern {
-	patt := CreateModuleParamsPattern(keys, types)
+func NewModuleParamsPattern(params []ModuleParameter) *ModuleParamsPattern {
+	patt := CreateModuleParamsPattern(params)
 	return &patt
 }
 
 // CreateModuleParamsPattern does not return a pointer on purpose.
-func CreateModuleParamsPattern(keys []string, types []Pattern) ModuleParamsPattern {
-	if keys == nil {
-		keys = []string{}
+// Passed parameters are sorted.
+func CreateModuleParamsPattern(params []ModuleParameter) ModuleParamsPattern {
+	sort.Slice(params, func(i, j int) bool {
+		if !params[i].Positional {
+
+			if params[j].Positional {
+				return false
+			}
+			return params[i].Name < params[j].Name
+		}
+		return params[i].Index < params[j].Index
+	})
+
+	paramNames := make([]string, len(params))
+	for i, p := range params {
+		paramNames[i] = p.Name
 	}
-	if types == nil {
-		types = []Pattern{}
-	}
+
 	return ModuleParamsPattern{
-		keys:  keys,
-		types: types,
+		parameters: params,
+		paramNames: paramNames,
 	}
 }
 
@@ -195,22 +208,19 @@ func (p *ModuleParamsPattern) Test(v Value, state RecTestCallState) bool {
 		return false
 	}
 
-	if p.keys == nil {
+	if p.parameters == nil {
 		return true
 	}
 
-	if otherStructPattern.keys == nil || len(p.keys) != len(otherStructPattern.keys) {
+	if otherStructPattern.parameters == nil || len(p.parameters) != len(otherStructPattern.parameters) {
 		return false
 	}
 
-	for i, key := range p.keys {
-		if otherStructPattern.keys[i] != key {
+	for i, param := range p.parameters {
+		if otherStructPattern.parameters[i].Name != param.Name {
 			return false
 		}
-	}
-
-	for i, patt := range p.types {
-		if !deeplyMatch(otherStructPattern.types[i], patt) {
+		if !deeplyMatch(otherStructPattern.parameters[i].Pattern, param.Pattern) {
 			return false
 		}
 	}
@@ -219,36 +229,47 @@ func (p *ModuleParamsPattern) Test(v Value, state RecTestCallState) bool {
 }
 
 func (p *ModuleParamsPattern) typeOfParam(name string) (Pattern, bool) {
-	ind, ok := p.indexOfParam(name)
-	if !ok {
-		return nil, false
-	}
-	return p.types[ind], true
-}
-
-func (p *ModuleParamsPattern) indexOfParam(name string) (int, bool) {
-	for index, key := range p.keys {
-		if key == name {
-			return index, true
+	for _, param := range p.parameters {
+		if param.Name == name {
+			return param.Pattern, true
 		}
 	}
-	return -1, false
+	return nil, false
 }
 
 func (p *ModuleParamsPattern) ArgumentsObject() *Object {
 	entries := map[string]Serializable{}
 	static := map[string]Pattern{}
 
-	for _, paramName := range p.keys {
-		pattern := utils.MustGet(p.typeOfParam(paramName))
+	var positionalParams []Serializable
 
-		arg, ok := AsSerializable(pattern.SymbolicValue()).(Serializable)
+	firstNonPositionlParamIndex := len(p.parameters)
+
+	for i, param := range p.parameters {
+		if !param.Positional {
+			firstNonPositionlParamIndex = i
+			break
+		}
+		arg, ok := AsSerializable(param.Pattern.SymbolicValue()).(Serializable)
 		if !ok {
 			arg = ANY_SERIALIZABLE
 		}
+		positionalParams = append(positionalParams, arg)
+	}
 
-		entries[paramName] = arg
-		static[paramName] = pattern
+	for _, param := range p.parameters[firstNonPositionlParamIndex:] {
+		arg, ok := AsSerializable(param.Pattern.SymbolicValue()).(Serializable)
+		if !ok {
+			arg = ANY_SERIALIZABLE
+		}
+		entries[param.Name] = arg
+		static[param.Name] = param.Pattern
+	}
+
+	if len(positionalParams) > 0 {
+		entries[inoxconsts.IMPLICIT_PROP_NAME] = NewList(positionalParams...)
+		//We do not add the implicit property name if there is no positional parameters
+		//because this would require the developer to add "": [] property.
 	}
 
 	return NewInexactObject(entries, nil, static)

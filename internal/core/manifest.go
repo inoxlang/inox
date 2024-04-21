@@ -212,10 +212,10 @@ func (p *ModuleParameters) GetArgumentsFromObject(ctx *Context, argObj *Object) 
 	return p.getArguments(ctx, resultEntries)
 }
 
-func (p *ModuleParameters) GetArgumentsFromStruct(ctx *Context, argStruct *ModuleArgs) (*ModuleArgs, error) {
+func (p *ModuleParameters) GetArgumentsFromModArgs(ctx *Context, modArgs *ModuleArgs) (*ModuleArgs, error) {
 	resultEntries := map[string]Value{}
 
-	propertyNames := argStruct.PropertyNames(ctx)
+	propertyNames := modArgs.PropertyNames(ctx)
 
 	for _, param := range p.positional {
 		paramName := param.Name()
@@ -224,7 +224,7 @@ func (p *ModuleParameters) GetArgumentsFromStruct(ctx *Context, argStruct *Modul
 			return nil, fmt.Errorf("missing value for argument %s", param.name)
 		}
 
-		arg := argStruct.Prop(ctx, paramName)
+		arg := modArgs.Prop(ctx, paramName)
 
 		if !param.pattern.Test(ctx, arg) {
 			return nil, fmt.Errorf("invalid value for argument %s", param.name)
@@ -244,7 +244,7 @@ func (p *ModuleParameters) GetArgumentsFromStruct(ctx *Context, argStruct *Modul
 			}
 		}
 
-		arg := argStruct.Prop(ctx, paramName)
+		arg := modArgs.Prop(ctx, paramName)
 
 		if !param.pattern.Test(ctx, arg) {
 			return nil, fmt.Errorf("invalid value for argument %s", param.name)
@@ -252,17 +252,13 @@ func (p *ModuleParameters) GetArgumentsFromStruct(ctx *Context, argStruct *Modul
 		resultEntries[paramName] = arg
 	}
 
-	err := argStruct.ForEachField(func(fieldName string, fieldValue Value) error {
-		_, ok := resultEntries[fieldName]
+	for argName := range modArgs.values {
+		_, ok := resultEntries[argName]
 		if !ok {
-			return errors.New(fmtUnknownArgument(fieldName))
+			return nil, errors.New(fmtUnknownArgument(argName))
 		}
-		return nil
-	})
-
-	if err != nil {
-		return nil, err
 	}
+
 	return p.getArguments(ctx, resultEntries)
 }
 
@@ -273,24 +269,15 @@ func (p *ModuleParameters) getArguments(ctx *Context, entries map[string]Value) 
 		}
 	}
 
-	structValues := make([]Value, len(p.paramsPattern.keys))
-	for name, value := range entries {
-		index, ok := p.paramsPattern.indexOfField(name)
-		if !ok {
-			panic(ErrUnreachable)
-		}
-		structValues[index] = value
-	}
-
 	return &ModuleArgs{
 		pattern: p.paramsPattern,
-		values:  structValues,
+		values:  entries,
 	}, nil
 }
 
 func (p *ModuleParameters) GetArgumentsFromCliArgs(ctx *Context, cliArgs []string) (*ModuleArgs, error) {
 	var positionalArgs []string
-	entries := map[string]Serializable{}
+	entries := map[string]Value{}
 
 	// non positional arguments
 outer:
@@ -362,18 +349,9 @@ outer:
 		return nil, errors.New(fmtTooManyPositionalArgs(len(positionalArgs), len(p.positional)))
 	}
 
-	structValues := make([]Value, len(p.paramsPattern.keys))
-	for name, value := range entries {
-		index, ok := p.paramsPattern.indexOfField(name)
-		if !ok {
-			panic(ErrUnreachable)
-		}
-		structValues[index] = value
-	}
-
 	return &ModuleArgs{
 		pattern: p.paramsPattern,
-		values:  structValues,
+		values:  entries,
 	}, nil
 }
 
@@ -386,10 +364,13 @@ func (p *ModuleParameters) GetSymbolicArguments(ctx *Context) *symbolic.ModuleAr
 		resultEntries[string(param.name)] = symbolicPatt.SymbolicValue()
 	}
 
+	var positional []symbolic.Value
+
 	for _, param := range p.positional {
 		symbolicPatt := utils.Must(param.pattern.ToSymbolicValue(nil, encountered)).(symbolic.Pattern)
-		resultEntries[string(param.name)] = symbolicPatt.SymbolicValue()
+		positional = append(positional, symbolicPatt.SymbolicValue())
 	}
+	resultEntries[inoxconsts.IMPLICIT_PROP_NAME] = symbolic.NewArray(positional...)
 
 	symbolicStructType := utils.Must(p.paramsPattern.ToSymbolicValue(ctx, encountered)).(*symbolic.ModuleParamsPattern)
 	return symbolic.NewModuleArgs(symbolicStructType, resultEntries)
@@ -1460,20 +1441,17 @@ func getModuleParameters(ctx *Context, v Value) (ModuleParameters, error) {
 		return ModuleParameters{}, fmt.Errorf("invalid manifest: '%s' section: %w", inoxconsts.MANIFEST_PARAMS_SECTION_NAME, err)
 	}
 
-	var paramNames []string
-	var paramPatterns []Pattern
+	paramPatterns := map[string]Pattern{}
 
 	for _, param := range params.positional {
-		paramNames = append(paramNames, param.name.UnderlyingString())
-		paramPatterns = append(paramPatterns, param.Pattern())
+		paramPatterns[param.name.UnderlyingString()] = param.Pattern()
 	}
 
 	for _, param := range params.others {
-		paramNames = append(paramNames, param.name.UnderlyingString())
-		paramPatterns = append(paramPatterns, param.Pattern())
+		paramPatterns[param.name.UnderlyingString()] = param.Pattern()
 	}
 
-	params.paramsPattern = NewModuleParamsPattern(paramNames, paramPatterns)
+	params.paramsPattern = NewModuleParamsPattern(paramPatterns, params)
 	return params, nil
 }
 
