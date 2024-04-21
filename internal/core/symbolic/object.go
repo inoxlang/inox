@@ -482,14 +482,14 @@ func (obj *Object) SetProp(state *State, node parse.Node, name string, value Val
 
 		if static, ok := obj.static[name]; ok {
 
-			if !static.TestValue(value, RecTestCallState{evalState: state}) {
-				msg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, value, static, state.mismatchMsgBuff)
+			if !static.TestValue(value, RecTestCallState{evalState: state.resetTestCallMsgBuffers()}) {
+				msg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, value, static, state.testCallMessageBuffer)
 				return nil, MakeSymbolicEvalError(node, state, msg, regions...)
 			}
 		} else if prevValue, ok := obj.entries[name]; ok {
 
-			if !prevValue.Test(value, RecTestCallState{evalState: state}) {
-				msg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, value, &TypePattern{val: prevValue}, state.mismatchMsgBuff)
+			if !prevValue.Test(value, RecTestCallState{evalState: state.resetTestCallMsgBuffers()}) {
+				msg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, value, &TypePattern{val: prevValue}, state.testCallMessageBuffer)
 				return nil, MakeSymbolicEvalError(node, state, msg, regions...)
 			}
 		}

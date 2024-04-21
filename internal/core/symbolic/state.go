@@ -59,10 +59,11 @@ type State struct {
 
 	//
 
-	mismatchMsgBuff      *bytes.Buffer
-	fmtHelper            *commonfmt.Helper
-	symbolicData         *Data
-	shellTrustedCommands []string
+	testCallMessageBuffer  *bytes.Buffer
+	testCallLocationBuffer *bytes.Buffer
+	fmtHelper              *commonfmt.Helper
+	symbolicData           *Data
+	shellTrustedCommands   []string
 
 	testedProgram *TestedProgram //can be nil
 
@@ -133,10 +134,11 @@ func newSymbolicState(ctx *Context, chunk *parse.ParsedChunkSource) *State {
 		scopeStack: []*scopeInfo{
 			{variables: map[string]varSymbolicInfo{}},
 		},
-		returnValue:     nil,
-		iterationChange: NoIterationChange,
-		fmtHelper:       commonfmt.NewHelper(),
-		mismatchMsgBuff: &bytes.Buffer{},
+		returnValue:            nil,
+		iterationChange:        NoIterationChange,
+		fmtHelper:              commonfmt.NewHelper(),
+		testCallMessageBuffer:  &bytes.Buffer{},
+		testCallLocationBuffer: &bytes.Buffer{},
 	}
 	ctx.associatedState = state
 
@@ -151,6 +153,12 @@ func (state *State) getErrorMesssageLocationOfSpan(span parse.NodeSpan) parse.So
 	sourcePositionStack := slices.Clone(state.importPositions)
 	sourcePositionStack = append(sourcePositionStack, state.currentChunk().GetSourcePosition(span))
 	return sourcePositionStack
+}
+
+func (state *State) resetTestCallMsgBuffers() *State {
+	state.testCallMessageBuffer.Reset()
+	state.testCallLocationBuffer.Reset()
+	return state
 }
 
 func (state *State) topChunk() *parse.ParsedChunkSource {
@@ -414,13 +422,13 @@ func (state *State) updateLocal2(
 
 		if !isNever(value) {
 
-			if !deeperMismatch && !info.static.TestValue(value, RecTestCallState{evalState: state}) {
+			if !deeperMismatch && !info.static.TestValue(value, RecTestCallState{evalState: state.resetTestCallMsgBuffers()}) {
 				msg := ""
 				var regions []commonfmt.RegionInfo
 				if narrowing {
 					msg, regions = fmtVarOfTypeCannotBeNarrowedToAn(state.fmtHelper, info.static.SymbolicValue(), value)
 				} else {
-					msg, regions = fmtNotAssignableToVarOftype(state.fmtHelper, value, info.static, state.mismatchMsgBuff)
+					msg, regions = fmtNotAssignableToVarOftype(state.fmtHelper, value, info.static, state.testCallMessageBuffer)
 				}
 				state.addError(MakeSymbolicEvalError(node, state, msg, regions...))
 				return false, nil
@@ -462,14 +470,14 @@ func (state *State) updateGlobal2(
 
 		if !isNever(value) {
 
-			if !deeperMismatch && !info.static.TestValue(value, RecTestCallState{evalState: state}) {
+			if !deeperMismatch && !info.static.TestValue(value, RecTestCallState{evalState: state.resetTestCallMsgBuffers()}) {
 				msg := ""
 
 				var regions []commonfmt.RegionInfo
 				if narrowing {
 					msg, regions = fmtVarOfTypeCannotBeNarrowedToAn(state.fmtHelper, info.static.SymbolicValue(), value)
 				} else {
-					msg, regions = fmtNotAssignableToVarOftype(state.fmtHelper, value, info.static, state.mismatchMsgBuff)
+					msg, regions = fmtNotAssignableToVarOftype(state.fmtHelper, value, info.static, state.testCallMessageBuffer)
 				}
 				state.addError(MakeSymbolicEvalError(node, state, msg, regions...))
 				return false, nil
@@ -787,6 +795,8 @@ func (state *State) join(areAllOutcomesCovered bool, forks ...*State) {
 	if areAllOutcomesCovered && doAllForksYield {
 		state.conditionalYield = false
 	}
+
+	state.resetTestCallMsgBuffers()
 }
 
 func (state *State) addError(err SymbolicEvaluationError) {

@@ -14,6 +14,7 @@ import (
 	"github.com/inoxlang/inox/internal/parse"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/utils"
+	"golang.org/x/exp/slices"
 )
 
 const (
@@ -966,4 +967,11 @@ func appendFirstMismatchErrorMessage(h *commonfmt.Helper, buf *bytes.Buffer) {
 			Formatted: buf.String(),
 		})
 	}
+}
+
+func prependToBuffer(buf *bytes.Buffer, p []byte) {
+	content := slices.Clone(buf.Bytes())
+	buf.Reset()
+	buf.Write(p)
+	buf.Write(content)
 }
