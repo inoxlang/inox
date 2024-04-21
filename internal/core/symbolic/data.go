@@ -53,8 +53,8 @@ type Data struct {
 	usedTypeExtensions          map[*parse.DoubleColonExpression]*TypeExtension
 	availableTypeExtensions     map[*parse.DoubleColonExpression][]*TypeExtension
 	urlReferencedEntities       map[*parse.DoubleColonExpression]Value
-
-	comptimeTypes map[ /* *Chunk or *EmbeddModule */ parse.Node]*ModuleCompileTimeTypes
+	moduleResults               map[ /* *Chunk or *EmbeddModule */ parse.Node]Value
+	comptimeTypes               map[ /* *Chunk or *EmbeddModule */ parse.Node]*ModuleCompileTimeTypes
 
 	errorMessageSet map[string]bool
 	errors          []SymbolicEvaluationError
@@ -77,6 +77,7 @@ func NewSymbolicData() *Data {
 		usedTypeExtensions:          make(map[*parse.DoubleColonExpression]*TypeExtension, 0),
 		availableTypeExtensions:     make(map[*parse.DoubleColonExpression][]*TypeExtension, 0),
 		urlReferencedEntities:       make(map[*parse.DoubleColonExpression]Value, 0),
+		moduleResults:               make(map[parse.Node]Value, 0),
 
 		comptimeTypes: make(map[parse.Node]*ModuleCompileTimeTypes, 0),
 
@@ -282,6 +283,14 @@ func (data *Data) AddData(newData *Data) {
 
 	for k, v := range newData.urlReferencedEntities {
 		data.SetURLReferencedEntity(k, v)
+	}
+
+	for k, v := range newData.moduleResults {
+		data.SetModuleResult(k, v)
+	}
+
+	for k, v := range newData.comptimeTypes {
+		data.comptimeTypes[k] = v
 	}
 
 	data.errors = append(data.errors, newData.errors...)
@@ -507,6 +516,40 @@ func (d *Data) SetURLReferencedEntity(n *parse.DoubleColonExpression, value Valu
 	}
 
 	d.urlReferencedEntities[n] = value
+}
+
+func (d *Data) SetModuleResult(module parse.Node, value Value) {
+	if d == nil {
+		return
+	}
+
+	switch module.(type) {
+	case *parse.Chunk, *parse.EmbeddedModule:
+	default:
+		panic(errors.New("invalid node"))
+	}
+
+	_, ok := d.moduleResults[module]
+	if ok {
+		panic(errors.New("result is already set for this module"))
+	}
+
+	d.moduleResults[module] = value
+}
+
+func (d *Data) GetModuleResult(module parse.Node) (Value, bool) {
+	if d == nil {
+		return nil, false
+	}
+
+	switch module.(type) {
+	case *parse.Chunk, *parse.EmbeddedModule:
+	default:
+		panic(errors.New("invalid node"))
+	}
+
+	result, ok := d.moduleResults[module]
+	return result, ok
 }
 
 func (d *Data) GetVariableDefinitionPosition(node parse.Node, ancestors []parse.Node) (pos parse.SourcePositionRange, found bool) {

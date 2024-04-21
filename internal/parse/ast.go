@@ -188,12 +188,15 @@ type Chunk struct {
 	Tokens []Token `json:"tokens,omitempty"`
 }
 
-// Module returns $c.EmbeddedModule if it is not nil, $c otherwise.
-func (c *Chunk) Module() Node {
+// ModuleNode returns a *Chunk or an *EmbeddedModule if $c is the root node of a module.
+func (c *Chunk) ModuleNode() (Node, bool) {
 	if c.EmbeddedModule != nil {
-		return c.EmbeddedModule
+		return c.EmbeddedModule, true
 	}
-	return c
+	if c.Manifest != nil {
+		return c, true
+	}
+	return nil, false
 }
 
 type EmbeddedModule struct {

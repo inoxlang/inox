@@ -3373,6 +3373,219 @@ func TestSymbolicEval(t *testing.T) {
 		})
 	})
 
+	t.Run("return statement in a top-level module", func(t *testing.T) {
+		t.Run("single unconditional return", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				manifest {} 
+				return 1
+			`)
+
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, INT_1, res)
+
+			//Check symbolic data.
+
+			result, ok := state.symbolicData.GetModuleResult(n)
+			if assert.True(t, ok) {
+				assert.Same(t, res, result)
+			}
+		})
+
+		t.Run("single conditional return in a single-statement module", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				manifest {}
+				if true { 
+					return 1 
+				}
+			`)
+
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewMultivalue(INT_1, Nil), res)
+
+			//Check symbolic data.
+
+			result, ok := state.symbolicData.GetModuleResult(n)
+			if assert.True(t, ok) {
+				assert.Same(t, res, result)
+			}
+		})
+
+		t.Run("single conditional return in a two-statement module", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				manifest {}
+				0;
+				if true { 
+					return 1 
+				}
+			`)
+
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewMultivalue(INT_1, Nil), res)
+
+			//Check symbolic data.
+
+			result, ok := state.symbolicData.GetModuleResult(n)
+			if assert.True(t, ok) {
+				assert.Same(t, res, result)
+			}
+		})
+
+		t.Run("two return statements", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				manifest {}
+				if true { 
+					return 1 
+				}
+				return 2
+			`)
+
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewMultivalue(INT_1, INT_2), res)
+
+			//Check symbolic data.
+
+			result, ok := state.symbolicData.GetModuleResult(n)
+			if assert.True(t, ok) {
+				assert.Same(t, res, result)
+			}
+		})
+	})
+
+	t.Run("return statement in an embedded module", func(t *testing.T) {
+
+		t.Run("single unconditional return", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				manifest {} 
+				go do {
+					return 1
+				}
+			`)
+
+			_, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+
+			//Check symbolic data.
+
+			result, ok := state.symbolicData.GetModuleResult(n)
+			if assert.True(t, ok) {
+				assert.Equal(t, ANY_LTHREAD, result)
+			}
+
+			embeddedMod := parse.FindFirstNode(n, (*parse.EmbeddedModule)(nil))
+
+			result, ok = state.symbolicData.GetModuleResult(embeddedMod)
+			if assert.True(t, ok) {
+				assert.Equal(t, INT_1, result)
+			}
+		})
+
+		t.Run("single conditional return in a single-statement module", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				manifest {}
+				go do {
+					if true { 
+						return 1 
+					}
+				}
+			`)
+
+			_, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+
+			//Check symbolic data.
+
+			result, ok := state.symbolicData.GetModuleResult(n)
+			if assert.True(t, ok) {
+				assert.Equal(t, ANY_LTHREAD, result)
+			}
+
+			embeddedMod := parse.FindFirstNode(n, (*parse.EmbeddedModule)(nil))
+
+			result, ok = state.symbolicData.GetModuleResult(embeddedMod)
+			if assert.True(t, ok) {
+				assert.Equal(t, joinValues([]Value{INT_1, Nil}), result)
+			}
+		})
+
+		t.Run("single conditional return in a two-statement module", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				manifest {}
+				go do {
+					0;
+					if true { 
+						return 1 
+					}
+				}
+			`)
+
+			_, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+
+			//Check symbolic data.
+
+			result, ok := state.symbolicData.GetModuleResult(n)
+			if assert.True(t, ok) {
+				assert.Equal(t, ANY_LTHREAD, result)
+			}
+
+			embeddedMod := parse.FindFirstNode(n, (*parse.EmbeddedModule)(nil))
+
+			result, ok = state.symbolicData.GetModuleResult(embeddedMod)
+			if assert.True(t, ok) {
+				assert.Equal(t, joinValues([]Value{INT_1, Nil}), result)
+			}
+		})
+
+		t.Run("two return statements", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				manifest {}
+				go do {
+					if true { 
+						return 1 
+					}
+					return 2
+				}
+			`)
+
+			_, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+
+			//Check symbolic data.
+
+			result, ok := state.symbolicData.GetModuleResult(n)
+			if assert.True(t, ok) {
+				assert.Equal(t, ANY_LTHREAD, result)
+			}
+
+			embeddedMod := parse.FindFirstNode(n, (*parse.EmbeddedModule)(nil))
+
+			result, ok = state.symbolicData.GetModuleResult(embeddedMod)
+			if assert.True(t, ok) {
+				assert.Equal(t, joinValues([]Value{INT_1, INT_2}), result)
+			}
+		})
+	})
+
 	t.Run("function declaration", func(t *testing.T) {
 
 		t.Run("missing body", func(t *testing.T) {
@@ -3547,7 +3760,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(fnExpr, state, MISSING_RETURN_IN_FUNCTION),
 			}, state.errors())
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("invalid return value", func(t *testing.T) {
@@ -3566,7 +3779,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(returnStmt, state, msg, regions...),
 			}, state.errors())
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("invalid return value: arrow syntax", func(t *testing.T) {
@@ -3584,7 +3797,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(strLit, state, msg, regions...),
 			}, state.errors())
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("invalid return value (annotation is an unprefixed named pattern)", func(t *testing.T) {
@@ -3604,7 +3817,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(returnStmt, state, msg, regions...),
 			}, state.errors())
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("invalid return value (deep mismatch)", func(t *testing.T) {
@@ -3627,7 +3840,7 @@ func TestSymbolicEval(t *testing.T) {
 				MakeSymbolicEvalError(objectProp.Value, state, errMsg, regions...),
 			}, state.errors())
 
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("missing unconditional return", func(t *testing.T) {
@@ -3645,7 +3858,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(fnExpr, state, MISSING_UNCONDITIONAL_RETURN_IN_FUNCTION),
 			}, state.errors())
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("invalid conditional return value", func(t *testing.T) {
@@ -3668,7 +3881,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(returnStmts[0], state, errMsg, regions...),
 			}, state.errors())
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("invalid nested conditional return value", func(t *testing.T) {
@@ -3693,7 +3906,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(returnStmts[0], state, errMsg, regions...),
 			}, state.errors())
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("patterns should be accessible from the body", func(t *testing.T) {
@@ -6533,7 +6746,7 @@ func TestSymbolicEval(t *testing.T) {
 				MakeSymbolicEvalError(idents[0], state, fmtVarIsNotDeclared("a")),
 				MakeSymbolicEvalError(idents[1], state, fmtVarIsNotDeclared("b")),
 			}, state.errors())
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("test is not a boolean", func(t *testing.T) {
@@ -6555,7 +6768,7 @@ func TestSymbolicEval(t *testing.T) {
 				MakeSymbolicEvalError(idents[1], state, fmtVarIsNotDeclared("a")),
 				MakeSymbolicEvalError(idents[2], state, fmtVarIsNotDeclared("b")),
 			}, state.errors())
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("error in test + missing consequent block", func(t *testing.T) {
@@ -6570,7 +6783,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(ifStmt.Test, state, fmtIfStmtTestShouldBeBoolBut(ANY_INT)),
 			}, state.errors())
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("error in test + missing alternate block", func(t *testing.T) {
@@ -6587,7 +6800,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(ifStmt.Test, state, fmtIfStmtTestShouldBeBoolBut(ANY_INT)),
 			}, state.errors())
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("join if: variable update", func(t *testing.T) {
@@ -7232,7 +7445,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 
 			identA := parse.FindIdentWithName(n, "a")
 
@@ -7257,7 +7470,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 
 			callExprs, ancestors := parse.FindNodesAndChains(n, (*parse.CallExpression)(nil), nil)
 
@@ -7301,7 +7514,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 
 			blocks, blockAncestors := parse.FindNodesAndChains(n, (*parse.Block)(nil), nil)
 			vars, varAncestors := parse.FindNodesAndChains(n, (*parse.Variable)(nil), nil)
@@ -8776,7 +8989,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(stmt, state, fmtSequenceShouldHaveLengthGreaterOrEqualTo(1)),
 			}, state.errors())
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("RHS is too short (2 variables)", func(t *testing.T) {
@@ -8790,7 +9003,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(stmt, state, fmtSequenceShouldHaveLengthGreaterOrEqualTo(2)),
 			}, state.errors())
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("RHS is too short (2 variables) but nillable", func(t *testing.T) {
@@ -8801,7 +9014,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("unknown-length list of integers : nillable", func(t *testing.T) {
@@ -8898,7 +9111,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(forStmt.IteratedValue, state, fmtXisNotIterable(ANY_INT)),
 			}, state.errors())
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("object iteration: keys are strings", func(t *testing.T) {
@@ -9097,7 +9310,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(forStmt.IteratedValue, state, fmtXisNotIterable(ANY_INT)),
 			}, state.errors())
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("state should be forked", func(t *testing.T) {
@@ -9361,7 +9574,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(walkStmt.Walked, state, fmtXisNotWalkable(ANY_INT)),
 			}, state.errors())
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("entries have right value", func(t *testing.T) {
@@ -9407,7 +9620,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(walkStmt.Walked, state, fmtXisNotWalkable(ANY_INT)),
 			}, state.errors())
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("state should be forked", func(t *testing.T) {
@@ -9475,7 +9688,7 @@ func TestSymbolicEval(t *testing.T) {
 				MakeSymbolicEvalError(unaryExprs[0], state, fmtOperandOfBoolNegateShouldBeBool(NewString("s"))),
 				MakeSymbolicEvalError(unaryExprs[1], state, fmtOperandOfBoolNegateShouldBeBool(NewString("s"))),
 			}, state.errors())
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("error in every block (with default case)", func(t *testing.T) {
@@ -9502,7 +9715,7 @@ func TestSymbolicEval(t *testing.T) {
 				MakeSymbolicEvalError(unaryExprs[1], state, fmtOperandOfBoolNegateShouldBeBool(NewString("s"))),
 				MakeSymbolicEvalError(unaryExprs[2], state, fmtOperandOfBoolNegateShouldBeBool(NewString("s"))),
 			}, state.errors())
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("block with an error + missing block", func(t *testing.T) {
@@ -9522,7 +9735,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(unaryExprs[0], state, fmtOperandOfBoolNegateShouldBeBool(NewString("s"))),
 			}, state.errors())
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("join single non-default case: variable update", func(t *testing.T) {
@@ -9653,7 +9866,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("narrowing of variable's value (with default case)", func(t *testing.T) {
@@ -9676,7 +9889,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("local scope data should be preserved inside all cases", func(t *testing.T) {
@@ -9694,7 +9907,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 
 			blocks, blockAncestors := parse.FindNodesAndChains(n, (*parse.Block)(nil), nil)
 			vars, varAncestors := parse.FindNodesAndChains(n, (*parse.Variable)(nil), nil)
@@ -10043,7 +10256,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(ident, state, fmtVarIsNotDeclared("undefined_var")),
 			}, state.errors())
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("an exact value used as a match case should be serializable", func(t *testing.T) {
@@ -10063,7 +10276,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(ident, state, AN_EXACT_VALUE_USED_AS_MATCH_CASE_SHOULD_BE_SERIALIZABLE),
 			}, state.errors())
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("error in every block", func(t *testing.T) {
@@ -10087,7 +10300,7 @@ func TestSymbolicEval(t *testing.T) {
 				MakeSymbolicEvalError(unaryExprs[0], state, fmtOperandOfBoolNegateShouldBeBool(NewString("s"))),
 				MakeSymbolicEvalError(unaryExprs[1], state, fmtOperandOfBoolNegateShouldBeBool(NewString("s"))),
 			}, state.errors())
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("single group matching case", func(t *testing.T) {
@@ -10102,7 +10315,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("two group matching cases with same variable", func(t *testing.T) {
@@ -10120,7 +10333,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("narrowing of a variable's value (no default case)", func(t *testing.T) {
@@ -10140,7 +10353,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("narrowing of a variable's value (with default case)", func(t *testing.T) {
@@ -10163,7 +10376,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("narrowing of a variable's value (multivalue)", func(t *testing.T) {
@@ -10183,7 +10396,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("narrowing of property", func(t *testing.T) {
@@ -10203,7 +10416,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("error in one block + missing block", func(t *testing.T) {
@@ -10224,7 +10437,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(unaryExpr, state, fmtOperandOfBoolNegateShouldBeBool(NewString("s"))),
 			}, state.errors())
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("local scope data should be preserved inside all cases", func(t *testing.T) {
@@ -10242,7 +10455,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 
 			blocks, blockAncestors := parse.FindNodesAndChains(n, (*parse.Block)(nil), nil)
 			vars, varAncestors := parse.FindNodesAndChains(n, (*parse.Variable)(nil), nil)
@@ -12268,7 +12481,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("value is not a boolean", func(t *testing.T) {
@@ -12281,7 +12494,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(n.Statements[0], state, fmtAssertedValueShouldBeBoolNot(ANY_INT)),
 			}, state.errors())
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("binary match expression narrows the type of a variable (%int)", func(t *testing.T) {
@@ -12321,7 +12534,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, expectedObject, varInfo.value)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("binary match expression narrows the type of a variable: (list pattern literal)", func(t *testing.T) {
@@ -12340,7 +12553,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, varInfo.value, expectedObject)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
-			assert.Nil(t, res)
+			assert.Equal(t, Nil, res)
 		})
 
 		t.Run("binary match expression narrows the type of a property (%int)", func(t *testing.T) {

@@ -931,7 +931,8 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 	}
 }
 
-func evalChunk(n *parse.Chunk, state *State) (_ Value, finalErr error) {
+// evalChunk evaluates the chunk of a file module, includable file, or an embedded module.
+func evalChunk(n *parse.Chunk, state *State) (result Value, finalErr error) {
 	manageLocalScope := !n.IsShellChunk && len(state.chunkStack) <= 1
 
 	if manageLocalScope {
@@ -1033,6 +1034,14 @@ func evalChunk(n *parse.Chunk, state *State) (_ Value, finalErr error) {
 		}
 	}
 
+	moduleNode, isModule := n.ModuleNode()
+
+	if isModule {
+		defer func() {
+			state.symbolicData.SetModuleResult(moduleNode, result)
+		}()
+	}
+
 	//Evaluation of statements.
 	if len(n.Statements) == 1 {
 		res, err := symbolicEval(n.Statements[0], state)
@@ -1040,17 +1049,21 @@ func evalChunk(n *parse.Chunk, state *State) (_ Value, finalErr error) {
 			return nil, err
 		}
 		checkCallExprWithUnhandledError(n.Statements[0], res, state)
-		if state.returnValue != nil && !state.conditionalReturn {
+
+		if state.returnValue != nil {
+			if state.conditionalReturn {
+				return joinValues([]Value{state.returnValue, Nil}), nil
+			}
 			return state.returnValue, nil
 		}
 
-		if res == nil && state.returnValue != nil {
-			return joinValues([]Value{state.returnValue, Nil}), nil
+		if res == nil {
+			return Nil, nil
 		}
+
 		return res, nil
 	}
 
-	var returnValue Value
 	for _, stmt := range n.Statements {
 		res, err := symbolicEval(stmt, state)
 
@@ -1060,16 +1073,21 @@ func evalChunk(n *parse.Chunk, state *State) (_ Value, finalErr error) {
 
 		checkCallExprWithUnhandledError(stmt, res, state)
 
-		if state.returnValue != nil {
-			if state.conditionalReturn {
-				returnValue = state.returnValue
-				continue
-			}
+		if state.returnValue != nil && !state.conditionalReturn {
+			//unconditional return
 			return state.returnValue, nil
 		}
 	}
 
-	return returnValue, nil
+	if state.returnValue == nil {
+		return Nil, nil
+	}
+
+	if state.conditionalReturn {
+		return joinValues([]Value{state.returnValue, Nil}), nil
+	}
+
+	return state.returnValue, nil
 }
 
 func evalURLExpression(n *parse.URLExpression, state *State, options evalOptions) (_ Value, finalErr error) {
