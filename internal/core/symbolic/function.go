@@ -750,9 +750,7 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult Value, mu
 			// 	arg = extVal.value
 			// }
 
-			firstMismatchMsg := ""
-
-			if !param.Test(arg, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
+			if !param.Test(arg, RecTestCallState{evalState: state}) {
 				if _, ok := argNode.(*parse.RuntimeTypeCheckExpression); ok {
 					args[paramIndex] = param
 					concreteCtx := state.ctx.startingConcreteContext
@@ -767,7 +765,7 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult Value, mu
 					// } else if goFunc.hasOptionalParams && paramIndex > goFunc.lastMandatoryParamIndex && Nil.Test(arg, RecTestCallState{}) {
 					//}
 
-					msg, regions := FmtInvalidArg(state.fmtHelper, position, arg, param, firstMismatchMsg)
+					msg, regions := FmtInvalidArg(state.fmtHelper, position, arg, param, state.mismatchMsgBuff)
 					state.addError(MakeSymbolicEvalError(argNode, state, msg, regions...))
 
 					args[paramIndex] = param //if argument does not match we use the symbolic parameter value as argument
@@ -799,14 +797,13 @@ func (goFunc *GoFunction) Call(input goFunctionCallInput) (finalResult Value, mu
 		variadicArgs := args[nonVariadicParamCount:]
 
 		for i, arg := range variadicArgs {
-			firstMismatchMsg := ""
 
-			if !goFunc.variadicElem.Test(arg.(Value), RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
+			if !goFunc.variadicElem.Test(arg.(Value), RecTestCallState{evalState: state}) {
 				position := i + nonVariadicParamCount
 				if goFunc.isfirstArgCtx {
 					position -= 1
 				}
-				msg, regions := FmtInvalidArg(state.fmtHelper, position, arg.(Value), goFunc.variadicElem, firstMismatchMsg)
+				msg, regions := FmtInvalidArg(state.fmtHelper, position, arg.(Value), goFunc.variadicElem, state.mismatchMsgBuff)
 				state.addError(MakeSymbolicEvalError(callLikeNode, state, msg, regions...))
 
 				variadicArgs[i] = goFunc.variadicElem

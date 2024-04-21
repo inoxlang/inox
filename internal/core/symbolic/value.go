@@ -1534,8 +1534,8 @@ func IsSimpleSymbolicInoxVal(v Value) bool {
 // }
 
 type RecTestCallState struct {
-	depth            int64
-	firstMismatchMsg *string
+	depth     int64
+	evalState *State
 }
 
 func (s *RecTestCallState) StartCall() {

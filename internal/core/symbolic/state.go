@@ -1,6 +1,7 @@
 package symbolic
 
 import (
+	"bytes"
 	"errors"
 
 	"github.com/go-git/go-billy/v5"
@@ -56,7 +57,9 @@ type State struct {
 	tempSymbolicGoFunctionIsVariadic     bool
 	tempUpdatedSelf                      Value
 
-	lastErrorNode        parse.Node
+	//
+
+	mismatchMsgBuff      *bytes.Buffer
 	fmtHelper            *commonfmt.Helper
 	symbolicData         *Data
 	shellTrustedCommands []string
@@ -133,6 +136,7 @@ func newSymbolicState(ctx *Context, chunk *parse.ParsedChunkSource) *State {
 		returnValue:     nil,
 		iterationChange: NoIterationChange,
 		fmtHelper:       commonfmt.NewHelper(),
+		mismatchMsgBuff: &bytes.Buffer{},
 	}
 	ctx.associatedState = state
 
@@ -409,15 +413,14 @@ func (state *State) updateLocal2(
 		info.value = value
 
 		if !isNever(value) {
-			firstMismatchMsg := ""
 
-			if !deeperMismatch && !info.static.TestValue(value, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
+			if !deeperMismatch && !info.static.TestValue(value, RecTestCallState{evalState: state}) {
 				msg := ""
 				var regions []commonfmt.RegionInfo
 				if narrowing {
 					msg, regions = fmtVarOfTypeCannotBeNarrowedToAn(state.fmtHelper, info.static.SymbolicValue(), value)
 				} else {
-					msg, regions = fmtNotAssignableToVarOftype(state.fmtHelper, value, info.static, firstMismatchMsg)
+					msg, regions = fmtNotAssignableToVarOftype(state.fmtHelper, value, info.static, state.mismatchMsgBuff)
 				}
 				state.addError(MakeSymbolicEvalError(node, state, msg, regions...))
 				return false, nil
@@ -458,16 +461,15 @@ func (state *State) updateGlobal2(
 		info.value = value
 
 		if !isNever(value) {
-			firstMismatchMsg := ""
 
-			if !deeperMismatch && !info.static.TestValue(value, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
+			if !deeperMismatch && !info.static.TestValue(value, RecTestCallState{evalState: state}) {
 				msg := ""
 
 				var regions []commonfmt.RegionInfo
 				if narrowing {
 					msg, regions = fmtVarOfTypeCannotBeNarrowedToAn(state.fmtHelper, info.static.SymbolicValue(), value)
 				} else {
-					msg, regions = fmtNotAssignableToVarOftype(state.fmtHelper, value, info.static, firstMismatchMsg)
+					msg, regions = fmtNotAssignableToVarOftype(state.fmtHelper, value, info.static, state.mismatchMsgBuff)
 				}
 				state.addError(MakeSymbolicEvalError(node, state, msg, regions...))
 				return false, nil

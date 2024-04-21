@@ -481,16 +481,15 @@ func (obj *Object) SetProp(state *State, node parse.Node, name string, value Val
 	if _, ok := obj.entries[name]; ok { // update property
 
 		if static, ok := obj.static[name]; ok {
-			firstMismatchMsg := ""
-			if !static.TestValue(value, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
-				msg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, value, static, firstMismatchMsg)
+
+			if !static.TestValue(value, RecTestCallState{evalState: state}) {
+				msg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, value, static, state.mismatchMsgBuff)
 				return nil, MakeSymbolicEvalError(node, state, msg, regions...)
 			}
 		} else if prevValue, ok := obj.entries[name]; ok {
-			firstMismatchMsg := ""
 
-			if !prevValue.Test(value, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
-				msg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, value, &TypePattern{val: prevValue}, firstMismatchMsg)
+			if !prevValue.Test(value, RecTestCallState{evalState: state}) {
+				msg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, value, &TypePattern{val: prevValue}, state.mismatchMsgBuff)
 				return nil, MakeSymbolicEvalError(node, state, msg, regions...)
 			}
 		}

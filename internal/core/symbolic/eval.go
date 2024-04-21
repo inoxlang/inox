@@ -1257,11 +1257,9 @@ func evalReturnStatement(n *parse.ReturnStatement, state *State) (_ Value, final
 	}
 	v := value
 
-	firstMismatchMsg := ""
-
-	if state.returnType != nil && !state.returnType.Test(v, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
+	if state.returnType != nil && !state.returnType.Test(v, RecTestCallState{evalState: state}) {
 		if !*deeperMismatch {
-			msg, regions := fmtInvalidReturnValue(state.fmtHelper, v, state.returnType, firstMismatchMsg)
+			msg, regions := fmtInvalidReturnValue(state.fmtHelper, v, state.returnType, state.mismatchMsgBuff)
 			state.addError(MakeSymbolicEvalError(n, state, msg, regions...))
 		}
 		state.returnValue = state.returnType
@@ -1299,10 +1297,9 @@ func evalYieldStatement(n *parse.YieldStatement, state *State) (_ Value, finalEr
 	}
 	v := value
 
-	firstMismatchMsg := ""
-	if state.yieldType != nil && !state.yieldType.Test(v, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
+	if state.yieldType != nil && !state.yieldType.Test(v, RecTestCallState{evalState: state}) {
 		if !*deeperMismatch {
-			msg, regions := fmtInvalidReturnValue(state.fmtHelper, v, state.yieldType, firstMismatchMsg)
+			msg, regions := fmtInvalidReturnValue(state.fmtHelper, v, state.yieldType, state.mismatchMsgBuff)
 			state.addError(MakeSymbolicEvalError(n, state, msg, regions...))
 		}
 		state.yieldedValue = state.yieldType
@@ -1405,10 +1402,10 @@ func evalLocalVariableDeclarations(n *parse.LocalVariableDeclarations, state *St
 			}
 
 			if static != nil {
-				firstMismatchMsg := ""
-				if !static.TestValue(right, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
+
+				if !static.TestValue(right, RecTestCallState{evalState: state}) {
 					if !deeperMismatch {
-						msg, regions := fmtNotAssignableToVarOftype(state.fmtHelper, right, static, firstMismatchMsg)
+						msg, regions := fmtNotAssignableToVarOftype(state.fmtHelper, right, static, state.mismatchMsgBuff)
 						state.addError(MakeSymbolicEvalError(decl.Right, state, msg, regions...))
 					}
 					right = ANY
@@ -1492,7 +1489,7 @@ func evalGlobalVariableDeclarations(n *parse.GlobalVariableDeclarations, state *
 			if static != nil {
 				if !static.TestValue(right, RecTestCallState{}) {
 					if !deeperMismatch {
-						msg, regions := fmtNotAssignableToVarOftype(state.fmtHelper, right, static, "")
+						msg, regions := fmtNotAssignableToVarOftype(state.fmtHelper, right, static, nil)
 						state.addError(MakeSymbolicEvalError(decl.Right, state, msg, regions...))
 					}
 					right = ANY
@@ -1742,12 +1739,10 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 			}
 			rhs = MergeValuesWithSameStaticTypeInMultivalue(rhs)
 
-			firstMismatchMsg := ""
-
 			if node.Operator.Int() && !utils.Implements[*IntType](field.Type) {
 				state.addError(MakeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
-			} else if !field.Type.TestValue(rhs, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
-				msg, regions := fmtNotAssignableToFieldOfType(state.fmtHelper, rhs, field.Type, firstMismatchMsg)
+			} else if !field.Type.TestValue(rhs, RecTestCallState{evalState: state}) {
+				msg, regions := fmtNotAssignableToFieldOfType(state.fmtHelper, rhs, field.Type, state.mismatchMsgBuff)
 				state.addError(MakeSymbolicEvalError(node, state, msg, regions...))
 			}
 
@@ -1901,12 +1896,10 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 			}
 			rhs = MergeValuesWithSameStaticTypeInMultivalue(rhs)
 
-			firstMismatchMsg := ""
-
 			if node.Operator.Int() && !utils.Implements[*IntType](field.Type) {
 				state.addError(MakeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
-			} else if !field.Type.TestValue(rhs, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
-				msg, regions := fmtNotAssignableToFieldOfType(state.fmtHelper, rhs, field.Type, firstMismatchMsg)
+			} else if !field.Type.TestValue(rhs, RecTestCallState{evalState: state}) {
+				msg, regions := fmtNotAssignableToFieldOfType(state.fmtHelper, rhs, field.Type, state.mismatchMsgBuff)
 				state.addError(MakeSymbolicEvalError(node, state, msg, regions...))
 			}
 			return nil, nil
@@ -2144,7 +2137,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 					} else {
 						v = seq.Element()
 					}
-					msg, regions := fmtNotAssignableToElementOfValue(state.fmtHelper, __rhs, v, "")
+					msg, regions := fmtNotAssignableToElementOfValue(state.fmtHelper, __rhs, v, nil)
 					state.addError(MakeSymbolicEvalError(node.Right, state, msg, regions...))
 				}
 			}
@@ -2458,14 +2451,12 @@ func evalIfExpression(n *parse.IfExpression, state *State, options evalOptions) 
 			return nil, err
 		}
 
-		firstMismatchMsg := ""
-
 		if options.expectedValue != nil &&
 			!deeperValueMismatch &&
-			!options.expectedValue.Test(consequentValue, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
+			!options.expectedValue.Test(consequentValue, RecTestCallState{evalState: state}) {
 
 			options.setActualValueMismatchIfNotNil()
-			msg, regions := fmtValueIsAnXButYWasExpected(state.fmtHelper, consequentValue, options.expectedValue, firstMismatchMsg)
+			msg, regions := fmtValueIsAnXButYWasExpected(state.fmtHelper, consequentValue, options.expectedValue, state.mismatchMsgBuff)
 
 			state.addError(MakeSymbolicEvalError(n.Consequent, state, msg, regions...))
 		} else if deeperValueMismatch {
@@ -2489,14 +2480,12 @@ func evalIfExpression(n *parse.IfExpression, state *State, options evalOptions) 
 				return nil, err
 			}
 
-			firstMismatchMsg := ""
-
 			if options.expectedValue != nil &&
 				!deeperValueMismatch &&
-				!options.expectedValue.Test(alternateValue, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
+				!options.expectedValue.Test(alternateValue, RecTestCallState{evalState: state}) {
 
 				options.setActualValueMismatchIfNotNil()
-				msg, regions := fmtValueIsAnXButYWasExpected(state.fmtHelper, alternateValue, options.expectedValue, firstMismatchMsg)
+				msg, regions := fmtValueIsAnXButYWasExpected(state.fmtHelper, alternateValue, options.expectedValue, state.mismatchMsgBuff)
 				state.addError(MakeSymbolicEvalError(n.Alternate, state, msg, regions...))
 			} else if deeperValueMismatch {
 				options.setActualValueMismatchIfNotNil()
@@ -2819,15 +2808,13 @@ func evalSwitchExpression(n *parse.SwitchExpression, state *State, options evalO
 
 			results = append(results, result)
 
-			firstMismatchMsg := ""
-
 			if options.expectedValue != nil &&
 				!deeperValueMismatch &&
-				!options.expectedValue.Test(result, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
+				!options.expectedValue.Test(result, RecTestCallState{evalState: state}) {
 
 				options.setActualValueMismatchIfNotNil()
 
-				msg, regions := fmtValueIsAnXButYWasExpected(state.fmtHelper, result, options.expectedValue, firstMismatchMsg)
+				msg, regions := fmtValueIsAnXButYWasExpected(state.fmtHelper, result, options.expectedValue, state.mismatchMsgBuff)
 				state.addError(MakeSymbolicEvalError(switchCase.Result, state, msg, regions...))
 			} else if deeperValueMismatch {
 				options.setActualValueMismatchIfNotNil()
@@ -2858,13 +2845,11 @@ func evalSwitchExpression(n *parse.SwitchExpression, state *State, options evalO
 		results = append(results, result)
 		hasValidDefaultCase = true
 
-		firstMismatchMsg := ""
-
 		if options.expectedValue != nil &&
 			!deeperValueMismatch &&
-			!options.expectedValue.Test(result, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
+			!options.expectedValue.Test(result, RecTestCallState{evalState: state}) {
 
-			msg, regions := fmtValueIsAnXButYWasExpected(state.fmtHelper, result, options.expectedValue, firstMismatchMsg)
+			msg, regions := fmtValueIsAnXButYWasExpected(state.fmtHelper, result, options.expectedValue, state.mismatchMsgBuff)
 			state.addError(MakeSymbolicEvalError(defaultCase.Result, state, msg, regions...))
 		} else if deeperValueMismatch {
 			options.setActualValueMismatchIfNotNil()
@@ -3097,13 +3082,12 @@ func evalMatchExpression(n *parse.MatchExpression, state *State, options evalOpt
 
 			results = append(results, result)
 
-			firstMismatchMsg := ""
 			if options.expectedValue != nil &&
 				!deeperValueMismatch &&
-				!options.expectedValue.Test(result, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
+				!options.expectedValue.Test(result, RecTestCallState{evalState: state}) {
 				options.setActualValueMismatchIfNotNil()
 
-				msg, regions := fmtValueIsAnXButYWasExpected(state.fmtHelper, result, options.expectedValue, firstMismatchMsg)
+				msg, regions := fmtValueIsAnXButYWasExpected(state.fmtHelper, result, options.expectedValue, state.mismatchMsgBuff)
 				state.addError(MakeSymbolicEvalError(matchCase.Result, state, msg, regions...))
 			} else if deeperValueMismatch {
 				options.setActualValueMismatchIfNotNil()
@@ -3138,14 +3122,12 @@ func evalMatchExpression(n *parse.MatchExpression, state *State, options evalOpt
 		results = append(results, result)
 		hasValidDefaultCase = true
 
-		firstMismatchMsg := ""
-
 		if options.expectedValue != nil &&
 			!deeperValueMismatch &&
-			!options.expectedValue.Test(result, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
+			!options.expectedValue.Test(result, RecTestCallState{evalState: state}) {
 			options.setActualValueMismatchIfNotNil()
 
-			msg, regions := fmtValueIsAnXButYWasExpected(state.fmtHelper, result, options.expectedValue, firstMismatchMsg)
+			msg, regions := fmtValueIsAnXButYWasExpected(state.fmtHelper, result, options.expectedValue, state.mismatchMsgBuff)
 			state.addError(MakeSymbolicEvalError(defaultCase.Result, state, msg, regions...))
 		} else if deeperValueMismatch {
 			options.setActualValueMismatchIfNotNil()
@@ -3621,10 +3603,9 @@ func evalFunctionExpression(n *parse.FunctionExpression, state *State, options e
 		//check return
 
 		if signatureReturnType != nil {
-			firstMismatchMsg := ""
 
-			if !signatureReturnType.Test(storedReturnType, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
-				msg, regions := fmtInvalidReturnValue(state.fmtHelper, storedReturnType, signatureReturnType, firstMismatchMsg)
+			if !signatureReturnType.Test(storedReturnType, RecTestCallState{evalState: state}) {
+				msg, regions := fmtInvalidReturnValue(state.fmtHelper, storedReturnType, signatureReturnType, state.mismatchMsgBuff)
 				state.addError(MakeSymbolicEvalError(n.Body, state, msg, regions...))
 			}
 			storedReturnType = signatureReturnType
@@ -4517,8 +4498,6 @@ func evalObjectLiteral(n *parse.ObjectLiteral, state *State, options evalOptions
 				return nil, err
 			}
 
-			firstMismatchMsg := ""
-
 			if p.Type != nil {
 				_propType, err := symbolicEval(p.Type, state)
 				if err != nil {
@@ -4526,20 +4505,20 @@ func evalObjectLiteral(n *parse.ObjectLiteral, state *State, options evalOptions
 				}
 				static = _propType.(Pattern)
 
-				if !static.TestValue(propVal, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
+				if !static.TestValue(propVal, RecTestCallState{evalState: state}) {
 					expected := static.SymbolicValue()
 					if !hasShallowError {
-						msg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, propVal, expected, "")
+						msg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, propVal, expected, nil)
 						state.addError(MakeSymbolicEvalError(p.Value, state, msg, regions...))
 					}
 					propVal = expected
 				}
 			} else if deeperMismatch {
 				options.setActualValueMismatchIfNotNil()
-			} else if expectedPropVal != nil && !deeperMismatch && !expectedPropVal.Test(propVal, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
+			} else if expectedPropVal != nil && !deeperMismatch && !expectedPropVal.Test(propVal, RecTestCallState{evalState: state}) {
 				options.setActualValueMismatchIfNotNil()
 				if !hasShallowError {
-					msg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, propVal, expectedPropVal, firstMismatchMsg)
+					msg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, propVal, expectedPropVal, state.mismatchMsgBuff)
 					state.addError(MakeSymbolicEvalError(p.Value, state, msg, regions...))
 				}
 			}
@@ -4695,14 +4674,12 @@ func evalRecordLiteral(n *parse.RecordLiteral, state *State, options evalOptions
 				return nil, err
 			}
 
-			firstMismatchMsg := ""
-
 			if deeperMismatch {
 				options.setActualValueMismatchIfNotNil()
-			} else if expectedPropVal != nil && !deeperMismatch && !expectedPropVal.Test(v, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
+			} else if expectedPropVal != nil && !deeperMismatch && !expectedPropVal.Test(v, RecTestCallState{evalState: state}) {
 				options.setActualValueMismatchIfNotNil()
 				if !hasShallowError {
-					msg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, v, expectedPropVal, firstMismatchMsg)
+					msg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, v, expectedPropVal, state.mismatchMsgBuff)
 					state.addError(MakeSymbolicEvalError(p.Value, state, msg, regions...))
 				}
 			}
@@ -5093,14 +5070,12 @@ func evalDictionaryLiteral(n *parse.DictionaryLiteral, state *State, options eva
 
 		//Check the value
 
-		firstMismatchMsg := ""
-
 		if deeperMismatch {
 			options.setActualValueMismatchIfNotNil()
-		} else if expectedEntryValue != nil && !deeperMismatch && !expectedEntryValue.Test(entryValue, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
+		} else if expectedEntryValue != nil && !deeperMismatch && !expectedEntryValue.Test(entryValue, RecTestCallState{evalState: state}) {
 			options.setActualValueMismatchIfNotNil()
 
-			msg, regions := fmtNotAssignableToEntryOfExpectedValue(state.fmtHelper, entryValue, expectedEntryValue, firstMismatchMsg)
+			msg, regions := fmtNotAssignableToEntryOfExpectedValue(state.fmtHelper, entryValue, expectedEntryValue, state.mismatchMsgBuff)
 			state.addError(MakeSymbolicEvalError(entry.Value, state, msg, regions...))
 		}
 

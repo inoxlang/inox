@@ -377,9 +377,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 			// 	widenedArg = widenOrAny(widenedArg)
 			// }
 
-			firstMismatchMsg := ""
-
-			if !paramType.Test(arg, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
+			if !paramType.Test(arg, RecTestCallState{evalState: state}) {
 				if argNode != nil {
 					//if the argument node is a runtime check expression we store
 					//the pattern that will be used at runtime to perform the check
@@ -401,7 +399,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 						})
 
 						if !deeperMismatch {
-							msg, regions := FmtInvalidArg(state.fmtHelper, i, arg, paramType, firstMismatchMsg)
+							msg, regions := FmtInvalidArg(state.fmtHelper, i, arg, paramType, state.mismatchMsgBuff)
 							state.addError(MakeSymbolicEvalError(argNode, state, msg, regions...))
 						}
 					}
@@ -411,7 +409,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 					if node == nil {
 						node = callNode
 					}
-					msg, regions := FmtInvalidArg(state.fmtHelper, i, arg, paramType, firstMismatchMsg)
+					msg, regions := FmtInvalidArg(state.fmtHelper, i, arg, paramType, state.mismatchMsgBuff)
 					state.addError(MakeSymbolicEvalError(argNode, state, msg, regions...))
 				}
 
@@ -520,8 +518,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 		// 	widenedArg = widenOrAny(widenedArg)
 		// }
 
-		firstMismatchMsg := ""
-		if !paramType.Test(arg, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
+		if !paramType.Test(arg, RecTestCallState{evalState: state}) {
 			if argNode != nil {
 				if _, ok := argNode.(*parse.RuntimeTypeCheckExpression); ok {
 					args[i] = paramType
@@ -541,7 +538,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 					})
 
 					if !deeperMismatch {
-						msg, regions := FmtInvalidArg(state.fmtHelper, i, arg, paramType, firstMismatchMsg)
+						msg, regions := FmtInvalidArg(state.fmtHelper, i, arg, paramType, state.mismatchMsgBuff)
 						state.addError(MakeSymbolicEvalError(argNode, state, msg, regions...))
 					}
 				}
@@ -551,7 +548,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 				if node == nil {
 					node = callNode
 				}
-				msg, regions := FmtInvalidArg(state.fmtHelper, i, arg, paramType, firstMismatchMsg)
+				msg, regions := FmtInvalidArg(state.fmtHelper, i, arg, paramType, state.mismatchMsgBuff)
 				state.addError(MakeSymbolicEvalError(argNode, state, msg, regions...))
 			}
 

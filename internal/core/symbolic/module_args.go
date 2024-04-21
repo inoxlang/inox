@@ -72,10 +72,9 @@ func (args *ModuleArgs) SetProp(state *State, node parse.Node, name string, valu
 	if !ok {
 		return nil, FormatErrPropertyDoesNotExist(name, args)
 	}
-	firstMismatchMsg := ""
 
-	if !fieldType.TestValue(value, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
-		msg := utils.Ret0(fmtNotAssignableToPropOfType(state.fmtHelper, value, fieldType, firstMismatchMsg))
+	if !fieldType.TestValue(value, RecTestCallState{evalState: state}) {
+		msg := utils.Ret0(fmtNotAssignableToPropOfType(state.fmtHelper, value, fieldType, state.mismatchMsgBuff))
 		return nil, errors.New(msg)
 	}
 
