@@ -124,7 +124,7 @@ func (a *Array) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPri
 		}
 
 		if !config.Compact && length > 0 {
-			w.WriteString("\n\r")
+			w.WriteEndOfLine()
 			w.WriteOuterIndent()
 		}
 		w.WriteByte(')')
@@ -410,7 +410,7 @@ func (list *List) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyP
 		}
 
 		if !config.Compact && length > 0 {
-			w.WriteString("\n\r")
+			w.WriteEndOfLine()
 			w.WriteOuterIndent()
 		}
 		w.WriteByte(']')
