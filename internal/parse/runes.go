@@ -219,3 +219,15 @@ func isMarkupPatternElementQuantifier(r rune) bool {
 	}
 	return false
 }
+
+func IsValidIdent(name string) bool {
+	if name == "" {
+		return false
+	}
+	for _, r := range name {
+		if !IsIdentChar(r) {
+			return false
+		}
+	}
+	return true
+}

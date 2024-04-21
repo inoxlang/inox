@@ -60,7 +60,7 @@ type State struct {
 	//
 
 	testCallMessageBuffer  *bytes.Buffer
-	testCallLocationBuffer *bytes.Buffer
+	testCallLocationBuffer []byte
 	fmtHelper              *commonfmt.Helper
 	symbolicData           *Data
 	shellTrustedCommands   []string
@@ -138,7 +138,7 @@ func newSymbolicState(ctx *Context, chunk *parse.ParsedChunkSource) *State {
 		iterationChange:        NoIterationChange,
 		fmtHelper:              commonfmt.NewHelper(),
 		testCallMessageBuffer:  &bytes.Buffer{},
-		testCallLocationBuffer: &bytes.Buffer{},
+		testCallLocationBuffer: make([]byte, 100),
 	}
 	ctx.associatedState = state
 
@@ -157,7 +157,7 @@ func (state *State) getErrorMesssageLocationOfSpan(span parse.NodeSpan) parse.So
 
 func (state *State) resetTestCallMsgBuffers() *State {
 	state.testCallMessageBuffer.Reset()
-	state.testCallLocationBuffer.Reset()
+	state.testCallLocationBuffer = state.testCallLocationBuffer[:0]
 	return state
 }
 
