@@ -170,7 +170,8 @@ func IsTheTopLevel(node Node) bool {
 	return false
 }
 
-// Chunk represents the root node obtained when parsing an Inox chunk.
+// Chunk represents either the root node obtained when parsing an Inox chunk (file),
+// or a synthetic node representing the root node of an embedded module (see EmbeddedModule.ToChunk).
 type Chunk struct {
 	NodeBase                   `json:"base:chunk"`
 	GlobalConstantDeclarations *GlobalConstantDeclarations `json:"globalConstDecls,omitempty"`    //nil if no const declarations at the top of the module
@@ -179,11 +180,20 @@ type Chunk struct {
 	IncludableChunkDesc        *IncludableChunkDescription `json:"includableChunkDesc,omitempty"` //nil if no manifest at the top of the module
 	RegionHeaders              []*AnnotatedRegionHeader    `json:"regionHeaders,omitempty"`
 	Statements                 []Node                      `json:"statements,omitempty"`
+	EmbeddedModule             *EmbeddedModule             //set if the *Chunk has been created from an embedded module
 	IsShellChunk               bool
 
 	//mostly valueless tokens, sorted by position (ascending).
 	//EmbeddedModule nodes hold references to subslices of .Tokens.
 	Tokens []Token `json:"tokens,omitempty"`
+}
+
+// Module returns $c.EmbeddedModule if it is not nil, $c otherwise.
+func (c *Chunk) Module() Node {
+	if c.EmbeddedModule != nil {
+		return c.EmbeddedModule
+	}
+	return c
 }
 
 type EmbeddedModule struct {
@@ -197,10 +207,13 @@ type EmbeddedModule struct {
 
 func (emod *EmbeddedModule) ToChunk() *Chunk {
 	return &Chunk{
-		NodeBase:   emod.NodeBase,
-		Manifest:   emod.Manifest,
-		Statements: emod.Statements,
-		Tokens:     emod.Tokens,
+		NodeBase:      emod.NodeBase,
+		Manifest:      emod.Manifest,
+		RegionHeaders: emod.RegionHeaders,
+		Statements:    emod.Statements,
+		Tokens:        emod.Tokens,
+
+		EmbeddedModule: emod,
 	}
 }
 
