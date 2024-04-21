@@ -18,6 +18,7 @@ import (
 
 const (
 	INOX_VALUE_REGION_KIND = "inox-value"
+	MISMATCH_REGION_KIND   = "mismatch"
 
 	//calls
 
@@ -377,7 +378,7 @@ func fmtTypeOfNetworkHostInterpolationIsAnXButYWasExpected(a Value, b Value) str
 	return fmt.Sprintf("type of the network host interpolation is %s but a(n) %s was expected", Stringify(a), Stringify(b))
 }
 
-func fmtNotAssignableToVarOftype(h *commonfmt.Helper, a Value, b Pattern) (string, []commonfmt.RegionInfo) {
+func fmtNotAssignableToVarOftype(h *commonfmt.Helper, a Value, b Pattern, firstMismatchErrorMessage string) (string, []commonfmt.RegionInfo) {
 	if h == nil {
 		h = commonfmt.NewHelper()
 	}
@@ -386,6 +387,8 @@ func fmtNotAssignableToVarOftype(h *commonfmt.Helper, a Value, b Pattern) (strin
 	fmtValue(h, a)
 	h.AppendString(" is not assignable to a variable of type ")
 	fmtValue(h, b.SymbolicValue())
+	h.AppendString(firstMismatchErrorMessage)
+	appendFirstMismatchErrorMessage(h, firstMismatchErrorMessage)
 
 	return h.Consume()
 }
@@ -403,7 +406,7 @@ func fmtVarOfTypeCannotBeNarrowedToAn(h *commonfmt.Helper, variable Value, val V
 	return h.Consume()
 }
 
-func fmtNotAssignableToPropOfType(h *commonfmt.Helper, a Value, b Value) (string, []commonfmt.RegionInfo) {
+func fmtNotAssignableToPropOfType(h *commonfmt.Helper, a Value, b Value, firstMismatchErrorMessage string) (string, []commonfmt.RegionInfo) {
 	if h == nil {
 		h = commonfmt.NewHelper()
 	}
@@ -423,11 +426,12 @@ func fmtNotAssignableToPropOfType(h *commonfmt.Helper, a Value, b Value) (string
 	h.AppendString(" is not assignable to a property of type ")
 	fmtValue(h, b)
 	h.AppendString(examplesString)
+	appendFirstMismatchErrorMessage(h, firstMismatchErrorMessage)
 
 	return h.Consume()
 }
 
-func fmtNotAssignableToFieldOfType(h *commonfmt.Helper, v Value, typ CompileTimeType) (string, []commonfmt.RegionInfo) {
+func fmtNotAssignableToFieldOfType(h *commonfmt.Helper, v Value, typ CompileTimeType, firstMismatchErrorMessage string) (string, []commonfmt.RegionInfo) {
 	examples := GetExamples(typ.SymbolicValue(), ExampleComputationContext{NonMatchingValue: v})
 	examplesString := ""
 	if len(examples) > 0 {
@@ -448,11 +452,12 @@ func fmtNotAssignableToFieldOfType(h *commonfmt.Helper, v Value, typ CompileTime
 	h.AppendString(" is not assignable to a field of type ")
 	fmtComptimeType(h, typ)
 	h.AppendString(examplesString)
+	appendFirstMismatchErrorMessage(h, firstMismatchErrorMessage)
 
 	return h.Consume()
 }
 
-func fmtNotAssignableToEntryOfExpectedValue(h *commonfmt.Helper, a Value, b Value) (string, []commonfmt.RegionInfo) {
+func fmtNotAssignableToEntryOfExpectedValue(h *commonfmt.Helper, a Value, b Value, firstMismatchErrorMessage string) (string, []commonfmt.RegionInfo) {
 
 	if h == nil {
 		h = commonfmt.NewHelper()
@@ -462,11 +467,12 @@ func fmtNotAssignableToEntryOfExpectedValue(h *commonfmt.Helper, a Value, b Valu
 	fmtValue(h, a)
 	h.AppendString(" is not assignable to an entry of expected value ")
 	fmtValue(h, b)
+	appendFirstMismatchErrorMessage(h, firstMismatchErrorMessage)
 
 	return h.Consume()
 }
 
-func fmtNotAssignableToElementOfValue(h *commonfmt.Helper, a Value, b Value) (string, []commonfmt.RegionInfo) {
+func fmtNotAssignableToElementOfValue(h *commonfmt.Helper, a Value, b Value, firstMismatchErrorMessage string) (string, []commonfmt.RegionInfo) {
 	examples := GetExamples(b, ExampleComputationContext{NonMatchingValue: a})
 	examplesString := ""
 	if len(examples) > 0 {
@@ -482,6 +488,7 @@ func fmtNotAssignableToElementOfValue(h *commonfmt.Helper, a Value, b Value) (st
 	h.AppendString(" is not assignable to an element of value ")
 	fmtValue(h, b)
 	h.AppendString(examplesString)
+	appendFirstMismatchErrorMessage(h, firstMismatchErrorMessage)
 
 	return h.Consume()
 }
@@ -589,7 +596,7 @@ func fmtInvalidNumberOfNonArgsAtLeastMandatoryMax(actual, mandatory int, max int
 	return fmt.Sprintf("invalid number of non-spread arguments: %v, at least %v were expected (max %v)", actual, mandatory, max)
 }
 
-func FmtInvalidArg(h *commonfmt.Helper, position int, actual, expected Value) (string, []commonfmt.RegionInfo) {
+func FmtInvalidArg(h *commonfmt.Helper, position int, actual, expected Value, firstMismatchErrorMessage string) (string, []commonfmt.RegionInfo) {
 	if h == nil {
 		h = commonfmt.NewHelper()
 	}
@@ -601,11 +608,12 @@ func FmtInvalidArg(h *commonfmt.Helper, position int, actual, expected Value) (s
 	h.AppendString(", but ")
 	fmtValue(h, expected)
 	h.AppendString(" was expected")
+	appendFirstMismatchErrorMessage(h, firstMismatchErrorMessage)
 
 	return h.Consume()
 }
 
-func fmtInvalidReturnValue(h *commonfmt.Helper, actual, expected Value) (string, []commonfmt.RegionInfo) {
+func fmtInvalidReturnValue(h *commonfmt.Helper, actual, expected Value, firstMismatchErrorMessage string) (string, []commonfmt.RegionInfo) {
 	if h == nil {
 		h = commonfmt.NewHelper()
 	}
@@ -614,6 +622,7 @@ func fmtInvalidReturnValue(h *commonfmt.Helper, actual, expected Value) (string,
 	h.AppendString(", but a value matching ")
 	fmtValue(h, expected)
 	h.AppendString(" was expected")
+	appendFirstMismatchErrorMessage(h, firstMismatchErrorMessage)
 
 	return h.Consume()
 }
@@ -931,4 +940,14 @@ func fmtPatternForAttributeDoesNotHaveCorrespStrPattern(name string) string {
 func fmtUnexpectedValForAttrX(attrName string) string {
 	return fmt.Sprintf("unexpected value for the attribute '%s': "+
 		"a string pattern, a pattern with a corresponding string pattern, or a value of type string-like|bool|int|rune|resource-name was expected", attrName)
+}
+
+func appendFirstMismatchErrorMessage(h *commonfmt.Helper, msg string) {
+	if msg != "" {
+		h.AppendString("; first mismatch: ")
+		h.AppendRegion(commonfmt.RegionParams{
+			Kind:      MISMATCH_REGION_KIND,
+			Formatted: msg,
+		})
+	}
 }

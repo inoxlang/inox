@@ -122,6 +122,7 @@ func fmtComptimeType(h *commonfmt.Helper, t CompileTimeType) {
 	})
 }
 
+
 type PrettyPrintArgs struct {
 	Value interface {
 		PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig)

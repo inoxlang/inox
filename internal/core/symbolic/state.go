@@ -409,13 +409,15 @@ func (state *State) updateLocal2(
 		info.value = value
 
 		if !isNever(value) {
-			if !deeperMismatch && !info.static.TestValue(value, RecTestCallState{}) {
+			firstMismatchMsg := ""
+
+			if !deeperMismatch && !info.static.TestValue(value, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
 				msg := ""
 				var regions []commonfmt.RegionInfo
 				if narrowing {
 					msg, regions = fmtVarOfTypeCannotBeNarrowedToAn(state.fmtHelper, info.static.SymbolicValue(), value)
 				} else {
-					msg, regions = fmtNotAssignableToVarOftype(state.fmtHelper, value, info.static)
+					msg, regions = fmtNotAssignableToVarOftype(state.fmtHelper, value, info.static, firstMismatchMsg)
 				}
 				state.addError(MakeSymbolicEvalError(node, state, msg, regions...))
 				return false, nil
@@ -456,13 +458,16 @@ func (state *State) updateGlobal2(
 		info.value = value
 
 		if !isNever(value) {
-			if !deeperMismatch && !info.static.TestValue(value, RecTestCallState{}) {
+			firstMismatchMsg := ""
+
+			if !deeperMismatch && !info.static.TestValue(value, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
 				msg := ""
+
 				var regions []commonfmt.RegionInfo
 				if narrowing {
 					msg, regions = fmtVarOfTypeCannotBeNarrowedToAn(state.fmtHelper, info.static.SymbolicValue(), value)
 				} else {
-					msg, regions = fmtNotAssignableToVarOftype(state.fmtHelper, value, info.static)
+					msg, regions = fmtNotAssignableToVarOftype(state.fmtHelper, value, info.static, firstMismatchMsg)
 				}
 				state.addError(MakeSymbolicEvalError(node, state, msg, regions...))
 				return false, nil

@@ -743,7 +743,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			decl := parse.FindNode(n, (*parse.LocalVariableDeclarator)(nil), nil)
 
-			errMsg, regions := fmtNotAssignableToVarOftype(state.fmtHelper, ANY_INT, &TypePattern{val: ANY_STR_LIKE})
+			errMsg, regions := fmtNotAssignableToVarOftype(state.fmtHelper, ANY_INT, &TypePattern{val: ANY_STR_LIKE}, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(decl.Right, state, errMsg, regions...),
@@ -802,7 +802,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			objectProp := parse.FindNode(n, (*parse.ObjectProperty)(nil), nil)
 
-			errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, NewInt(1), ANY_STR_LIKE)
+			errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, NewInt(1), ANY_STR_LIKE, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(objectProp.Value, state, errMsg, regions...),
@@ -820,7 +820,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			objectProp := parse.FindNode(n, (*parse.ObjectProperty)(nil), nil)
 
-			errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, NewInt(1), ANY_STR_LIKE)
+			errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, NewInt(1), ANY_STR_LIKE, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(objectProp.Value, state, errMsg, regions...),
@@ -840,7 +840,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			intLiteral := parse.FindNode(n, (*parse.IntLiteral)(nil), nil)
 
-			errMsg, regions := fmtNotAssignableToEntryOfExpectedValue(state.fmtHelper, NewInt(1), NewString("str"))
+			errMsg, regions := fmtNotAssignableToEntryOfExpectedValue(state.fmtHelper, NewInt(1), NewString("str"), "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(intLiteral, state, errMsg, regions...),
@@ -892,7 +892,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			decl := parse.FindNode(n, (*parse.LocalVariableDeclarator)(nil), nil)
 
-			errMsg, regions := fmtNotAssignableToVarOftype(state.fmtHelper, ANY_INT, &TypePattern{val: ANY_STR_LIKE})
+			errMsg, regions := fmtNotAssignableToVarOftype(state.fmtHelper, ANY_INT, &TypePattern{val: ANY_STR_LIKE}, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(decl.Right, state, errMsg, regions...),
@@ -911,7 +911,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			decl := parse.FindNode(n, (*parse.LocalVariableDeclarator)(nil), nil)
 
-			errMsg, regions := fmtNotAssignableToVarOftype(state.fmtHelper, NewEmptyObject(), &TypePattern{val: ANY_STR_LIKE})
+			errMsg, regions := fmtNotAssignableToVarOftype(state.fmtHelper, NewEmptyObject(), &TypePattern{val: ANY_STR_LIKE}, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(decl.Right, state, errMsg, regions...),
@@ -1130,7 +1130,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			decl := parse.FindNode(n, (*parse.GlobalVariableDeclarator)(nil), nil)
 
-			errMsg, regions := fmtNotAssignableToVarOftype(state.fmtHelper, ANY_INT, &TypePattern{val: ANY_STR_LIKE})
+			errMsg, regions := fmtNotAssignableToVarOftype(state.fmtHelper, ANY_INT, &TypePattern{val: ANY_STR_LIKE}, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(decl.Right, state, errMsg, regions...),
@@ -1190,7 +1190,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			objectProp := parse.FindNode(n, (*parse.ObjectProperty)(nil), nil)
 
-			errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, NewInt(1), ANY_STR_LIKE)
+			errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, NewInt(1), ANY_STR_LIKE, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(objectProp.Value, state, errMsg, regions...),
@@ -1209,7 +1209,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			objectProp := parse.FindNode(n, (*parse.ObjectProperty)(nil), nil)
 
-			errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, NewInt(1), ANY_STR_LIKE)
+			errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, NewInt(1), ANY_STR_LIKE, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(objectProp.Value, state, errMsg, regions...),
@@ -1230,7 +1230,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			intLiteral := parse.FindNode(n, (*parse.IntLiteral)(nil), nil)
 
-			errMsg, regions := fmtNotAssignableToEntryOfExpectedValue(state.fmtHelper, NewInt(1), NewString("str"))
+			errMsg, regions := fmtNotAssignableToEntryOfExpectedValue(state.fmtHelper, NewInt(1), NewString("str"), "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(intLiteral, state, errMsg, regions...),
@@ -1283,7 +1283,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			decl := parse.FindNode(n, (*parse.GlobalVariableDeclarator)(nil), nil)
 
-			errMsg, regions := fmtNotAssignableToVarOftype(state.fmtHelper, ANY_INT, &TypePattern{val: ANY_STR_LIKE})
+			errMsg, regions := fmtNotAssignableToVarOftype(state.fmtHelper, ANY_INT, &TypePattern{val: ANY_STR_LIKE}, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(decl.Right, state, errMsg, regions...),
@@ -1302,7 +1302,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			decl := parse.FindNode(n, (*parse.GlobalVariableDeclarator)(nil), nil)
 
-			errMsg, regions := fmtNotAssignableToVarOftype(state.fmtHelper, NewEmptyObject(), &TypePattern{val: ANY_STR_LIKE})
+			errMsg, regions := fmtNotAssignableToVarOftype(state.fmtHelper, NewEmptyObject(), &TypePattern{val: ANY_STR_LIKE}, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(decl.Right, state, errMsg, regions...),
@@ -1430,7 +1430,7 @@ func TestSymbolicEval(t *testing.T) {
 					state.ctx.ResolveNamedPattern("int"),
 					state.ctx.ResolveNamedPattern("str"),
 				},
-			})
+			}, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(assignement, state, errMsg, regions...),
@@ -1449,7 +1449,7 @@ func TestSymbolicEval(t *testing.T) {
 			assignement := n.Statements[1]
 			assert.NoError(t, err)
 
-			errMsg, regions := fmtNotAssignableToVarOftype(state.fmtHelper, TRUE, &TypePattern{val: ANY_INT})
+			errMsg, regions := fmtNotAssignableToVarOftype(state.fmtHelper, TRUE, &TypePattern{val: ANY_INT}, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(assignement, state, errMsg, regions...),
@@ -1470,7 +1470,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			staticType := NewListPatternOf(&TypePattern{val: ANY_INT})
 
-			errMsg, regions := fmtNotAssignableToVarOftype(state.fmtHelper, TRUE, staticType)
+			errMsg, regions := fmtNotAssignableToVarOftype(state.fmtHelper, TRUE, staticType, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(assignement, state, errMsg, regions...),
@@ -1674,7 +1674,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.NoError(t, err)
 
-			errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, ANY_INT, &TypePattern{val: ANY_STRING})
+			errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, ANY_INT, &TypePattern{val: ANY_STRING}, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(assignment, state, errMsg, regions...),
@@ -1700,7 +1700,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.NoError(t, err)
 
-			errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, ANY_INT, &TypePattern{val: ANY_STRING})
+			errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, ANY_INT, &TypePattern{val: ANY_STRING}, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(assignment, state, errMsg, regions...),
@@ -1727,7 +1727,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.NoError(t, err)
 
-			errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, ANY_INT, &TypePattern{val: ANY_STRING})
+			errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, ANY_INT, &TypePattern{val: ANY_STRING}, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(assignment, state, errMsg, regions...),
@@ -1787,7 +1787,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.NoError(t, err)
 
-			errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, TRUE, propType)
+			errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, TRUE, propType, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(assignment, state, errMsg, regions...),
@@ -1948,7 +1948,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.NoError(t, err)
 
-			errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, ANY_INT, state.ctx.ResolveNamedPattern("str").SymbolicValue())
+			errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, ANY_INT, state.ctx.ResolveNamedPattern("str").SymbolicValue(), "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(valueNode, state, errMsg, regions...),
@@ -2201,7 +2201,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			prop := parse.FindObjPropWithName(n, "a")
 
-			errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, TRUE, ANY_INT)
+			errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, TRUE, ANY_INT, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(prop.Value, state, errMsg, regions...),
@@ -2358,7 +2358,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			prop := parse.FindObjPropWithName(n, "a")
 
-			errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, TRUE, ANY_INT)
+			errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, TRUE, ANY_INT, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(prop.Value, state, errMsg, regions...),
@@ -3774,7 +3774,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 
 			assert.NoError(t, err)
-			msg, regions := fmtInvalidReturnValue(state.fmtHelper, NewString("a"), ANY_INT)
+			msg, regions := fmtInvalidReturnValue(state.fmtHelper, NewString("a"), ANY_INT, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(returnStmt, state, msg, regions...),
@@ -3792,7 +3792,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.NoError(t, err)
 
-			msg, regions := fmtInvalidReturnValue(state.fmtHelper, NewString("a"), ANY_INT)
+			msg, regions := fmtInvalidReturnValue(state.fmtHelper, NewString("a"), ANY_INT, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(strLit, state, msg, regions...),
@@ -3812,7 +3812,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.NoError(t, err)
 
-			msg, regions := fmtInvalidReturnValue(state.fmtHelper, NewString("a"), ANY_INT)
+			msg, regions := fmtInvalidReturnValue(state.fmtHelper, NewString("a"), ANY_INT, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(returnStmt, state, msg, regions...),
@@ -3834,7 +3834,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.NoError(t, err)
 
-			errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, NewString("a"), ANY_INT)
+			errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, NewString("a"), ANY_INT, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(objectProp.Value, state, errMsg, regions...),
@@ -3876,7 +3876,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.NoError(t, err)
 
-			errMsg, regions := fmtInvalidReturnValue(state.fmtHelper, NewString("a"), ANY_INT)
+			errMsg, regions := fmtInvalidReturnValue(state.fmtHelper, NewString("a"), ANY_INT, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(returnStmts[0], state, errMsg, regions...),
@@ -3901,7 +3901,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.NoError(t, err)
 
-			errMsg, regions := fmtInvalidReturnValue(state.fmtHelper, NewString("a"), ANY_INT)
+			errMsg, regions := fmtInvalidReturnValue(state.fmtHelper, NewString("a"), ANY_INT, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(returnStmts[0], state, errMsg, regions...),
@@ -4420,7 +4420,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
-			msg, regions := FmtInvalidArg(state.fmtHelper, 0, NewString("a"), ANY_INT)
+			msg, regions := FmtInvalidArg(state.fmtHelper, 0, NewString("a"), ANY_INT, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(strLit, state, msg, regions...),
@@ -4455,7 +4455,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
-			msg, regions := FmtInvalidArg(state.fmtHelper, 1, NewString("a"), ANY_INT)
+			msg, regions := FmtInvalidArg(state.fmtHelper, 1, NewString("a"), ANY_INT, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(strLit, state, msg, regions...),
@@ -4519,7 +4519,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 
 			assert.NoError(t, err)
-			errMsg, regions := fmtInvalidReturnValue(state.fmtHelper, NewString("a"), ANY_INT)
+			errMsg, regions := fmtInvalidReturnValue(state.fmtHelper, NewString("a"), ANY_INT, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(fnReturnStmt, state, errMsg, regions...),
@@ -4541,7 +4541,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
-			msg, regions := FmtInvalidArg(state.fmtHelper, 0, NewString("a"), ANY_INT)
+			msg, regions := FmtInvalidArg(state.fmtHelper, 0, NewString("a"), ANY_INT, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(call.Arguments[0], state, msg, regions...),
@@ -4563,7 +4563,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
-			msg, regions := FmtInvalidArg(state.fmtHelper, 0, NewString("a"), ANY_INT)
+			msg, regions := FmtInvalidArg(state.fmtHelper, 0, NewString("a"), ANY_INT, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(call.Arguments[0], state, msg, regions...),
@@ -4590,7 +4590,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
-			msg, regions := FmtInvalidArg(state.fmtHelper, 0, NewEmptyObject(), param)
+			msg, regions := FmtInvalidArg(state.fmtHelper, 0, NewEmptyObject(), param, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(argNode, state, msg, regions...),
@@ -4624,7 +4624,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
-			msg, regions := FmtInvalidArg(state.fmtHelper, 0, NewEmptyObject(), param)
+			msg, regions := FmtInvalidArg(state.fmtHelper, 0, NewEmptyObject(), param, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(argNode, state, msg, regions...),
@@ -4651,7 +4651,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
-			errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, NewString("a"), ANY_INT)
+			errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, NewString("a"), ANY_INT, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(propertyValue, state, errMsg, regions...),
@@ -5105,7 +5105,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
-			msg, regions := FmtInvalidArg(state.fmtHelper, 0, NewString("a"), ANY_INT)
+			msg, regions := FmtInvalidArg(state.fmtHelper, 0, NewString("a"), ANY_INT, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(argNode, state, msg, regions...),
@@ -5193,7 +5193,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
-			msg, regions := FmtInvalidArg(state.fmtHelper, 0, NewString("a"), ANY_INT)
+			msg, regions := FmtInvalidArg(state.fmtHelper, 0, NewString("a"), ANY_INT, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(argNode, state, msg, regions...),
@@ -5306,7 +5306,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
-			msg, regions := FmtInvalidArg(state.fmtHelper, 1, NewString("a"), ANY_INT)
+			msg, regions := FmtInvalidArg(state.fmtHelper, 1, NewString("a"), ANY_INT, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(argNode, state, msg, regions...),
@@ -5338,7 +5338,9 @@ func TestSymbolicEval(t *testing.T) {
 				state.fmtHelper,
 				0,
 				NewMultivalue(NewListOf(ANY_STR_LIKE), NewListOf(ANY_INT)),
-				NewListOf(ANY_SERIALIZABLE))
+				NewListOf(ANY_SERIALIZABLE),
+				"",
+			)
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(call.Arguments[0], state, msg, regions...),
@@ -5376,6 +5378,7 @@ func TestSymbolicEval(t *testing.T) {
 				0,
 				NewMultivalue(NewListOf(ANY_STR_LIKE), NewListOf(ANY_INT)),
 				NewListOf(ANY_SERIALIZABLE),
+				"",
 			)
 
 			assert.NoError(t, err)
@@ -5409,7 +5412,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
-			msg, regions := FmtInvalidArg(state.fmtHelper, 0, NewString("a"), ANY_INT)
+			msg, regions := FmtInvalidArg(state.fmtHelper, 0, NewString("a"), ANY_INT, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(call, state, msg, regions...),
@@ -5455,7 +5458,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
-			msg, regions := FmtInvalidArg(state.fmtHelper, 1, NewString("a"), ANY_INT)
+			msg, regions := FmtInvalidArg(state.fmtHelper, 1, NewString("a"), ANY_INT, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(call, state, msg, regions...),
@@ -5806,7 +5809,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
-			msg, regions := FmtInvalidArg(state.fmtHelper, 0, NewIdentifier("b"), NewIdentifier("a"))
+			msg, regions := FmtInvalidArg(state.fmtHelper, 0, NewIdentifier("b"), NewIdentifier("a"), "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(argNode, state, msg, regions...),
@@ -5837,7 +5840,7 @@ func TestSymbolicEval(t *testing.T) {
 				return
 			}
 
-			msg, regions := FmtInvalidArg(state.fmtHelper, 0, NewIdentifier("b"), NewIdentifier("a"))
+			msg, regions := FmtInvalidArg(state.fmtHelper, 0, NewIdentifier("b"), NewIdentifier("a"), "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(argNode, state, msg, regions...),
@@ -6016,7 +6019,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
-			msg, regions := FmtInvalidArg(state.fmtHelper, 0, NewExactObject2(map[string]Serializable{}), param)
+			msg, regions := FmtInvalidArg(state.fmtHelper, 0, NewExactObject2(map[string]Serializable{}), param, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(argNode, state, msg, regions...),
@@ -6051,7 +6054,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
-			msg, regions := FmtInvalidArg(state.fmtHelper, 0, NewEmptyRecord(), param)
+			msg, regions := FmtInvalidArg(state.fmtHelper, 0, NewEmptyRecord(), param, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(argNode, state, msg, regions...),
@@ -6087,7 +6090,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
-			errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, NewString("a"), ANY_INT)
+			errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, NewString("a"), ANY_INT, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(propertyValue, state, errMsg, regions...),
@@ -6675,7 +6678,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
-			msg, regions := FmtInvalidArg(state.fmtHelper, 0, NewString("1"), ANY_INT)
+			msg, regions := FmtInvalidArg(state.fmtHelper, 0, NewString("1"), ANY_INT, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(secondCall.Arguments[0], state, msg, regions...),
@@ -7744,9 +7747,9 @@ func TestSymbolicEval(t *testing.T) {
 			_, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
-			errMsg1, regions1 := fmtNotAssignableToPropOfType(state.fmtHelper, TRUE, ANY_INT)
+			errMsg1, regions1 := fmtNotAssignableToPropOfType(state.fmtHelper, TRUE, ANY_INT, "")
 
-			errMsg2, regions2 := fmtNotAssignableToPropOfType(state.fmtHelper, FALSE, ANY_INT)
+			errMsg2, regions2 := fmtNotAssignableToPropOfType(state.fmtHelper, FALSE, ANY_INT, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(boolLiterals[1], state, errMsg1, regions1...),
@@ -7783,7 +7786,7 @@ func TestSymbolicEval(t *testing.T) {
 			assignement := parse.FindNode(n.Statements[1], (*parse.Assignment)(nil), nil)
 			assert.NoError(t, err)
 
-			errMsg, regions := fmtNotAssignableToVarOftype(state.fmtHelper, &Int{hasValue: true, value: 3}, &TypePattern{val: &List{generalElement: ANY_SERIALIZABLE}})
+			errMsg, regions := fmtNotAssignableToVarOftype(state.fmtHelper, &Int{hasValue: true, value: 3}, &TypePattern{val: &List{generalElement: ANY_SERIALIZABLE}}, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(assignement, state, errMsg, regions...),
@@ -7804,7 +7807,7 @@ func TestSymbolicEval(t *testing.T) {
 
 				objectProp := parse.FindNode(n.Statements[1], (*parse.ObjectProperty)(nil), nil)
 
-				errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, NewInt(1), ANY_STR_LIKE)
+				errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, NewInt(1), ANY_STR_LIKE, "")
 
 				assert.Equal(t, []SymbolicEvaluationError{
 					MakeSymbolicEvalError(objectProp.Value, state, errMsg, regions...),
@@ -7939,7 +7942,7 @@ func TestSymbolicEval(t *testing.T) {
 
 				objectProp := parse.FindNode(n.Statements[1], (*parse.ObjectProperty)(nil), nil)
 
-				errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, NewInt(1), ANY_STR_LIKE)
+				errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, NewInt(1), ANY_STR_LIKE, "")
 
 				assert.Equal(t, []SymbolicEvaluationError{
 					MakeSymbolicEvalError(objectProp.Value, state, errMsg, regions...),
@@ -7987,7 +7990,7 @@ func TestSymbolicEval(t *testing.T) {
 
 				objectProp := parse.FindNode(n.Statements[1], (*parse.ObjectProperty)(nil), nil)
 
-				errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, NewInt(1), ANY_STR_LIKE)
+				errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, NewInt(1), ANY_STR_LIKE, "")
 
 				assert.Equal(t, []SymbolicEvaluationError{
 					MakeSymbolicEvalError(objectProp.Value, state, errMsg, regions...),
@@ -8008,7 +8011,7 @@ func TestSymbolicEval(t *testing.T) {
 
 				assignment := parse.FindNode(n, (*parse.Assignment)(nil), nil)
 
-				errMsg, regions := fmtNotAssignableToFieldOfType(state.fmtHelper, ANY_BOOL, BUILTIN_COMPTIME_TYPES["int"])
+				errMsg, regions := fmtNotAssignableToFieldOfType(state.fmtHelper, ANY_BOOL, BUILTIN_COMPTIME_TYPES["int"], "")
 
 				assert.Equal(t, []SymbolicEvaluationError{
 					MakeSymbolicEvalError(assignment, state, errMsg, regions...),
@@ -8103,7 +8106,7 @@ func TestSymbolicEval(t *testing.T) {
 
 				objectProp := parse.FindNode(n.Statements[1], (*parse.ObjectProperty)(nil), nil)
 
-				errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, NewInt(1), ANY_STR_LIKE)
+				errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, NewInt(1), ANY_STR_LIKE, "")
 
 				assert.Equal(t, []SymbolicEvaluationError{
 					MakeSymbolicEvalError(objectProp.Value, state, errMsg, regions...),
@@ -8124,7 +8127,7 @@ func TestSymbolicEval(t *testing.T) {
 
 				assignment := parse.FindNode(n, (*parse.Assignment)(nil), nil)
 
-				errMsg, regions := fmtNotAssignableToFieldOfType(state.fmtHelper, ANY_BOOL, BUILTIN_COMPTIME_TYPES["int"])
+				errMsg, regions := fmtNotAssignableToFieldOfType(state.fmtHelper, ANY_BOOL, BUILTIN_COMPTIME_TYPES["int"], "")
 
 				assert.Equal(t, []SymbolicEvaluationError{
 					MakeSymbolicEvalError(assignment, state, errMsg, regions...),
@@ -8311,7 +8314,7 @@ func TestSymbolicEval(t *testing.T) {
 
 				assert.NoError(t, err)
 
-				errMsg, regions := fmtNotAssignableToElementOfValue(state.fmtHelper, NewInt(1), NewInt(0))
+				errMsg, regions := fmtNotAssignableToElementOfValue(state.fmtHelper, NewInt(1), NewInt(0), "")
 
 				assert.Equal(t, []SymbolicEvaluationError{
 					MakeSymbolicEvalError(assignement.Right, state, errMsg, regions...),
@@ -8331,7 +8334,7 @@ func TestSymbolicEval(t *testing.T) {
 
 				assert.NoError(t, err)
 
-				errMsg, regions := fmtNotAssignableToElementOfValue(state.fmtHelper, NewRune('a'), ANY_INT)
+				errMsg, regions := fmtNotAssignableToElementOfValue(state.fmtHelper, NewRune('a'), ANY_INT, "")
 
 				assert.Equal(t, []SymbolicEvaluationError{
 					MakeSymbolicEvalError(assignement.Right, state, errMsg, regions...),
@@ -8351,7 +8354,7 @@ func TestSymbolicEval(t *testing.T) {
 
 				objectProp := parse.FindNode(n.Statements[1], (*parse.ObjectProperty)(nil), nil)
 
-				errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, NewInt(1), NewString("x"))
+				errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, NewInt(1), NewString("x"), "")
 
 				assert.Equal(t, []SymbolicEvaluationError{
 					MakeSymbolicEvalError(objectProp.Value, state, errMsg, regions...),
@@ -8608,7 +8611,7 @@ func TestSymbolicEval(t *testing.T) {
 
 				assert.NoError(t, err)
 
-				errMsg, regions := fmtNotAssignableToElementOfValue(state.fmtHelper, NewRune('a'), ANY_INT)
+				errMsg, regions := fmtNotAssignableToElementOfValue(state.fmtHelper, NewRune('a'), ANY_INT, "")
 
 				assert.Equal(t, []SymbolicEvaluationError{
 					MakeSymbolicEvalError(assignement.Right, state, errMsg, regions...),
@@ -8628,7 +8631,7 @@ func TestSymbolicEval(t *testing.T) {
 
 				objectProp := parse.FindNode(n.Statements[1], (*parse.ObjectProperty)(nil), nil)
 
-				errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, NewInt(1), NewString("x"))
+				errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, NewInt(1), NewString("x"), "")
 
 				assert.Equal(t, []SymbolicEvaluationError{
 					MakeSymbolicEvalError(objectProp.Value, state, errMsg, regions...),
@@ -8804,7 +8807,7 @@ func TestSymbolicEval(t *testing.T) {
 
 				objectProp := parse.FindNode(n.Statements[1], (*parse.ObjectProperty)(nil), nil)
 
-				errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, NewInt(1), ANY_STRING)
+				errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, NewInt(1), ANY_STRING, "")
 
 				assert.Equal(t, []SymbolicEvaluationError{
 					MakeSymbolicEvalError(objectProp.Value, state, errMsg, regions...),
@@ -10084,8 +10087,8 @@ func TestSymbolicEval(t *testing.T) {
 			_, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
-			errMsg1, regions1 := fmtNotAssignableToPropOfType(state.fmtHelper, TRUE, ANY_INT)
-			errMsg2, regions2 := fmtNotAssignableToPropOfType(state.fmtHelper, FALSE, ANY_INT)
+			errMsg1, regions1 := fmtNotAssignableToPropOfType(state.fmtHelper, TRUE, ANY_INT, "")
+			errMsg2, regions2 := fmtNotAssignableToPropOfType(state.fmtHelper, FALSE, ANY_INT, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(boolLiterals[0], state, errMsg1, regions1...),
@@ -10755,8 +10758,8 @@ func TestSymbolicEval(t *testing.T) {
 			_, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
-			errMsg1, regions1 := fmtNotAssignableToPropOfType(state.fmtHelper, TRUE, ANY_INT)
-			errMsg2, regions2 := fmtNotAssignableToPropOfType(state.fmtHelper, FALSE, ANY_INT)
+			errMsg1, regions1 := fmtNotAssignableToPropOfType(state.fmtHelper, TRUE, ANY_INT, "")
+			errMsg2, regions2 := fmtNotAssignableToPropOfType(state.fmtHelper, FALSE, ANY_INT, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(boolLiterals[0], state, errMsg1, regions1...),
@@ -12242,9 +12245,9 @@ func TestSymbolicEval(t *testing.T) {
 
 			pattern := utils.Must(NewExactValuePattern(INT_1))
 
-			errMsg1, regions1 := fmtNotAssignableToVarOftype(state.fmtHelper, INT_2, pattern)
-			errMsg2, regions2 := fmtNotAssignableToVarOftype(state.fmtHelper, ANY_INT, pattern)
-			errMsg3, regions3 := fmtNotAssignableToVarOftype(state.fmtHelper, ANY, pattern)
+			errMsg1, regions1 := fmtNotAssignableToVarOftype(state.fmtHelper, INT_2, pattern, "")
+			errMsg2, regions2 := fmtNotAssignableToVarOftype(state.fmtHelper, ANY_INT, pattern, "")
+			errMsg3, regions3 := fmtNotAssignableToVarOftype(state.fmtHelper, ANY, pattern, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(bDecl.Right, state, errMsg1, regions1...),
@@ -12279,9 +12282,9 @@ func TestSymbolicEval(t *testing.T) {
 
 			pattern := utils.Must(NewExactValuePattern(AsSerializableChecked(NewRunTimeValue(ANY_INT))))
 
-			errMsg1, regions1 := fmtNotAssignableToVarOftype(state.fmtHelper, INT_1, pattern)
-			errMsg2, regions2 := fmtNotAssignableToVarOftype(state.fmtHelper, ANY_INT, pattern)
-			errMsg3, regions3 := fmtNotAssignableToVarOftype(state.fmtHelper, ANY, pattern)
+			errMsg1, regions1 := fmtNotAssignableToVarOftype(state.fmtHelper, INT_1, pattern, "")
+			errMsg2, regions2 := fmtNotAssignableToVarOftype(state.fmtHelper, ANY_INT, pattern, "")
+			errMsg3, regions3 := fmtNotAssignableToVarOftype(state.fmtHelper, ANY, pattern, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(aDecl.Right, state, errMsg1, regions1...),
@@ -12317,9 +12320,9 @@ func TestSymbolicEval(t *testing.T) {
 
 			pattern := utils.Must(NewExactValuePattern(AsSerializableChecked(NewRunTimeValue(AsSerializableChecked(varValue)))))
 
-			errMsg1, regions1 := fmtNotAssignableToVarOftype(state.fmtHelper, INT_1, pattern)
-			errMsg2, regions2 := fmtNotAssignableToVarOftype(state.fmtHelper, ANY_INT, pattern)
-			errMsg3, regions3 := fmtNotAssignableToVarOftype(state.fmtHelper, ANY, pattern)
+			errMsg1, regions1 := fmtNotAssignableToVarOftype(state.fmtHelper, INT_1, pattern, "")
+			errMsg2, regions2 := fmtNotAssignableToVarOftype(state.fmtHelper, ANY_INT, pattern, "")
+			errMsg3, regions3 := fmtNotAssignableToVarOftype(state.fmtHelper, ANY, pattern, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(aDecl.Right, state, errMsg1, regions1...),
@@ -12357,9 +12360,9 @@ func TestSymbolicEval(t *testing.T) {
 
 			pattern := NewExactStringPatternWithConcreteValue(NewString("a"))
 
-			errMsg1, regions1 := fmtNotAssignableToVarOftype(state.fmtHelper, NewString("b"), pattern)
-			errMsg2, regions2 := fmtNotAssignableToVarOftype(state.fmtHelper, ANY_STRING, pattern)
-			errMsg3, regions3 := fmtNotAssignableToVarOftype(state.fmtHelper, ANY, pattern)
+			errMsg1, regions1 := fmtNotAssignableToVarOftype(state.fmtHelper, NewString("b"), pattern, "")
+			errMsg2, regions2 := fmtNotAssignableToVarOftype(state.fmtHelper, ANY_STRING, pattern, "")
+			errMsg3, regions3 := fmtNotAssignableToVarOftype(state.fmtHelper, ANY, pattern, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(bDecl.Right, state, errMsg1, regions1...),
@@ -12394,9 +12397,9 @@ func TestSymbolicEval(t *testing.T) {
 
 			pattern := NewExactStringPatternWithRunTimeValue(NewRunTimeValue(ANY_STR_LIKE).as(STRLIKE_INTERFACE_TYPE).(*strLikeRunTimeValue))
 
-			errMsg1, regions1 := fmtNotAssignableToVarOftype(state.fmtHelper, NewString("a"), pattern)
-			errMsg2, regions2 := fmtNotAssignableToVarOftype(state.fmtHelper, ANY_STR_LIKE, pattern)
-			errMsg3, regions3 := fmtNotAssignableToVarOftype(state.fmtHelper, ANY, pattern)
+			errMsg1, regions1 := fmtNotAssignableToVarOftype(state.fmtHelper, NewString("a"), pattern, "")
+			errMsg2, regions2 := fmtNotAssignableToVarOftype(state.fmtHelper, ANY_STR_LIKE, pattern, "")
+			errMsg3, regions3 := fmtNotAssignableToVarOftype(state.fmtHelper, ANY, pattern, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(aDecl.Right, state, errMsg1, regions1...),
@@ -12432,9 +12435,9 @@ func TestSymbolicEval(t *testing.T) {
 
 			pattern := NewExactStringPatternWithRunTimeValue(NewRunTimeValue(variableValue).as(STRLIKE_INTERFACE_TYPE).(*strLikeRunTimeValue))
 
-			errMsg1, regions1 := fmtNotAssignableToVarOftype(state.fmtHelper, NewString("a"), pattern)
-			errMsg2, regions2 := fmtNotAssignableToVarOftype(state.fmtHelper, ANY_STR_LIKE, pattern)
-			errMsg3, regions3 := fmtNotAssignableToVarOftype(state.fmtHelper, ANY, pattern)
+			errMsg1, regions1 := fmtNotAssignableToVarOftype(state.fmtHelper, NewString("a"), pattern, "")
+			errMsg2, regions2 := fmtNotAssignableToVarOftype(state.fmtHelper, ANY_STR_LIKE, pattern, "")
+			errMsg3, regions3 := fmtNotAssignableToVarOftype(state.fmtHelper, ANY, pattern, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(aDecl.Right, state, errMsg1, regions1...),
@@ -12678,7 +12681,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
-			errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, INT_1, ANY_STR_LIKE)
+			errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, INT_1, ANY_STR_LIKE, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(intLit, state, errMsg, regions...),
@@ -12698,7 +12701,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
-			errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, NewPath("./mod.ix"), ANY_ABS_NON_DIR_PATH)
+			errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, NewPath("./mod.ix"), ANY_ABS_NON_DIR_PATH, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(pathLit, state, errMsg, regions...),
@@ -12904,7 +12907,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
-			errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, INT_1, ANY_STR_LIKE)
+			errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, INT_1, ANY_STR_LIKE, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(intLit, state, errMsg, regions...),
@@ -12929,7 +12932,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
-			errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, INT_1, ANY_BOOL)
+			errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, INT_1, ANY_BOOL, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(intLit, state, errMsg, regions...),
@@ -12949,7 +12952,7 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 
-			errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, NewPath("./mod.ix"), ANY_ABS_NON_DIR_PATH)
+			errMsg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, NewPath("./mod.ix"), ANY_ABS_NON_DIR_PATH, "")
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(pathLit, state, errMsg, regions...),

@@ -28,18 +28,22 @@ type RegionParams struct {
 	Kind            string
 	AssociatedValue any
 	Format          func(tempRegionWriter *bytes.Buffer, value any) error
+	Formatted       string //ignored if Format is not nil
 }
 
 func (h *Helper) AppendRegion(params RegionParams) error {
 	startIndex := int32(h.messageBuff.Len())
 	defer h.tempRegionBuff.Reset()
 
-	err := params.Format(h.tempRegionBuff, params.AssociatedValue)
-	if err != nil {
-		return err
+	if params.Format != nil {
+		err := params.Format(h.tempRegionBuff, params.AssociatedValue)
+		if err != nil {
+			return err
+		}
+		h.messageBuff.Write(h.tempRegionBuff.Bytes())
+	} else {
+		h.messageBuff.WriteString(params.Formatted)
 	}
-
-	h.messageBuff.Write(h.tempRegionBuff.Bytes())
 
 	endIndex := int32(h.messageBuff.Len())
 

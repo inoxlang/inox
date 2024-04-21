@@ -1257,9 +1257,11 @@ func evalReturnStatement(n *parse.ReturnStatement, state *State) (_ Value, final
 	}
 	v := value
 
-	if state.returnType != nil && !state.returnType.Test(v, RecTestCallState{}) {
+	firstMismatchMsg := ""
+
+	if state.returnType != nil && !state.returnType.Test(v, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
 		if !*deeperMismatch {
-			msg, regions := fmtInvalidReturnValue(state.fmtHelper, v, state.returnType)
+			msg, regions := fmtInvalidReturnValue(state.fmtHelper, v, state.returnType, firstMismatchMsg)
 			state.addError(MakeSymbolicEvalError(n, state, msg, regions...))
 		}
 		state.returnValue = state.returnType
@@ -1297,9 +1299,10 @@ func evalYieldStatement(n *parse.YieldStatement, state *State) (_ Value, finalEr
 	}
 	v := value
 
-	if state.yieldType != nil && !state.yieldType.Test(v, RecTestCallState{}) {
+	firstMismatchMsg := ""
+	if state.yieldType != nil && !state.yieldType.Test(v, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
 		if !*deeperMismatch {
-			msg, regions := fmtInvalidReturnValue(state.fmtHelper, v, state.yieldType)
+			msg, regions := fmtInvalidReturnValue(state.fmtHelper, v, state.yieldType, firstMismatchMsg)
 			state.addError(MakeSymbolicEvalError(n, state, msg, regions...))
 		}
 		state.yieldedValue = state.yieldType
@@ -1402,9 +1405,10 @@ func evalLocalVariableDeclarations(n *parse.LocalVariableDeclarations, state *St
 			}
 
 			if static != nil {
-				if !static.TestValue(right, RecTestCallState{}) {
+				firstMismatchMsg := ""
+				if !static.TestValue(right, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
 					if !deeperMismatch {
-						msg, regions := fmtNotAssignableToVarOftype(state.fmtHelper, right, static)
+						msg, regions := fmtNotAssignableToVarOftype(state.fmtHelper, right, static, firstMismatchMsg)
 						state.addError(MakeSymbolicEvalError(decl.Right, state, msg, regions...))
 					}
 					right = ANY
@@ -1488,7 +1492,7 @@ func evalGlobalVariableDeclarations(n *parse.GlobalVariableDeclarations, state *
 			if static != nil {
 				if !static.TestValue(right, RecTestCallState{}) {
 					if !deeperMismatch {
-						msg, regions := fmtNotAssignableToVarOftype(state.fmtHelper, right, static)
+						msg, regions := fmtNotAssignableToVarOftype(state.fmtHelper, right, static, "")
 						state.addError(MakeSymbolicEvalError(decl.Right, state, msg, regions...))
 					}
 					right = ANY
@@ -1738,10 +1742,12 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 			}
 			rhs = MergeValuesWithSameStaticTypeInMultivalue(rhs)
 
+			firstMismatchMsg := ""
+
 			if node.Operator.Int() && !utils.Implements[*IntType](field.Type) {
 				state.addError(MakeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
-			} else if !field.Type.TestValue(rhs, RecTestCallState{}) {
-				msg, regions := fmtNotAssignableToFieldOfType(state.fmtHelper, rhs, field.Type)
+			} else if !field.Type.TestValue(rhs, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
+				msg, regions := fmtNotAssignableToFieldOfType(state.fmtHelper, rhs, field.Type, firstMismatchMsg)
 				state.addError(MakeSymbolicEvalError(node, state, msg, regions...))
 			}
 
@@ -1895,10 +1901,12 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 			}
 			rhs = MergeValuesWithSameStaticTypeInMultivalue(rhs)
 
+			firstMismatchMsg := ""
+
 			if node.Operator.Int() && !utils.Implements[*IntType](field.Type) {
 				state.addError(MakeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
-			} else if !field.Type.TestValue(rhs, RecTestCallState{}) {
-				msg, regions := fmtNotAssignableToFieldOfType(state.fmtHelper, rhs, field.Type)
+			} else if !field.Type.TestValue(rhs, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
+				msg, regions := fmtNotAssignableToFieldOfType(state.fmtHelper, rhs, field.Type, firstMismatchMsg)
 				state.addError(MakeSymbolicEvalError(node, state, msg, regions...))
 			}
 			return nil, nil
@@ -2136,7 +2144,7 @@ func evalAssignment(node *parse.Assignment, state *State) (_ Value, finalErr err
 					} else {
 						v = seq.Element()
 					}
-					msg, regions := fmtNotAssignableToElementOfValue(state.fmtHelper, __rhs, v)
+					msg, regions := fmtNotAssignableToElementOfValue(state.fmtHelper, __rhs, v, "")
 					state.addError(MakeSymbolicEvalError(node.Right, state, msg, regions...))
 				}
 			}
@@ -3577,8 +3585,10 @@ func evalFunctionExpression(n *parse.FunctionExpression, state *State, options e
 		//check return
 
 		if signatureReturnType != nil {
-			if !signatureReturnType.Test(storedReturnType, RecTestCallState{}) {
-				msg, regions := fmtInvalidReturnValue(state.fmtHelper, storedReturnType, signatureReturnType)
+			firstMismatchMsg := ""
+
+			if !signatureReturnType.Test(storedReturnType, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
+				msg, regions := fmtInvalidReturnValue(state.fmtHelper, storedReturnType, signatureReturnType, firstMismatchMsg)
 				state.addError(MakeSymbolicEvalError(n.Body, state, msg, regions...))
 			}
 			storedReturnType = signatureReturnType
@@ -4471,26 +4481,29 @@ func evalObjectLiteral(n *parse.ObjectLiteral, state *State, options evalOptions
 				return nil, err
 			}
 
+			firstMismatchMsg := ""
+
 			if p.Type != nil {
 				_propType, err := symbolicEval(p.Type, state)
 				if err != nil {
 					return nil, err
 				}
 				static = _propType.(Pattern)
-				if !static.TestValue(propVal, RecTestCallState{}) {
+
+				if !static.TestValue(propVal, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
 					expected := static.SymbolicValue()
 					if !hasShallowError {
-						msg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, propVal, expected)
+						msg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, propVal, expected, "")
 						state.addError(MakeSymbolicEvalError(p.Value, state, msg, regions...))
 					}
 					propVal = expected
 				}
 			} else if deeperMismatch {
 				options.setActualValueMismatchIfNotNil()
-			} else if expectedPropVal != nil && !deeperMismatch && !expectedPropVal.Test(propVal, RecTestCallState{}) {
+			} else if expectedPropVal != nil && !deeperMismatch && !expectedPropVal.Test(propVal, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
 				options.setActualValueMismatchIfNotNil()
 				if !hasShallowError {
-					msg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, propVal, expectedPropVal)
+					msg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, propVal, expectedPropVal, firstMismatchMsg)
 					state.addError(MakeSymbolicEvalError(p.Value, state, msg, regions...))
 				}
 			}
@@ -4646,12 +4659,14 @@ func evalRecordLiteral(n *parse.RecordLiteral, state *State, options evalOptions
 				return nil, err
 			}
 
+			firstMismatchMsg := ""
+
 			if deeperMismatch {
 				options.setActualValueMismatchIfNotNil()
-			} else if expectedPropVal != nil && !deeperMismatch && !expectedPropVal.Test(v, RecTestCallState{}) {
+			} else if expectedPropVal != nil && !deeperMismatch && !expectedPropVal.Test(v, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
 				options.setActualValueMismatchIfNotNil()
 				if !hasShallowError {
-					msg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, v, expectedPropVal)
+					msg, regions := fmtNotAssignableToPropOfType(state.fmtHelper, v, expectedPropVal, firstMismatchMsg)
 					state.addError(MakeSymbolicEvalError(p.Value, state, msg, regions...))
 				}
 			}
@@ -5042,12 +5057,14 @@ func evalDictionaryLiteral(n *parse.DictionaryLiteral, state *State, options eva
 
 		//Check the value
 
+		firstMismatchMsg := ""
+
 		if deeperMismatch {
 			options.setActualValueMismatchIfNotNil()
-		} else if expectedEntryValue != nil && !deeperMismatch && !expectedEntryValue.Test(entryValue, RecTestCallState{}) {
+		} else if expectedEntryValue != nil && !deeperMismatch && !expectedEntryValue.Test(entryValue, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
 			options.setActualValueMismatchIfNotNil()
 
-			msg, regions := fmtNotAssignableToEntryOfExpectedValue(state.fmtHelper, entryValue, expectedEntryValue)
+			msg, regions := fmtNotAssignableToEntryOfExpectedValue(state.fmtHelper, entryValue, expectedEntryValue, firstMismatchMsg)
 			state.addError(MakeSymbolicEvalError(entry.Value, state, msg, regions...))
 		}
 

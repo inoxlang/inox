@@ -99,11 +99,11 @@ var (
 				if optionalNode != nil {
 					//Return a symbolic error.
 					state := ctx.EvalState()
-					msg, regions := symbolic.FmtInvalidArg(state.FormatHelper(), 0, values[0], symbolic.ANY_PATTERN)
+					msg, regions := symbolic.FmtInvalidArg(state.FormatHelper(), 0, values[0], symbolic.ANY_PATTERN, "")
 					return nil, symbolic.MakeSymbolicEvalError(optionalNode, state, msg, regions...)
 				}
 				//Return an error without any location or regions.
-				msg, _ := symbolic.FmtInvalidArg(nil, 0, values[0], symbolic.ANY_PATTERN)
+				msg, _ := symbolic.FmtInvalidArg(nil, 0, values[0], symbolic.ANY_PATTERN, "")
 				return nil, errors.New(msg)
 			}
 
@@ -262,11 +262,11 @@ var (
 					if optionalNode != nil {
 						//Return a symbolic error.
 						state := ctx.EvalState()
-						msg, regions := symbolic.FmtInvalidArg(state.FormatHelper(), 0, v, symbolic.ANY_OBJECT_PATTERN)
+						msg, regions := symbolic.FmtInvalidArg(state.FormatHelper(), 0, v, symbolic.ANY_OBJECT_PATTERN, "")
 						return nil, symbolic.MakeSymbolicEvalError(optionalNode, state, msg, regions...)
 					}
 					//Return an error without any location or regions.
-					msg, _ := symbolic.FmtInvalidArg(nil, 0, values[0], symbolic.ANY_PATTERN)
+					msg, _ := symbolic.FmtInvalidArg(nil, 0, values[0], symbolic.ANY_PATTERN, "")
 					return nil, errors.New(msg)
 				}
 			}
@@ -320,11 +320,11 @@ var (
 					if optionalNode != nil {
 						//Return a symbolic error.
 						state := ctx.EvalState()
-						msg, regions := symbolic.FmtInvalidArg(state.FormatHelper(), 0, v, symbolic.ANY_TUPLE)
+						msg, regions := symbolic.FmtInvalidArg(state.FormatHelper(), 0, v, symbolic.ANY_TUPLE, "")
 						return nil, symbolic.MakeSymbolicEvalError(optionalNode, state, msg, regions...)
 					}
 					//Return an error without any location or regions.
-					msg, _ := symbolic.FmtInvalidArg(nil, 0, values[0], symbolic.ANY_PATTERN)
+					msg, _ := symbolic.FmtInvalidArg(nil, 0, values[0], symbolic.ANY_PATTERN, "")
 					return nil, errors.New(msg)
 				}
 			}
@@ -888,11 +888,11 @@ var (
 					if optionalNode != nil {
 						//Return a symbolic error.
 						state := ctx.EvalState()
-						msg, regions := symbolic.FmtInvalidArg(state.FormatHelper(), 0, v, symbolic.ANY_STR_PATTERN)
+						msg, regions := symbolic.FmtInvalidArg(state.FormatHelper(), 0, v, symbolic.ANY_STR_PATTERN, "")
 						return nil, symbolic.MakeSymbolicEvalError(optionalNode, state, msg, regions...)
 					}
 					//Return an error without any location or regions.
-					msg, _ := symbolic.FmtInvalidArg(nil, 0, values[0], symbolic.ANY_PATTERN)
+					msg, _ := symbolic.FmtInvalidArg(nil, 0, values[0], symbolic.ANY_PATTERN, "")
 					return nil, errors.New(msg)
 				}
 			}
