@@ -7766,9 +7766,13 @@ func TestSymbolicEval(t *testing.T) {
 
 			_, err := symbolicEval(n, state)
 			assert.NoError(t, err)
+
+			msg1, regions1 := fmtValueIsAnXButYWasExpected(state.fmtHelper, INT_1, ANY_BOOL, "")
+			msg2, regions2 := fmtValueIsAnXButYWasExpected(state.fmtHelper, INT_2, ANY_BOOL, "")
+
 			assert.Equal(t, []SymbolicEvaluationError{
-				MakeSymbolicEvalError(intLiterals[0], state, fmtValueIsAnXButYWasExpected(INT_1, ANY_BOOL)),
-				MakeSymbolicEvalError(intLiterals[1], state, fmtValueIsAnXButYWasExpected(INT_2, ANY_BOOL)),
+				MakeSymbolicEvalError(intLiterals[0], state, msg1, regions1...),
+				MakeSymbolicEvalError(intLiterals[1], state, msg2, regions2...),
 			}, state.errors())
 		})
 	})
@@ -10108,9 +10112,13 @@ func TestSymbolicEval(t *testing.T) {
 
 			_, err := symbolicEval(n, state)
 			assert.NoError(t, err)
+
+			msg1, regions1 := fmtValueIsAnXButYWasExpected(state.fmtHelper, INT_1, ANY_BOOL, "")
+			msg2, regions2 := fmtValueIsAnXButYWasExpected(state.fmtHelper, INT_2, ANY_BOOL, "")
+
 			assert.Equal(t, []SymbolicEvaluationError{
-				MakeSymbolicEvalError(intLiterals[0], state, fmtValueIsAnXButYWasExpected(INT_1, ANY_BOOL)),
-				MakeSymbolicEvalError(intLiterals[1], state, fmtValueIsAnXButYWasExpected(INT_2, ANY_BOOL)),
+				MakeSymbolicEvalError(intLiterals[0], state, msg1, regions1...),
+				MakeSymbolicEvalError(intLiterals[1], state, msg2, regions2...),
 			}, state.errors())
 		})
 
@@ -10779,9 +10787,13 @@ func TestSymbolicEval(t *testing.T) {
 
 			_, err := symbolicEval(n, state)
 			assert.NoError(t, err)
+
+			msg1, regions1 := fmtValueIsAnXButYWasExpected(state.fmtHelper, INT_1, ANY_BOOL, "")
+			msg2, regions2 := fmtValueIsAnXButYWasExpected(state.fmtHelper, INT_2, ANY_BOOL, "")
+
 			assert.Equal(t, []SymbolicEvaluationError{
-				MakeSymbolicEvalError(intLiterals[0], state, fmtValueIsAnXButYWasExpected(INT_1, ANY_BOOL)),
-				MakeSymbolicEvalError(intLiterals[1], state, fmtValueIsAnXButYWasExpected(INT_2, ANY_BOOL)),
+				MakeSymbolicEvalError(intLiterals[0], state, msg1, regions1...),
+				MakeSymbolicEvalError(intLiterals[1], state, msg2, regions2...),
 			}, state.errors())
 		})
 

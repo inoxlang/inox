@@ -370,8 +370,20 @@ func fmtIfExprTestShouldBeBoolBut(test Value) string {
 	return fmt.Sprintf("if expression's test should a boolean but is a(n) %T", test)
 }
 
-func fmtValueIsAnXButYWasExpected(a Value, b Value) string {
-	return fmt.Sprintf("value is a(n) %s but a(n) %s was expected", Stringify(a), Stringify(b))
+func fmtValueIsAnXButYWasExpected(h *commonfmt.Helper, a Value, b Value, firstMismatchErrorMessage string) (string, []commonfmt.RegionInfo) {
+	if h == nil {
+		h = commonfmt.NewHelper()
+	}
+
+	h.AppendString("value is a(n) ")
+	fmtValue(h, a)
+	h.AppendString(" but a(n) ")
+	fmtValue(h, b)
+	h.AppendString(" was expected")
+	appendFirstMismatchErrorMessage(h, firstMismatchErrorMessage)
+
+	return h.Consume()
+
 }
 
 func fmtTypeOfNetworkHostInterpolationIsAnXButYWasExpected(a Value, b Value) string {
@@ -387,7 +399,6 @@ func fmtNotAssignableToVarOftype(h *commonfmt.Helper, a Value, b Pattern, firstM
 	fmtValue(h, a)
 	h.AppendString(" is not assignable to a variable of type ")
 	fmtValue(h, b.SymbolicValue())
-	h.AppendString(firstMismatchErrorMessage)
 	appendFirstMismatchErrorMessage(h, firstMismatchErrorMessage)
 
 	return h.Consume()

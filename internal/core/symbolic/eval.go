@@ -2458,9 +2458,16 @@ func evalIfExpression(n *parse.IfExpression, state *State, options evalOptions) 
 			return nil, err
 		}
 
-		if options.expectedValue != nil && !deeperValueMismatch && !options.expectedValue.Test(consequentValue, RecTestCallState{}) {
+		firstMismatchMsg := ""
+
+		if options.expectedValue != nil &&
+			!deeperValueMismatch &&
+			!options.expectedValue.Test(consequentValue, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
+
 			options.setActualValueMismatchIfNotNil()
-			state.addError(MakeSymbolicEvalError(n.Consequent, state, fmtValueIsAnXButYWasExpected(consequentValue, options.expectedValue)))
+			msg, regions := fmtValueIsAnXButYWasExpected(state.fmtHelper, consequentValue, options.expectedValue, firstMismatchMsg)
+
+			state.addError(MakeSymbolicEvalError(n.Consequent, state, msg, regions...))
 		} else if deeperValueMismatch {
 			options.setActualValueMismatchIfNotNil()
 			deeperValueMismatch = false //reset so that we can use the variable for the alternate value.
@@ -2482,9 +2489,15 @@ func evalIfExpression(n *parse.IfExpression, state *State, options evalOptions) 
 				return nil, err
 			}
 
-			if options.expectedValue != nil && !deeperValueMismatch && !options.expectedValue.Test(alternateValue, RecTestCallState{}) {
+			firstMismatchMsg := ""
+
+			if options.expectedValue != nil &&
+				!deeperValueMismatch &&
+				!options.expectedValue.Test(alternateValue, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
+
 				options.setActualValueMismatchIfNotNil()
-				state.addError(MakeSymbolicEvalError(n.Alternate, state, fmtValueIsAnXButYWasExpected(alternateValue, options.expectedValue)))
+				msg, regions := fmtValueIsAnXButYWasExpected(state.fmtHelper, alternateValue, options.expectedValue, firstMismatchMsg)
+				state.addError(MakeSymbolicEvalError(n.Alternate, state, msg, regions...))
 			} else if deeperValueMismatch {
 				options.setActualValueMismatchIfNotNil()
 			}
@@ -2806,9 +2819,16 @@ func evalSwitchExpression(n *parse.SwitchExpression, state *State, options evalO
 
 			results = append(results, result)
 
-			if options.expectedValue != nil && !deeperValueMismatch && !options.expectedValue.Test(result, RecTestCallState{}) {
+			firstMismatchMsg := ""
+
+			if options.expectedValue != nil &&
+				!deeperValueMismatch &&
+				!options.expectedValue.Test(result, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
+
 				options.setActualValueMismatchIfNotNil()
-				state.addError(MakeSymbolicEvalError(switchCase.Result, state, fmtValueIsAnXButYWasExpected(result, options.expectedValue)))
+
+				msg, regions := fmtValueIsAnXButYWasExpected(state.fmtHelper, result, options.expectedValue, firstMismatchMsg)
+				state.addError(MakeSymbolicEvalError(switchCase.Result, state, msg, regions...))
 			} else if deeperValueMismatch {
 				options.setActualValueMismatchIfNotNil()
 				deeperValueMismatch = false //reset so that we can use the variable for other results.
@@ -2838,9 +2858,14 @@ func evalSwitchExpression(n *parse.SwitchExpression, state *State, options evalO
 		results = append(results, result)
 		hasValidDefaultCase = true
 
-		if options.expectedValue != nil && !deeperValueMismatch && !options.expectedValue.Test(result, RecTestCallState{}) {
-			options.setActualValueMismatchIfNotNil()
-			state.addError(MakeSymbolicEvalError(defaultCase.Result, state, fmtValueIsAnXButYWasExpected(result, options.expectedValue)))
+		firstMismatchMsg := ""
+
+		if options.expectedValue != nil &&
+			!deeperValueMismatch &&
+			!options.expectedValue.Test(result, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
+
+			msg, regions := fmtValueIsAnXButYWasExpected(state.fmtHelper, result, options.expectedValue, firstMismatchMsg)
+			state.addError(MakeSymbolicEvalError(defaultCase.Result, state, msg, regions...))
 		} else if deeperValueMismatch {
 			options.setActualValueMismatchIfNotNil()
 			deeperValueMismatch = false //reset so that we can use the variable for other results.
@@ -3072,9 +3097,14 @@ func evalMatchExpression(n *parse.MatchExpression, state *State, options evalOpt
 
 			results = append(results, result)
 
-			if options.expectedValue != nil && !deeperValueMismatch && !options.expectedValue.Test(result, RecTestCallState{}) {
+			firstMismatchMsg := ""
+			if options.expectedValue != nil &&
+				!deeperValueMismatch &&
+				!options.expectedValue.Test(result, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
 				options.setActualValueMismatchIfNotNil()
-				state.addError(MakeSymbolicEvalError(matchCase.Result, state, fmtValueIsAnXButYWasExpected(result, options.expectedValue)))
+
+				msg, regions := fmtValueIsAnXButYWasExpected(state.fmtHelper, result, options.expectedValue, firstMismatchMsg)
+				state.addError(MakeSymbolicEvalError(matchCase.Result, state, msg, regions...))
 			} else if deeperValueMismatch {
 				options.setActualValueMismatchIfNotNil()
 				deeperValueMismatch = false //reset so that we can use the variable for other results.
@@ -3108,9 +3138,15 @@ func evalMatchExpression(n *parse.MatchExpression, state *State, options evalOpt
 		results = append(results, result)
 		hasValidDefaultCase = true
 
-		if options.expectedValue != nil && !deeperValueMismatch && !options.expectedValue.Test(result, RecTestCallState{}) {
+		firstMismatchMsg := ""
+
+		if options.expectedValue != nil &&
+			!deeperValueMismatch &&
+			!options.expectedValue.Test(result, RecTestCallState{firstMismatchMsg: &firstMismatchMsg}) {
 			options.setActualValueMismatchIfNotNil()
-			state.addError(MakeSymbolicEvalError(defaultCase.Result, state, fmtValueIsAnXButYWasExpected(result, options.expectedValue)))
+
+			msg, regions := fmtValueIsAnXButYWasExpected(state.fmtHelper, result, options.expectedValue, firstMismatchMsg)
+			state.addError(MakeSymbolicEvalError(defaultCase.Result, state, msg, regions...))
 		} else if deeperValueMismatch {
 			options.setActualValueMismatchIfNotNil()
 			deeperValueMismatch = false //reset so that we can use the variable for other results.
