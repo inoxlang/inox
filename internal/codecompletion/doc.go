@@ -1,7 +1,6 @@
 package codecompletion
 
 import (
-	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/help"
 	"github.com/inoxlang/inox/internal/inoxconsts"
@@ -46,19 +45,19 @@ var (
 	}
 
 	MODULE_IMPORT_SECTION_DEFAULT_VALUE_COMPLETIONS = map[string]string{
-		core.IMPORT_CONFIG__ALLOW_PROPNAME:     "{}",
-		core.IMPORT_CONFIG__ARGUMENTS_PROPNAME: "{}",
+		inoxconsts.IMPORT_CONFIG__ALLOW_PROPNAME:     "{}",
+		inoxconsts.IMPORT_CONFIG__ARGUMENTS_PROPNAME: "{}",
 	}
 
 	MODULE_IMPORT_SECTION_DOC = map[string]string{
-		core.IMPORT_CONFIG__ALLOW_PROPNAME:     utils.MustGet(help.HelpFor("module-import-config/allow-section", helpMessageConfig)),
-		core.IMPORT_CONFIG__ARGUMENTS_PROPNAME: utils.MustGet(help.HelpFor("module-import-config/arguments-section", helpMessageConfig)),
+		inoxconsts.IMPORT_CONFIG__ALLOW_PROPNAME:     utils.MustGet(help.HelpFor("module-import-config/allow-section", helpMessageConfig)),
+		inoxconsts.IMPORT_CONFIG__ARGUMENTS_PROPNAME: utils.MustGet(help.HelpFor("module-import-config/arguments-section", helpMessageConfig)),
 	}
 
 	MODULE_IMPORT_SECTION_LABEL_DETAILS = map[string]string{
-		core.IMPORT_CONFIG__ALLOW_PROPNAME:      "granted permissions",
-		core.IMPORT_CONFIG__ARGUMENTS_PROPNAME:  "module arguments",
-		core.IMPORT_CONFIG__VALIDATION_PROPNAME: "validation string (base64 encoded sha256 hash)",
+		inoxconsts.IMPORT_CONFIG__ALLOW_PROPNAME:      "granted permissions",
+		inoxconsts.IMPORT_CONFIG__ARGUMENTS_PROPNAME:  "module arguments",
+		inoxconsts.IMPORT_CONFIG__VALIDATION_PROPNAME: "validation string (base64 encoded sha256 hash)",
 	}
 
 	LTHREAD_META_SECTION_LABEL_DETAILS = map[string]string{

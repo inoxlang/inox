@@ -3870,6 +3870,8 @@ func evalImportStatement(n *parse.ImportStatement, state *State) (_ Value, final
 		state.SetGlobalScopeData(n, state.currentGlobalScopeData())
 	}
 
+	//Retrieve the imported module.
+
 	var pathOrURL string
 
 	switch src := n.Source.(type) {
@@ -3895,6 +3897,8 @@ func evalImportStatement(n *parse.ImportStatement, state *State) (_ Value, final
 		return nil, nil
 	}
 
+	//Create the context of the imported module.
+
 	// TODO: use concrete context with permissions of imported module
 	importedModuleContext := NewSymbolicContext(state.ctx.startingConcreteContext, state.ctx.startingConcreteContext, state.ctx)
 	for name, basePattern := range state.basePatterns {
@@ -3906,6 +3910,8 @@ func evalImportStatement(n *parse.ImportStatement, state *State) (_ Value, final
 	}
 
 	importPositions := append(slices.Clone(state.importPositions), state.getErrorMesssageLocation(n)...)
+
+	//Check the imported module with a separate symbolic *State.
 
 	data, err := EvalCheck(EvalCheckInput{
 		Node:   importedModule.mainChunk.Node,
@@ -3927,6 +3933,8 @@ func evalImportStatement(n *parse.ImportStatement, state *State) (_ Value, final
 		return nil, err
 	}
 
+	//Set the value of the result variable.
+
 	result, ok := data.moduleResults[importedModule.mainChunk.Node]
 	if !ok {
 		result = ANY
@@ -3935,6 +3943,59 @@ func evalImportStatement(n *parse.ImportStatement, state *State) (_ Value, final
 
 	state.SetMostSpecificNodeValue(n.Identifier, result)
 	state.SetGlobalScopeData(n, state.currentGlobalScopeData())
+
+	//Retrieve the parameters of the module by getting the value of mod-args.
+
+	var moduleParams *ModuleParamsPattern
+
+	modArgsVarData, _, ok := data.GetGlobalVarData(importedModule.mainChunk.Node, nil, globalnames.MOD_ARGS_VARNAME)
+	if ok {
+		moduleArgs, ok := modArgsVarData.Value.(*ModuleArgs)
+		if ok {
+			moduleParams = moduleArgs.typ
+		}
+	}
+
+	//Evaluate the import configuration.
+
+	objLit, ok := n.Configuration.(*parse.ObjectLiteral)
+
+	if !ok { //parsing error
+		return nil, nil
+	}
+
+	expectedArgumentsObject := EXACT_EMPTY_OBJECT
+
+	if moduleParams != nil {
+		expectedArgumentsObject = moduleParams.ArgumentsObject()
+	}
+
+	hasImportedModuleParameters := len(expectedArgumentsObject.PropertyNames()) > 0
+
+	importConfig, err := _symbolicEval(objLit, state, evalOptions{
+		expectedValue: NewInexactObject(
+			map[string]Serializable{
+				inoxconsts.IMPORT_CONFIG__ARGUMENTS_PROPNAME: expectedArgumentsObject,
+			},
+			//The property is optional if the module does not have parameters.
+			utils.If(!hasImportedModuleParameters, map[string]struct{}{inoxconsts.IMPORT_CONFIG__ARGUMENTS_PROPNAME: {}}, nil),
+			nil,
+		),
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	configObject := importConfig.(*Object)
+
+	_, _, hasProp := configObject.GetProperty(inoxconsts.IMPORT_CONFIG__ARGUMENTS_PROPNAME)
+	if !hasProp && hasImportedModuleParameters {
+		state.addError(MakeSymbolicEvalError(objLit, state, THE_ARGUMENTS_PROP_IS_REQUIRED_IN_IMPORT_CONFIG_BECAUSE_IMPORTED_MODULE_HAS_PARAMS))
+	}
+
+	//We do not have to check $args against $expectedArgumentsObject because any mismatch
+	//is reported during the evaluating of the object literal.
 
 	return nil, nil
 }

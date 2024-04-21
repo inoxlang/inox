@@ -17,6 +17,7 @@ var (
 	ANY_KEYLIST      = NewAnyKeyList()
 
 	EMPTY_OBJECT          = NewEmptyObject()
+	EXACT_EMPTY_OBJECT    = NewEmptyExactObject()
 	EMPTY_READONLY_OBJECT = NewEmptyReadonlyObject()
 	EMPTY_LIST            = NewList()
 	EMPTY_READONLY_LIST   = NewReadonlyList()

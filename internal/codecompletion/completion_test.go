@@ -14,6 +14,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/globals/net_ns"
 	"github.com/inoxlang/inox/internal/help"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/stretchr/testify/assert"
 
 	parse "github.com/inoxlang/inox/internal/parse"
@@ -820,13 +821,13 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 			completions := findCompletions(state, chunk, 19)
 			assert.EqualValues(t, []Completion{
 				{
-					ShownString:   core.IMPORT_CONFIG__ALLOW_PROPNAME + ": {}",
-					Value:         core.IMPORT_CONFIG__ALLOW_PROPNAME + ": {}",
+					ShownString:   inoxconsts.IMPORT_CONFIG__ALLOW_PROPNAME + ": {}",
+					Value:         inoxconsts.IMPORT_CONFIG__ALLOW_PROPNAME + ": {}",
 					ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 18, End: 19}},
 				},
 				{
-					ShownString:   core.IMPORT_CONFIG__ARGUMENTS_PROPNAME + ": {}",
-					Value:         core.IMPORT_CONFIG__ARGUMENTS_PROPNAME + ": {}",
+					ShownString:   inoxconsts.IMPORT_CONFIG__ARGUMENTS_PROPNAME + ": {}",
+					Value:         inoxconsts.IMPORT_CONFIG__ARGUMENTS_PROPNAME + ": {}",
 					ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 18, End: 19}},
 				},
 			}, completions)
@@ -839,8 +840,8 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 
 			completions := findCompletions(state, chunk, 18)
 			assert.Contains(t, completions, Completion{
-				ShownString:   core.IMPORT_CONFIG__ALLOW_PROPNAME + ": {}",
-				Value:         core.IMPORT_CONFIG__ALLOW_PROPNAME + ": {}",
+				ShownString:   inoxconsts.IMPORT_CONFIG__ALLOW_PROPNAME + ": {}",
+				Value:         inoxconsts.IMPORT_CONFIG__ALLOW_PROPNAME + ": {}",
 				ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 18, End: 18}},
 			})
 		})

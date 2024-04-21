@@ -1172,7 +1172,7 @@ func findObjectInteriorCompletions(n *parse.ObjectLiteral, search completionSear
 		}
 	case *parse.ImportStatement: //suggest sections of the module import config that are not present
 	mod_import_sections_loop:
-		for _, sectionName := range core.IMPORT_CONFIG_SECTION_NAMES {
+		for _, sectionName := range inoxconsts.IMPORT_CONFIG_SECTION_NAMES {
 			for _, prop := range n.Properties {
 				if !prop.HasNoKey() && prop.Name() == sectionName {
 					continue mod_import_sections_loop
@@ -1228,7 +1228,7 @@ func findObjectInteriorCompletions(n *parse.ObjectLiteral, search completionSear
 
 		//allowed permissions in module import statement
 		if len(ancestors) >= 5 &&
-			parent.HasNameEqualTo(core.IMPORT_CONFIG__ALLOW_PROPNAME) &&
+			parent.HasNameEqualTo(inoxconsts.IMPORT_CONFIG__ALLOW_PROPNAME) &&
 			utils.Implements[*parse.ImportStatement](ancestors[len(ancestors)-3]) {
 
 			for _, info := range permbase.PERMISSION_KINDS {

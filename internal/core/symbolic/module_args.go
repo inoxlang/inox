@@ -20,12 +20,12 @@ var (
 
 // A ModuleArgs represents a symbolic ModuleArgs.
 type ModuleArgs struct {
-	typ         *ModuleParamsPattern //if nil matches any module args
-	fieldValues map[string]Value
+	typ    *ModuleParamsPattern //if nil matches any module args
+	values map[string]Value
 }
 
-func NewModuleArgs(paramsPattern *ModuleParamsPattern, fieldValues map[string]Value) *ModuleArgs {
-	return &ModuleArgs{typ: paramsPattern, fieldValues: fieldValues}
+func NewModuleArgs(paramsPattern *ModuleParamsPattern, values map[string]Value) *ModuleArgs {
+	return &ModuleArgs{typ: paramsPattern, values: values}
 }
 
 func (args *ModuleArgs) Test(v Value, state RecTestCallState) bool {
@@ -49,13 +49,13 @@ func (args *ModuleArgs) Prop(name string) Value {
 		return ANY
 	}
 
-	fieldValue, ok := args.fieldValues[name]
+	fieldValue, ok := args.values[name]
 	if ok {
 		return fieldValue
 	}
 
-	if fieldType, ok := args.typ.typeOfField(name); ok {
-		return fieldType.SymbolicValue()
+	if paramType, ok := args.typ.typeOfParam(name); ok {
+		return paramType.SymbolicValue()
 	} else {
 		panic(FormatErrPropertyDoesNotExist(name, args))
 	}
@@ -66,7 +66,7 @@ func (args *ModuleArgs) PropertyNames() []string {
 }
 
 func (args *ModuleArgs) SetProp(state *State, node parse.Node, name string, value Value) (IProps, error) {
-	fieldType, ok := args.typ.typeOfField(name)
+	fieldType, ok := args.typ.typeOfParam(name)
 	if !ok {
 		return nil, FormatErrPropertyDoesNotExist(name, args)
 	}
@@ -79,24 +79,24 @@ func (args *ModuleArgs) SetProp(state *State, node parse.Node, name string, valu
 }
 
 func (args *ModuleArgs) WithExistingPropReplaced(state *State, name string, value Value) (IProps, error) {
-	fields := maps.Clone(args.fieldValues)
+	fields := maps.Clone(args.values)
 	fields[name] = value
 
 	result := &ModuleArgs{
-		fieldValues: fields,
-		typ:         args.typ,
+		values: fields,
+		typ:    args.typ,
 	}
 
 	if args.typ == nil {
 		return result, nil
 	}
 
-	pattern, ok := args.typ.typeOfField(name)
+	pattern, ok := args.typ.typeOfParam(name)
 	if !ok {
 		return nil, fmt.Errorf("cannot replace value inexisting property %s", name)
 	}
 	if !pattern.TestValue(value, RecTestCallState{}) {
-		return nil, fmt.Errorf("cannot uodate property %s with a non matching value", name)
+		return nil, fmt.Errorf("cannot update property %s with a non matching value", name)
 	}
 
 	return result, nil
@@ -154,7 +154,7 @@ func (args *ModuleArgs) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.P
 	}
 
 	w.WriteOuterIndent()
-	w.WriteByte(')')
+	w.WriteByte('}')
 }
 
 func (args *ModuleArgs) WidestOfType() Value {
@@ -218,21 +218,42 @@ func (p *ModuleParamsPattern) Test(v Value, state RecTestCallState) bool {
 	return true
 }
 
-func (p *ModuleParamsPattern) typeOfField(name string) (Pattern, bool) {
-	ind, ok := p.indexOfField(name)
+func (p *ModuleParamsPattern) typeOfParam(name string) (Pattern, bool) {
+	ind, ok := p.indexOfParam(name)
 	if !ok {
 		return nil, false
 	}
 	return p.types[ind], true
 }
 
-func (p *ModuleParamsPattern) indexOfField(name string) (int, bool) {
+func (p *ModuleParamsPattern) indexOfParam(name string) (int, bool) {
 	for index, key := range p.keys {
 		if key == name {
 			return index, true
 		}
 	}
 	return -1, false
+}
+
+func (p *ModuleParamsPattern) ArgumentsObject() *Object {
+	entries := map[string]Serializable{}
+	static := map[string]Pattern{}
+
+	for _, paramName := range p.keys {
+		pattern := utils.MustGet(p.typeOfParam(paramName))
+
+		arg, ok := AsSerializable(pattern.SymbolicValue()).(Serializable)
+		if !ok {
+			arg = ANY_SERIALIZABLE
+		}
+
+		entries[paramName] = arg
+		static[paramName] = pattern
+	}
+
+	return NewInexactObject(entries, nil, static)
+	//Note: returning an exact object would be better but the arguments object passed in the imported configuration
+	//may not be exact.
 }
 
 func (p *ModuleParamsPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {

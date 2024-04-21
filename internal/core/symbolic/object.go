@@ -36,6 +36,10 @@ func NewEmptyObject() *Object {
 	return &Object{entries: map[string]Serializable{}}
 }
 
+func NewEmptyExactObject() *Object {
+	return &Object{entries: map[string]Serializable{}, exact: true}
+}
+
 func NewEmptyReadonlyObject() *Object {
 	obj := NewEmptyObject()
 	obj.readonly = true

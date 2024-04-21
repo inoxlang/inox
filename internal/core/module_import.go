@@ -9,22 +9,13 @@ import (
 	"github.com/inoxlang/inox/internal/core/inoxmod"
 	"github.com/inoxlang/inox/internal/core/slog"
 	"github.com/inoxlang/inox/internal/globals/globalnames"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 
 	"github.com/inoxlang/inox/internal/utils"
 )
 
 const (
 	DEFAULT_IMPORT_TIMEOUT = 10 * time.Second
-
-	IMPORT_CONFIG__ALLOW_PROPNAME      = "allow"
-	IMPORT_CONFIG__ARGUMENTS_PROPNAME  = "arguments"
-	IMPORT_CONFIG__VALIDATION_PROPNAME = "validation"
-)
-
-var (
-	IMPORT_CONFIG_SECTION_NAMES = []string{
-		IMPORT_CONFIG__ALLOW_PROPNAME, IMPORT_CONFIG__ARGUMENTS_PROPNAME, IMPORT_CONFIG__VALIDATION_PROPNAME,
-	}
 )
 
 // ImportWaitModule imports a module and waits for its lthread to return its result.
@@ -80,11 +71,11 @@ func buildImportConfig(obj *Object, importSource ResourceName, parentState *Glob
 
 	err = obj.ForEachEntry(func(k string, v Serializable) error {
 		switch k {
-		case IMPORT_CONFIG__VALIDATION_PROPNAME:
+		case inoxconsts.IMPORT_CONFIG__VALIDATION_PROPNAME:
 			config.ValidationString = v.(String)
-		case IMPORT_CONFIG__ARGUMENTS_PROPNAME:
+		case inoxconsts.IMPORT_CONFIG__ARGUMENTS_PROPNAME:
 			config.ArgObj = v.(*Object)
-		case IMPORT_CONFIG__ALLOW_PROPNAME:
+		case inoxconsts.IMPORT_CONFIG__ALLOW_PROPNAME:
 			config.GrantedPermListing = v.(*Object)
 		default:
 			return fmt.Errorf("invalid import configuration, unknown section '%s'", k)

@@ -14500,7 +14500,7 @@ func TestSymbolicEval(t *testing.T) {
 	})
 	t.Run("module import statement ", func(t *testing.T) {
 
-		t.Run("ok", func(t *testing.T) {
+		t.Run("base case", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				manifest {}
 				import lib ./lib.ix {}
@@ -14686,6 +14686,115 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, fmtRightOperandOfBinaryShouldBe(parse.Add, "int", "\"a\""), evalErr.Message)
 
 			assert.Equal(t, Nil, res)
+		})
+
+		t.Run("argument", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				manifest {}
+				import lib ./lib.ix {
+					arguments: {a: 1}
+				}
+				return lib
+			`)
+			importStmt := parse.FindNode(n, (*parse.ImportStatement)(nil), nil)
+			state.Module.directlyImportedModules = map[*parse.ImportStatement]*Module{
+				importStmt: {
+					mainChunk: utils.Must(parse.ParseChunkSource(parse.SourceFile{
+						NameString:  "/lib.ix",
+						Resource:    "/lib.ix",
+						ResourceDir: "/",
+						CodeString: `
+							manifest {
+								parameters: {a: %int}
+							} 
+							return mod-args.a
+						`,
+					})),
+				},
+			}
+			state.basePatterns = map[string]Pattern{
+				"int": state.ctx.ResolveNamedPattern("int"),
+			}
+
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_INT, res)
+		})
+
+		t.Run("missing argument", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				manifest {}
+				import lib ./lib.ix {
+					arguments: {}
+				}
+				return lib
+			`)
+
+			importStmt := parse.FindFirstNode(n, (*parse.ImportStatement)(nil))
+
+			state.Module.directlyImportedModules = map[*parse.ImportStatement]*Module{
+				importStmt: {
+					mainChunk: utils.Must(parse.ParseChunkSource(parse.SourceFile{
+						NameString:  "/lib.ix",
+						Resource:    "/lib.ix",
+						ResourceDir: "/",
+						CodeString: `
+							manifest {
+								parameters: {a: %int}
+							} 
+							return mod-args.a
+						`,
+					})),
+				},
+			}
+			state.basePatterns = map[string]Pattern{
+				"int": state.ctx.ResolveNamedPattern("int"),
+			}
+
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.NotEmpty(t, state.errors())
+			assert.Equal(t, ANY_INT, res)
+		})
+
+		t.Run("argument with an unexpected value", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				manifest {}
+				import lib ./lib.ix {
+					arguments: {a: true}
+				}
+				return lib
+			`)
+
+			importStmt := parse.FindFirstNode(n, (*parse.ImportStatement)(nil))
+
+			state.Module.directlyImportedModules = map[*parse.ImportStatement]*Module{
+				importStmt: {
+					mainChunk: utils.Must(parse.ParseChunkSource(parse.SourceFile{
+						NameString:  "/lib.ix",
+						Resource:    "/lib.ix",
+						ResourceDir: "/",
+						CodeString: `
+							manifest {
+								parameters: {a: %int}
+							} 
+							return mod-args.a
+						`,
+					})),
+				},
+			}
+			state.basePatterns = map[string]Pattern{
+				"int": state.ctx.ResolveNamedPattern("int"),
+			}
+
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.NotEmpty(t, state.errors())
+			assert.Equal(t, ANY_INT, res)
 		})
 	})
 

@@ -103,8 +103,10 @@ const (
 	INVALID_ELEM_ELEMS_OF_RECORD_SHOULD_BE_IMMUTABLE = "invalid element, elements of a record should be immutable"
 
 	//module import
-	IMPORTED_MOD_PATH_MUST_END_WITH_IX = "imported module's path must end with '" + inoxconsts.INOXLANG_FILE_EXTENSION + "'"
-	IMPORTED_MODULE_HAS_ERRORS         = "imported module has errors"
+	IMPORTED_MOD_PATH_MUST_END_WITH_IX                                                 = "imported module's path must end with '" + inoxconsts.INOXLANG_FILE_EXTENSION + "'"
+	IMPORTED_MODULE_HAS_ERRORS                                                         = "imported module has errors"
+	THE_ARGUMENTS_PROP_IS_REQUIRED_IN_IMPORT_CONFIG_BECAUSE_IMPORTED_MODULE_HAS_PARAMS = //
+	"the '" + inoxconsts.IMPORT_CONFIG__ARGUMENTS_PROPNAME + "' property in import configuration because the imported module has parameters"
 
 	INVALID_MUTATION                               = "invalid mutation"
 	PATTERN_IS_NOT_CONVERTIBLE_TO_READONLY_VERSION = "pattern is not convertible to a readonly version"

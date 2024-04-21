@@ -350,6 +350,19 @@ func (d *Data) GetGlobalScopeData(n parse.Node, ancestorChain []parse.Node) (Sco
 	return d.getScopeData(n, ancestorChain, true)
 }
 
+func (d *Data) GetGlobalVarData(n parse.Node, ancestorChain []parse.Node, name string) (VarData, *parse.Chunk, bool) {
+	scopeData, ok := d.GetGlobalScopeData(n, ancestorChain)
+	if !ok {
+		return VarData{}, nil, false
+	}
+	for _, variable := range scopeData.Variables {
+		if variable.Name == name {
+			return variable, scopeData.Chunk, true
+		}
+	}
+	return VarData{}, nil, false
+}
+
 func (d *Data) getScopeData(n parse.Node, ancestorChain []parse.Node, global bool) (ScopeData, bool) {
 	if d == nil {
 		return ScopeData{}, false

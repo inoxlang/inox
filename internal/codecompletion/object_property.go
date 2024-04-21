@@ -3,7 +3,6 @@ package codecompletion
 import (
 	"strings"
 
-	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/inoxconsts"
@@ -102,7 +101,7 @@ func findObjectPropertyNameCompletions(
 	if utils.Implements[*parse.ImportStatement](ancestors[ancestorCount-3]) {
 		configObject := objectLiteral
 
-		for _, sectionName := range core.IMPORT_CONFIG_SECTION_NAMES {
+		for _, sectionName := range inoxconsts.IMPORT_CONFIG_SECTION_NAMES {
 			if configObject.HasNamedProp(sectionName) {
 				//ignore properties that are already present.
 				continue
@@ -193,7 +192,7 @@ func findObjectPropertyNameCompletions(
 	//case: the current property is in the 'allow' object in a module import statement.
 	if ancestorCount >= 6 && utils.Implements[*parse.ObjectLiteral](ancestors[ancestorCount-2]) &&
 		utils.Implements[*parse.ObjectProperty](ancestors[ancestorCount-3]) &&
-		ancestors[ancestorCount-3].(*parse.ObjectProperty).HasNameEqualTo(core.IMPORT_CONFIG__ALLOW_PROPNAME) &&
+		ancestors[ancestorCount-3].(*parse.ObjectProperty).HasNameEqualTo(inoxconsts.IMPORT_CONFIG__ALLOW_PROPNAME) &&
 		utils.Implements[*parse.ImportStatement](ancestors[ancestorCount-5]) {
 
 		for _, info := range permbase.PERMISSION_KINDS {
