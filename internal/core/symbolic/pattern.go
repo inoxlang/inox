@@ -1195,7 +1195,7 @@ func (p *ObjectPattern) ToRecordPattern() *RecordPattern {
 }
 
 func (p *ObjectPattern) Test(v Value, state RecTestCallState) bool {
-	state.StartCall()
+	state.StartCallWithName("object-pattern")
 	defer state.FinishCall()
 
 	other, ok := v.(*ObjectPattern)
@@ -1239,11 +1239,21 @@ func (p *ObjectPattern) Test(v Value, state RecTestCallState) bool {
 }
 
 func (p *ObjectPattern) TestValue(v Value, state RecTestCallState) bool {
-	state.StartCall()
+	state.StartCallWithName("object")
 	defer state.FinishCall()
 
 	obj, ok := v.(*Object)
-	if !ok || p.readonly != obj.readonly {
+	if !ok {
+		state.WriteMismatch("an object is expected")
+		return false
+	}
+
+	if p.readonly != obj.readonly {
+		if p.readonly {
+			state.WriteMismatch("a readonly object is expected")
+		} else {
+			state.WriteMismatch("a regular object is expected but current one is readonly")
+		}
 		return false
 	}
 
@@ -1252,6 +1262,7 @@ func (p *ObjectPattern) TestValue(v Value, state RecTestCallState) bool {
 	}
 
 	if !p.inexact && obj.IsInexact() {
+		state.WriteMismatch("object pattern is exact but current object may have additional properties")
 		return false
 	}
 
@@ -1282,26 +1293,28 @@ func (p *ObjectPattern) TestValue(v Value, state RecTestCallState) bool {
 		}
 	}
 
-	for key, valuePattern := range p.entries {
-		_, isOptional := p.optionalEntries[key]
-		_, isOptionalInObject := obj.optionalEntries[key]
-		value, _, ok := obj.GetProperty(key)
+	for propName, valuePattern := range p.entries {
+		_, isOptional := p.optionalEntries[propName]
+		_, isOptionalInObject := obj.optionalEntries[propName]
+		value, _, ok := obj.GetProperty(propName)
 
 		if !isOptional && isOptionalInObject {
+			state.WriteMismatch("property `", propName, "` is required")
 			return false
 		}
 
 		if !ok {
-			if !isOptional || (p.hasDeps(key) && !obj.hasDeps(key)) {
+			if !isOptional || (p.hasDeps(propName) && !obj.hasDeps(propName)) {
+				state.WriteMismatch("missing property `", propName, "`")
 				return false
 			}
 		} else {
-			if !valuePattern.TestValue(value, state) {
+			if !valuePattern.TestValue(value, state.ForProperty(propName)) {
 				return false
 			}
 			if !isOptional || !isOptionalInObject {
 				//check dependencies
-				deps := p.dependencies[key]
+				deps := p.dependencies[propName]
 				for _, requiredKey := range deps.requiredKeys {
 					if !obj.hasRequiredProperty(requiredKey) {
 						return false
@@ -1318,6 +1331,7 @@ func (p *ObjectPattern) TestValue(v Value, state RecTestCallState) bool {
 	if !p.inexact {
 		for _, propName := range obj.PropertyNames() {
 			if _, ok := p.entries[propName]; !ok {
+				state.WriteMismatch("unexpected additional property `", propName, "`")
 				return false
 			}
 		}

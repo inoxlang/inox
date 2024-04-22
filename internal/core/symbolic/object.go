@@ -112,7 +112,7 @@ func (obj *Object) TestExact(v Value) bool {
 }
 
 func (obj *Object) Test(v Value, state RecTestCallState) bool {
-	state.StartCall()
+	state.StartCallWithName("object")
 	defer state.FinishCall()
 
 	return obj.test(v, obj.exact, state)
@@ -120,7 +120,18 @@ func (obj *Object) Test(v Value, state RecTestCallState) bool {
 
 func (obj *Object) test(v Value, exact bool, state RecTestCallState) bool {
 	otherObj, ok := v.(*Object)
-	if !ok || obj.readonly != otherObj.readonly {
+
+	if !ok {
+		state.WriteMismatch("an object is expected")
+		return false
+	}
+
+	if obj.readonly != otherObj.readonly {
+		if obj.readonly {
+			state.WriteMismatch("a readonly object is expected")
+		} else {
+			state.WriteMismatch("a regular object is expected but current one is readonly")
+		}
 		return false
 	}
 
@@ -129,6 +140,7 @@ func (obj *Object) test(v Value, exact bool, state RecTestCallState) bool {
 	}
 
 	if obj.exact && otherObj.IsInexact() {
+		state.WriteMismatch("current object may have additional properties")
 		return false
 	}
 
@@ -162,6 +174,7 @@ func (obj *Object) test(v Value, exact bool, state RecTestCallState) bool {
 		other, isPresentInOther := otherObj.entries[propName]
 
 		if isPresentInOther && !isOptional && isOptionalInOther {
+			state.WriteMismatch("property `", propName, "` is required")
 			return false
 		}
 
@@ -169,10 +182,11 @@ func (obj *Object) test(v Value, exact bool, state RecTestCallState) bool {
 			if isOptional {
 				continue
 			}
+			state.WriteMismatch("missing property `", propName, "`")
 			return false
 		}
 
-		if !propPattern.Test(other, state) {
+		if !propPattern.Test(other, state.ForProperty(propName)) {
 			return false
 		}
 
@@ -192,9 +206,10 @@ func (obj *Object) test(v Value, exact bool, state RecTestCallState) bool {
 
 	//check there are no additional properties
 	if exact {
-		for k := range otherObj.entries {
-			_, ok := obj.entries[k]
+		for propName := range otherObj.entries {
+			_, ok := obj.entries[propName]
 			if !ok {
+				state.WriteMismatch("unexpected additional property `", propName, "`")
 				return false
 			}
 		}
