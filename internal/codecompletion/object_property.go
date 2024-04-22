@@ -1,6 +1,7 @@
 package codecompletion
 
 import (
+	"encoding/json"
 	"strings"
 
 	"github.com/inoxlang/inox/internal/core/permbase"
@@ -10,6 +11,260 @@ import (
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
 	"github.com/inoxlang/inox/internal/utils"
 )
+
+func findObjectInteriorCompletions(n *parse.ObjectLiteral, search completionSearch) (completions []Completion) {
+	chunk := search.chunk
+	cursorIndex := int32(search.cursorIndex)
+	ancestors := search.ancestorChain
+
+	interiorSpan, err := parse.GetInteriorSpan(n, chunk.Node)
+	if err != nil {
+		return nil
+	}
+
+	if !interiorSpan.HasPositionEndIncluded(cursorIndex) {
+		return nil
+	}
+
+	pos := chunk.GetSourcePosition(parse.NodeSpan{Start: cursorIndex, End: cursorIndex})
+
+	properties, ok := search.state.Global.SymbolicData.GetAllowedNonPresentProperties(n)
+	if ok {
+		for _, name := range properties {
+			propNameAndColon := quotePropNameIfNecessary(name) + ": "
+			completions = append(completions, Completion{
+				ShownString:   propNameAndColon,
+				Value:         propNameAndColon,
+				Kind:          defines.CompletionItemKindProperty,
+				ReplacedRange: pos,
+			})
+		}
+	}
+
+	switch parent := search.parent.(type) {
+	case *parse.Manifest: //suggest sections of the manifest that are not present
+	manifest_sections_loop:
+		for _, sectionName := range inoxconsts.MANIFEST_SECTION_NAMES {
+			for _, prop := range n.Properties {
+				if !prop.HasNoKey() && prop.Name() == sectionName {
+					continue manifest_sections_loop
+				}
+			}
+
+			suffix := ": "
+			valueCompletion, ok := MANIFEST_SECTION_DEFAULT_VALUE_COMPLETIONS[sectionName]
+			if ok {
+				suffix += valueCompletion
+			}
+
+			completions = append(completions, Completion{
+				ShownString:           sectionName + suffix,
+				Value:                 sectionName + suffix,
+				MarkdownDocumentation: MANIFEST_SECTION_DOC[sectionName],
+				Kind:                  defines.CompletionItemKindVariable,
+				ReplacedRange:         pos,
+			})
+		}
+	case *parse.ImportStatement: //suggest sections of the module import config that are not present
+	mod_import_sections_loop:
+		for _, sectionName := range inoxconsts.IMPORT_CONFIG_SECTION_NAMES {
+			for _, prop := range n.Properties {
+				if !prop.HasNoKey() && prop.Name() == sectionName {
+					continue mod_import_sections_loop
+				}
+			}
+
+			suffix := ": "
+			valueCompletion, ok := MODULE_IMPORT_SECTION_DEFAULT_VALUE_COMPLETIONS[sectionName]
+			if ok {
+				suffix += valueCompletion
+			}
+
+			completions = append(completions, Completion{
+				ShownString:           sectionName + suffix,
+				Value:                 sectionName + suffix,
+				MarkdownDocumentation: MODULE_IMPORT_SECTION_DOC[sectionName],
+				Kind:                  defines.CompletionItemKindVariable,
+				ReplacedRange:         pos,
+			})
+		}
+	case *parse.SpawnExpression:
+		if n != parent.Meta {
+			break
+		}
+		//suggest sections of the lthread meta object that are not present
+	lthread_meta_sections_loop:
+		for _, sectionName := range symbolic.LTHREAD_SECTION_NAMES {
+			for _, prop := range n.Properties {
+				if !prop.HasNoKey() && prop.Name() == sectionName {
+					continue lthread_meta_sections_loop
+				}
+			}
+
+			suffix := ": "
+			valueCompletion, ok := LTHREAD_META_SECTION_DEFAULT_VALUE_COMPLETIONS[sectionName]
+			if ok {
+				suffix += valueCompletion
+			}
+
+			completions = append(completions, Completion{
+				ShownString:           sectionName + suffix,
+				Value:                 sectionName + suffix,
+				LabelDetail:           LTHREAD_META_SECTION_LABEL_DETAILS[sectionName],
+				MarkdownDocumentation: LTHREAD_META_SECTION_DOC[sectionName],
+				Kind:                  defines.CompletionItemKindVariable,
+				ReplacedRange:         pos,
+			})
+		}
+	case *parse.ObjectProperty:
+		if parent.HasNoKey() || len(ancestors) < 3 {
+			return
+		}
+
+		//allowed permissions in module import statement
+		if len(ancestors) >= 5 &&
+			parent.HasNameEqualTo(inoxconsts.IMPORT_CONFIG__ALLOW_PROPNAME) &&
+			utils.Implements[*parse.ImportStatement](ancestors[len(ancestors)-3]) {
+
+			for _, info := range permbase.PERMISSION_KINDS {
+				//ignore kinds that are already present.
+				if n.HasNamedProp(info.Name) {
+					continue
+				}
+
+				detail := MAJOR_PERM_KIND_TEXT
+
+				if info.PermissionKind.IsMinor() {
+					detail = MINOR_PERM_KIND_TEXT
+				}
+
+				completions = append(completions, Completion{
+					ShownString:   info.Name,
+					Value:         info.Name,
+					Kind:          defines.CompletionItemKindVariable,
+					ReplacedRange: pos,
+					LabelDetail:   detail,
+				})
+			}
+		}
+
+		switch greatGrandParent := ancestors[len(ancestors)-3].(type) {
+		case *parse.Manifest:
+			switch parent.Name() {
+			case inoxconsts.MANIFEST_PERMS_SECTION_NAME: //permissions section
+				for _, info := range permbase.PERMISSION_KINDS {
+					//ignore kinds that are already present.
+					if n.HasNamedProp(info.Name) {
+						continue
+					}
+
+					detail := MAJOR_PERM_KIND_TEXT
+
+					if info.PermissionKind.IsMinor() {
+						detail = MINOR_PERM_KIND_TEXT
+					}
+
+					completions = append(completions, Completion{
+						ShownString:   info.Name,
+						Value:         info.Name,
+						Kind:          defines.CompletionItemKindVariable,
+						ReplacedRange: pos,
+						LabelDetail:   detail,
+					})
+				}
+			}
+		default:
+			_ = greatGrandParent
+		}
+
+		if len(ancestors) < 5 {
+			break
+		}
+
+		manifestSectionName := ""
+		var sectionProperty *parse.ObjectProperty
+
+		ancestorCount := len(ancestors)
+
+		if utils.Implements[*parse.Manifest](ancestors[ancestorCount-5]) &&
+			utils.Implements[*parse.ObjectLiteral](ancestors[ancestorCount-4]) &&
+			utils.Implements[*parse.ObjectProperty](ancestors[ancestorCount-3]) &&
+			ancestors[ancestorCount-3].(*parse.ObjectProperty).Key != nil {
+			sectionProperty = ancestors[ancestorCount-3].(*parse.ObjectProperty)
+			manifestSectionName = sectionProperty.Name()
+		}
+
+		if sectionProperty == nil || sectionProperty.Value == nil {
+			break
+		}
+
+		//the cursor is located in the span of an object inside a manifest section.
+
+		switch manifestSectionName {
+		case inoxconsts.MANIFEST_DATABASES_SECTION_NAME:
+			//suggest database description's properties
+
+			_, ok := sectionProperty.Value.(*parse.ObjectLiteral)
+			if !ok {
+				break
+			}
+			dbDescription := n
+
+			for _, descPropName := range inoxconsts.MANIFEST_DATABASE_PROPNAMES {
+				//ignore properties that are already present.
+				if dbDescription.HasNamedProp(descPropName) {
+					continue
+				}
+
+				suffix := ": "
+				valueCompletion, ok := MANIFEST_DB_DESC_DEFAULT_VALUE_COMPLETIONS[descPropName]
+				if ok {
+					suffix += valueCompletion
+				}
+
+				completions = append(completions, Completion{
+					ShownString:           descPropName + suffix,
+					Value:                 descPropName + suffix,
+					Kind:                  defines.CompletionItemKindVariable,
+					MarkdownDocumentation: MANIFEST_DB_DESC_DOC[descPropName],
+					ReplacedRange:         pos,
+				})
+			}
+		}
+	}
+
+	return
+}
+
+func findRecordInteriorCompletions(n *parse.RecordLiteral, search completionSearch) (completions []Completion) {
+	cursorIndex := int32(search.cursorIndex)
+	chunk := search.chunk
+
+	interiorSpan, err := parse.GetInteriorSpan(n, chunk.Node)
+	if err != nil {
+		return nil
+	}
+
+	if !interiorSpan.HasPositionEndIncluded(cursorIndex) {
+		return nil
+	}
+
+	pos := chunk.GetSourcePosition(parse.NodeSpan{Start: cursorIndex, End: cursorIndex})
+
+	properties, ok := search.state.Global.SymbolicData.GetAllowedNonPresentProperties(n)
+	if ok {
+		for _, name := range properties {
+			propNameAndColon := quotePropNameIfNecessary(name) + ": "
+			completions = append(completions, Completion{
+				ShownString:   propNameAndColon,
+				Value:         propNameAndColon,
+				Kind:          defines.CompletionItemKindProperty,
+				ReplacedRange: pos,
+			})
+		}
+	}
+	return
+}
 
 func findObjectPropertyNameCompletions(
 	ident *parse.IdentifierLiteral,
@@ -221,7 +476,7 @@ func findObjectPropertyNameCompletions(
 	if ok {
 		for _, name := range properties {
 			if hasPrefixCaseInsensitive(name, ident.Name) {
-				propNameAndColon := name + ": "
+				propNameAndColon := quotePropNameIfNecessary(name) + ": "
 				completions = append(completions, Completion{
 					ShownString: propNameAndColon,
 					Value:       propNameAndColon,
@@ -236,4 +491,12 @@ func findObjectPropertyNameCompletions(
 	}
 
 	return
+}
+
+func quotePropNameIfNecessary(name string) string {
+	if parse.IsValidIdent(name) {
+		return name
+	}
+	quoted := utils.Must(json.Marshal(name))
+	return utils.BytesAsString(quoted)
 }

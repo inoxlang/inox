@@ -344,6 +344,22 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 			}, completions)
 		})
 
+		t.Run("non-ident-like property name from prefix in object literal", func(t *testing.T) {
+			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			defer state.Global.Ctx.CancelGracefully()
+
+			chunk, _ := parseChunkSource("pattern o = {\"c fé\": int}; var o o = {c} # error at p (not declared)", "")
+
+			doSymbolicCheck(chunk, state.Global)
+			completions := findCompletions(state, chunk, 39)
+			assert.EqualValues(t, []Completion{
+				{
+					ShownString:   `"c fé": `,
+					Value:         `"c fé": `,
+					ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 38, End: 39}}},
+			}, completions)
+		})
+
 		t.Run("property name from prefix in object literal: linefeed before prefix", func(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
 			defer state.Global.Ctx.CancelGracefully()
@@ -387,6 +403,19 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 			}, completions)
 		})
 
+		t.Run("suggest object property: empty property name: object has single property that is not a ident-like", func(t *testing.T) {
+			state := newState()
+			obj := core.NewObjectFromMap(core.ValMap{"c fé": core.String("foo")}, state.Global.Ctx)
+			state.SetGlobal("obj", obj, core.GlobalConst)
+			chunk, _ := parseChunkSource("obj.", "")
+
+			doSymbolicCheck(chunk, state.Global)
+			completions := findCompletions(state, chunk, 4)
+			assert.EqualValues(t, []Completion{
+				{ShownString: `.("c fé")`, Value: `.("c fé")`, ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 3, End: 4}}},
+			}, completions)
+		})
+
 		t.Run("suggest object property: start of property name: object has single property", func(t *testing.T) {
 			state := newState()
 			obj := core.NewObjectFromMap(core.ValMap{"name": core.String("foo")}, state.Global.Ctx)
@@ -397,6 +426,19 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 			completions := findCompletions(state, chunk, 5)
 			assert.EqualValues(t, []Completion{
 				{ShownString: ".name", Value: ".name", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 3, End: 5}}},
+			}, completions)
+		})
+
+		t.Run("suggest object property: start of property name: object has single property that is not ident-like", func(t *testing.T) {
+			state := newState()
+			obj := core.NewObjectFromMap(core.ValMap{"c fé": core.String("foo")}, state.Global.Ctx)
+			state.SetGlobal("obj", obj, core.GlobalConst)
+			chunk, _ := parseChunkSource("obj.c", "")
+
+			doSymbolicCheck(chunk, state.Global)
+			completions := findCompletions(state, chunk, 5)
+			assert.EqualValues(t, []Completion{
+				{ShownString: `.("c fé")`, Value: `.("c fé")`, ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 3, End: 5}}},
 			}, completions)
 		})
 
@@ -466,6 +508,19 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 			}, completions)
 		})
 
+		t.Run("suggest object property: empty property name: object has single property that is not ident-like", func(t *testing.T) {
+			state := newState()
+			obj := core.NewObjectFromMap(core.ValMap{"c fé": core.String("foo")}, state.Global.Ctx)
+			state.SetGlobal("obj", obj, core.GlobalConst)
+			chunk, _ := parseChunkSource("$obj.", "")
+
+			doSymbolicCheck(chunk, state.Global)
+			completions := findCompletions(state, chunk, 5)
+			assert.EqualValues(t, []Completion{
+				{ShownString: `.("c fé")`, Value: `.("c fé")`, ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 4, End: 5}}},
+			}, completions)
+		})
+
 		t.Run("suggest object property: start of property name: object has single property", func(t *testing.T) {
 			state := newState()
 			obj := core.NewObjectFromMap(core.ValMap{"name": core.String("foo")}, state.Global.Ctx)
@@ -476,6 +531,19 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 			completions := findCompletions(state, chunk, 6)
 			assert.EqualValues(t, []Completion{
 				{ShownString: ".name", Value: ".name", ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 4, End: 6}}},
+			}, completions)
+		})
+
+		t.Run("suggest object property: start of property name: object has single property that is not ident-like", func(t *testing.T) {
+			state := newState()
+			obj := core.NewObjectFromMap(core.ValMap{"c fé": core.String("foo")}, state.Global.Ctx)
+			state.SetGlobal("obj", obj, core.GlobalConst)
+			chunk, _ := parseChunkSource("$obj.c", "")
+
+			doSymbolicCheck(chunk, state.Global)
+			completions := findCompletions(state, chunk, 6)
+			assert.EqualValues(t, []Completion{
+				{ShownString: `.("c fé")`, Value: `.("c fé")`, ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 4, End: 6}}},
 			}, completions)
 		})
 
