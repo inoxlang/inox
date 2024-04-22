@@ -4545,31 +4545,30 @@ func evalObjectLiteral(n *parse.ObjectLiteral, state *State, options evalOptions
 		state.SetMostSpecificNodeValue(p.Key, propVal)
 	}
 
-	//evaluate elements that don't have a key.
+	//Evaluate elements.
 	var noKeyValues []Serializable
 	for _, p := range noKeyProps {
 		propVal, err := symbolicEval(p.Value, state)
 		if err != nil {
 			return nil, err
 		}
-		state.SetMostSpecificNodeValue(p.Key, propVal)
 
-		//additional checks if expected object is readonly
-		if expectedObj.readonly {
-			if !IsReadonlyOrImmutable(propVal) {
-				state.addError(MakeSymbolicEvalError(p.Key, state, PROPERTY_VALUES_OF_READONLY_OBJECTS_SHOULD_BE_READONLY_OR_IMMUTABLE))
+		state.SetMostSpecificNodeValue(p.Value, propVal)
+
+		if expectedObj.readonly && !IsReadonlyOrImmutable(propVal) {
+			state.addError(MakeSymbolicEvalError(p.Value, state, PROPERTY_VALUES_OF_READONLY_OBJECTS_SHOULD_BE_READONLY_OR_IMMUTABLE))
+
+			noKeyValues = append(noKeyValues, ANY_SERIALIZABLE)
+		} else {
+			serializable, ok := AsSerializable(propVal).(Serializable)
+			if !ok {
+				state.addError(MakeSymbolicEvalError(p, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE))
+				serializable = ANY_SERIALIZABLE
+			} else if _, ok := asWatchable(propVal).(Watchable); !ok && propVal.IsMutable() {
+				state.addError(MakeSymbolicEvalError(p, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_WATCHABLE))
 			}
+			noKeyValues = append(noKeyValues, serializable)
 		}
-
-		serializable, ok := AsSerializable(propVal).(Serializable)
-		if !ok {
-			state.addError(MakeSymbolicEvalError(p, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE))
-			serializable = ANY_SERIALIZABLE
-		} else if _, ok := asWatchable(propVal).(Watchable); !ok && propVal.IsMutable() {
-			state.addError(MakeSymbolicEvalError(p, state, MUTABLE_NON_WATCHABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_WATCHABLE))
-		}
-
-		noKeyValues = append(noKeyValues, serializable)
 	}
 
 	if len(noKeyValues) > 0 {
@@ -4711,11 +4710,11 @@ func evalRecordLiteral(n *parse.RecordLiteral, state *State, options evalOptions
 			return nil, err
 		}
 
-		state.SetMostSpecificNodeValue(p.Key, propVal)
+		state.SetMostSpecificNodeValue(p.Value, propVal)
 
 		serializable, ok := AsSerializable(propVal).(Serializable)
 		if !ok {
-			state.addErrorIf(!hasShallowError, MakeSymbolicEvalError(p, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE))
+			state.addErrorIf(!hasShallowError, MakeSymbolicEvalError(p.Value, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE))
 			serializable = ANY_SERIALIZABLE
 		} else if propVal.IsMutable() {
 			state.addErrorIf(!hasShallowError, MakeSymbolicEvalError(p.Value, state, INVALID_ELEM_ELEMS_OF_RECORD_SHOULD_BE_IMMUTABLE))

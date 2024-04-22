@@ -1981,7 +1981,7 @@ func TestSymbolicEval(t *testing.T) {
 			}, res)
 		})
 
-		t.Run("one property without a key", func(t *testing.T) {
+		t.Run("one element", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`{1}`)
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -1996,7 +1996,22 @@ func TestSymbolicEval(t *testing.T) {
 			}, res)
 		})
 
-		t.Run("two properties without a key", func(t *testing.T) {
+		t.Run("one element: variable (identifier)", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`a = 1; return {a}`)
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, &Object{
+				entries: map[string]Serializable{
+					"": NewList(INT_1),
+				},
+				static: map[string]Pattern{
+					"": NewListPatternOf(&TypePattern{val: ANY_INT}),
+				},
+			}, res)
+		})
+
+		t.Run("two elements", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`{1, 2}`)
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -2164,6 +2179,36 @@ func TestSymbolicEval(t *testing.T) {
 			}, res)
 		})
 
+		t.Run("readonly with non-serializable element", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(obj readonly {}){
+					return obj
+				}
+				return f({ go do {} })
+			`)
+			prop := parse.FindFirstNode(n, (*parse.ObjectProperty)(nil))
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				MakeSymbolicEvalError(prop.Value, state, PROPERTY_VALUES_OF_READONLY_OBJECTS_SHOULD_BE_READONLY_OR_IMMUTABLE),
+			}, state.errors())
+
+			expectedObject := NewInexactObject(
+				map[string]Serializable{
+					"": NewList(ANY_SERIALIZABLE),
+				},
+				nil,
+				map[string]Pattern{
+					"": NewListPatternOf(&TypePattern{val: ANY_SERIALIZABLE}),
+				},
+			)
+			expectedObject.readonly = true
+
+			assert.Equal(t, expectedObject, res)
+		})
+
 		t.Run("readonly objects should not have non-readonly property values", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				fn f(obj readonly {}){
@@ -2240,7 +2285,7 @@ func TestSymbolicEval(t *testing.T) {
 			}, res)
 		})
 
-		t.Run("one property without a key", func(t *testing.T) {
+		t.Run("one element", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`#{1}`)
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -2252,7 +2297,7 @@ func TestSymbolicEval(t *testing.T) {
 			}, res)
 		})
 
-		t.Run("two properties without a key", func(t *testing.T) {
+		t.Run("two elements", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`#{1, 2}`)
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
@@ -2347,6 +2392,32 @@ func TestSymbolicEval(t *testing.T) {
 					"suite": ANY_SERIALIZABLE,
 				},
 			}, res)
+		})
+
+		t.Run("non-serializable element", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`#{ go do {} }`)
+			prop := parse.FindFirstNode(n, (*parse.ObjectProperty)(nil))
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				MakeSymbolicEvalError(prop.Value, state, NON_SERIALIZABLE_VALUES_NOT_ALLOWED_AS_INITIAL_VALUES_OF_SERIALIZABLE),
+			}, state.errors())
+
+			expectedRecord := NewInexactRecord(
+				map[string]Serializable{
+					"": NewTuple(ANY_SERIALIZABLE),
+				},
+				nil,
+			)
+
+			assert.Equal(t, expectedRecord, res)
+
+			nodeValue, ok := state.symbolicData.GetMostSpecificNodeValue(prop.Value)
+			if assert.True(t, ok) {
+				assert.Equal(t, ANY_LTHREAD, nodeValue)
+			}
 		})
 
 		t.Run("mismatch between object and expected value", func(t *testing.T) {
