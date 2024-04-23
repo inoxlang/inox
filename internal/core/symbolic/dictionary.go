@@ -164,8 +164,11 @@ func (dict *Dictionary) key() Value {
 }
 
 func (dict *Dictionary) ForEachEntry(fn func(key Serializable, k string, v Value) error) error {
-	for k, v := range dict.entries {
-		if err := fn(dict.keys[k], k, v); err != nil {
+	keyStrings := maps.Keys(dict.entries)
+	sort.Strings(keyStrings)
+
+	for _, keyString := range keyStrings {
+		if err := fn(dict.keys[keyString], keyString, dict.entries[keyString]); err != nil {
 			return err
 		}
 	}

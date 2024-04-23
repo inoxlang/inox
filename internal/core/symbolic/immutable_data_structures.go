@@ -660,8 +660,11 @@ func (rec *Record) HasPropertyOptionalOrNot(name string) bool {
 }
 
 func (rec *Record) ForEachEntry(fn func(k string, v Value) error) error {
-	for k, v := range rec.entries {
-		if err := fn(k, v); err != nil {
+	propertyNames := maps.Keys(rec.entries)
+	sort.Strings(propertyNames)
+
+	for _, propName := range propertyNames {
+		if err := fn(propName, rec.entries[propName]); err != nil {
 			return err
 		}
 	}

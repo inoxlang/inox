@@ -461,8 +461,11 @@ func (obj *Object) MatchAnyObject() bool {
 }
 
 func (obj *Object) ForEachEntry(fn func(propName string, propValue Value) error) error {
-	for k, v := range obj.entries {
-		if err := fn(k, v); err != nil {
+	propertyNames := maps.Keys(obj.entries)
+	sort.Strings(propertyNames)
+
+	for _, propName := range propertyNames {
+		if err := fn(propName, obj.entries[propName]); err != nil {
 			return err
 		}
 	}

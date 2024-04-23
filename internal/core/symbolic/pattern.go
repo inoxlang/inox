@@ -1419,12 +1419,17 @@ func (o *ObjectPattern) ToReadonlyPattern() (PotentiallyReadonlyPattern, error) 
 }
 
 func (patt *ObjectPattern) ForEachEntry(fn func(propName string, propPattern Pattern, isOptional bool) error) error {
-	for propName, propPattern := range patt.entries {
+	propertyNames := maps.Keys(patt.entries)
+	sort.Strings(propertyNames)
+
+	for _, propName := range propertyNames {
+		propPattern := patt.entries[propName]
 		_, isOptional := patt.optionalEntries[propName]
 		if err := fn(propName, propPattern, isOptional); err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
