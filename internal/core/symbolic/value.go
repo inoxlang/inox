@@ -226,6 +226,15 @@ func (b *Bool) Concretize(ctx ConcreteContext) any {
 	return extData.ConcreteValueFactories.CreateBool(b.value)
 }
 
+// MustGetValue returns the value if the boolean is concretizable,
+// the function panics otherwise.
+func (b *Bool) MustGetValue() bool {
+	if !b.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+	return b.value
+}
+
 func (b *Bool) Static() Pattern {
 	return &TypePattern{val: b.WidestOfType()}
 }
@@ -1532,4 +1541,3 @@ func IsSimpleSymbolicInoxVal(v Value) bool {
 // 		}
 // 	}
 // }
-

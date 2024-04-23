@@ -163,13 +163,22 @@ func (dict *Dictionary) key() Value {
 	return ANY
 }
 
-func (dict *Dictionary) ForEachEntry(fn func(k string, v Value) error) error {
+func (dict *Dictionary) ForEachEntry(fn func(key Serializable, k string, v Value) error) error {
 	for k, v := range dict.entries {
-		if err := fn(k, v); err != nil {
+		if err := fn(dict.keys[k], k, v); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func (dict *Dictionary) AllKeysConcretizable() bool {
+	for _, k := range dict.keys {
+		if !IsConcretizable(k) {
+			return false
+		}
+	}
+	return true
 }
 
 func (dict *Dictionary) Prop(name string) Value {

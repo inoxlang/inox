@@ -5045,7 +5045,7 @@ func evalDictionaryLiteral(n *parse.DictionaryLiteral, state *State, options eva
 	expectedDictionary, ok := findInMultivalue[*Dictionary](options.expectedValue)
 	if ok && expectedDictionary.entries != nil {
 		var keys []string
-		expectedDictionary.ForEachEntry(func(keyRepr string, _ Value) error {
+		expectedDictionary.ForEachEntry(func(_ Serializable, keyRepr string, _ Value) error {
 			if slices.Contains(keys, keyRepr) {
 				return nil
 			}

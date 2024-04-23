@@ -80,6 +80,15 @@ func (f *Float) Concretize(ctx ConcreteContext) any {
 	return extData.ConcreteValueFactories.CreateFloat(f.value)
 }
 
+// MustGetValue returns the value if the boolean is concretizable,
+// the function panics otherwise.
+func (f *Float) MustGetValue() float64 {
+	if !f.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+	return f.value
+}
+
 func (f *Float) Static() Pattern {
 	return &TypePattern{val: ANY_FLOAT}
 }

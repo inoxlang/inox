@@ -336,6 +336,14 @@ func (p *PathPattern) Concretize(ctx ConcreteContext) any {
 	return extData.ConcreteValueFactories.CreatePathPattern(p.value)
 }
 
+func (p *PathPattern) MustGetStringValue() string {
+	if !p.IsConcretizable() {
+		panic(ErrNotConcretizable)
+	}
+
+	return p.value
+}
+
 func (p *PathPattern) Static() Pattern {
 	return &TypePattern{val: p.WidestOfType()}
 }
