@@ -36,7 +36,11 @@ func handleCompletion(ctx context.Context, req *defines.CompletionParams) (resul
 
 	line, column := getLineColumn(req.Position)
 
-	completions := getCompletions(fpath, line, column, rpcSession, memberAuthToken)
+	completions, _, ok := getCompletions(fpath, line, column, rpcSession, memberAuthToken)
+	if !ok {
+		return nil, nil
+	}
+
 	completionIndex := 0
 
 	lspCompletions := utils.MapSlice(completions, func(completion codecompletion.Completion) defines.CompletionItem {
@@ -45,7 +49,7 @@ func handleCompletion(ctx context.Context, req *defines.CompletionParams) (resul
 		}()
 
 		item := defines.CompletionItem{
-			Label: completion.Value,
+			Label: completion.ShownString,
 			Kind:  &completion.Kind,
 			SortText: func() *string {
 				index := completionIndex
@@ -56,6 +60,22 @@ func handleCompletion(ctx context.Context, req *defines.CompletionParams) (resul
 				s += string(rune(index%10) + 'a')
 				return &s
 			}(),
+		}
+
+		if completion.ReplacedRange.Span != (parse.NodeSpan{}) || completion.ShownString != completion.Value {
+			lspRange := rangeToLspRange(completion.ReplacedRange)
+
+			// if completion.ReplacedRange.Span.Len() == 0 {
+			// 	item.TextEdit = defines.InsertReplaceEdit{
+			// 		Insert:  lspRange,
+			// 		NewText: completion.Value,
+			// 	}
+			// } else {
+			item.TextEdit = defines.TextEdit{
+				Range:   lspRange,
+				NewText: completion.Value,
+			}
+			//}
 		}
 
 		if completion.LabelDetail != "" {
@@ -72,37 +92,21 @@ func handleCompletion(ctx context.Context, req *defines.CompletionParams) (resul
 			}
 		}
 
-		if completion.ReplacedRange.Span != (parse.NodeSpan{}) {
-			lspRange := rangeToLspRange(completion.ReplacedRange)
-
-			// if completion.ReplacedRange.Span.Len() == 0 {
-			// 	item.TextEdit = defines.InsertReplaceEdit{
-			// 		Insert:  lspRange,
-			// 		NewText: completion.Value,
-			// 	}
-			// } else {
-			item.TextEdit = defines.TextEdit{
-				Range:   lspRange,
-				NewText: completion.Value,
-			}
-			//}
-
-		}
-
 		return item
 	})
+
 	return &lspCompletions, nil
 }
 
 // getCompletions gets the completions for a specific position in an Inox code file.
-func getCompletions(fpath string, line, column int32, rpcSession *jsonrpc.Session, memberAuthToken string) []codecompletion.Completion {
+func getCompletions(fpath string, line, column int32, rpcSession *jsonrpc.Session, memberAuthToken string) ([]codecompletion.Completion, *parse.ParsedChunkSource, bool) {
 	//----------------------------------------------------
 	session := getCreateLockedProjectSession(rpcSession)
 
 	fls := session.filesystem
 	if fls == nil {
 		session.lock.Unlock()
-		return nil
+		return nil, nil, false
 	}
 
 	lastCodebaseAnalysis := session.lastCodebaseAnalysis
@@ -128,7 +132,7 @@ func getCompletions(fpath string, line, column int32, rpcSession *jsonrpc.Sessio
 	})
 
 	if !ok {
-		return nil
+		return nil, nil, false
 	}
 
 	state := prepResult.state
@@ -146,7 +150,7 @@ func getCompletions(fpath string, line, column int32, rpcSession *jsonrpc.Sessio
 	}
 
 	if state == nil {
-		return nil
+		return nil, nil, false
 	}
 
 	pos := chunk.GetLineColumnPosition(line, column)
@@ -162,7 +166,7 @@ func getCompletions(fpath string, line, column int32, rpcSession *jsonrpc.Sessio
 			StaticFileURLPaths: staticResourcePaths,
 			CodebaseAnalysis:   lastCodebaseAnalysis,
 		},
-	})
+	}), chunk, true
 }
 
 func getStaticResourcePaths(fls afs.Filesystem, absStaticDir string) (paths []string) {
