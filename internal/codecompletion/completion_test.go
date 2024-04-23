@@ -526,6 +526,146 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 
 	})
 
+	t.Run("object literal interior", func(t *testing.T) {
+		if mode != LspCompletions {
+			return
+		}
+
+		t.Run("suggest properties: single property", func(t *testing.T) {
+			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			defer state.Global.Ctx.CancelGracefully()
+
+			chunk, _ := parseChunkSource("var o {a: int} = {}", "")
+
+			doSymbolicCheck(chunk, state.Global)
+			completions := findCompletions(state, chunk, 18)
+
+			assert.EqualValues(t, []Completion{
+				{
+					ShownString:   "a: ",
+					Value:         "a: ",
+					ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 18, End: 18}},
+				},
+			}, completions)
+		})
+
+		t.Run("suggest properties: single property with a concretizable value", func(t *testing.T) {
+			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			defer state.Global.Ctx.CancelGracefully()
+
+			chunk, _ := parseChunkSource("var o {a: 1} = {}", "")
+
+			doSymbolicCheck(chunk, state.Global)
+			completions := findCompletions(state, chunk, 16)
+
+			assert.EqualValues(t, []Completion{
+				{
+					ShownString:   "a: 1",
+					Value:         "a: 1",
+					ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 16, End: 16}},
+				},
+			}, completions)
+		})
+
+		t.Run("suggest properties: two properties with a concretizable value", func(t *testing.T) {
+			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			defer state.Global.Ctx.CancelGracefully()
+
+			chunk, _ := parseChunkSource("var o {a: 1, b: 2} = {}", "")
+
+			doSymbolicCheck(chunk, state.Global)
+			completions := findCompletions(state, chunk, 22)
+
+			assert.ElementsMatch(t, []Completion{
+				{
+					ShownString:   "a: 1",
+					Value:         "a: 1",
+					ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 22, End: 22}},
+				},
+				{
+					ShownString:   "b: 2",
+					Value:         "b: 2",
+					ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 22, End: 22}},
+				},
+				{
+					ShownString:   ALL_MISSING_OBJ_PROPS_LABEL,
+					Value:         "{\na: 1\nb: 2\n}",
+					ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 21, End: 23}},
+				},
+			}, completions)
+		})
+	})
+
+	t.Run("record literal interior", func(t *testing.T) {
+		if mode != LspCompletions {
+			return
+		}
+
+		t.Run("suggest properties: single property", func(t *testing.T) {
+			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			defer state.Global.Ctx.CancelGracefully()
+
+			chunk, _ := parseChunkSource("var o #{a: int} = #{}", "")
+
+			doSymbolicCheck(chunk, state.Global)
+			completions := findCompletions(state, chunk, 20)
+
+			assert.EqualValues(t, []Completion{
+				{
+					ShownString:   "a: ",
+					Value:         "a: ",
+					ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 20, End: 20}},
+				},
+			}, completions)
+		})
+
+		t.Run("suggest properties: single property with a concretizable value", func(t *testing.T) {
+			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			defer state.Global.Ctx.CancelGracefully()
+
+			chunk, _ := parseChunkSource("var o #{a: 1} = #{}", "")
+
+			doSymbolicCheck(chunk, state.Global)
+			completions := findCompletions(state, chunk, 18)
+
+			assert.EqualValues(t, []Completion{
+				{
+					ShownString:   "a: 1",
+					Value:         "a: 1",
+					ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 18, End: 18}},
+				},
+			}, completions)
+		})
+
+		t.Run("suggest properties: two properties with a concretizable value", func(t *testing.T) {
+			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			defer state.Global.Ctx.CancelGracefully()
+
+			chunk, _ := parseChunkSource("var o #{a: 1, b: 2} = #{}", "")
+
+			doSymbolicCheck(chunk, state.Global)
+			completions := findCompletions(state, chunk, 24)
+
+			assert.ElementsMatch(t, []Completion{
+				{
+					ShownString:   "a: 1",
+					Value:         "a: 1",
+					ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 24, End: 24}},
+				},
+				{
+					ShownString:   "b: 2",
+					Value:         "b: 2",
+					ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 24, End: 24}},
+				},
+				{
+					ShownString:   ALL_MISSING_REC_PROPS_LABEL,
+					Value:         "#{\na: 1\nb: 2\n}",
+					ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 22, End: 25}},
+				},
+			}, completions)
+		})
+	})
+
 	t.Run("member expression", func(t *testing.T) {
 		t.Run("suggest object property: empty property name: object has single property", func(t *testing.T) {
 			state := newState()

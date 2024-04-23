@@ -13,6 +13,11 @@ import (
 	"github.com/inoxlang/inox/internal/utils"
 )
 
+const (
+	ALL_MISSING_OBJ_PROPS_LABEL = "{ ... all missing properties ... }"
+	ALL_MISSING_REC_PROPS_LABEL = "#{ ... all missing properties ... }"
+)
+
 func findObjectInteriorCompletions(objLit *parse.ObjectLiteral, search completionSearch) (completions []Completion) {
 	chunk := search.chunk
 	cursorIndex := int32(search.cursorIndex)
@@ -302,7 +307,7 @@ func findRegularObjectPropertyCompletions[ObjectLikeType interface {
 
 	//Suggest all missing properties.
 
-	if expectedObject != nil {
+	if expectedObject != nil && len(missingProperties) > 1 {
 		objectPosRange := search.chunk.GetSourcePosition(objOrRecordLit.Base().Span)
 
 		expectedValueCompletion, ok := stringifyExpectedValue(expectedValueStringificationParams{
@@ -310,15 +315,16 @@ func findRegularObjectPropertyCompletions[ObjectLikeType interface {
 			search:        search,
 			valueAtCursor: currentObject,
 		})
+
 		if ok {
 			//Note: The first character needs to be the first chacter from the replaced region because
 			//otherwise VSCode does not show the completion.
 
 			shownString := ""
 			if utils.Implements[*symbolic.Object](expectedObject) {
-				shownString = "{ ... all missing properties ... }"
+				shownString = ALL_MISSING_OBJ_PROPS_LABEL
 			} else {
-				shownString = "#{ ... all missing properties ... }"
+				shownString = ALL_MISSING_REC_PROPS_LABEL
 			}
 
 			completions = append(completions, Completion{
