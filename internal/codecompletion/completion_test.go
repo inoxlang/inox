@@ -375,6 +375,38 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 					ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 37, End: 38}}},
 			}, completions)
 		})
+
+		t.Run("property name + expected value from prefix in object literal", func(t *testing.T) {
+			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			defer state.Global.Ctx.CancelGracefully()
+
+			chunk, _ := parseChunkSource("pattern o = {prop: 1}; var o o = {p} # error at p (not declared)", "")
+
+			doSymbolicCheck(chunk, state.Global)
+			completions := findCompletions(state, chunk, 35)
+			assert.EqualValues(t, []Completion{
+				{
+					ShownString:   "prop: 1",
+					Value:         "prop: 1",
+					ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 34, End: 35}}},
+			}, completions)
+		})
+
+		t.Run("property name + expected value from prefix in record literal", func(t *testing.T) {
+			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			defer state.Global.Ctx.CancelGracefully()
+
+			chunk, _ := parseChunkSource("pattern o = #{prop: 1}; var o o = #{p} # error at p (not declared)", "")
+
+			doSymbolicCheck(chunk, state.Global)
+			completions := findCompletions(state, chunk, 37)
+			assert.EqualValues(t, []Completion{
+				{
+					ShownString:   "prop: 1",
+					Value:         "prop: 1",
+					ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 36, End: 37}}},
+			}, completions)
+		})
 	})
 
 	t.Run("identifier member expression", func(t *testing.T) {

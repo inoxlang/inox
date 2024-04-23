@@ -507,22 +507,8 @@ after_subcommand_completions:
 		utils.Implements[*parse.RecordLiteral](ancestors[len(ancestors)-2]) {
 
 		isPropName = true
-
-		recordLiteral := ancestors[len(ancestors)-2].(*parse.RecordLiteral)
-
-		properties, ok := state.Global.SymbolicData.GetAllowedNonPresentProperties(recordLiteral)
-		if ok {
-			for _, name := range properties {
-				if hasPrefixCaseInsensitive(name, ident.Name) {
-					propNameAndColon := name + ": "
-					completions = append(completions, Completion{
-						ShownString: propNameAndColon,
-						Value:       propNameAndColon,
-						Kind:        defines.CompletionItemKindProperty,
-					})
-				}
-			}
-		}
+		recordLiteral := ancestors[len(ancestors)-2]
+		completions = append(completions, findCompletionsFromPropertyPrefixOfRegularObject[*symbolic.Record](ident.Name, recordLiteral, search)...)
 	}
 
 	if isPropName {

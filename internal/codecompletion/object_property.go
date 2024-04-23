@@ -7,17 +7,18 @@ import (
 	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/inoxconsts"
+	"github.com/inoxlang/inox/internal/jsoniter"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
-func findObjectInteriorCompletions(n *parse.ObjectLiteral, search completionSearch) (completions []Completion) {
+func findObjectInteriorCompletions(objLit *parse.ObjectLiteral, search completionSearch) (completions []Completion) {
 	chunk := search.chunk
 	cursorIndex := int32(search.cursorIndex)
 	ancestors := search.ancestorChain
 
-	interiorSpan, err := parse.GetInteriorSpan(n, chunk.Node)
+	interiorSpan, err := parse.GetInteriorSpan(objLit, chunk.Node)
 	if err != nil {
 		return nil
 	}
@@ -26,26 +27,19 @@ func findObjectInteriorCompletions(n *parse.ObjectLiteral, search completionSear
 		return nil
 	}
 
+	//Suggestions for regular objects.
+
 	pos := chunk.GetSourcePosition(parse.NodeSpan{Start: cursorIndex, End: cursorIndex})
 
-	properties, ok := search.state.Global.SymbolicData.GetAllowedNonPresentProperties(n)
-	if ok {
-		for _, name := range properties {
-			propNameAndColon := quotePropNameIfNecessary(name) + ": "
-			completions = append(completions, Completion{
-				ShownString:   propNameAndColon,
-				Value:         propNameAndColon,
-				Kind:          defines.CompletionItemKindProperty,
-				ReplacedRange: pos,
-			})
-		}
-	}
+	completions = append(completions, findRegularObjectPropertyCompletions[*symbolic.Object](objLit, pos, search)...)
+
+	//Suggestions for the manifest, lthread meta, and import configuration.
 
 	switch parent := search.parent.(type) {
 	case *parse.Manifest: //suggest sections of the manifest that are not present
 	manifest_sections_loop:
 		for _, sectionName := range inoxconsts.MANIFEST_SECTION_NAMES {
-			for _, prop := range n.Properties {
+			for _, prop := range objLit.Properties {
 				if !prop.HasNoKey() && prop.Name() == sectionName {
 					continue manifest_sections_loop
 				}
@@ -68,7 +62,7 @@ func findObjectInteriorCompletions(n *parse.ObjectLiteral, search completionSear
 	case *parse.ImportStatement: //suggest sections of the module import config that are not present
 	mod_import_sections_loop:
 		for _, sectionName := range inoxconsts.IMPORT_CONFIG_SECTION_NAMES {
-			for _, prop := range n.Properties {
+			for _, prop := range objLit.Properties {
 				if !prop.HasNoKey() && prop.Name() == sectionName {
 					continue mod_import_sections_loop
 				}
@@ -89,13 +83,13 @@ func findObjectInteriorCompletions(n *parse.ObjectLiteral, search completionSear
 			})
 		}
 	case *parse.SpawnExpression:
-		if n != parent.Meta {
+		if objLit != parent.Meta {
 			break
 		}
 		//suggest sections of the lthread meta object that are not present
 	lthread_meta_sections_loop:
 		for _, sectionName := range symbolic.LTHREAD_SECTION_NAMES {
-			for _, prop := range n.Properties {
+			for _, prop := range objLit.Properties {
 				if !prop.HasNoKey() && prop.Name() == sectionName {
 					continue lthread_meta_sections_loop
 				}
@@ -128,7 +122,7 @@ func findObjectInteriorCompletions(n *parse.ObjectLiteral, search completionSear
 
 			for _, info := range permbase.PERMISSION_KINDS {
 				//ignore kinds that are already present.
-				if n.HasNamedProp(info.Name) {
+				if objLit.HasNamedProp(info.Name) {
 					continue
 				}
 
@@ -154,7 +148,7 @@ func findObjectInteriorCompletions(n *parse.ObjectLiteral, search completionSear
 			case inoxconsts.MANIFEST_PERMS_SECTION_NAME: //permissions section
 				for _, info := range permbase.PERMISSION_KINDS {
 					//ignore kinds that are already present.
-					if n.HasNamedProp(info.Name) {
+					if objLit.HasNamedProp(info.Name) {
 						continue
 					}
 
@@ -208,7 +202,7 @@ func findObjectInteriorCompletions(n *parse.ObjectLiteral, search completionSear
 			if !ok {
 				break
 			}
-			dbDescription := n
+			dbDescription := objLit
 
 			for _, descPropName := range inoxconsts.MANIFEST_DATABASE_PROPNAMES {
 				//ignore properties that are already present.
@@ -236,6 +230,111 @@ func findObjectInteriorCompletions(n *parse.ObjectLiteral, search completionSear
 	return
 }
 
+func findRegularObjectPropertyCompletions[ObjectLikeType interface {
+	*symbolic.Object | *symbolic.Record
+	symbolic.Value
+	HasPropertyOptionalOrNot(name string) bool
+	GetProperty(name string) (symbolic.Value, symbolic.Pattern, bool)
+	IsExistingPropertyOptional(name string) bool
+}](
+	objOrRecordLit parse.Node,
+	cursorPos parse.SourcePositionRange,
+	search completionSearch,
+) (completions []Completion) {
+	symbolicData := search.state.Global.SymbolicData
+
+	//Suggest allowed non-present properties.
+
+	nonPresentProperties, ok := symbolicData.GetAllowedNonPresentProperties(objOrRecordLit)
+
+	if !ok {
+		return nil
+	}
+	currentNodeValue, _ := symbolicData.GetMostSpecificNodeValue(objOrRecordLit)
+	currentObject, ok := currentNodeValue.(ObjectLikeType) //may be nil
+
+	if !ok {
+		return nil
+	}
+
+	expected, _ := symbolicData.GetExpectedNodeValueInfo(objOrRecordLit)
+	expectedObject, ok := expected.Value().(ObjectLikeType)
+
+	if !ok {
+		return nil
+	}
+
+	missingProperties := map[string] /*expected value or nil */ symbolic.Serializable{}
+
+	//Individual property suggestions.
+
+	for _, name := range nonPresentProperties {
+		if currentObject.HasPropertyOptionalOrNot(name) {
+			continue
+		}
+
+		completionValue := quotePropNameIfNecessary(name) + ": "
+
+		expectedValue, _, ok := expectedObject.GetProperty(name)
+		if ok {
+			expectedValueCompletion, ok := stringifyExpectedValue(expectedValueStringificationParams{
+				expectedValue: expectedValue,
+				search:        search,
+			})
+			if ok {
+				completionValue += expectedValueCompletion
+			}
+
+			if !expectedObject.IsExistingPropertyOptional(name) {
+				missingProperties[name] = expectedValue.(symbolic.Serializable)
+			}
+		} else {
+			missingProperties[name] = symbolic.ANY_SERIALIZABLE
+		}
+
+		completions = append(completions, Completion{
+			ShownString:   completionValue,
+			Value:         completionValue,
+			Kind:          defines.CompletionItemKindProperty,
+			ReplacedRange: cursorPos,
+		})
+	}
+
+	//Suggest all missing properties.
+
+	if expectedObject != nil {
+		objectPosRange := search.chunk.GetSourcePosition(objOrRecordLit.Base().Span)
+
+		expectedValueCompletion, ok := stringifyExpectedValue(expectedValueStringificationParams{
+			expectedValue: expectedObject,
+			search:        search,
+			valueAtCursor: currentObject,
+		})
+		if ok {
+			//Note: The first character needs to be the first chacter from the replaced region because
+			//otherwise VSCode does not show the completion.
+
+			shownString := ""
+			if utils.Implements[*symbolic.Object](expectedObject) {
+				shownString = "{ ... all missing properties ... }"
+			} else {
+				shownString = "#{ ... all missing properties ... }"
+			}
+
+			completions = append(completions, Completion{
+				ShownString: shownString,
+
+				Value:         expectedValueCompletion,
+				Kind:          defines.CompletionItemKindProperty,
+				ReplacedRange: objectPosRange,
+				LabelDetail:   "all missing properties",
+			})
+		}
+	}
+
+	return
+}
+
 func findRecordInteriorCompletions(n *parse.RecordLiteral, search completionSearch) (completions []Completion) {
 	cursorIndex := int32(search.cursorIndex)
 	chunk := search.chunk
@@ -250,19 +349,8 @@ func findRecordInteriorCompletions(n *parse.RecordLiteral, search completionSear
 	}
 
 	pos := chunk.GetSourcePosition(parse.NodeSpan{Start: cursorIndex, End: cursorIndex})
+	completions = append(completions, findRegularObjectPropertyCompletions[*symbolic.Record](n, pos, search)...)
 
-	properties, ok := search.state.Global.SymbolicData.GetAllowedNonPresentProperties(n)
-	if ok {
-		for _, name := range properties {
-			propNameAndColon := quotePropNameIfNecessary(name) + ": "
-			completions = append(completions, Completion{
-				ShownString:   propNameAndColon,
-				Value:         propNameAndColon,
-				Kind:          defines.CompletionItemKindProperty,
-				ReplacedRange: pos,
-			})
-		}
-	}
 	return
 }
 
@@ -472,22 +560,60 @@ func findObjectPropertyNameCompletions(
 		return completions
 	}
 
-	properties, ok := search.state.Global.SymbolicData.GetAllowedNonPresentProperties(objectLiteral)
-	if ok {
-		for _, name := range properties {
-			if hasPrefixCaseInsensitive(name, ident.Name) {
-				propNameAndColon := quotePropNameIfNecessary(name) + ": "
-				completions = append(completions, Completion{
-					ShownString: propNameAndColon,
-					Value:       propNameAndColon,
-					Kind:        defines.CompletionItemKindProperty,
-				})
-			}
-		}
-	}
+	completions = append(completions, findCompletionsFromPropertyPrefixOfRegularObject[*symbolic.Object](ident.Name, objectLiteral, search)...)
 
 	if strings.HasPrefix(ident.Name, "HX") {
 		completions = append(completions, getHTMXResponseHeaderNames(ident, search)...)
+	}
+
+	return
+}
+
+func findCompletionsFromPropertyPrefixOfRegularObject[ObjectLikeType interface {
+	*symbolic.Object | *symbolic.Record
+	symbolic.Value
+	HasPropertyOptionalOrNot(name string) bool
+	GetProperty(name string) (symbolic.Value, symbolic.Pattern, bool)
+	IsExistingPropertyOptional(name string) bool
+}](
+	propPrefix string,
+	objOrRecordLit parse.Node,
+	search completionSearch,
+) (completions []Completion) {
+
+	properties, ok := search.state.Global.SymbolicData.GetAllowedNonPresentProperties(objOrRecordLit)
+	if !ok {
+		return
+	}
+
+	expected, _ := search.state.Global.SymbolicData.GetExpectedNodeValueInfo(objOrRecordLit)
+	expectedObject, ok := expected.Value().(ObjectLikeType)
+
+	if !ok {
+		return nil
+	}
+
+	for _, name := range properties {
+		if hasPrefixCaseInsensitive(name, propPrefix) {
+			completionValue := quotePropNameIfNecessary(name) + ": "
+
+			expectedValue, _, ok := expectedObject.GetProperty(name)
+			if ok {
+				expectedValueCompletion, ok := stringifyExpectedValue(expectedValueStringificationParams{
+					expectedValue: expectedValue,
+					search:        search,
+				})
+				if ok {
+					completionValue += expectedValueCompletion
+				}
+			}
+
+			completions = append(completions, Completion{
+				ShownString: completionValue,
+				Value:       completionValue,
+				Kind:        defines.CompletionItemKindProperty,
+			})
+		}
 	}
 
 	return
@@ -499,4 +625,20 @@ func quotePropNameIfNecessary(name string) string {
 	}
 	quoted := utils.Must(json.Marshal(name))
 	return utils.BytesAsString(quoted)
+}
+
+func appendPropName(buf *[]byte, name string) {
+	if parse.IsValidIdent(name) {
+		*buf = append(*buf, name...)
+		return
+	}
+	jsoniter.AppendString(buf, name)
+}
+
+func appendString(buf *[]byte, s string) {
+	*buf = append(*buf, s...)
+}
+
+func appendByte(buf *[]byte, b byte) {
+	*buf = append(*buf, b)
 }
