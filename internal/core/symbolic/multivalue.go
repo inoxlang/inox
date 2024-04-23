@@ -6,6 +6,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/parse"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
+	"golang.org/x/exp/slices"
 )
 
 var (
@@ -180,6 +181,10 @@ top_switch:
 
 func (mv *Multivalue) getValues() []Value {
 	return mv.values
+}
+
+func (mv *Multivalue) Values() []Value {
+	return slices.Clone(mv.values)
 }
 
 func (mv *Multivalue) AllValues(callbackFn func(v Value) bool) bool {

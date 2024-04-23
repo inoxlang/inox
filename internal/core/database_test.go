@@ -12,6 +12,7 @@ import (
 	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/core/staticcheck"
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/parse"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
@@ -85,7 +86,7 @@ func TestDatabaseIL(t *testing.T) {
 			})
 
 			dbIL.UpdateSchema(ctx, newSchema, NewObjectFromMap(ValMap{
-				symbolic.DB_MIGRATION__INCLUSIONS_PROP_NAME: NewDictionary(ValMap{
+				inoxconsts.DB_MIGRATION__INCLUSIONS_PROP_NAME: NewDictionary(ValMap{
 					GetJSONRepresentation(PathPattern("/a-"), nil, nil): handler,
 				}),
 			}, ctx))
@@ -149,7 +150,7 @@ func TestDatabaseIL(t *testing.T) {
 			})
 
 			dbIL.UpdateSchema(ctx, newSchema, NewObjectFromMap(ValMap{
-				symbolic.DB_MIGRATION__INCLUSIONS_PROP_NAME: NewDictionary(ValMap{
+				inoxconsts.DB_MIGRATION__INCLUSIONS_PROP_NAME: NewDictionary(ValMap{
 					GetJSONRepresentation(PathPattern("/a"), nil, nil): handler,
 				}),
 			}, ctx))
@@ -627,7 +628,7 @@ func TestDatabaseIL(t *testing.T) {
 		})
 
 		dbIL.UpdateSchema(ctx, newSchema, NewObjectFromMap(ValMap{
-			symbolic.DB_MIGRATION__INCLUSIONS_PROP_NAME: NewDictionary(ValMap{
+			inoxconsts.DB_MIGRATION__INCLUSIONS_PROP_NAME: NewDictionary(ValMap{
 				GetJSONRepresentation(PathPattern("/a"), nil, nil): handler,
 			}),
 		}, ctx))
@@ -698,7 +699,7 @@ func TestDatabaseIL(t *testing.T) {
 
 		assert.PanicsWithError(t, ErrNewSchemaNotEqualToExpectedSchema.Error(), func() {
 			dbIL.UpdateSchema(ctx, newSchema, NewObjectFromMap(ValMap{
-				symbolic.DB_MIGRATION__INCLUSIONS_PROP_NAME: NewDictionary(ValMap{
+				inoxconsts.DB_MIGRATION__INCLUSIONS_PROP_NAME: NewDictionary(ValMap{
 					GetJSONRepresentation(PathPattern("/a"), nil, nil): handler,
 				}),
 			}, ctx))

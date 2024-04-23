@@ -3,6 +3,7 @@ package symbolic
 import (
 	"fmt"
 
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
@@ -29,17 +30,17 @@ var (
 		TEST_ITEM_META__MAIN_DB_SCHEMA:   ANY_OBJECT_PATTERN,
 		TEST_ITEM_META__MAIN_DB_MIGRATIONS: NewInexactObject(
 			map[string]Serializable{
-				DB_MIGRATION__DELETIONS_PROP_NAME:       ANY_DICT,
-				DB_MIGRATION__INCLUSIONS_PROP_NAME:      ANY_DICT,
-				DB_MIGRATION__REPLACEMENTS_PROP_NAME:    ANY_DICT,
-				DB_MIGRATION__INITIALIZATIONS_PROP_NAME: ANY_DICT,
+				inoxconsts.DB_MIGRATION__DELETIONS_PROP_NAME:       ANY_DICT,
+				inoxconsts.DB_MIGRATION__INCLUSIONS_PROP_NAME:      ANY_DICT,
+				inoxconsts.DB_MIGRATION__REPLACEMENTS_PROP_NAME:    ANY_DICT,
+				inoxconsts.DB_MIGRATION__INITIALIZATIONS_PROP_NAME: ANY_DICT,
 			},
 			//optional entries
 			map[string]struct{}{
-				DB_MIGRATION__DELETIONS_PROP_NAME:       {},
-				DB_MIGRATION__INCLUSIONS_PROP_NAME:      {},
-				DB_MIGRATION__REPLACEMENTS_PROP_NAME:    {},
-				DB_MIGRATION__INITIALIZATIONS_PROP_NAME: {},
+				inoxconsts.DB_MIGRATION__DELETIONS_PROP_NAME:       {},
+				inoxconsts.DB_MIGRATION__INCLUSIONS_PROP_NAME:      {},
+				inoxconsts.DB_MIGRATION__REPLACEMENTS_PROP_NAME:    {},
+				inoxconsts.DB_MIGRATION__INITIALIZATIONS_PROP_NAME: {},
 			},
 			nil,
 		),

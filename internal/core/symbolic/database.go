@@ -19,11 +19,6 @@ import (
 )
 
 const (
-	DB_MIGRATION__DELETIONS_PROP_NAME       = "deletions"
-	DB_MIGRATION__INCLUSIONS_PROP_NAME      = "inclusions"
-	DB_MIGRATION__REPLACEMENTS_PROP_NAME    = "replacements"
-	DB_MIGRATION__INITIALIZATIONS_PROP_NAME = "initializations"
-
 	EXPLANATION_ABOUT_RESTRICTED_SYNTAX_IN_MIGRATION_HANDLERS = //
 	`Migration handlers are restricted in order to avoid issues and long execution times, the list of functions usable inside the handlers can be found here: ` +
 		`https://github.com/inoxlang/inox/blob/main/docs/language-reference/databases.md#handler-restrictions`
@@ -442,7 +437,7 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, addition
 				dict.entries[pathPattern] = entryValue
 			}
 
-			expectedObject.entries[DB_MIGRATION__REPLACEMENTS_PROP_NAME] = dict
+			expectedObject.entries[inoxconsts.DB_MIGRATION__REPLACEMENTS_PROP_NAME] = dict
 		}
 
 		if len(deletions) > 0 {
@@ -466,7 +461,7 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, addition
 
 			}
 
-			expectedObject.entries[DB_MIGRATION__DELETIONS_PROP_NAME] = dict
+			expectedObject.entries[inoxconsts.DB_MIGRATION__DELETIONS_PROP_NAME] = dict
 		}
 
 		if len(inclusions) > 0 {
@@ -496,7 +491,7 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, addition
 				dict.entries[pathPattern] = entryValue
 			}
 
-			expectedObject.entries[DB_MIGRATION__INCLUSIONS_PROP_NAME] = dict
+			expectedObject.entries[inoxconsts.DB_MIGRATION__INCLUSIONS_PROP_NAME] = dict
 		}
 
 		if len(initializations) > 0 {
@@ -528,7 +523,7 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, addition
 				dict.entries[pathPattern] = entryValue
 			}
 
-			expectedObject.entries[DB_MIGRATION__INITIALIZATIONS_PROP_NAME] = dict
+			expectedObject.entries[inoxconsts.DB_MIGRATION__INITIALIZATIONS_PROP_NAME] = dict
 		}
 
 		ctx.SetSymbolicGoFunctionParameters(&[]Value{ANY_OBJECT_PATTERN, expectedObject}, []string{"new-schema", "migrations"})

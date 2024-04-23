@@ -375,7 +375,7 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, nextSchema *ObjectPattern, migr
 			dict := v.(*Dictionary)
 
 			switch k {
-			case symbolic.DB_MIGRATION__DELETIONS_PROP_NAME:
+			case inoxconsts.DB_MIGRATION__DELETIONS_PROP_NAME:
 				migrationHandlers.Deletions = map[PathPattern]*MigrationOpHandler{}
 				dict.ForEachEntry(ctx, func(keyRepr string, key, v Serializable) error {
 					var handler *MigrationOpHandler
@@ -391,7 +391,7 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, nextSchema *ObjectPattern, migr
 					migrationHandlers.Deletions[key.(PathPattern)] = handler
 					return nil
 				})
-			case symbolic.DB_MIGRATION__REPLACEMENTS_PROP_NAME:
+			case inoxconsts.DB_MIGRATION__REPLACEMENTS_PROP_NAME:
 				migrationHandlers.Replacements = map[PathPattern]*MigrationOpHandler{}
 				dict.ForEachEntry(ctx, func(keyRepr string, key, v Serializable) error {
 					var handler *MigrationOpHandler
@@ -406,7 +406,7 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, nextSchema *ObjectPattern, migr
 					migrationHandlers.Replacements[key.(PathPattern)] = handler
 					return nil
 				})
-			case symbolic.DB_MIGRATION__INCLUSIONS_PROP_NAME:
+			case inoxconsts.DB_MIGRATION__INCLUSIONS_PROP_NAME:
 				migrationHandlers.Inclusions = map[PathPattern]*MigrationOpHandler{}
 				dict.ForEachEntry(ctx, func(keyRepr string, key, v Serializable) error {
 					var handler *MigrationOpHandler
@@ -421,7 +421,7 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, nextSchema *ObjectPattern, migr
 					migrationHandlers.Inclusions[key.(PathPattern)] = handler
 					return nil
 				})
-			case symbolic.DB_MIGRATION__INITIALIZATIONS_PROP_NAME:
+			case inoxconsts.DB_MIGRATION__INITIALIZATIONS_PROP_NAME:
 				migrationHandlers.Initializations = map[PathPattern]*MigrationOpHandler{}
 				dict.ForEachEntry(ctx, func(keyRepr string, key, v Serializable) error {
 					var handler *MigrationOpHandler
