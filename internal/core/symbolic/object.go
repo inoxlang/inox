@@ -614,6 +614,16 @@ func (obj *Object) GetProperty(name string) (Value, Pattern, bool) {
 	return v, obj.static[name], ok
 }
 
+// HasPropertyOptionalOrNot returns if the property $name is listed in the object's entries,
+// the property may be optional.
+func (obj *Object) HasPropertyOptionalOrNot(name string) bool {
+	if obj.entries == nil {
+		return true
+	}
+	_, ok := obj.entries[name]
+	return ok
+}
+
 func (obj *Object) AddStatic(pattern Pattern) (StaticDataHolder, error) {
 	if objPatt, ok := pattern.(*ObjectPattern); ok {
 		if obj.static == nil {

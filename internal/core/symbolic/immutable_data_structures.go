@@ -638,6 +638,27 @@ func (rec *Record) getProperty(name string) (Value, bool) {
 	return v, ok
 }
 
+// result should not be modfied
+func (rec *Record) GetProperty(name string) (Value, Pattern, bool) {
+	v, ok := rec.getProperty(name)
+	return v, nil, ok
+}
+
+func (rec *Record) IsExistingPropertyOptional(name string) bool {
+	_, ok := rec.optionalEntries[name]
+	return ok
+}
+
+// HasPropertyOptionalOrNot returns if the property $name is listed in the object's entries,
+// the property may be optional.
+func (rec *Record) HasPropertyOptionalOrNot(name string) bool {
+	if rec.entries == nil {
+		return true
+	}
+	_, ok := rec.entries[name]
+	return ok
+}
+
 func (rec *Record) ForEachEntry(fn func(k string, v Value) error) error {
 	for k, v := range rec.entries {
 		if err := fn(k, v); err != nil {

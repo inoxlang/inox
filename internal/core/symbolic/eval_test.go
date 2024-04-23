@@ -2436,6 +2436,30 @@ func TestSymbolicEval(t *testing.T) {
 			}, state.errors())
 		})
 
+		t.Run("mismatch between object and expected value: missing property", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				var obj #{a: int} = #{}
+			`)
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			recordLit := parse.FindFirstNode(n, (*parse.RecordLiteral)(nil))
+			recordPattern := NewInexactRecordPattern(map[string]Pattern{"a": state.ctx.ResolveNamedPattern("int")}, nil)
+
+			errMsg, regions := fmtNotAssignableToVarOftype(state.fmtHelper, NewEmptyRecord(), recordPattern, nil)
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				MakeSymbolicEvalError(recordLit, state, errMsg, regions...),
+			}, state.errors())
+
+			//Check symbolic data.
+
+			names, ok := state.symbolicData.GetAllowedNonPresentProperties(recordLit)
+			if assert.True(t, ok) {
+				assert.Equal(t, []string{"a"}, names)
+			}
+		})
+
 		t.Run("mismatch between object and expected value: missing property value (parsing error)", func(t *testing.T) {
 			n, state, _ := _makeStateAndChunk(`
 				var obj #{a: int} = #{a: }
@@ -4662,6 +4686,36 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 
 			msg, regions := FmtInvalidArg(state.fmtHelper, 0, NewEmptyObject(), param, nil)
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				MakeSymbolicEvalError(argNode, state, msg, regions...),
+			}, state.errors())
+
+			allowedProps, ok := state.symbolicData.GetAllowedNonPresentProperties(argNode)
+			assert.True(t, ok)
+			assert.Equal(t, []string{"a"}, allowedProps)
+
+			assert.Equal(t, ANY_INT, res)
+		})
+
+		t.Run("missing property in record argument", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(arg #{a: int}){
+					return int
+				}
+				return f(#{})
+			`)
+
+			argNode := n.Statements[1].(*parse.ReturnStatement).Expr.(*parse.CallExpression).Arguments[0]
+
+			param := NewInexactRecord(map[string]Serializable{
+				"a": ANY_INT,
+			}, nil)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			msg, regions := FmtInvalidArg(state.fmtHelper, 0, NewEmptyRecord(), param, nil)
 
 			assert.Equal(t, []SymbolicEvaluationError{
 				MakeSymbolicEvalError(argNode, state, msg, regions...),
