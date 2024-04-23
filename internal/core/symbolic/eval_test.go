@@ -6423,11 +6423,41 @@ func TestSymbolicEval(t *testing.T) {
 			if !assert.NoError(t, err) {
 				return
 			}
-			assert.Len(t, state.Errors(), 1)
+			assert.Len(t, state.Errors(), 2)
 
 			allowedProps, ok := state.symbolicData.GetAllowedNonPresentProperties(objLit)
 			assert.True(t, ok)
 			assert.Equal(t, []string{"prop"}, allowedProps)
+		})
+
+		t.Run("expected node values should be set if the function does not report errors, even if there are errors in arguments", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				f({
+					otherprop: go do {} # error 
+				})
+			`)
+			objLit := parse.FindFirstNode(n, (*parse.ObjectLiteral)(nil))
+
+			expectedObject := NewInexactObject2(map[string]Serializable{"prop": ANY_INT})
+
+			f := &GoFunction{
+				fn: func(ctx *Context, _ Value) {
+					ctx.SetSymbolicGoFunctionParameters(&[]Value{expectedObject}, []string{"object"})
+				},
+			}
+
+			state.setGlobal("f", f, GlobalConst)
+			_, err := symbolicEval(n, state)
+
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Len(t, state.Errors(), 2)
+
+			expectedValueInfo, ok := state.symbolicData.GetExpectedNodeValueInfo(objLit)
+			if assert.True(t, ok) {
+				assert.Equal(t, expectedObject, expectedValueInfo.Value())
+			}
 		})
 
 		t.Run("useless deep mutation of a shared object property's value should be an error - member expression", func(t *testing.T) {

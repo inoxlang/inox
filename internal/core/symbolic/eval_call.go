@@ -261,7 +261,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 			callLikeNode:      callNode,
 		})
 
-		if errorsInArguments != 0 {
+		if errorsInArguments != 0 && state.SymbolicGoFunctionErrorsCount() != 0 {
 			//If there are errors at argument nodes, there is a high chance that the
 			//errors and updated self reported by the Go function call are irrelevant.
 			//Hence we just get information about more specific parameters and return early.

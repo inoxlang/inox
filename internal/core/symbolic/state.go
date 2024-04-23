@@ -826,6 +826,10 @@ func (state *State) addLocatedSymbolicGoFunctionError(msg string, location parse
 	})
 }
 
+func (state *State) SymbolicGoFunctionErrorsCount() int {
+	return len(state.tempSymbolicGoFunctionErrors)
+}
+
 func (state *State) consumeSymbolicGoFunctionErrors(fn func(msg string, optionalLocaction parse.Node)) {
 	errors := state.tempSymbolicGoFunctionErrors
 	for _, err := range errors {
