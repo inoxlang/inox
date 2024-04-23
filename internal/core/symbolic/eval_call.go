@@ -2,6 +2,7 @@ package symbolic
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/parse"
@@ -708,6 +709,8 @@ func setAllowedNonPresentProperties(argNodes []parse.Node, nonSpreadArgCount int
 			}
 
 			allowedNonPresentProperties = removePropertiesAlreadyPresent(allowedNonPresentProperties, objLit.Properties)
+			sort.Strings(allowedNonPresentProperties)
+
 			state.symbolicData.SetAllowedNonPresentProperties(objLit, allowedNonPresentProperties)
 		case *Record:
 			allowedNonPresentProperties := GetAllPropertyNames(p)
@@ -718,6 +721,8 @@ func setAllowedNonPresentProperties(argNodes []parse.Node, nonSpreadArgCount int
 			}
 
 			allowedNonPresentProperties = removePropertiesAlreadyPresent(allowedNonPresentProperties, recordLit.Properties)
+			sort.Strings(allowedNonPresentProperties)
+
 			state.symbolicData.SetAllowedNonPresentProperties(recordLit, allowedNonPresentProperties)
 		default:
 			continue

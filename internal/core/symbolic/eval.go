@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"runtime/debug"
+	"sort"
 	"strings"
 
 	"slices"
@@ -4453,6 +4454,7 @@ func evalObjectLiteral(n *parse.ObjectLiteral, state *State, options evalOptions
 			properties = append(properties, propName)
 			return nil
 		})
+		sort.Strings(properties)
 		state.symbolicData.SetAllowedNonPresentProperties(n, properties)
 	}
 
@@ -4648,6 +4650,7 @@ func evalRecordLiteral(n *parse.RecordLiteral, state *State, options evalOptions
 			return nil
 		})
 
+		sort.Strings(properties)
 		state.symbolicData.SetAllowedNonPresentProperties(n, properties)
 	} else {
 		expectedRecord = &Record{}
@@ -5052,7 +5055,6 @@ func evalDictionaryLiteral(n *parse.DictionaryLiteral, state *State, options eva
 			keys = append(keys, keyRepr)
 			return nil
 		})
-
 		state.symbolicData.SetAllowedNonPresentKeys(n, keys)
 	} else {
 		expectedDictionary = &Dictionary{}
