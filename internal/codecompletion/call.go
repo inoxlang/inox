@@ -11,6 +11,8 @@ import (
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
 )
 
+const GO_WRAPPER_FUNCTION_NAME_SUFFIX = "-fm"
+
 func handleCallArgumentCompletions(callNode *parse.CallExpression, search completionSearch) (completions []Completion) {
 
 	if callNode.CommandLikeSyntax {
@@ -66,27 +68,16 @@ func handleCallArgumentCompletions(callNode *parse.CallExpression, search comple
 			parametersExceptCtx = fn.ParametersExceptCtx()
 		}
 
-		funcName := runtime.FuncForPC(reflect.ValueOf(fn.GoFunc()).Pointer()).Name()
-		const WRAPPER_FUNCTION_NAME_SUFFIX = "-fm"
-		isClosureOrMethod := strings.HasSuffix(funcName, WRAPPER_FUNCTION_NAME_SUFFIX)
+		funcName := getNormalizedGoFuncName(fn)
 
-		if isClosureOrMethod {
-			//Remove suffix
-			funcName = strings.TrimSuffix(funcName, WRAPPER_FUNCTION_NAME_SUFFIX)
-		}
-
-		getFuncName := func(fn any) string {
-			return runtime.FuncForPC(reflect.ValueOf(fn).Pointer()).Name()
-		}
-
+		_ = funcName
 		_ = methodContainer
-		_ = getFuncName
 		_ = parametersExceptCtx
 		_ = paramIndex
 
-		switch funcName {
+		//switch funcName {
 		//case getFuncName((*symbolic.DatabaseIL).UpdateSchema):
-		}
+		//}
 	}
 
 	return
@@ -176,4 +167,16 @@ top_loop:
 		}
 	}
 	return completions
+}
+
+// getNormalizedGoFuncName returns the name of the passed function without the -fm suffix.
+func getNormalizedGoFuncName(fn any) string {
+	funcName := runtime.FuncForPC(reflect.ValueOf(fn).Pointer()).Name()
+	isClosureOrMethod := strings.HasSuffix(funcName, GO_WRAPPER_FUNCTION_NAME_SUFFIX)
+
+	if isClosureOrMethod {
+		//Remove suffix
+		funcName = strings.TrimSuffix(funcName, GO_WRAPPER_FUNCTION_NAME_SUFFIX)
+	}
+	return funcName
 }

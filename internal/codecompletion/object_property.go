@@ -35,8 +35,36 @@ func findObjectInteriorCompletions(objLit *parse.ObjectLiteral, search completio
 	//Suggestions for regular objects.
 
 	pos := chunk.GetSourcePosition(parse.NodeSpan{Start: cursorIndex, End: cursorIndex})
+	beforeCursor, afterCursor := chunk.GetLineCutWithTrimmedSpace(cursorIndex)
 
 	completions = append(completions, findRegularObjectPropertyCompletions[*symbolic.Object](objLit, pos, search)...)
+
+	addLeadingLinefeed := strings.HasSuffix(beforeCursor, "{")
+	addTrailingLinefeed := strings.HasPrefix(afterCursor, "}")
+
+	//Add linefeeds in some cases for better formating.
+
+	for i := range completions {
+		compl := completions[i]
+
+		if compl.Value[0] == '{' { //not a single property completion
+			continue
+		}
+
+		if len(compl.Value) < 20 { //small
+			continue
+		}
+
+		switch {
+		case addLeadingLinefeed && addTrailingLinefeed:
+			compl.Value = "\n" + compl.Value + "\n"
+		case addLeadingLinefeed:
+			compl.Value = "\n" + compl.Value
+		case addTrailingLinefeed:
+			compl.Value = compl.Value + "\n"
+		}
+		completions[i] = compl
+	}
 
 	//Suggestions for the manifest, lthread meta, and import configuration.
 
@@ -273,28 +301,30 @@ func findRegularObjectPropertyCompletions[ObjectLikeType interface {
 
 	//Individual property suggestions.
 
-	for _, name := range nonPresentProperties {
-		if currentObject.HasPropertyOptionalOrNot(name) {
+	for _, propName := range nonPresentProperties {
+		if currentObject.HasPropertyOptionalOrNot(propName) {
 			continue
 		}
 
-		completionValue := quotePropNameIfNecessary(name) + ": "
+		completionValue := quotePropNameIfNecessary(propName) + ": "
 
-		expectedValue, _, ok := expectedObject.GetProperty(name)
+		expectedValue, _, ok := expectedObject.GetProperty(propName)
 		if ok {
-			expectedValueCompletion, ok := stringifyExpectedValue(expectedValueStringificationParams{
-				expectedValue: expectedValue,
-				search:        search,
+			expectedValueCompletion, _, ok := getExpectedValueCompletion(expectedValueCompletionComputationConfig{
+				expectedOrGuessedValue:         expectedValue,
+				search:                         search,
+				tryBestGuessIfNotConcretizable: true,
+				propertyName:                   propName,
 			})
 			if ok {
 				completionValue += expectedValueCompletion
 			}
 
-			if !expectedObject.IsExistingPropertyOptional(name) {
-				missingProperties[name] = expectedValue.(symbolic.Serializable)
+			if !expectedObject.IsExistingPropertyOptional(propName) {
+				missingProperties[propName] = expectedValue.(symbolic.Serializable)
 			}
 		} else {
-			missingProperties[name] = symbolic.ANY_SERIALIZABLE
+			missingProperties[propName] = symbolic.ANY_SERIALIZABLE
 		}
 
 		completions = append(completions, Completion{
@@ -310,10 +340,11 @@ func findRegularObjectPropertyCompletions[ObjectLikeType interface {
 	if expectedObject != nil && len(missingProperties) > 1 {
 		objectPosRange := search.chunk.GetSourcePosition(objOrRecordLit.Base().Span)
 
-		expectedValueCompletion, ok := stringifyExpectedValue(expectedValueStringificationParams{
-			expectedValue: expectedObject,
-			search:        search,
-			valueAtCursor: currentObject,
+		expectedValueCompletions, _, ok := getExpectedValueCompletion(expectedValueCompletionComputationConfig{
+			expectedOrGuessedValue:         expectedObject,
+			search:                         search,
+			actulValueAtCursor:             currentObject,
+			tryBestGuessIfNotConcretizable: true,
 		})
 
 		if ok {
@@ -330,7 +361,7 @@ func findRegularObjectPropertyCompletions[ObjectLikeType interface {
 			completions = append(completions, Completion{
 				ShownString: shownString,
 
-				Value:         expectedValueCompletion,
+				Value:         expectedValueCompletions,
 				Kind:          defines.CompletionItemKindProperty,
 				ReplacedRange: objectPosRange,
 				LabelDetail:   "all missing properties",
@@ -355,7 +386,36 @@ func findRecordInteriorCompletions(n *parse.RecordLiteral, search completionSear
 	}
 
 	pos := chunk.GetSourcePosition(parse.NodeSpan{Start: cursorIndex, End: cursorIndex})
+	beforeCursor, afterCursor := chunk.GetLineCutWithTrimmedSpace(cursorIndex)
+
 	completions = append(completions, findRegularObjectPropertyCompletions[*symbolic.Record](n, pos, search)...)
+
+	addLeadingLinefeed := strings.HasSuffix(beforeCursor, "{")
+	addTrailingLinefeed := strings.HasPrefix(afterCursor, "}")
+
+	//Add linefeeds in some cases for better formating.
+
+	for i := range completions {
+		compl := completions[i]
+
+		if compl.Value[0] == '#' { //not a single property completion
+			continue
+		}
+
+		if len(compl.Value) < 20 { //small
+			continue
+		}
+
+		switch {
+		case addLeadingLinefeed && addTrailingLinefeed:
+			compl.Value = "\n" + compl.Value + "\n"
+		case addLeadingLinefeed:
+			compl.Value = "\n" + compl.Value
+		case addTrailingLinefeed:
+			compl.Value = compl.Value + "\n"
+		}
+		completions[i] = compl
+	}
 
 	return
 }
@@ -599,15 +659,17 @@ func findCompletionsFromPropertyPrefixOfRegularObject[ObjectLikeType interface {
 		return nil
 	}
 
-	for _, name := range properties {
-		if hasPrefixCaseInsensitive(name, propPrefix) {
-			completionValue := quotePropNameIfNecessary(name) + ": "
+	for _, propName := range properties {
+		if hasPrefixCaseInsensitive(propName, propPrefix) {
+			completionValue := quotePropNameIfNecessary(propName) + ": "
 
-			expectedValue, _, ok := expectedObject.GetProperty(name)
+			expectedValue, _, ok := expectedObject.GetProperty(propName)
 			if ok {
-				expectedValueCompletion, ok := stringifyExpectedValue(expectedValueStringificationParams{
-					expectedValue: expectedValue,
-					search:        search,
+				expectedValueCompletion, _, ok := getExpectedValueCompletion(expectedValueCompletionComputationConfig{
+					expectedOrGuessedValue:         expectedValue,
+					search:                         search,
+					tryBestGuessIfNotConcretizable: true,
+					propertyName:                   propName,
 				})
 				if ok {
 					completionValue += expectedValueCompletion

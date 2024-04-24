@@ -1,5 +1,7 @@
 package inoxconsts
 
+import "slices"
+
 const (
 	LDB_SCHEME_NAME string = "ldb"
 	ODB_SCHEME_NAME string = "odb"
@@ -16,3 +18,7 @@ var (
 		DB_MIGRATION__INITIALIZATIONS_PROP_NAME,
 	}
 )
+
+func IsDbMigrationPropertyName(name string) bool {
+	return slices.Contains(DB_MIGRATION_PROP_NAMES, name)
+}

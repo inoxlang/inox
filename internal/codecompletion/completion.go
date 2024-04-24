@@ -104,6 +104,7 @@ func FindCompletions(args SearchArgs) []Completion {
 		mode:          mode,
 		parent:        parent,
 		ancestorChain: ancestors,
+		deepestCall:   deepestCall,
 		inputData:     args.InputData,
 	}
 
@@ -187,6 +188,7 @@ type completionSearch struct {
 	mode          Mode
 	parent        parse.Node
 	ancestorChain []parse.Node
+	deepestCall   *parse.CallExpression //may be nil
 	inputData     InputData
 }
 

@@ -567,6 +567,24 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 			}, completions)
 		})
 
+		t.Run("suggest properties: single property with a concretizable value taking a lot of space when stringified", func(t *testing.T) {
+			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			defer state.Global.Ctx.CancelGracefully()
+
+			chunk, _ := parseChunkSource("var o {a: \"1111111111111111111111\"} = {}", "")
+
+			doSymbolicCheck(chunk, state.Global)
+			completions := findCompletions(state, chunk, 39)
+
+			assert.EqualValues(t, []Completion{
+				{
+					ShownString:   `a: "1111111111111111111111"`,
+					Value:         "\na: \"1111111111111111111111\"\n",
+					ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 39, End: 39}},
+				},
+			}, completions)
+		})
+
 		t.Run("suggest properties: two properties with a concretizable value", func(t *testing.T) {
 			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
 			defer state.Global.Ctx.CancelGracefully()
@@ -633,6 +651,24 @@ func runSingleModeTests(t *testing.T, mode Mode, wd, dir string) {
 					ShownString:   "a: 1",
 					Value:         "a: 1",
 					ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 18, End: 18}},
+				},
+			}, completions)
+		})
+
+		t.Run("suggest properties: single property with a concretizable value taking a lot of space when stringified", func(t *testing.T) {
+			state := core.NewTreeWalkState(core.NewContext(core.ContextConfig{Permissions: perms}))
+			defer state.Global.Ctx.CancelGracefully()
+
+			chunk, _ := parseChunkSource("var o #{a: \"1111111111111111111111\"} = #{}", "")
+
+			doSymbolicCheck(chunk, state.Global)
+			completions := findCompletions(state, chunk, 41)
+
+			assert.EqualValues(t, []Completion{
+				{
+					ShownString:   `a: "1111111111111111111111"`,
+					Value:         "\na: \"1111111111111111111111\"\n",
+					ReplacedRange: parse.SourcePositionRange{Span: parse.NodeSpan{Start: 41, End: 41}},
 				},
 			}, completions)
 		})

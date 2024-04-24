@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"strings"
 	"sync"
 )
 
@@ -161,6 +162,35 @@ func (chunk *ParsedChunkSource) GetEndSpanLineColumn(span NodeSpan) (int32, int3
 	}
 
 	return line, col
+}
+
+func (chunk *ParsedChunkSource) GetLineCut(cutIndex int32) (beforeSpan string, afterSpan string) {
+	runes := chunk.Runes()
+
+	i := cutIndex
+
+	for i > 0 && runes[i] != '\n' {
+		i--
+	}
+
+	beforeSpan = string(runes[i:cutIndex])
+
+	i = cutIndex
+
+	for i < len32(runes) && runes[i] != '\n' {
+		i++
+	}
+
+	afterSpan = string(runes[cutIndex:i])
+
+	return
+}
+
+func (chunk *ParsedChunkSource) GetLineCutWithTrimmedSpace(cutIndex int32) (beforeSpan string, afterSpan string) {
+	beforeSpan, afterSpan = chunk.GetLineCut(cutIndex)
+	beforeSpan = strings.TrimFunc(beforeSpan, isSpaceNotLF)
+	afterSpan = strings.TrimFunc(afterSpan, isSpaceNotLF)
+	return
 }
 
 func (chunk *ParsedChunkSource) GetLineColumnSingeCharSpan(line, column int32) NodeSpan {
