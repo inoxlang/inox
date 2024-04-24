@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/inoxlang/inox/internal/parse"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -133,7 +134,7 @@ func (p *Path) Static() Pattern {
 
 func (p *Path) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 	if p.hasValue {
-		w.WriteString(p.value)
+		utils.Must(parse.PrintPath(w, p.value))
 		return
 	}
 

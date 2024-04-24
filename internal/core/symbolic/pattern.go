@@ -395,7 +395,7 @@ func (p *PathPattern) TestValue(v Value, state RecTestCallState) bool {
 func (p *PathPattern) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
 
 	if p.hasValue {
-		w.WriteString("%" + p.value)
+		utils.Must(parse.PrintPathPattern(w, p.value))
 		return
 	}
 

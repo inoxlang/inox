@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -97,4 +98,60 @@ func SPrint(node Node, chunk *Chunk, config PrintConfig) string {
 
 	Print(node, chunk, &buff, config)
 	return buff.String()
+}
+
+func PrintPath[S ~string](w io.Writer, path S) (int, error) {
+	s := string(path)
+
+	quote := ContainsSpace(s) || strings.ContainsFunc(s, IsDelim)
+	if quote {
+		var b []byte
+
+		i := strings.Index(s, "/")
+		b = append(b, path[:i+1]...)
+		b = append(b, '`')
+		b = append(b, path[i+1:]...)
+		b = append(b, '`')
+
+		return w.Write(b)
+	} else {
+		return w.Write(utils.StringAsBytes(path))
+	}
+}
+
+func PrintPathPattern[S ~string](w io.Writer, path S) (totalN int, err error) {
+	b := [1]byte{'%'}
+
+	var n int
+
+	totalN, err = w.Write(b[:])
+	if err != nil {
+		return
+	}
+
+	if path[0] == '%' {
+		path = path[1:]
+	}
+
+	s := string(path)
+
+	quote := ContainsSpace(s) || strings.ContainsFunc(s, IsDelim)
+
+	if quote {
+		var b []byte
+
+		i := strings.Index(s, "/")
+		b = append(b, s[:i+1]...)
+		b = append(b, '`')
+		b = append(b, s[i+1:]...)
+		b = append(b, '`')
+
+		n, err = w.Write(b)
+		totalN += n
+		return
+	} else {
+		n, err = w.Write(utils.StringAsBytes(s))
+		totalN += n
+		return
+	}
 }

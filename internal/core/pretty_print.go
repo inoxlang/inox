@@ -940,27 +940,7 @@ func (pth Path) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth in
 		utils.Must(w.Write(config.Colors.PathLiteral))
 	}
 
-	quote := parse.ContainsSpace(string(pth))
-	if !quote {
-		for _, r := range pth {
-			if parse.IsDelim(r) {
-				quote = true
-			}
-		}
-	}
-
-	var b []byte
-	if quote {
-		i := strings.Index(string(pth), "/")
-		b = append(b, pth[:i+1]...)
-		b = append(b, '`')
-		b = append(b, pth[i+1:]...)
-		b = append(b, '`')
-	} else {
-		b = utils.StringAsBytes(pth)
-	}
-	_, err := w.Write(b)
-	utils.PanicIfErr(err)
+	utils.Must(parse.PrintPath(w, pth))
 
 	if config.Colorize {
 		utils.Must(w.Write(ANSI_RESET_SEQUENCE))
@@ -972,28 +952,7 @@ func (patt PathPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, 
 		utils.Must(w.Write(config.Colors.PatternLiteral))
 	}
 
-	quote := parse.ContainsSpace(string(patt))
-	if !quote {
-		for _, r := range patt {
-			if parse.IsDelim(r) {
-				quote = true
-			}
-		}
-	}
-
-	var b = []byte{'%'}
-	if quote {
-		i := strings.Index(string(patt), "/")
-		b = append(b, patt[:i+1]...)
-		b = append(b, '`')
-		b = append(b, patt[i+1:]...)
-		b = append(b, '`')
-	} else {
-		b = append(b, patt...)
-	}
-
-	_, err := w.Write(b)
-	utils.PanicIfErr(err)
+	utils.Must(parse.PrintPathPattern(w, patt))
 
 	if config.Colorize {
 		utils.Must(w.Write(ANSI_RESET_SEQUENCE))

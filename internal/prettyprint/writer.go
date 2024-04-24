@@ -81,9 +81,15 @@ func (w PrettyPrintWriter) WriteStringF(fmtStr string, args ...any) {
 	*w.written += n
 }
 
-func (w PrettyPrintWriter) WriteBytes(b []byte) {
-	utils.Must(w.writer.Write(b))
-	*w.written += len(b)
+func (w PrettyPrintWriter) Write(p []byte) (int, error) {
+	n, err := w.writer.Write(p)
+	*w.written += n
+	return n, err
+}
+
+func (w PrettyPrintWriter) WriteBytes(p []byte) {
+	utils.Must(w.writer.Write(p))
+	*w.written += len(p)
 }
 
 func (w PrettyPrintWriter) WriteManyBytes(b ...[]byte) {
