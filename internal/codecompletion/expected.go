@@ -14,7 +14,6 @@ import (
 type expectedValueCompletionComputationConfig struct {
 	expectedOrGuessedValue         symbolic.Value
 	search                         completionSearch
-	actulValueAtCursor             symbolic.Value //may be nil
 	tryBestGuessIfNotConcretizable bool
 
 	//Name of the property of which the completion of the value will be computed.
@@ -53,13 +52,13 @@ func _getExpectedValueCompletion(buf *[]byte, indentationUnit string, params exp
 		completionOk = true
 
 		appendByte(buf, '{')
-
-		currentObj, _ := params.actulValueAtCursor.(*symbolic.Object)
+		propCount := 0
 
 		v.ForEachEntry(func(propName string, propValue symbolic.Value) error {
-			if v.IsExistingPropertyOptional(propName) || (currentObj != nil && currentObj.HasPropertyOptionalOrNot(propName)) {
+			if v.IsExistingPropertyOptional(propName) {
 				return nil
 			}
+			propCount++
 
 			appendByte(buf, '\n')
 			for range params._depth + 1 {
@@ -83,7 +82,10 @@ func _getExpectedValueCompletion(buf *[]byte, indentationUnit string, params exp
 			return nil
 		})
 
-		appendByte(buf, '\n')
+		if propCount > 0 {
+			appendByte(buf, '\n')
+		}
+
 		for range params._depth + 1 {
 			appendString(buf, indentationUnit)
 		}
@@ -94,13 +96,13 @@ func _getExpectedValueCompletion(buf *[]byte, indentationUnit string, params exp
 		completionOk = true
 
 		appendString(buf, "#{")
-
-		currentRecord, _ := params.actulValueAtCursor.(*symbolic.Object)
+		propCount := 0
 
 		v.ForEachEntry(func(propName string, propValue symbolic.Value) error {
-			if v.IsExistingPropertyOptional(propName) || (currentRecord != nil && currentRecord.HasPropertyOptionalOrNot(propName)) {
+			if v.IsExistingPropertyOptional(propName) {
 				return nil
 			}
+			propCount++
 
 			appendByte(buf, '\n')
 			for range params._depth + 1 {
@@ -125,7 +127,10 @@ func _getExpectedValueCompletion(buf *[]byte, indentationUnit string, params exp
 			return nil
 		})
 
-		appendByte(buf, '\n')
+		if propCount > 0 {
+			appendByte(buf, '\n')
+		}
+
 		for range params._depth {
 			appendString(buf, indentationUnit)
 		}
@@ -241,11 +246,12 @@ func _getExpectedValueCompletion(buf *[]byte, indentationUnit string, params exp
 		}
 	case *symbolic.Path:
 		if v.IsConcretizable() {
+			completionOk = true
 			appendString(buf, symbolic.Stringify(v))
 		}
 	case *symbolic.PathPattern:
 		if v.IsConcretizable() {
-			appendByte(buf, '%')
+			completionOk = true
 			appendString(buf, symbolic.Stringify(v))
 		}
 	case symbolic.IMultivalue:
@@ -272,7 +278,6 @@ func _getExpectedValueCompletion(buf *[]byte, indentationUnit string, params exp
 				_, completionOk = _getExpectedValueCompletion(buf, indentationUnit, expectedValueCompletionComputationConfig{
 					expectedOrGuessedValue:         guessedValue,
 					search:                         search,
-					actulValueAtCursor:             params.actulValueAtCursor,
 					tryBestGuessIfNotConcretizable: true,
 					propertyName:                   params.propertyName,
 					_depth:                         params._depth,

@@ -16,7 +16,17 @@ import (
 const (
 	ALL_MISSING_OBJ_PROPS_LABEL = "{ ... all missing properties ... }"
 	ALL_MISSING_REC_PROPS_LABEL = "#{ ... all missing properties ... }"
+
+	SINGLE_PROP_COMPLETION_LARGE_THRESHOLD = 20
 )
+
+type objectOrRecord interface {
+	symbolic.OptionalIProps
+	HasPropertyOptionalOrNot(name string) bool
+	GetProperty(name string) (symbolic.Value, symbolic.Pattern, bool)
+	IsExistingPropertyOptional(name string) bool
+	PropertyCount() int
+}
 
 func findObjectInteriorCompletions(objLit *parse.ObjectLiteral, search completionSearch) (completions []Completion) {
 	chunk := search.chunk
@@ -51,7 +61,7 @@ func findObjectInteriorCompletions(objLit *parse.ObjectLiteral, search completio
 			continue
 		}
 
-		if len(compl.Value) < 20 { //small
+		if len(compl.Value) < SINGLE_PROP_COMPLETION_LARGE_THRESHOLD { //small
 			continue
 		}
 
@@ -265,10 +275,7 @@ func findObjectInteriorCompletions(objLit *parse.ObjectLiteral, search completio
 
 func findRegularObjectPropertyCompletions[ObjectLikeType interface {
 	*symbolic.Object | *symbolic.Record
-	symbolic.Value
-	HasPropertyOptionalOrNot(name string) bool
-	GetProperty(name string) (symbolic.Value, symbolic.Pattern, bool)
-	IsExistingPropertyOptional(name string) bool
+	objectOrRecord
 }](
 	objOrRecordLit parse.Node,
 	cursorPos parse.SourcePositionRange,
@@ -327,12 +334,13 @@ func findRegularObjectPropertyCompletions[ObjectLikeType interface {
 			missingProperties[propName] = symbolic.ANY_SERIALIZABLE
 		}
 
-		completions = append(completions, Completion{
+		completion := Completion{
 			ShownString:   completionValue,
 			Value:         completionValue,
 			Kind:          defines.CompletionItemKindProperty,
 			ReplacedRange: cursorPos,
-		})
+		}
+		completions = append(completions, completion)
 	}
 
 	//Suggest all missing properties.
@@ -340,32 +348,36 @@ func findRegularObjectPropertyCompletions[ObjectLikeType interface {
 	if expectedObject != nil && len(missingProperties) > 1 {
 		objectPosRange := search.chunk.GetSourcePosition(objOrRecordLit.Base().Span)
 
-		expectedValueCompletions, _, ok := getExpectedValueCompletion(expectedValueCompletionComputationConfig{
-			expectedOrGuessedValue:         expectedObject,
-			search:                         search,
-			actulValueAtCursor:             currentObject,
-			tryBestGuessIfNotConcretizable: true,
-		})
+		//TODO: support cases where currentObject.PropertyCount() > 0
 
-		if ok {
-			//Note: The first character needs to be the first chacter from the replaced region because
-			//otherwise VSCode does not show the completion.
+		if currentObject.PropertyCount() == 0 {
+			//Suggest object.
 
-			shownString := ""
-			if utils.Implements[*symbolic.Object](expectedObject) {
-				shownString = ALL_MISSING_OBJ_PROPS_LABEL
-			} else {
-				shownString = ALL_MISSING_REC_PROPS_LABEL
-			}
-
-			completions = append(completions, Completion{
-				ShownString: shownString,
-
-				Value:         expectedValueCompletions,
-				Kind:          defines.CompletionItemKindProperty,
-				ReplacedRange: objectPosRange,
-				LabelDetail:   "all missing properties",
+			expectedValueCompletions, _, ok := getExpectedValueCompletion(expectedValueCompletionComputationConfig{
+				expectedOrGuessedValue:         expectedObject,
+				search:                         search,
+				tryBestGuessIfNotConcretizable: true,
 			})
+
+			if ok {
+				//Note: The first character needs to be the first chacter from the replaced region because
+				//otherwise VSCode does not show the completion.
+
+				shownString := ""
+				if utils.Implements[*symbolic.Object](expectedObject) {
+					shownString = ALL_MISSING_OBJ_PROPS_LABEL
+				} else {
+					shownString = ALL_MISSING_REC_PROPS_LABEL
+				}
+
+				completions = append(completions, Completion{
+					ShownString: shownString,
+
+					Value:         expectedValueCompletions,
+					Kind:          defines.CompletionItemKindProperty,
+					ReplacedRange: objectPosRange,
+				})
+			}
 		}
 	}
 
@@ -402,7 +414,7 @@ func findRecordInteriorCompletions(n *parse.RecordLiteral, search completionSear
 			continue
 		}
 
-		if len(compl.Value) < 20 { //small
+		if len(compl.Value) < SINGLE_PROP_COMPLETION_LARGE_THRESHOLD { //small
 			continue
 		}
 
@@ -637,10 +649,7 @@ func findObjectPropertyNameCompletions(
 
 func findCompletionsFromPropertyPrefixOfRegularObject[ObjectLikeType interface {
 	*symbolic.Object | *symbolic.Record
-	symbolic.Value
-	HasPropertyOptionalOrNot(name string) bool
-	GetProperty(name string) (symbolic.Value, symbolic.Pattern, bool)
-	IsExistingPropertyOptional(name string) bool
+	objectOrRecord
 }](
 	propPrefix string,
 	objOrRecordLit parse.Node,

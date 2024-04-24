@@ -614,6 +614,15 @@ func (rec *Record) OptionalPropertyNames() []string {
 	return maps.Keys(rec.optionalEntries)
 }
 
+// PropertyCount returns the number of properties of the record,
+// -1 is returned if the record match any other record.
+func (rec *Record) PropertyCount() int {
+	if rec.entries == nil {
+		return -1
+	}
+	return len(rec.entries)
+}
+
 func (rec *Record) ValueEntryMap() map[string]Value {
 	entries := map[string]Value{}
 	for k, v := range rec.entries {

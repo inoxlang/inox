@@ -575,6 +575,15 @@ func (obj *Object) OptionalPropertyNames() []string {
 	return maps.Keys(obj.optionalEntries)
 }
 
+// PropertyCount returns the number of properties of the object,
+// -1 is returned if the object match any other object.
+func (obj *Object) PropertyCount() int {
+	if obj.entries == nil {
+		return -1
+	}
+	return len(obj.entries)
+}
+
 // func (obj *Object) SetNewProperty(name string, value SymbolicValue, static Pattern) {
 // 	if obj.entries == nil {
 // 		obj.entries = make(map[string]SymbolicValue, 1)
