@@ -143,10 +143,12 @@ func _getExpectedValueCompletion(buf *[]byte, indentationUnit string, params exp
 		}
 
 		completionOk = true
-
+		propCount := 0
 		appendString(buf, ":{")
 
 		v.ForEachEntry(func(key symbolic.Serializable, keyString string, value symbolic.Value) error {
+			propCount++
+
 			appendByte(buf, '\n')
 			for range params._depth + 1 {
 				appendString(buf, indentationUnit)
@@ -169,7 +171,10 @@ func _getExpectedValueCompletion(buf *[]byte, indentationUnit string, params exp
 			return nil
 		})
 
-		appendByte(buf, '\n')
+		if propCount > 0 {
+			appendByte(buf, '\n')
+		}
+
 		for range params._depth {
 			appendString(buf, indentationUnit)
 		}
@@ -179,6 +184,12 @@ func _getExpectedValueCompletion(buf *[]byte, indentationUnit string, params exp
 			return
 		}
 
+		for i := 0; i < v.KnownLen(); i++ {
+			if !symbolic.IsConcretizable(v.ElementAt(i)) {
+				return
+			}
+		}
+
 		completionOk = true
 
 		if v.KnownLen() == 0 {
@@ -186,14 +197,18 @@ func _getExpectedValueCompletion(buf *[]byte, indentationUnit string, params exp
 			return
 		}
 
+		onSeveralLines := v.KnownLen() > 1
+
 		appendString(buf, "[")
 
 		for i := 0; i < v.KnownLen(); i++ {
 			elem := v.ElementAt(i)
 
-			appendByte(buf, '\n')
-			for range params._depth + 1 {
-				appendString(buf, indentationUnit)
+			if onSeveralLines {
+				appendByte(buf, '\n')
+				for range params._depth + 1 {
+					appendString(buf, indentationUnit)
+				}
 			}
 
 			_getExpectedValueCompletion(buf, indentationUnit, expectedValueCompletionComputationConfig{
@@ -206,7 +221,58 @@ func _getExpectedValueCompletion(buf *[]byte, indentationUnit string, params exp
 			})
 		}
 
-		appendByte(buf, '\n')
+		if onSeveralLines {
+			appendByte(buf, '\n')
+		}
+		for range params._depth {
+			appendString(buf, indentationUnit)
+		}
+		appendByte(buf, ']')
+	case *symbolic.Tuple:
+		if !v.HasKnownLen() {
+			return
+		}
+
+		for i := 0; i < v.KnownLen(); i++ {
+			if !symbolic.IsConcretizable(v.ElementAt(i)) {
+				return
+			}
+		}
+
+		completionOk = true
+
+		if v.KnownLen() == 0 {
+			appendString(buf, "#[]")
+			return
+		}
+
+		onSeveralLines := v.KnownLen() > 1
+
+		appendString(buf, "#[")
+
+		for i := 0; i < v.KnownLen(); i++ {
+			elem := v.ElementAt(i)
+
+			if onSeveralLines {
+				appendByte(buf, '\n')
+				for range params._depth + 1 {
+					appendString(buf, indentationUnit)
+				}
+			}
+
+			_getExpectedValueCompletion(buf, indentationUnit, expectedValueCompletionComputationConfig{
+				expectedOrGuessedValue:         elem,
+				search:                         search,
+				parentPropertyName:             params.propertyName,
+				parentDictKey:                  params.parentDictKey,
+				tryBestGuessIfNotConcretizable: params.tryBestGuessIfNotConcretizable,
+				_depth:                         params._depth + 1,
+			})
+		}
+
+		if onSeveralLines {
+			appendByte(buf, '\n')
+		}
 		for range params._depth {
 			appendString(buf, indentationUnit)
 		}

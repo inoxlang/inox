@@ -275,4 +275,196 @@ func TestStringifyExpectedValue(t *testing.T) {
 			assert.Equal(t, "{\na: \n}", s) //TODO: remove linefeeds ?
 		})
 	})
+
+	t.Run("record", func(t *testing.T) {
+		t.Run("empty", func(t *testing.T) {
+			s, isGuess, ok := getExpectedValueCompletion(expectedValueCompletionComputationConfig{
+				expectedOrGuessedValue: symbolic.NewEmptyRecord(),
+				search:                 completionSearch{chunk: emptyChunk},
+			})
+
+			assert.True(t, ok)
+			assert.False(t, isGuess)
+			assert.Equal(t, `#{}`, s)
+		})
+
+		t.Run("one property: ident-like name and concretizable value", func(t *testing.T) {
+			s, isGuess, ok := getExpectedValueCompletion(expectedValueCompletionComputationConfig{
+				expectedOrGuessedValue: symbolic.NewInexactRecord(map[string]symbolic.Serializable{"a": symbolic.INT_1}, nil),
+				search:                 completionSearch{chunk: emptyChunk},
+			})
+
+			assert.True(t, ok)
+			assert.False(t, isGuess)
+			assert.Equal(t, "#{\na: 1\n}", s) //TODO: remove linefeeds ?
+		})
+
+		t.Run("one property: non ident-like name and concretizable value", func(t *testing.T) {
+			s, isGuess, ok := getExpectedValueCompletion(expectedValueCompletionComputationConfig{
+				expectedOrGuessedValue: symbolic.NewInexactRecord(map[string]symbolic.Serializable{"c fé": symbolic.INT_1}, nil),
+				search:                 completionSearch{chunk: emptyChunk},
+			})
+
+			assert.True(t, ok)
+			assert.False(t, isGuess)
+			assert.Equal(t, "#{\n\"c fé\": 1\n}", s) //TODO: remove linefeeds ?
+		})
+
+		t.Run("one property: non concretizable value", func(t *testing.T) {
+			s, isGuess, ok := getExpectedValueCompletion(expectedValueCompletionComputationConfig{
+				expectedOrGuessedValue: symbolic.NewInexactObject2(map[string]symbolic.Serializable{"a": symbolic.ANY_INT}),
+				search:                 completionSearch{chunk: emptyChunk},
+			})
+
+			assert.True(t, ok)
+			assert.False(t, isGuess)
+			assert.Equal(t, "{\na: \n}", s) //TODO: remove linefeeds ?
+		})
+	})
+
+	t.Run("dictionary", func(t *testing.T) {
+		t.Run("empty", func(t *testing.T) {
+			s, isGuess, ok := getExpectedValueCompletion(expectedValueCompletionComputationConfig{
+				expectedOrGuessedValue: symbolic.NewDictionary(nil, nil),
+				search:                 completionSearch{chunk: emptyChunk},
+			})
+
+			assert.True(t, ok)
+			assert.False(t, isGuess)
+			assert.Equal(t, `:{}`, s)
+		})
+
+		t.Run("one entry: concretizable value", func(t *testing.T) {
+			s, isGuess, ok := getExpectedValueCompletion(expectedValueCompletionComputationConfig{
+				expectedOrGuessedValue: symbolic.NewDictionary(
+					map[string]symbolic.Serializable{`"a"`: symbolic.NewInt(1)},
+					map[string]symbolic.Serializable{`"a"`: symbolic.NewString(`"a"`)},
+				),
+				search: completionSearch{chunk: emptyChunk},
+			})
+
+			assert.True(t, ok)
+			assert.False(t, isGuess)
+			assert.Equal(t, ":{\n\"a\": 1\n}", s) //TODO: remove linefeeds ?
+		})
+
+		t.Run("one entry: non concretizable value", func(t *testing.T) {
+			s, isGuess, ok := getExpectedValueCompletion(expectedValueCompletionComputationConfig{
+				expectedOrGuessedValue: symbolic.NewDictionary(
+					map[string]symbolic.Serializable{`"a"`: symbolic.ANY_INT},
+					map[string]symbolic.Serializable{`"a"`: symbolic.NewString(`"a"`)},
+				),
+				search: completionSearch{chunk: emptyChunk},
+			})
+
+			assert.True(t, ok)
+			assert.False(t, isGuess)
+			assert.Equal(t, ":{\n\"a\": \n}", s) //TODO: remove linefeeds ?
+		})
+
+		t.Run("two entries: concretizable values", func(t *testing.T) {
+			s, isGuess, ok := getExpectedValueCompletion(expectedValueCompletionComputationConfig{
+				expectedOrGuessedValue: symbolic.NewDictionary(
+					map[string]symbolic.Serializable{`"a"`: symbolic.NewInt(1), `"b"`: symbolic.NewInt(2)},
+					map[string]symbolic.Serializable{`"a"`: symbolic.NewString(`"a"`), `"b"`: symbolic.NewString(`"b"`)},
+				),
+				search: completionSearch{chunk: emptyChunk},
+			})
+
+			assert.True(t, ok)
+			assert.False(t, isGuess)
+			assert.Equal(t, ":{\n\"a\": 1\n\"b\": 2\n}", s) //TODO: remove linefeeds ?
+		})
+	})
+
+	t.Run("list", func(t *testing.T) {
+		t.Run("empty", func(t *testing.T) {
+			s, isGuess, ok := getExpectedValueCompletion(expectedValueCompletionComputationConfig{
+				expectedOrGuessedValue: symbolic.NewList(),
+				search:                 completionSearch{chunk: emptyChunk},
+			})
+
+			assert.True(t, ok)
+			assert.False(t, isGuess)
+			assert.Equal(t, `[]`, s)
+		})
+
+		t.Run("one element: concretizable", func(t *testing.T) {
+			s, isGuess, ok := getExpectedValueCompletion(expectedValueCompletionComputationConfig{
+				expectedOrGuessedValue: symbolic.NewList(symbolic.NewInt(1)),
+				search:                 completionSearch{chunk: emptyChunk},
+			})
+
+			assert.True(t, ok)
+			assert.False(t, isGuess)
+			assert.Equal(t, `[1]`, s)
+		})
+
+		t.Run("one element: non concretizable", func(t *testing.T) {
+			s, isGuess, ok := getExpectedValueCompletion(expectedValueCompletionComputationConfig{
+				expectedOrGuessedValue: symbolic.NewList(symbolic.ANY_INT),
+				search:                 completionSearch{chunk: emptyChunk},
+			})
+
+			assert.False(t, ok)
+			assert.False(t, isGuess)
+			assert.Empty(t, s)
+		})
+
+		t.Run("two elements: concretizable", func(t *testing.T) {
+			s, isGuess, ok := getExpectedValueCompletion(expectedValueCompletionComputationConfig{
+				expectedOrGuessedValue: symbolic.NewList(symbolic.NewInt(1), symbolic.NewInt(2)),
+				search:                 completionSearch{chunk: emptyChunk},
+			})
+
+			assert.True(t, ok)
+			assert.False(t, isGuess)
+			assert.Equal(t, "[\n1\n2\n]", s)
+		})
+	})
+	t.Run("tuple", func(t *testing.T) {
+		t.Run("empty", func(t *testing.T) {
+			s, isGuess, ok := getExpectedValueCompletion(expectedValueCompletionComputationConfig{
+				expectedOrGuessedValue: symbolic.NewTuple(),
+				search:                 completionSearch{chunk: emptyChunk},
+			})
+
+			assert.True(t, ok)
+			assert.False(t, isGuess)
+			assert.Equal(t, `#[]`, s)
+		})
+
+		t.Run("one element: concretizable", func(t *testing.T) {
+			s, isGuess, ok := getExpectedValueCompletion(expectedValueCompletionComputationConfig{
+				expectedOrGuessedValue: symbolic.NewTuple(symbolic.NewInt(1)),
+				search:                 completionSearch{chunk: emptyChunk},
+			})
+
+			assert.True(t, ok)
+			assert.False(t, isGuess)
+			assert.Equal(t, `#[1]`, s)
+		})
+
+		t.Run("one element: non concretizable", func(t *testing.T) {
+			s, isGuess, ok := getExpectedValueCompletion(expectedValueCompletionComputationConfig{
+				expectedOrGuessedValue: symbolic.NewTuple(symbolic.ANY_INT),
+				search:                 completionSearch{chunk: emptyChunk},
+			})
+
+			assert.False(t, ok)
+			assert.False(t, isGuess)
+			assert.Empty(t, s)
+		})
+
+		t.Run("two elements: concretizable", func(t *testing.T) {
+			s, isGuess, ok := getExpectedValueCompletion(expectedValueCompletionComputationConfig{
+				expectedOrGuessedValue: symbolic.NewTuple(symbolic.NewInt(1), symbolic.NewInt(2)),
+				search:                 completionSearch{chunk: emptyChunk},
+			})
+
+			assert.True(t, ok)
+			assert.False(t, isGuess)
+			assert.Equal(t, "#[\n1\n2\n]", s)
+		})
+	})
 }
