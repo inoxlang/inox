@@ -435,6 +435,7 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, addition
 				}
 
 				dict.entries[pathPattern] = entryValue
+				dict.keys[pathPattern] = NewPathPattern(op.PseudoPath)
 			}
 
 			expectedObject.entries[inoxconsts.DB_MIGRATION__REPLACEMENTS_PROP_NAME] = dict
@@ -458,7 +459,7 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, addition
 					},
 					Nil,
 				)).(Serializable)
-
+				dict.keys[pathPattern] = NewPathPattern(op.PseudoPath)
 			}
 
 			expectedObject.entries[inoxconsts.DB_MIGRATION__DELETIONS_PROP_NAME] = dict
@@ -489,6 +490,7 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, addition
 				}
 
 				dict.entries[pathPattern] = entryValue
+				dict.keys[pathPattern] = NewPathPattern(op.PseudoPath)
 			}
 
 			expectedObject.entries[inoxconsts.DB_MIGRATION__INCLUSIONS_PROP_NAME] = dict
@@ -521,6 +523,7 @@ func (db *DatabaseIL) UpdateSchema(ctx *Context, schema *ObjectPattern, addition
 				}
 
 				dict.entries[pathPattern] = entryValue
+				dict.keys[pathPattern] = NewPathPattern(op.PseudoPath)
 			}
 
 			expectedObject.entries[inoxconsts.DB_MIGRATION__INITIALIZATIONS_PROP_NAME] = dict

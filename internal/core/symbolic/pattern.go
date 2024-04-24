@@ -279,6 +279,9 @@ func NewPathPattern(v string) *PathPattern {
 	if v == "" {
 		panic(errors.New("string should not be empty"))
 	}
+	if !parse.HasPathLikeStart(v) {
+		panic(errors.New("string should have a valid path start"))
+	}
 
 	return &PathPattern{
 		hasValue: true,
