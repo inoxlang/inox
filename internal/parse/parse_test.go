@@ -9425,64 +9425,6 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("var = | <pipeline>", func(t *testing.T) {
-			n := mustparseChunk(t, "$a = | a | b")
-			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 12}, nil, false},
-				Statements: []Node{
-					&Assignment{
-						NodeBase: NodeBase{
-							NodeSpan{0, 12},
-							nil,
-							false,
-							/*[]Token{
-								{Type: EQUAL, Span: NodeSpan{3, 4}},
-								{Type: PIPE, Span: NodeSpan{5, 6}},
-							},*/
-						},
-						Left: &Variable{
-							NodeBase: NodeBase{NodeSpan{0, 2}, nil, false},
-							Name:     "a",
-						},
-						Right: &PipelineExpression{
-							NodeBase: NodeBase{
-								NodeSpan{7, 12},
-								nil,
-								false,
-							},
-							Stages: []*PipelineStage{
-								{
-									Kind: NormalStage,
-									Expr: &CallExpression{
-										NodeBase: NodeBase{NodeSpan{7, 9}, nil, false},
-										Callee: &IdentifierLiteral{
-											NodeBase: NodeBase{NodeSpan{7, 8}, nil, false},
-											Name:     "a",
-										},
-										Must:              true,
-										CommandLikeSyntax: true,
-									},
-								},
-								{
-									Kind: NormalStage,
-									Expr: &CallExpression{
-										NodeBase: NodeBase{NodeSpan{11, 12}, nil, false},
-										Callee: &IdentifierLiteral{
-											NodeBase: NodeBase{NodeSpan{11, 12}, nil, false},
-											Name:     "b",
-										},
-										Must:              true,
-										CommandLikeSyntax: true,
-									},
-								},
-							},
-						},
-						Operator: Assign,
-					},
-				},
-			}, n)
-		})
-
 		t.Run("<identifier member expr> = <value>", func(t *testing.T) {
 			n := mustparseChunk(t, "a.b = $b")
 			assert.EqualValues(t, &Chunk{
@@ -10373,15 +10315,9 @@ func testParse(
 							},
 							{
 								Kind: NormalStage,
-								Expr: &CallExpression{
-									Must:              true,
-									CommandLikeSyntax: true,
-									NodeBase:          NodeBase{NodeSpan{11, 23}, nil, false},
-									Callee: &IdentifierLiteral{
-										NodeBase: NodeBase{NodeSpan{11, 23}, nil, false},
-										Name:     "do-something",
-									},
-									Arguments: nil,
+								Expr: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{11, 23}, nil, false},
+									Name:     "do-something",
 								},
 							},
 						},
@@ -10426,15 +10362,9 @@ func testParse(
 							},
 							{
 								Kind: NormalStage,
-								Expr: &CallExpression{
-									Must:              true,
-									CommandLikeSyntax: true,
-									NodeBase:          NodeBase{NodeSpan{11, 23}, nil, false},
-									Callee: &IdentifierLiteral{
-										NodeBase: NodeBase{NodeSpan{11, 23}, nil, false},
-										Name:     "do-something",
-									},
-									Arguments: nil,
+								Expr: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{11, 23}, nil, false},
+									Name:     "do-something",
 								},
 							},
 						},
@@ -10479,15 +10409,9 @@ func testParse(
 							},
 							{
 								Kind: NormalStage,
-								Expr: &CallExpression{
-									Must:              true,
-									CommandLikeSyntax: true,
-									NodeBase:          NodeBase{NodeSpan{11, 23}, nil, false},
-									Callee: &IdentifierLiteral{
-										NodeBase: NodeBase{NodeSpan{11, 23}, nil, false},
-										Name:     "do-something",
-									},
-									Arguments: nil,
+								Expr: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{11, 23}, nil, false},
+									Name:     "do-something",
 								},
 							},
 						},
@@ -10527,15 +10451,9 @@ func testParse(
 							},
 							{
 								Kind: NormalStage,
-								Expr: &CallExpression{
-									Must:              true,
-									CommandLikeSyntax: true,
-									NodeBase:          NodeBase{NodeSpan{8, 20}, nil, false},
-									Callee: &IdentifierLiteral{
-										NodeBase: NodeBase{NodeSpan{8, 20}, nil, false},
-										Name:     "do-something",
-									},
-									Arguments: nil,
+								Expr: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{8, 20}, nil, false},
+									Name:     "do-something",
 								},
 							},
 						},
@@ -10550,11 +10468,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 25}, nil, false},
 				Statements: []Node{
 					&PipelineStatement{
-						NodeBase: NodeBase{
-							NodeSpan{0, 25},
-							nil,
-							false,
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 25}},
 						Stages: []*PipelineStage{
 							{
 								Kind: NormalStage,
@@ -10604,11 +10518,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 45}, nil, false},
 				Statements: []Node{
 					&PipelineStatement{
-						NodeBase: NodeBase{
-							NodeSpan{0, 45},
-							nil,
-							false,
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 45}},
 						Stages: []*PipelineStage{
 							{
 								Kind: NormalStage,
@@ -10648,15 +10558,316 @@ func testParse(
 							},
 							{
 								Kind: NormalStage,
+								Expr: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{28, 45}, nil, false},
+									Name:     "do-something-else",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+	})
+
+	t.Run("pipeline expression", func(t *testing.T) {
+		t.Run("empty second stage", func(t *testing.T) {
+			assert.Panics(t, func() {
+				mustparseChunk(t, "($a |)")
+			})
+		})
+
+		t.Run("second stage is not a call", func(t *testing.T) {
+			assert.Panics(t, func() {
+				mustparseChunk(t, "($a | 1)")
+			})
+		})
+
+		t.Run("second stage is a call with no arguments", func(t *testing.T) {
+			n := mustparseChunk(t, "(print($a) | do-something)")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 26}, nil, false},
+				Statements: []Node{
+					&PipelineExpression{
+						NodeBase: NodeBase{Span: NodeSpan{0, 26}, IsParenthesized: true},
+						Stages: []*PipelineStage{
+							{
+								Kind: NormalStage,
 								Expr: &CallExpression{
-									Must:              true,
-									CommandLikeSyntax: true,
-									NodeBase:          NodeBase{NodeSpan{28, 45}, nil, false},
+									NodeBase: NodeBase{NodeSpan{1, 10}, nil, false},
 									Callee: &IdentifierLiteral{
-										NodeBase: NodeBase{NodeSpan{28, 45}, nil, false},
-										Name:     "do-something-else",
+										NodeBase: NodeBase{NodeSpan{1, 6}, nil, false},
+										Name:     "print",
 									},
-									Arguments: nil,
+									Arguments: []Node{
+										&Variable{
+											NodeBase: NodeBase{NodeSpan{7, 9}, nil, false},
+											Name:     "a",
+										},
+									},
+								},
+							},
+							{
+								Kind: NormalStage,
+								Expr: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{13, 25}, nil, false},
+									Name:     "do-something",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("second stage is a call with no arguments, followed by an unexpected expression on the following line", func(t *testing.T) {
+			n, err := parseChunk(t, "( print($a) | do-something\n1)", "")
+			assert.Error(t, err)
+
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{
+					Span: NodeSpan{0, 29},
+				},
+				Statements: []Node{
+					&PipelineExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 26},
+							&ParsingError{UnspecifiedParsingError, UNTERMINATED_PARENTHESIZED_PIPE_EXPR_MISSING_CLOSING_PAREN},
+							true,
+						},
+						Stages: []*PipelineStage{
+							{
+								Kind: NormalStage,
+								Expr: &CallExpression{
+									NodeBase: NodeBase{NodeSpan{2, 11}, nil, false},
+									Callee: &IdentifierLiteral{
+										NodeBase: NodeBase{NodeSpan{2, 7}, nil, false},
+										Name:     "print",
+									},
+									Arguments: []Node{
+										&Variable{
+											NodeBase: NodeBase{NodeSpan{8, 10}, nil, false},
+											Name:     "a",
+										},
+									},
+								},
+							},
+							{
+								Kind: NormalStage,
+								Expr: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{14, 26}, nil, false},
+									Name:     "do-something",
+								},
+							},
+						},
+					},
+					&IntLiteral{
+						NodeBase: NodeBase{NodeSpan{27, 28}, nil, false},
+						Raw:      "1",
+						Value:    1,
+					},
+					&UnknownNode{
+						NodeBase: NodeBase{
+							NodeSpan{28, 29},
+							&ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInBlockOrModule(')')},
+							false,
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("first and second stages are calls with no arguments", func(t *testing.T) {
+			n := mustparseChunk(t, "( print | do-something)")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
+				Statements: []Node{
+					&PipelineExpression{
+						NodeBase: NodeBase{Span: NodeSpan{0, 23}, IsParenthesized: true},
+						Stages: []*PipelineStage{
+							{
+								Kind: NormalStage,
+								Expr: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 7}, nil, false},
+									Name:     "print",
+								},
+							},
+							{
+								Kind: NormalStage,
+								Expr: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{10, 22}, nil, false},
+									Name:     "do-something",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("second stage is a call with a single argument", func(t *testing.T) {
+			n := mustparseChunk(t, "( print($a) | do-something($))")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 30}, nil, false},
+				Statements: []Node{
+					&PipelineExpression{
+						NodeBase: NodeBase{Span: NodeSpan{0, 30}, IsParenthesized: true},
+						Stages: []*PipelineStage{
+							{
+								Kind: NormalStage,
+								Expr: &CallExpression{
+									NodeBase: NodeBase{NodeSpan{2, 11}, nil, false},
+									Callee: &IdentifierLiteral{
+										NodeBase: NodeBase{NodeSpan{2, 7}, nil, false},
+										Name:     "print",
+									},
+									Arguments: []Node{
+										&Variable{
+											NodeBase: NodeBase{NodeSpan{8, 10}, nil, false},
+											Name:     "a",
+										},
+									},
+								},
+							},
+							{
+								Kind: NormalStage,
+								Expr: &CallExpression{
+									NodeBase: NodeBase{NodeSpan{14, 29}, nil, false},
+									Callee: &IdentifierLiteral{
+										NodeBase: NodeBase{NodeSpan{14, 26}, nil, false},
+										Name:     "do-something",
+									},
+									Arguments: []Node{
+										&Variable{
+											NodeBase: NodeBase{NodeSpan{27, 28}, nil, false},
+											Name:     "",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("third stage is a call with no arguments", func(t *testing.T) {
+			n := mustparseChunk(t, "( print($a) | do-something($) | do-something-else)")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 50}, nil, false},
+				Statements: []Node{
+					&PipelineExpression{
+						NodeBase: NodeBase{Span: NodeSpan{0, 50}, IsParenthesized: true},
+						Stages: []*PipelineStage{
+							{
+								Kind: NormalStage,
+								Expr: &CallExpression{
+									NodeBase: NodeBase{NodeSpan{2, 11}, nil, false},
+									Callee: &IdentifierLiteral{
+										NodeBase: NodeBase{NodeSpan{2, 7}, nil, false},
+										Name:     "print",
+									},
+									Arguments: []Node{
+										&Variable{
+											NodeBase: NodeBase{NodeSpan{8, 10}, nil, false},
+											Name:     "a",
+										},
+									},
+								},
+							},
+							{
+								Kind: NormalStage,
+								Expr: &CallExpression{
+									NodeBase: NodeBase{NodeSpan{14, 29}, nil, false},
+									Callee: &IdentifierLiteral{
+										NodeBase: NodeBase{NodeSpan{14, 26}, nil, false},
+										Name:     "do-something",
+									},
+									Arguments: []Node{
+										&Variable{
+											NodeBase: NodeBase{NodeSpan{27, 28}, nil, false},
+											Name:     "",
+										},
+									},
+								},
+							},
+							{
+								Kind: NormalStage,
+								Expr: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{32, 49}, nil, false},
+									Name:     "do-something-else",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("unparenthesized", func(t *testing.T) {
+			n := mustparseChunk(t, "a = 1 | f")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 9}, nil, false},
+				Statements: []Node{
+					&Assignment{
+						NodeBase: NodeBase{Span: NodeSpan{0, 9}},
+						Left: &IdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{0, 1}},
+							Name:     "a",
+						},
+						Right: &PipelineExpression{
+							NodeBase: NodeBase{Span: NodeSpan{4, 9}},
+							Stages: []*PipelineStage{
+								{
+									Kind: NormalStage,
+									Expr: &IntLiteral{
+										NodeBase: NodeBase{Span: NodeSpan{4, 5}},
+										Raw:      "1",
+										Value:    1,
+									},
+								},
+								{
+									Kind: NormalStage,
+									Expr: &IdentifierLiteral{
+										NodeBase: NodeBase{NodeSpan{8, 9}, nil, false},
+										Name:     "f",
+									},
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("unparenthesized", func(t *testing.T) {
+			n := mustparseChunk(t, "a = 1 | f")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 9}, nil, false},
+				Statements: []Node{
+					&Assignment{
+						NodeBase: NodeBase{Span: NodeSpan{0, 9}},
+						Left: &IdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{0, 1}},
+							Name:     "a",
+						},
+						Right: &PipelineExpression{
+							NodeBase: NodeBase{Span: NodeSpan{4, 9}},
+							Stages: []*PipelineStage{
+								{
+									Kind: NormalStage,
+									Expr: &IntLiteral{
+										NodeBase: NodeBase{Span: NodeSpan{4, 5}},
+										Raw:      "1",
+										Value:    1,
+									},
+								},
+								{
+									Kind: NormalStage,
+									Expr: &IdentifierLiteral{
+										NodeBase: NodeBase{NodeSpan{8, 9}, nil, false},
+										Name:     "f",
+									},
 								},
 							},
 						},
@@ -28246,12 +28457,6 @@ func testParse(
 							NodeSpan{1, 13},
 							nil,
 							true,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
-								{Type: PATTERN_UNION_OPENING_PIPE, Span: NodeSpan{1, 3}},
-								{Type: PATTERN_UNION_PIPE, Span: NodeSpan{8, 9}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{13, 14}},
-							},*/
 						},
 						Cases: []Node{
 							&DoubleQuotedStringLiteral{
@@ -28280,12 +28485,6 @@ func testParse(
 							NodeSpan{1, 13},
 							nil,
 							true,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
-								{Type: PATTERN_UNION_OPENING_PIPE, Span: NodeSpan{1, 3}},
-								{Type: PATTERN_UNION_PIPE, Span: NodeSpan{8, 9}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{13, 14}},
-							},*/
 						},
 						Cases: []Node{
 							&DoubleQuotedStringLiteral{
@@ -28297,6 +28496,42 @@ func testParse(
 								NodeBase: NodeBase{NodeSpan{10, 13}, nil, false},
 								Raw:      `"b"`,
 								Value:    "b",
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("parenthesized, unprefixed and no leading pipe", func(t *testing.T) {
+			n := mustparseChunk(t, `pattern p = ("a" | "b")`)
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
+				Statements: []Node{
+					&PatternDefinition{
+						NodeBase: NodeBase{NodeSpan{0, 23}, nil, false},
+						Left: &PatternIdentifierLiteral{
+							NodeBase:   NodeBase{NodeSpan{8, 9}, nil, false},
+							Name:       "p",
+							Unprefixed: true,
+						},
+						Right: &PatternUnion{
+							NodeBase: NodeBase{
+								NodeSpan{13, 22},
+								nil,
+								true,
+							},
+							Cases: []Node{
+								&DoubleQuotedStringLiteral{
+									NodeBase: NodeBase{NodeSpan{13, 16}, nil, false},
+									Raw:      `"a"`,
+									Value:    "a",
+								},
+								&DoubleQuotedStringLiteral{
+									NodeBase: NodeBase{NodeSpan{19, 22}, nil, false},
+									Raw:      `"b"`,
+									Value:    "b",
+								},
 							},
 						},
 					},

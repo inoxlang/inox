@@ -69,8 +69,8 @@ func (p *parser) parsePercentPrefixedPattern(precededByOpeningParen bool) Node {
 		prev := p.inPattern
 		p.inPattern = false
 		e, _ := p.parseExpression(exprParsingConfig{
-			disallowUnparenthesizedBinForExpr:       true,
-			disallowParsingSeveralPatternUnionCases: true,
+			disallowUnparenthesizedBinForPipelineExprs: true,
+			disallowParsingSeveralPatternUnionCases:    true,
 		})
 
 		p.inPattern = prev
@@ -453,8 +453,8 @@ func (p *parser) parseFunctionPattern(start int32, percentPrefixed bool) Node {
 			p.inPattern = true
 
 			returnType, _ = p.parseExpression(exprParsingConfig{
-				disallowUnparenthesizedBinForExpr:       true,
-				disallowParsingSeveralPatternUnionCases: true,
+				disallowUnparenthesizedBinForPipelineExprs: true,
+				disallowParsingSeveralPatternUnionCases:    true,
 			})
 
 			p.inPattern = inPatternSave
@@ -1074,8 +1074,8 @@ func (p *parser) parsePatternDefinition(patternIdent *IdentifierLiteral) *Patter
 			}()
 
 			patternDef.Left, _ = p.parseExpression(exprParsingConfig{
-				disallowUnparenthesizedBinForExpr:       true,
-				disallowParsingSeveralPatternUnionCases: true,
+				disallowUnparenthesizedBinForPipelineExprs: true,
+				disallowParsingSeveralPatternUnionCases:    true,
 			})
 			patternDef.Span.End = p.i
 
@@ -1145,8 +1145,8 @@ func (p *parser) parsePatternNamespaceDefinition(patternIdent *IdentifierLiteral
 			}()
 
 			namespaceDef.Left, _ = p.parseExpression(exprParsingConfig{
-				disallowUnparenthesizedBinForExpr:       true,
-				disallowParsingSeveralPatternUnionCases: true,
+				disallowUnparenthesizedBinForPipelineExprs: true,
+				disallowParsingSeveralPatternUnionCases:    true,
 			})
 			namespaceDef.Span.End = p.i
 

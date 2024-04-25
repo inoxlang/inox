@@ -135,6 +135,7 @@ const (
 	ONLY_IDENTS_AND_STRINGS_VALID_OBJ_PATT_KEYS = "Only identifiers and strings are valid object pattern keys"
 
 	INVALID_PATT_UNION_ELEMENT_SEPARATOR_EXPLANATION = "invalid pattern union: elements should be separated by '|'"
+	UNTERMINATED_PATT_UNION_MISSING_PAREN            = "unterminated pattern union: missing closing parenthesis"
 	INVALID_PATTERN_INVALID_OCCURENCE_COUNT          = "invalid pattern: invalid exact ocurrence count"
 
 	//dictionary literal
@@ -440,14 +441,20 @@ const (
 	INVALID_WALK_STMT_MISSING_ENTRY_IDENTIFIER         = "invalid walk statement: missing entry identifier"
 	UNTERMINATED_WALK_STMT_MISSING_BODY                = "unterminated walk statement: missing body (block)"
 
-	UNTERMINATED_MULTI_ASSIGN_MISSING_EQL_SIGN             = "unterminated multi assign statement: missing '=' sign"
-	ASSIGN_KEYWORD_SHOULD_BE_FOLLOWED_BY_IDENTS            = "assign keyword should be followed by identifiers (assign a b = <value>)"
-	UNTERMINATED_ASSIGNMENT_MISSING_VALUE_AFTER_EQL_SIGN   = "unterminated assignment, missing value after the '=' sign"
-	INVALID_ASSIGN_A_PIPELINE_EXPR_WAS_EXPECTED_AFTER_PIPE = "invalid assignment: a pipeline expression was expected after the '|' symbol"
-	UNTERMINATED_ASSIGNMENT_MISSING_TERMINATOR             = "unterminated assignment: missing terminator (';' or end of line), if the right hande side is a binary expression try to put parenthesis around it"
+	UNTERMINATED_MULTI_ASSIGN_MISSING_EQL_SIGN           = "unterminated multi assign statement: missing '=' sign"
+	ASSIGN_KEYWORD_SHOULD_BE_FOLLOWED_BY_IDENTS          = "assign keyword should be followed by identifiers (assign a b = <value>)"
+	UNTERMINATED_ASSIGNMENT_MISSING_VALUE_AFTER_EQL_SIGN = "unterminated assignment, missing value after the '=' sign"
+	UNTERMINATED_ASSIGNMENT_MISSING_TERMINATOR           = "unterminated assignment: missing terminator (';' or end of line), if the right hande side is a binary expression try to put parenthesis around it"
 
-	UNTERMINATED_PIPE_STMT_LAST_STAGE_EMPTY                                       = "unterminated pipeline statement: last stage is empty"
-	INVALID_PIPE_STATE_ALL_STAGES_SHOULD_BE_CALLS                                 = "invalid pipeline stage, all pipeline stages should be calls"
+	//pipeline statement
+	UNTERMINATED_PIPE_STMT_LAST_STAGE_EMPTY            = "unterminated pipeline statement: last stage is empty"
+	INVALID_PIPE_STMT_STAGE_ALL_STAGES_SHOULD_BE_CALLS = "invalid pipeline statement stage, a stage should either be a call or a reference to a function"
+
+	//pipeline expression
+	UNTERMINATED_PIPE_EXPR_LAST_STAGE_EMPTY                    = "unterminated pipeline expression: last stage is empty"
+	INVALID_PIPE_EXPR_STAGE_ALL_STAGES_SHOULD_BE_CALLS         = "invalid pipeline expression stage, a stage should either be a call or a reference to a function"
+	UNTERMINATED_PARENTHESIZED_PIPE_EXPR_MISSING_CLOSING_PAREN = "unterminated parenthesized pipeline expression: missing closing parenthesis"
+
 	UNTERMINATED_CALL                                                             = "unterminated call"
 	A_NON_PAREN_CALL_EXPR_SHOULD_HAVE_ARGS_AND_CALLEE_SHOULD_BE_FOLLOWED_BY_SPACE = "a non-parenthesized call expression should have arguments and the callee (<name>$) should be followed by a space"
 

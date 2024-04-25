@@ -46,9 +46,9 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(
 		}
 	} else {
 		left, isMissingExpr = p.parseExpression(exprParsingConfig{
-			precedingOpeningParenIndexPlusOne: openingParenIndex + 1,
-			disallowUnparenthesizedBinForExpr: true,
-			forceAllowForExpr:                 !hasPreviousOperator,
+			precedingOpeningParenIndexPlusOne:          openingParenIndex + 1,
+			disallowUnparenthesizedBinForPipelineExprs: true,
+			forceAllowForExpr:                          !hasPreviousOperator,
 		})
 	}
 
@@ -120,7 +120,7 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(
 	}
 
 	if stringLiteral, ok := left.(*UnquotedStringLiteral); ok && stringLiteral.Value == "-" {
-		operand, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
+		operand, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForPipelineExprs: true})
 
 		p.tokens = append(p.tokens, Token{Type: MINUS, Span: left.Base().Span})
 
@@ -168,7 +168,41 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(
 
 	if p.s[p.i] == '|' { //pattern union without a leading pipe
 		precededByOpeningParen := true
-		p.tryParsePatternUnionWithoutLeadingPipe(left, precededByOpeningParen)
+
+		if p.inPattern {
+			patternUnion, ok := p.tryParsePatternUnionWithoutLeadingPipe(left, precededByOpeningParen)
+			if ok {
+				patternUnion.Span.Start = openingParenIndex
+				patternUnion.IsParenthesized = true
+				p.eatSpaceNewlineComment()
+
+				if p.i >= p.len || p.s[p.i] != ')' {
+					patternUnion.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_PATT_UNION_MISSING_PAREN}
+				} else {
+					p.tokens = append(p.tokens, Token{Type: CLOSING_PARENTHESIS, Span: NodeSpan{p.i, p.i + 1}})
+					patternUnion.Span = NodeSpan{startIndex, p.i + 1}
+					p.i++
+				}
+				return patternUnion
+			}
+		} else {
+			pipelineExpr, ok := p.tryParseSecondaryStagesOfPipelineExpression(left)
+			if ok {
+				pipelineExpr.Span.Start = openingParenIndex
+				pipelineExpr.IsParenthesized = true
+				p.eatSpaceNewlineComment()
+
+				if p.i >= p.len || p.s[p.i] != ')' {
+					pipelineExpr.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_PARENTHESIZED_PIPE_EXPR_MISSING_CLOSING_PAREN}
+				} else {
+					p.tokens = append(p.tokens, Token{Type: CLOSING_PARENTHESIS, Span: NodeSpan{p.i, p.i + 1}})
+					pipelineExpr.Span = NodeSpan{startIndex, p.i + 1}
+					p.i++
+				}
+				return pipelineExpr
+			}
+
+		}
 	}
 
 	endOnLinefeed := false
@@ -193,7 +227,7 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(
 		p.inPattern = true
 	}
 
-	right, isMissingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
+	right, isMissingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForPipelineExprs: true})
 
 	p.inPattern = inPatternSave
 
@@ -498,7 +532,7 @@ func (p *parser) tryParseUnparenthesizedBinaryExpr(left Node) (Node, bool) {
 		p.inPattern = true
 	}
 
-	right, isMissingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
+	right, isMissingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForPipelineExprs: true})
 
 	p.inPattern = inPatternSave
 

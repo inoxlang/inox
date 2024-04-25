@@ -27,7 +27,7 @@ func (p *parser) parseMetadaAnnotationsBeforeStatement(
 		start := p.i
 
 		for p.i < p.len && p.s[p.i] == '@' {
-			e, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
+			e, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForPipelineExprs: true})
 
 			isAnnotation := isAnnotationExpression(e)
 
@@ -78,7 +78,7 @@ func (p *parser) parseMetadaAnnotationsBeforeStatement(
 	start := p.i
 
 	for p.i < p.len && p.s[p.i] == '@' {
-		e, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
+		e, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForPipelineExprs: true})
 
 		isAnnotation := isAnnotationExpression(e)
 
@@ -182,7 +182,7 @@ func (p *parser) tryParseMetadaAnnotationsAfterProperty() *MetadataAnnotations {
 	start := p.i
 
 	for p.i < p.len && p.s[p.i] == '@' {
-		e, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
+		e, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForPipelineExprs: true})
 
 		isAnnotation := isAnnotationExpression(e)
 
@@ -229,7 +229,7 @@ func (p *parser) parseAnnotatedRegionHeadersInMarkup(
 		start := p.i
 
 		for p.i < p.len && p.s[p.i] == '@' {
-			e, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
+			e, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForPipelineExprs: true})
 
 			isAnnotation := isAnnotationExpression(e)
 

@@ -1,11 +1,11 @@
 package parse
 
 type exprParsingConfig struct {
-	precedingOpeningParenIndexPlusOne       int32 //0 if no parenthesis
-	statement                               bool
-	disallowUnparenthesizedBinForExpr       bool
-	disallowParsingSeveralPatternUnionCases bool
-	forceAllowForExpr                       bool
+	precedingOpeningParenIndexPlusOne          int32 //0 if no parenthesis
+	statement                                  bool
+	disallowUnparenthesizedBinForPipelineExprs bool
+	disallowParsingSeveralPatternUnionCases    bool
+	forceAllowForExpr                          bool
 }
 
 // parseExpression parses any expression, if $expr is a *MissingExpression $isMissingExpr will be true.
@@ -23,13 +23,19 @@ func (p *parser) parseExpression(config ...exprParsingConfig) (expr Node, isMiss
 			precededByOpeningParen = true
 		}
 		isStmt = config[0].statement
-		allowForExpr = !isStmt && (!config[0].disallowUnparenthesizedBinForExpr || config[0].forceAllowForExpr)
+		allowForExpr = !isStmt && (!config[0].disallowUnparenthesizedBinForPipelineExprs || config[0].forceAllowForExpr)
 	}
 
 	defer func() {
-		allowUnparenthesizedBinExpr := !p.inPattern && !isStmt && (len(config) == 0 || !config[0].disallowUnparenthesizedBinForExpr)
+		allowUnparenthesizedBinForPipelineExprs := !p.inPattern && !isStmt && (len(config) == 0 || !config[0].disallowUnparenthesizedBinForPipelineExprs)
 
-		if expr != nil && !isMissingExpr && allowUnparenthesizedBinExpr {
+		if expr != nil && !isMissingExpr && allowUnparenthesizedBinForPipelineExprs {
+			pipelineExpr, ok := p.tryParseSecondaryStagesOfPipelineExpression(expr)
+			if ok {
+				expr = pipelineExpr
+				return
+			}
+
 			binExpr, ok := p.tryParseUnparenthesizedBinaryExpr(expr)
 			if ok {
 				expr = binExpr

@@ -113,7 +113,7 @@ func (p *parser) parseMarkupElement(start int32) (_ *MarkupElement, noOrExpected
 		}
 		unterminatedHyperscriptAttribute = false
 
-		name, isMissingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
+		name, isMissingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForPipelineExprs: true})
 
 		if isMissingExpr {
 			openingTag.Attributes = append(openingTag.Attributes, &MarkupAttribute{
@@ -149,7 +149,7 @@ func (p *parser) parseMarkupElement(start int32) (_ *MarkupElement, noOrExpected
 			p.i++
 
 			value, isMissingExpr := p.parseExpression(exprParsingConfig{
-				disallowUnparenthesizedBinForExpr: true,
+				disallowUnparenthesizedBinForPipelineExprs: true,
 			})
 
 			openingTag.Attributes = append(openingTag.Attributes, &MarkupAttribute{
@@ -316,7 +316,7 @@ func (p *parser) parseMarkupElement(start int32) (_ *MarkupElement, noOrExpected
 	p.tokens = append(p.tokens, Token{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{p.i, p.i + 2}})
 	p.i += 2
 
-	closingName, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
+	closingName, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForPipelineExprs: true})
 
 	closingTag := &MarkupClosingTag{
 		NodeBase: NodeBase{

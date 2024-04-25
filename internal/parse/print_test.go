@@ -224,10 +224,16 @@ func TestPrint(t *testing.T) {
 		"f 1",
 		"f 1 2",
 		"a = f(1 2)",
-		//pipe
+		//pipe statements
 		"f 1 | g 2",
 		"f 1 | g 2 | h 3",
-		"a = | f 1 | g 2",
+		//pipe expressions
+		"(1 | f)",
+		"(1 | f |)",
+		"(1 | f | g)",
+		"a = 1 | f",
+		"a = 1 | f |",
+		"a = 1 | f | g",
 		//valid binary expressions
 		"(a + b)",
 		"(a +\nb)",

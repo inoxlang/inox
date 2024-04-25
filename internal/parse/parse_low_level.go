@@ -53,7 +53,7 @@ func (p *parser) parseStructDefinition(extendIdent *IdentifierLiteral) *StructDe
 	p.eatSpaceNewlineSemicolonComment()
 
 	for p.i < p.len && p.s[p.i] != '}' {
-		expr, isMissingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
+		expr, isMissingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForPipelineExprs: true})
 
 		if isMissingExpr {
 			p.tokens = append(p.tokens, Token{Type: UNEXPECTED_CHAR, Span: NodeSpan{p.i, p.i + 1}, Raw: string(p.s[p.i])})
@@ -94,7 +94,7 @@ func (p *parser) parseStructDefinition(extendIdent *IdentifierLiteral) *StructDe
 					p.inPattern = prev
 				}()
 
-				fieldDef.Type, _ = p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForExpr: true})
+				fieldDef.Type, _ = p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForPipelineExprs: true})
 				fieldDef.Span.End = p.i
 			}()
 

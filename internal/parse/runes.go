@@ -152,6 +152,10 @@ func IsCommentFirstSpace(r rune) bool {
 	return isSpaceNotLF(r)
 }
 
+func IsCommentStart(runes []rune, index int32) bool {
+	return index < len32(runes)-1 && runes[index] == '#' && IsCommentFirstSpace(runes[index+1])
+}
+
 func IsDelim(r rune) bool {
 	switch {
 	case isPairedDelim(r) || isUnpairedDelim(r):
