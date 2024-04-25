@@ -394,35 +394,75 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 	case *parse.PruneStatement:
 		return nil, nil
 	case *parse.CallExpression:
-		return callSymbolicFunc(n, n.Callee, state, n.Arguments, n.Must, n.CommandLikeSyntax)
+		return callSymbolicFunc(symbolicFunctionCall{
+			callNode:      n,
+			calleeNode:    n.Callee,
+			state:         state,
+			argNodes:      n.Arguments,
+			must:          n.Must,
+			cmdLineSyntax: n.CommandLikeSyntax,
+		})
 	case *parse.PatternCallExpression:
 		return evalPatternCallExpression(n, state)
 	case *parse.PipelineStatement, *parse.PipelineExpression:
 		var stages []*parse.PipelineStage
+
+		isExpr := false
 
 		switch e := n.(type) {
 		case *parse.PipelineStatement:
 			stages = e.Stages
 		case *parse.PipelineExpression:
 			stages = e.Stages
+			isExpr = true
 		}
 
 		defer func() {
 			state.removeLocal("")
 		}()
 
-		var res Value
 		var err error
 
-		for _, stage := range stages {
-			res, err = symbolicEval(stage.Expr, state)
-			if err != nil {
-				return nil, err
-			}
-			state.overrideLocal("", res)
+		firstStageResult, err := symbolicEval(stages[0].Expr, state)
+		if err != nil {
+			return nil, err
 		}
 
-		return res, nil
+		state.overrideLocal("", firstStageResult)
+
+		for _, stage := range stages[1:] {
+
+			switch stage.Expr.(type) {
+			case *parse.IdentifierLiteral, *parse.IdentifierMemberExpression:
+				prevResult := utils.MustGet(state.getLocal("")).value
+				stageResult, err := callSymbolicFunc(symbolicFunctionCall{
+					callNode:      stage.Expr,
+					calleeNode:    stage.Expr,
+					argNodes:      nil,
+					argValues:     []Value{prevResult},
+					state:         state,
+					must:          true,
+					cmdLineSyntax: false,
+				})
+				if err != nil {
+					return nil, err
+				}
+				state.overrideLocal("", stageResult)
+			default:
+				stageResult, err := symbolicEval(stage.Expr, state)
+				if err != nil {
+					return nil, err
+				}
+				state.overrideLocal("", stageResult)
+			}
+
+		}
+
+		if isExpr {
+			return utils.MustGet(state.getLocal("")).value, nil
+		}
+
+		return nil, nil
 	case *parse.LocalVariableDeclarations:
 		return nil, evalLocalVariableDeclarations(n, state)
 	case *parse.GlobalVariableDeclarations:

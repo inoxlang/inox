@@ -6841,26 +6841,31 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, ANY_INT, res)
 		})
 
-		t.Run("pipe statement should not be impacted by previous pipe statements", func(t *testing.T) {
+		t.Run("stages with a function instead of a call should evaluate a 'must' call with the previous result as the sole argument", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
-				fn idt(arg){
-					return Array(arg, nil)
+				globalvar result = {value: 0}
+
+				fn get_int(){
+					return Array(int, nil)
 				}
 
-				idt int | idt $
-				result = | idt "a" | idt $
-
-				return result
+				fn addOne(i %int){
+					result.value = (i + int)
+				}
+	
+				get_int | addOne
+				return result.value
 			`)
+
 			state.setGlobal("Array", WrapGoFunction(NewArray), GlobalConst)
 
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
-			assert.Equal(t, NewString("a"), res)
+			assert.Equal(t, ANY_INT, res)
 		})
 
-		t.Run("anonymous variable should not be defined after pipe statement", func(t *testing.T) {
+		t.Run("anonymous variable should not be defined after a pipe statement", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				fn idt(arg){
 					return Array(arg, nil)
@@ -6868,6 +6873,91 @@ func TestSymbolicEval(t *testing.T) {
 
 				idt int | idt $
 
+				return $
+			`)
+			state.setGlobal("Array", WrapGoFunction(NewArray), GlobalConst)
+			varIdent := parse.FindNodes(n, (*parse.Variable)(nil), nil)[1]
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				MakeSymbolicEvalError(varIdent, state, fmtVarIsNotDeclared("")),
+			}, state.errors())
+
+			assert.Equal(t, ANY, res)
+		})
+
+	})
+
+	t.Run("pipe expression", func(t *testing.T) {
+		t.Run("ok", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+
+				fn addOne(i %int){
+					return (i + int)
+				}
+	
+				return 1 | addOne($)
+			`)
+
+			state.setGlobal("Array", WrapGoFunction(NewArray), GlobalConst)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_INT, res)
+		})
+
+		t.Run("$ is an invalid argument in call at second stage", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				globalvar result = {value: 0}
+
+				fn addOne(i %int){
+					return (i + int)
+				}
+	
+				return "1" | addOne($)
+			`)
+			state.setGlobal("Array", WrapGoFunction(NewArray), GlobalConst)
+			secondCall := parse.FindFirstNode(n, (*parse.CallExpression)(nil))
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+
+			msg, regions := FmtInvalidArg(state.fmtHelper, 0, NewString("1"), ANY_INT, nil)
+
+			assert.Equal(t, []SymbolicEvaluationError{
+				MakeSymbolicEvalError(secondCall.Arguments[0], state, msg, regions...),
+			}, state.errors())
+			assert.Equal(t, ANY_INT, res)
+		})
+
+		t.Run("stages with a function instead of a call should evaluate a 'must' call with the previous result as the sole argument", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				globalvar result = {value: 0}
+	
+				fn addOne(i %int){
+					return Array(i + int, nil)
+				}
+	
+				return 1 | addOne
+			`)
+
+			state.setGlobal("Array", WrapGoFunction(NewArray), GlobalConst)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, ANY_INT, res)
+		})
+
+		t.Run("anonymous variable should not be defined after a pipe expression", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn idt(arg){
+					return arg
+				}
+
+				a = int | idt($)
 				return $
 			`)
 			state.setGlobal("Array", WrapGoFunction(NewArray), GlobalConst)

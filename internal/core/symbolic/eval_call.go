@@ -12,11 +12,26 @@ import (
 
 type inoxCallInfo struct {
 	calleeFnExpr       *parse.FunctionExpression
-	callNode           *parse.CallExpression //nil if is initial check call
+	callNode           parse.Node //nil if is initial check call
 	isInitialCheckCall bool
 }
 
-func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, state *State, argNodes []parse.Node, must bool, cmdLineSyntax bool) (Value, error) {
+type symbolicFunctionCall struct {
+	callNode   parse.Node //not necessarily a *parse.CallExpression
+	calleeNode parse.Node
+	state      *State
+
+	argNodes  []parse.Node //ignored if argValues != nil
+	argValues []Value
+
+	must          bool
+	cmdLineSyntax bool
+}
+
+func callSymbolicFunc(functionCall symbolicFunctionCall) (Value, error) {
+	callNode, calleeNode, state, argNodes, must, cmdLineSyntax :=
+		functionCall.callNode, functionCall.calleeNode, functionCall.state, functionCall.argNodes, functionCall.must, functionCall.cmdLineSyntax
+
 	var (
 		callee          Value
 		err             error
@@ -28,7 +43,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 	switch c := calleeNode.(type) {
 	case *parse.IdentifierLiteral, *parse.IdentifierMemberExpression,
 		*parse.Variable, *parse.MemberExpression, *parse.DoubleColonExpression:
-		callee, err = _symbolicEval(callNode.Callee, state, evalOptions{
+		callee, err = _symbolicEval(calleeNode, state, evalOptions{
 			doubleColonExprAncestorChain: []parse.Node{callNode},
 		})
 		if err != nil {
@@ -118,106 +133,110 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 	var spreadArgNode parse.Node
 
 	errCountBeforeEvaluationOfArguments := len(state.errors())
+	errorsInArguments := 0
 
-	for argIndex, argNode := range argNodes {
+	if functionCall.argValues != nil {
+		args = functionCall.argValues
+	} else {
+		for argIndex, argNode := range argNodes {
 
-		if spreadArg, ok := argNode.(*parse.SpreadArgument); ok {
-			hasSpreadArg = true
-			spreadArgNode = argNode
-			v, err := symbolicEval(spreadArg.Expr, state)
-			if err != nil {
-				return nil, err
-			}
-
-			iterable, ok := v.(Iterable)
-
-			if ok {
-				var elements []Value
-
-				indexable, ok := v.(Indexable)
-				if ok && indexable.HasKnownLen() {
-					for i := 0; i < indexable.KnownLen(); i++ {
-						elements = append(elements, indexable.ElementAt(i))
-					}
-				} else { //add single element
-					elements = append(elements, iterable.IteratorElementValue())
+			if spreadArg, ok := argNode.(*parse.SpreadArgument); ok {
+				hasSpreadArg = true
+				spreadArgNode = argNode
+				v, err := symbolicEval(spreadArg.Expr, state)
+				if err != nil {
+					return nil, err
 				}
 
-				for _, e := range elements {
-					//same logic for non spread arguments
+				iterable, ok := v.(Iterable)
+
+				if ok {
+					var elements []Value
+
+					indexable, ok := v.(Indexable)
+					if ok && indexable.HasKnownLen() {
+						for i := 0; i < indexable.KnownLen(); i++ {
+							elements = append(elements, indexable.ElementAt(i))
+						}
+					} else { //add single element
+						elements = append(elements, iterable.IteratorElementValue())
+					}
+
+					for _, e := range elements {
+						//same logic for non spread arguments
+						if isSharedFunction {
+							shared, err := ShareOrClone(e, state)
+							if err != nil {
+								state.addError(MakeSymbolicEvalError(argNode, state, err.Error()))
+								shared = ANY
+							}
+							e = shared.(Serializable)
+						}
+						args = append(args, e)
+					}
+				} else {
+					state.addError(MakeSymbolicEvalError(argNode, state, fmtSpreadArgumentShouldBeIterable(v)))
+				}
+
+			} else { //Regular argument.
+				nonSpreadArgCount++
+
+				if ident, ok := argNode.(*parse.IdentifierLiteral); ok && cmdLineSyntax { //Identifier literal interpreted as an identifier value.
+					args = append(args, &Identifier{name: ident.Name})
+
+					//add warning if the identifier has the same name as a variable
+					if state.hasLocal(ident.Name) || state.hasGlobal(ident.Name) {
+						addWarning := false
+
+						if calleeIdent, ok := calleeNode.(*parse.IdentifierLiteral); !ok {
+							addWarning = true
+						} else if calleeIdent.Name != globalnames.EXEC_FN &&
+							calleeIdent.Name != globalnames.HELP_FN &&
+							!slices.Contains(state.shellTrustedCommands, calleeIdent.Name) {
+							addWarning = true
+						}
+
+						if addWarning {
+							state.addWarning(makeSymbolicEvalWarning(argNode, state, fmtDidYouMeanDollarNameInCLI(ident.Name)))
+						}
+					}
+
+				} else { //Argument interpreted in the regular way.
+					//we assume that Go functions don't modify their arguments so
+					//we are (almost) certain that the object will not get additional properties.
+					//TODO: track Go functions that mutate their arguments.
+					//TODO: for Inox function calls set forceExactObjectLiteral to true if the expected argument is a readonly object.
+					options := evalOptions{neverModifiedArgument: isGoFunc}
+
+					if len(nonGoParameters) > 0 && argIndex < len(nonGoParameters) {
+						options.expectedValue = nonGoParameters[argIndex]
+
+						argMismatches = append(argMismatches, false)
+						if len(argMismatches) != argIndex+1 {
+							panic(parse.ErrUnreachable)
+						}
+						options.actualValueMismatch = &argMismatches[argIndex]
+					}
+
+					arg, err := _symbolicEval(argNode, state, options)
+					if err != nil {
+						return nil, err
+					}
 					if isSharedFunction {
-						shared, err := ShareOrClone(e, state)
+						shared, err := ShareOrClone(arg, state)
 						if err != nil {
 							state.addError(MakeSymbolicEvalError(argNode, state, err.Error()))
 							shared = ANY
 						}
-						e = shared.(Serializable)
+						arg = shared
 					}
-					args = append(args, e)
+					args = append(args, arg)
 				}
-			} else {
-				state.addError(MakeSymbolicEvalError(argNode, state, fmtSpreadArgumentShouldBeIterable(v)))
 			}
 
-		} else { //Regular argument.
-			nonSpreadArgCount++
-
-			if ident, ok := argNode.(*parse.IdentifierLiteral); ok && cmdLineSyntax { //Identifier literal interpreted as an identifier value.
-				args = append(args, &Identifier{name: ident.Name})
-
-				//add warning if the identifier has the same name as a variable
-				if state.hasLocal(ident.Name) || state.hasGlobal(ident.Name) {
-					addWarning := false
-
-					if calleeIdent, ok := calleeNode.(*parse.IdentifierLiteral); !ok {
-						addWarning = true
-					} else if calleeIdent.Name != globalnames.EXEC_FN &&
-						calleeIdent.Name != globalnames.HELP_FN &&
-						!slices.Contains(state.shellTrustedCommands, calleeIdent.Name) {
-						addWarning = true
-					}
-
-					if addWarning {
-						state.addWarning(makeSymbolicEvalWarning(argNode, state, fmtDidYouMeanDollarNameInCLI(ident.Name)))
-					}
-				}
-
-			} else { //Argument interpreted in the regular way.
-				//we assume that Go functions don't modify their arguments so
-				//we are (almost) certain that the object will not get additional properties.
-				//TODO: track Go functions that mutate their arguments.
-				//TODO: for Inox function calls set forceExactObjectLiteral to true if the expected argument is a readonly object.
-				options := evalOptions{neverModifiedArgument: isGoFunc}
-
-				if len(nonGoParameters) > 0 && argIndex < len(nonGoParameters) {
-					options.expectedValue = nonGoParameters[argIndex]
-
-					argMismatches = append(argMismatches, false)
-					if len(argMismatches) != argIndex+1 {
-						panic(parse.ErrUnreachable)
-					}
-					options.actualValueMismatch = &argMismatches[argIndex]
-				}
-
-				arg, err := _symbolicEval(argNode, state, options)
-				if err != nil {
-					return nil, err
-				}
-				if isSharedFunction {
-					shared, err := ShareOrClone(arg, state)
-					if err != nil {
-						state.addError(MakeSymbolicEvalError(argNode, state, err.Error()))
-						shared = ANY
-					}
-					arg = shared
-				}
-				args = append(args, arg)
-			}
 		}
-
+		errorsInArguments = len(state.errors()) - errCountBeforeEvaluationOfArguments
 	}
-
-	errorsInArguments := len(state.errors()) - errCountBeforeEvaluationOfArguments
 
 	//Execution
 
@@ -363,7 +382,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 		for i, arg := range currentArgs {
 
 			var argNode parse.Node
-			if i < nonSpreadArgCount {
+			if i < nonSpreadArgCount && argNodes != nil { //argNodes may be nil if the call does not correspond to a *parse.CallExpression.
 				argNode = argNodes[i]
 			}
 
@@ -511,7 +530,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 		params = append(params, paramType)
 
 		var argNode parse.Node
-		if i < nonSpreadArgCount {
+		if i < nonSpreadArgCount && argNodes != nil { //argNodes may be nil if the call does not correspond to a *parse.CallExpression;
 			argNode = argNodes[i]
 		}
 
@@ -569,7 +588,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 		ret := returnType
 
 		if must {
-			ret = checkTransformMustCallReturnValue(ret, callNode, state)
+			ret = checkTransformMustCallReturnValue(ret, callNode, calleeNode, state)
 		}
 		return ret, nil
 	} //else Inox function
@@ -656,7 +675,7 @@ func callSymbolicFunc(callNode *parse.CallExpression, calleeNode parse.Node, sta
 
 		//'must' call: check and update return type
 		if must {
-			ret = checkTransformMustCallReturnValue(ret, callNode, state)
+			ret = checkTransformMustCallReturnValue(ret, callNode, calleeNode, state)
 		}
 
 		if isSharedFunction {
@@ -730,7 +749,7 @@ func setAllowedNonPresentProperties(argNodes []parse.Node, nonSpreadArgCount int
 	}
 }
 
-func checkTransformMustCallReturnValue(ret Value, callNode *parse.CallExpression, state *State) Value {
+func checkTransformMustCallReturnValue(ret Value, callNode parse.Node, calleeNode parse.Node, state *State) Value {
 	INVALID_RETURN_TYPE_MSG := INVALID_MUST_CALL_OF_AN_INOX_FN_RETURN_TYPE_MUST_BE_XXX
 
 outer:
@@ -784,7 +803,7 @@ outer:
 		return Nil
 	}
 
-	state.addError(MakeSymbolicEvalError(callNode.Callee, state, INVALID_RETURN_TYPE_MSG))
+	state.addError(MakeSymbolicEvalError(calleeNode, state, INVALID_RETURN_TYPE_MSG))
 	return ret
 }
 
