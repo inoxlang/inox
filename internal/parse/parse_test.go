@@ -18714,6 +18714,90 @@ func testParse(
 			}, n)
 		})
 
+		t.Run("+<letter> should not be confused with an unquoted string", func(t *testing.T) {
+			n := mustparseChunk(t, "a = a +b")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
+				Statements: []Node{
+					&Assignment{
+						NodeBase: NodeBase{Span: NodeSpan{0, 8}},
+						Left: &IdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{0, 1}},
+							Name:     "a",
+						},
+						Right: &BinaryExpression{
+							NodeBase: NodeBase{Span: NodeSpan{4, 8}},
+							Operator: Add,
+							Left: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{4, 5}, nil, false},
+								Name:     "a",
+							},
+							Right: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{7, 8}, nil, false},
+								Name:     "b",
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("-<letter> should not be confused with an unquoted string", func(t *testing.T) {
+			n := mustparseChunk(t, "a = a -b")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
+				Statements: []Node{
+					&Assignment{
+						NodeBase: NodeBase{Span: NodeSpan{0, 8}},
+						Left: &IdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{0, 1}},
+							Name:     "a",
+						},
+						Right: &BinaryExpression{
+							NodeBase: NodeBase{Span: NodeSpan{4, 8}},
+							Operator: Sub,
+							Left: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{4, 5}, nil, false},
+								Name:     "a",
+							},
+							Right: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{7, 8}, nil, false},
+								Name:     "b",
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("/<letter> should not be confused with an unquoted string", func(t *testing.T) {
+			n := mustparseChunk(t, "a = a /b")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
+				Statements: []Node{
+					&Assignment{
+						NodeBase: NodeBase{Span: NodeSpan{0, 8}},
+						Left: &IdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{0, 1}},
+							Name:     "a",
+						},
+						Right: &BinaryExpression{
+							NodeBase: NodeBase{Span: NodeSpan{4, 8}},
+							Operator: Div,
+							Left: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{4, 5}, nil, false},
+								Name:     "a",
+							},
+							Right: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{7, 8}, nil, false},
+								Name:     "b",
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
 		t.Run("addition with first operand being an unparenthesized number negation", func(t *testing.T) {
 			n := mustparseChunk(t, "a = -$a + $b")
 			assert.EqualValues(t, &Chunk{

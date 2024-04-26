@@ -1,7 +1,6 @@
 package parse
 
 import (
-	"unicode"
 	"unicode/utf8"
 
 	"github.com/inoxlang/inox/internal/utils"
@@ -458,10 +457,8 @@ func (p *parser) tryParseUnparenthesizedBinaryExpr(left Node) (Node, bool) {
 			return nil, false
 		}
 	case '+', '/', '-':
-		//Check we are not at the start of an unquoted string literal or path.
-		if tempIndex < p.len-1 && !unicode.IsSpace(p.s[tempIndex+1]) {
-			return nil, false
-		}
+		//We don't check that we are not at the start of an unquoted string literal or path because since `(a +b)` is parsed as a binary expression,
+		//`a +b` should be parsed the same. Also tryParseUnparenthesizedBinaryExpr is never called in command-like calls.
 	case '?':
 		if !spacePresentAfterLeft {
 			//Unexpected '?' char. It may be an attempt at typing a boolean conversion expression
