@@ -1,4 +1,4 @@
-declare const identifier: unique symbol;
+declare const BRAND_SYMBOL: unique symbol;
 type Node = {
     _source: Signal;
     _prevSource?: Node;
@@ -9,8 +9,30 @@ type Node = {
     _version: number;
     _rollbackNode?: Node;
 };
-declare function batch<T>(callback: () => T): T;
-declare function untracked<T>(callback: () => T): T;
+/**
+ * Combine multiple value updates into one "commit" at the end of the provided callback.
+ *
+ * Batches can be nested and changes are only flushed once the outermost batch callback
+ * completes.
+ *
+ * Accessing a signal that has been modified within a batch will reflect its updated
+ * value.
+ *
+ * @param fn The callback function.
+ * @returns The value returned by the callback.
+ */
+declare function batch<T>(fn: () => T): T;
+/**
+ * Run a callback function that can access signal values without
+ * subscribing to the signal updates.
+ *
+ * @param fn The callback function.
+ * @returns The value returned by the callback.
+ */
+declare function untracked<T>(fn: () => T): T;
+/**
+ * The base class for plain and computed signals.
+ */
 declare class Signal<T = any> {
     /** @internal */
     _value: unknown;
@@ -36,43 +58,74 @@ declare class Signal<T = any> {
     toString(): string;
     toJSON(): T;
     peek(): T;
-    brand: typeof identifier;
+    brand: typeof BRAND_SYMBOL;
     get value(): T;
     set value(value: T);
 }
 /** @internal */
 declare function Signal(this: Signal, value?: unknown): void;
+/**
+ * Create a new plain signal.
+ *
+ * @param value The initial value for the signal.
+ * @returns A new signal.
+ */
 declare function signal<T>(value: T): Signal<T>;
 declare class Computed<T = any> extends Signal<T> {
-    _compute: () => T;
+    _fn: () => T;
     _sources?: Node;
     _globalVersion: number;
     _flags: number;
-    constructor(compute: () => T);
+    constructor(fn: () => T);
     _notify(): void;
     get value(): T;
 }
-declare function Computed(this: Computed, compute: () => unknown): void;
+declare function Computed(this: Computed, fn: () => unknown): void;
 declare namespace Computed {
     var prototype: Computed<any>;
 }
+/**
+ * An interface for read-only signals.
+ */
 interface ReadonlySignal<T = any> extends Signal<T> {
     readonly value: T;
 }
-declare function computed<T>(compute: () => T): ReadonlySignal<T>;
-type EffectCleanup = () => unknown;
+/**
+ * Create a new signal that is computed based on the values of other signals.
+ *
+ * The returned computed signal is read-only, and its value is automatically
+ * updated when any signals accessed from within the callback function change.
+ *
+ * @param fn The effect callback.
+ * @returns A new read-only signal.
+ */
+declare function computed<T>(fn: () => T): ReadonlySignal<T>;
+type EffectFn = () => void | (() => void);
 declare class Effect {
-    _compute?: () => unknown | EffectCleanup;
-    _cleanup?: () => unknown;
+    _fn?: EffectFn;
+    _cleanup?: () => void;
     _sources?: Node;
     _nextBatchedEffect?: Effect;
     _flags: number;
-    constructor(compute: () => unknown | EffectCleanup);
+    constructor(fn: EffectFn);
     _callback(): void;
     _start(): () => void;
     _notify(): void;
     _dispose(): void;
 }
-declare function Effect(this: Effect, compute: () => unknown | EffectCleanup): void;
-declare function effect(compute: () => unknown | EffectCleanup): () => void;
+declare function Effect(this: Effect, fn: EffectFn): void;
+/**
+ * Create an effect to run arbitrary code in response to signal changes.
+ *
+ * An effect tracks which signals are accessed within the given callback
+ * function `fn`, and re-runs the callback when those signals change.
+ *
+ * The callback may return a cleanup function. The cleanup function gets
+ * run once, either when the callback is next called or when the effect
+ * gets disposed, whichever happens first.
+ *
+ * @param fn The effect callback.
+ * @returns A function for disposing the effect.
+ */
+declare function effect(fn: EffectFn): () => void;
 

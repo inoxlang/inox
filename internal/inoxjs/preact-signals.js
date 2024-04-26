@@ -1,13 +1,9 @@
 "use strict";
 // Preact Signal library (MIT licensed): https://github.com/preactjs/signals
-// https://github.com/preactjs/signals/blob/a43821fa0f23846d86dd2e186b088e8f5c4f9d30/packages/core/src/index.ts
-function cycleDetected() {
-    throw new Error("Cycle detected");
-}
-function mutationDetected() {
-    throw new Error("Computed cannot have side-effects");
-}
-const identifier = Symbol.for("preact-signals");
+// https://github.com/preactjs/signals/blob/bd5c4d859d9f72c5e7f07d29dc97dbcb6c8fbc3f/packages/core/src/index.ts
+// An named symbol/brand for detecting Signal instances even when they weren't
+// created using the same signals library version.
+const BRAND_SYMBOL = Symbol.for("preact-signals");
 // Flags for Computed and Effect.
 const RUNNING = 1 << 0;
 const NOTIFIED = 1 << 1;
@@ -53,13 +49,25 @@ function endBatch() {
         throw error;
     }
 }
-function batch(callback) {
+/**
+ * Combine multiple value updates into one "commit" at the end of the provided callback.
+ *
+ * Batches can be nested and changes are only flushed once the outermost batch callback
+ * completes.
+ *
+ * Accessing a signal that has been modified within a batch will reflect its updated
+ * value.
+ *
+ * @param fn The callback function.
+ * @returns The value returned by the callback.
+ */
+function batch(fn) {
     if (batchDepth > 0) {
-        return callback();
+        return fn();
     }
     /*@__INLINE__**/ startBatch();
     try {
-        return callback();
+        return fn();
     }
     finally {
         endBatch();
@@ -67,19 +75,20 @@ function batch(callback) {
 }
 // Currently evaluated computed or effect.
 let evalContext = undefined;
-let untrackedDepth = 0;
-function untracked(callback) {
-    if (untrackedDepth > 0) {
-        return callback();
-    }
+/**
+ * Run a callback function that can access signal values without
+ * subscribing to the signal updates.
+ *
+ * @param fn The callback function.
+ * @returns The value returned by the callback.
+ */
+function untracked(fn) {
     const prevContext = evalContext;
     evalContext = undefined;
-    untrackedDepth++;
     try {
-        return callback();
+        return fn();
     }
     finally {
-        untrackedDepth--;
         evalContext = prevContext;
     }
 }
@@ -163,14 +172,20 @@ function addDependency(signal) {
     return undefined;
 }
 /** @internal */
-// @ts-ignore internal Signal is viewed as function
+// @ts-ignore: "Cannot redeclare exported variable 'Signal'."
+//
+// A class with the same name has already been declared, so we need to ignore
+// TypeScript's warning about a redeclared variable.
+//
+// The previously declared class is implemented here with ES5-style prototypes.
+// This enables better control of the transpiled output size.
 function Signal(value) {
     this._value = value;
     this._version = 0;
     this._node = undefined;
     this._targets = undefined;
 }
-Signal.prototype.brand = identifier;
+Signal.prototype.brand = BRAND_SYMBOL;
 Signal.prototype._refresh = function () {
     return true;
 };
@@ -202,16 +217,15 @@ Signal.prototype._unsubscribe = function (node) {
     }
 };
 Signal.prototype.subscribe = function (fn) {
-    const signal = this;
-    return effect(function () {
-        const value = signal.value;
-        const flag = this._flags & TRACKING;
-        this._flags &= ~TRACKING;
+    return effect(() => {
+        const value = this.value;
+        const prevContext = evalContext;
+        evalContext = undefined;
         try {
             fn(value);
         }
         finally {
-            this._flags |= flag;
+            evalContext = prevContext;
         }
     });
 };
@@ -225,7 +239,14 @@ Signal.prototype.toJSON = function () {
     return this.value;
 };
 Signal.prototype.peek = function () {
-    return this._value;
+    const prevContext = evalContext;
+    evalContext = undefined;
+    try {
+        return this.value;
+    }
+    finally {
+        evalContext = prevContext;
+    }
 };
 Object.defineProperty(Signal.prototype, "value", {
     get() {
@@ -236,12 +257,9 @@ Object.defineProperty(Signal.prototype, "value", {
         return this._value;
     },
     set(value) {
-        if (evalContext instanceof Computed) {
-            mutationDetected();
-        }
         if (value !== this._value) {
             if (batchIteration > 100) {
-                cycleDetected();
+                throw new Error("Cycle detected");
             }
             this._value = value;
             this._version++;
@@ -258,6 +276,12 @@ Object.defineProperty(Signal.prototype, "value", {
         }
     },
 });
+/**
+ * Create a new plain signal.
+ *
+ * @param value The initial value for the signal.
+ * @returns A new signal.
+ */
 function signal(value) {
     return new Signal(value);
 }
@@ -353,9 +377,9 @@ function cleanupSources(target) {
     }
     target._sources = head;
 }
-function Computed(compute) {
+function Computed(fn) {
     Signal.call(this, undefined);
-    this._compute = compute;
+    this._fn = fn;
     this._sources = undefined;
     this._globalVersion = globalVersion - 1;
     this._flags = OUTDATED;
@@ -388,7 +412,7 @@ Computed.prototype._refresh = function () {
     try {
         prepareSources(this);
         evalContext = this;
-        const value = this._compute();
+        const value = this._fn();
         if (this._flags & HAS_ERROR ||
             this._value !== value ||
             this._version === 0) {
@@ -410,7 +434,7 @@ Computed.prototype._refresh = function () {
 Computed.prototype._subscribe = function (node) {
     if (this._targets === undefined) {
         this._flags |= OUTDATED | TRACKING;
-        // A computed signal subscribes lazily to its dependencies when the it
+        // A computed signal subscribes lazily to its dependencies when it
         // gets its first subscriber.
         for (let node = this._sources; node !== undefined; node = node._nextSource) {
             node._source._subscribe(node);
@@ -440,19 +464,10 @@ Computed.prototype._notify = function () {
         }
     }
 };
-Computed.prototype.peek = function () {
-    if (!this._refresh()) {
-        cycleDetected();
-    }
-    if (this._flags & HAS_ERROR) {
-        throw this._value;
-    }
-    return this._value;
-};
 Object.defineProperty(Computed.prototype, "value", {
     get() {
         if (this._flags & RUNNING) {
-            cycleDetected();
+            throw new Error("Cycle detected");
         }
         const node = addDependency(this);
         this._refresh();
@@ -465,8 +480,17 @@ Object.defineProperty(Computed.prototype, "value", {
         return this._value;
     },
 });
-function computed(compute) {
-    return new Computed(compute);
+/**
+ * Create a new signal that is computed based on the values of other signals.
+ *
+ * The returned computed signal is read-only, and its value is automatically
+ * updated when any signals accessed from within the callback function change.
+ *
+ * @param fn The effect callback.
+ * @returns A new read-only signal.
+ */
+function computed(fn) {
+    return new Computed(fn);
 }
 function cleanupEffect(effect) {
     const cleanup = effect._cleanup;
@@ -495,7 +519,7 @@ function disposeEffect(effect) {
     for (let node = effect._sources; node !== undefined; node = node._nextSource) {
         node._source._unsubscribe(node);
     }
-    effect._compute = undefined;
+    effect._fn = undefined;
     effect._sources = undefined;
     cleanupEffect(effect);
 }
@@ -511,8 +535,8 @@ function endEffect(prevContext) {
     }
     endBatch();
 }
-function Effect(compute) {
-    this._compute = compute;
+function Effect(fn) {
+    this._fn = fn;
     this._cleanup = undefined;
     this._sources = undefined;
     this._nextBatchedEffect = undefined;
@@ -523,9 +547,9 @@ Effect.prototype._callback = function () {
     try {
         if (this._flags & DISPOSED)
             return;
-        if (this._compute === undefined)
+        if (this._fn === undefined)
             return;
-        const cleanup = this._compute();
+        const cleanup = this._fn();
         if (typeof cleanup === "function") {
             this._cleanup = cleanup;
         }
@@ -536,7 +560,7 @@ Effect.prototype._callback = function () {
 };
 Effect.prototype._start = function () {
     if (this._flags & RUNNING) {
-        cycleDetected();
+        throw new Error("Cycle detected");
     }
     this._flags |= RUNNING;
     this._flags &= ~DISPOSED;
@@ -560,8 +584,21 @@ Effect.prototype._dispose = function () {
         disposeEffect(this);
     }
 };
-function effect(compute) {
-    const effect = new Effect(compute);
+/**
+ * Create an effect to run arbitrary code in response to signal changes.
+ *
+ * An effect tracks which signals are accessed within the given callback
+ * function `fn`, and re-runs the callback when those signals change.
+ *
+ * The callback may return a cleanup function. The cleanup function gets
+ * run once, either when the callback is next called or when the effect
+ * gets disposed, whichever happens first.
+ *
+ * @param fn The effect callback.
+ * @returns A function for disposing the effect.
+ */
+function effect(fn) {
+    const effect = new Effect(fn);
     try {
         effect._callback();
     }
