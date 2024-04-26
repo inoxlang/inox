@@ -5,6 +5,6 @@ manifest {
 }
 
 
-names = | fs.ls %./*.ix | map_iterable $ .name
+names = fs.ls(%./*.ix) | map_iterable($, .name)
 
 print topjson(names)
