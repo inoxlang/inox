@@ -243,8 +243,7 @@ func RunPreparedModule(args RunPreparedModuleArgs) (
 	//execute the script
 
 	if args.Transpile {
-		_err = errors.New("transpilation is not supported yet")
-		return
+		fmt.Fprintln(out, "transpilation is not supported yet, the interpreter will be used")
 	}
 
 	treeWalkState := core.NewTreeWalkStateWithGlobal(state)
