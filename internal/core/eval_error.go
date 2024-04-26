@@ -21,11 +21,12 @@ const (
 )
 
 var (
-	ErrStackOverflow            = errors.New("stack overflow")
-	ErrIndexOutOfRange          = errors.New("index out of range")
-	ErrInsertionIndexOutOfRange = errors.New("insertion index out of range")
-	ErrNegativeLowerIndex       = errors.New("negative lower index")
-	ErrUnreachable              = errors.New("unreachable")
+	ErrStackOverflow                  = errors.New("stack overflow")
+	ErrIndexOutOfRange                = errors.New("index out of range")
+	ErrInsertionIndexOutOfRange       = errors.New("insertion index out of range")
+	ErrNegativeLowerIndex             = errors.New("negative lower index")
+	ErrUnreachable                    = errors.New("unreachable")
+	ErrLeftOperandDoesNotMatchPattern = errors.New("left operand does not match the pattern")
 
 	ErrCannotSetValOfIndexKeyProp = errors.New("cannot set value of index key property")
 	ErrCannotPopFromEmptyList     = errors.New("cannot pop from an empty list")
@@ -43,7 +44,7 @@ var (
 	ErrNaNinfinityOperand = errors.New("NaN or (+|-)infinity operand in floating point operation")
 	ErrNaNinfinityResult  = errors.New("result of floating point operation is NaN or (+|-)infinity")
 
-	//quantty
+	//quantity
 	ErrNegQuantityNotSupported = errors.New("negative quantities are not supported")
 
 	ErrCannotEvaluateCompiledFunctionInTreeWalkEval = errors.New("cannot evaluate compiled function in a tree walk evaluation")

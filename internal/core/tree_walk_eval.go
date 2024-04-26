@@ -2974,6 +2974,12 @@ func evalBinaryExpression(n *parse.BinaryExpression, state *TreeWalkState) (Valu
 			ok = !ok
 		}
 		return Bool(ok), nil
+	case parse.As:
+		ok := right.(Pattern).Test(state.Global.Ctx, left)
+		if !ok {
+			return nil, ErrLeftOperandDoesNotMatchPattern
+		}
+		return left, nil
 	case parse.Substrof:
 		return Bool(isSubstrOf(state.Global.Ctx, left, right)), nil
 	case parse.SetDifference:

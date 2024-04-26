@@ -1312,6 +1312,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			{`({a: 1} match %{a: 1})`, core.True, nil},
 			{`({} match %{a: 1})`, core.False, nil},
 
+			{`(1 as %int)`, core.Int(1), nil},
+			{`("1" as %int)`, nil, core.ErrLeftOperandDoesNotMatchPattern},
+			{`({a: 1} as %{a: 1})`, core.NewObjectFromMapNoInit(core.ValMap{"a": core.Int(1)}), nil},
+			{`({} as %{a: 1})`, nil, core.ErrLeftOperandDoesNotMatchPattern},
+
 			{`("a" keyof {})`, core.False, nil},
 			{`("a" keyof {a: 1})`, core.True, nil},
 			{`("aa" keyof {"a": "aa"})`, core.False, nil},
