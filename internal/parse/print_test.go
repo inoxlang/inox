@@ -260,6 +260,7 @@ func TestPrint(t *testing.T) {
 		"(a not-in b)",
 		"(a keyof b)",
 		"(a ulrof b)",
+		"(a as b)",
 		"(a match b)",
 		"(a match {a: | 1 | 2})",
 		"(a not-match b)",
@@ -296,6 +297,8 @@ func TestPrint(t *testing.T) {
 		"a = 1 >= 2",
 		"a = a is",
 		"a = a is b",
+		"a = a as b",
+		"a = a match b",
 		//unparenthesized binary expressions at end of an object
 		"{a: 1 +}",
 		"{a: 1 + 2}",

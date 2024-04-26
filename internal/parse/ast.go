@@ -1712,6 +1712,7 @@ const (
 	Range
 	ExclEndRange
 	And
+	As
 	Or
 	Match
 	NotMatch
@@ -1749,8 +1750,9 @@ var BINARY_OPERATOR_STRINGS = [...]string{
 	Dot:               ".",
 	Range:             "..",
 	ExclEndRange:      "..<",
-	And:               "and",
-	Or:                "or",
+	As:                AS_KEYWORD_STRING,
+	And:               AND_KEYWORD_STRING,
+	Or:                OR_KEYWORD_STRING,
 	Match:             "match",
 	NotMatch:          "not-match",
 	Substrof:          "substrof",

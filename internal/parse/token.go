@@ -14,8 +14,9 @@ import (
 const (
 	MIN_TOKEN_CACHING_COUNT = 2
 
-	AND_LEN = int32(len("and"))
-	OR_LEN  = int32(len("or"))
+	AND_LEN = int32(len(AND_KEYWORD_STRING))
+	OR_LEN  = int32(len(OR_KEYWORD_STRING))
+	AS_LEN  = int32(len(AS_KEYWORD_STRING))
 
 	OTHERPROPS_KEYWORD_STRING      = "otherprops"
 	ASSERT_KEYWORD_STRING          = "assert"
@@ -31,6 +32,10 @@ const (
 
 	COYIELD_KEYWORD_STRING = "coyield"
 	YIELD_KEYWORD_STRING   = "yield"
+
+	AS_KEYWORD_STRING  = "as"
+	AND_KEYWORD_STRING = "and"
+	OR_KEYWORD_STRING  = "or"
 
 	OPTIONAL_MARKUP_ELEMENT_QUANTIFIER      = "?"
 	OPTIONAL_MARKUP_ELEMENT_QUANTIFIER_RUNE = '?'
@@ -384,9 +389,9 @@ var tokenStrings = [...]string{
 	NEW_KEYWORD:                       NEW_KEYWORD_STRING,
 	TO_KEYWORD:                        "to",
 	OTHERPROPS_KEYWORD:                OTHERPROPS_KEYWORD_STRING,
-	AS_KEYWORD:                        "as",
-	AND_KEYWORD:                       "and",
-	OR_KEYWORD:                        "or",
+	AS_KEYWORD:                        AS_KEYWORD_STRING,
+	AND_KEYWORD:                       AND_KEYWORD_STRING,
+	OR_KEYWORD:                        OR_KEYWORD_STRING,
 	PERCENT_FN:                        "%fn",
 	PERCENT_SYMBOL:                    "%",
 	TILDE:                             "~",

@@ -17490,11 +17490,7 @@ func testParse(
 						},
 						Operator: Or,
 						Left: &BinaryExpression{
-							NodeBase: NodeBase{
-								NodeSpan{0, 6},
-								nil,
-								false,
-							},
+							NodeBase: NodeBase{Span: NodeSpan{0, 6}},
 							Operator: GreaterThan,
 							Left: &IdentifierLiteral{
 								NodeBase: NodeBase{NodeSpan{1, 2}, nil, false},
@@ -17536,11 +17532,6 @@ func testParse(
 							NodeSpan{0, 12},
 							nil,
 							true,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
-								{Type: OR_KEYWORD, Span: NodeSpan{7, 9}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{11, 12}},
-							},*/
 						},
 						Operator: Or,
 						Left: &BinaryExpression{
@@ -17578,11 +17569,6 @@ func testParse(
 							NodeSpan{0, 12},
 							nil,
 							true,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
-								{Type: OR_KEYWORD, Span: NodeSpan{3, 5}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{11, 12}},
-							},*/
 						},
 						Operator: Or,
 						Left: &IdentifierLiteral{
@@ -17620,11 +17606,6 @@ func testParse(
 							NodeSpan{0, 25},
 							nil,
 							true,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
-								{Type: OR_KEYWORD, Span: NodeSpan{7, 9}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{24, 25}},
-							},*/
 						},
 						Operator: Or,
 						Left: &BinaryExpression{
@@ -17644,14 +17625,7 @@ func testParse(
 							},
 						},
 						Right: &BinaryExpression{
-							NodeBase: NodeBase{
-								NodeSpan{10, 24},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OR_KEYWORD, Span: NodeSpan{16, 18}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{10, 24}},
 							Operator: Or,
 							Left: &BinaryExpression{
 								NodeBase: NodeBase{
@@ -17701,11 +17675,6 @@ func testParse(
 							NodeSpan{0, 21},
 							nil,
 							true,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
-								{Type: OR_KEYWORD, Span: NodeSpan{3, 5}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{20, 21}},
-							},*/
 						},
 						Operator: Or,
 						Left: &IdentifierLiteral{
@@ -17824,11 +17793,6 @@ func testParse(
 							NodeSpan{0, 26},
 							&ParsingError{UnspecifiedParsingError, BIN_EXPR_CHAIN_OPERATORS_SHOULD_BE_THE_SAME},
 							true,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
-								{Type: OR_KEYWORD, Span: NodeSpan{7, 9}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{25, 26}},
-							},*/
 						},
 						Operator: Or,
 						Left: &BinaryExpression{
@@ -17848,14 +17812,7 @@ func testParse(
 							},
 						},
 						Right: &BinaryExpression{
-							NodeBase: NodeBase{
-								NodeSpan{10, 25},
-								nil,
-								false,
-								/*[]Token{
-									{Type: AND_KEYWORD, Span: NodeSpan{16, 19}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{10, 25}},
 							Operator: And,
 							Left: &BinaryExpression{
 								NodeBase: NodeBase{
@@ -17906,11 +17863,6 @@ func testParse(
 							NodeSpan{0, 35},
 							&ParsingError{UnspecifiedParsingError, BIN_EXPR_CHAIN_OPERATORS_SHOULD_BE_THE_SAME},
 							true,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
-								{Type: OR_KEYWORD, Span: NodeSpan{7, 9}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{34, 35}},
-							},*/
 						},
 						Operator: Or,
 						Left: &BinaryExpression{
@@ -18009,10 +17961,6 @@ func testParse(
 							NodeSpan{0, 9},
 							nil,
 							true,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
-								{Type: OR_KEYWORD, Span: NodeSpan{7, 9}},
-							},*/
 						},
 						Operator: Or,
 						Left: &BinaryExpression{
@@ -18054,10 +18002,6 @@ func testParse(
 							NodeSpan{0, 15},
 							&ParsingError{UnspecifiedParsingError, UNTERMINATED_BIN_EXPR_MISSING_PAREN},
 							true,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
-								{Type: OR_KEYWORD, Span: NodeSpan{7, 9}},
-							},*/
 						},
 						Operator: Or,
 						Left: &BinaryExpression{
@@ -18107,11 +18051,6 @@ func testParse(
 							NodeSpan{0, 9},
 							nil,
 							true,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
-								{Type: PLUS, Span: NodeSpan{4, 5}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{8, 9}},
-							},*/
 						},
 						Operator: Add,
 						Left: &Variable{
@@ -18137,11 +18076,6 @@ func testParse(
 							NodeSpan{0, 10},
 							nil,
 							true,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
-								{Type: PLUS, Span: NodeSpan{5, 6}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{9, 10}},
-							},*/
 						},
 						Operator: Add,
 						Left: &UnaryExpression{
@@ -18175,11 +18109,6 @@ func testParse(
 							NodeSpan{0, 10},
 							nil,
 							true,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
-								{Type: PLUS, Span: NodeSpan{4, 5}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{9, 10}},
-							},*/
 						},
 						Operator: Add,
 						Left: &Variable{
@@ -18213,11 +18142,6 @@ func testParse(
 							NodeSpan{0, 12},
 							nil,
 							true,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
-								{Type: MATCH_KEYWORD, Span: NodeSpan{3, 8}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{11, 12}},
-							},*/
 						},
 						Operator: Match,
 						Left: &IdentifierLiteral{
@@ -18225,15 +18149,31 @@ func testParse(
 							Name:     "o",
 						},
 						Right: &ObjectPatternLiteral{
-							NodeBase: NodeBase{
-								NodeSpan{9, 11},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{10, 11}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{9, 11}},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("'as' with unprefixed pattern", func(t *testing.T) {
+			n := mustparseChunk(t, "(o as {})")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 9}, nil, false},
+				Statements: []Node{
+					&BinaryExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 9},
+							nil,
+							true,
+						},
+						Operator: As,
+						Left: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{1, 2}, nil, false},
+							Name:     "o",
+						},
+						Right: &ObjectPatternLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{6, 8}},
 						},
 					},
 				},
@@ -18250,11 +18190,6 @@ func testParse(
 							NodeSpan{0, 10},
 							nil,
 							true,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
-								{Type: TWO_DOTS, Span: NodeSpan{4, 6}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{9, 10}},
-							},*/
 						},
 						Operator: Range,
 						Left: &Variable{
@@ -18304,13 +18239,7 @@ func testParse(
 						NodeBase: NodeBase{
 							NodeSpan{0, 9},
 							nil,
-							true,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
-								{Type: PLUS, Span: NodeSpan{4, 5}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{8, 9}},
-							},*/
-						},
+							true},
 						Operator: PairComma,
 						Left: &Variable{
 							NodeBase: NodeBase{NodeSpan{1, 3}, nil, false},
@@ -18335,11 +18264,6 @@ func testParse(
 							NodeSpan{0, 8},
 							nil,
 							true,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
-								{Type: PLUS, Span: NodeSpan{4, 5}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{8, 9}},
-							},*/
 						},
 						Operator: PairComma,
 						Left: &Variable{
@@ -18365,11 +18289,6 @@ func testParse(
 							NodeSpan{0, 8},
 							nil,
 							true,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
-								{Type: PLUS, Span: NodeSpan{4, 5}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{8, 9}},
-							},*/
 						},
 						Operator: PairComma,
 						Left: &Variable{
@@ -18395,11 +18314,6 @@ func testParse(
 							NodeSpan{0, 7},
 							nil,
 							true,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
-								{Type: PLUS, Span: NodeSpan{4, 5}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{8, 9}},
-							},*/
 						},
 						Operator: PairComma,
 						Left: &Variable{
@@ -18454,11 +18368,6 @@ func testParse(
 							NodeSpan{0, 9},
 							&ParsingError{UnspecifiedParsingError, INVALID_BIN_EXPR_NON_EXISTING_OPERATOR},
 							true,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
-								{Type: INVALID_OPERATOR, Span: NodeSpan{4, 5}, Raw: "?"},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{8, 9}},
-							},*/
 						},
 						Operator: -1,
 						Left: &Variable{
@@ -18485,11 +18394,6 @@ func testParse(
 							NodeSpan{0, 9},
 							&ParsingError{UnspecifiedParsingError, INVALID_BIN_EXPR_NON_EXISTING_OPERATOR},
 							true,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
-								{Type: INVALID_OPERATOR, Span: NodeSpan{4, 5}, Raw: "!"},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{8, 9}},
-							},*/
 						},
 						Operator: -1,
 						Left: &Variable{
@@ -18516,11 +18420,6 @@ func testParse(
 							NodeSpan{0, 7},
 							&ParsingError{UnspecifiedParsingError, INVALID_BIN_EXPR_NON_EXISTING_OPERATOR},
 							true,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
-								{Type: INVALID_OPERATOR, Span: NodeSpan{3, 4}, Raw: "!"},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{6, 7}},
-							},*/
 						},
 						Operator: -1,
 						Left: &Variable{
@@ -18547,11 +18446,6 @@ func testParse(
 							NodeSpan{0, 12},
 							&ParsingError{UnspecifiedParsingError, INVALID_BIN_EXPR_NON_EXISTING_OPERATOR},
 							true,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
-								{Type: INVALID_OPERATOR, Span: NodeSpan{4, 8}, Raw: "ande"},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{11, 12}},
-							},*/
 						},
 						Operator: -1,
 						Left: &Variable{
@@ -18578,10 +18472,6 @@ func testParse(
 							NodeSpan{0, 6},
 							&ParsingError{UnspecifiedParsingError, UNTERMINATED_BIN_EXPR_MISSING_OPERATOR},
 							true,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{5, 6}},
-							},*/
 						},
 						Operator: -1,
 						Left: &Variable{
@@ -18630,10 +18520,6 @@ func testParse(
 							NodeSpan{0, 2},
 							&ParsingError{MissingExpr, fmtExprExpectedHere([]rune("(\n"), 2, true)},
 							false,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
-								{Type: NEWLINE, Span: NodeSpan{1, 2}},
-							},*/
 						},
 					},
 				},
@@ -18651,10 +18537,6 @@ func testParse(
 							NodeSpan{0, 2},
 							&ParsingError{UnspecifiedParsingError, fmtUnexpectedCharInParenthesizedExpression(';')},
 							false,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
-								{Type: UNEXPECTED_CHAR, Raw: ";", Span: NodeSpan{1, 2}},
-							},*/
 						},
 					},
 				},
@@ -18672,10 +18554,6 @@ func testParse(
 							NodeSpan{0, 2},
 							&ParsingError{MissingExpr, fmtExprExpectedHere([]rune("()"), 1, true)},
 							true,
-							/*[]Token{
-								{Type: OPENING_PARENTHESIS, Span: NodeSpan{0, 1}},
-								{Type: CLOSING_PARENTHESIS, Span: NodeSpan{1, 2}},
-							},*/
 						},
 					},
 				},
@@ -18742,7 +18620,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("-<letter> should not be confused with an unquoted string", func(t *testing.T) {
+		t.Run("-<letter> should not be confused with an option  name", func(t *testing.T) {
 			n := mustparseChunk(t, "a = a -b")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
@@ -18770,7 +18648,7 @@ func testParse(
 			}, n)
 		})
 
-		t.Run("/<letter> should not be confused with an unquoted string", func(t *testing.T) {
+		t.Run("/<letter> should not be confused with a path", func(t *testing.T) {
 			n := mustparseChunk(t, "a = a /b")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 8}, nil, false},
@@ -18882,6 +18760,33 @@ func testParse(
 							},
 							Right: &ObjectPatternLiteral{
 								NodeBase: NodeBase{Span: NodeSpan{12, 14}},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("'as' with unprefixed pattern", func(t *testing.T) {
+			n := mustparseChunk(t, "a = o as {}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 11}, nil, false},
+				Statements: []Node{
+					&Assignment{
+						NodeBase: NodeBase{Span: NodeSpan{0, 11}},
+						Left: &IdentifierLiteral{
+							NodeBase: NodeBase{Span: NodeSpan{0, 1}},
+							Name:     "a",
+						},
+						Right: &BinaryExpression{
+							NodeBase: NodeBase{Span: NodeSpan{4, 11}},
+							Operator: As,
+							Left: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{4, 5}, nil, false},
+								Name:     "o",
+							},
+							Right: &ObjectPatternLiteral{
+								NodeBase: NodeBase{Span: NodeSpan{9, 11}},
 							},
 						},
 					},

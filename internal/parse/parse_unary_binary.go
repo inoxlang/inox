@@ -30,7 +30,7 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(
 		isMissingExpr bool
 	)
 
-	if !hasPreviousOperator && p.i < p.len && p.s[p.i] == '<' && (p.i == p.len-1 || p.s[p.i+1] != '{') {
+	if !hasPreviousOperator && p.i < p.len && p.s[p.i] == '<' && (p.i == p.len-1 || p.s[p.i+1] != '{') { //markup
 		if p.inPattern {
 			prefixed := false
 			left = p.parseMarkupPatternExpression(prefixed)
@@ -118,7 +118,7 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(
 		}
 	}
 
-	if stringLiteral, ok := left.(*UnquotedStringLiteral); ok && stringLiteral.Value == "-" {
+	if stringLiteral, ok := left.(*UnquotedStringLiteral); ok && stringLiteral.Value == "-" { //unary negation
 		operand, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForPipelineExprs: true})
 
 		p.tokens = append(p.tokens, Token{Type: MINUS, Span: left.Base().Span})
@@ -204,6 +204,8 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(
 		}
 	}
 
+	//Parse the operator.
+
 	endOnLinefeed := false
 	operator, operatorToken, parsingErr, earlyReturnedBinExpr := p.getBinaryOperator(left, startIndex, endOnLinefeed)
 
@@ -222,7 +224,7 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(
 	inPatternSave := p.inPattern
 
 	switch operator {
-	case Match, NotMatch:
+	case As, Match, NotMatch:
 		p.inPattern = true
 	}
 
@@ -249,7 +251,7 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(
 		switch p.s[p.i] {
 		case 'a':
 			if p.len-p.i >= AND_LEN &&
-				string(p.s[p.i:p.i+AND_LEN]) == "and" &&
+				string(p.s[p.i:p.i+AND_LEN]) == AND_KEYWORD_STRING &&
 				(p.len-p.i == AND_LEN || !IsIdentChar(p.s[p.i+AND_LEN])) {
 				continueParsing = true
 				andOrToken = Token{Type: AND_KEYWORD, Span: NodeSpan{p.i, p.i + AND_LEN}}
@@ -257,7 +259,7 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(
 			}
 		case 'o':
 			if p.len-p.i >= OR_LEN &&
-				string(p.s[p.i:p.i+OR_LEN]) == "or" &&
+				string(p.s[p.i:p.i+OR_LEN]) == OR_KEYWORD_STRING &&
 				(p.len-p.i == OR_LEN || !IsIdentChar(p.s[p.i+OR_LEN])) {
 				andOrToken = Token{Type: OR_KEYWORD, Span: NodeSpan{p.i, p.i + OR_LEN}}
 				p.i += OR_LEN
@@ -525,7 +527,7 @@ func (p *parser) tryParseUnparenthesizedBinaryExpr(left Node) (Node, bool) {
 	inPatternSave := p.inPattern
 
 	switch operator {
-	case Match, NotMatch:
+	case As, Match, NotMatch:
 		p.inPattern = true
 	}
 
@@ -732,11 +734,20 @@ _switch:
 		parsingErr = makeInvalidOperatorError()
 	case 'a':
 		if p.len-p.i >= AND_LEN &&
-			string(p.s[p.i:p.i+AND_LEN]) == "and" &&
+			string(p.s[p.i:p.i+AND_LEN]) == AND_KEYWORD_STRING &&
 			(p.len-p.i == AND_LEN || !IsIdentChar(p.s[p.i+AND_LEN])) {
 			operator = And
 			p.i += AND_LEN
 			operatorType = AND_KEYWORD
+			break
+		}
+
+		if p.len-p.i >= AS_LEN &&
+			string(p.s[p.i:p.i+AS_LEN]) == AS_KEYWORD_STRING &&
+			(p.len-p.i == AS_LEN || !IsIdentChar(p.s[p.i+AS_LEN])) {
+			operator = As
+			p.i += AS_LEN
+			operatorType = AS_KEYWORD
 			break
 		}
 
@@ -829,7 +840,7 @@ _switch:
 		parsingErr = makeInvalidOperatorError()
 	case 'o':
 		if p.len-p.i >= OR_LEN &&
-			string(p.s[p.i:p.i+OR_LEN]) == "or" &&
+			string(p.s[p.i:p.i+OR_LEN]) == OR_KEYWORD_STRING &&
 			(p.len-p.i == OR_LEN || !IsIdentChar(p.s[p.i+OR_LEN])) {
 			operator = Or
 			operatorType = OR_KEYWORD
