@@ -3248,6 +3248,41 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, ANY_BOOL, res)
 		})
 
+		t.Run("match: right operand is not a pattern", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`({} match 1)`)
+			res, err := symbolicEval(n, state)
+
+			binExpr := n.Statements[0].(*parse.BinaryExpression)
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				MakeSymbolicEvalError(binExpr.Right, state, fmtRightOperandOfBinaryShouldBe(binExpr.Operator, "pattern", Stringify(INT_1))),
+			}, state.errors())
+			assert.Equal(t, ANY_BOOL, res)
+		})
+
+		t.Run("as: left operand matches the right operand", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`(/home/user/ as %/home/user/...)`)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewPathMatchingPattern(NewPathPattern("/home/user/...")), res)
+		})
+
+		t.Run("as: right operand is not a pattern", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`(true as 1)`)
+			res, err := symbolicEval(n, state)
+
+			binExpr := n.Statements[0].(*parse.BinaryExpression)
+
+			assert.NoError(t, err)
+			assert.Equal(t, []SymbolicEvaluationError{
+				MakeSymbolicEvalError(binExpr.Right, state, fmtRightOperandOfBinaryShouldBe(binExpr.Operator, "pattern", Stringify(INT_1))),
+			}, state.errors())
+			assert.Equal(t, TRUE, res)
+		})
+
 		t.Run("set difference: right operand is a pattern", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk("((%| int | 2 | 3) \\ %| int | 2)")
 			res, err := symbolicEval(n, state)

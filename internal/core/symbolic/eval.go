@@ -3383,6 +3383,16 @@ func evalBinaryExpression(n *parse.BinaryExpression, state *State, options evalO
 		}
 
 		return ANY_BOOL, nil
+	case parse.As:
+		pattern, ok := right.(Pattern)
+		if ok {
+			val := pattern.SymbolicValue()
+			narrowChain(n.Left, setExactValue, val, state, 0)
+			return val, nil
+		} else {
+			state.addError(MakeSymbolicEvalError(n.Right, state, fmtRightOperandOfBinaryShouldBe(n.Operator, "pattern", Stringify(right))))
+			return left, nil
+		}
 	case parse.Substrof:
 
 		switch left.(type) {
