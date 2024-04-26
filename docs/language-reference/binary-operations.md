@@ -53,6 +53,7 @@ concat "Hello " (name_or_nil ?? b)  # ok
 - [Nil Coalescing Operator](#nil-coaelescing-operator)
 - [Pattern Difference](#pattern-difference)
 - [Match](#match)
+- [As](#match)
 - [Ordered Comparison](#ordered-comparison)
 - [Equality](#equality)
 - [Is](#is)
@@ -227,6 +228,22 @@ object = {a: 1}
 ```
 
 The `not-match` operator is the opposite of `match`.
+
+---
+
+## As
+
+The binary **as** operation checks that the value on the left matches the
+pattern on the right. If they do match the the value on the left is returned, otherwise an error is thrown. 
+The pattern on the right does not require a `%` prefix, unless it's a
+pattern literal.
+
+```
+value = ...
+
+object = value as {a: 1}  # the right operand is NOT an object here, it's a pattern.
+object = value as %{a: 1}  # equivalent to the previous line
+```
 
 ---
 
