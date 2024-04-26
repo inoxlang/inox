@@ -5087,7 +5087,7 @@ func TestSymbolicEval(t *testing.T) {
 				return
 			}
 			assert.Equal(t, []SymbolicEvaluationError{
-				MakeSymbolicEvalError(fnIdent, state, INVALID_MUST_CALL_OF_AN_INOX_FN_RETURN_TYPE_MUST_BE_XXX),
+				MakeSymbolicEvalError(fnIdent, state, INVALID_MUST_CALL_OF_AN_INOX_FN_RET_ARRAY_SHOULD_HAVE_LEN),
 			}, state.errors())
 			assert.Empty(t, state.warnings())
 			assert.Equal(t, NewArray(), res)
@@ -5108,30 +5108,45 @@ func TestSymbolicEval(t *testing.T) {
 				return
 			}
 			assert.Equal(t, []SymbolicEvaluationError{
-				MakeSymbolicEvalError(fnIdent, state, INVALID_MUST_CALL_OF_AN_INOX_FN_RETURN_TYPE_MUST_BE_XXX),
+				MakeSymbolicEvalError(fnIdent, state, INVALID_MUST_CALL_OF_AN_INOX_FN_RET_ARRAY_SHOULD_HAVE_LEN),
 			}, state.errors())
 			assert.Empty(t, state.warnings())
 			assert.Equal(t, NewArray(INT_1), res)
 		})
 
-		t.Run("'must' call: function should not return a value that is not nil, nor err, nor an array", func(t *testing.T) {
+		t.Run("'must' call: function should not return a value that may be an array", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				fn f(){
-					return 1
+					return anyval
 				}
 				return f!()
 			`)
 			fnIdent := n.Statements[1].(*parse.ReturnStatement).Expr.(*parse.CallExpression).Callee
-			state.setGlobal("Array", WrapGoFunction(NewArray), GlobalConst)
+			state.setGlobal("anyval", ANY, GlobalConst)
 
 			res, err := symbolicEval(n, state)
 			if !assert.NoError(t, err) {
 				return
 			}
 			assert.Equal(t, []SymbolicEvaluationError{
-				MakeSymbolicEvalError(fnIdent, state, INVALID_MUST_CALL_OF_AN_INOX_FN_RETURN_TYPE_MUST_BE_XXX),
+				MakeSymbolicEvalError(fnIdent, state, INVALID_MUST_CALL_OF_AN_INOX_FN_RETURNED_VALUE_MAY_BE_AN_ARRAY),
 			}, state.errors())
 			assert.Empty(t, state.warnings())
+			assert.Equal(t, ANY, res)
+		})
+
+		t.Run("'must' call: function always return a value that cannot be an array", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(){
+					return 1
+				}
+				return f!()
+			`)
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Empty(t, state.errors())
 			assert.Equal(t, INT_1, res)
 		})
 	})
@@ -6682,7 +6697,7 @@ func TestSymbolicEval(t *testing.T) {
 			}
 
 			assert.Equal(t, []SymbolicEvaluationError{
-				MakeSymbolicEvalError(fnIdent, state, INVALID_MUST_CALL_OF_AN_INOX_FN_RETURN_TYPE_MUST_BE_XXX),
+				MakeSymbolicEvalError(fnIdent, state, INVALID_MUST_CALL_OF_AN_INOX_FN_RET_ARRAY_SHOULD_HAVE_LEN),
 			}, state.errors())
 			if !assert.IsType(t, (*InoxFunction)(nil), res) {
 				return
@@ -6692,23 +6707,20 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, NewArray(), result)
 		})
 
-		t.Run("'must' call: function should not return a value that is not nil, nor err, nor an array", func(t *testing.T) {
+		t.Run("'must' call: function always return a value that cannot be an array", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				fn f(func %fn() int){
 					return func!()
 				}
 				return f
 			`)
-			fnIdent := parse.FindNode(n, (*parse.CallExpression)(nil), nil).Callee
 			state.setGlobal("Array", WrapGoFunction(NewArray), GlobalConst)
 
 			res, err := symbolicEval(n, state)
 			if !assert.NoError(t, err) {
 				return
 			}
-			assert.Equal(t, []SymbolicEvaluationError{
-				MakeSymbolicEvalError(fnIdent, state, INVALID_MUST_CALL_OF_AN_INOX_FN_RETURN_TYPE_MUST_BE_XXX),
-			}, state.errors())
+			assert.Empty(t, state.errors())
 			assert.Empty(t, state.warnings())
 			if !assert.IsType(t, (*InoxFunction)(nil), res) {
 				return
@@ -6716,6 +6728,32 @@ func TestSymbolicEval(t *testing.T) {
 
 			result := res.(*InoxFunction).Result()
 			assert.Equal(t, ANY_INT, result)
+		})
+
+		t.Run("'must' call: function should not return a value that may be an array", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				fn f(func %fn() indexable){
+					return func!()
+				}
+				return f
+			`)
+			fnIdent := parse.FindNode(n, (*parse.CallExpression)(nil), nil).Callee
+			state.ctx.AddNamedPattern("indexable", &TypePattern{val: ANY_INDEXABLE}, false)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Equal(t, []SymbolicEvaluationError{
+				MakeSymbolicEvalError(fnIdent, state, INVALID_MUST_CALL_OF_AN_INOX_FN_RETURNED_VALUE_MAY_BE_AN_ARRAY),
+			}, state.errors())
+			assert.Empty(t, state.warnings())
+			if !assert.IsType(t, (*InoxFunction)(nil), res) {
+				return
+			}
+
+			result := res.(*InoxFunction).Result()
+			assert.Equal(t, ANY_INDEXABLE, result)
 		})
 	})
 	t.Run("call pattern", func(t *testing.T) {

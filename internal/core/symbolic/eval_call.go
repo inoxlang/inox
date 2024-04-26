@@ -750,14 +750,13 @@ func setAllowedNonPresentProperties(argNodes []parse.Node, nonSpreadArgCount int
 }
 
 func checkTransformMustCallReturnValue(ret Value, callNode parse.Node, calleeNode parse.Node, state *State) Value {
-	INVALID_RETURN_TYPE_MSG := INVALID_MUST_CALL_OF_AN_INOX_FN_RETURN_TYPE_MUST_BE_XXX
 
-outer:
 	switch r := ret.(type) {
 	case *Array:
 		array := r
-		if !array.HasKnownLen() || array.KnownLen() == 0 {
-			break
+		if !array.HasKnownLen() || array.KnownLen() <= 1 {
+			state.addError(MakeSymbolicEvalError(calleeNode, state, INVALID_MUST_CALL_OF_AN_INOX_FN_RET_ARRAY_SHOULD_HAVE_LEN))
+			return ret
 		}
 
 		lastElem := array.elements[len(array.elements)-1]
@@ -775,25 +774,16 @@ outer:
 			ok = true
 		}
 
-		if ok {
-			switch array.KnownLen() {
-			case 1:
-				break outer
-			case 2:
-				return array.ElementAt(0)
-			default:
-				return NewArray(array.elements[:len(array.elements)-1]...)
-			}
+		if !ok {
+			state.addError(MakeSymbolicEvalError(calleeNode, state, INVALID_MUST_CALL_OF_AN_INOX_LAST_ARRAY_ELEM_SHOULD_BE_X))
+			return ret
 		}
-	case IMultivalue:
-		mv := r
-		if len(mv.OriginalMultivalue().getValues()) == 2 {
-			onlyErrorsAndNil := mv.OriginalMultivalue().AllValues(func(v Value) bool {
-				return utils.Implements[*Error](v) || utils.Implements[*NilT](v)
-			})
-			if onlyErrorsAndNil {
-				return Nil
-			}
+
+		switch array.KnownLen() {
+		case 2:
+			return array.ElementAt(0)
+		default:
+			return NewArray(array.elements[:len(array.elements)-1]...)
 		}
 	case *Error:
 		state.addWarning(makeSymbolicEvalWarning(callNode, state, ERROR_IS_ALWAYS_RETURNED_THIS_WILL_CAUSE_A_PANIC))
@@ -801,10 +791,43 @@ outer:
 	case *NilT:
 		state.addWarning(makeSymbolicEvalWarning(callNode, state, NO_ERROR_IS_RETURNED))
 		return Nil
+	default:
+		mv, ok := r.(IMultivalue)
+		if ok && mv.OriginalMultivalue().ValueCount() == 2 {
+			//error | nil
+			onlyErrorsAndNil := mv.OriginalMultivalue().AllValues(func(v Value) bool {
+				return utils.Implements[*Error](v) || utils.Implements[*NilT](v)
+			})
+			if onlyErrorsAndNil {
+				return Nil
+			}
+		}
+
+		if mayBeAnArray(ret) {
+			state.addError(MakeSymbolicEvalError(calleeNode, state, INVALID_MUST_CALL_OF_AN_INOX_FN_RETURNED_VALUE_MAY_BE_AN_ARRAY))
+		}
+		return ret
+	}
+}
+
+func mayBeAnArray(v Value) bool {
+	_, ok := v.(*Array)
+	if ok {
+		return true
 	}
 
-	state.addError(MakeSymbolicEvalError(calleeNode, state, INVALID_RETURN_TYPE_MSG))
-	return ret
+	mv, ok := v.(IMultivalue)
+	if ok {
+		return mv.OriginalMultivalue().SomeValues(mayBeAnArray)
+	}
+
+	switch v.(type) {
+	case *Any, *AnyIndexable, *AnyIterable, *AnySequenceOf,
+		*AnySerializable, *AnyContainer, *AnyWatchable, *AnyWalkable, *AnyMessageReceiver: //future-proofing
+		return true
+	}
+
+	return false
 }
 
 func isReturnValueWithPossibleError(ret Value) bool {

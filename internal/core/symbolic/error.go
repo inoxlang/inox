@@ -23,12 +23,18 @@ const (
 
 	//calls
 
-	CALLEE_HAS_NODE_BUT_NOT_DEFINED                         = "callee is a node but has no defined type"
-	CANNOT_CALL_GO_FUNC_NO_CONCRETE_VALUE                   = "cannot call go function with no concrete value"
-	SPREAD_ARGS_NOT_SUPPORTED_FOR_NON_VARIADIC_FUNCS        = "spread arguments are not supported when calling non-variadic functions"
-	FUNCS_CALLED_RECU_SHOULD_HAVE_RET_TYPE                  = "functions called recursively should have a return type"
-	INVALID_MUST_CALL_OF_AN_INOX_FN_RETURN_TYPE_MUST_BE_XXX = //
-	"invalid 'must' call of an Inox function: return type should either be nil, (error|nil) or an array of known length (>= 2) whose last element is error or (error|nil)"
+	CALLEE_HAS_NODE_BUT_NOT_DEFINED                  = "callee is a node but has no defined type"
+	CANNOT_CALL_GO_FUNC_NO_CONCRETE_VALUE            = "cannot call go function with no concrete value"
+	SPREAD_ARGS_NOT_SUPPORTED_FOR_NON_VARIADIC_FUNCS = "spread arguments are not supported when calling non-variadic functions"
+	FUNCS_CALLED_RECU_SHOULD_HAVE_RET_TYPE           = "functions called recursively should have a return type"
+
+	INVALID_MUST_CALL_OF_AN_INOX_LAST_ARRAY_ELEM_SHOULD_BE_X = //
+	"invalid 'must' call of an Inox function: the last element of the returned array should be error, nil, or (error | nil)"
+	INVALID_MUST_CALL_OF_AN_INOX_FN_RET_ARRAY_SHOULD_HAVE_LEN = //
+	"invalid 'must' call of an Inox function: returned array should have an known length >= 2"
+	INVALID_MUST_CALL_OF_AN_INOX_FN_RETURNED_VALUE_MAY_BE_AN_ARRAY = //
+	"invalid 'must' call of an Inox function: the actual result cannot be determined because returned value may be an array"
+
 	NO_ERROR_IS_RETURNED                             = "no error is returned"
 	ERROR_IS_ALWAYS_RETURNED_THIS_WILL_CAUSE_A_PANIC = "error is always returned, this will cause a panic"
 

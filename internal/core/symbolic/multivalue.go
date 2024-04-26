@@ -187,6 +187,10 @@ func (mv *Multivalue) Values() []Value {
 	return slices.Clone(mv.values)
 }
 
+func (mv *Multivalue) ValueCount() int {
+	return len(mv.values)
+}
+
 func (mv *Multivalue) AllValues(callbackFn func(v Value) bool) bool {
 	for _, val := range mv.values {
 		if !callbackFn(val) {
@@ -194,6 +198,15 @@ func (mv *Multivalue) AllValues(callbackFn func(v Value) bool) bool {
 		}
 	}
 	return true
+}
+
+func (mv *Multivalue) SomeValues(callbackFn func(v Value) bool) bool {
+	for _, val := range mv.values {
+		if callbackFn(val) {
+			return true
+		}
+	}
+	return false
 }
 
 func (mv *Multivalue) ForEachValue(callbackFn func(v Value) error) error {
