@@ -148,7 +148,7 @@ func GetNodeColorizations(chunk *parse.Chunk, lightMode bool) []ColorizationInfo
 				ColorSequence: colors.ControlKeyword,
 			})
 		//other keywords
-		case parse.AND_KEYWORD, parse.OR_KEYWORD, parse.MAPPING_KEYWORD, parse.TREEDATA_KEYWORD,
+		case parse.AS_KEYWORD, parse.IS_KEYWORD, parse.AND_KEYWORD, parse.OR_KEYWORD, parse.MAPPING_KEYWORD, parse.TREEDATA_KEYWORD,
 			parse.FN_KEYWORD, parse.CONST_KEYWORD, parse.VAR_KEYWORD, parse.GLOBALVAR_KEYWORD, parse.ASSIGN_KEYWORD, parse.CONCAT_KEYWORD,
 			parse.SENDVAL_KEYWORD, parse.SYNCHRONIZED_KEYWORD, parse.EXTEND_KEYWORD, parse.PATTERN_KEYWORD,
 			parse.PNAMESPACE_KEYWORD, parse.STRUCT_KEYWORD, parse.NEW_KEYWORD, parse.SELF_KEYWORD, parse.URLOF_KEYWORD,
