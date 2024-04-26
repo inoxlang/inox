@@ -1982,7 +1982,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 		}
 
 		t.Run("assignment : LHS is a pipeline expression", func(t *testing.T) {
-			code := `a = | get-data | split-lines $; return $a`
+			code := `a = get-data() | split-lines($); return $a`
 			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
 				"get-data": core.ValOf(func(ctx *core.Context) core.String {
 					return "aaa\nbbb"
@@ -5928,21 +5928,57 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 	})
 
 	t.Run("pipeline expression", func(t *testing.T) {
-		code := `
-			result = | idt [1, "a", 2] | filter $ %int
-			return result
-		`
-		state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
-			"idt": core.ValOf(func(ctx *core.Context, v core.Value) core.Value {
-				return v
-			}),
-			"filter": core.ValOf(globals.Filter),
-		})
-		state.Ctx.AddNamedPattern("int", core.INT_PATTERN)
+		t.Run("base case", func(t *testing.T) {
+			code := `
+				result = [1, "a", 2] | filter($, %int)
+				return result
+			`
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
+				"filter": core.ValOf(globals.Filter),
+			})
+			state.Ctx.AddNamedPattern("int", core.INT_PATTERN)
 
-		res, err := Eval(code, state, false)
-		assert.NoError(t, err)
-		assert.Equal(t, core.NewWrappedValueList(core.Int(1), core.Int(2)), res)
+			res, err := Eval(code, state, false)
+			assert.NoError(t, err)
+			assert.Equal(t, core.NewWrappedValueList(core.Int(1), core.Int(2)), res)
+		})
+
+		t.Run("second stage is the name of a Go function", func(t *testing.T) {
+			code := `
+				result = [1, "a", 2] | second_elem
+				return result
+			`
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
+				"second_elem": core.ValOf(func(ctx *core.Context, list *core.List) core.Value {
+					return list.At(ctx, 1)
+				}),
+			})
+			state.Ctx.AddNamedPattern("int", core.INT_PATTERN)
+
+			res, err := Eval(code, state, false)
+			assert.NoError(t, err)
+			assert.Equal(t, core.String("a"), res)
+		})
+
+		t.Run("second stage is the name of an Inox function that returns the second element of a list", func(t *testing.T) {
+			code := `
+				fn second_elem(list list){
+					return list[1]
+				}
+				result = [1, "a", 2] | second_elem
+				return result
+			`
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
+				"idt": core.ValOf(func(ctx *core.Context, array *core.Array) core.Value {
+					return array.At(ctx, 1)
+				}),
+			})
+			state.Ctx.AddNamedPattern("int", core.INT_PATTERN)
+
+			res, err := Eval(code, state, false)
+			assert.NoError(t, err)
+			assert.Equal(t, core.String("a"), res)
+		})
 	})
 
 	t.Run("member expression", func(t *testing.T) {

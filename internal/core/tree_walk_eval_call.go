@@ -13,10 +13,10 @@ const (
 
 type TreeWalkCall struct {
 	callee             Value
-	callNode           *parse.CallExpression //nil if the function is called in isolation.
+	callNode           parse.Node //nil if the function is called in isolation.
 	self               Value
 	state              *TreeWalkState
-	arguments          any
+	arguments          any //[]Value or []parse.Node
 	must               bool
 	cmdLineSyntax      bool
 	disabledArgSharing []bool

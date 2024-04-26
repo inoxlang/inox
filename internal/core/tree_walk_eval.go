@@ -467,19 +467,43 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			}()
 		}
 
-		var res Value
+		res, err := TreeWalkEval(stages[0].Expr, state)
+		if err != nil {
+			return nil, err
+		}
+		scope[""] = res
 
-		for _, stage := range stages {
-			res, err = TreeWalkEval(stage.Expr, state)
-			if err != nil {
-				return nil, err
+		for _, stage := range stages[1:] {
+			switch stage.Expr.(type) {
+			case *parse.IdentifierLiteral, *parse.IdentifierMemberExpression:
+				callee, err := TreeWalkEval(stage.Expr, state)
+				if err != nil {
+					return nil, err
+				}
+
+				res, err := TreeWalkCallFunc(TreeWalkCall{
+					callee:    callee,
+					callNode:  stage.Expr,
+					state:     state,
+					arguments: []Value{scope[""]},
+					must:      true,
+				})
+				if err != nil {
+					return nil, err
+				}
+				scope[""] = res
+			default:
+				res, err := TreeWalkEval(stage.Expr, state)
+				if err != nil {
+					return nil, err
+				}
+				scope[""] = res
 			}
-			scope[""] = res
 		}
 
 		//unlike the bytecode interpreter we return the value even for pipe statement
 		//it's useful for the shell
-		return res, nil
+		return scope[""], nil
 	case *parse.LocalVariableDeclarations:
 		currentScope := state.CurrentLocalScope()
 
