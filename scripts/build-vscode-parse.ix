@@ -27,8 +27,8 @@ build_cmd_env = {
 }
 
 assign result err = ex(
-    ..200s --env=build_cmd_env 
-    #go #build -x -v -o ./vscode/parse.wasm ./vscode/parse/main.go
+    ..200s, --env=build_cmd_env,
+    #go, #build, -x, -v, -o, ./vscode/parse.wasm, ./vscode/parse/main.go
 )
 
 

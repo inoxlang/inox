@@ -32,7 +32,7 @@ fs.rm(OUTPUT_DECLARATION_FILE)
 
 # transpile
 
-assign result err = ex(..5s #tsc -p TS_CONFIG_FILE)
+assign result err = ex(..5s, #tsc, -p, TS_CONFIG_FILE)
 
 if err? {
     print "failed:" $err
@@ -46,7 +46,7 @@ if err? {
 
 # remove lines starting with 'export' from the .js file.
 
-js = tostr(fs.read!(OUTPUT_JS_FILE))
+js = tostr(fs.read!(OUTPUT_JS_FILE) as string)
 js_lines = split!(js, "\n")
 
 var new_js str = ""
@@ -61,7 +61,7 @@ update!(OUTPUT_JS_FILE, #replace, new_js)
 
 # remove lines starting with 'export' from the .d.ts file.
 
-decl = tostr(fs.read!(OUTPUT_DECLARATION_FILE))
+decl = tostr(fs.read!(OUTPUT_DECLARATION_FILE) as string)
 decl_lines = split!(decl, "\n")
 
 var new_decl str = ""
