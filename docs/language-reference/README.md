@@ -13,6 +13,7 @@
 - [Transient Types](./transient-types.md)
 - [Control flow](./control-flow.md)
 - [Functions](./functions.md)
+- [Pipeline](./pipeline.md)
 - [Patterns](./patterns.md)
 - [Extensions](./extensions.md)
 - [Markup Expressions (HTML)](./markup-expressions.md)
