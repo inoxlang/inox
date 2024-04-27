@@ -9,17 +9,93 @@ const signalsToDependents = new WeakMap()
 /** @type {WeakMap<Text, Dependent>} */
 const textsWithInterpolations = new WeakMap()
 
+
+/** @type {WeakMap<Element, Record<string, Signal>>} */
+const hyperscriptComponentRootsToSignals = new WeakMap();
+
+(function(){
+	const observer = new MutationObserver((mutations, observer) => {
+		/** @type {Map<HTMLElement, Set<string>[]>} */
+		const updatedAttributeNames = new Map()
+
+		for(const mutation of mutations){
+			switch(mutation.type){
+			case 'attributes':
+				const signals = hyperscriptComponentRootsToSignals.get(mutation.target)
+				if(signals && (mutation.target instanceof HTMLElement)){
+					let list = updatedAttributeNames.get(mutation.target)
+					if(list === undefined){
+						list = []
+						updatedAttributeNames.set(mutation.target, list)
+					}
+					list.push(mutation.attributeName)
+				}
+				break
+			case 'childList':
+				//Initialize new Hyperscript components.
+				mutation.addedNodes.forEach(node => {
+					if(isComponentRootElement(node)){
+						initComponent({
+							element: node,
+							isHyperscriptComponent: true
+						})
+					}
+				})
+				break
+			}
+		}
+
+		//Update signals with the new attribute values.
+
+		for(const [component, attributeNames] of updatedAttributeNames){
+			batch(() => {
+				const signals = hyperscriptComponentRootsToSignals.get(component)
+                for(const attrName of attributeNames){
+					const signalName = signalNameFromAttrName(attrName)
+					signals[signalName].value = component.attributes.getNamedItem(attrName).value
+				}
+			})
+		}
+	})	
+
+	observer.observe(document.documentElement, {
+		subtree: true,
+		attributes: true,
+		childList: true,
+	})
+})();
+
+
 /**
  * @param {{
  *      signals?: Record<string, Signal>
  * }} arg 
  */
 function initComponent(arg) {
-	const componentRoot = /** @type {HTMLElement} */(me())
+	const componentRoot = arg.element ?? /** @type {HTMLElement} */(me())
 
 	//register signals
 
 	const signals = arg.signals ?? {}
+
+	if(arg.isHyperscriptComponent){
+		if(arg.signals){
+			throw new Error('signals should not be provided for an hyperscript components')
+		}
+
+		//Create a signal for each attribute.
+
+		const attributeNames = getDeduplicatedAttributeNames(componentRoot)
+
+		for(const attrName of attributeNames){
+            const signalName = signalNameFromAttrName(attrName)
+			signals[signalName] = signal(componentRoot.attributes.getNamedItem(attrName).value)
+		}
+
+		hyperscriptComponentRootsToSignals.set(componentRoot, signals)
+	}
+
+
 	const initialState = getState(signals)
 	const updatedSignalCount = signal(0)
 
@@ -166,9 +242,11 @@ function getState(signals) {
 	const state = {}
 	for (const name in signals) {
 		state[name] = signals[name].peek()
+		if(name.startsWith('data-')){
+			state[name.slice('data-'.length)] = state[name]
+		}
 	}
-	return state
-}
+}	
 
 /** 
  *  @typedef Interpolation
@@ -330,4 +408,31 @@ function walkNode(elem, visit) {
 	elem.childNodes.forEach(childNode => {
 		walkNode(childNode, visit)
 	})
+}
+
+
+/**
+ * @param {Node} node 
+ * @returns {asserts node is HTMLElement}
+ */
+function isComponentRootElement(node){
+	return (node instanceof HTMLElement) && Array.from(node.classList).some(className => className[0].toUpperCase() == className[0])
+}
+
+/**
+ * @param {HTMLElement} element 
+ */
+function getDeduplicatedAttributeNames(element){
+	const attributeNames = element.getAttributeNames()
+	return Array.from(new Set(attributeNames)) //remove duplicates
+}
+
+/**
+ * @param {string} name 
+ */
+function signalNameFromAttrName(attrName){
+	if(attrName.startsWith('data-')){
+		return attrName.slice('data-'.length)
+	}
+	return attrName
 }
