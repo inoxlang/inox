@@ -62,12 +62,12 @@ _Note: the permissions granted to imported modules (local or third-party) are
 </details>
 
 _Inox is intended to be used for web applications that are primarily rendered
-server-side. Cient-side components are also supported, see here for more information:
+server-side. Client-side interactivity is implemeted using [Hyperscript](https://hyperscript.org/) and [HTMX](https://htmx.org/). See here for more information:
 [frontend development](./docs/frontend-development.md)._
 
 ---
 
-I have been working 2 years full time on Inox. There is still work to do in
+I have been working over 2 years on Inox. There is still work to do in
 order to make Inox usable in real world applications. If you believe this
 project has potential, **consider donating** through
 [GitHub](https://github.com/sponsors/GraphR00t) (preferred) or
