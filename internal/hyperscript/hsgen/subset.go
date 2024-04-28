@@ -90,9 +90,19 @@ func IsBuiltinCommandName(name string) bool {
 	return slices.Contains(COMMAND_NAMES, name)
 }
 
-func GetBuiltinDefinition(name string) (Definition, bool) {
+func GetBuiltinCommandDefinition(name string) (Definition, bool) {
 	for _, def := range BUILTIN_DEFINITIONS {
-		if def.Name == name {
+		if def.Name == name && def.Kind == CommandDefinition {
+			return def, true
+		}
+	}
+
+	return Definition{}, false
+}
+
+func GetBuiltinFeatureDefinition(name string) (Definition, bool) {
+	for _, def := range BUILTIN_DEFINITIONS {
+		if def.Name == name && def.Kind == FeatureDefinition {
 			return def, true
 		}
 	}

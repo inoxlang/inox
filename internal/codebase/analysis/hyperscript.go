@@ -35,16 +35,21 @@ func (a *analyzer) addUsedHyperscriptFeaturesAndCommands(node parse.Node) {
 		if token.Type != hscode.IDENTIFIER {
 			continue
 		}
-		if hsgen.IsBuiltinFeatureName(token.Value) || hsgen.IsBuiltinCommandName(token.Value) {
-			def, ok := hsgen.GetBuiltinDefinition(token.Value)
+
+		if hsgen.IsBuiltinFeatureName(token.Value) {
+			def, ok := hsgen.GetBuiltinFeatureDefinition(token.Value)
 			if ok {
-				switch def.Kind {
-				case hsgen.CommandDefinition:
-					a.result.UsedHyperscriptCommands[def.Name] = def
-				case hsgen.FeatureDefinition:
-					a.result.UsedHyperscriptFeatures[def.Name] = def
-				}
+				a.result.UsedHyperscriptFeatures[def.Name] = def
 			}
 		}
+
+		if hsgen.IsBuiltinCommandName(token.Value) {
+			def, ok := hsgen.GetBuiltinCommandDefinition(token.Value)
+			if ok {
+				a.result.UsedHyperscriptCommands[def.Name] = def
+			}
+		}
+
+		//Note: some commands are also features (e.g. 'set').
 	}
 }

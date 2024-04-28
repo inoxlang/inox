@@ -41,11 +41,11 @@ func TestAnalyzeHyperscript(t *testing.T) {
 		}
 
 		expectedUsedCommands := map[string]hsgen.Definition{
-			"toggle": utils.MustGet(hsgen.GetBuiltinDefinition("toggle")),
+			"toggle": utils.MustGet(hsgen.GetBuiltinCommandDefinition("toggle")),
 		}
 
 		expectedUseFeatures := map[string]hsgen.Definition{
-			"on": utils.MustGet(hsgen.GetBuiltinDefinition("on")),
+			"on": utils.MustGet(hsgen.GetBuiltinFeatureDefinition("on")),
 		}
 
 		assert.Equal(t, expectedUsedCommands, result.UsedHyperscriptCommands)
@@ -67,14 +67,42 @@ func TestAnalyzeHyperscript(t *testing.T) {
 		}
 
 		expectedUsedCommands := map[string]hsgen.Definition{
-			"toggle": utils.MustGet(hsgen.GetBuiltinDefinition("toggle")),
+			"toggle": utils.MustGet(hsgen.GetBuiltinCommandDefinition("toggle")),
 		}
 
 		expectedUseFeatures := map[string]hsgen.Definition{
-			"on": utils.MustGet(hsgen.GetBuiltinDefinition("on")),
+			"on": utils.MustGet(hsgen.GetBuiltinFeatureDefinition("on")),
 		}
 
 		assert.Equal(t, expectedUsedCommands, result.UsedHyperscriptCommands)
 		assert.Equal(t, expectedUseFeatures, result.UsedHyperscriptFeatures)
 	})
+
+	t.Run("usage of a feature that is also a command", func(t *testing.T) {
+		ctx := setup()
+		defer ctx.CancelGracefully()
+
+		util.WriteFile(ctx.GetFileSystem(), "/routes/index.ix", []byte("manifest{}; return html<div {on click set a to 1}></div>"), 0600)
+
+		result, err := AnalyzeCodebase(ctx, Configuration{
+			TopDirectories: []string{"/"},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		expectedUsedCommands := map[string]hsgen.Definition{
+			"set": utils.MustGet(hsgen.GetBuiltinCommandDefinition("set")),
+		}
+
+		expectedUseFeatures := map[string]hsgen.Definition{
+			"on":  utils.MustGet(hsgen.GetBuiltinFeatureDefinition("on")),
+			"set": utils.MustGet(hsgen.GetBuiltinFeatureDefinition("set")),
+		}
+
+		assert.Equal(t, expectedUsedCommands, result.UsedHyperscriptCommands)
+		assert.Equal(t, expectedUseFeatures, result.UsedHyperscriptFeatures)
+	})
+
 }
