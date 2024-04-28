@@ -2,7 +2,10 @@
 
 (function(){
 
-	const INTERPOLATION_PATTERN = /\$\(([^)]*)\)/g
+	const INTERPOLATION_PATTERN = new RegExp('[(]{2}'+ '((?:[^)]|\\)[^)])+)' + '[)]{2}', 'g')
+	const LOOSE_HS_ELEM_VAR_NAME_PATTERN = /(:[a-zA-Z_][_a-zA-Z0-9]*)/g
+	const LOOSE_HS_ATTR_NAME_PATTERN = /(@[a-zA-Z_][_a-zA-Z0-9-]*)/g
+
 	const SIGNAL_SETTLING_TIMEOUT_MILLIS = 100
 	
 	/** @type {WeakMap<Signal, Dependent[]>} */
@@ -55,7 +58,7 @@
 									element: node,
 									isHyperscriptComponent: true
 								})
-							})
+							}, 0)
 						}
 					})
 					//We don't register new text interpolations because this is not secure.
@@ -115,6 +118,17 @@
 				signals[signalName] = signal(componentRoot.attributes.getNamedItem(attrName).value)
 			}
 	
+			//Create a signal for each element variable.
+
+			const elementScope = getElementScope(componentRoot)
+
+			for(const varName in elementScope){
+				const signalName = signalNameFromElemVarName(varName)
+				signals[signalName] = signal(elementScope[varName])
+
+			}
+			observeElementScope(componentRoot, signals)
+
 			hyperscriptComponentRootsToSignals.set(componentRoot, signals)
 		}
 	
@@ -155,7 +169,7 @@
 			const interpolations = []
 	
 			while (execArray != null) {
-				interpolations.push(getInterpolation(execArray[0], execArray[1], execArray.index, textNode))
+				interpolations.push(getInterpolation(execArray[0], execArray[1], execArray.index, textNode, signals))
 	
 				execArray = INTERPOLATION_PATTERN.exec(textNode.wholeText)
 			}
@@ -168,18 +182,22 @@
 				rerender: makeRenderTextNode(textNode, interpolations)
 			}
 	
-			textDependent.rerender(initialState)
+			textDependent.rerender(initialState, componentRoot)
 			textsWithInterpolations.set(textNode, textDependent)
 	
+			//Add the dependent to the mapping <signal> -> <dependents> 
+
 			for (const interp of interpolations) {
-				const signal = signals[interp.name]
-				if (signal) {
-					let dependents = signalsToDependents.get(signal)
-					if (dependents === undefined) {
-						dependents = []
-						signalsToDependents.set(signal, dependents)
+				for(const signalName of interp.inexactSignalList){
+					const signal = signals[signalName]
+					if (signal) {
+						let dependents = signalsToDependents.get(signal)
+						if (dependents === undefined) {
+							dependents = []
+							signalsToDependents.set(signal, dependents)
+						}
+						dependents.push(textDependent)
 					}
-					dependents.push(textDependent)
 				}
 			}
 		})
@@ -250,7 +268,7 @@
 					//rerender dependents
 	
 					for (const dependent of dependents) {
-						dependent.rerender(state)
+						dependent.rerender(state, componentRoot)
 					}
 				}
 			} finally {
@@ -276,10 +294,10 @@
 	/** 
 	 *  @typedef Interpolation
 	 *  @property {Text} node
-	 *  @property {string} name
+	 *  @property {string} expression
+	 *  @property {string[]} inexactSignalList
 	 *  @property {number} startIndex
 	 *  @property {number} endIndex
-	 *  @property {string} [default]
 	 *  @property {string} [type]
 	 */
 	
@@ -288,11 +306,13 @@
 	 */
 	
 	/** 
+	 * A TextNodeDependent represents an HTML Text Node that contains one or more interpolations
+	 * and that is therefore dependent on signals.
 	 *  @typedef TextNodeDependent
 	 *  @property {"text"} type
 	 *  @property {Text} node
 	 *  @property {Interpolation[]} interpolations
-	 *  @property {(state: State) => void} rerender
+	 *  @property {(state: State, componentRoot: HTMLElement) => void} rerender
 	 */
 	
 	/** 
@@ -305,77 +325,48 @@
 	 * @param {string} rawInterpolation 
 	 * @param {number} delimStartIndex
 	 * @param {Text} node
+	 * @param {Record<string, Signal>} signals
 	 * */
-	function getInterpolation(rawInterpolationWithDelims, rawInterpolation, delimStartIndex, node) {
+	function getInterpolation(rawInterpolationWithDelims, rawInterpolation, delimStartIndex, node, signals) {
 	
 		/** @type {Interpolation} */
 		const interpolation = {
-			name: "???",
+			expression: rawInterpolation,
 			node: node,
 			startIndex: delimStartIndex,
-			endIndex: delimStartIndex + rawInterpolationWithDelims.length
+			endIndex: delimStartIndex + rawInterpolationWithDelims.length,
+			inexactSignalList: []
 		}
-		let partIndex = 0;
-		let partStart = 0;
-		let inString = false
+
+
+        //Add element variables to the signal list.
+
+        {
+            let execArray = LOOSE_HS_ELEM_VAR_NAME_PATTERN.exec(interpolation.expression)
 	
-		loop:
-		for (let i = 0; i < rawInterpolation.length; i++) {
-			switch (rawInterpolation[i]) {
-				case ':': case ')':
-					if (inString) {
-						throw new Error(`invalid interpolation \`${rawInterpolation}\`: unterminated default value`)
-					}
-					switch (partIndex) {
-						case 0:
-							interpolation.name = rawInterpolation.slice(partStart, i)
-							partIndex++
-							partStart = i + 1
-							break
-						case 1:
-							if (rawInterpolation[partStart] == "'") {
-								interpolation.default = rawInterpolation.slice(partStart + 1, i - 1)
-							}
+            while (execArray != null) {
+                const name = signalNameFromElemVarName(execArray[0])
+                if(name in signals){
+                    interpolation.inexactSignalList.push(name)
+                }
+                execArray = LOOSE_HS_ELEM_VAR_NAME_PATTERN.exec(interpolation.expression)
+            }
+        }
+
+        //Add attribute names to the signal list.
+
+        {
+            let execArray = LOOSE_HS_ATTR_NAME_PATTERN.exec(interpolation.expression)
 	
-							partIndex++
-							partStart = i + 1
-							break
-						default:
-							throw new Error(`invalid interpolation \`${rawInterpolation}\`: too many parts`)
-					}
+            while (execArray != null) {
+                const name = signalNameFromAttrName(execArray[0])
+                if(name in signals){
+                    interpolation.inexactSignalList.push(name)
+                }
+                execArray = LOOSE_HS_ATTR_NAME_PATTERN.exec(interpolation.expression)
+            }
+        }
 	
-					continue loop
-				case "'":
-					if (partIndex == 0) {
-						throw new Error(`invalid interpolation \`${rawInterpolation}\`: the first part should be a name not a value, example: $(name:"default")`)
-					}
-					if (!inString) {
-						if (partIndex == 0 || partIndex > 1) {
-							throw new Error(`invalid interpolation \`${rawInterpolation}\``)
-						}
-	
-						inString = true
-					} else {
-						let backslashCount = 0
-						for (let j = i - 1; j >= 0 && rawInterpolation[j] == '\\'; j--) {
-							backslashCount++
-						}
-	
-						if (backslashCount % 2 == 1) {
-							//escaped
-							continue
-						}
-						inString = false
-					}
-					break
-			}
-		}
-	
-		if (partIndex == 0) {
-			if (partStart == 0) {
-				interpolation.name = rawInterpolation.slice(partStart)
-			}
-		}
 		return interpolation
 	}
 	
@@ -405,18 +396,20 @@
 	
 		/**
 		 * @param {State} state
+		 * @param {HTMLElement} componentRoot
 		 */
-		return (state) => {
+		return (state, componentRoot) => {
 			let string = ""
 			for (const part of parts) {
 				if (typeof part == 'string') {
 					string += part
 				} else {
 					const interpolation = part
-					if (interpolation.name in state) {
-						string += state[interpolation.name].toString()
+					const result = evaluateHyperscript(interpolation.expression, componentRoot)
+					if(result === undefined || result === null){
+						string += '?'
 					} else {
-						string += interpolation.default ?? "???"
+						string += result.toString()
 					}
 				}
 			}
@@ -464,13 +457,56 @@
 	}
 	
 	/**
-	 * @param {string} name 
+	 * @param {string} attrName 
 	 */
 	function signalNameFromAttrName(attrName){
-		if(attrName.startsWith('data-')){
-			return attrName.slice('data-'.length)
-		}
-		return attrName
+		return '@'+attrName
 	}
 
+	/**
+	 * @param {string} elemVarName 
+	 */
+	function signalNameFromElemVarName(elemVarName){
+		if(elemVarName.startsWith(':')){
+			return elemVarName
+		}
+		return ':'+elemVarName
+	}
+
+	/**
+	 * @param {string} expr
+	 * @param {HTMLElement} element 
+	 */
+	function evaluateHyperscript(expr, element){
+		const owner = element
+		const ctx = _hyperscript.internals.runtime.makeContext(owner, {}, element, undefined)
+		return _hyperscript.evaluate(expr, ctx)
+	}
+
+	/**
+	 * @param {HTMLElement} element 
+	 */
+	function getElementScope(element){
+		return _hyperscript.internals.runtime.getInternalData(element)?.elementScope ?? {}
+	}
+
+	/**
+	 * @param {HTMLElement} element 
+	 * @param {Record<string, Signal>} signals
+	 */
+	function observeElementScope(element, signals){
+		const data =  _hyperscript.internals.runtime.getInternalData(element)
+		data.elementScope = new Proxy(getElementScope(element), {
+			set(target, name, newValue){
+				if(typeof name == 'string'){
+					setTimeout(() => { //wait for the end of hyperscript execution
+						const signalName = signalNameFromElemVarName(name)
+						signals[signalName].value = newValue
+					})
+				}
+				target[name] = newValue
+				return true
+			}
+		})
+	}
 }());
