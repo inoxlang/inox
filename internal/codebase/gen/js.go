@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/inoxlang/inox/internal/afs"
@@ -176,8 +177,11 @@ func (g *JsGenerator) genInox(ctx *core.Context, analysis *analysis.Result, bund
 
 	defer f.Close()
 
+	libs := maps.Keys(analysis.UsedInoxJsLibs)
+	sort.Strings(libs)
+
 	jsCode, err := ixgen.Generate(ixgen.Config{
-		Libraries: analysis.UsedInoxJsLibs,
+		Libraries: libs,
 	})
 	if err != nil {
 		logger.Println(g.owner, err)

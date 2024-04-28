@@ -39,8 +39,8 @@ func TestAnalyzeInoxjs(t *testing.T) {
 			return
 		}
 
-		assert.Equal(t, []string{inoxjs.SURREAL_LIB_NAME}, result.UsedInoxJsLibs)
-		assert.True(t, result.IsSurrealUsed)
+		assert.Contains(t, result.UsedInoxJsLibs, inoxjs.SURREAL_LIB_NAME)
+		assert.True(t, result.IsSurrealUsed())
 	})
 
 	t.Run("preact signals", func(t *testing.T) {
@@ -62,8 +62,8 @@ func TestAnalyzeInoxjs(t *testing.T) {
 			return
 		}
 
-		assert.Equal(t, []string{inoxjs.PREACT_SIGNALS_LIB_NAME}, result.UsedInoxJsLibs)
-		assert.True(t, result.IsPreactSignalsLibUsed)
+		assert.Contains(t, result.UsedInoxJsLibs, inoxjs.PREACT_SIGNALS_LIB_NAME)
+		assert.True(t, result.IsPreactSignalsLibUsed())
 	})
 
 	t.Run("inox component library + preact signals should be reported as being used if a client-side interpolation is found", func(t *testing.T) {
@@ -86,9 +86,11 @@ func TestAnalyzeInoxjs(t *testing.T) {
 			return
 		}
 
-		assert.Equal(t, []string{inoxjs.INOX_COMPONENT_LIB_NAME, inoxjs.PREACT_SIGNALS_LIB_NAME}, result.UsedInoxJsLibs)
-		assert.True(t, result.IsInoxComponentLibUsed)
-		assert.True(t, result.IsPreactSignalsLibUsed)
+		assert.Contains(t, result.UsedInoxJsLibs, inoxjs.INOX_COMPONENT_LIB_NAME)
+		assert.Contains(t, result.UsedInoxJsLibs, inoxjs.PREACT_SIGNALS_LIB_NAME)
+
+		assert.True(t, result.IsInoxComponentLibUsed())
+		assert.True(t, result.IsPreactSignalsLibUsed())
 	})
 
 	t.Run("inox component library + preact signals should be reported as being used if a 'x-if' XML attribute is found", func(t *testing.T) {
@@ -99,7 +101,7 @@ func TestAnalyzeInoxjs(t *testing.T) {
 		util.WriteFile(fls, "/routes/index.ix", []byte(`
 			manifest{}
 			return html<div>
-				<div x-if="variable"></div>
+				<div `+inoxjs.CONDITIONAL_DISPLAY_ATTR_NAME+`="variable"></div>
 			</div>
 		`), 0600)
 
@@ -111,9 +113,11 @@ func TestAnalyzeInoxjs(t *testing.T) {
 			return
 		}
 
-		assert.Equal(t, []string{inoxjs.INOX_COMPONENT_LIB_NAME, inoxjs.PREACT_SIGNALS_LIB_NAME}, result.UsedInoxJsLibs)
-		assert.True(t, result.IsInoxComponentLibUsed)
-		assert.True(t, result.IsPreactSignalsLibUsed)
+		assert.Contains(t, result.UsedInoxJsLibs, inoxjs.INOX_COMPONENT_LIB_NAME)
+		assert.Contains(t, result.UsedInoxJsLibs, inoxjs.PREACT_SIGNALS_LIB_NAME)
+
+		assert.True(t, result.IsInoxComponentLibUsed())
+		assert.True(t, result.IsPreactSignalsLibUsed())
 	})
 
 	t.Run("css scope inline: <style> element of markup expression", func(t *testing.T) {
@@ -136,8 +140,8 @@ func TestAnalyzeInoxjs(t *testing.T) {
 			return
 		}
 
-		assert.Equal(t, []string{inoxjs.CSS_INLINE_SCOPE_LIB_NAME}, result.UsedInoxJsLibs)
-		assert.True(t, result.IsCssScopeInlineUsed)
+		assert.Contains(t, result.UsedInoxJsLibs, inoxjs.CSS_INLINE_SCOPE_LIB_NAME)
+		assert.True(t, result.IsCssScopeInlineUsed())
 	})
 
 	t.Run("css scope inline: <style> not element of markup expression", func(t *testing.T) {
@@ -162,7 +166,7 @@ func TestAnalyzeInoxjs(t *testing.T) {
 			return
 		}
 
-		assert.Equal(t, []string{inoxjs.CSS_INLINE_SCOPE_LIB_NAME}, result.UsedInoxJsLibs)
-		assert.True(t, result.IsCssScopeInlineUsed)
+		assert.Contains(t, result.UsedInoxJsLibs, inoxjs.CSS_INLINE_SCOPE_LIB_NAME)
+		assert.True(t, result.IsCssScopeInlineUsed())
 	})
 }

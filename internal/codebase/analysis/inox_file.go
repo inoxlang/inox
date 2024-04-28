@@ -59,10 +59,9 @@ func (a *analyzer) preAnalyzeInoxFile(path string, fileContent string, chunk *pa
 		case *parse.MarkupElement:
 			a.preAnalyzeMarkupElement(node)
 		case *parse.MarkupText:
-			if strings.Contains(node.Value, inoxjs.TEXT_INTERPOLATION_OPENING_DELIMITER) && !a.result.IsInoxComponentLibUsed {
-				a.result.IsInoxComponentLibUsed = true
-				a.result.IsPreactSignalsLibUsed = true
-				a.result.UsedInoxJsLibs = append(a.result.UsedInoxJsLibs, inoxjs.INOX_COMPONENT_LIB_NAME, inoxjs.PREACT_SIGNALS_LIB_NAME)
+			if strings.Contains(node.Value, inoxjs.TEXT_INTERPOLATION_OPENING_DELIMITER) {
+				a.result.UsedInoxJsLibs[inoxjs.INOX_COMPONENT_LIB_NAME] = struct{}{}
+				a.result.UsedInoxJsLibs[inoxjs.PREACT_SIGNALS_LIB_NAME] = struct{}{}
 			}
 		}
 

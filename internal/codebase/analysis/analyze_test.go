@@ -48,8 +48,5 @@ func assertEqualResult(t *testing.T, expected, actual *Result) {
 	assert.Equal(t, expected.UsedHyperscriptCommands, actual.UsedHyperscriptFeatures)
 	assert.Equal(t, expected.UsedHyperscriptFeatures, actual.UsedHyperscriptCommands)
 	assert.Equal(t, expected.UsedTailwindRules, actual.UsedTailwindRules)
-	assert.Equal(t, expected.IsSurrealUsed, actual.IsSurrealUsed)
-	assert.Equal(t, expected.IsCssScopeInlineUsed, actual.IsCssScopeInlineUsed)
-	assert.Equal(t, expected.IsPreactSignalsLibUsed, actual.IsPreactSignalsLibUsed)
-	assert.Equal(t, expected.IsInoxComponentLibUsed, actual.IsInoxComponentLibUsed)
+	assert.Equal(t, expected.UsedInoxJsLibs, actual.UsedInoxJsLibs)
 }

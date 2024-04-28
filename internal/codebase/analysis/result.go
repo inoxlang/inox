@@ -6,6 +6,7 @@ import (
 	"github.com/inoxlang/inox/internal/css/varclasses"
 	"github.com/inoxlang/inox/internal/globals/http_ns/spec"
 	"github.com/inoxlang/inox/internal/hyperscript/hsgen"
+	"github.com/inoxlang/inox/internal/inoxjs"
 	"github.com/inoxlang/inox/internal/memds"
 )
 
@@ -31,11 +32,7 @@ type Result struct {
 	CssVariables         map[css.VarName]varclasses.Variable
 	UsedVarBasedCssRules map[css.VarName]varclasses.Variable
 
-	UsedInoxJsLibs         []string
-	IsSurrealUsed          bool
-	IsCssScopeInlineUsed   bool
-	IsPreactSignalsLibUsed bool
-	IsInoxComponentLibUsed bool
+	UsedInoxJsLibs map[string]struct{}
 }
 
 type additionalGraphData struct {
@@ -55,10 +52,31 @@ func newEmptyResult() *Result {
 		UsedHyperscriptCommands: make(map[string]hsgen.Definition),
 		UsedHyperscriptFeatures: make(map[string]hsgen.Definition),
 		UsedTailwindRules:       make(map[string]tailwind.Ruleset),
+		UsedInoxJsLibs:          make(map[string]struct{}),
 
 		CssVariables:         make(map[css.VarName]varclasses.Variable),
 		UsedVarBasedCssRules: make(map[css.VarName]varclasses.Variable),
 	}
 
 	return result
+}
+
+func (r *Result) IsSurrealUsed() bool {
+	_, ok := r.UsedInoxJsLibs[inoxjs.SURREAL_LIB_NAME]
+	return ok
+}
+
+func (r *Result) IsCssScopeInlineUsed() bool {
+	_, ok := r.UsedInoxJsLibs[inoxjs.CSS_INLINE_SCOPE_LIB_NAME]
+	return ok
+}
+
+func (r *Result) IsPreactSignalsLibUsed() bool {
+	_, ok := r.UsedInoxJsLibs[inoxjs.PREACT_SIGNALS_LIB_NAME]
+	return ok
+}
+
+func (r *Result) IsInoxComponentLibUsed() bool {
+	_, ok := r.UsedInoxJsLibs[inoxjs.INOX_COMPONENT_LIB_NAME]
+	return ok
 }

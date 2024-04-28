@@ -38,9 +38,8 @@ func (a *analyzer) preAnalyzeMarkupAttribute(markupAddr *parse.MarkupAttribute) 
 	}
 
 	if name == inoxjs.CONDITIONAL_DISPLAY_ATTR_NAME {
-		a.result.IsInoxComponentLibUsed = true
-		a.result.IsPreactSignalsLibUsed = true
-		a.result.UsedInoxJsLibs = append(a.result.UsedInoxJsLibs, inoxjs.INOX_COMPONENT_LIB_NAME, inoxjs.PREACT_SIGNALS_LIB_NAME)
+		a.result.UsedInoxJsLibs[inoxjs.INOX_COMPONENT_LIB_NAME] = struct{}{}
+		a.result.UsedInoxJsLibs[inoxjs.PREACT_SIGNALS_LIB_NAME] = struct{}{}
 	}
 
 }
@@ -52,22 +51,18 @@ func (a *analyzer) preAnalyzeMarkupElement(node *parse.MarkupElement) {
 	case parse.HyperscriptScript:
 		a.addUsedHyperscriptFeaturesAndCommands(node)
 	case parse.JsScript:
-		if SURREAL_DETECTION_PATTERN.MatchString(node.RawElementContent) && !result.IsSurrealUsed {
-			result.IsSurrealUsed = true
-			result.UsedInoxJsLibs = append(result.UsedInoxJsLibs, inoxjs.SURREAL_LIB_NAME)
+		if SURREAL_DETECTION_PATTERN.MatchString(node.RawElementContent) {
+			result.UsedInoxJsLibs[inoxjs.SURREAL_LIB_NAME] = struct{}{}
 		}
-		if PREACT_SIGNALS_DETECTION_PATTERN.MatchString(node.RawElementContent) && !result.IsPreactSignalsLibUsed {
-			result.IsPreactSignalsLibUsed = true
-			result.UsedInoxJsLibs = append(result.UsedInoxJsLibs, inoxjs.PREACT_SIGNALS_LIB_NAME)
+		if PREACT_SIGNALS_DETECTION_PATTERN.MatchString(node.RawElementContent) {
+			result.UsedInoxJsLibs[inoxjs.PREACT_SIGNALS_LIB_NAME] = struct{}{}
 		}
-		if strings.Contains(node.RawElementContent, inoxjs.INIT_COMPONENT_FN_NAME+"(") && !result.IsPreactSignalsLibUsed {
-			result.IsInoxComponentLibUsed = true
-			result.UsedInoxJsLibs = append(result.UsedInoxJsLibs, inoxjs.INOX_COMPONENT_LIB_NAME)
+		if strings.Contains(node.RawElementContent, inoxjs.INIT_COMPONENT_FN_NAME+"(") {
+			result.UsedInoxJsLibs[inoxjs.INOX_COMPONENT_LIB_NAME] = struct{}{}
 		}
 	case parse.CssStyleElem:
-		if CSS_SCOPE_INLINE_DETECTION_PATTERN.MatchString(node.RawElementContent) && !result.IsCssScopeInlineUsed {
-			result.IsCssScopeInlineUsed = true
-			result.UsedInoxJsLibs = append(result.UsedInoxJsLibs, inoxjs.CSS_INLINE_SCOPE_LIB_NAME)
+		if CSS_SCOPE_INLINE_DETECTION_PATTERN.MatchString(node.RawElementContent) {
+			result.UsedInoxJsLibs[inoxjs.CSS_INLINE_SCOPE_LIB_NAME] = struct{}{}
 		}
 	}
 }
