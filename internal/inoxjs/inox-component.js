@@ -15,7 +15,10 @@ const hyperscriptComponentRootsToSignals = new WeakMap();
 
 (function(){
 	const observer = new MutationObserver((mutations, observer) => {
-		/** @type {Map<HTMLElement, Set<string>[]>} */
+		/**
+		 * Mapping <Hyperscript component root> -> list of relevant attribute names that have been updated. 
+		 * @type {Map<HTMLElement, Set<string>[]>} 
+		 * */
 		const updatedAttributeNames = new Map()
 
 		for(const mutation of mutations){
@@ -24,11 +27,18 @@ const hyperscriptComponentRootsToSignals = new WeakMap();
 				const signals = hyperscriptComponentRootsToSignals.get(mutation.target)
 				if(signals && (mutation.target instanceof HTMLElement)){
 					let list = updatedAttributeNames.get(mutation.target)
+
 					if(list === undefined){
+						//Create the list of updated attributes for the component root.
 						list = []
 						updatedAttributeNames.set(mutation.target, list)
 					}
-					list.push(mutation.attributeName)
+
+					//Add the attribute name to the list of it has a corresponding signal.
+
+					if(signalNameFromAttrName(mutation.attributeName) in signals){
+						list.push(mutation.attributeName)
+					}
 				}
 				break
 			case 'childList':
