@@ -86,8 +86,9 @@ func TestAnalyzeInoxjs(t *testing.T) {
 			return
 		}
 
-		assert.Equal(t, []string{inoxjs.INOX_COMPONENT_LIB_NAME}, result.UsedInoxJsLibs)
+		assert.Equal(t, []string{inoxjs.INOX_COMPONENT_LIB_NAME, inoxjs.PREACT_SIGNALS_LIB_NAME}, result.UsedInoxJsLibs)
 		assert.True(t, result.IsInoxComponentLibUsed)
+		assert.True(t, result.IsPreactSignalsLibUsed)
 	})
 
 	t.Run("css scope inline: <style> element of markup expression", func(t *testing.T) {
