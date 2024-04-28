@@ -21,19 +21,26 @@ func (a *analyzer) preAnalyzeMarkupAttribute(markupAddr *parse.MarkupAttribute) 
 		return
 	}
 
+	name := ident.Name
 	result := a.result
 
 	//Tailwind
-	if ident.Name == "class" {
+	if name == "class" {
 		addUsedTailwindRulesets(markupAddr.Value, result)
 		addUsedVarBasedCssClasses(markupAddr.Value, result)
 		return
 	}
 
 	//HTMX
-	if strings.HasPrefix(ident.Name, "hx-") {
-		addUsedHtmxExtensions(markupAddr, ident.Name, result)
+	if strings.HasPrefix(name, "hx-") {
+		addUsedHtmxExtensions(markupAddr, name, result)
 		return
+	}
+
+	if name == inoxjs.CONDITIONAL_DISPLAY_ATTR_NAME {
+		a.result.IsInoxComponentLibUsed = true
+		a.result.IsPreactSignalsLibUsed = true
+		a.result.UsedInoxJsLibs = append(a.result.UsedInoxJsLibs, inoxjs.INOX_COMPONENT_LIB_NAME, inoxjs.PREACT_SIGNALS_LIB_NAME)
 	}
 
 }

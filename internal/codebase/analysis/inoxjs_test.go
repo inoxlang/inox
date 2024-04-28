@@ -66,7 +66,7 @@ func TestAnalyzeInoxjs(t *testing.T) {
 		assert.True(t, result.IsPreactSignalsLibUsed)
 	})
 
-	t.Run("inox component library", func(t *testing.T) {
+	t.Run("inox component library + preact signals should be reported as being used if a client-side interpolation is found", func(t *testing.T) {
 		ctx := setup()
 		defer ctx.CancelGracefully()
 		fls := ctx.GetFileSystem()
@@ -74,7 +74,32 @@ func TestAnalyzeInoxjs(t *testing.T) {
 		util.WriteFile(fls, "/routes/index.ix", []byte(`
 			manifest{}
 			return html<div>
-				$(name:'?')
+				((name))
+			</div>
+		`), 0600)
+
+		result, err := AnalyzeCodebase(ctx, Configuration{
+			TopDirectories: []string{"/"},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.Equal(t, []string{inoxjs.INOX_COMPONENT_LIB_NAME, inoxjs.PREACT_SIGNALS_LIB_NAME}, result.UsedInoxJsLibs)
+		assert.True(t, result.IsInoxComponentLibUsed)
+		assert.True(t, result.IsPreactSignalsLibUsed)
+	})
+
+	t.Run("inox component library + preact signals should be reported as being used if a 'x-if' XML attribute is found", func(t *testing.T) {
+		ctx := setup()
+		defer ctx.CancelGracefully()
+		fls := ctx.GetFileSystem()
+
+		util.WriteFile(fls, "/routes/index.ix", []byte(`
+			manifest{}
+			return html<div>
+				<div x-if="variable"></div>
 			</div>
 		`), 0600)
 
