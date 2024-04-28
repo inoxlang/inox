@@ -242,10 +242,8 @@ function getState(signals) {
 	const state = {}
 	for (const name in signals) {
 		state[name] = signals[name].peek()
-		if(name.startsWith('data-')){
-			state[name.slice('data-'.length)] = state[name]
-		}
 	}
+	return state
 }	
 
 /** 
