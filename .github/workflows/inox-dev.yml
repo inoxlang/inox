@@ -41,6 +41,11 @@ jobs:
       with:
           go-version: '1.22.x'
 
+    - name: Install GCC & G++ 12
+      uses: GraphR00t/apt-cache-action@v1.1
+      with:
+        packages: g++-12 gcc-12
+
     - name: Env setup
       run: |
         echo "CGO_ENABLED=1" >> $GITHUB_ENV
