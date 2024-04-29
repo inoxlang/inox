@@ -41,13 +41,11 @@ jobs:
       with:
           go-version: '1.22.x'
 
-    - name: Install GCC
-      uses: GraphR00t/apt-cache-action@v1.1
-      with:
-        packages: gcc build-essential
-
     - name: Install dependencies
       run: go mod download
+
+    - name: Enable CGO
+      run: echo "CGO_ENABLED=1" >> $GITHUB_ENV
 
     - uses: GraphR00t/go-release-action@v1.50
       with:
