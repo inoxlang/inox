@@ -22,7 +22,7 @@ jobs:
     - name: Install dependencies
       run: go mod download
 
-    - uses: GraphR00t/go-release-action@v1.41
+    - uses: GraphR00t/go-release-action@v1.50
       with:
         # same as prod
         github_token: ${{ secrets.GITHUB_TOKEN }}
