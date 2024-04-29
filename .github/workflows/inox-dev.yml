@@ -44,7 +44,6 @@ jobs:
     - name: Env setup
       run: |
         echo "CGO_ENABLED=1" >> $GITHUB_ENV
-        echo "CC=gcc-12" >> $GITHUB_ENV
         echo "CXX=g++-12" >> $GITHUB_ENV
 
     - name: Go env
