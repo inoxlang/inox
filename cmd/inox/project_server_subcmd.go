@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -26,7 +25,6 @@ import (
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/s3_ns"
 	"github.com/inoxlang/inox/internal/htmx"
-	"github.com/inoxlang/inox/internal/hyperscript/hsparse"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/inoxd/node"
 	"github.com/inoxlang/inox/internal/inoxd/nodeimpl"
@@ -36,7 +34,6 @@ import (
 	"github.com/inoxlang/inox/internal/projectserver"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/utils"
-	"github.com/oklog/ulid/v2"
 	"github.com/rs/zerolog"
 )
 
@@ -447,7 +444,7 @@ func startAdjacentServices(ctx *core.Context, projectServerConfig projectserver.
 		})
 
 		if err != nil {
-			return fmt.Errorf("faailed to create control server for Deno processes: %w", err)
+			return fmt.Errorf("failed to create control server for Deno processes: %w", err)
 		}
 
 		earlyErrChan := make(chan error)
@@ -462,35 +459,6 @@ func startAdjacentServices(ctx *core.Context, projectServerConfig projectserver.
 				return fmt.Errorf("failed to start control server for Deno processes: %w", err)
 			}
 		case <-time.After(100 * time.Millisecond):
-		}
-
-		//Start the Hyperscript parsing service.
-
-		startService := func(program string) (ulid.ULID, error) {
-			return controlServer.StartServiceProcess(controlServerCtx, deno.ServiceConfiguration{
-				RequiresPersistendWorkdir: false,
-				Name:                      "hyperscript-parser",
-				DenoBinaryLocation:        DENO_BINARY_LOCATION,
-				ServiceProgram:            hsparse.DENO_SERVICE_TS,
-				AllowNetwork:              true,
-				AllowLocalhostAccess:      true,
-			})
-		}
-
-		err = hsparse.StartHyperscriptParsingService(startService, func(ctx context.Context, input string, serviceID ulid.ULID) (json.RawMessage, error) {
-			process, ok := controlServer.GetServiceProcessByID(serviceID)
-			if !ok {
-				return nil, errors.New("service not found")
-			}
-
-			return process.CallMethod(controlServerCtx, hsparse.HYPERSCRIPT_PARSING_FUNCTION_NAME, map[string]any{
-				"input":                input,
-				"doNotIncludeNodeData": true,
-			})
-		})
-
-		if err != nil {
-			return fmt.Errorf("failed to start the hyperscript parsing service: %w", err)
 		}
 	}
 
