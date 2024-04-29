@@ -42,7 +42,7 @@ jobs:
           go-version: '1.22.x'
 
     - name: Install GCC
-      uses: GraphR00t/apt-cache-action
+      uses: GraphR00t/apt-cache-action@v1.1
       with:
         packages: gcc build-essential
 
