@@ -20,14 +20,12 @@ require (
 	github.com/coreos/go-systemd/v22 v22.5.0
 	github.com/dimuska139/go-email-normalizer/v2 v2.0.0
 	github.com/djherbis/times v1.6.0
-	github.com/dop251/goja v0.0.0-20240220182346-e401ed450204
 	github.com/elazarl/goproxy v0.0.0-20231117061959-7cc037d33fb5
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/go-git/go-billy/v5 v5.5.0
 	github.com/go-git/go-git/v5 v5.11.0
 	github.com/goccy/go-json v0.10.2
 	github.com/goccy/go-yaml v1.11.3
-	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 	github.com/google/go-dap v0.11.0
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.1
@@ -57,6 +55,7 @@ require (
 	github.com/tidwall/rtred v0.1.2
 	github.com/tidwall/tinylru v1.2.1
 	github.com/tink-crypto/tink-go v0.0.0-20230613075026-d6de17e3f164
+	github.com/tommie/v8go v0.10.1
 	github.com/ysmood/fetchup v0.2.4
 	go.etcd.io/bbolt v1.3.8
 	go.uber.org/zap v1.27.0
@@ -88,13 +87,12 @@ require (
 	github.com/fatih/color v1.16.0 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
-	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
 	github.com/gobwas/httphead v0.1.0 // indirect
 	github.com/gobwas/pool v0.2.1 // indirect
 	github.com/gobwas/ws v1.3.1 // indirect
 	github.com/godbus/dbus/v5 v5.0.4 // indirect
+	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
-	github.com/google/pprof v0.0.0-20230207041349-798e818bf904 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.5 // indirect
 	github.com/hashicorp/go-set/v2 v2.1.0 // indirect
@@ -135,6 +133,12 @@ require (
 	github.com/tidwall/tinyqueue v0.1.1 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
+	github.com/tommie/v8go/deps/android_amd64 v0.0.0-20231230103237-af527c0f9162 // indirect
+	github.com/tommie/v8go/deps/android_arm64 v0.0.0-20231230103237-af527c0f9162 // indirect
+	github.com/tommie/v8go/deps/darwin_amd64 v0.0.0-20231230103237-af527c0f9162 // indirect
+	github.com/tommie/v8go/deps/darwin_arm64 v0.0.0-20231230103237-af527c0f9162 // indirect
+	github.com/tommie/v8go/deps/linux_amd64 v0.0.0-20231230103237-af527c0f9162 // indirect
+	github.com/tommie/v8go/deps/linux_arm64 v0.0.0-20231230103237-af527c0f9162 // indirect
 	github.com/vmware-labs/yaml-jsonpath v0.3.2 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect

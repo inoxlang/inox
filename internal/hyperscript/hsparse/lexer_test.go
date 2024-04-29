@@ -11,7 +11,7 @@ func TestLexer(t *testing.T) {
 
 	t.Run("ok", func(t *testing.T) {
 		const source = "on click toggle .red on me"
-		res, _, _ := parseHyperScriptSlow(context.Background(), source)
+		res, _, _ := ParseHyperScript(context.Background(), source)
 
 		lexer := NewLexer()
 		tokens, err := lexer.tokenize(source, false)
@@ -26,7 +26,7 @@ func TestLexer(t *testing.T) {
 		t.Skip("TODO: fix")
 
 		const source = "on click toggle . on me"
-		_, parsingErr, _ := parseHyperScriptSlow(context.Background(), source)
+		_, parsingErr, _ := ParseHyperScript(context.Background(), source)
 
 		lexer := NewLexer()
 
