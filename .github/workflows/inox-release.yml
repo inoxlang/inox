@@ -14,6 +14,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - uses: echo GITHUB_REF
+      run: echo ${GITHUB_REF}
+
     - name: Setup Go
       uses: actions/setup-go@v5
       with:
@@ -36,4 +39,7 @@ jobs:
         CHECKSUM_ASSET_NAME: inox-linux-amd64.tar.gz.sha256
         GIT_TAG: ${{ github.event.release.tag_name }}
         # env.GITHUB_REF_NAME is only set when the workflow is triggered by a push event to a branch or tag. 
+        # https://github.com/orgs/community/discussions/64528#discussioncomment-6783649
+        # 
+        # github.event.release.tag_name is only available if the tagging itself triggered the build (?)
 
