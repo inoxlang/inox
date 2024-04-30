@@ -101,6 +101,11 @@
 	function initComponent(arg) {
 		const componentRoot = arg.element ?? /** @type {HTMLElement} */(me())
 
+		if(! isComponentRootElement(componentRoot)){
+			console.error(componentRoot, 'is not a valid component root element, class list should start with a capitalized class name')
+			return
+		}
+
 		//register signals
 
 		const signals = arg.signals ?? {}
@@ -251,8 +256,6 @@
 					}
 				}
 			}
-
-			console.log(node)
 		})
 
 		//rendering
@@ -518,7 +521,14 @@
 	 * @returns {boolean}
 	 */
 	function isComponentRootElement(node) {
-		return (node instanceof HTMLElement) && Array.from(node.classList).some(className => className[0].toUpperCase() == className[0])
+		if(!(node instanceof HTMLElement)) {
+			return false
+		} 
+		const firstClassName = node.classList.item(0)
+		if(firstClassName === null){
+			return false
+		}
+		return (/[A-Z]/).test(firstClassName[0])
 	}
 
 	/**
