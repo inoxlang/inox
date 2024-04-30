@@ -1,8 +1,11 @@
 name: Inox release
 
 on:
-  release:
-    types: [created]
+  workflow_dispatch:
+    inputs:
+      tag:
+        type: string
+        required: true
 
 permissions: write-all
 
@@ -13,9 +16,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-
-    - uses: echo GITHUB_REF
-      run: echo ${GITHUB_REF}
+      with:
+        ref: ${{ inputs.tag }}
 
     - name: Setup Go
       uses: actions/setup-go@v5
@@ -37,7 +39,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         BINARY_ASSET_NAME: inox-linux-amd64.tar.gz
         CHECKSUM_ASSET_NAME: inox-linux-amd64.tar.gz.sha256
-        GIT_TAG: ${{ github.event.release.tag_name }}
+        GIT_TAG: ${{ inputs.tag }}
         # env.GITHUB_REF_NAME is only set when the workflow is triggered by a push event to a branch or tag. 
         # https://github.com/orgs/community/discussions/64528#discussioncomment-6783649
         # 
