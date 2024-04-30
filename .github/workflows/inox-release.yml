@@ -12,26 +12,26 @@ jobs:
     name: release for linux/amd64
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Setup Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v5
       with:
           go-version: '1.22.x'
 
     - name: Install dependencies
       run: go mod download
 
-    - uses: GraphR00t/go-release-action@v1.50
-      with:
-        # same as prod
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        goos: linux
-        goarch: amd64
-        project_path: "./cmd/inox"
-        binary_name: "inox"
-        asset_name: inox-linux-amd64
-        # extra_files: LICENSE README.md docs examples
-        md5sum: false
-        sha256sum: true
+    - name: Check Event
+      run: bash -eux ./scripts/ci/check_github_event.sh
 
+    - name: Build Binary
+      run: GOOS=linux GOARCH=amd64 go build ./cmd/inox
+
+    - name: Update Assets
+      run: bash -eux ./scripts/ci/update_assets.sh
+      env:
+        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        BINARY_ASSET_NAME: inox-linux-amd64.tar.gz
+        CHECKSUM_ASSET_NAME: inox-linux-amd64.tar.gz.sha256
+        GIT_TAG: ${{inputs.release_tag}}
