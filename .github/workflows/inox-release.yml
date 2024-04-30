@@ -31,7 +31,7 @@ jobs:
     - name: Update Assets
       run: bash -eux ./scripts/ci/update_assets.sh
       env:
-        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         BINARY_ASSET_NAME: inox-linux-amd64.tar.gz
         CHECKSUM_ASSET_NAME: inox-linux-amd64.tar.gz.sha256
-        GIT_TAG: ${{inputs.release_tag}}
+        GIT_TAG: ${{ env.GITHUB_REF_NAME }}
