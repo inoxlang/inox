@@ -15,12 +15,12 @@ if [ -z "${GIT_TAG}" ]; then
   exit 1
 fi
 
+# Create archive
+tar cvfz ${BINARY_ASSET_NAME} ./inox
+
 # Compute checksum
 SHA256_SUM=$(sha256sum ${BINARY_ASSET_NAME} | cut -d ' ' -f 1)
 echo ${SHA256_SUM} >${CHECKSUM_ASSET_NAME}
-
-# Create archive
-tar cvfz ${BINARY_ASSET_NAME} ./inox
 
 # Upload archive and checksum file
 assets_uploader=github.com/wangyoucao577/assets-uploader/cmd/github-assets-uploader@v0.13.0
