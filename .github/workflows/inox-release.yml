@@ -34,6 +34,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         BINARY_ASSET_NAME: inox-linux-amd64.tar.gz
         CHECKSUM_ASSET_NAME: inox-linux-amd64.tar.gz.sha256
-        GIT_TAG: ${{ env.GITHUB_REF#refs/tags/ }}
+        GIT_TAG: ${{ github.event.release.tag_name }}
         # env.GITHUB_REF_NAME is only set when the workflow is triggered by a push event to a branch or tag. 
 
