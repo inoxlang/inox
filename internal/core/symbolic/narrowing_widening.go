@@ -553,7 +553,7 @@ func findInMultivalue[T Value](v Value) (result T, found bool) {
 	return
 }
 
-func ImplementsOrIsMultivalueWithAllValuesImplementing[T Value](v Value) bool {
+func ImplOrMultivaluesImplementing[T Value](v Value) bool {
 	_, ok := v.(T)
 	if ok {
 		return true
@@ -561,12 +561,12 @@ func ImplementsOrIsMultivalueWithAllValuesImplementing[T Value](v Value) bool {
 
 	if mv, ok := v.(IMultivalue); ok {
 		return mv.OriginalMultivalue().AllValues(func(v Value) bool {
-			return ImplementsOrIsMultivalueWithAllValuesImplementing[T](v)
+			return ImplOrMultivaluesImplementing[T](v)
 		})
 	}
 
 	if rv, ok := v.(*RunTimeValue); ok {
-		return ImplementsOrIsMultivalueWithAllValuesImplementing[T](rv.OriginalRunTimeValue().super)
+		return ImplOrMultivaluesImplementing[T](rv.OriginalRunTimeValue().super)
 	}
 
 	return false

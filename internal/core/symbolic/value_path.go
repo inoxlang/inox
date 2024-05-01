@@ -132,7 +132,7 @@ func (n *PropertyName) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pr
 }
 
 func (n *PropertyName) UnderlyingString() *String {
-	return &String{}
+	return ANY_STRING
 }
 
 func (n *PropertyName) WidestOfType() Value {

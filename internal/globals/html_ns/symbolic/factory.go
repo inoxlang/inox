@@ -39,20 +39,20 @@ func checkInterpolationValue(value symbolic.Value) (errMsg string) {
 	}
 
 	switch {
-	case symbolic.ImplementsOrIsMultivalueWithAllValuesImplementing[symbolic.StringLike](value),
-		symbolic.ImplementsOrIsMultivalueWithAllValuesImplementing[symbolic.GoString](value),
-		symbolic.ImplementsOrIsMultivalueWithAllValuesImplementing[*HTMLNode](value),
-		symbolic.ImplementsOrIsMultivalueWithAllValuesImplementing[*symbolic.Int](value):
+	case symbolic.ImplOrMultivaluesImplementing[symbolic.StringLike](value),
+		symbolic.ImplOrMultivaluesImplementing[symbolic.GoString](value),
+		symbolic.ImplOrMultivaluesImplementing[*HTMLNode](value),
+		symbolic.ImplOrMultivaluesImplementing[*symbolic.Int](value):
 		return ""
 	}
 
 	if list, ok := value.(*symbolic.List); ok {
-		elem := list.IteratorElementValue()
+		elem := list.Element()
 		switch {
-		case symbolic.ImplementsOrIsMultivalueWithAllValuesImplementing[symbolic.StringLike](elem),
-			symbolic.ImplementsOrIsMultivalueWithAllValuesImplementing[symbolic.GoString](value),
-			symbolic.ImplementsOrIsMultivalueWithAllValuesImplementing[*HTMLNode](elem),
-			symbolic.ImplementsOrIsMultivalueWithAllValuesImplementing[*symbolic.Int](elem):
+		case symbolic.ImplOrMultivaluesImplementing[symbolic.StringLike](elem),
+			symbolic.ImplOrMultivaluesImplementing[symbolic.GoString](value),
+			symbolic.ImplOrMultivaluesImplementing[*HTMLNode](elem),
+			symbolic.ImplOrMultivaluesImplementing[*symbolic.Int](elem):
 			return ""
 		}
 	}

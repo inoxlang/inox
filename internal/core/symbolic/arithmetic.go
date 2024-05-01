@@ -22,9 +22,9 @@ type IPseudoSub interface {
 
 func (d *Duration) Add(right Value, node *parse.BinaryExpression, state *State) (Value, error) {
 	switch {
-	case ImplementsOrIsMultivalueWithAllValuesImplementing[*Duration](right):
+	case ImplOrMultivaluesImplementing[*Duration](right):
 		return ANY_DURATION, nil
-	case ImplementsOrIsMultivalueWithAllValuesImplementing[*DateTime](right):
+	case ImplOrMultivaluesImplementing[*DateTime](right):
 		return ANY_DATETIME, nil
 	default:
 		state.addError(MakeSymbolicEvalError(node.Right, state, A_DURATION_CAN_ONLY_BE_ADDED_WITH_A_DURATION_DATE_DATETIME))
@@ -34,9 +34,9 @@ func (d *Duration) Add(right Value, node *parse.BinaryExpression, state *State) 
 
 func (d *Duration) Sub(right Value, node *parse.BinaryExpression, state *State) (Value, error) {
 	switch {
-	case ImplementsOrIsMultivalueWithAllValuesImplementing[*Duration](right):
+	case ImplOrMultivaluesImplementing[*Duration](right):
 		return ANY_DURATION, nil
-	case ImplementsOrIsMultivalueWithAllValuesImplementing[*DateTime](right):
+	case ImplOrMultivaluesImplementing[*DateTime](right):
 		state.addError(MakeSymbolicEvalError(node.Right, state, A_DURATION_CAN_BE_SUBSTRACTED_FROM_A_DATETIME))
 		return ANY_DATETIME, nil
 	default:
@@ -47,7 +47,7 @@ func (d *Duration) Sub(right Value, node *parse.BinaryExpression, state *State) 
 
 func (d *DateTime) Add(other Value, node *parse.BinaryExpression, state *State) (Value, error) {
 	switch {
-	case ImplementsOrIsMultivalueWithAllValuesImplementing[*Duration](other):
+	case ImplOrMultivaluesImplementing[*Duration](other):
 		return ANY_DATETIME, nil
 	default:
 		state.addError(MakeSymbolicEvalError(node.Right, state, A_DATETIME_CAN_ONLY_BE_ADDED_WITH_A_DURATION))
@@ -57,7 +57,7 @@ func (d *DateTime) Add(other Value, node *parse.BinaryExpression, state *State) 
 
 func (d *DateTime) Sub(other Value, node *parse.BinaryExpression, state *State) (Value, error) {
 	switch {
-	case ImplementsOrIsMultivalueWithAllValuesImplementing[*Duration](other):
+	case ImplOrMultivaluesImplementing[*Duration](other):
 		return ANY_DATETIME, nil
 	default:
 		state.addError(MakeSymbolicEvalError(node.Right, state, ONLY_A_DURATION_CAN_BE_SUBSTRACTED_FROM_A_DATETIME))

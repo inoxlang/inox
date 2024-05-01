@@ -1164,7 +1164,7 @@ func evalURLExpression(n *parse.URLExpression, state *State, options evalOptions
 		}
 	}
 
-	if !ImplementsOrIsMultivalueWithAllValuesImplementing[*Host](host) {
+	if !ImplOrMultivaluesImplementing[*Host](host) {
 		state.addError(MakeSymbolicEvalError(n.HostPart, state, HOST_PART_SHOULD_HAVE_A_HOST_VALUE))
 		state.SetMostSpecificNodeValue(n.HostPart, ANY_HOST)
 		options.setHasShallowErrors()
@@ -3199,9 +3199,9 @@ func evalUnaryExpression(n *parse.UnaryExpression, state *State, options evalOpt
 	switch n.Operator {
 	case parse.NumberNegate:
 		switch {
-		case ImplementsOrIsMultivalueWithAllValuesImplementing[*Int](operand):
+		case ImplOrMultivaluesImplementing[*Int](operand):
 			return ANY_INT, nil
-		case ImplementsOrIsMultivalueWithAllValuesImplementing[*Float](operand):
+		case ImplOrMultivaluesImplementing[*Float](operand):
 			return ANY_FLOAT, nil
 		default:
 			state.addError(MakeSymbolicEvalError(n, state, fmtOperandOfNumberNegateShouldBeIntOrFloat(operand)))
@@ -3301,14 +3301,14 @@ func evalBinaryExpression(n *parse.BinaryExpression, state *State, options evalO
 		}
 		return ANY_BOOL, nil
 	case parse.Urlof:
-		if !ImplementsOrIsMultivalueWithAllValuesImplementing[*URL](left) {
+		if !ImplOrMultivaluesImplementing[*URL](left) {
 			state.addError(MakeSymbolicEvalError(n.Left, state, fmtLeftOperandOfBinaryShouldBe(n.Operator, "url", Stringify(left))))
 		}
 
 		switch right.(type) {
 		case *Any, *AnySerializable:
 		default:
-			if !ImplementsOrIsMultivalueWithAllValuesImplementing[UrlHolder](right) {
+			if !ImplOrMultivaluesImplementing[UrlHolder](right) {
 				state.addWarning(makeSymbolicEvalWarning(n.Right, state, RIGHT_OPERAND_MAY_NOT_HAVE_A_URL))
 			}
 		}

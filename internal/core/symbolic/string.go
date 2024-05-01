@@ -217,7 +217,7 @@ func (s *String) IteratorElementValue() Value {
 }
 
 func (s *String) UnderlyingString() *String {
-	return ANY_STRING
+	return s
 }
 
 func (s *String) GetOrBuildString() *String {

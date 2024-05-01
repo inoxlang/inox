@@ -34,7 +34,7 @@ func (t *BoolType) Equal(v CompileTimeType, state RecTestCallState) bool {
 }
 
 func (t *BoolType) TestValue(v Value, state RecTestCallState) bool {
-	return ImplementsOrIsMultivalueWithAllValuesImplementing[*Bool](v)
+	return ImplOrMultivaluesImplementing[*Bool](v)
 }
 
 func (t *BoolType) SymbolicValue() Value {
@@ -61,7 +61,7 @@ func (t *IntType) Equal(v CompileTimeType, state RecTestCallState) bool {
 }
 
 func (t *IntType) TestValue(v Value, state RecTestCallState) bool {
-	return ImplementsOrIsMultivalueWithAllValuesImplementing[*Int](v)
+	return ImplOrMultivaluesImplementing[*Int](v)
 }
 
 func (t *IntType) SymbolicValue() Value {
@@ -88,7 +88,7 @@ func (t *FloatType) Equal(v CompileTimeType, state RecTestCallState) bool {
 }
 
 func (t *FloatType) TestValue(v Value, state RecTestCallState) bool {
-	return ImplementsOrIsMultivalueWithAllValuesImplementing[*Float](v)
+	return ImplOrMultivaluesImplementing[*Float](v)
 }
 
 func (t *FloatType) SymbolicValue() Value {
@@ -115,7 +115,7 @@ func (t *StringType) Equal(v CompileTimeType, state RecTestCallState) bool {
 }
 
 func (t *StringType) TestValue(v Value, state RecTestCallState) bool {
-	return ImplementsOrIsMultivalueWithAllValuesImplementing[*String](v)
+	return ImplOrMultivaluesImplementing[*String](v)
 }
 
 func (t *StringType) SymbolicValue() Value {

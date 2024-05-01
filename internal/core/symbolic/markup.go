@@ -102,7 +102,7 @@ func (n *AnyMarkupNode) Test(v Value, state RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
-	return ImplementsOrIsMultivalueWithAllValuesImplementing[MarkupNode](v)
+	return ImplOrMultivaluesImplementing[MarkupNode](v)
 }
 
 func (n *AnyMarkupNode) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrintConfig) {
