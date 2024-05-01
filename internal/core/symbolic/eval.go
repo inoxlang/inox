@@ -6023,8 +6023,9 @@ func evalMarkupElement(n *parse.MarkupElement, state *State, options evalOptions
 			regularAttr, ok := attr.(*parse.MarkupAttribute)
 			if ok {
 				name := regularAttr.Name.(*parse.IdentifierLiteral).Name
-				if regularAttr.Value == nil {
-					attrs[name] = ANY_STRING
+				if regularAttr.Value == nil { //no value
+					//See ../markup.go and the evaluation of *parse.MarkupElement in ../tree_walk_eval.go.
+					attrs[name] = EMPTY_STRING
 					continue
 				}
 				val, err := symbolicEval(regularAttr.Value, state)

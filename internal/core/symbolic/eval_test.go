@@ -14578,7 +14578,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Empty(t, state.errors())
 			assert.Equal(t, &NonInterpretedMarkupElement{
 				name:       "div",
-				attributes: map[string]Value{"a": ANY_STRING},
+				attributes: map[string]Value{"a": EMPTY_STRING},
 				children:   []Value{ANY_STRING},
 				sourceNode: parse.FindNode(n, (*parse.MarkupElement)(nil), nil),
 			}, res)
