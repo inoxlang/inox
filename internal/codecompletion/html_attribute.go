@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/globals/html_ns"
 	"github.com/inoxlang/inox/internal/globals/http_ns/spec"
+	"github.com/inoxlang/inox/internal/htmldata"
 	"github.com/inoxlang/inox/internal/mimeconsts"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
@@ -18,7 +18,7 @@ import (
 // This file contains completion logic for HTML and HTMX.
 
 func findHtmlAttributeNameCompletions(ident *parse.IdentifierLiteral, parent *parse.MarkupAttribute, tagName string, ancestors []parse.Node) (completions []Completion) {
-	attributes, ok := html_ns.GetAllTagAttributes(tagName)
+	attributes, ok := htmldata.GetAllTagAttributes(tagName)
 	if !ok {
 		return
 	}
@@ -58,7 +58,7 @@ func findHtmlAttributeValueCompletions(
 	inputData := search.inputData
 	codebaseAnalysis := inputData.CodebaseAnalysis
 
-	set, ok := html_ns.GetAttributeValueSet(attrName, tagName)
+	set, ok := htmldata.GetAttributeValueSet(attrName, tagName)
 	if ok {
 		for _, attrValueData := range set.Values {
 			if !strings.HasPrefix(attrValueData.Name, attrValue) {

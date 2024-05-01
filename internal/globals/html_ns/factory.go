@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/htmldata"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/mimeconsts"
 	"golang.org/x/net/html"
@@ -30,8 +31,8 @@ func CreateHTMLNodeFromMarkupElement(ctx *core.Context, arg *core.NonInterpreted
 		attrName := attr.Name()
 
 		//handle pseudo htmx attributes
-		if isPseudoHtmxAttribute(attrName) {
-			transpilePseudoHtmxAttribute(attr, &attributes)
+		if htmldata.IsPseudoHtmxAttribute(attrName) {
+			htmldata.TranspilePseudoHtmxAttribute(attr, &attributes)
 			//TODO: handle errors
 			continue
 		}

@@ -1,4 +1,4 @@
-package html_ns
+package htmldata
 
 import (
 	_ "embed"
@@ -38,7 +38,7 @@ func init() {
 
 }
 
-func isPseudoHtmxAttribute(name string) bool {
+func IsPseudoHtmxAttribute(name string) bool {
 	if len(name) < SHORTEST_PSEUDO_HTMX_ATTR_NAME_LEN {
 		return false
 	}
@@ -46,7 +46,7 @@ func isPseudoHtmxAttribute(name string) bool {
 	return index < len(PSEUDO_HTMX_ATTR_NAMES) && PSEUDO_HTMX_ATTR_NAMES[index] == name
 }
 
-func transpilePseudoHtmxAttribute(attr core.NonInterpretedMarkupAttribute, currentOutput *[]html.Attribute) error {
+func TranspilePseudoHtmxAttribute(attr core.NonInterpretedMarkupAttribute, currentOutput *[]html.Attribute) error {
 	trimmedName := strings.TrimPrefix(attr.Name(), "hx-")
 
 	switch trimmedName {

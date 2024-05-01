@@ -8,7 +8,7 @@ import (
 	"github.com/inoxlang/inox/internal/css/tailwind"
 	"github.com/inoxlang/inox/internal/css/varclasses"
 	"github.com/inoxlang/inox/internal/globals/globalnames"
-	"github.com/inoxlang/inox/internal/globals/html_ns"
+	"github.com/inoxlang/inox/internal/htmldata"
 	"github.com/inoxlang/inox/internal/hyperscript/hscode"
 	"github.com/inoxlang/inox/internal/hyperscript/hshelp"
 	"github.com/inoxlang/inox/internal/parse"
@@ -86,7 +86,7 @@ func getTagOrAttributeHoverHelp(
 	case "html":
 
 		if parent == openingElem {
-			tagData, ok := html_ns.GetTagData(tagIdent.Name)
+			tagData, ok := htmldata.GetTagData(tagIdent.Name)
 			if ok {
 				return tagData.DescriptionContent(), false, true
 			}
@@ -94,7 +94,7 @@ func getTagOrAttributeHoverHelp(
 
 			//Get data for standard attributes.
 
-			attributes, ok := html_ns.GetAllTagAttributes(tagIdent.Name)
+			attributes, ok := htmldata.GetAllTagAttributes(tagIdent.Name)
 			if !ok {
 				break
 			}

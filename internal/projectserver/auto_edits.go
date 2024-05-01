@@ -3,7 +3,7 @@ package projectserver
 import (
 	"slices"
 
-	"github.com/inoxlang/inox/internal/globals/html_ns"
+	"github.com/inoxlang/inox/internal/htmldata"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
 )
@@ -37,7 +37,7 @@ func getAutoEditForChange(documentText string, replacement string, rangeStart, r
 		}
 
 		//if void tag turn it into a self-closing tag since void tags are not supported.
-		if slices.Contains(html_ns.VOID_HTML_TAG_NAMES, tagName.Name) {
+		if slices.Contains(htmldata.VOID_HTML_TAG_NAMES, tagName.Name) {
 			elemEnd := node.Base().Span.End
 			span := parse.NodeSpan{Start: elemEnd - 1, End: elemEnd}
 			posRange := chunk.GetSourcePosition(span)

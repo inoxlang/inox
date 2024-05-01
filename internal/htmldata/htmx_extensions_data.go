@@ -1,4 +1,4 @@
-package html_ns
+package htmldata
 
 import (
 	_ "embed"

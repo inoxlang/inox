@@ -8,9 +8,9 @@ import (
 	"strings"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/globals/html_ns"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/globals/http_ns/spec"
+	"github.com/inoxlang/inox/internal/htmldata"
 	parse "github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
 	"github.com/inoxlang/inox/internal/utils"
@@ -19,7 +19,7 @@ import (
 // This file contains completion logic for HTML and HTMX.
 
 func getHTMLTagNamesWithPrefix(prefix string) (completions []Completion) {
-	for _, tag := range html_ns.STANDARD_DATA.Tags {
+	for _, tag := range htmldata.STANDARD_DATA.Tags {
 		if strings.HasPrefix(tag.Name, prefix) {
 			completions = append(completions, Completion{
 				ShownString:           tag.Name,
