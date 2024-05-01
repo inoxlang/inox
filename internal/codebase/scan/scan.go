@@ -36,7 +36,7 @@ type Configuration struct {
 	FileParsingTimeout   time.Duration        //maximum duration for parsing a single file. defaults to parse.DEFAULT_TIMEOUT
 }
 
-type InoxFileHandler func(path string, fileContent string, n *parse.Chunk) error
+type InoxFileHandler func(path string, fileContent string, n *parse.ParsedChunkSource) error
 type CSSFileHandler func(path string, fileContent string, n css.Node) error
 
 func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) error {
@@ -150,7 +150,7 @@ func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) e
 			seenInoxFiles = append(seenInoxFiles, path)
 
 			for _, handler := range config.InoxFileHandlers {
-				err := handler(path, contentS, result.Node)
+				err := handler(path, contentS, result)
 
 				if err != nil {
 					return fmt.Errorf("an iNox file handler returned an error for %s", path)

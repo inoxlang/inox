@@ -8,6 +8,7 @@ import (
 	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/hyperscript/hsgen"
+	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -103,6 +104,45 @@ func TestAnalyzeHyperscript(t *testing.T) {
 
 		assert.Equal(t, expectedUsedCommands, result.UsedHyperscriptCommands)
 		assert.Equal(t, expectedUseFeatures, result.UsedHyperscriptFeatures)
+	})
+
+	t.Run("component", func(t *testing.T) {
+		ctx := setup()
+		defer ctx.CancelGracefully()
+
+		util.WriteFile(ctx.GetFileSystem(), "/routes/index.ix", []byte(`
+			manifest{}
+			return html<div class="Counter" {init}></div>
+		`), 0600)
+
+		result, err := AnalyzeCodebase(ctx, Configuration{
+			TopDirectories: []string{"/"},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		mod := result.InoxModules["/routes/index.ix"]
+		markupElem := parse.FindFirstNode(mod.Module.MainChunk.Node, (*parse.MarkupElement)(nil))
+
+		if !assert.Len(t, result.HyperscriptComponents, 1) {
+			return
+		}
+
+		component, ok := result.HyperscriptComponents[markupElem.Span]
+
+		if !assert.True(t, ok) {
+			return
+		}
+
+		expectedComponent := &HyperscriptComponent{
+			Element:            markupElem,
+			AttributeShorthand: markupElem.Opening.Attributes[1].(*parse.HyperscriptAttributeShorthand),
+			ChunkSource:        mod.Module.MainChunk,
+		}
+
+		assert.Equal(t, expectedComponent, component)
 	})
 
 }

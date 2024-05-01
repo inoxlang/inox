@@ -8,6 +8,7 @@ import (
 	"github.com/inoxlang/inox/internal/hyperscript/hsgen"
 	"github.com/inoxlang/inox/internal/inoxjs"
 	"github.com/inoxlang/inox/internal/memds"
+	"github.com/inoxlang/inox/internal/parse"
 )
 
 type Result struct {
@@ -27,6 +28,7 @@ type Result struct {
 
 	UsedHyperscriptCommands map[string]hsgen.Definition
 	UsedHyperscriptFeatures map[string]hsgen.Definition
+	HyperscriptComponents   map[ /*root element span */ parse.NodeSpan]*HyperscriptComponent
 
 	UsedTailwindRules    map[ /* name with modifiers */ string]tailwind.Ruleset
 	CssVariables         map[css.VarName]varclasses.Variable
@@ -51,6 +53,7 @@ func newEmptyResult() *Result {
 		UsedHtmxExtensions:      make(map[string]struct{}),
 		UsedHyperscriptCommands: make(map[string]hsgen.Definition),
 		UsedHyperscriptFeatures: make(map[string]hsgen.Definition),
+		HyperscriptComponents:   make(map[parse.NodeSpan]*HyperscriptComponent),
 		UsedTailwindRules:       make(map[string]tailwind.Ruleset),
 		UsedInoxJsLibs:          make(map[string]struct{}),
 

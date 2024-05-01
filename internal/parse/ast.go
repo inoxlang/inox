@@ -2532,6 +2532,11 @@ func (attr MarkupAttribute) GetName() string {
 	return attr.Name.(*IdentifierLiteral).Name
 }
 
+func (attr MarkupAttribute) IsNameEqual(name string) bool {
+	ident, ok := attr.Name.(*IdentifierLiteral)
+	return ok && ident.Name == name
+}
+
 func (attr MarkupAttribute) ValueIfStringLiteral() string {
 	switch val := attr.Value.(type) {
 	case *DoubleQuotedStringLiteral:

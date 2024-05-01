@@ -6,12 +6,10 @@ import (
 	"github.com/inoxlang/inox/internal/parse"
 )
 
-func (a *analyzer) preAnalyzeHyperscriptAtributeShortand(node *parse.HyperscriptAttributeShorthand) {
-	a.addUsedHyperscriptFeaturesAndCommands(node)
-}
-
 func (a *analyzer) addUsedHyperscriptFeaturesAndCommands(node parse.Node) {
 	var tokens []hscode.Token
+
+	//Get tokens
 
 	switch node := node.(type) {
 	case *parse.HyperscriptAttributeShorthand:
@@ -30,6 +28,8 @@ func (a *analyzer) addUsedHyperscriptFeaturesAndCommands(node parse.Node) {
 			}
 		}
 	}
+
+	//Find what features and commands are used.
 
 	for _, token := range tokens {
 		if token.Type != hscode.IDENTIFIER {
@@ -52,4 +52,25 @@ func (a *analyzer) addUsedHyperscriptFeaturesAndCommands(node parse.Node) {
 
 		//Note: some commands are also features (e.g. 'set').
 	}
+}
+
+func (a *analyzer) preanalyzeHyperscriptComponent(
+	elem *parse.MarkupElement,
+	attribute *parse.HyperscriptAttributeShorthand,
+	chunkSource *parse.ParsedChunkSource,
+) {
+
+	component := &HyperscriptComponent{
+		Element:            elem,
+		AttributeShorthand: attribute,
+		ChunkSource:        chunkSource,
+	}
+
+	a.result.HyperscriptComponents[elem.Span] = component
+}
+
+type HyperscriptComponent struct {
+	Element            *parse.MarkupElement
+	AttributeShorthand *parse.HyperscriptAttributeShorthand
+	ChunkSource        *parse.ParsedChunkSource
 }
