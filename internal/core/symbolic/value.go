@@ -368,7 +368,7 @@ func (i *Identifier) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pret
 	w.WriteStringF("#%s", i.name)
 }
 
-func (i *Identifier) underlyingString() *String {
+func (i *Identifier) UnderlyingString() *String {
 	return &String{}
 }
 
@@ -1418,7 +1418,7 @@ func (r *AnyResourceName) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint
 	w.WriteName("resource-name")
 }
 
-func (r *AnyResourceName) underlyingString() *String {
+func (r *AnyResourceName) UnderlyingString() *String {
 	return &String{}
 }
 

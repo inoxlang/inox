@@ -131,7 +131,7 @@ func (n *PropertyName) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.Pr
 	w.WriteString(n.name)
 }
 
-func (n *PropertyName) underlyingString() *String {
+func (n *PropertyName) UnderlyingString() *String {
 	return &String{}
 }
 

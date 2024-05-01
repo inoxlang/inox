@@ -43,7 +43,7 @@ var (
 // A GoString represents a symbolic GoString.
 type GoString interface {
 	Value
-	underlyingString() *String
+	UnderlyingString() *String
 }
 
 // A StringLike represents a symbolic StringLike.
@@ -216,7 +216,7 @@ func (s *String) IteratorElementValue() Value {
 	return ANY_BYTE
 }
 
-func (s *String) underlyingString() *String {
+func (s *String) UnderlyingString() *String {
 	return ANY_STRING
 }
 

@@ -231,7 +231,7 @@ func (p *Path) Prop(name string) Value {
 	}
 }
 
-func (p *Path) underlyingString() *String {
+func (p *Path) UnderlyingString() *String {
 	return ANY_STRING
 }
 
@@ -359,7 +359,7 @@ func (u *URL) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPrint
 	}
 }
 
-func (u *URL) underlyingString() *String {
+func (u *URL) UnderlyingString() *String {
 	return ANY_STRING
 }
 
@@ -461,7 +461,7 @@ func (s *Scheme) PrettyPrint(w pprint.PrettyPrintWriter, config *pprint.PrettyPr
 	}
 }
 
-func (s *Scheme) underlyingString() *String {
+func (s *Scheme) UnderlyingString() *String {
 	return ANY_STRING
 }
 
@@ -590,7 +590,7 @@ func (*Host) Prop(name string) Value {
 	}
 }
 
-func (h *Host) underlyingString() *String {
+func (h *Host) UnderlyingString() *String {
 	return ANY_STRING
 }
 

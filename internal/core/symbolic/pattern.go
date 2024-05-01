@@ -467,7 +467,7 @@ func (p *PathPattern) IteratorElementValue() Value {
 	return p.SymbolicValue()
 }
 
-func (p *PathPattern) underlyingString() *String {
+func (p *PathPattern) UnderlyingString() *String {
 	return ANY_STRING
 }
 
@@ -626,7 +626,7 @@ func (p *URLPattern) IteratorElementValue() Value {
 	return p.SymbolicValue()
 }
 
-func (p *URLPattern) underlyingString() *String {
+func (p *URLPattern) UnderlyingString() *String {
 	return ANY_STRING
 }
 
@@ -811,7 +811,7 @@ func (p *HostPattern) IteratorElementValue() Value {
 	return p.SymbolicValue()
 }
 
-func (p *HostPattern) underlyingString() *String {
+func (p *HostPattern) UnderlyingString() *String {
 	return ANY_STRING
 }
 
