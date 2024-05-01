@@ -55,7 +55,7 @@ func (h *Handle) Screenshot(ctx *symbolic.Context, sel *symbolic.String) (*symbo
 }
 
 func (h *Handle) HtmlNode(ctx *symbolic.Context, sel *symbolic.String) (*html_ns.HTMLNode, *symbolic.Error) {
-	return html_ns.NewHTMLNode(), nil
+	return html_ns.ANY_HTML_NODE, nil
 }
 
 func (h *Handle) Close(ctx *symbolic.Context) {

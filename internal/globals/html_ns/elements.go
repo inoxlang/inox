@@ -31,7 +31,7 @@ var (
 	NODE_PATTERN = &core.TypePattern{
 		Name:          "html.node",
 		Type:          reflect.TypeOf(&HTMLNode{}),
-		SymbolicValue: _html_symbolic.NewHTMLNode(),
+		SymbolicValue: _html_symbolic.ANY_HTML_NODE,
 	}
 )
 

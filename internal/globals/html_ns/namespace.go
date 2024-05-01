@@ -18,13 +18,13 @@ func init() {
 	})
 
 	symbolicElement := func(ctx *symbolic.Context, tag *symbolic.String, desc *symbolic.Object) *_html_symbolic.HTMLNode {
-		return _html_symbolic.NewHTMLNode()
+		return _html_symbolic.ANY_HTML_NODE
 	}
 
 	// register symbolic version of Go functions
 	core.RegisterSymbolicGoFunctions([]any{
 		_html_find, func(ctx *symbolic.Context, selector *symbolic.String, node *_html_symbolic.HTMLNode) *symbolic.List {
-			return symbolic.NewListOf(_html_symbolic.NewHTMLNode())
+			return symbolic.NewListOf(_html_symbolic.ANY_HTML_NODE)
 		},
 		NewNode, symbolicElement,
 		Render, func(ctx *symbolic.Context, arg *_html_symbolic.HTMLNode) *symbolic.ByteSlice {

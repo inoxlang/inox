@@ -14,22 +14,51 @@ var (
 	_ symbolic.MarkupNode = (*HTMLNode)(nil)
 )
 
+// An HTMLNode represents a symbolic HTMLNode.
 type HTMLNode struct {
+	tagName            string //empty if any tag name is matched
+	requiredAttributes []HTMLAttribute
+	requiredChildren   []*HTMLNode //order is irrelevant, repetitions are ignored
 	symbolic.UnassignablePropsMixin
 	symbolic.SerializableMixin
 	symbolic.MarkupNodeMixin
-}
-
-func NewHTMLNode() *HTMLNode {
-	return &HTMLNode{}
 }
 
 func (n *HTMLNode) Test(v symbolic.Value, state symbolic.RecTestCallState) bool {
 	state.StartCall()
 	defer state.FinishCall()
 
-	_, ok := v.(*HTMLNode)
+	otherNode, ok := v.(*HTMLNode)
 	if !ok {
+		return false
+	}
+
+	//Check tag name.
+
+	if n.tagName != "" && otherNode.tagName != n.tagName {
+		return false
+	}
+
+	//Check attributes.
+
+	for _, attr := range n.requiredAttributes {
+		for _, otherNodeAttr := range otherNode.requiredAttributes {
+			if otherNodeAttr.name == attr.name && !attr.stringValue.Test(otherNodeAttr.stringValue, state) {
+				return false
+			}
+		}
+	}
+
+	//Check children.
+
+check_children:
+	for _, child := range n.requiredChildren {
+		for _, otherNodeChild := range otherNode.requiredChildren {
+			if child.Test(otherNodeChild, state) {
+				continue check_children
+			}
+		}
+		//No child of the other node matches $child.
 		return false
 	}
 
@@ -39,7 +68,7 @@ func (n *HTMLNode) Test(v symbolic.Value, state symbolic.RecTestCallState) bool 
 func (n *HTMLNode) Prop(name string) symbolic.Value {
 	switch name {
 	case "first-child":
-		return NewHTMLNode()
+		return ANY_HTML_NODE
 	case "data":
 		return symbolic.ANY_STRING
 	default:
@@ -67,6 +96,19 @@ func (n *HTMLNode) PrettyPrint(w prettyprint.PrettyPrintWriter, config *pprint.P
 	w.WriteName("html-node")
 }
 
-func (r *HTMLNode) WidestOfType() symbolic.Value {
-	return &HTMLNode{}
+func (n *HTMLNode) WidestOfType() symbolic.Value {
+	return ANY_HTML_NODE
+}
+
+// An HTMLAttribute represents a symbolic HTMLAttribute.
+type HTMLAttribute struct {
+	name        string
+	stringValue *symbolic.String
+}
+
+func NewHTMLAttribute(name string, value *symbolic.String) HTMLAttribute {
+	return HTMLAttribute{
+		name:        name,
+		stringValue: value,
+	}
 }

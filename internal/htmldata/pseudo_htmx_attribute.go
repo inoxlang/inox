@@ -46,44 +46,64 @@ func IsPseudoHtmxAttribute(name string) bool {
 	return index < len(PSEUDO_HTMX_ATTR_NAMES) && PSEUDO_HTMX_ATTR_NAMES[index] == name
 }
 
-func TranspilePseudoHtmxAttribute(attr core.NonInterpretedMarkupAttribute, currentOutput *[]html.Attribute) error {
-	trimmedName := strings.TrimPrefix(attr.Name(), "hx-")
+func GetEquivalentAttributesNamesToPseudoHTMXAttribute(name string) (names [3]string, count int) {
+	trimmedName := strings.TrimPrefix(name, "hx-")
 
 	switch trimmedName {
 	case "lazy-load":
-		attrValue, ok := attr.Value().(core.StringLike)
+		count = 2
+		names[0] = "hx-trigger"
+		names[1] = "hx-get"
+	case "post-json", "patch-json", "put-json":
+		method, _, _ := strings.Cut(trimmedName, "-")
+
+		count = 2
+		names[0] = "hx-" + method
+		names[1] = "hx-ext"
+	}
+
+	return
+}
+
+func GetEquivalentsToPseudoHtmxAttribute(name string, value core.Value) (attributes [3]html.Attribute, count int, err error) {
+	//Most updates to this function should be followed by updates to GetEquivalentAttributesNamesToPseudoHTMXAttribute.
+
+	trimmedName := strings.TrimPrefix(name, "hx-")
+
+	switch trimmedName {
+	case "lazy-load":
+		attrValue, ok := value.(core.StringLike)
 		if !ok {
-			return fmt.Errorf(`invalid value for attribute %s: a string is expected (e.g. "/users")`, attr.Name())
+			err = fmt.Errorf(`invalid value for attribute %s: a string is expected (e.g. "/users")`, name)
+			return
 		}
 
-		*currentOutput = append(*currentOutput,
-			html.Attribute{
-				Key: "hx-trigger",
-				Val: "load",
-			},
-			html.Attribute{
-				Key: "hx-get",
-				Val: attrValue.GetOrBuildString(),
-			},
-		)
+		count = 2
+		attributes[0] = html.Attribute{
+			Key: "hx-trigger",
+			Val: "load",
+		}
+		attributes[1] = html.Attribute{
+			Key: "hx-get",
+			Val: attrValue.GetOrBuildString(),
+		}
 	case "post-json", "patch-json", "put-json":
-		attrValue, ok := attr.Value().(core.StringLike)
+		attrValue, ok := value.(core.StringLike)
 		if !ok {
-			return fmt.Errorf(`invalid value for attribute %s: a string is expected (e.g. "/users")`, attr.Name())
+			err = fmt.Errorf(`invalid value for attribute %s: a string is expected (e.g. "/users")`, name)
+			return
 		}
 
 		method, _, _ := strings.Cut(trimmedName, "-")
-
-		*currentOutput = append(*currentOutput,
-			html.Attribute{
-				Key: "hx-" + method,
-				Val: attrValue.GetOrBuildString(),
-			},
-			html.Attribute{
-				Key: "hx-ext",
-				Val: "json-form",
-			},
-		)
+		count = 2
+		attributes[0] = html.Attribute{
+			Key: "hx-" + method,
+			Val: attrValue.GetOrBuildString(),
+		}
+		attributes[1] = html.Attribute{
+			Key: "hx-ext",
+			Val: "json-form",
+		}
 	}
-	return nil
+	return
 }

@@ -32,8 +32,13 @@ func CreateHTMLNodeFromMarkupElement(ctx *core.Context, arg *core.NonInterpreted
 
 		//handle pseudo htmx attributes
 		if htmldata.IsPseudoHtmxAttribute(attrName) {
-			htmldata.TranspilePseudoHtmxAttribute(attr, &attributes)
+			equivalentAttrs, count, err := htmldata.GetEquivalentsToPseudoHtmxAttribute(attr.Name(), attr.Value())
+
 			//TODO: handle errors
+			if err != nil {
+				panic(err)
+			}
+			attributes = append(attributes, equivalentAttrs[:count]...)
 			continue
 		}
 

@@ -3,8 +3,10 @@ package html_ns
 import (
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/htmldata"
 	"github.com/inoxlang/inox/internal/parse"
 )
 
@@ -61,36 +63,85 @@ func checkInterpolationValue(value symbolic.Value) (errMsg string) {
 
 func CreateHTMLNodeFromMarkupElement(ctx *symbolic.Context, elem *symbolic.NonInterpretedMarkupElement) *HTMLNode {
 
-	var checkElem func(e *symbolic.NonInterpretedMarkupElement)
-	checkElem = func(e *symbolic.NonInterpretedMarkupElement) {
-		for name, val := range e.Attributes() {
-			switch val.(type) {
-			case symbolic.GoString, symbolic.StringLike, *symbolic.Int:
-			default:
-				errMsg := fmtAttrValueNotAccepted(val, name)
-				sourceNode, ok := e.SourceNode()
-				if ok {
-					ctx.AddLocatedSymbolicGoFunctionError(sourceNode.Opening, errMsg)
-				} else {
-					ctx.AddSymbolicGoFunctionError(errMsg)
-				}
-			}
+	var requiredAttributes []HTMLAttribute
+
+	for name, val := range elem.Attributes() {
+		hasAttrWithSameName := slices.ContainsFunc(requiredAttributes, func(a HTMLAttribute) bool { return a.name == name })
+
+		if hasAttrWithSameName {
+			continue
 		}
 
-		for _, child := range e.Children() {
-			switch c := child.(type) {
-			case *symbolic.NonInterpretedMarkupElement:
-				checkElem(c)
-			default:
-				//already checked during interpolation checks
-				//ctx.AddFormattedSymbolicGoFunctionError("value of interpolation is not accepted for now (%s), use a string or an integer", symbolic.Stringify(c))
+		if htmldata.IsPseudoHtmxAttribute(name) {
+			names, count := htmldata.GetEquivalentAttributesNamesToPseudoHTMXAttribute(name)
+
+			for _, name := range names[:count] {
+				hasAttrWithSameName := slices.ContainsFunc(requiredAttributes, func(a HTMLAttribute) bool { return a.name == name })
+				if !hasAttrWithSameName {
+					requiredAttributes = append(requiredAttributes, NewHTMLAttribute(name, symbolic.ANY_STRING))
+				}
+			}
+			continue
+		}
+
+		switch val := val.(type) {
+		case symbolic.GoString:
+			requiredAttributes = append(requiredAttributes, NewHTMLAttribute(name, val.UnderlyingString()))
+		case symbolic.StringLike:
+			requiredAttributes = append(requiredAttributes, NewHTMLAttribute(name, val.GetOrBuildString()))
+		case *symbolic.Int:
+			requiredAttributes = append(requiredAttributes, NewHTMLAttribute(name, symbolic.ANY_STRING))
+		default:
+			errMsg := fmtAttrValueNotAccepted(val, name)
+			sourceNode, ok := elem.SourceNode()
+			if ok {
+				ctx.AddLocatedSymbolicGoFunctionError(sourceNode.Opening, errMsg)
+			} else {
+				ctx.AddSymbolicGoFunctionError(errMsg)
 			}
 		}
 	}
 
-	checkElem(elem)
+	var requiredChildren []*HTMLNode
 
-	return NewHTMLNode()
+	//handleChild adds an HTML node to $requiredChildren if $child can be converted to an HTML node
+	//by the concrete HTML factory.
+	handleChild := func(child symbolic.Value) {
+		if nonInterpretedMarkupElement, ok := child.(*symbolic.NonInterpretedMarkupElement); ok {
+			requiredChildren = append(requiredChildren, CreateHTMLNodeFromMarkupElement(ctx, nonInterpretedMarkupElement))
+			return
+		}
+
+		if htmlNode, ok := child.(*HTMLNode); ok {
+			if !htmlNode.Test(ANY_HTML_NODE, symbolic.RecTestCallState{}) {
+				requiredChildren = append(requiredChildren, htmlNode)
+			}
+			return
+		}
+
+		//Text nodes from markup text or interpolations with a string result are ignored.
+	}
+
+	for _, child := range elem.Children() {
+		if list, ok := child.(*symbolic.List); ok {
+			if list.HasKnownLen() {
+				for i := range list.KnownLen() {
+					listElem := list.ElementAt(i)
+					handleChild(listElem)
+				}
+			} else {
+				handleChild(list.Element())
+			}
+		} else {
+			handleChild(child)
+		}
+	}
+
+	return &HTMLNode{
+		tagName:            elem.Name(),
+		requiredAttributes: requiredAttributes,
+		requiredChildren:   requiredChildren,
+	}
 }
 
 func fmtAttrValueNotAccepted(val symbolic.Value, name string) string {

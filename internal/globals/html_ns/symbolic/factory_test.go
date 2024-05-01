@@ -123,4 +123,67 @@ func TestSymbolicCreateHTMLNodeFromMarkupElement(t *testing.T) {
 		errors := state.Errors()
 		assert.NotEmpty(t, errors)
 	})
+
+	t.Run("deep: complex", func(t *testing.T) {
+
+		globals := globals()
+		globals["unknown_len_node_list"] = symbolic.NewListOf(&HTMLNode{
+			tagName:            "a",
+			requiredAttributes: []HTMLAttribute{{name: "href", stringValue: symbolic.ANY_STRING}},
+		})
+
+		chunk, state := symbolic.MakeTestStateAndChunk(`
+			known_len_node_list = [<div b></div>, <div c></div>]
+
+			return html<div>
+				<span a="true"></span>
+				<form hx-post-json=""></form>
+				{known_len_node_list}
+				{unknown_len_node_list}
+			</div>
+		`, globals)
+
+		node, err := symbolic.SymbolicEval(chunk, state)
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		errors := state.Errors()
+		if !assert.Empty(t, errors) {
+			return
+		}
+
+		expectedNode := &HTMLNode{
+			tagName: "div",
+			requiredChildren: []*HTMLNode{
+				{
+					tagName:            "span",
+					requiredAttributes: []HTMLAttribute{{name: "a", stringValue: symbolic.NewString("true")}},
+				},
+				{
+					tagName: "form",
+					requiredAttributes: []HTMLAttribute{
+						{name: "hx-post", stringValue: symbolic.ANY_STRING},
+						{name: "hx-ext", stringValue: symbolic.ANY_STRING},
+					},
+				},
+				//elements of known-length list
+				{
+					tagName:            "div",
+					requiredAttributes: []HTMLAttribute{{name: "b", stringValue: symbolic.EMPTY_STRING}},
+				},
+				{
+					tagName:            "div",
+					requiredAttributes: []HTMLAttribute{{name: "c", stringValue: symbolic.EMPTY_STRING}},
+				},
+				//elements of unknown-length list
+				{
+					tagName:            "a",
+					requiredAttributes: []HTMLAttribute{{name: "href", stringValue: symbolic.ANY_STRING}},
+				},
+			},
+		}
+
+		assert.Equal(t, expectedNode, node)
+	})
 }
