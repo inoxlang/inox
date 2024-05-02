@@ -1,44 +1,8 @@
 package hscode
 
-import "reflect"
-
-type Node interface {
-	Base() NodeBase
-}
-
-type NodeBase struct {
-	Type       NodeType `json:"type"`
-	StartToken *Token   `json:"startToken,omitempty"`
-	EndToken   *Token   `json:"endToken,omitempty"`
-	IsFeature  bool     `json:"isFeature"`
-}
-
-func (n NodeBase) IsZero() bool {
-	return reflect.ValueOf(n).IsZero()
-}
-
-func (n NodeBase) IsNotZero() bool {
-	return !reflect.ValueOf(n).IsZero()
-}
-
-func (n NodeBase) StartPos() int32 {
-	return n.StartToken.Start
-}
-
-func (n NodeBase) EndPos() int32 {
-	return n.EndToken.End
-}
-
-func (n NodeBase) IncludedIn(other Node) bool {
-	return n.StartPos() >= other.Base().StartPos() && n.EndPos() <= other.Base().EndPos()
-}
-
-type Field struct {
-	Name  Token
-	Value Node
-}
-
 type NodeType string
+
+type Map = map[string]any
 
 const (
 	HyperscriptProgram           NodeType = "hyperscript"
@@ -99,7 +63,9 @@ const (
 	Initial_literal              NodeType = "initial_literal"
 	ClosestExpr                  NodeType = "closestExpr"
 
-	OnFeature NodeType = "onFeature"
+	OnFeature   NodeType = "onFeature"
+	InitFeature NodeType = "initFeature"
+	DefFeature  NodeType = "defFeature"
 
 	SettleCmd NodeType = "settleCmd"
 	AddCmd    NodeType = "addCmd"

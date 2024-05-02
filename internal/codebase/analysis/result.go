@@ -28,7 +28,7 @@ type Result struct {
 
 	UsedHyperscriptCommands map[string]hsgen.Definition
 	UsedHyperscriptFeatures map[string]hsgen.Definition
-	HyperscriptComponents   map[ /*root element span */ parse.NodeSpan]*HyperscriptComponent
+	HyperscriptComponents   map[parse.SourcePositionRange]*HyperscriptComponent
 
 	UsedTailwindRules    map[ /* name with modifiers */ string]tailwind.Ruleset
 	CssVariables         map[css.VarName]varclasses.Variable
@@ -53,7 +53,7 @@ func newEmptyResult() *Result {
 		UsedHtmxExtensions:      make(map[string]struct{}),
 		UsedHyperscriptCommands: make(map[string]hsgen.Definition),
 		UsedHyperscriptFeatures: make(map[string]hsgen.Definition),
-		HyperscriptComponents:   make(map[parse.NodeSpan]*HyperscriptComponent),
+		HyperscriptComponents:   make(map[parse.SourcePositionRange]*HyperscriptComponent),
 		UsedTailwindRules:       make(map[string]tailwind.Ruleset),
 		UsedInoxJsLibs:          make(map[string]struct{}),
 

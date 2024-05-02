@@ -1,6 +1,8 @@
 package analysis
 
 import (
+	"strings"
+
 	"github.com/inoxlang/inox/internal/hyperscript/hscode"
 	"github.com/inoxlang/inox/internal/hyperscript/hsgen"
 	"github.com/inoxlang/inox/internal/parse"
@@ -54,11 +56,24 @@ func (a *analyzer) addUsedHyperscriptFeaturesAndCommands(node parse.Node) {
 	}
 }
 
+type HyperscriptComponent struct {
+	Element                     *parse.MarkupElement
+	AttributeShorthand          *parse.HyperscriptAttributeShorthand
+	ChunkSource                 *parse.ParsedChunkSource
+	HandledEvents               []DOMEvent
+	InitialElementScopeVarNames []string // example: {":a", ":b"}
+}
+
+type DOMEvent struct {
+	Type string
+}
+
 func (a *analyzer) preanalyzeHyperscriptComponent(
 	elem *parse.MarkupElement,
 	attribute *parse.HyperscriptAttributeShorthand,
 	chunkSource *parse.ParsedChunkSource,
 ) {
+	//Add component in the result.
 
 	component := &HyperscriptComponent{
 		Element:            elem,
@@ -66,11 +81,47 @@ func (a *analyzer) preanalyzeHyperscriptComponent(
 		ChunkSource:        chunkSource,
 	}
 
-	a.result.HyperscriptComponents[elem.Span] = component
-}
+	a.result.HyperscriptComponents[chunkSource.GetSourcePosition(elem.Span)] = component
 
-type HyperscriptComponent struct {
-	Element            *parse.MarkupElement
-	AttributeShorthand *parse.HyperscriptAttributeShorthand
-	ChunkSource        *parse.ParsedChunkSource
+	//Pre-analyze
+
+	if attribute.HyperscriptParsingResult == nil {
+		return
+	}
+
+	program := attribute.HyperscriptParsingResult.NodeData
+	features, ok := hscode.GetProgramFeatures(program)
+	if !ok {
+		return
+	}
+
+	walk := func(node hscode.Map, inInit bool) {
+		hscode.Walk(node, func(node hscode.Map, nodeType hscode.NodeType, parent hscode.Map, ancestorChain []hscode.Map, _ bool) (hscode.AstTraversalAction, error) {
+			switch nodeType {
+			case hscode.SetCommand:
+				name, _ := hscode.GetSetCommandTargetName(node)
+				if inInit && strings.HasPrefix(name, ":") {
+					component.InitialElementScopeVarNames = append(component.InitialElementScopeVarNames, name)
+				}
+			}
+			return hscode.ContinueAstTraversal, nil
+		}, nil)
+	}
+
+	for _, feature := range features {
+		feature := feature.(hscode.Map)
+		switch hscode.GetTypeIfNode(feature) {
+		case hscode.InitFeature: //init
+			walk(feature, true)
+		case hscode.OnFeature: //on
+			onFeature := feature
+			events, _ := hscode.GetOnFeatureEvents(onFeature)
+			for _, event := range events {
+				component.HandledEvents = append(component.HandledEvents, DOMEvent{
+					Type: event.Name,
+				})
+			}
+			walk(feature, false)
+		}
+	}
 }

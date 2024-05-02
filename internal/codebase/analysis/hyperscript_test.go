@@ -107,42 +107,100 @@ func TestAnalyzeHyperscript(t *testing.T) {
 	})
 
 	t.Run("component", func(t *testing.T) {
-		ctx := setup()
-		defer ctx.CancelGracefully()
+		t.Run("base case", func(t *testing.T) {
+			ctx := setup()
+			defer ctx.CancelGracefully()
 
-		util.WriteFile(ctx.GetFileSystem(), "/routes/index.ix", []byte(`
+			util.WriteFile(ctx.GetFileSystem(), "/routes/index.ix", []byte(`
 			manifest{}
 			return html<div class="Counter" {init}></div>
 		`), 0600)
 
-		result, err := AnalyzeCodebase(ctx, Configuration{
-			TopDirectories: []string{"/"},
+			result, err := AnalyzeCodebase(ctx, Configuration{
+				TopDirectories: []string{"/"},
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			mod := result.InoxModules["/routes/index.ix"]
+			markupElem := parse.FindFirstNode(mod.Module.MainChunk.Node, (*parse.MarkupElement)(nil))
+
+			if !assert.Len(t, result.HyperscriptComponents, 1) {
+				return
+			}
+
+			component, ok := result.HyperscriptComponents[mod.Module.MainChunk.GetSourcePosition(markupElem.Span)]
+
+			if !assert.True(t, ok) {
+				return
+			}
+
+			expectedComponent := &HyperscriptComponent{
+				Element:            markupElem,
+				AttributeShorthand: markupElem.Opening.Attributes[1].(*parse.HyperscriptAttributeShorthand),
+				ChunkSource:        mod.Module.MainChunk,
+			}
+
+			assert.Equal(t, expectedComponent, component)
 		})
 
-		if !assert.NoError(t, err) {
-			return
-		}
+		t.Run("component with init feature and event handling", func(t *testing.T) {
+			ctx := setup()
+			defer ctx.CancelGracefully()
 
-		mod := result.InoxModules["/routes/index.ix"]
-		markupElem := parse.FindFirstNode(mod.Module.MainChunk.Node, (*parse.MarkupElement)(nil))
+			util.WriteFile(ctx.GetFileSystem(), "/routes/index.ix", []byte(`
+					manifest{}
+					return html<div class="Counter" {
+						init 
+							set :count to 0
+						on incr
+							increment :count
+						on decr
+							decrement :count
+					}>
+					</div>
+				`), 0600)
 
-		if !assert.Len(t, result.HyperscriptComponents, 1) {
-			return
-		}
+			result, err := AnalyzeCodebase(ctx, Configuration{
+				TopDirectories: []string{"/"},
+			})
 
-		component, ok := result.HyperscriptComponents[markupElem.Span]
+			if !assert.NoError(t, err) {
+				return
+			}
 
-		if !assert.True(t, ok) {
-			return
-		}
+			mod := result.InoxModules["/routes/index.ix"]
+			markupElem := parse.FindFirstNode(mod.Module.MainChunk.Node, (*parse.MarkupElement)(nil))
 
-		expectedComponent := &HyperscriptComponent{
-			Element:            markupElem,
-			AttributeShorthand: markupElem.Opening.Attributes[1].(*parse.HyperscriptAttributeShorthand),
-			ChunkSource:        mod.Module.MainChunk,
-		}
+			if !assert.Len(t, result.HyperscriptComponents, 1) {
+				return
+			}
 
-		assert.Equal(t, expectedComponent, component)
+			component, ok := result.HyperscriptComponents[mod.Module.MainChunk.GetSourcePosition(markupElem.Span)]
+
+			if !assert.True(t, ok) {
+				return
+			}
+
+			expectedComponent := &HyperscriptComponent{
+				Element:                     markupElem,
+				AttributeShorthand:          markupElem.Opening.Attributes[1].(*parse.HyperscriptAttributeShorthand),
+				ChunkSource:                 mod.Module.MainChunk,
+				InitialElementScopeVarNames: []string{":count"},
+				HandledEvents: []DOMEvent{
+					{
+						Type: "incr",
+					},
+					{
+						Type: "decr",
+					},
+				},
+			}
+
+			assert.Equal(t, expectedComponent, component)
+		})
 	})
 
 }

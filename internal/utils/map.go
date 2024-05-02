@@ -1,5 +1,15 @@
 package utils
 
+func HasKeys[K string, V any](m map[K]V, keys ...K) bool {
+	for _, key := range keys {
+		_, ok := m[key]
+		if !ok {
+			return false
+		}
+	}
+	return true
+}
+
 func SameKeys[K comparable, V any](m1 map[K]V, m2 map[K]V) bool {
 	if len(m1) != len(m2) {
 		return false
