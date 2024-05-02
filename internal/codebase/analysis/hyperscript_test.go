@@ -131,19 +131,20 @@ func TestAnalyzeHyperscript(t *testing.T) {
 				return
 			}
 
-			component, ok := result.HyperscriptComponents[mod.Module.MainChunk.GetSourcePosition(markupElem.Span)]
+			components := result.HyperscriptComponents["Counter"]
 
-			if !assert.True(t, ok) {
+			if !assert.Len(t, components, 1) {
 				return
 			}
 
 			expectedComponent := &HyperscriptComponent{
+				Name:               "Counter",
 				Element:            markupElem,
 				AttributeShorthand: markupElem.Opening.Attributes[1].(*parse.HyperscriptAttributeShorthand),
 				ChunkSource:        mod.Module.MainChunk,
 			}
 
-			assert.Equal(t, expectedComponent, component)
+			assert.Equal(t, expectedComponent, components[0])
 		})
 
 		t.Run("component with init feature and event handling", func(t *testing.T) {
@@ -178,13 +179,14 @@ func TestAnalyzeHyperscript(t *testing.T) {
 				return
 			}
 
-			component, ok := result.HyperscriptComponents[mod.Module.MainChunk.GetSourcePosition(markupElem.Span)]
+			components := result.HyperscriptComponents["Counter"]
 
-			if !assert.True(t, ok) {
+			if !assert.Len(t, components, 1) {
 				return
 			}
 
 			expectedComponent := &HyperscriptComponent{
+				Name:                        "Counter",
 				Element:                     markupElem,
 				AttributeShorthand:          markupElem.Opening.Attributes[1].(*parse.HyperscriptAttributeShorthand),
 				ChunkSource:                 mod.Module.MainChunk,
@@ -199,7 +201,7 @@ func TestAnalyzeHyperscript(t *testing.T) {
 				},
 			}
 
-			assert.Equal(t, expectedComponent, component)
+			assert.Equal(t, expectedComponent, components[0])
 		})
 	})
 

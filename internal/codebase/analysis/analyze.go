@@ -87,6 +87,8 @@ func (a *analyzer) analyzeCodebase(ctx *core.Context) (result *Result, finalErr 
 
 	mainProgramPath := layout.MAIN_PROGRAM_PATH
 
+	//Determine the server API and handler modules.
+
 	appModuleEntry, ok := a.result.InoxModules[mainProgramPath]
 	if ok || appModuleEntry.SymbolicData != nil {
 		staticDir, dynamicDir := a.tryGetStaticAndDynamicDirs(appModuleEntry)
@@ -110,6 +112,8 @@ func (a *analyzer) analyzeCodebase(ctx *core.Context) (result *Result, finalErr 
 			result.ServerDynamicDir = dynamicDir
 		}
 	}
+
+	//Analyze Hyperscript code.
 
 	return
 }

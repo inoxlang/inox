@@ -57,6 +57,7 @@ func (a *analyzer) addUsedHyperscriptFeaturesAndCommands(node parse.Node) {
 }
 
 type HyperscriptComponent struct {
+	Name                        string
 	Element                     *parse.MarkupElement
 	AttributeShorthand          *parse.HyperscriptAttributeShorthand
 	ChunkSource                 *parse.ParsedChunkSource
@@ -69,19 +70,22 @@ type DOMEvent struct {
 }
 
 func (a *analyzer) preanalyzeHyperscriptComponent(
+	componentName string,
 	elem *parse.MarkupElement,
 	attribute *parse.HyperscriptAttributeShorthand,
 	chunkSource *parse.ParsedChunkSource,
 ) {
+
 	//Add component in the result.
 
 	component := &HyperscriptComponent{
+		Name:               componentName,
 		Element:            elem,
 		AttributeShorthand: attribute,
 		ChunkSource:        chunkSource,
 	}
 
-	a.result.HyperscriptComponents[chunkSource.GetSourcePosition(elem.Span)] = component
+	a.result.HyperscriptComponents[componentName] = append(a.result.HyperscriptComponents[componentName], component)
 
 	//Pre-analyze
 

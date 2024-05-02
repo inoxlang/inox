@@ -63,19 +63,21 @@ func (a *analyzer) preAnalyzeInoxFile(path string, fileContent string, chunkSour
 			markupElement, _, ok := parse.FindClosest(ancestorChain, (*parse.MarkupElement)(nil))
 			if ok {
 				isComponent := false
+				componentName := ""
 
 				//Determine if the element is the root of a hyperscript component.
 				for _, attr := range markupElement.Opening.Attributes {
 					if attr, ok := attr.(*parse.MarkupAttribute); ok {
 						isComponent = attr.IsNameEqual("class") && css.DoesClassListStartWithUppercaseLetter(attr.ValueIfStringLiteral())
 						if isComponent {
+							componentName, _ = css.GetFirstClassNameInList(attr.ValueIfStringLiteral())
 							break
 						}
 					}
 				}
 
 				if isComponent {
-					a.preanalyzeHyperscriptComponent(markupElement, node, chunkSource)
+					a.preanalyzeHyperscriptComponent(componentName, markupElement, node, chunkSource)
 				}
 			}
 		case *parse.MarkupElement:
