@@ -12,10 +12,12 @@ func DoesClassListStartWithUppercaseLetter(classList string) bool {
 }
 
 func GetFirstClassNameInList(classList string) (string, bool) {
+	classList = strings.TrimSpace(classList)
+
 	names := strings.Split(classList, " ")
 	if len(names) == 0 {
 		return "", false
 	}
 	firstName := strings.TrimSpace(names[0])
-	return firstName, true
+	return firstName, firstName != ""
 }
