@@ -217,10 +217,10 @@ var (
 	ErrNotImplementedYet = errors.New("not implemented yet")
 	ErrUnreachable       = errors.New("unreachable")
 
-	_ parse.LocatedError = SymbolicEvaluationError{}
+	_ parse.LocatedError = EvaluationError{}
 )
 
-type SymbolicEvaluationError struct {
+type EvaluationError struct {
 	Message        string
 	MessageRegions []commonfmt.RegionInfo
 
@@ -229,15 +229,15 @@ type SymbolicEvaluationError struct {
 	LocatedMessageRegions []commonfmt.RegionInfo
 }
 
-func (err SymbolicEvaluationError) Error() string {
+func (err EvaluationError) Error() string {
 	return err.LocatedMessage
 }
 
-func (err SymbolicEvaluationError) MessageWithoutLocation() string {
+func (err EvaluationError) MessageWithoutLocation() string {
 	return err.Message
 }
 
-func (err SymbolicEvaluationError) LocationStack() parse.SourcePositionStack {
+func (err EvaluationError) LocationStack() parse.SourcePositionStack {
 	return err.Location
 }
 
@@ -250,7 +250,7 @@ type ErrorReformatting struct {
 	ValuePrettyPringConfig   *pprint.PrettyPrintConfig //values are not reformatted if nil
 }
 
-func (err SymbolicEvaluationError) ReformatNonLocated(w io.Writer, reformatting ErrorReformatting) error {
+func (err EvaluationError) ReformatNonLocated(w io.Writer, reformatting ErrorReformatting) error {
 	text := err.Message
 	regions := err.MessageRegions
 
@@ -308,7 +308,7 @@ func (err SymbolicEvaluationError) ReformatNonLocated(w io.Writer, reformatting 
 	return commonfmt.Reformat(w, text, replacements)
 }
 
-func (err SymbolicEvaluationError) HasInoxValueRegions() bool {
+func (err EvaluationError) HasInoxValueRegions() bool {
 	for _, region := range err.MessageRegions {
 		if region.Kind == INOX_VALUE_REGION_KIND {
 			return true

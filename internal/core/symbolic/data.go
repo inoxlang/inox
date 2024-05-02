@@ -57,7 +57,7 @@ type Data struct {
 	comptimeTypes               map[ /* *Chunk or *EmbeddModule */ parse.Node]*ModuleCompileTimeTypes
 
 	errorMessageSet map[string]bool
-	errors          []SymbolicEvaluationError
+	errors          []EvaluationError
 
 	warningMessageSet map[string]bool
 	warnings          []SymbolicEvaluationWarning
@@ -90,7 +90,7 @@ func (data *Data) IsEmpty() bool {
 	return len(data.mostSpecificNodeValues) == 0 && len(data.errors) == 0
 }
 
-func (data *Data) AddError(err SymbolicEvaluationError) {
+func (data *Data) AddError(err EvaluationError) {
 	if data.errorMessageSet[err.Error()] {
 		return
 	}
@@ -228,7 +228,7 @@ func (data *Data) GetAllowedNonPresentKeys(node parse.Node) ([]string, bool) {
 	return v, ok
 }
 
-func (data *Data) Errors() []SymbolicEvaluationError {
+func (data *Data) Errors() []EvaluationError {
 	return data.errors
 }
 

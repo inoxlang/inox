@@ -287,7 +287,7 @@ func GetCheckData(fpath string, compilationCtx *core.Context, out io.Writer) map
 		})
 		i = -1
 
-		data["symbolicCheckErrors"] = utils.MapSlice(state.SymbolicData.Errors(), func(err symbolic.SymbolicEvaluationError) any {
+		data["symbolicCheckErrors"] = utils.MapSlice(state.SymbolicData.Errors(), func(err symbolic.EvaluationError) any {
 			i++
 			return map[string]any{
 				"text":     err.Message,

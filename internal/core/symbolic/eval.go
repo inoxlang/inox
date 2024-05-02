@@ -6961,7 +6961,7 @@ func handleConstraints(obj *Object, block *parse.InitializationBlock, state *Sta
 	return nil
 }
 
-func MakeSymbolicEvalError(node parse.Node, state *State, msg string, regions ...commonfmt.RegionInfo) SymbolicEvaluationError {
+func MakeSymbolicEvalError(node parse.Node, state *State, msg string, regions ...commonfmt.RegionInfo) EvaluationError {
 	locatedMsg := msg
 	location := state.getErrorMesssageLocation(node)
 
@@ -6977,7 +6977,7 @@ func MakeSymbolicEvalError(node parse.Node, state *State, msg string, regions ..
 			locatedMessageRegions[i].End += int32(prefixLen)
 		}
 	}
-	return SymbolicEvaluationError{
+	return EvaluationError{
 		Message:        msg,
 		MessageRegions: regions,
 
@@ -6987,8 +6987,8 @@ func MakeSymbolicEvalError(node parse.Node, state *State, msg string, regions ..
 	}
 }
 
-func makeSymbolicEvalErrorFromError(node parse.Node, state *State, err error) SymbolicEvaluationError {
-	if e, ok := err.(SymbolicEvaluationError); ok {
+func makeSymbolicEvalErrorFromError(node parse.Node, state *State, err error) EvaluationError {
+	if e, ok := err.(EvaluationError); ok {
 		return e
 	}
 	return MakeSymbolicEvalError(node, state, err.Error())

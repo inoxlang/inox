@@ -799,11 +799,11 @@ func (state *State) join(areAllOutcomesCovered bool, forks ...*State) {
 	state.resetTestCallMsgBuffers()
 }
 
-func (state *State) addError(err SymbolicEvaluationError) {
+func (state *State) addError(err EvaluationError) {
 	state.symbolicData.AddError(err)
 }
 
-func (state *State) addErrorIf(cond bool, err SymbolicEvaluationError) {
+func (state *State) addErrorIf(cond bool, err EvaluationError) {
 	if cond {
 		state.symbolicData.AddError(err)
 	}
@@ -896,14 +896,14 @@ func (state *State) consumeUpdatedSelf() (Value, bool) {
 	return state.tempUpdatedSelf, true
 }
 
-func (state *State) errors() []SymbolicEvaluationError {
+func (state *State) errors() []EvaluationError {
 	return state.symbolicData.errors
 }
 func (state *State) warnings() []SymbolicEvaluationWarning {
 	return state.symbolicData.warnings
 }
 
-func (state *State) Errors() []SymbolicEvaluationError {
+func (state *State) Errors() []EvaluationError {
 	return slices.Clone(state.symbolicData.errors)
 }
 

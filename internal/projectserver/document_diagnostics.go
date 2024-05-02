@@ -222,7 +222,7 @@ func computeDocumentDiagnostics(params diagnosticNotificationParams) (result *do
 	//we need the diagnostics list to be present in the notification so diagnostics should not be nil
 	diagnostics := make([]defines.Diagnostic, 0)
 	otherDocumentDiagnostics := map[defines.DocumentUri][]defines.Diagnostic{}
-	symbolicErrors := make(map[defines.DocumentUri][]symbolic.SymbolicEvaluationError, 0)
+	symbolicErrors := make(map[defines.DocumentUri][]symbolic.EvaluationError, 0)
 
 	if !ok {
 		return &documentDiagnostics{items: diagnostics}, nil
@@ -449,7 +449,7 @@ type documentDiagnostics struct {
 	id                           DocDiagnosticId
 	items                        []defines.Diagnostic
 	otherDocumentDiagnostics     map[defines.DocumentUri][]defines.Diagnostic
-	symbolicErrors               map[defines.DocumentUri][]symbolic.SymbolicEvaluationError
+	symbolicErrors               map[defines.DocumentUri][]symbolic.EvaluationError
 	containsWorkspaceDiagnostics bool
 	lock                         sync.Mutex
 }
