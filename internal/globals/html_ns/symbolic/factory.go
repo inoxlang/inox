@@ -137,11 +137,17 @@ func CreateHTMLNodeFromMarkupElement(ctx *symbolic.Context, elem *symbolic.NonIn
 		}
 	}
 
-	return &HTMLNode{
+	htmlNode := &HTMLNode{
 		tagName:            elem.Name(),
 		requiredAttributes: requiredAttributes,
 		requiredChildren:   requiredChildren,
 	}
+
+	if sourceNode, ok := elem.SourceNode(); ok {
+		htmlNode.sourceNode = sourceNode
+	}
+
+	return htmlNode
 }
 
 func fmtAttrValueNotAccepted(val symbolic.Value, name string) string {

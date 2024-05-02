@@ -2,6 +2,7 @@ package html_ns
 
 import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/prettyprint"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
@@ -18,7 +19,9 @@ var (
 type HTMLNode struct {
 	tagName            string //empty if any tag name is matched
 	requiredAttributes []HTMLAttribute
-	requiredChildren   []*HTMLNode //order is irrelevant, repetitions are ignored
+	requiredChildren   []*HTMLNode          //order is irrelevant, repetitions are ignored
+	sourceNode         *parse.MarkupElement //optional, not used for matching
+
 	symbolic.UnassignablePropsMixin
 	symbolic.SerializableMixin
 	symbolic.MarkupNodeMixin
@@ -63,6 +66,13 @@ check_children:
 	}
 
 	return true
+}
+
+func (n *HTMLNode) SourceNode() (*parse.MarkupElement, bool) {
+	if n.sourceNode == nil {
+		return nil, false
+	}
+	return n.sourceNode, true
 }
 
 func (n *HTMLNode) Prop(name string) symbolic.Value {

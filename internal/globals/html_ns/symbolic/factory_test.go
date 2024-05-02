@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/parse"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -153,15 +154,20 @@ func TestSymbolicCreateHTMLNodeFromMarkupElement(t *testing.T) {
 			return
 		}
 
+		markupElements := parse.FindNodes(chunk, (*parse.MarkupElement)(nil), nil)
+
 		expectedNode := &HTMLNode{
-			tagName: "div",
+			tagName:    "div",
+			sourceNode: markupElements[2],
 			requiredChildren: []*HTMLNode{
 				{
 					tagName:            "span",
+					sourceNode:         markupElements[3],
 					requiredAttributes: []HTMLAttribute{{name: "a", stringValue: symbolic.NewString("true")}},
 				},
 				{
-					tagName: "form",
+					tagName:    "form",
+					sourceNode: markupElements[4],
 					requiredAttributes: []HTMLAttribute{
 						{name: "hx-post", stringValue: symbolic.ANY_STRING},
 						{name: "hx-ext", stringValue: symbolic.ANY_STRING},
@@ -170,10 +176,12 @@ func TestSymbolicCreateHTMLNodeFromMarkupElement(t *testing.T) {
 				//elements of known-length list
 				{
 					tagName:            "div",
+					sourceNode:         markupElements[0],
 					requiredAttributes: []HTMLAttribute{{name: "b", stringValue: symbolic.EMPTY_STRING}},
 				},
 				{
 					tagName:            "div",
+					sourceNode:         markupElements[1],
 					requiredAttributes: []HTMLAttribute{{name: "c", stringValue: symbolic.EMPTY_STRING}},
 				},
 				//elements of unknown-length list
