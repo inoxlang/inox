@@ -95,4 +95,49 @@ func TestParseHyperscript(t *testing.T) {
 
 		assert.EqualValues(t, hscode.HyperscriptProgram, res.NodeData["type"])
 	})
+
+	t.Run("string with back ticks", func(t *testing.T) {
+		start := time.Now()
+		res, parsingErr, criticalError := ParseHyperScript(context.Background(), "init set :a to `s`")
+
+		if !assert.NoError(t, criticalError) {
+			return
+		}
+
+		if !assert.Nil(t, parsingErr) {
+			return
+		}
+
+		if !assert.Less(t, time.Since(start), MAX_PARSING_DURATION_FOR_SMALL_PIECE_OF_CODE) {
+			return
+		}
+
+		assert.Greater(t, len(res.Tokens), 6)
+		assert.Len(t, res.TokensNoWhitespace, 6)
+
+		assert.EqualValues(t, hscode.HyperscriptProgram, res.NodeData["type"])
+	})
+
+	t.Run("string template with back ticks", func(t *testing.T) {
+		start := time.Now()
+		res, parsingErr, criticalError := ParseHyperScript(context.Background(), "init set :a to `{s}`")
+
+		if !assert.NoError(t, criticalError) {
+			return
+		}
+
+		if !assert.Nil(t, parsingErr) {
+			return
+		}
+
+		if !assert.Less(t, time.Since(start), MAX_PARSING_DURATION_FOR_SMALL_PIECE_OF_CODE) {
+			return
+		}
+
+		assert.Greater(t, len(res.Tokens), 6)
+		assert.Len(t, res.TokensNoWhitespace, 6)
+
+		assert.EqualValues(t, hscode.HyperscriptProgram, res.NodeData["type"])
+	})
+
 }

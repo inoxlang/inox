@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/inoxlang/inox/internal/hyperscript/hscode"
@@ -64,8 +63,6 @@ func ParseHyperScript(ctx context.Context, source string) (parsingResult *hscode
 
 	resultChan := make(chan *v8go.Value, 1)
 	errChan := make(chan error, 1)
-	source = strings.ReplaceAll(source, "\\", "\\\\")
-	source = strings.ReplaceAll(source, "`", "\\`")
 
 	isolate := vm.ctx.Isolate()
 	jsString, err := v8go.NewValue(isolate, source)
