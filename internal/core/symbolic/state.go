@@ -809,7 +809,7 @@ func (state *State) addErrorIf(cond bool, err EvaluationError) {
 	}
 }
 
-func (state *State) addWarning(warning SymbolicEvaluationWarning) {
+func (state *State) addWarning(warning EvaluationWarning) {
 	state.symbolicData.AddWarning(warning)
 }
 
@@ -899,7 +899,7 @@ func (state *State) consumeUpdatedSelf() (Value, bool) {
 func (state *State) errors() []EvaluationError {
 	return state.symbolicData.errors
 }
-func (state *State) warnings() []SymbolicEvaluationWarning {
+func (state *State) warnings() []EvaluationWarning {
 	return state.symbolicData.warnings
 }
 
@@ -907,7 +907,7 @@ func (state *State) Errors() []EvaluationError {
 	return slices.Clone(state.symbolicData.errors)
 }
 
-func (state *State) Warnings() []SymbolicEvaluationWarning {
+func (state *State) Warnings() []EvaluationWarning {
 	return slices.Clone(state.symbolicData.warnings)
 }
 

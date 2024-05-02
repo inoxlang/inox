@@ -6994,17 +6994,17 @@ func makeSymbolicEvalErrorFromError(node parse.Node, state *State, err error) Ev
 	return MakeSymbolicEvalError(node, state, err.Error())
 }
 
-func makeSymbolicEvalWarning(node parse.Node, state *State, msg string) SymbolicEvaluationWarning {
+func makeSymbolicEvalWarning(node parse.Node, state *State, msg string) EvaluationWarning {
 	return makeSymbolicEvalWarningWithSpan(node.Base().Span, state, msg)
 }
 
-func makeSymbolicEvalWarningWithSpan(nodeSpan parse.NodeSpan, state *State, msg string) SymbolicEvaluationWarning {
+func makeSymbolicEvalWarningWithSpan(nodeSpan parse.NodeSpan, state *State, msg string) EvaluationWarning {
 	locatedMsg := msg
 	location := state.getErrorMesssageLocationOfSpan(nodeSpan)
 	if state.Module != nil {
 		locatedMsg = fmt.Sprintf("check(symbolic): warning: %s: %s", location, msg)
 	}
-	return SymbolicEvaluationWarning{msg, locatedMsg, location}
+	return EvaluationWarning{msg, locatedMsg, location}
 }
 
 func converTypeToSymbolicValue(t reflect.Type, allowOptionalParam bool) (result Value, optionalParam bool, _ error) {

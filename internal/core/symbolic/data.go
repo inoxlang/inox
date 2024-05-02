@@ -60,7 +60,7 @@ type Data struct {
 	errors          []EvaluationError
 
 	warningMessageSet map[string]bool
-	warnings          []SymbolicEvaluationWarning
+	warnings          []EvaluationWarning
 }
 
 func NewSymbolicData() *Data {
@@ -99,7 +99,7 @@ func (data *Data) AddError(err EvaluationError) {
 	data.errors = append(data.errors, err)
 }
 
-func (data *Data) AddWarning(warning SymbolicEvaluationWarning) {
+func (data *Data) AddWarning(warning EvaluationWarning) {
 	if warning.LocatedMessage != "" {
 		if data.warningMessageSet[warning.LocatedMessage] {
 			return
@@ -232,7 +232,7 @@ func (data *Data) Errors() []EvaluationError {
 	return data.errors
 }
 
-func (data *Data) Warnings() []SymbolicEvaluationWarning {
+func (data *Data) Warnings() []EvaluationWarning {
 	return data.warnings
 }
 
