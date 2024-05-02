@@ -95,7 +95,7 @@ func CreateHTMLNodeFromMarkupElement(ctx *symbolic.Context, elem *symbolic.NonIn
 			errMsg := fmtAttrValueNotAccepted(val, name)
 			sourceNode, ok := elem.SourceNode()
 			if ok {
-				ctx.AddLocatedSymbolicGoFunctionError(sourceNode.Opening, errMsg)
+				ctx.AddLocatedSymbolicGoFunctionError(sourceNode.Node.Opening, errMsg)
 			} else {
 				ctx.AddSymbolicGoFunctionError(errMsg)
 			}

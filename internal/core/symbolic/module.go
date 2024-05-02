@@ -38,6 +38,10 @@ func NewModule(
 	}
 }
 
+func (mod *Module) MainChunk() *parse.ParsedChunkSource {
+	return mod.mainChunk
+}
+
 func (mod *Module) Name() string {
 	return mod.mainChunk.Name()
 }

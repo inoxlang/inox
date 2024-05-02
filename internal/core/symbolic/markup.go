@@ -36,7 +36,12 @@ type NonInterpretedMarkupElement struct {
 	attributes map[string]Value
 	children   []Value
 
-	sourceNode *parse.MarkupElement
+	sourceNode *MarkupSourceNode
+}
+
+type MarkupSourceNode struct {
+	Node  *parse.MarkupElement
+	Chunk *parse.ParsedChunkSource
 }
 
 func NewNonInterpretedMarkupElement(name string, attributes map[string]Value, children []Value) *NonInterpretedMarkupElement {
@@ -57,9 +62,8 @@ func (e *NonInterpretedMarkupElement) Children() []Value {
 	return e.children
 }
 
-// result should not be modified.
-func (e *NonInterpretedMarkupElement) SourceNode() (*parse.MarkupElement, bool) {
-	if e.sourceNode == nil {
+func (e *NonInterpretedMarkupElement) SourceNode() (*MarkupSourceNode, bool) {
+	if e.sourceNode.Node == nil {
 		return nil, false
 	}
 	return e.sourceNode, true

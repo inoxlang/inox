@@ -14482,9 +14482,12 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
 			assert.Equal(t, &NonInterpretedMarkupElement{
-				name:       "div",
-				children:   []Value{ANY_STRING, ANY_INT, ANY_STRING},
-				sourceNode: parse.FindNode(n, (*parse.MarkupElement)(nil), nil),
+				name:     "div",
+				children: []Value{ANY_STRING, ANY_INT, ANY_STRING},
+				sourceNode: &MarkupSourceNode{
+					Node:  parse.FindNode(n, (*parse.MarkupElement)(nil), nil),
+					Chunk: state.Module.MainChunk(),
+				},
 			}, res)
 		})
 
@@ -14509,9 +14512,12 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
 			assert.Equal(t, &NonInterpretedMarkupElement{
-				name:       "div",
-				children:   []Value{ANY_STRING, ANY_INT, ANY_STRING},
-				sourceNode: parse.FindNode(n, (*parse.MarkupElement)(nil), nil),
+				name:     "div",
+				children: []Value{ANY_STRING, ANY_INT, ANY_STRING},
+				sourceNode: &MarkupSourceNode{
+					Node:  parse.FindNode(n, (*parse.MarkupElement)(nil), nil),
+					Chunk: state.Module.MainChunk(),
+				},
 			}, res)
 		})
 
@@ -14534,9 +14540,12 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, &NonInterpretedMarkupElement{
-				name:       "div",
-				children:   []Value{ANY_STRING, ANY_INT, ANY_STRING},
-				sourceNode: parse.FindNode(n, (*parse.MarkupElement)(nil), nil),
+				name:     "div",
+				children: []Value{ANY_STRING, ANY_INT, ANY_STRING},
+				sourceNode: &MarkupSourceNode{
+					Node:  parse.FindNode(n, (*parse.MarkupElement)(nil), nil),
+					Chunk: state.Module.MainChunk(),
+				},
 			}, res)
 
 			intIdent := parse.FindIdentWithName(n, "int")
@@ -14561,7 +14570,10 @@ func TestSymbolicEval(t *testing.T) {
 				name:       "div",
 				attributes: map[string]Value{"a": NewString("a")},
 				children:   []Value{ANY_STRING},
-				sourceNode: parse.FindNode(n, (*parse.MarkupElement)(nil), nil),
+				sourceNode: &MarkupSourceNode{
+					Node:  parse.FindNode(n, (*parse.MarkupElement)(nil), nil),
+					Chunk: state.Module.MainChunk(),
+				},
 			}, res)
 		})
 
@@ -14580,7 +14592,10 @@ func TestSymbolicEval(t *testing.T) {
 				name:       "div",
 				attributes: map[string]Value{"a": EMPTY_STRING},
 				children:   []Value{ANY_STRING},
-				sourceNode: parse.FindNode(n, (*parse.MarkupElement)(nil), nil),
+				sourceNode: &MarkupSourceNode{
+					Node:  parse.FindNode(n, (*parse.MarkupElement)(nil), nil),
+					Chunk: state.Module.MainChunk(),
+				},
 			}, res)
 		})
 
@@ -14596,9 +14611,12 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, &NonInterpretedMarkupElement{
-				name:       "div",
-				children:   []Value{ANY_STRING},
-				sourceNode: parse.FindNode(n, (*parse.MarkupElement)(nil), nil),
+				name:     "div",
+				children: []Value{ANY_STRING},
+				sourceNode: &MarkupSourceNode{
+					Node:  parse.FindNode(n, (*parse.MarkupElement)(nil), nil),
+					Chunk: state.Module.MainChunk(),
+				},
 			}, res)
 
 			markupExpr := parse.FindNode(n, (*parse.MarkupExpression)(nil), nil)

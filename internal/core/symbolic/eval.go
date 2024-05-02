@@ -6048,7 +6048,10 @@ func evalMarkupElement(n *parse.MarkupElement, state *State, options evalOptions
 	}
 
 	markupElem := NewNonInterpretedMarkupElement(name, attrs, children)
-	markupElem.sourceNode = n
+	markupElem.sourceNode = &MarkupSourceNode{
+		Node:  n,
+		Chunk: state.currentChunk(),
+	}
 
 	state.SetMostSpecificNodeValue(n.Opening.Name, markupElem)
 	if n.Closing != nil {

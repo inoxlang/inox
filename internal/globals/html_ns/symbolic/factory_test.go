@@ -144,6 +144,8 @@ func TestSymbolicCreateHTMLNodeFromMarkupElement(t *testing.T) {
 			</div>
 		`, globals)
 
+		parsedChunkSource := state.Module.MainChunk()
+
 		node, err := symbolic.SymbolicEval(chunk, state)
 		if !assert.NoError(t, err) {
 			return
@@ -157,17 +159,26 @@ func TestSymbolicCreateHTMLNodeFromMarkupElement(t *testing.T) {
 		markupElements := parse.FindNodes(chunk, (*parse.MarkupElement)(nil), nil)
 
 		expectedNode := &HTMLNode{
-			tagName:    "div",
-			sourceNode: markupElements[2],
+			tagName: "div",
+			sourceNode: &symbolic.MarkupSourceNode{
+				Node:  markupElements[2],
+				Chunk: parsedChunkSource,
+			},
 			requiredChildren: []*HTMLNode{
 				{
-					tagName:            "span",
-					sourceNode:         markupElements[3],
+					tagName: "span",
+					sourceNode: &symbolic.MarkupSourceNode{
+						Node:  markupElements[3],
+						Chunk: parsedChunkSource,
+					},
 					requiredAttributes: []HTMLAttribute{{name: "a", stringValue: symbolic.NewString("true")}},
 				},
 				{
-					tagName:    "form",
-					sourceNode: markupElements[4],
+					tagName: "form",
+					sourceNode: &symbolic.MarkupSourceNode{
+						Node:  markupElements[4],
+						Chunk: parsedChunkSource,
+					},
 					requiredAttributes: []HTMLAttribute{
 						{name: "hx-post", stringValue: symbolic.ANY_STRING},
 						{name: "hx-ext", stringValue: symbolic.ANY_STRING},
@@ -175,13 +186,19 @@ func TestSymbolicCreateHTMLNodeFromMarkupElement(t *testing.T) {
 				},
 				//elements of known-length list
 				{
-					tagName:            "div",
-					sourceNode:         markupElements[0],
+					tagName: "div",
+					sourceNode: &symbolic.MarkupSourceNode{
+						Node:  markupElements[0],
+						Chunk: parsedChunkSource,
+					},
 					requiredAttributes: []HTMLAttribute{{name: "b", stringValue: symbolic.EMPTY_STRING}},
 				},
 				{
-					tagName:            "div",
-					sourceNode:         markupElements[1],
+					tagName: "div",
+					sourceNode: &symbolic.MarkupSourceNode{
+						Node:  markupElements[1],
+						Chunk: parsedChunkSource,
+					},
 					requiredAttributes: []HTMLAttribute{{name: "c", stringValue: symbolic.EMPTY_STRING}},
 				},
 				//elements of unknown-length list
