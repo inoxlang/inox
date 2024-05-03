@@ -4,9 +4,11 @@ import (
 	"testing"
 
 	"github.com/go-git/go-billy/v5/util"
+	"github.com/inoxlang/inox/internal/codebase/analysis/text"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
+	"github.com/inoxlang/inox/internal/hyperscript/hsanalysis"
 	"github.com/inoxlang/inox/internal/hyperscript/hsgen"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
@@ -24,7 +26,6 @@ func TestAnalyzeHyperscript(t *testing.T) {
 			Permissions: []core.Permission{core.FilesystemPermission{Kind_: permbase.Read, Entity: core.PathPattern("/...")}},
 			Filesystem:  newMemFS(),
 		}, nil)
-
 	}
 
 	t.Run("attribute shorthand", func(t *testing.T) {
@@ -124,7 +125,7 @@ func TestAnalyzeHyperscript(t *testing.T) {
 				return
 			}
 
-			mod := result.InoxModules["/routes/index.ix"]
+			mod := result.LocalModules["/routes/index.ix"]
 			markupElem := parse.FindFirstNode(mod.Module.MainChunk.Node, (*parse.MarkupElement)(nil))
 
 			if !assert.Len(t, result.HyperscriptComponents, 1) {
@@ -137,7 +138,7 @@ func TestAnalyzeHyperscript(t *testing.T) {
 				return
 			}
 
-			expectedComponent := &HyperscriptComponent{
+			expectedComponent := &hsanalysis.Component{
 				Name:               "Counter",
 				Element:            markupElem,
 				AttributeShorthand: markupElem.Opening.Attributes[1].(*parse.HyperscriptAttributeShorthand),
@@ -172,7 +173,7 @@ func TestAnalyzeHyperscript(t *testing.T) {
 				return
 			}
 
-			mod := result.InoxModules["/routes/index.ix"]
+			mod := result.LocalModules["/routes/index.ix"]
 			markupElem := parse.FindFirstNode(mod.Module.MainChunk.Node, (*parse.MarkupElement)(nil))
 
 			if !assert.Len(t, result.HyperscriptComponents, 1) {
@@ -185,13 +186,13 @@ func TestAnalyzeHyperscript(t *testing.T) {
 				return
 			}
 
-			expectedComponent := &HyperscriptComponent{
+			expectedComponent := &hsanalysis.Component{
 				Name:                        "Counter",
 				Element:                     markupElem,
 				AttributeShorthand:          markupElem.Opening.Attributes[1].(*parse.HyperscriptAttributeShorthand),
 				ChunkSource:                 mod.Module.MainChunk,
 				InitialElementScopeVarNames: []string{":count"},
-				HandledEvents: []DOMEvent{
+				HandledEvents: []hsanalysis.DOMEvent{
 					{
 						Type: "incr",
 					},
@@ -205,4 +206,45 @@ func TestAnalyzeHyperscript(t *testing.T) {
 		})
 	})
 
+}
+
+func TestAnalyzeHyperscriptContainingErrors(t *testing.T) {
+
+	setup := func() *core.Context {
+		newMemFS := func() *fs_ns.MemFilesystem {
+			return fs_ns.NewMemFilesystem(100_000)
+		}
+
+		return core.NewContextWithEmptyState(core.ContextConfig{
+			Permissions: []core.Permission{core.FilesystemPermission{Kind_: permbase.Read, Entity: core.PathPattern("/...")}},
+			Filesystem:  newMemFS(),
+		}, nil)
+	}
+
+	t.Run("misplaced element-scoped variable", func(t *testing.T) {
+		ctx := setup()
+		defer ctx.CancelGracefully()
+
+		util.WriteFile(ctx.GetFileSystem(), "/routes/index.ix", []byte(`
+			manifest{}; 
+				return html<div class="Counter" {}>
+					<div {init tell closest .Counter set :count to 1}></div>
+				</div>
+		`), 0600)
+
+		result, err := AnalyzeCodebase(ctx, Configuration{
+			TopDirectories: []string{"/"},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		if !assert.Len(t, result.HyperscriptErrors, 1) {
+			return
+		}
+
+		hyperscriptError := result.HyperscriptErrors[0]
+		assert.Equal(t, text.VAR_NOT_IN_ELEM_SCOPE_OF_ELEM_REF_BY_TELL_CMD, hyperscriptError.Message)
+	})
 }

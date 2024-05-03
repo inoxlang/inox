@@ -5,6 +5,7 @@ import (
 	"github.com/inoxlang/inox/internal/css/tailwind"
 	"github.com/inoxlang/inox/internal/css/varclasses"
 	"github.com/inoxlang/inox/internal/globals/http_ns/spec"
+	"github.com/inoxlang/inox/internal/hyperscript/hsanalysis"
 	"github.com/inoxlang/inox/internal/hyperscript/hsgen"
 	"github.com/inoxlang/inox/internal/inoxjs"
 	"github.com/inoxlang/inox/internal/memds"
@@ -15,7 +16,7 @@ type Result struct {
 
 	//Backend
 
-	InoxModules        map[ /*absolute path*/ string]InoxModule
+	LocalModules       map[ /*absolute path*/ string]InoxModule
 	ServerAPI          *spec.API //may be nil
 	ServerStaticDir    string    //may be empty
 	ServerDynamicDir   string    //may be empty
@@ -27,7 +28,9 @@ type Result struct {
 
 	UsedHyperscriptCommands map[string]hsgen.Definition
 	UsedHyperscriptFeatures map[string]hsgen.Definition
-	HyperscriptComponents   map[ /*name*/ string][]*HyperscriptComponent
+	HyperscriptComponents   map[ /*name*/ string][]*hsanalysis.Component
+	HyperscriptErrors       []hsanalysis.Error
+	HyperscriptWarnings     []hsanalysis.Warning
 
 	UsedTailwindRules    map[ /* name with modifiers */ string]tailwind.Ruleset
 	CssVariables         map[css.VarName]varclasses.Variable
@@ -45,14 +48,14 @@ func newEmptyResult() *Result {
 
 		//Backend
 
-		InoxModules: make(map[string]InoxModule),
+		LocalModules: make(map[string]InoxModule),
 
 		//Frontend
 
 		UsedHtmxExtensions:      make(map[string]struct{}),
 		UsedHyperscriptCommands: make(map[string]hsgen.Definition),
 		UsedHyperscriptFeatures: make(map[string]hsgen.Definition),
-		HyperscriptComponents:   make(map[string][]*HyperscriptComponent),
+		HyperscriptComponents:   make(map[string][]*hsanalysis.Component),
 		UsedTailwindRules:       make(map[string]tailwind.Ruleset),
 		UsedInoxJsLibs:          make(map[string]struct{}),
 

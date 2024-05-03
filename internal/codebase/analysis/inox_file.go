@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/css"
+	"github.com/inoxlang/inox/internal/hyperscript/hsanalysis"
 	"github.com/inoxlang/inox/internal/inoxjs"
 	"github.com/inoxlang/inox/internal/parse"
 )
@@ -44,7 +44,7 @@ func (a *analyzer) preAnalyzeInoxFile(path string, fileContent string, chunkSour
 			info.StaticCheckData = state.StaticCheckData
 			info.SymbolicData = state.SymbolicData
 		}
-		a.result.InoxModules[path] = info
+		a.result.LocalModules[path] = info
 
 		if a.ctx.IsDoneSlowCheck() {
 			return a.ctx.Err()
@@ -62,22 +62,10 @@ func (a *analyzer) preAnalyzeInoxFile(path string, fileContent string, chunkSour
 
 			markupElement, _, ok := parse.FindClosest(ancestorChain, (*parse.MarkupElement)(nil))
 			if ok {
-				isComponent := false
-				componentName := ""
-
-				//Determine if the element is the root of a hyperscript component.
-				for _, attr := range markupElement.Opening.Attributes {
-					if attr, ok := attr.(*parse.MarkupAttribute); ok {
-						isComponent = attr.IsNameEqual("class") && css.DoesClassListStartWithUppercaseLetter(attr.ValueIfStringLiteral())
-						if isComponent {
-							componentName, _ = css.GetFirstClassNameInList(attr.ValueIfStringLiteral())
-							break
-						}
-					}
-				}
-
+				componentName, isComponent := hsanalysis.GetHyperscriptComponentName(markupElement)
 				if isComponent {
-					a.preanalyzeHyperscriptComponent(componentName, markupElement, node, chunkSource)
+					component := hsanalysis.PreanalyzeHyperscriptComponent(componentName, markupElement, node, chunkSource)
+					a.result.HyperscriptComponents[componentName] = append(a.result.HyperscriptComponents[componentName], component)
 				}
 			}
 		case *parse.MarkupElement:

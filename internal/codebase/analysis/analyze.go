@@ -89,7 +89,7 @@ func (a *analyzer) analyzeCodebase(ctx *core.Context) (result *Result, finalErr 
 
 	//Determine the server API and handler modules.
 
-	appModuleEntry, ok := a.result.InoxModules[mainProgramPath]
+	appModuleEntry, ok := a.result.LocalModules[mainProgramPath]
 	if ok || appModuleEntry.SymbolicData != nil {
 		staticDir, dynamicDir := a.tryGetStaticAndDynamicDirs(appModuleEntry)
 
@@ -114,6 +114,15 @@ func (a *analyzer) analyzeCodebase(ctx *core.Context) (result *Result, finalErr 
 	}
 
 	//Analyze Hyperscript code.
+
+	for _, sameNameComponents := range result.HyperscriptComponents {
+		for _, component := range sameNameComponents {
+			err := a.analyzeHyperscriptComponent(component)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
 
 	return
 }

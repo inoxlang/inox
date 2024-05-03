@@ -2,7 +2,7 @@ package hscode
 
 type NodeType string
 
-type Map = map[string]any
+type JSONMap = map[string]any
 
 const (
 	HyperscriptProgram           NodeType = "hyperscript"

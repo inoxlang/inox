@@ -110,6 +110,15 @@ func Some[T any](s []T, predicate func(e T) bool) bool {
 	return false
 }
 
+func All[T any](s []T, predicate func(e T) bool) bool {
+	for _, e := range s {
+		if !predicate(e) {
+			return false
+		}
+	}
+
+	return true
+}
 func EmptySliceIfNil[T any](slice []T) []T {
 	if slice == nil {
 		return make([]T, 0)
