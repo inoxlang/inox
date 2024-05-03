@@ -1,4 +1,4 @@
-package analysis
+package analysis_test
 
 import (
 	"strings"
@@ -11,6 +11,8 @@ import (
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
+
+	. "github.com/inoxlang/inox/internal/codebase/analysis"
 )
 
 func TestAnalyzeTailwind(t *testing.T) {

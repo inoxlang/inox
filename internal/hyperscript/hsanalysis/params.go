@@ -6,11 +6,11 @@ import (
 )
 
 type Parameters struct {
-	Node             hscode.JSONMap
-	LocationKind     hyperscriptCodeLocationKind
-	Component        *Component //may be nil
-	Chunk            *parse.ParsedChunkSource
-	InoxNodePosition parse.SourcePositionRange
+	HyperscriptProgram hscode.JSONMap
+	LocationKind       hyperscriptCodeLocationKind
+	Component          *Component //may be nil
+	Chunk              *parse.ParsedChunkSource
+	InoxNodePosition   parse.SourcePositionRange
 }
 
 type hyperscriptCodeLocationKind int

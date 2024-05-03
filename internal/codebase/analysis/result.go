@@ -42,7 +42,7 @@ type Result struct {
 type additionalGraphData struct {
 }
 
-func newEmptyResult() *Result {
+func NewEmptyResult() *Result {
 	result := &Result{
 		inner: memds.NewDirectedGraphWithAdditionalData[Node, Edge](memds.ThreadSafe, additionalGraphData{}),
 
@@ -64,6 +64,14 @@ func newEmptyResult() *Result {
 	}
 
 	return result
+}
+
+func (r *Result) GraphNodeCount() int {
+	return r.inner.NodeCount()
+}
+
+func (r *Result) GraphEdgeCount() int64 {
+	return r.inner.EdgeCount()
 }
 
 func (r *Result) IsSurrealUsed() bool {

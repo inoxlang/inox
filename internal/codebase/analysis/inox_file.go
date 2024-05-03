@@ -15,7 +15,7 @@ func (a *analyzer) preAnalyzeInoxFile(path string, fileContent string, chunkSour
 		return a.ctx.Err()
 	}
 
-	chunk := chunkSource.Node
+	chunk := chunkSource.Node //may be replaced by the chunk obtained in the module preparation below.
 
 	if chunk.Manifest != nil {
 		state, mod, manifest, err := core.PrepareLocalModule(core.ModulePreparationArgs{
@@ -40,18 +40,30 @@ func (a *analyzer) preAnalyzeInoxFile(path string, fileContent string, chunkSour
 			PreparationError: err,
 			Module:           mod,
 		}
+
 		if state != nil {
 			info.StaticCheckData = state.StaticCheckData
 			info.SymbolicData = state.SymbolicData
 		}
+
 		a.result.LocalModules[path] = info
+
+		if mod != nil {
+			//Update the chunk to make sure to walk the same AST as the symbolic data.
+			chunk = mod.MainChunk.Node
+			chunkSource = mod.MainChunk
+		}
 
 		if a.ctx.IsDoneSlowCheck() {
 			return a.ctx.Err()
 		}
 	}
 
-	parse.Walk(chunk, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
+	return parse.Walk(chunk, func(node, parent, scopeNode parse.Node, ancestorChain []parse.Node, after bool) (parse.TraversalAction, error) {
+
+		if a.ctx.IsDoneSlowCheck() {
+			return parse.StopTraversal, a.ctx.Err()
+		}
 
 		switch node := node.(type) {
 		//markup
@@ -60,11 +72,16 @@ func (a *analyzer) preAnalyzeInoxFile(path string, fileContent string, chunkSour
 		case *parse.HyperscriptAttributeShorthand:
 			a.addUsedHyperscriptFeaturesAndCommands(node)
 
+			closestMarkupExpr, _, ok := parse.FindClosest(ancestorChain, (*parse.MarkupExpression)(nil))
+			if !ok {
+				break
+			}
+
 			markupElement, _, ok := parse.FindClosest(ancestorChain, (*parse.MarkupElement)(nil))
 			if ok {
 				componentName, isComponent := hsanalysis.GetHyperscriptComponentName(markupElement)
 				if isComponent {
-					component := hsanalysis.PreanalyzeHyperscriptComponent(componentName, markupElement, node, chunkSource)
+					component := hsanalysis.PreanalyzeHyperscriptComponent(componentName, markupElement, closestMarkupExpr, node, chunkSource)
 					a.result.HyperscriptComponents[componentName] = append(a.result.HyperscriptComponents[componentName], component)
 				}
 			}
@@ -79,6 +96,4 @@ func (a *analyzer) preAnalyzeInoxFile(path string, fileContent string, chunkSour
 
 		return parse.ContinueTraversal, nil
 	}, nil)
-
-	return nil
 }

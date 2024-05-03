@@ -70,6 +70,7 @@ func NewParsedChunkSource(node *Chunk, src ChunkSource) *ParsedChunkSource {
 	}
 }
 
+// unique name | URL | path
 func (c *ParsedChunkSource) Name() string {
 	return c.Source.Name()
 }

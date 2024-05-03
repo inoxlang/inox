@@ -1,4 +1,4 @@
-package analysis
+package analysis_test
 
 import (
 	"testing"
@@ -7,6 +7,8 @@ import (
 	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/stretchr/testify/assert"
+
+	. "github.com/inoxlang/inox/internal/codebase/analysis"
 )
 
 func TestAnalyze(t *testing.T) {
@@ -34,15 +36,15 @@ func TestAnalyze(t *testing.T) {
 			return
 		}
 
-		assertEqualResult(t, newEmptyResult(), result)
+		assertEqualResult(t, NewEmptyResult(), result)
 	})
 
 }
 
 func assertEqualResult(t *testing.T, expected, actual *Result) {
 
-	assert.Equal(t, expected.inner.NodeCount(), actual.inner.NodeCount())
-	assert.Equal(t, expected.inner.EdgeCount(), actual.inner.EdgeCount())
+	assert.Equal(t, expected.GraphNodeCount(), actual.GraphNodeCount())
+	assert.Equal(t, expected.GraphEdgeCount(), actual.GraphEdgeCount())
 
 	assert.Equal(t, expected.UsedHtmxExtensions, actual.UsedHtmxExtensions)
 	assert.Equal(t, expected.UsedHyperscriptCommands, actual.UsedHyperscriptFeatures)

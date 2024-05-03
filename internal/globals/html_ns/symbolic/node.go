@@ -2,6 +2,8 @@ package html_ns
 
 import (
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/inoxconsts"
+	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/prettyprint"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 )
@@ -72,6 +74,33 @@ func (n *HTMLNode) SourceNode() (*symbolic.MarkupSourceNode, bool) {
 		return nil, false
 	}
 	return n.sourceNode, true
+}
+
+// FindNode searches for the node of span $nodeSpan located in the chunk $chunkName by looking at the HTMLNode
+// and its descendants.
+func (n *HTMLNode) FindNode(nodeSpan parse.NodeSpan, chunkName string) (*HTMLNode, bool) {
+	if n.sourceNode != nil && n.sourceNode.Node.Span == nodeSpan && n.sourceNode.Chunk.Name() == chunkName {
+		return n, true
+	}
+	for _, child := range n.requiredChildren {
+		foundNode, ok := child.FindNode(nodeSpan, chunkName)
+		if ok {
+			return foundNode, true
+		}
+	}
+	return nil, false
+}
+
+func (n *HTMLNode) HyperscriptAttributeValue() (string, bool) {
+	for _, attr := range n.requiredAttributes {
+		if attr.name == inoxconsts.HYPERSCRIPT_ATTRIBUTE_NAME {
+			if attr.stringValue.HasValue() {
+				return attr.stringValue.Value(), true
+			}
+			return "", false
+		}
+	}
+	return "", false
 }
 
 func (n *HTMLNode) Prop(name string) symbolic.Value {

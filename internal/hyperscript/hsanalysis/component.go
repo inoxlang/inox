@@ -12,6 +12,7 @@ import (
 type Component struct {
 	Name                        string
 	Element                     *parse.MarkupElement
+	ClosestMarkupExpr           *parse.MarkupExpression
 	AttributeShorthand          *parse.HyperscriptAttributeShorthand
 	ChunkSource                 *parse.ParsedChunkSource
 	HandledEvents               []DOMEvent
@@ -56,9 +57,15 @@ func GetHyperscriptComponentName(markupElement *parse.MarkupElement) (name strin
 	return
 }
 
+func IsHyperscriptComponent(markupElement *parse.MarkupElement) bool {
+	_, ok := GetHyperscriptComponentName(markupElement)
+	return ok
+}
+
 func PreanalyzeHyperscriptComponent(
 	componentName string,
 	elem *parse.MarkupElement,
+	closestMarkupExpr *parse.MarkupExpression,
 	attribute *parse.HyperscriptAttributeShorthand,
 	chunkSource *parse.ParsedChunkSource,
 ) (component *Component) {
@@ -66,6 +73,7 @@ func PreanalyzeHyperscriptComponent(
 	component = &Component{
 		Name:               componentName,
 		Element:            elem,
+		ClosestMarkupExpr:  closestMarkupExpr,
 		AttributeShorthand: attribute,
 		ChunkSource:        chunkSource,
 	}

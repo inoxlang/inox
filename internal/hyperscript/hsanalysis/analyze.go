@@ -1,9 +1,17 @@
 package hsanalysis
 
 import (
+	"sync"
+
 	"github.com/inoxlang/inox/internal/codebase/analysis/text"
 	"github.com/inoxlang/inox/internal/hyperscript/hscode"
 )
+
+var analyzerPool = sync.Pool{
+	New: func() any {
+		return &analyzer{}
+	},
+}
 
 type analyzer struct {
 	parameters Parameters
@@ -18,16 +26,23 @@ type analyzer struct {
 }
 
 func Analyze(params Parameters) ([]Error, []Warning, error) {
-	checker := &analyzer{
-		parameters: params,
-	}
+	analyzer := analyzerPool.Get().(*analyzer)
+	analyzer.parameters = params
 
-	criticalErr := hscode.Walk(params.Node, checker.preVisitHyperscriptNode, checker.postVisitHyperscriptNode)
+	defer func() {
+		analyzer.parameters = Parameters{}
+		analyzer.errors = nil
+		analyzer.warnings = nil
+
+		analyzerPool.Put(analyzer)
+	}()
+
+	criticalErr := hscode.Walk(params.HyperscriptProgram, analyzer.preVisitHyperscriptNode, analyzer.postVisitHyperscriptNode)
 	if criticalErr != nil {
 		return nil, nil, criticalErr
 	}
 
-	return checker.errors, checker.warnings, nil
+	return analyzer.errors, analyzer.warnings, nil
 }
 
 func (c *analyzer) preVisitHyperscriptNode(

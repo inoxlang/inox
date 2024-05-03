@@ -1,6 +1,7 @@
 package analysis
 
 import (
+	html_symbolic "github.com/inoxlang/inox/internal/globals/html_ns/symbolic"
 	"github.com/inoxlang/inox/internal/hyperscript/hsanalysis"
 	"github.com/inoxlang/inox/internal/hyperscript/hscode"
 	"github.com/inoxlang/inox/internal/parse"
@@ -38,19 +39,29 @@ func (a *analyzer) analyzeHyperscriptComponent(component *hsanalysis.Component) 
 		return a.ctx.Err()
 	}
 
-	//Retrieval symbolic data about the markup.
+	//Retrieve symbolic data about the HTML node.
 
-	//Analyze
+	var componentRootNode *html_symbolic.HTMLNode
 
-	params := hsanalysis.Parameters{
-		Node:             component.AttributeShorthand.HyperscriptParsingResult.NodeData,
-		LocationKind:     hsanalysis.UnderscoreAttribute,
-		Component:        component,
-		Chunk:            component.ChunkSource,
-		InoxNodePosition: component.ChunkSource.GetSourcePosition(component.AttributeShorthand.Span),
+	chunkName := component.ChunkSource.Name()
+	module, ok := a.result.LocalModules[chunkName]
+	if ok {
+		val, _ := module.SymbolicData.GetMostSpecificNodeValue(component.ClosestMarkupExpr)
+		markupExprValue, ok := val.(*html_symbolic.HTMLNode)
+		if ok {
+			componentRootNode, _ = markupExprValue.FindNode(component.Element.Span, component.ChunkSource.Name())
+		}
 	}
 
-	errors, warnings, criticalError := hsanalysis.Analyze(params)
+	//Analyze the Hyperscript code of the compontent's root node.
+
+	errors, warnings, criticalError := hsanalysis.Analyze(hsanalysis.Parameters{
+		HyperscriptProgram: component.AttributeShorthand.HyperscriptParsingResult.NodeData,
+		LocationKind:       hsanalysis.UnderscoreAttribute,
+		Component:          component,
+		Chunk:              component.ChunkSource,
+		InoxNodePosition:   component.ChunkSource.GetSourcePosition(component.AttributeShorthand.Span),
+	})
 
 	if criticalError != nil {
 		return
@@ -58,6 +69,81 @@ func (a *analyzer) analyzeHyperscriptComponent(component *hsanalysis.Component) 
 
 	a.result.HyperscriptErrors = append(a.result.HyperscriptErrors, errors...)
 	a.result.HyperscriptWarnings = append(a.result.HyperscriptWarnings, warnings...)
+
+	if componentRootNode == nil {
+		return
+	}
+
+	//Analyze the Hyperscript code of elements inside the component.
+
+	visitedMarkupElements := map[*parse.MarkupElement]struct{}{}
+
+	err := componentRootNode.Walk(func(node *html_symbolic.HTMLNode) (action html_symbolic.TraversalAction, criticalErr error) {
+		action = html_symbolic.ContinueTraversal
+
+		sourceNode, ok := node.SourceNode()
+		if !ok {
+			return
+		}
+
+		if _, ok := visitedMarkupElements[sourceNode.Node]; ok {
+			return
+		}
+
+		err := parse.Walk(sourceNode.Node, func(node, parent, _ parse.Node, _ []parse.Node, _ bool) (action parse.TraversalAction, criticalErr error) {
+			action = parse.ContinueTraversal
+
+			markupElem, ok := node.(*parse.MarkupElement)
+			if !ok { //we only care about AST nodes that may contain Hyperscript code.
+				return
+			}
+
+			if _, ok := visitedMarkupElements[markupElem]; ok {
+				action = parse.Prune
+				return
+			}
+
+			visitedMarkupElements[markupElem] = struct{}{}
+
+			if hsanalysis.IsHyperscriptComponent(markupElem) {
+				action = parse.Prune
+				return
+			}
+
+			attribute, ok := sourceNode.Node.HyperscriptAttributeShorthand()
+			if !ok || attribute.HyperscriptParsingResult == nil {
+				return
+			}
+
+			errors, warnings, err := hsanalysis.Analyze(hsanalysis.Parameters{
+				HyperscriptProgram: attribute.HyperscriptParsingResult.NodeData,
+				LocationKind:       hsanalysis.UnderscoreAttribute,
+				Component:          component,
+				Chunk:              component.ChunkSource,
+				InoxNodePosition:   component.ChunkSource.GetSourcePosition(attribute.Span),
+			})
+
+			if err != nil {
+				criticalErr = err
+				return
+			}
+
+			a.result.HyperscriptErrors = append(a.result.HyperscriptErrors, errors...)
+			a.result.HyperscriptWarnings = append(a.result.HyperscriptWarnings, warnings...)
+
+			return
+		}, nil)
+
+		if err != nil {
+			criticalErr = err
+		}
+
+		return
+	}, nil)
+
+	if err != nil {
+		criticalError = err
+	}
 
 	return
 }

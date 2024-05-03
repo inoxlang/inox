@@ -2498,6 +2498,16 @@ func (e MarkupElement) IsFirstTagNameLetterCapitalized() bool {
 	return char >= 'A' && char <= 'Z'
 }
 
+func (e MarkupElement) HyperscriptAttributeShorthand() (*HyperscriptAttributeShorthand, bool) {
+	for _, attr := range e.Opening.Attributes {
+		switch attr := attr.(type) {
+		case *HyperscriptAttributeShorthand:
+			return attr, true
+		}
+	}
+	return nil, false
+}
+
 type RawElementType string
 
 const (

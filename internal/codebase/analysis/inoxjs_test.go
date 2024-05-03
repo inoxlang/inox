@@ -1,4 +1,4 @@
-package analysis
+package analysis_test
 
 import (
 	"testing"
@@ -9,6 +9,8 @@ import (
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/inoxjs"
 	"github.com/stretchr/testify/assert"
+
+	. "github.com/inoxlang/inox/internal/codebase/analysis"
 )
 
 func TestAnalyzeInoxjs(t *testing.T) {

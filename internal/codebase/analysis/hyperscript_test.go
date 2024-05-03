@@ -1,4 +1,4 @@
-package analysis
+package analysis_test
 
 import (
 	"testing"
@@ -13,6 +13,8 @@ import (
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
+
+	. "github.com/inoxlang/inox/internal/codebase/analysis"
 )
 
 func TestAnalyzeHyperscript(t *testing.T) {
@@ -113,9 +115,9 @@ func TestAnalyzeHyperscript(t *testing.T) {
 			defer ctx.CancelGracefully()
 
 			util.WriteFile(ctx.GetFileSystem(), "/routes/index.ix", []byte(`
-			manifest{}
-			return html<div class="Counter" {init}></div>
-		`), 0600)
+				manifest{}
+				return html<div class="Counter" {init}></div>
+			`), 0600)
 
 			result, err := AnalyzeCodebase(ctx, Configuration{
 				TopDirectories: []string{"/"},
@@ -126,7 +128,7 @@ func TestAnalyzeHyperscript(t *testing.T) {
 			}
 
 			mod := result.LocalModules["/routes/index.ix"]
-			markupElem := parse.FindFirstNode(mod.Module.MainChunk.Node, (*parse.MarkupElement)(nil))
+			markupExpr := parse.FindFirstNode(mod.Module.MainChunk.Node, (*parse.MarkupExpression)(nil))
 
 			if !assert.Len(t, result.HyperscriptComponents, 1) {
 				return
@@ -140,8 +142,9 @@ func TestAnalyzeHyperscript(t *testing.T) {
 
 			expectedComponent := &hsanalysis.Component{
 				Name:               "Counter",
-				Element:            markupElem,
-				AttributeShorthand: markupElem.Opening.Attributes[1].(*parse.HyperscriptAttributeShorthand),
+				Element:            markupExpr.Element,
+				ClosestMarkupExpr:  markupExpr,
+				AttributeShorthand: markupExpr.Element.Opening.Attributes[1].(*parse.HyperscriptAttributeShorthand),
 				ChunkSource:        mod.Module.MainChunk,
 			}
 
@@ -174,7 +177,7 @@ func TestAnalyzeHyperscript(t *testing.T) {
 			}
 
 			mod := result.LocalModules["/routes/index.ix"]
-			markupElem := parse.FindFirstNode(mod.Module.MainChunk.Node, (*parse.MarkupElement)(nil))
+			markupExpr := parse.FindFirstNode(mod.Module.MainChunk.Node, (*parse.MarkupExpression)(nil))
 
 			if !assert.Len(t, result.HyperscriptComponents, 1) {
 				return
@@ -188,8 +191,9 @@ func TestAnalyzeHyperscript(t *testing.T) {
 
 			expectedComponent := &hsanalysis.Component{
 				Name:                        "Counter",
-				Element:                     markupElem,
-				AttributeShorthand:          markupElem.Opening.Attributes[1].(*parse.HyperscriptAttributeShorthand),
+				Element:                     markupExpr.Element,
+				ClosestMarkupExpr:           markupExpr,
+				AttributeShorthand:          markupExpr.Element.Opening.Attributes[1].(*parse.HyperscriptAttributeShorthand),
 				ChunkSource:                 mod.Module.MainChunk,
 				InitialElementScopeVarNames: []string{":count"},
 				HandledEvents: []hsanalysis.DOMEvent{
@@ -221,15 +225,73 @@ func TestAnalyzeHyperscriptContainingErrors(t *testing.T) {
 		}, nil)
 	}
 
-	t.Run("misplaced element-scoped variable", func(t *testing.T) {
+	t.Run("misplaced element-scoped variable in '_' attribute of root element's tag", func(t *testing.T) {
 		ctx := setup()
 		defer ctx.CancelGracefully()
 
 		util.WriteFile(ctx.GetFileSystem(), "/routes/index.ix", []byte(`
 			manifest{}; 
-				return html<div class="Counter" {}>
-					<div {init tell closest .Counter set :count to 1}></div>
-				</div>
+			return html<div class="Counter" {init tell closest .Counter set :count to 1}>
+			</div>
+		`), 0600)
+
+		result, err := AnalyzeCodebase(ctx, Configuration{
+			TopDirectories: []string{"/"},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		if !assert.Len(t, result.HyperscriptErrors, 1) {
+			return
+		}
+
+		hyperscriptError := result.HyperscriptErrors[0]
+		assert.Equal(t, text.VAR_NOT_IN_ELEM_SCOPE_OF_ELEM_REF_BY_TELL_CMD, hyperscriptError.Message)
+	})
+
+	t.Run("misplaced element-scoped variable in '_' attribute of non-root element's tag", func(t *testing.T) {
+		ctx := setup()
+		defer ctx.CancelGracefully()
+
+		util.WriteFile(ctx.GetFileSystem(), "/routes/index.ix", []byte(`
+			manifest{}; 
+			return html<div class="Counter" {}>
+				<div {init tell closest .Counter set :count to 1}></div>
+			</div>
+		`), 0600)
+
+		result, err := AnalyzeCodebase(ctx, Configuration{
+			TopDirectories: []string{"/"},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		if !assert.Len(t, result.HyperscriptErrors, 1) {
+			return
+		}
+
+		hyperscriptError := result.HyperscriptErrors[0]
+		assert.Equal(t, text.VAR_NOT_IN_ELEM_SCOPE_OF_ELEM_REF_BY_TELL_CMD, hyperscriptError.Message)
+	})
+
+	t.Run("misplaced element-scoped variable in '_' attribute of non-root element's tag that is conditionally included", func(t *testing.T) {
+		ctx := setup()
+		defer ctx.CancelGracefully()
+
+		util.WriteFile(ctx.GetFileSystem(), "/routes/index.ix", []byte(`
+			manifest{}; 
+			return html<div class="Counter" {}>
+				{
+					if true
+						<div {init tell closest .Counter set :count to 1}></div>
+					else
+						<div></div>
+				}
+			</div>
 		`), 0600)
 
 		result, err := AnalyzeCodebase(ctx, Configuration{

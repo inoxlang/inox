@@ -45,7 +45,7 @@ func AnalyzeCodebase(ctx *core.Context, config Configuration) (*Result, error) {
 	analyzer := &analyzer{
 		Configuration:      config,
 		ctx:                ctx,
-		result:             newEmptyResult(),
+		result:             NewEmptyResult(),
 		fls:                ctx.GetFileSystem(),
 		fileParsingTimeout: FILE_PARSING_TIMEOUT,
 	}
