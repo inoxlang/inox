@@ -9,10 +9,15 @@
 
 	const SIGNAL_SETTLING_TIMEOUT_MILLIS = 100
 
-	/** @type {WeakMap<Signal, Dependent[]>} */
+	/** 
+	 * @type {WeakMap<Signal, Dependent[]>}
+	 * 
+	 * The list of dependents should not be 'stored' using a WeakRef because (for now)
+	 * only signalsToDependents references them.
+	 * */
 	const signalsToDependents = new WeakMap()
 
-	/** @type {WeakMap<Element, Record<string, Signal>>} */
+	/** @type {WeakMap<Element, WeakRef<Record<string, Signal>>>} */
 	const hyperscriptComponentRootsToSignals = new WeakMap();
 
 	(function () {
@@ -30,7 +35,7 @@
 							continue
 						}
 						const attributeName = /** @type {string} */ (mutation.attributeName)
-						const signals = hyperscriptComponentRootsToSignals.get(mutation.target)
+						const signals = hyperscriptComponentRootsToSignals.get(mutation.target)?.deref()
 						if (signals) {
 							let set = updatedAttributeNames.get(mutation.target)
 
@@ -49,7 +54,7 @@
 						break
 					case 'childList':
 						mutation.addedNodes.forEach(node => {
-							if (node instanceof HTMLElement && isComponentRootElement(node) && !isRegisteredHyperscriptComponent(node)) {
+							if ((node instanceof HTMLElement) && isComponentRootElement(node) && !isRegisteredHyperscriptComponent(node)) {
 								//Initialize new Hyperscript component.
 
 								//TODO: check that the component has been created from trusted HTML (HTMX, ..)
@@ -71,7 +76,7 @@
 			//Update signals with the new attribute values.
 
 			for (const [component, attributeNames] of updatedAttributeNames) {
-				const signals = hyperscriptComponentRootsToSignals.get(component)
+				const signals = hyperscriptComponentRootsToSignals.get(component)?.deref()
 				if(signals === undefined){
 					throw new Error('unreachable')
 				}
@@ -142,7 +147,7 @@
 			}
 			observeElementScope(componentRoot, signals)
 
-			hyperscriptComponentRootsToSignals.set(componentRoot, signals)
+			hyperscriptComponentRootsToSignals.set(componentRoot, new WeakRef(signals))
 		}
 
 
@@ -190,7 +195,7 @@
 			/** @type {TextNodeDependent} */
 			const textDependent = {
 				type: "text",
-				node: textNode,
+				node: new WeakRef(textNode),
 				interpolations: textInterpolations,
 				rerender: makeRenderTextNode(textNode, textInterpolations)
 			}
@@ -235,7 +240,7 @@
 			/** @type {ConditionallyDisplayedDependent} */
 			const conditionallyDisplayed = {
 				type: "conditional-display",
-				element: node,
+				element: new WeakRef(node),
 				conditionExpression: expression,
 				inexactSignalList: estimateSignalsUsedInHyperscriptExpr(expression, signals)
 			}
@@ -244,7 +249,11 @@
 
 			const result = evaluateHyperscript(conditionallyDisplayed.conditionExpression, componentRoot)
 			if(!result){
-				conditionallyDisplayed.element.style.display = 'none';
+				const element = conditionallyDisplayed.element.deref()
+				if(!element){
+					throw new Error('unreachable')
+				}
+				element.style.display = 'none';
 			}
 
 			//Add the dependent to the mapping <signal> -> <dependents> 
@@ -336,10 +345,16 @@
 							break
 						case 'conditional-display':
 							const result = evaluateHyperscript(dependent.conditionExpression, componentRoot)
+
+							const element = dependent.element.deref()
+							if(!element){
+								continue
+							}
+
 							if(result){
-								dependent.element.style.display = ''
+								element.style.display = ''
 							} else {
-								dependent.element.style.display = 'none';
+								element.style.display = 'none';
 							}
 						}
 					}
@@ -366,7 +381,7 @@
 
 	/** 
 	 *  @typedef Interpolation
-	 *  @property {Text} node
+	 *  @property {WeakRef<Text>} node
 	 *  @property {string} expression
 	 *  @property {string[]} inexactSignalList
 	 *  @property {number} startIndex
@@ -383,7 +398,7 @@
 	 * and that is therefore dependent on signals.
 	 *  @typedef TextNodeDependent
 	 *  @property {"text"} type
-	 *  @property {Text} node
+	 *  @property {WeakRef<Text>} node
 	 *  @property {Interpolation[]} interpolations
 	 *  @property {(state: State, componentRoot: HTMLElement) => void} rerender
 	 */
@@ -393,7 +408,7 @@
 	 * evaluates to true.
 	 *  @typedef ConditionallyDisplayedDependent
 	 *  @property {"conditional-display"} type
-	 *  @property {HTMLElement} element
+	 *  @property {WeakRef<HTMLElement>} element
 	 *  @property {string} conditionExpression
 	 *  @property {string[]} inexactSignalList
 	 */
@@ -415,7 +430,7 @@
 		/** @type {Interpolation} */
 		const interpolation = {
 			expression: rawInterpolation,
-			node: node,
+			node: new WeakRef(node),
 			startIndex: delimStartIndex,
 			endIndex: delimStartIndex + rawInterpolationWithDelims.length,
 			inexactSignalList: estimateSignalsUsedInHyperscriptExpr(rawInterpolation, signals)
