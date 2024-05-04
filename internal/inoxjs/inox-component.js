@@ -2,6 +2,7 @@
 
 (function () {
 	const CONDITIONAL_DISPLAY_ATTR_NAME = "x-if"
+
 	const INTERPOLATION_PATTERN = new RegExp('[(]{2}' + '((?:[^)]|\\)[^)])+)' + '[)]{2}', 'g')
 	const LOOSE_HS_ELEM_VAR_NAME_PATTERN = /(:[a-zA-Z_][_a-zA-Z0-9]*)/g
 	const LOOSE_HS_ATTR_NAME_PATTERN = /(@[a-zA-Z_][_a-zA-Z0-9-]*)/g
@@ -31,7 +32,7 @@
 			for (const mutation of mutations) {
 				switch (mutation.type) {
 					case 'attributes':
-						if(! (mutation.target instanceof HTMLElement)){
+						if (!(mutation.target instanceof HTMLElement)) {
 							continue
 						}
 						const attributeName = /** @type {string} */ (mutation.attributeName)
@@ -77,7 +78,7 @@
 
 			for (const [component, attributeNames] of updatedAttributeNames) {
 				const signals = hyperscriptComponentRootsToSignals.get(component)?.deref()
-				if(signals === undefined){
+				if (signals === undefined) {
 					throw new Error('unreachable')
 				}
 				batch(() => {
@@ -112,7 +113,7 @@
 		//@ts-ignore
 		const componentRoot = arg.element ?? me()
 
-		if(! isComponentRootElement(componentRoot)){
+		if (!isComponentRootElement(componentRoot)) {
 			console.error(componentRoot, 'is not a valid component root element, class list should start with a capitalized class name')
 			return
 		}
@@ -166,7 +167,7 @@
 			})
 		}
 
-		//register text interpolations
+		//Register text interpolations.
 
 		walkNode(componentRoot, node => {
 			if (node.nodeType != node.TEXT_NODE) {
@@ -187,7 +188,7 @@
 			const textInterpolations = []
 
 			while (execArray != null) {
-				textInterpolations.push(getInterpolation(execArray[0], execArray[1], execArray.index, textNode, signals))
+				textInterpolations.push(getInterpolation(execArray[0], execArray[1], execArray.index, signals))
 
 				execArray = INTERPOLATION_PATTERN.exec(textNode.wholeText)
 			}
@@ -213,7 +214,7 @@
 							dependents = []
 							signalsToDependents.set(signal, dependents)
 						}
-						if(! dependents.includes(textDependent)){
+						if (!dependents.includes(textDependent)) {
 							dependents.push(textDependent)
 						}
 					}
@@ -221,7 +222,53 @@
 			}
 		})
 
-		//register conditionally displayed elements.
+		//Register attribute interpolations.
+
+		for(const attribute of Array.from(componentRoot.attributes)){
+			let execArray = INTERPOLATION_PATTERN.exec(attribute.value)
+
+			if (execArray == null) {
+				continue
+			}
+
+			const textInterpolations = []
+
+			while (execArray != null) {
+				textInterpolations.push(getInterpolation(execArray[0], execArray[1], execArray.index, signals))
+
+				execArray = INTERPOLATION_PATTERN.exec(attribute.value)
+			}
+
+			/** @type {AttributeDependent} */
+			const attributeDependent = {
+				type: "attribute",
+				attribute: new WeakRef(attribute),
+				interpolations: textInterpolations,
+				refresh: makeRefreshAttrValue(attribute, textInterpolations)
+			}
+
+			attributeDependent.refresh(initialState, componentRoot)
+
+			//Add the dependent to the mapping <signal> -> <dependents> 
+
+			for (const interp of textInterpolations) {
+				for (const signalName of interp.inexactSignalList) {
+					const signal = signals[signalName]
+					if (signal) {
+						let dependents = signalsToDependents.get(signal)
+						if (dependents === undefined) {
+							dependents = []
+							signalsToDependents.set(signal, dependents)
+						}
+						if (!dependents.includes(attributeDependent)) {
+							dependents.push(attributeDependent)
+						}
+					}
+				}
+			}
+		}
+
+		//Register conditionally displayed elements.
 
 		walkNode(componentRoot, node => {
 			if (!(node instanceof HTMLElement) || !node.hasAttribute(CONDITIONAL_DISPLAY_ATTR_NAME)) {
@@ -233,10 +280,10 @@
 			}
 
 			const expression = /** @type {string} */ (node.getAttribute(CONDITIONAL_DISPLAY_ATTR_NAME))
-			if(expression.trim() == ""){
+			if (expression.trim() == "") {
 				return
 			}
-			
+
 			/** @type {ConditionallyDisplayedDependent} */
 			const conditionallyDisplayed = {
 				type: "conditional-display",
@@ -248,9 +295,9 @@
 			//Initial conditional display.
 
 			const result = evaluateHyperscript(conditionallyDisplayed.conditionExpression, componentRoot)
-			if(!result){
+			if (!result) {
 				const element = conditionallyDisplayed.element.deref()
-				if(!element){
+				if (!element) {
 					throw new Error('unreachable')
 				}
 				element.style.display = 'none';
@@ -266,7 +313,7 @@
 						dependents = []
 						signalsToDependents.set(signal, dependents)
 					}
-					if(! dependents.includes(conditionallyDisplayed)){
+					if (!dependents.includes(conditionallyDisplayed)) {
 						dependents.push(conditionallyDisplayed)
 					}
 				}
@@ -339,23 +386,26 @@
 					//rerender dependents
 
 					for (const dependent of dependents) {
-						switch(dependent.type){
-						case 'text':
-							dependent.rerender(state, componentRoot)
-							break
-						case 'conditional-display':
-							const result = evaluateHyperscript(dependent.conditionExpression, componentRoot)
+						switch (dependent.type) {
+							case 'text':
+								dependent.rerender(state, componentRoot)
+								break
+							case 'attribute':
+								dependent.refresh(state, componentRoot)
+								break
+							case 'conditional-display':
+								const result = evaluateHyperscript(dependent.conditionExpression, componentRoot)
 
-							const element = dependent.element.deref()
-							if(!element){
-								continue
-							}
+								const element = dependent.element.deref()
+								if (!element) {
+									continue
+								}
 
-							if(result){
-								element.style.display = ''
-							} else {
-								element.style.display = 'none';
-							}
+								if (result) {
+									element.style.display = ''
+								} else {
+									element.style.display = 'none';
+								}
 						}
 					}
 				}
@@ -381,7 +431,6 @@
 
 	/** 
 	 *  @typedef Interpolation
-	 *  @property {WeakRef<Text>} node
 	 *  @property {string} expression
 	 *  @property {string[]} inexactSignalList
 	 *  @property {number} startIndex
@@ -390,7 +439,7 @@
 	 */
 
 	/** 
-	 *  @typedef {TextNodeDependent | ConditionallyDisplayedDependent} Dependent
+	 *  @typedef {TextNodeDependent | AttributeDependent | ConditionallyDisplayedDependent} Dependent
 	 */
 
 	/** 
@@ -401,6 +450,16 @@
 	 *  @property {WeakRef<Text>} node
 	 *  @property {Interpolation[]} interpolations
 	 *  @property {(state: State, componentRoot: HTMLElement) => void} rerender
+	 */
+
+	/** 
+	 * An AttributeDependent represents an HTML attribute that contains one or more interpolations
+	 * and that is therefore dependent on signals.
+	 *  @typedef AttributeDependent
+	 *  @property {"attribute"} type
+	 *  @property {WeakRef<Attr>} attribute
+	 *  @property {Interpolation[]} interpolations
+	 *  @property {(state: State, componentRoot: HTMLElement) => void} refresh
 	 */
 
 	/** 
@@ -422,15 +481,13 @@
 	 * @param {string} rawInterpolationWithDelims 
 	 * @param {string} rawInterpolation 
 	 * @param {number} delimStartIndex
-	 * @param {Text} node
 	 * @param {Record<string, Signal>} signals
 	 * */
-	function getInterpolation(rawInterpolationWithDelims, rawInterpolation, delimStartIndex, node, signals) {
+	function getInterpolation(rawInterpolationWithDelims, rawInterpolation, delimStartIndex, signals) {
 
 		/** @type {Interpolation} */
 		const interpolation = {
 			expression: rawInterpolation,
-			node: new WeakRef(node),
 			startIndex: delimStartIndex,
 			endIndex: delimStartIndex + rawInterpolationWithDelims.length,
 			inexactSignalList: estimateSignalsUsedInHyperscriptExpr(rawInterpolation, signals)
@@ -440,28 +497,38 @@
 	}
 
 	/**
-	 * @param {Text} node
+	 * @param {string} template
 	 * @param {Interpolation[]} interpolations
+	 * 
 	 */
-	function makeRenderTextNode(node, interpolations) {
-		const initialText = node.wholeText
+	function getStringTemplateParts(template, interpolations) {
 		let startPartIndex = 0
 
 		/** @type {(string | Interpolation)[]} */
 		const parts = []
 
 		for (const interpolation of interpolations) {
-			const before = initialText.slice(startPartIndex, interpolation.startIndex)
+			const before = template.slice(startPartIndex, interpolation.startIndex)
 			if (before.length > 0) {
 				parts.push(before)
 			}
 			parts.push(interpolation)
 			startPartIndex = interpolation.endIndex
 		}
-		const after = initialText.slice(startPartIndex)
+		const after = template.slice(startPartIndex)
 		if (after != "") {
 			parts.push(after)
 		}
+
+		return parts
+	}
+
+	/**
+	 * @param {Text} node
+	 * @param {Interpolation[]} interpolations
+	 */
+	function makeRenderTextNode(node, interpolations) {
+		const parts = getStringTemplateParts(node.wholeText, interpolations)
 
 		/**
 		 * @param {State} state
@@ -483,6 +550,36 @@
 				}
 			}
 			node.data = string
+		}
+	}
+
+	/**
+	* @param {Attr} attr
+	* @param {Interpolation[]} interpolations
+	*/
+	function makeRefreshAttrValue(attr, interpolations) {
+		const template = attr.value
+		const parts = getStringTemplateParts(template, interpolations)
+		/**
+		 * @param {State} state
+		 * @param {HTMLElement} componentRoot
+		 */
+		return (state, componentRoot) => {
+			let string = ""
+			for (const part of parts) {
+				if (typeof part == 'string') {
+					string += part
+				} else {
+					const interpolation = part
+					const result = evaluateHyperscript(interpolation.expression, componentRoot)
+					if (result === undefined || result === null) {
+						string += '?'
+					} else {
+						string += result.toString()
+					}
+				}
+			}
+			attr.value = string
 		}
 	}
 
@@ -542,11 +639,11 @@
 	 * @returns {boolean}
 	 */
 	function isComponentRootElement(node) {
-		if(!(node instanceof HTMLElement)) {
+		if (!(node instanceof HTMLElement)) {
 			return false
-		} 
+		}
 		const firstClassName = node.classList.item(0)
-		if(firstClassName === null){
+		if (firstClassName === null) {
 			return false
 		}
 		return (/[A-Z]/).test(firstClassName[0])
@@ -558,7 +655,7 @@
 	 */
 	function isRegisteredHyperscriptComponent(node) {
 
-		return hyperscriptComponentRootsToSignals.get(/** @type {any} */ (node)) !== undefined
+		return hyperscriptComponentRootsToSignals.get(/** @type {any} */(node)) !== undefined
 	}
 
 	/**
@@ -594,7 +691,7 @@
 	 * @param {HTMLElement} element 
 	*/
 	function evaluateHyperscript(expr, element) {
-		
+
 		const owner = element
 		//@ts-ignore
 		const ctx = _hyperscript.internals.runtime.makeContext(owner, {}, element, undefined)
