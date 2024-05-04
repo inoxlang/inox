@@ -1,6 +1,6 @@
 
 const (
-    TS_CONFIG_FILE = ./internal/inoxjs/tsconfig.json
+    TS_CONFIG_FILE = ./internal/inoxjs/preact-tsconfig.json
     OUTPUT_JS_FILE = ./internal/inoxjs/preact-signals.js
     OUTPUT_DECLARATION_FILE = ./internal/inoxjs/preact-signals.d.ts
 
