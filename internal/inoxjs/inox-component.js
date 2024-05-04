@@ -12,9 +12,6 @@
 	/** @type {WeakMap<Signal, Dependent[]>} */
 	const signalsToDependents = new WeakMap()
 
-	/** @type {WeakMap<Text, Dependent>} */
-	const textsWithInterpolations = new WeakMap()
-
 	/** @type {WeakMap<Element, Record<string, Signal>>} */
 	const hyperscriptComponentRootsToSignals = new WeakMap();
 
@@ -22,33 +19,37 @@
 		const observer = new MutationObserver((mutations, observer) => {
 			/**
 			 * Mapping <Hyperscript component root> -> list of relevant attribute names that have been updated. 
-			 * @type {Map<HTMLElement, Set<string>[]>} 
+			 * @type {Map<HTMLElement, Set<string>>} 
 			 * */
 			const updatedAttributeNames = new Map()
 
 			for (const mutation of mutations) {
 				switch (mutation.type) {
 					case 'attributes':
+						if(! (mutation.target instanceof HTMLElement)){
+							continue
+						}
+						const attributeName = /** @type {string} */ (mutation.attributeName)
 						const signals = hyperscriptComponentRootsToSignals.get(mutation.target)
-						if (signals && (mutation.target instanceof HTMLElement)) {
-							let list = updatedAttributeNames.get(mutation.target)
+						if (signals) {
+							let set = updatedAttributeNames.get(mutation.target)
 
-							if (list === undefined) {
-								//Create the list of updated attributes for the component root.
-								list = []
-								updatedAttributeNames.set(mutation.target, list)
+							if (set === undefined) {
+								//Create the Set of updated attributes for the component root.
+								set = new Set()
+								updatedAttributeNames.set(mutation.target, set)
 							}
 
-							//Add the attribute name to the list of it has a corresponding signal.
+							//Add the attribute name if there is a corresponding signal.
 
-							if (signalNameFromAttrName(mutation.attributeName) in signals) {
-								list.push(mutation.attributeName)
+							if (signalNameFromAttrName(attributeName) in signals) {
+								set.add(attributeName)
 							}
 						}
 						break
 					case 'childList':
 						mutation.addedNodes.forEach(node => {
-							if (isComponentRootElement(node) && !isRegisteredHyperscriptComponent(node)) {
+							if (node instanceof HTMLElement && isComponentRootElement(node) && !isRegisteredHyperscriptComponent(node)) {
 								//Initialize new Hyperscript component.
 
 								//TODO: check that the component has been created from trusted HTML (HTMX, ..)
@@ -70,11 +71,15 @@
 			//Update signals with the new attribute values.
 
 			for (const [component, attributeNames] of updatedAttributeNames) {
+				const signals = hyperscriptComponentRootsToSignals.get(component)
+				if(signals === undefined){
+					throw new Error('unreachable')
+				}
 				batch(() => {
-					const signals = hyperscriptComponentRootsToSignals.get(component)
 					for (const attrName of attributeNames) {
 						const signalName = signalNameFromAttrName(attrName)
-						signals[signalName].value = component.attributes.getNamedItem(attrName).value
+						const attribute =  /** @type {Attr} */ (component.attributes.getNamedItem(attrName))
+						signals[signalName].value = attribute.value
 					}
 				})
 			}
@@ -99,7 +104,8 @@
 	 * }} arg 
 	 */
 	function initComponent(arg) {
-		const componentRoot = arg.element ?? /** @type {HTMLElement} */(me())
+		//@ts-ignore
+		const componentRoot = arg.element ?? me()
 
 		if(! isComponentRootElement(componentRoot)){
 			console.error(componentRoot, 'is not a valid component root element, class list should start with a capitalized class name')
@@ -121,7 +127,8 @@
 
 			for (const attrName of attributeNames) {
 				const signalName = signalNameFromAttrName(attrName)
-				signals[signalName] = signal(componentRoot.attributes.getNamedItem(attrName).value)
+				const attr = /** @type {Attr} */ (componentRoot.attributes.getNamedItem(attrName))
+				signals[signalName] = signal(attr.value)
 			}
 
 			//Create a signal for each element variable.
@@ -189,7 +196,6 @@
 			}
 
 			textDependent.rerender(initialState, componentRoot)
-			textsWithInterpolations.set(textNode, textDependent)
 
 			//Add the dependent to the mapping <signal> -> <dependents> 
 
@@ -221,7 +227,7 @@
 				return 'prune'
 			}
 
-			const expression = node.getAttribute(CONDITIONAL_DISPLAY_ATTR_NAME)
+			const expression = /** @type {string} */ (node.getAttribute(CONDITIONAL_DISPLAY_ATTR_NAME))
 			if(expression.trim() == ""){
 				return
 			}
@@ -471,7 +477,7 @@
 	 *  @returns {string[]}
 	 */
 	function estimateSignalsUsedInHyperscriptExpr(expression, signals) {
-		/** @type {string{}} */
+		/** @type {string[]} */
 		const list = []
 
 		//Add element variables to the signal list.
@@ -536,7 +542,8 @@
 	 * @returns {boolean}
 	 */
 	function isRegisteredHyperscriptComponent(node) {
-		return hyperscriptComponentRootsToSignals.get(node) !== undefined
+
+		return hyperscriptComponentRootsToSignals.get(/** @type {any} */ (node)) !== undefined
 	}
 
 	/**
@@ -551,6 +558,9 @@
 	 * @param {string} attrName 
 	 */
 	function signalNameFromAttrName(attrName) {
+		if (attrName.startsWith('@')) {
+			return attrName
+		}
 		return '@' + attrName
 	}
 
@@ -567,10 +577,14 @@
 	/**
 	 * @param {string} expr
 	 * @param {HTMLElement} element 
-	 */
+	*/
 	function evaluateHyperscript(expr, element) {
+		
 		const owner = element
+		//@ts-ignore
 		const ctx = _hyperscript.internals.runtime.makeContext(owner, {}, element, undefined)
+
+		//@ts-ignore
 		return _hyperscript.evaluate(expr, ctx)
 	}
 
@@ -578,6 +592,7 @@
 	 * @param {HTMLElement} element 
 	 */
 	function getElementScope(element) {
+		//@ts-ignore
 		return _hyperscript.internals.runtime.getInternalData(element)?.elementScope ?? {}
 	}
 
@@ -586,6 +601,7 @@
 	 * @param {Record<string, Signal>} signals
 	 */
 	function observeElementScope(element, signals) {
+		//@ts-ignore
 		const data = _hyperscript.internals.runtime.getInternalData(element)
 		data.elementScope = new Proxy(getElementScope(element), {
 			set(target, name, newValue) {
