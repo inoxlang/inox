@@ -1,14 +1,22 @@
 /// <reference types="./preact-signals.d.ts" />
 
+
 (function () {
 	const CONDITIONAL_DISPLAY_ATTR_NAME = "x-if"
+	const FOR_LOOP_ATTR_NAME = "x-for"
+	const KEY_ATTR_NAME = "x-key"
+	const DISABLE_SCRIPTING_ATTR_NAME = "data-disable-scripting"
+	const HYPERSCRIPT_ATTR_NAME = "_"
+
 
 	const INTERPOLATION_PATTERN = new RegExp('[(]{2}' + '((?:[^)]|\\)[^)])+)' + '[)]{2}', 'g')
 	const LOOSE_HS_ELEM_VAR_NAME_PATTERN = /(:[a-zA-Z_][_a-zA-Z0-9]*)/g
 	const LOOSE_HS_ATTR_NAME_PATTERN = /(@[a-zA-Z_][_a-zA-Z0-9-]*)/g
-
+	const FOR_LOOP_ATTR_NAME_PATTERN =
+		/^(?<elemVarName>:[a-zA-Z_][_a-zA-Z0-9]*)\s+in\s+(?<arraySignalName>[$:@]?[a-zA-Z_][-_a-zA-Z0-9]*?)(?:\s*|\s+index\s+(?<indexVarName>:[a-zA-Z_][_a-zA-Z0-9]*))$/;
 
 	const SIGNAL_SETTLING_TIMEOUT_MILLIS = 100
+	const FOR_LOOP_RESULT_ELEMENT_SYMBOL = Symbol()
 
 	/** 
 	 * @type {WeakMap<Signal, Dependent[]>}
@@ -21,6 +29,9 @@
 	/** @type {WeakMap<Element, WeakRef<Record<string, Signal>>>} */
 	const hyperscriptComponentRootsToSignals = new WeakMap();
 
+	/** @type {WeakMap<ForLoopDependent, ForLoopInternalState>} */
+	const forLoopsInternalState = new WeakMap();
+
 	(function () {
 		const observer = new MutationObserver((mutations, observer) => {
 			/**
@@ -32,7 +43,7 @@
 			for (const mutation of mutations) {
 				switch (mutation.type) {
 					case 'attributes':
-						if (!(mutation.target instanceof HTMLElement)) {
+						if (!(mutation.target instanceof HTMLElement) || isInDisabledScriptingRegion(mutation.target)) {
 							continue
 						}
 						const attributeName = /** @type {string} */ (mutation.attributeName)
@@ -55,7 +66,11 @@
 						break
 					case 'childList':
 						mutation.addedNodes.forEach(node => {
-							if ((node instanceof HTMLElement) && isComponentRootElement(node) && !isRegisteredHyperscriptComponent(node)) {
+							if (!isInDisabledScriptingRegion(node) &&
+								(node instanceof HTMLElement) &&
+								isComponentRootElement(node) &&
+								!isRegisteredHyperscriptComponent(node) &&
+								!node.hasAttribute(FOR_LOOP_ATTR_NAME)) {
 								//Initialize new Hyperscript component.
 
 								//TODO: check that the component has been created from trusted HTML (HTMX, ..)
@@ -106,7 +121,8 @@
 	 * @param {{
 	 *      element?: HTMLElement
 	 *      signals?: Record<string, Signal>
-	 *      isHyperscriptComponent?: boolean
+	 *      isHyperscriptComponent?: boolean,
+	 *      elementScopeSlice?: Record<string, unknown>
 	 * }} arg 
 	 */
 	function initComponent(arg) {
@@ -141,12 +157,16 @@
 
 			const elementScope = getElementScope(componentRoot)
 
+			for (const [name, value] of Object.entries(arg.elementScopeSlice ?? {})) {
+				elementScope[name] = value
+			}
+
 			for (const varName in elementScope) {
 				const signalName = signalNameFromElemVarName(varName)
 				signals[signalName] = signal(elementScope[varName])
-
 			}
-			observeElementScope(componentRoot, signals)
+
+			observeElementScope(componentRoot, signals, elementScope)
 
 			hyperscriptComponentRootsToSignals.set(componentRoot, new WeakRef(signals))
 		}
@@ -170,6 +190,10 @@
 		//Register text interpolations.
 
 		walkNode(componentRoot, node => {
+			if ((node instanceof HTMLElement) && node.hasAttribute(FOR_LOOP_ATTR_NAME)) {
+				return 'prune'
+			}
+
 			if (node.nodeType != node.TEXT_NODE) {
 				return
 			}
@@ -224,7 +248,7 @@
 
 		//Register attribute interpolations.
 
-		for(const attribute of Array.from(componentRoot.attributes)){
+		for (const attribute of Array.from(componentRoot.attributes)) {
 			let execArray = INTERPOLATION_PATTERN.exec(attribute.value)
 
 			if (execArray == null) {
@@ -271,10 +295,17 @@
 		//Register conditionally displayed elements.
 
 		walkNode(componentRoot, node => {
+			//Ignore descendants of template elements.
+			if ((node instanceof HTMLElement) && node.hasAttribute(FOR_LOOP_ATTR_NAME)) {
+				return 'prune'
+			}
+
+			//Ignore non-elements and elements without the attribute.
 			if (!(node instanceof HTMLElement) || !node.hasAttribute(CONDITIONAL_DISPLAY_ATTR_NAME)) {
 				return
 			}
 
+			//Ignore descendant components and their descendants.
 			if (node != componentRoot && isComponentRootElement(node)) {
 				return 'prune'
 			}
@@ -319,6 +350,77 @@
 				}
 			}
 		})
+
+
+		//Register 'for' loops.
+
+		walkNode(componentRoot, node => {
+			if (node == componentRoot || !(node instanceof HTMLElement) || node.parentElement === null) {
+				return
+			}
+
+			const hasAttribute = node.hasAttribute(FOR_LOOP_ATTR_NAME)
+
+			//Ignore descendant components and their descendants.
+			if (!hasAttribute && node != componentRoot && isComponentRootElement(node)) {
+				return 'prune'
+			}
+
+			if (!hasAttribute) {
+				return
+			}
+
+			const attributeValue = /** @type {string} */ (node.getAttribute(FOR_LOOP_ATTR_NAME))
+
+			const execArray = FOR_LOOP_ATTR_NAME_PATTERN.exec(attributeValue)
+			if (execArray === null || execArray.groups === undefined) {
+				console.error(
+					`invalid value for ${FOR_LOOP_ATTR_NAME} attribute: \`${attributeValue}\`` +
+					`\nValid examples: \`:elem in :list\`, \`:elem in :list index :index\``)
+				return
+			}
+
+			if (!isComponentRootElement(node)) {
+				console.error(node, 'a valid component name is missing in the class list')
+				return 'prune'
+			}
+
+			const templateElement = node
+			const elemVarName = execArray.groups['elemVarName']
+			const arraySignalName = execArray.groups['arraySignalName']
+			const indexVarName = /** @type {string|undefined} */ (execArray.groups['indexVarName']);
+
+			/** @type {ForLoopDependent} */
+			const forLoopDependent = {
+				type: "for-loop",
+				elemVarName: elemVarName,
+				indexVarName: indexVarName,
+				arraySignalName: arraySignalName,
+				templateElement: new WeakRef(templateElement),
+			}
+
+			//Initial render.
+
+			templateElement.style.display = 'none';
+			evaluateXForLoop(forLoopDependent, templateElement, componentRoot, initialState)
+
+			//Add the dependent to the mapping <signal> -> <dependents> 
+
+			const signal = signals[arraySignalName]
+			if (signal) {
+				let dependents = signalsToDependents.get(signal)
+				if (dependents === undefined) {
+					dependents = []
+					signalsToDependents.set(signal, dependents)
+				}
+				if (!dependents.includes(forLoopDependent)) {
+					dependents.push(forLoopDependent)
+				}
+			}
+
+			return 'prune'
+		})
+
 
 		//rendering
 
@@ -394,18 +496,27 @@
 								dependent.refresh(state, componentRoot)
 								break
 							case 'conditional-display':
-								const result = evaluateHyperscript(dependent.conditionExpression, componentRoot)
-
 								const element = dependent.element.deref()
 								if (!element) {
 									continue
 								}
+
+								const result = evaluateHyperscript(dependent.conditionExpression, componentRoot)
 
 								if (result) {
 									element.style.display = ''
 								} else {
 									element.style.display = 'none';
 								}
+								break
+							case 'for-loop':
+								const templateElement = dependent.templateElement.deref()
+								if (!templateElement) {
+									continue
+								}
+
+								evaluateXForLoop(dependent, templateElement, componentRoot, state)
+								break
 						}
 					}
 				}
@@ -439,7 +550,7 @@
 	 */
 
 	/** 
-	 *  @typedef {TextNodeDependent | AttributeDependent | ConditionallyDisplayedDependent} Dependent
+	 *  @typedef {TextNodeDependent | AttributeDependent | ConditionallyDisplayedDependent | ForLoopDependent} Dependent
 	 */
 
 	/** 
@@ -473,9 +584,23 @@
 	 */
 
 	/** 
+	 * A ForLoopDependent a client-side for-loop that creates sibling elements from a template element.
+	 *  @typedef ForLoopDependent
+	 *  @property {"for-loop"} type
+	 *  @property {WeakRef<HTMLElement>} templateElement
+	 *  @property {string} arraySignalName
+	 *  @property {string} elemVarName
+	 *  @property {string|undefined} indexVarName
+	 */
+
+	/** 
 	 *  @typedef {Record<string, string>} State
 	 */
 
+
+	/** 
+	 *  @typedef {({lastRenderElements: Set<HTMLElement>, currentValue: unknown})} ForLoopInternalState
+	 */
 
 	/** 
 	 * @param {string} rawInterpolationWithDelims 
@@ -633,7 +758,6 @@
 		})
 	}
 
-
 	/**
 	 * @param {Node} node 
 	 * @returns {boolean}
@@ -654,15 +778,26 @@
 	 * @returns {boolean}
 	 */
 	function isRegisteredHyperscriptComponent(node) {
-
 		return hyperscriptComponentRootsToSignals.get(/** @type {any} */(node)) !== undefined
 	}
+
+	/**
+	 * @param {Node} node
+	 * @returns {boolean}
+	 */
+	function isInDisabledScriptingRegion(node) {
+		if (node instanceof HTMLElement) {
+			return node.closest("[" + DISABLE_SCRIPTING_ATTR_NAME + "]") !== null
+		}
+		return node.parentElement != null && isInDisabledScriptingRegion(node.parentElement)
+	}
+
 
 	/**
 	 * @param {HTMLElement} element 
 	 */
 	function getDeduplicatedAttributeNames(element) {
-		const attributeNames = element.getAttributeNames()
+		const attributeNames = element.getAttributeNames().filter(name => name != HYPERSCRIPT_ATTR_NAME)
 		return Array.from(new Set(attributeNames)) //remove duplicates
 	}
 
@@ -701,21 +836,126 @@
 	}
 
 	/**
+	 * @param {ForLoopDependent} dependent
+	 * @param {HTMLElement} templateElement
+	 * @param {HTMLElement} componentRoot
+	 * @param {State} state
+	 */
+	function evaluateXForLoop(dependent, templateElement, componentRoot, state) {
+		const parentElement = templateElement.parentElement
+		if (parentElement === null) {
+			return
+		}
+
+		let internalState = forLoopsInternalState.get(dependent)
+		if (internalState == undefined) {
+			internalState = {
+				lastRenderElements: new Set(),
+				currentValue: undefined
+			}
+			forLoopsInternalState.set(dependent, internalState)
+		}
+
+		const array = evaluateHyperscript(dependent.arraySignalName, componentRoot)
+		if (!Array.isArray(array)) {
+			console.warn(templateElement, dependent.arraySignalName + ' did not evaluate to an Array but to ', array)
+			return
+		}
+
+		//Note: comparing currentValue to array using the equality operator is not useful because the array can have the same identity.
+
+		internalState.currentValue = array
+
+		const keyTemplate = templateElement.getAttribute(KEY_ATTR_NAME)
+
+		/**
+		 * @param {number} index 
+		 * @param {any} value 
+		 */
+		const createInstance = (index, value) => {
+			const instanceElement = /** @type {HTMLElement} */ (templateElement.cloneNode(true))
+			instanceElement.removeAttribute(DISABLE_SCRIPTING_ATTR_NAME)
+			instanceElement.removeAttribute(FOR_LOOP_ATTR_NAME)
+			instanceElement.style.display = '';
+
+			//Make sure the element has a non-empty '_' attribute in order for the Hyperscript lib to initialize it.
+			if (!instanceElement.getAttribute(HYPERSCRIPT_ATTR_NAME)) {
+				instanceElement.setAttribute(HYPERSCRIPT_ATTR_NAME, "init")
+			}
+			return instanceElement
+		}
+
+		/**
+		 * @param {HTMLElement} instance 
+		 * @param {number} index 
+		 * @param {unknown} value 
+		 */
+		function initInstance(instance, index, value) {
+			//@ts-ignore
+			_hyperscript.internals.runtime.initElement(instance)
+
+			initComponent({
+				element: instance,
+				isHyperscriptComponent: true,
+				elementScopeSlice: {
+					[dependent.elemVarName]: value,
+					...dependent.indexVarName ? {
+						[dependent.indexVarName]: index,
+					} : {}
+				}
+			})
+		}
+
+		if (keyTemplate === null) {
+
+			for (const elem of Array.from(internalState.lastRenderElements)) {
+				elem.remove()
+			}
+			internalState.lastRenderElements.clear()
+
+			/** @type {HTMLElement|undefined} */
+			let prevSibling;
+
+			for (const [index, value] of array.entries()) {
+				const instance = createInstance(index, value)
+				internalState.lastRenderElements.add(instance)
+
+				if (index == 0) {
+					templateElement.insertAdjacentElement('afterend', instance)
+				} else {
+					prevSibling?.insertAdjacentElement('afterend', instance)
+				}
+				initInstance(instance, index, value)
+
+				prevSibling = instance
+			}
+		} else {
+			console.error(dependent.templateElement, 'keys are not supported yet')
+		}
+	}
+
+	/**
 	 * @param {HTMLElement} element 
+	 * @returns {Record<string, unknown>}
 	 */
 	function getElementScope(element) {
 		//@ts-ignore
-		return _hyperscript.internals.runtime.getInternalData(element)?.elementScope ?? {}
+		const internalData = _hyperscript.internals.runtime.getInternalData(element)
+		if(internalData.elementScope === undefined){
+			internalData.elementScope = {}
+		}
+		return internalData.elementScope
 	}
 
 	/**
 	 * @param {HTMLElement} element 
 	 * @param {Record<string, Signal>} signals
+	 * @param {Record<string|symbol, unknown>} elementScope
 	 */
-	function observeElementScope(element, signals) {
+	function observeElementScope(element, signals, elementScope) {
 		//@ts-ignore
 		const data = _hyperscript.internals.runtime.getInternalData(element)
-		data.elementScope = new Proxy(getElementScope(element), {
+		data.elementScope = new Proxy(elementScope, {
 			set(target, name, newValue) {
 				if (typeof name == 'string') {
 					setTimeout(() => { //wait for the end of hyperscript execution
