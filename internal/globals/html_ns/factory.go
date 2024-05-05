@@ -7,6 +7,7 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/htmldata"
 	"github.com/inoxlang/inox/internal/inoxconsts"
+	"github.com/inoxlang/inox/internal/inoxjs"
 	"github.com/inoxlang/inox/internal/mimeconsts"
 	"golang.org/x/net/html"
 )
@@ -42,8 +43,19 @@ func CreateHTMLNodeFromMarkupElement(ctx *core.Context, arg *core.NonInterpreted
 			continue
 		}
 
+		switch attrName {
+		case inoxjs.FOR_LOOP_ATTR_NAME:
+			//Disable Hyperscript scripting for template elements.
+			//https://hyperscript.org/docs/#security
+			attributes = append(attributes, html.Attribute{
+				Key: "data-disable-scripting",
+				Val: "",
+			})
+		}
+
 		attrValue := attr.Value()
 
+		//turn "h" attribute in script elements into type=<hyperscript media type>
 		if tagName == "script" && attrName == inoxconsts.HYPERSCRIPT_SCRIPT_MARKER {
 			attrName = "type"
 			attrValue = core.String(mimeconsts.HYPERSCRIPT_CTYPE)
