@@ -95,7 +95,34 @@ func TestAnalyzeInoxjs(t *testing.T) {
 		assert.True(t, result.IsPreactSignalsLibUsed())
 	})
 
-	t.Run("inox component library + preact signals should be reported as being used if a 'x-if' XML attribute is found", func(t *testing.T) {
+	t.Run("inox component library + preact signals should be reported as being used if a client-side interpolation in an attribute is found", func(t *testing.T) {
+		ctx := setup()
+		defer ctx.CancelGracefully()
+		fls := ctx.GetFileSystem()
+
+		util.WriteFile(fls, "/routes/index.ix", []byte(`
+			manifest{}
+			return html<div hx-get="(())"></div>
+		`), 0600)
+
+		result, err := AnalyzeCodebase(ctx, Configuration{
+			TopDirectories: []string{"/"},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		if !assert.Contains(t, result.UsedInoxJsLibs, inoxjs.INOX_COMPONENT_LIB_NAME) {
+			return
+		}
+		assert.Contains(t, result.UsedInoxJsLibs, inoxjs.PREACT_SIGNALS_LIB_NAME)
+
+		assert.True(t, result.IsInoxComponentLibUsed())
+		assert.True(t, result.IsPreactSignalsLibUsed())
+	})
+
+	t.Run("inox component library + preact signals should be reported as being used if a 'x-if' attribute is found", func(t *testing.T) {
 		ctx := setup()
 		defer ctx.CancelGracefully()
 		fls := ctx.GetFileSystem()
@@ -104,6 +131,33 @@ func TestAnalyzeInoxjs(t *testing.T) {
 			manifest{}
 			return html<div>
 				<div `+inoxjs.CONDITIONAL_DISPLAY_ATTR_NAME+`="variable"></div>
+			</div>
+		`), 0600)
+
+		result, err := AnalyzeCodebase(ctx, Configuration{
+			TopDirectories: []string{"/"},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.Contains(t, result.UsedInoxJsLibs, inoxjs.INOX_COMPONENT_LIB_NAME)
+		assert.Contains(t, result.UsedInoxJsLibs, inoxjs.PREACT_SIGNALS_LIB_NAME)
+
+		assert.True(t, result.IsInoxComponentLibUsed())
+		assert.True(t, result.IsPreactSignalsLibUsed())
+	})
+
+	t.Run("inox component library + preact signals should be reported as being used if a 'x-for' attribute is found", func(t *testing.T) {
+		ctx := setup()
+		defer ctx.CancelGracefully()
+		fls := ctx.GetFileSystem()
+
+		util.WriteFile(fls, "/routes/index.ix", []byte(`
+			manifest{}
+			return html<div>
+				<div `+inoxjs.FOR_LOOP_ATTR_NAME+`="variable"></div>
 			</div>
 		`), 0600)
 

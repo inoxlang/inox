@@ -24,6 +24,15 @@ func (a *analyzer) preAnalyzeMarkupAttribute(markupAddr *parse.MarkupAttribute) 
 	name := ident.Name
 	result := a.result
 
+	//InoxJS
+	switch {
+	case name == inoxjs.CONDITIONAL_DISPLAY_ATTR_NAME ||
+		name == inoxjs.FOR_LOOP_ATTR_NAME ||
+		strings.Contains(markupAddr.ValueIfStringLiteral(), inoxjs.TEXT_INTERPOLATION_OPENING_DELIMITER):
+		a.result.UsedInoxJsLibs[inoxjs.INOX_COMPONENT_LIB_NAME] = struct{}{}
+		a.result.UsedInoxJsLibs[inoxjs.PREACT_SIGNALS_LIB_NAME] = struct{}{}
+	}
+
 	//Tailwind
 	if name == "class" {
 		addUsedTailwindRulesets(markupAddr.Value, result)
@@ -35,11 +44,6 @@ func (a *analyzer) preAnalyzeMarkupAttribute(markupAddr *parse.MarkupAttribute) 
 	if strings.HasPrefix(name, "hx-") {
 		addUsedHtmxExtensions(markupAddr, name, result)
 		return
-	}
-
-	if name == inoxjs.CONDITIONAL_DISPLAY_ATTR_NAME {
-		a.result.UsedInoxJsLibs[inoxjs.INOX_COMPONENT_LIB_NAME] = struct{}{}
-		a.result.UsedInoxJsLibs[inoxjs.PREACT_SIGNALS_LIB_NAME] = struct{}{}
 	}
 
 }
