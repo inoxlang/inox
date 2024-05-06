@@ -2,11 +2,13 @@ package inoxjs
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	"github.com/inoxlang/inox/internal/hyperscript/hscode"
 	"github.com/inoxlang/inox/internal/hyperscript/hsparse"
 	"github.com/inoxlang/inox/internal/utils"
+	. "github.com/inoxlang/inox/internal/utils/intconv"
 )
 
 const (
@@ -27,36 +29,84 @@ func ContainsClientSideInterpolation(s string) bool {
 }
 
 type ClientSideInterpolation struct {
-	Expression    string
-	ParsingResult *hscode.ParsingResult
-	ParsingError  *hscode.ParsingError
+	Expression                           string
+	ParsingResult                        *hscode.ParsingResult
+	ParsingError                         *hscode.ParsingError
+	StartRuneIndex, RelativeEndRuneIndex int32 //indexes in the encoded string.
 }
 
-func ParseClientSideInterpolations(ctx context.Context, s string) (interpolations []ClientSideInterpolation, criticalErr error) {
-	if len(s) <= 1 {
+// ParseClientSideInterpolations parses the client side interpolations in a string, the second parameter is used to determine the
+// span of the interpolation.
+func ParseClientSideInterpolations(ctx context.Context, str, encoded string) (interpolations []ClientSideInterpolation, criticalErr error) {
+	if len(str) <= 1 {
 		return
 	}
 
-	runes := []rune(s)
+	if strings.Count(str, TEXT_INTERPOLATION_OPENING_DELIMITER) != strings.Count(encoded, TEXT_INTERPOLATION_OPENING_DELIMITER) ||
+		strings.Count(str, TEXT_INTERPOLATION_CLOSING_DELIMITER) != strings.Count(encoded, TEXT_INTERPOLATION_CLOSING_DELIMITER) {
+		criticalErr = errors.New("the encoded string containing the interpolations should not contain encoded '((' or '))' sequences")
+		return
+	}
 
-	i := 1
+	encodedStrRunes := []rune(encoded)
+	encodedStrRuneCount := MustIToI32(len(encodedStrRunes))
+
+	i := int32(1)
 	inInterpolation := false
-	interpolationStart := -1
+	exprStart := int32(-1)
 
-	//Find interpolations.
+	//Find interpolations in the encoded string.
+	var encodedStrInterpolationSpans [][2]int32
 
-	for i < len(runes) {
+	for i < encodedStrRuneCount {
+		if !inInterpolation && encodedStrRunes[i] == '(' && encodedStrRunes[i-1] == '(' {
+			i++
+			inInterpolation = true
+			exprStart = i
+			continue
+		}
+		if inInterpolation && encodedStrRunes[i] == ')' && encodedStrRunes[i-1] == ')' {
+			encodedStrInterpolationSpans = append(encodedStrInterpolationSpans, [2]int32{exprStart - 2, i + 1})
+			exprStart = -1
+			inInterpolation = false
+
+			i++
+			continue
+		}
+
+		i++
+	}
+
+	i = 1
+	inInterpolation = false
+	exprStart = -1
+
+	runes := []rune(str)
+	runeCount := MustIToI32(len(runes))
+
+	//Find interpolations in text.
+
+	for i < runeCount {
 		if !inInterpolation && runes[i] == '(' && runes[i-1] == '(' {
 			i++
 			inInterpolation = true
-			interpolationStart = i
+			exprStart = i
 			continue
 		}
 		if inInterpolation && runes[i] == ')' && runes[i-1] == ')' {
+			interpIndex := len(interpolations)
+			if interpIndex >= len(encodedStrInterpolationSpans) {
+				interpolations = nil
+				criticalErr = errors.New("the encoded string does not match the decoded string")
+				return
+			}
+
 			interpolations = append(interpolations, ClientSideInterpolation{
-				Expression: string(runes[interpolationStart : i-1]),
+				Expression:           string(runes[exprStart : i-1]),
+				StartRuneIndex:       encodedStrInterpolationSpans[interpIndex][0],
+				RelativeEndRuneIndex: encodedStrInterpolationSpans[interpIndex][1],
 			})
-			interpolationStart = -1
+			exprStart = -1
 			inInterpolation = false
 
 			i++

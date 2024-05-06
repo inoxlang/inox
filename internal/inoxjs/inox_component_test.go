@@ -11,7 +11,7 @@ import (
 func TestParseClientSideInterpolations(t *testing.T) {
 
 	t.Run("empty", func(t *testing.T) {
-		interpolations, err := ParseClientSideInterpolations(context.Background(), "")
+		interpolations, err := ParseClientSideInterpolations(context.Background(), "", "")
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -19,7 +19,7 @@ func TestParseClientSideInterpolations(t *testing.T) {
 	})
 
 	t.Run("empty leading interpolation: length 0", func(t *testing.T) {
-		interpolations, err := ParseClientSideInterpolations(context.Background(), "(())end")
+		interpolations, err := ParseClientSideInterpolations(context.Background(), "(())end", "(())end")
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -33,10 +33,12 @@ func TestParseClientSideInterpolations(t *testing.T) {
 			return
 		}
 		assert.Nil(t, interp.ParsingResult)
+		assert.EqualValues(t, 0, interp.StartRuneIndex)
+		assert.EqualValues(t, 4, interp.RelativeEndRuneIndex)
 	})
 
 	t.Run("empty leading interpolation: one space", func(t *testing.T) {
-		interpolations, err := ParseClientSideInterpolations(context.Background(), "(( ))end")
+		interpolations, err := ParseClientSideInterpolations(context.Background(), "(( ))end", "(( ))end")
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -50,10 +52,12 @@ func TestParseClientSideInterpolations(t *testing.T) {
 			return
 		}
 		assert.Nil(t, interp.ParsingResult)
+		assert.EqualValues(t, 0, interp.StartRuneIndex)
+		assert.EqualValues(t, 5, interp.RelativeEndRuneIndex)
 	})
 
-	t.Run("non-empty leading interpolation", func(t *testing.T) {
-		interpolations, err := ParseClientSideInterpolations(context.Background(), "((:count))end")
+	t.Run("non-leading interpolation", func(t *testing.T) {
+		interpolations, err := ParseClientSideInterpolations(context.Background(), "((:count))end", "((:count))end")
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -70,10 +74,12 @@ func TestParseClientSideInterpolations(t *testing.T) {
 			return
 		}
 		assert.True(t, hscode.IsSymbolWithName(interp.ParsingResult.NodeData, ":count"))
+		assert.EqualValues(t, 0, interp.StartRuneIndex)
+		assert.EqualValues(t, 10, interp.RelativeEndRuneIndex)
 	})
 
-	t.Run("non-empty trailing interpolations", func(t *testing.T) {
-		interpolations, err := ParseClientSideInterpolations(context.Background(), "start((:count))")
+	t.Run("trailing interpolations", func(t *testing.T) {
+		interpolations, err := ParseClientSideInterpolations(context.Background(), "start((:count))", "start((:count))")
 		if !assert.NoError(t, err) {
 			return
 		}
@@ -90,16 +96,20 @@ func TestParseClientSideInterpolations(t *testing.T) {
 			return
 		}
 		assert.True(t, hscode.IsSymbolWithName(interp.ParsingResult.NodeData, ":count"))
+		assert.EqualValues(t, 5, interp.StartRuneIndex)
+		assert.EqualValues(t, 15, interp.RelativeEndRuneIndex)
 	})
 
 	t.Run("two interpolations", func(t *testing.T) {
-		interpolations, err := ParseClientSideInterpolations(context.Background(), "((a))/((:count))")
+		interpolations, err := ParseClientSideInterpolations(context.Background(), "((a))/((:count))", "((a))/((:count))")
 		if !assert.NoError(t, err) {
 			return
 		}
 		if !assert.Len(t, interpolations, 2) {
 			return
 		}
+
+		//Check first interpolation.
 
 		interp0 := interpolations[0]
 
@@ -112,16 +122,67 @@ func TestParseClientSideInterpolations(t *testing.T) {
 		}
 		assert.True(t, hscode.IsSymbolWithName(interp0.ParsingResult.NodeData, "a"))
 
-		interp2 := interpolations[1]
+		assert.EqualValues(t, 0, interp0.StartRuneIndex)
+		assert.EqualValues(t, 5, interp0.RelativeEndRuneIndex)
 
-		assert.Equal(t, ":count", interp2.Expression)
-		if !assert.Nil(t, interp2.ParsingError) {
+		//Check second interpolation.
+
+		interp1 := interpolations[1]
+
+		assert.Equal(t, ":count", interp1.Expression)
+		if !assert.Nil(t, interp1.ParsingError) {
 			return
 		}
-		if !assert.NotNil(t, interp2.ParsingResult) {
+		if !assert.NotNil(t, interp1.ParsingResult) {
 			return
 		}
-		assert.True(t, hscode.IsSymbolWithName(interp2.ParsingResult.NodeData, ":count"))
+		assert.True(t, hscode.IsSymbolWithName(interp1.ParsingResult.NodeData, ":count"))
+
+		assert.EqualValues(t, 6, interp1.StartRuneIndex)
+		assert.EqualValues(t, 16, interp1.RelativeEndRuneIndex)
 	})
 
+	t.Run("JSON-encoded character before interpolation", func(t *testing.T) {
+		interpolations, err := ParseClientSideInterpolations(context.Background(), "a((:count))end", `\u0061((:count))end`)
+		if !assert.NoError(t, err) {
+			return
+		}
+		if !assert.Len(t, interpolations, 1) {
+			return
+		}
+		interp := interpolations[0]
+
+		assert.Equal(t, ":count", interp.Expression)
+		if !assert.Nil(t, interp.ParsingError) {
+			return
+		}
+		if !assert.NotNil(t, interp.ParsingResult) {
+			return
+		}
+		assert.True(t, hscode.IsSymbolWithName(interp.ParsingResult.NodeData, ":count"))
+		assert.EqualValues(t, 6, interp.StartRuneIndex)
+		assert.EqualValues(t, 16, interp.RelativeEndRuneIndex)
+	})
+
+	t.Run("JSON-encoded character in interpolation", func(t *testing.T) {
+		interpolations, err := ParseClientSideInterpolations(context.Background(), `((:count))end`, `((:\u0063ount))end`)
+		if !assert.NoError(t, err) {
+			return
+		}
+		if !assert.Len(t, interpolations, 1) {
+			return
+		}
+		interp := interpolations[0]
+
+		assert.Equal(t, ":count", interp.Expression)
+		if !assert.Nil(t, interp.ParsingError) {
+			return
+		}
+		if !assert.NotNil(t, interp.ParsingResult) {
+			return
+		}
+		assert.True(t, hscode.IsSymbolWithName(interp.ParsingResult.NodeData, ":count"))
+		assert.EqualValues(t, 0, interp.StartRuneIndex)
+		assert.EqualValues(t, 15, interp.RelativeEndRuneIndex)
+	})
 }
