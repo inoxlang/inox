@@ -1,8 +1,6 @@
 package analysis
 
 import (
-	"strings"
-
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/hyperscript/hsanalysis"
 	"github.com/inoxlang/inox/internal/inoxjs"
@@ -88,9 +86,10 @@ func (a *analyzer) preAnalyzeInoxFile(path string, fileContent string, chunkSour
 		case *parse.MarkupElement:
 			a.preAnalyzeMarkupElement(node)
 		case *parse.MarkupText:
-			if strings.Contains(node.Value, inoxjs.TEXT_INTERPOLATION_OPENING_DELIMITER) {
+			if inoxjs.ContainsClientSideInterpolation(node.Value) {
 				a.result.UsedInoxJsLibs[inoxjs.INOX_COMPONENT_LIB_NAME] = struct{}{}
 				a.result.UsedInoxJsLibs[inoxjs.PREACT_SIGNALS_LIB_NAME] = struct{}{}
+				a.result.ClientSideInterpolationsFound = true
 			}
 		}
 

@@ -93,6 +93,7 @@ func TestAnalyzeInoxjs(t *testing.T) {
 
 		assert.True(t, result.IsInoxComponentLibUsed())
 		assert.True(t, result.IsPreactSignalsLibUsed())
+		assert.True(t, result.ClientSideInterpolationsFound)
 	})
 
 	t.Run("inox component library + preact signals should be reported as being used if a client-side interpolation in an attribute is found", func(t *testing.T) {
@@ -120,6 +121,7 @@ func TestAnalyzeInoxjs(t *testing.T) {
 
 		assert.True(t, result.IsInoxComponentLibUsed())
 		assert.True(t, result.IsPreactSignalsLibUsed())
+		assert.True(t, result.ClientSideInterpolationsFound)
 	})
 
 	t.Run("inox component library + preact signals should be reported as being used if a 'x-if' attribute is found", func(t *testing.T) {

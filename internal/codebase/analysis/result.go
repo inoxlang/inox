@@ -26,11 +26,12 @@ type Result struct {
 
 	UsedHtmxExtensions map[string]struct{}
 
-	UsedHyperscriptCommands map[string]hsgen.Definition
-	UsedHyperscriptFeatures map[string]hsgen.Definition
-	HyperscriptComponents   map[ /*name*/ string][]*hsanalysis.Component
-	HyperscriptErrors       []hsanalysis.Error
-	HyperscriptWarnings     []hsanalysis.Warning
+	UsedHyperscriptCommands       map[string]hsgen.Definition
+	UsedHyperscriptFeatures       map[string]hsgen.Definition
+	HyperscriptComponents         map[ /*name*/ string][]*hsanalysis.Component
+	HyperscriptErrors             []hsanalysis.Error
+	HyperscriptWarnings           []hsanalysis.Warning
+	ClientSideInterpolationsFound bool
 
 	UsedTailwindRules    map[ /* name with modifiers */ string]tailwind.Ruleset
 	CssVariables         map[css.VarName]varclasses.Variable

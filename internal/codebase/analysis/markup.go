@@ -26,9 +26,11 @@ func (a *analyzer) preAnalyzeMarkupAttribute(markupAddr *parse.MarkupAttribute) 
 
 	//InoxJS
 	switch {
+	case inoxjs.ContainsClientSideInterpolation(markupAddr.ValueIfStringLiteral()):
+		a.result.ClientSideInterpolationsFound = true
+		fallthrough
 	case name == inoxjs.CONDITIONAL_DISPLAY_ATTR_NAME ||
-		name == inoxjs.FOR_LOOP_ATTR_NAME ||
-		strings.Contains(markupAddr.ValueIfStringLiteral(), inoxjs.TEXT_INTERPOLATION_OPENING_DELIMITER):
+		name == inoxjs.FOR_LOOP_ATTR_NAME:
 		a.result.UsedInoxJsLibs[inoxjs.INOX_COMPONENT_LIB_NAME] = struct{}{}
 		a.result.UsedInoxJsLibs[inoxjs.PREACT_SIGNALS_LIB_NAME] = struct{}{}
 	}
