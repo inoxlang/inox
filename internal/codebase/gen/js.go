@@ -103,7 +103,7 @@ func (g *JsGenerator) genHyperscript(ctx *core.Context, analysis *analysis.Resul
 	defs := maps.Values(analysis.UsedHyperscriptFeatures)
 	defs = append(defs, maps.Values(analysis.UsedHyperscriptCommands)...)
 
-	if len(defs) > 0 {
+	if len(defs) > 0 || analysis.ClientSideInterpolationsFound {
 		jsCode, err := hsgen.Generate(hsgen.Config{
 			RequiredDefinitions: defs,
 		})
@@ -116,7 +116,9 @@ func (g *JsGenerator) genHyperscript(ctx *core.Context, analysis *analysis.Resul
 		w := io.MultiWriter(f, bundleWriter) //write to the file and the bundle.
 		w.Write(utils.StringAsBytes(jsCode))
 	} else {
-		f.Write(utils.StringAsBytes("\n/* This file is empty because no Hyperscript features or commands are used. */"))
+		f.Write(utils.StringAsBytes(
+			"\n/* This file is empty because no Hyperscript features nor commands are used, and no client-side interpolations have been found. */",
+		))
 	}
 }
 
