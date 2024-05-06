@@ -185,4 +185,41 @@ func TestParseHyperscriptExpression(t *testing.T) {
 		assert.True(t, hscode.IsSymbolWithName(res.NodeData, source))
 	})
 
+	t.Run("empty", func(t *testing.T) {
+		res, parsingErr, criticalError := ParseHyperScriptExpression(context.Background(), "")
+
+		if !assert.NoError(t, criticalError) {
+			return
+		}
+
+		if !assert.NotNil(t, parsingErr) {
+			return
+		}
+
+		if !assert.Nil(t, res) {
+			return
+		}
+
+		assert.Empty(t, parsingErr.Tokens, 1)
+		assert.Empty(t, parsingErr.TokensNoWhitespace, 1)
+	})
+
+	t.Run("empty: one space", func(t *testing.T) {
+		res, parsingErr, criticalError := ParseHyperScriptExpression(context.Background(), " ")
+
+		if !assert.NoError(t, criticalError) {
+			return
+		}
+
+		if !assert.NotNil(t, parsingErr) {
+			return
+		}
+
+		if !assert.Nil(t, res) {
+			return
+		}
+
+		assert.Empty(t, parsingErr.Tokens)
+		assert.Empty(t, parsingErr.TokensNoWhitespace)
+	})
 }

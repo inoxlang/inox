@@ -1,7 +1,14 @@
 //This file contains lexing and parsing logic that has been extracted from https://github.com/bigskysoftware/_hyperscript/blob/898345a1753ec365491dd6eedc3ab06873862109/src/_hyperscript.js#L1849 
 
 function parseHyperScript(args = {}){
+    /** @type {string} */
     let input = args.input
+    if(typeof input != 'string'){
+        return {
+            criticalError: 'input is not a string'
+        }
+    }
+
     const doNotIncludeNodeData = args.doNotIncludeNodeData ?? false
     const parseExpression = args.parseExpression ?? false
 
@@ -34,10 +41,18 @@ function parseHyperScript(args = {}){
     } catch (err) {
 
         if (err instanceof ParsingError) {
+            let message = err.message
+            let messageAtToken = err.messageAtToken
+
+            if(input.trim() == '') {
+                message = 'Missing expresison'
+                messageAtToken = 'Missing expression'
+            }
+
             return {
                 errorJSON: JSON.stringify({
-                    message: err.message,
-                    messageAtToken: err.messageAtToken,
+                    message: message,
+                    messageAtToken: messageAtToken,
                     token: jsonifyToken(err.token),
                     tokens: tokenList
                 })
