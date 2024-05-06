@@ -17,6 +17,7 @@ type hyperscriptCodeLocationKind int
 
 const (
 	InoxJsAttribute hyperscriptCodeLocationKind = iota
+	ComponentUnderscoreAttribute
 	UnderscoreAttribute
 	HyperscriptScriptElement
 	HyperscriptScriptFile

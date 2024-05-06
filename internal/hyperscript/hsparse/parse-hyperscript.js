@@ -45,8 +45,8 @@ function parseHyperScript(args = {}){
             let messageAtToken = err.messageAtToken
 
             if(input.trim() == '') {
-                message = 'Missing expresison'
-                messageAtToken = 'Missing expression'
+                message = 'Missing expression'
+                messageAtToken = message
             }
 
             return {

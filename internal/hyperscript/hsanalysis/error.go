@@ -15,6 +15,14 @@ type Error struct {
 	LocatedMessage string
 }
 
+func MakeError(msg string, location parse.SourcePositionRange) Error {
+	return Error{
+		Message:        msg,
+		Location:       location,
+		LocatedMessage: fmt.Sprintf("%s: %s", location, msg),
+	}
+}
+
 func (e Error) Error() string {
 	return e.LocatedMessage
 }

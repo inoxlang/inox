@@ -1,6 +1,9 @@
 package analysis
 
 import (
+	"strings"
+
+	"github.com/inoxlang/inox/internal/codebase/analysis/text"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	html_symbolic "github.com/inoxlang/inox/internal/globals/html_ns/symbolic"
 	"github.com/inoxlang/inox/internal/hyperscript/hsanalysis"
@@ -56,23 +59,6 @@ func (a *analyzer) analyzeHyperscriptComponent(component *hsanalysis.Component) 
 		}
 	}
 
-	//Analyze the Hyperscript code of the compontent's root node.
-
-	errors, warnings, criticalError := hsanalysis.Analyze(hsanalysis.Parameters{
-		HyperscriptProgram: component.AttributeShorthand.HyperscriptParsingResult.NodeData,
-		LocationKind:       hsanalysis.UnderscoreAttribute,
-		Component:          component,
-		Chunk:              component.ChunkSource,
-		InoxNodePosition:   component.ChunkSource.GetSourcePosition(component.AttributeShorthand.Span),
-	})
-
-	if criticalError != nil {
-		return
-	}
-
-	a.result.HyperscriptErrors = append(a.result.HyperscriptErrors, errors...)
-	a.result.HyperscriptWarnings = append(a.result.HyperscriptWarnings, warnings...)
-
 	if componentRootNode == nil {
 		return
 	}
@@ -108,7 +94,7 @@ func (a *analyzer) analyzeHyperscriptComponent(component *hsanalysis.Component) 
 
 			visitedMarkupElements[markupElem] = struct{}{}
 
-			if hsanalysis.IsHyperscriptComponent(markupElem) { //do no enter the sub-tree of descendant components.
+			if markupElem != component.Element && hsanalysis.IsHyperscriptComponent(markupElem) { //do no enter the sub-tree of descendant components.
 				action = parse.Prune
 				return
 			}
@@ -138,12 +124,18 @@ func (a *analyzer) analyzeHyperscriptInMarkupElement(component *hsanalysis.Compo
 
 	attribute, ok := sourceNode.Node.HyperscriptAttributeShorthand()
 	if ok && attribute.HyperscriptParsingResult != nil {
+
+		locationKind := hsanalysis.UnderscoreAttribute
+		if sourceNode.Node == component.Element {
+			locationKind = hsanalysis.ComponentUnderscoreAttribute
+		}
+
 		errors, warnings, err := hsanalysis.Analyze(hsanalysis.Parameters{
 			HyperscriptProgram: attribute.HyperscriptParsingResult.NodeData,
-			LocationKind:       hsanalysis.UnderscoreAttribute,
+			LocationKind:       locationKind,
 			Component:          component,
-			Chunk:              component.ChunkSource,
-			InoxNodePosition:   component.ChunkSource.GetSourcePosition(attribute.Span),
+			Chunk:              sourceNode.Chunk,
+			InoxNodePosition:   sourceNode.Chunk.GetSourcePosition(attribute.Span),
 		})
 
 		if err != nil {
@@ -153,8 +145,6 @@ func (a *analyzer) analyzeHyperscriptInMarkupElement(component *hsanalysis.Compo
 
 		a.result.HyperscriptErrors = append(a.result.HyperscriptErrors, errors...)
 		a.result.HyperscriptWarnings = append(a.result.HyperscriptWarnings, warnings...)
-
-		return
 	}
 
 	//Analyze client-side interpolatons in attributes.
@@ -165,8 +155,58 @@ func (a *analyzer) analyzeHyperscriptInMarkupElement(component *hsanalysis.Compo
 			continue
 		}
 
-		value := attr.ValueIfStringLiteral()
-		inoxjs.ContainsClientSideInterpolation()
+		encoded := ""
+		str := ""
+
+		switch v := attr.Value.(type) {
+		case *parse.DoubleQuotedStringLiteral:
+			encoded = v.Raw
+			str = v.Value
+		case *parse.MultilineStringLiteral:
+			encoded = v.Raw
+			str = v.Value
+		default:
+			continue
+		}
+
+		if strings.Count(str, inoxjs.INTERPOLATION_OPENING_DELIMITER) != strings.Count(encoded, inoxjs.INTERPOLATION_OPENING_DELIMITER) ||
+			strings.Count(str, inoxjs.INTERPOLATION_CLOSING_DELIMITER) != strings.Count(encoded, inoxjs.INTERPOLATION_CLOSING_DELIMITER) {
+
+			analysisError := hsanalysis.MakeError(
+				text.ATTRS_SHOULD_NOT_CONTAIN_ENCODED_CLIENT_SIDE_DELIMS,
+				sourceNode.Chunk.GetSourcePosition(attr.Span),
+			)
+
+			a.result.HyperscriptErrors = append(a.result.HyperscriptErrors, analysisError)
+
+			continue
+		}
+
+		if strings.Count(str, inoxjs.INTERPOLATION_OPENING_DELIMITER) == 0 {
+			//No interpolations.
+			continue
+		}
+
+		interpolations, err := inoxjs.ParseClientSideInterpolations(a.ctx, str, encoded)
+		if err != nil {
+			criticalErr = err
+			return
+		}
+
+		for _, interp := range interpolations {
+			if interp.ParsingError != nil {
+				analysisError := hsanalysis.MakeError(
+					interp.ParsingError.Message,
+					//location
+					sourceNode.Chunk.GetSourcePosition(parse.NodeSpan{
+						Start: attr.Span.Start + interp.StartRuneIndex,
+						End:   attr.Span.Start + interp.RelativeEndRuneIndex,
+					}),
+				)
+
+				a.result.HyperscriptErrors = append(a.result.HyperscriptErrors, analysisError)
+			}
+		}
 	}
 
 	return

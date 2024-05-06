@@ -8,23 +8,23 @@ import (
 	"github.com/inoxlang/inox/internal/hyperscript/hscode"
 	"github.com/inoxlang/inox/internal/hyperscript/hsparse"
 	"github.com/inoxlang/inox/internal/utils"
-	. "github.com/inoxlang/inox/internal/utils/intconv"
+	"github.com/inoxlang/inox/internal/utils/intconv"
 )
 
 const (
-	TEXT_INTERPOLATION_OPENING_DELIMITER = "(("
-	TEXT_INTERPOLATION_CLOSING_DELIMITER = "))"
-	CONDITIONAL_DISPLAY_ATTR_NAME        = "x-if"
-	FOR_LOOP_ATTR_NAME                   = "x-for"
-	INIT_COMPONENT_FN_NAME               = "initComponent"
+	INTERPOLATION_OPENING_DELIMITER = "(("
+	INTERPOLATION_CLOSING_DELIMITER = "))"
+	CONDITIONAL_DISPLAY_ATTR_NAME   = "x-if"
+	FOR_LOOP_ATTR_NAME              = "x-for"
+	INIT_COMPONENT_FN_NAME          = "initComponent"
 )
 
 func ContainsClientSideInterpolation(s string) bool {
-	openingDelimIndex := strings.Index(s, TEXT_INTERPOLATION_OPENING_DELIMITER)
+	openingDelimIndex := strings.Index(s, INTERPOLATION_OPENING_DELIMITER)
 	if openingDelimIndex < 0 {
 		return false
 	}
-	closingDelimIndex := strings.Index(s, TEXT_INTERPOLATION_CLOSING_DELIMITER)
+	closingDelimIndex := strings.Index(s, INTERPOLATION_CLOSING_DELIMITER)
 	return closingDelimIndex > openingDelimIndex
 }
 
@@ -42,14 +42,14 @@ func ParseClientSideInterpolations(ctx context.Context, str, encoded string) (in
 		return
 	}
 
-	if strings.Count(str, TEXT_INTERPOLATION_OPENING_DELIMITER) != strings.Count(encoded, TEXT_INTERPOLATION_OPENING_DELIMITER) ||
-		strings.Count(str, TEXT_INTERPOLATION_CLOSING_DELIMITER) != strings.Count(encoded, TEXT_INTERPOLATION_CLOSING_DELIMITER) {
+	if strings.Count(str, INTERPOLATION_OPENING_DELIMITER) != strings.Count(encoded, INTERPOLATION_OPENING_DELIMITER) ||
+		strings.Count(str, INTERPOLATION_CLOSING_DELIMITER) != strings.Count(encoded, INTERPOLATION_CLOSING_DELIMITER) {
 		criticalErr = errors.New("the encoded string containing the interpolations should not contain encoded '((' or '))' sequences")
 		return
 	}
 
 	encodedStrRunes := []rune(encoded)
-	encodedStrRuneCount := MustIToI32(len(encodedStrRunes))
+	encodedStrRuneCount := intconv.MustIToI32(len(encodedStrRunes))
 
 	i := int32(1)
 	inInterpolation := false
@@ -82,7 +82,7 @@ func ParseClientSideInterpolations(ctx context.Context, str, encoded string) (in
 	exprStart = -1
 
 	runes := []rune(str)
-	runeCount := MustIToI32(len(runes))
+	runeCount := intconv.MustIToI32(len(runes))
 
 	//Find interpolations in text.
 
