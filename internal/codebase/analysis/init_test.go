@@ -12,5 +12,5 @@ import (
 func init() {
 	tailwind.InitSubset()
 	htmx.Load()
-	parse.RegisterParseHypercript(hsparse.ParseHyperScript)
+	parse.RegisterParseHypercript(hsparse.ParseHyperScriptProgram)
 }

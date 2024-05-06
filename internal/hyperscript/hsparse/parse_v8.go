@@ -31,7 +31,15 @@ type jsVM struct {
 	parseFunction *v8go.Function
 }
 
-func ParseHyperScript(ctx context.Context, source string) (parsingResult *hscode.ParsingResult, parsingErr *hscode.ParsingError, criticalError error) {
+func ParseHyperScriptProgram(ctx context.Context, source string) (parsingResult *hscode.ParsingResult, parsingErr *hscode.ParsingError, criticalError error) {
+	return _parseHyperScript(ctx, source, false)
+}
+
+func ParseHyperScriptExpression(ctx context.Context, source string) (parsingResult *hscode.ParsingResult, parsingErr *hscode.ParsingError, criticalError error) {
+	return _parseHyperScript(ctx, source, true)
+}
+
+func _parseHyperScript(ctx context.Context, source string, parseExpr bool) (parsingResult *hscode.ParsingResult, parsingErr *hscode.ParsingError, criticalError error) {
 
 	if len(source) > MAX_SOURCE_CODE_LENGTH {
 		return nil, nil, errors.New("source code is too long")
@@ -69,9 +77,20 @@ func ParseHyperScript(ctx context.Context, source string) (parsingResult *hscode
 	if err != nil {
 		return nil, nil, errInternal
 	}
+	defer func() {
+		jsString.Release()
+	}()
 
 	argObjectTempl := v8go.NewObjectTemplate(isolate)
 	argObjectTempl.Set("input", jsString)
+	if parseExpr {
+		True := utils.Must(v8go.NewValue(isolate, true))
+		argObjectTempl.Set("parseExpression", True)
+
+		defer func() {
+			True.Release()
+		}()
+	}
 
 	argObject, err := argObjectTempl.NewInstance(vm.ctx)
 

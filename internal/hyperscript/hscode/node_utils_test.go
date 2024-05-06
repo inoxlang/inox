@@ -11,7 +11,7 @@ import (
 
 func TestGetTokenAtCursor(t *testing.T) {
 
-	result, _, _ := hsparse.ParseHyperScript(context.Background(), "on click toggle .red on me")
+	result, _, _ := hsparse.ParseHyperScriptProgram(context.Background(), "on click toggle .red on me")
 
 	token, ok := hscode.GetTokenAtCursor(0, result.Tokens)
 	if !assert.True(t, ok) {
@@ -44,7 +44,7 @@ func TestGetTokenAtCursor(t *testing.T) {
 
 func TestGetClosestTokenOnCursorLeftSide(t *testing.T) {
 
-	result, _, _ := hsparse.ParseHyperScript(context.Background(), "on click toggle .red on me")
+	result, _, _ := hsparse.ParseHyperScriptProgram(context.Background(), "on click toggle .red on me")
 
 	_, ok := hscode.GetClosestTokenOnCursorLeftSide(0, result.Tokens)
 	if !assert.False(t, ok) {

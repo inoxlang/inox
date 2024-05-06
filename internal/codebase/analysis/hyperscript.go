@@ -1,9 +1,12 @@
 package analysis
 
 import (
+	"github.com/inoxlang/inox/internal/core/symbolic"
 	html_symbolic "github.com/inoxlang/inox/internal/globals/html_ns/symbolic"
 	"github.com/inoxlang/inox/internal/hyperscript/hsanalysis"
 	"github.com/inoxlang/inox/internal/hyperscript/hscode"
+	"github.com/inoxlang/inox/internal/inoxconsts"
+	"github.com/inoxlang/inox/internal/inoxjs"
 	"github.com/inoxlang/inox/internal/parse"
 )
 
@@ -74,7 +77,7 @@ func (a *analyzer) analyzeHyperscriptComponent(component *hsanalysis.Component) 
 		return
 	}
 
-	//Analyze the Hyperscript code of elements inside the component.
+	//Analyze the Hyperscript attribute shorthands of elements and client-side interpolations inside the component.
 
 	visitedMarkupElements := map[*parse.MarkupElement]struct{}{}
 
@@ -105,32 +108,13 @@ func (a *analyzer) analyzeHyperscriptComponent(component *hsanalysis.Component) 
 
 			visitedMarkupElements[markupElem] = struct{}{}
 
-			if hsanalysis.IsHyperscriptComponent(markupElem) {
+			if hsanalysis.IsHyperscriptComponent(markupElem) { //do no enter the sub-tree of descendant components.
 				action = parse.Prune
 				return
 			}
 
-			attribute, ok := sourceNode.Node.HyperscriptAttributeShorthand()
-			if !ok || attribute.HyperscriptParsingResult == nil {
-				return
-			}
-
-			errors, warnings, err := hsanalysis.Analyze(hsanalysis.Parameters{
-				HyperscriptProgram: attribute.HyperscriptParsingResult.NodeData,
-				LocationKind:       hsanalysis.UnderscoreAttribute,
-				Component:          component,
-				Chunk:              component.ChunkSource,
-				InoxNodePosition:   component.ChunkSource.GetSourcePosition(attribute.Span),
-			})
-
-			if err != nil {
-				criticalErr = err
-				return
-			}
-
-			a.result.HyperscriptErrors = append(a.result.HyperscriptErrors, errors...)
-			a.result.HyperscriptWarnings = append(a.result.HyperscriptWarnings, warnings...)
-
+			action = parse.Prune
+			criticalErr = a.analyzeHyperscriptInMarkupElement(component, sourceNode)
 			return
 		}, nil)
 
@@ -143,6 +127,46 @@ func (a *analyzer) analyzeHyperscriptComponent(component *hsanalysis.Component) 
 
 	if err != nil {
 		criticalError = err
+	}
+
+	return
+}
+
+func (a *analyzer) analyzeHyperscriptInMarkupElement(component *hsanalysis.Component, sourceNode *symbolic.MarkupSourceNode) (criticalErr error) {
+
+	//Analyze attribute shorthand.
+
+	attribute, ok := sourceNode.Node.HyperscriptAttributeShorthand()
+	if ok && attribute.HyperscriptParsingResult != nil {
+		errors, warnings, err := hsanalysis.Analyze(hsanalysis.Parameters{
+			HyperscriptProgram: attribute.HyperscriptParsingResult.NodeData,
+			LocationKind:       hsanalysis.UnderscoreAttribute,
+			Component:          component,
+			Chunk:              component.ChunkSource,
+			InoxNodePosition:   component.ChunkSource.GetSourcePosition(attribute.Span),
+		})
+
+		if err != nil {
+			criticalErr = err
+			return
+		}
+
+		a.result.HyperscriptErrors = append(a.result.HyperscriptErrors, errors...)
+		a.result.HyperscriptWarnings = append(a.result.HyperscriptWarnings, warnings...)
+
+		return
+	}
+
+	//Analyze client-side interpolatons in attributes.
+
+	for _, attr := range sourceNode.Node.Opening.Attributes {
+		attr, ok := attr.(*parse.MarkupAttribute)
+		if !ok || attr.IsNameEqual(inoxconsts.HYPERSCRIPT_ATTRIBUTE_NAME) {
+			continue
+		}
+
+		value := attr.ValueIfStringLiteral()
+		inoxjs.ContainsClientSideInterpolation()
 	}
 
 	return

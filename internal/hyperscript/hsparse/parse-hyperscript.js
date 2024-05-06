@@ -2,7 +2,8 @@
 
 function parseHyperScript(args = {}){
     let input = args.input
-    const doNotIncludeNodeData = args.doNotIncludeNodeData || false
+    const doNotIncludeNodeData = args.doNotIncludeNodeData ?? false
+    const parseExpression = args.parseExpression ?? false
 
     if(input == undefined){
         input = globalThis.input
@@ -12,7 +13,12 @@ function parseHyperScript(args = {}){
     const tokenList = Array.from(tokens.tokens).map(jsonifyToken) //Get tokens before they are used by the parser.
 
     try {
-        const node = parser.parseHyperScript(tokens)
+        let node
+        if(parseExpression){
+            node = parser.requireElement('expression', tokens)
+        } else {
+            node = parser.parseHyperScript(tokens)
+        }
 
         let nodeData = node
         if(doNotIncludeNodeData){

@@ -10,15 +10,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParseHyperscript(t *testing.T) {
+func TestParseHyperscriptProgram(t *testing.T) {
 
 	const MAX_PARSING_DURATION_FOR_SMALL_PIECE_OF_CODE = 3 * time.Millisecond
 
-	ParseHyperScript(context.Background(), "on click toggle .red on me ") //create a VM
+	ParseHyperScriptProgram(context.Background(), "on click toggle .red on me ") //create a VM
 
 	t.Run("valid", func(t *testing.T) {
 		start := time.Now()
-		res, parsingErr, criticalError := ParseHyperScript(context.Background(), "on click toggle .red on me")
+		res, parsingErr, criticalError := ParseHyperScriptProgram(context.Background(), "on click toggle .red on me")
 
 		if !assert.NoError(t, criticalError) {
 			return
@@ -40,7 +40,7 @@ func TestParseHyperscript(t *testing.T) {
 
 	t.Run("unexpected token", func(t *testing.T) {
 		start := time.Now()
-		res, parsingErr, criticalError := ParseHyperScript(context.Background(), "on click x .red on me")
+		res, parsingErr, criticalError := ParseHyperScriptProgram(context.Background(), "on click x .red on me")
 
 		if !assert.NoError(t, criticalError) {
 			return
@@ -76,7 +76,7 @@ func TestParseHyperscript(t *testing.T) {
 			t.FailNow()
 		}
 
-		res, parsingErr, criticalError := ParseHyperScript(context.Background(), source)
+		res, parsingErr, criticalError := ParseHyperScriptProgram(context.Background(), source)
 
 		if !assert.NoError(t, criticalError) {
 			return
@@ -98,7 +98,7 @@ func TestParseHyperscript(t *testing.T) {
 
 	t.Run("string with back ticks", func(t *testing.T) {
 		start := time.Now()
-		res, parsingErr, criticalError := ParseHyperScript(context.Background(), "init set :a to `s`")
+		res, parsingErr, criticalError := ParseHyperScriptProgram(context.Background(), "init set :a to `s`")
 
 		if !assert.NoError(t, criticalError) {
 			return
@@ -120,7 +120,7 @@ func TestParseHyperscript(t *testing.T) {
 
 	t.Run("string template with back ticks", func(t *testing.T) {
 		start := time.Now()
-		res, parsingErr, criticalError := ParseHyperScript(context.Background(), "init set :a to `{s}`")
+		res, parsingErr, criticalError := ParseHyperScriptProgram(context.Background(), "init set :a to `{s}`")
 
 		if !assert.NoError(t, criticalError) {
 			return
@@ -138,6 +138,51 @@ func TestParseHyperscript(t *testing.T) {
 		assert.Len(t, res.TokensNoWhitespace, 6)
 
 		assert.EqualValues(t, hscode.HyperscriptProgram, res.NodeData["type"])
+	})
+
+}
+
+func TestParseHyperscriptExpression(t *testing.T) {
+
+	t.Run("valid", func(t *testing.T) {
+		res, parsingErr, criticalError := ParseHyperScriptExpression(context.Background(), "XX")
+
+		if !assert.NoError(t, criticalError) {
+			return
+		}
+
+		if !assert.Nil(t, parsingErr) {
+			return
+		}
+
+		assert.Len(t, res.Tokens, 1)
+		assert.Len(t, res.TokensNoWhitespace, 1)
+
+		assert.True(t, hscode.IsSymbolWithName(res.NodeData, "XX"))
+	})
+
+	t.Run("long code but shorter than MAX_SOURCE_CODE_LENGTH", func(t *testing.T) {
+		repeatCount := MAX_SOURCE_CODE_LENGTH - 1
+		source := strings.Repeat("X", repeatCount)
+
+		if len(source) >= MAX_SOURCE_CODE_LENGTH {
+			t.FailNow()
+		}
+
+		res, parsingErr, criticalError := ParseHyperScriptExpression(context.Background(), source)
+
+		if !assert.NoError(t, criticalError) {
+			return
+		}
+
+		if !assert.Nil(t, parsingErr) {
+			return
+		}
+
+		assert.Len(t, res.Tokens, 1)
+		assert.Len(t, res.TokensNoWhitespace, 1)
+
+		assert.True(t, hscode.IsSymbolWithName(res.NodeData, source))
 	})
 
 }

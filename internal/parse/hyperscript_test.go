@@ -12,7 +12,7 @@ func TestParseHyperscriptAttributeShorthand(t *testing.T) {
 
 	t.Run("valid", func(t *testing.T) {
 		chunk, err := parseChunkForgetTokens("h<div {on click toggle .red on me}></div>", "test", ParserOptions{
-			ParseHyperscript: hsparse.ParseHyperScript,
+			ParseHyperscript: hsparse.ParseHyperScriptProgram,
 		})
 
 		if !assert.NoError(t, err) {
@@ -28,7 +28,7 @@ func TestParseHyperscriptAttributeShorthand(t *testing.T) {
 
 	t.Run("error", func(t *testing.T) {
 		chunk, err := parseChunkForgetTokens("h<div {on click x .red on me}></div>", "test", ParserOptions{
-			ParseHyperscript: hsparse.ParseHyperScript,
+			ParseHyperscript: hsparse.ParseHyperScriptProgram,
 		})
 
 		if !assert.Error(t, err) {
@@ -70,7 +70,7 @@ func TestParseHyperscriptScriptElement(t *testing.T) {
 
 	t.Run("valid", func(t *testing.T) {
 		chunk, err := parseChunkForgetTokens("h<script h>on click toggle .red on me</script>", "test", ParserOptions{
-			ParseHyperscript: hsparse.ParseHyperScript,
+			ParseHyperscript: hsparse.ParseHyperScriptProgram,
 		})
 
 		if !assert.NoError(t, err) {
@@ -83,7 +83,7 @@ func TestParseHyperscriptScriptElement(t *testing.T) {
 
 	t.Run("error", func(t *testing.T) {
 		chunk, err := parseChunkForgetTokens("h<script h>on click x .red on me</script>", "test", ParserOptions{
-			ParseHyperscript: hsparse.ParseHyperScript,
+			ParseHyperscript: hsparse.ParseHyperScriptProgram,
 		})
 
 		if !assert.Error(t, err) {
