@@ -30726,17 +30726,89 @@ func testParse(
 								},
 							},
 							Closing: &MarkupClosingTag{
-								NodeBase: NodeBase{
-									NodeSpan{7, 13},
-									nil,
-									false,
-									/*[]Token{
-										{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{12, 14}},
-										{Type: GREATER_THAN, Span: NodeSpan{17, 18}},
-									},*/
-								},
+								NodeBase: NodeBase{Span: NodeSpan{7, 13}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{9, 12}, nil, false},
+									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("HTML4 predefined entity", func(t *testing.T) {
+			n := mustparseChunk(t, "h<div>&eacute;</div>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
+				Statements: []Node{
+					&MarkupExpression{
+						NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "h",
+						},
+						Element: &MarkupElement{
+							NodeBase: NodeBase{NodeSpan{1, 20}, nil, false},
+							Opening: &MarkupOpeningTag{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:     "div",
+								},
+							},
+							Children: []Node{
+								&MarkupText{
+									NodeBase: NodeBase{NodeSpan{6, 14}, nil, false},
+									Raw:      "&eacute;",
+									Value:    "é",
+								},
+							},
+							Closing: &MarkupClosingTag{
+								NodeBase: NodeBase{Span: NodeSpan{14, 20}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{16, 19}, nil, false},
+									Name:     "div",
+								},
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("HTML5 predefined entity", func(t *testing.T) {
+			n := mustparseChunk(t, "h<div>&infin;</div>")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
+				Statements: []Node{
+					&MarkupExpression{
+						NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
+						Namespace: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "h",
+						},
+						Element: &MarkupElement{
+							NodeBase: NodeBase{NodeSpan{1, 19}, nil, false},
+							Opening: &MarkupOpeningTag{
+								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
+									Name:     "div",
+								},
+							},
+							Children: []Node{
+								&MarkupText{
+									NodeBase: NodeBase{NodeSpan{6, 13}, nil, false},
+									Raw:      "&infin;",
+									Value:    "∞",
+								},
+							},
+							Closing: &MarkupClosingTag{
+								NodeBase: NodeBase{Span: NodeSpan{13, 19}},
+								Name: &IdentifierLiteral{
+									NodeBase: NodeBase{NodeSpan{15, 18}, nil, false},
 									Name:     "div",
 								},
 							},
@@ -30760,15 +30832,7 @@ func testParse(
 						Element: &MarkupElement{
 							NodeBase: NodeBase{NodeSpan{1, 18}, nil, false},
 							Opening: &MarkupOpeningTag{
-								NodeBase: NodeBase{
-									NodeSpan{1, 12},
-									nil,
-									false,
-									/*[]Token{
-										{Type: LESS_THAN, Span: NodeSpan{1, 2}},
-										{Type: GREATER_THAN, Span: NodeSpan{11, 12}},
-									},*/
-								},
+								NodeBase: NodeBase{Span: NodeSpan{1, 12}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{2, 5}, nil, false},
 									Name:     "div",
@@ -30800,15 +30864,7 @@ func testParse(
 								},
 							},
 							Closing: &MarkupClosingTag{
-								NodeBase: NodeBase{
-									NodeSpan{12, 18},
-									nil,
-									false,
-									/*[]Token{
-										{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{12, 14}},
-										{Type: GREATER_THAN, Span: NodeSpan{17, 18}},
-									},*/
-								},
+								NodeBase: NodeBase{Span: NodeSpan{12, 18}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{14, 17}, nil, false},
 									Name:     "div",
@@ -30843,11 +30899,7 @@ func testParse(
 								},
 								Attributes: []Node{
 									&MarkupAttribute{
-										NodeBase: NodeBase{
-											NodeSpan{6, 11},
-											nil,
-											false,
-										},
+										NodeBase: NodeBase{Span: NodeSpan{6, 11}},
 										Name: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{6, 7}, nil, false},
 											Name:     "a",
@@ -30868,15 +30920,7 @@ func testParse(
 								},
 							},
 							Closing: &MarkupClosingTag{
-								NodeBase: NodeBase{
-									NodeSpan{12, 18},
-									nil,
-									false,
-									/*[]Token{
-										{Type: END_TAG_OPEN_DELIMITER, Span: NodeSpan{12, 14}},
-										{Type: GREATER_THAN, Span: NodeSpan{17, 18}},
-									},*/
-								},
+								NodeBase: NodeBase{Span: NodeSpan{12, 18}},
 								Name: &IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{14, 17}, nil, false},
 									Name:     "div",

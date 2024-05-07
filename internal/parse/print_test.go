@@ -681,6 +681,10 @@ func TestPrint(t *testing.T) {
 		`h<div "a"="b"/>`,
 		"h<div></span></span></div>",
 		"h<div></span>1</span>2</div>",
+		"h<div>&lt;</div>",
+		"h<div>&#0065</div>",
+		"h<div>&#x0061</div>",
+		"h<div>&#</div>",
 		//markup expressions with region headers
 		"h<div>\n@'a'\n<a></a></div>",
 		"h<div>\n@'a' @a\n<a></a></div>",
