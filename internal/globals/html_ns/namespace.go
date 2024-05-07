@@ -36,6 +36,9 @@ func init() {
 		EscapeString, func(ctx *symbolic.Context, s symbolic.StringLike) *symbolic.String {
 			return symbolic.ANY_STRING
 		},
+		UnescapeString, func(ctx *symbolic.Context, s symbolic.StringLike) *symbolic.String {
+			return symbolic.ANY_STRING
+		},
 		CreateHTMLNodeFromMarkupElement, _html_symbolic.CreateHTMLNodeFromMarkupElement,
 	})
 
@@ -61,6 +64,7 @@ func NewHTMLNamespace() *core.Namespace {
 		"render":     core.WrapGoFunction(Render),
 		"str_render": core.WrapGoFunction(RenderToString),
 		"escape":     core.WrapGoFunction(EscapeString),
+		"unespace":   core.WrapGoFunction(UnescapeString),
 
 		symbolic.FROM_MARKUP_FACTORY_NAME: core.WrapGoFunction(CreateHTMLNodeFromMarkupElement),
 	})
