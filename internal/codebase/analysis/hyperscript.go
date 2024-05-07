@@ -147,7 +147,49 @@ func (a *analyzer) analyzeHyperscriptInMarkupElement(component *hsanalysis.Compo
 		a.result.HyperscriptWarnings = append(a.result.HyperscriptWarnings, warnings...)
 	}
 
-	//Analyze client-side interpolatons in attributes.
+	analyzeInterpolationsInString := func(str string, encoded string, nodeSpan parse.NodeSpan) (criticalErr error) {
+		if strings.Count(str, inoxjs.INTERPOLATION_OPENING_DELIMITER) != strings.Count(encoded, inoxjs.INTERPOLATION_OPENING_DELIMITER) ||
+			strings.Count(str, inoxjs.INTERPOLATION_CLOSING_DELIMITER) != strings.Count(encoded, inoxjs.INTERPOLATION_CLOSING_DELIMITER) {
+
+			analysisError := hsanalysis.MakeError(
+				text.ATTRS_SHOULD_NOT_CONTAIN_ENCODED_CLIENT_SIDE_DELIMS,
+				sourceNode.Chunk.GetSourcePosition(nodeSpan),
+			)
+
+			a.result.HyperscriptErrors = append(a.result.HyperscriptErrors, analysisError)
+
+			return
+		}
+
+		if strings.Count(str, inoxjs.INTERPOLATION_OPENING_DELIMITER) == 0 {
+			//No interpolations.
+			return
+		}
+
+		interpolations, err := inoxjs.ParseClientSideInterpolations(a.ctx, str, encoded)
+		if err != nil {
+			criticalErr = err
+			return
+		}
+
+		for _, interp := range interpolations {
+			if interp.ParsingError != nil {
+				analysisError := hsanalysis.MakeError(
+					interp.ParsingError.Message,
+					//location
+					sourceNode.Chunk.GetSourcePosition(parse.NodeSpan{
+						Start: nodeSpan.Start + interp.StartRuneIndex,
+						End:   nodeSpan.Start + interp.EndRuneIndex,
+					}),
+				)
+
+				a.result.HyperscriptErrors = append(a.result.HyperscriptErrors, analysisError)
+			}
+		}
+		return
+	}
+
+	//Analyze client-side interpolations in attributes.
 
 	for _, attr := range sourceNode.Node.Opening.Attributes {
 		attr, ok := attr.(*parse.MarkupAttribute)
@@ -169,43 +211,26 @@ func (a *analyzer) analyzeHyperscriptInMarkupElement(component *hsanalysis.Compo
 			continue
 		}
 
-		if strings.Count(str, inoxjs.INTERPOLATION_OPENING_DELIMITER) != strings.Count(encoded, inoxjs.INTERPOLATION_OPENING_DELIMITER) ||
-			strings.Count(str, inoxjs.INTERPOLATION_CLOSING_DELIMITER) != strings.Count(encoded, inoxjs.INTERPOLATION_CLOSING_DELIMITER) {
-
-			analysisError := hsanalysis.MakeError(
-				text.ATTRS_SHOULD_NOT_CONTAIN_ENCODED_CLIENT_SIDE_DELIMS,
-				sourceNode.Chunk.GetSourcePosition(attr.Span),
-			)
-
-			a.result.HyperscriptErrors = append(a.result.HyperscriptErrors, analysisError)
-
-			continue
-		}
-
-		if strings.Count(str, inoxjs.INTERPOLATION_OPENING_DELIMITER) == 0 {
-			//No interpolations.
-			continue
-		}
-
-		interpolations, err := inoxjs.ParseClientSideInterpolations(a.ctx, str, encoded)
+		err := analyzeInterpolationsInString(str, encoded, attr.Span)
 		if err != nil {
 			criticalErr = err
 			return
 		}
+	}
 
-		for _, interp := range interpolations {
-			if interp.ParsingError != nil {
-				analysisError := hsanalysis.MakeError(
-					interp.ParsingError.Message,
-					//location
-					sourceNode.Chunk.GetSourcePosition(parse.NodeSpan{
-						Start: attr.Span.Start + interp.StartRuneIndex,
-						End:   attr.Span.Start + interp.RelativeEndRuneIndex,
-					}),
-				)
+	//Analyze client-side interpolations in markup text nodes.
 
-				a.result.HyperscriptErrors = append(a.result.HyperscriptErrors, analysisError)
-			}
+	for _, child := range sourceNode.Node.Children {
+		text, ok := child.(*parse.MarkupText)
+
+		if !ok {
+			continue
+		}
+
+		err := analyzeInterpolationsInString(text.Value, text.Raw, text.Span)
+		if err != nil {
+			criticalErr = err
+			return
 		}
 	}
 

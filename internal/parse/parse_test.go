@@ -30800,7 +30800,7 @@ func testParse(
 							},
 							Children: []Node{
 								&MarkupText{
-									NodeBase: NodeBase{NodeSpan{6, 13}, nil, false},
+									NodeBase: NodeBase{NodeSpan{6, 14}, nil, false},
 									Raw:      "&iinfin;",
 									Value:    "⧜",
 								},

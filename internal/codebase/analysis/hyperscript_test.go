@@ -310,7 +310,7 @@ func TestAnalyzeHyperscriptContainingErrors(t *testing.T) {
 		assert.Equal(t, text.VAR_NOT_IN_ELEM_SCOPE_OF_ELEM_REF_BY_TELL_CMD, hyperscriptError.Message)
 	})
 
-	t.Run("empty client-side interpolation in attribute of root element of component", func(t *testing.T) {
+	t.Run("error in client-side interpolation in attribute of root element of component", func(t *testing.T) {
 		ctx := setup()
 		defer ctx.CancelGracefully()
 
@@ -335,7 +335,7 @@ func TestAnalyzeHyperscriptContainingErrors(t *testing.T) {
 		assert.Contains(t, "Missing expression", hyperscriptError.Message)
 	})
 
-	t.Run("empty client-side interpolation in attribute of non-root element of component", func(t *testing.T) {
+	t.Run("error in client-side interpolation in attribute of non-root element of component", func(t *testing.T) {
 		ctx := setup()
 		defer ctx.CancelGracefully()
 
@@ -361,4 +361,113 @@ func TestAnalyzeHyperscriptContainingErrors(t *testing.T) {
 		hyperscriptError := result.HyperscriptErrors[0]
 		assert.Contains(t, "Missing expression", hyperscriptError.Message)
 	})
+
+	t.Run("error in client-side interpolation in attribute of non-root element of component that is injected through an interpolation", func(t *testing.T) {
+		ctx := setup()
+		defer ctx.CancelGracefully()
+
+		util.WriteFile(ctx.GetFileSystem(), "/routes/index.ix", []byte(`
+			manifest{}; 
+			child = <div a="(())"></div>
+			return html<div class="Counter" {}> 
+				{child}
+			</div>
+		`), 0600)
+
+		result, err := AnalyzeCodebase(ctx, Configuration{
+			TopDirectories: []string{"/"},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		if !assert.Len(t, result.HyperscriptErrors, 1) {
+			return
+		}
+
+		hyperscriptError := result.HyperscriptErrors[0]
+		assert.Contains(t, "Missing expression", hyperscriptError.Message)
+	})
+
+	t.Run("error in client-side interpolation in text of root element of component", func(t *testing.T) {
+		ctx := setup()
+		defer ctx.CancelGracefully()
+
+		util.WriteFile(ctx.GetFileSystem(), "/routes/index.ix", []byte(`
+			manifest{}; 
+			return html<div class="Counter" {}> (()) </div>
+		`), 0600)
+
+		result, err := AnalyzeCodebase(ctx, Configuration{
+			TopDirectories: []string{"/"},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		if !assert.Len(t, result.HyperscriptErrors, 1) {
+			return
+		}
+
+		hyperscriptError := result.HyperscriptErrors[0]
+		assert.Contains(t, "Missing expression", hyperscriptError.Message)
+	})
+
+	t.Run("error in client-side interpolation in text of non-root element of component", func(t *testing.T) {
+		ctx := setup()
+		defer ctx.CancelGracefully()
+
+		util.WriteFile(ctx.GetFileSystem(), "/routes/index.ix", []byte(`
+			manifest{}; 
+			return html<div class="Counter" {}>
+				<div> (()) </div>
+			</div>
+		`), 0600)
+
+		result, err := AnalyzeCodebase(ctx, Configuration{
+			TopDirectories: []string{"/"},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		if !assert.Len(t, result.HyperscriptErrors, 1) {
+			return
+		}
+
+		hyperscriptError := result.HyperscriptErrors[0]
+		assert.Contains(t, "Missing expression", hyperscriptError.Message)
+	})
+
+	t.Run("error in client-side interpolation in text of non-root element of component that is injected through an interpolation", func(t *testing.T) {
+		ctx := setup()
+		defer ctx.CancelGracefully()
+
+		util.WriteFile(ctx.GetFileSystem(), "/routes/index.ix", []byte(`
+			manifest{}; 
+			child = <div>(())</div>
+			return html<div class="Counter" {}> 
+				{child}
+			</div>
+		`), 0600)
+
+		result, err := AnalyzeCodebase(ctx, Configuration{
+			TopDirectories: []string{"/"},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		if !assert.Len(t, result.HyperscriptErrors, 1) {
+			return
+		}
+
+		hyperscriptError := result.HyperscriptErrors[0]
+		assert.Contains(t, "Missing expression", hyperscriptError.Message)
+	})
+
 }
