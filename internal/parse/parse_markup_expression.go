@@ -532,16 +532,7 @@ children_parsing_loop:
 
 			// add previous slice
 			raw := string(p.s[childStart:p.i])
-			value, sliceErr := p.getValueOfMultilineStringSliceOrLiteral([]byte(raw), false)
-			children = append(children, &MarkupText{
-				NodeBase: NodeBase{
-					NodeSpan{childStart, p.i},
-					sliceErr,
-					false,
-				},
-				Raw:   raw,
-				Value: value,
-			})
+			children = append(children, NewMarkupText(NodeSpan{childStart, p.i}, raw))
 
 			inInterpolation = true
 			p.i++
@@ -674,16 +665,7 @@ children_parsing_loop:
 
 			// Add previous slice
 			raw := string(p.s[childStart:p.i])
-			value, sliceErr := p.getValueOfMultilineStringSliceOrLiteral([]byte(raw), false)
-			children = append(children, &MarkupText{
-				NodeBase: NodeBase{
-					NodeSpan{childStart, p.i},
-					sliceErr,
-					false,
-				},
-				Raw:   raw,
-				Value: value,
-			})
+			children = append(children, NewMarkupText(NodeSpan{childStart, p.i}, raw))
 
 			if p.i < p.len-1 && p.s[p.i+1] == '{' {
 				unquotedRegion := p.parseUnquotedRegion()
@@ -706,16 +688,7 @@ children_parsing_loop:
 		case p.s[p.i] == '@' && !inInterpolation && p.i < p.len-1 && p.s[p.i+1] == '\'' && isSpace(p.s[p.i-1]): //annotated region header
 			// Add previous slice
 			raw := string(p.s[childStart:p.i])
-			value, sliceErr := p.getValueOfMultilineStringSliceOrLiteral([]byte(raw), false)
-			children = append(children, &MarkupText{
-				NodeBase: NodeBase{
-					NodeSpan{childStart, p.i},
-					sliceErr,
-					false,
-				},
-				Raw:   raw,
-				Value: value,
-			})
+			children = append(children, NewMarkupText(NodeSpan{childStart, p.i}, raw))
 
 			p.parseAnnotatedRegionHeadersInMarkup(&regionHeaders)
 			childStart = p.i
@@ -726,30 +699,13 @@ children_parsing_loop:
 
 	if inInterpolation {
 		raw := string(p.s[interpolationStart:p.i])
-		value, _ := p.getValueOfMultilineStringSliceOrLiteral([]byte(raw), false)
+		text := NewMarkupText(NodeSpan{interpolationStart, p.i}, raw)
+		text.Err = &ParsingError{UnspecifiedParsingError, UNTERMINATED_MARKUP_INTERP}
 
-		children = append(children, &MarkupText{
-			NodeBase: NodeBase{
-				NodeSpan{interpolationStart, p.i},
-				&ParsingError{UnspecifiedParsingError, UNTERMINATED_MARKUP_INTERP},
-				false,
-			},
-			Raw:   raw,
-			Value: value,
-		})
+		children = append(children, text)
 	} else {
 		raw := string(p.s[childStart:p.i])
-		value, sliceErr := p.getValueOfMultilineStringSliceOrLiteral([]byte(raw), false)
-
-		children = append(children, &MarkupText{
-			NodeBase: NodeBase{
-				NodeSpan{childStart, p.i},
-				sliceErr,
-				false,
-			},
-			Raw:   raw,
-			Value: value,
-		})
+		children = append(children, NewMarkupText(NodeSpan{childStart, p.i}, raw))
 	}
 
 	return children, regionHeaders, parsingErr, allChildrenHaveMatchingClosingTag

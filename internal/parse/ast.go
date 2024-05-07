@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"html"
 	"net/url"
 	"strings"
 	"time"
@@ -2575,6 +2576,16 @@ type MarkupText struct {
 	NodeBase `json:"base:markup-text"`
 	Raw      string `json:"raw"`
 	Value    string `json:"value"`
+}
+
+func NewMarkupText(span NodeSpan, raw string) *MarkupText {
+	return &MarkupText{
+		NodeBase: NodeBase{
+			Span: span,
+		},
+		Raw:   raw,
+		Value: html.UnescapeString(raw),
+	}
 }
 
 type MarkupInterpolation struct {
