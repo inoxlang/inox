@@ -67,7 +67,7 @@ func IsNodeOfType(arg any, nodeType NodeType) bool {
 }
 
 func AssertIsNodeOfType(arg any, nodeType NodeType) {
-	if IsNodeOfType(arg, nodeType) {
+	if !IsNodeOfType(arg, nodeType) {
 		panic(fmt.Errorf("expected argument to be a node of type %s", nodeType))
 	}
 }

@@ -1,6 +1,8 @@
 package hsanalysis
 
 import (
+	"slices"
+	"strings"
 	"sync"
 
 	"github.com/inoxlang/inox/internal/codebase/analysis/text"
@@ -26,23 +28,20 @@ type analyzer struct {
 }
 
 func Analyze(params Parameters) ([]Error, []Warning, error) {
-	analyzer := analyzerPool.Get().(*analyzer)
-	analyzer.parameters = params
+	a := analyzerPool.Get().(*analyzer)
+	a.parameters = params
 
 	defer func() {
-		analyzer.parameters = Parameters{}
-		analyzer.errors = nil
-		analyzer.warnings = nil
-
-		analyzerPool.Put(analyzer)
+		*a = analyzer{}
+		analyzerPool.Put(a)
 	}()
 
-	criticalErr := hscode.Walk(params.HyperscriptProgram, analyzer.preVisitHyperscriptNode, analyzer.postVisitHyperscriptNode)
+	criticalErr := hscode.Walk(params.ProgramOrExpression, a.preVisitHyperscriptNode, a.postVisitHyperscriptNode)
 	if criticalErr != nil {
 		return nil, nil, criticalErr
 	}
 
-	return analyzer.errors, analyzer.warnings, nil
+	return a.errors, a.warnings, nil
 }
 
 func (c *analyzer) preVisitHyperscriptNode(
@@ -54,7 +53,13 @@ func (c *analyzer) preVisitHyperscriptNode(
 
 	ancestorChain []hscode.JSONMap,
 	_ bool,
-) (hscode.AstTraversalAction, error) {
+) (action hscode.AstTraversalAction, err error) {
+
+	action = hscode.ContinueAstTraversal
+	component := c.parameters.Component
+	locationKind := c.parameters.LocationKind
+	isInClientSideInterpolation := (locationKind == ClientSideAttributeInterpolation || locationKind == ClientSideTextInterpolation)
+	inComponentContext := component != nil && isInClientSideInterpolation
 
 	switch nodeType {
 	case hscode.SetCommand:
@@ -64,8 +69,23 @@ func (c *analyzer) preVisitHyperscriptNode(
 		}
 		c.inTellCommand = true
 	case hscode.Symbol:
-		if hscode.IsTarget(node, parent) && c.inTellCommand {
+		if c.inTellCommand {
 			c.addError(node, text.VAR_NOT_IN_ELEM_SCOPE_OF_ELEM_REF_BY_TELL_CMD)
+			return
+		}
+		name := hscode.GetSymbolName(node)
+		if strings.HasPrefix(name, ":") {
+
+			switch locationKind {
+			case ClientSideAttributeInterpolation, ClientSideTextInterpolation:
+				if component == nil {
+					c.addError(node, text.ELEMENT_SCOPE_VARS_NOT_ALLOWED_HERE_BECAUSE_NO_COMPONENT)
+				} else if !slices.Contains(component.InitialElementScopeVarNames, name) && !hscode.IsTarget(node, parent) {
+					c.addError(node, text.FmtElementScopeVarMayNotBeDefined(name, inComponentContext))
+				}
+			default:
+			}
+
 		}
 	}
 

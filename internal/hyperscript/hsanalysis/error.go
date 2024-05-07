@@ -3,7 +3,6 @@ package hsanalysis
 import (
 	"fmt"
 
-	"github.com/inoxlang/inox/internal/codebase/analysis/text"
 	"github.com/inoxlang/inox/internal/hyperscript/hscode"
 	"github.com/inoxlang/inox/internal/parse"
 )
@@ -35,18 +34,13 @@ type Warning struct {
 }
 
 func (c *analyzer) addError(node hscode.JSONMap, msg string) {
-
 	relativeNodeStart, relativeNodeEnd := hscode.GetNodeSpan(node)
+	codeStartIndex := c.parameters.CodeStartIndex
 
-	inoxNodeSpan := c.parameters.InoxNodePosition.Span
-	absoluteNodeStart := inoxNodeSpan.Start + relativeNodeStart
-	absoluteNodeEnd := inoxNodeSpan.End + relativeNodeEnd
+	absoluteNodeStart := codeStartIndex + relativeNodeStart
+	absoluteNodeEnd := codeStartIndex + relativeNodeEnd
 
-	location := c.parameters.Chunk.GetSourcePosition(parse.NodeSpan{absoluteNodeStart, absoluteNodeEnd})
+	location := c.parameters.Chunk.GetSourcePosition(parse.NodeSpan{Start: absoluteNodeStart, End: absoluteNodeEnd})
 
-	c.errors = append(c.errors, Error{
-		Message:        text.VAR_NOT_IN_ELEM_SCOPE_OF_ELEM_REF_BY_TELL_CMD,
-		Location:       location,
-		LocatedMessage: fmt.Sprintf("%s: %s", location, msg),
-	})
+	c.errors = append(c.errors, MakeError(msg, location))
 }

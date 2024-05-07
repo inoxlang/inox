@@ -62,6 +62,10 @@ func Ret1[A, B any](a A, b B) B {
 	return b
 }
 
+func Ret0OutOf3[A, B, C any](a A, b B, c C) A {
+	return a
+}
+
 func SamePointer(a, b interface{}) bool {
 	return reflect.ValueOf(a).Pointer() == reflect.ValueOf(b).Pointer()
 }

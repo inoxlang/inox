@@ -6,6 +6,8 @@ import (
 	"io"
 	"strings"
 	"sync"
+
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 // ParsedChunkSource contains an AST and the ChunkSource that was parsed to obtain it.
@@ -15,6 +17,10 @@ type ParsedChunkSource struct {
 	Source    ChunkSource
 	runes     []rune
 	runesLock sync.Mutex
+}
+
+func MustParseChunkSource(src ChunkSource, options ...ParserOptions) *ParsedChunkSource {
+	return utils.Must(ParseChunkSource(src, options...))
 }
 
 // ParseChunkSource parses an Inox chunk. The returned error is either a non-syntax error or an aggregation of

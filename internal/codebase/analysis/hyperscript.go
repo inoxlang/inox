@@ -131,11 +131,11 @@ func (a *analyzer) analyzeHyperscriptInMarkupElement(component *hsanalysis.Compo
 		}
 
 		errors, warnings, err := hsanalysis.Analyze(hsanalysis.Parameters{
-			HyperscriptProgram: attribute.HyperscriptParsingResult.NodeData,
-			LocationKind:       locationKind,
-			Component:          component,
-			Chunk:              sourceNode.Chunk,
-			InoxNodePosition:   sourceNode.Chunk.GetSourcePosition(attribute.Span),
+			ProgramOrExpression: attribute.HyperscriptParsingResult.NodeData,
+			LocationKind:        locationKind,
+			Component:           component,
+			Chunk:               sourceNode.Chunk,
+			CodeStartIndex:      attribute.Span.Start + (1 /* '{'*/),
 		})
 
 		if err != nil {
@@ -147,7 +147,7 @@ func (a *analyzer) analyzeHyperscriptInMarkupElement(component *hsanalysis.Compo
 		a.result.HyperscriptWarnings = append(a.result.HyperscriptWarnings, warnings...)
 	}
 
-	analyzeInterpolationsInString := func(str string, encoded string, nodeSpan parse.NodeSpan) (criticalErr error) {
+	analyzeInterpolationsInString := func(str string, encoded string, nodeSpan parse.NodeSpan, attribute bool) (criticalErr error) {
 		if strings.Count(str, inoxjs.INTERPOLATION_OPENING_DELIMITER) != strings.Count(encoded, inoxjs.INTERPOLATION_OPENING_DELIMITER) ||
 			strings.Count(str, inoxjs.INTERPOLATION_CLOSING_DELIMITER) != strings.Count(encoded, inoxjs.INTERPOLATION_CLOSING_DELIMITER) {
 
@@ -166,6 +166,8 @@ func (a *analyzer) analyzeHyperscriptInMarkupElement(component *hsanalysis.Compo
 			return
 		}
 
+		hyperscriptCodeStartIndex := nodeSpan.Start + (1 /* " or ` */)
+
 		interpolations, err := inoxjs.ParseClientSideInterpolations(a.ctx, str, encoded)
 		if err != nil {
 			criticalErr = err
@@ -178,12 +180,35 @@ func (a *analyzer) analyzeHyperscriptInMarkupElement(component *hsanalysis.Compo
 					interp.ParsingError.Message,
 					//location
 					sourceNode.Chunk.GetSourcePosition(parse.NodeSpan{
-						Start: nodeSpan.Start + interp.StartRuneIndex,
-						End:   nodeSpan.Start + interp.EndRuneIndex,
+						Start: hyperscriptCodeStartIndex + interp.StartRuneIndex,
+						End:   hyperscriptCodeStartIndex + interp.EndRuneIndex,
 					}),
 				)
 
 				a.result.HyperscriptErrors = append(a.result.HyperscriptErrors, analysisError)
+			} else {
+				expr := interp.ParsingResult.NodeData
+
+				locationKind := hsanalysis.ClientSideTextInterpolation
+				if attribute {
+					locationKind = hsanalysis.ClientSideAttributeInterpolation
+				}
+
+				errors, warnings, err := hsanalysis.Analyze(hsanalysis.Parameters{
+					ProgramOrExpression: expr,
+					LocationKind:        locationKind,
+					Component:           component,
+					Chunk:               sourceNode.Chunk,
+					CodeStartIndex:      hyperscriptCodeStartIndex + interp.StartRuneIndex,
+				})
+
+				if err != nil {
+					criticalErr = err
+					return
+				}
+
+				a.result.HyperscriptErrors = append(a.result.HyperscriptErrors, errors...)
+				a.result.HyperscriptWarnings = append(a.result.HyperscriptWarnings, warnings...)
 			}
 		}
 		return
@@ -211,7 +236,8 @@ func (a *analyzer) analyzeHyperscriptInMarkupElement(component *hsanalysis.Compo
 			continue
 		}
 
-		err := analyzeInterpolationsInString(str, encoded, attr.Span)
+		attribute := true
+		err := analyzeInterpolationsInString(str, encoded, attr.Span, attribute)
 		if err != nil {
 			criticalErr = err
 			return
@@ -227,7 +253,9 @@ func (a *analyzer) analyzeHyperscriptInMarkupElement(component *hsanalysis.Compo
 			continue
 		}
 
-		err := analyzeInterpolationsInString(text.Value, text.Raw, text.Span)
+		attribute := false
+
+		err := analyzeInterpolationsInString(text.Value, text.Raw, text.Span, attribute)
 		if err != nil {
 			criticalErr = err
 			return

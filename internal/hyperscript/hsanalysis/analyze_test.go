@@ -1,0 +1,231 @@
+package hsanalysis
+
+import (
+	"context"
+	"testing"
+
+	"github.com/inoxlang/inox/internal/codebase/analysis/text"
+	"github.com/inoxlang/inox/internal/hyperscript/hsparse"
+	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/utils"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestAnalyzeHyperscriptAttributeOfComponent(t *testing.T) {
+
+	locationKind := ComponentUnderscoreAttribute
+
+	parse.RegisterParseHypercript(hsparse.ParseHyperScriptProgram)
+
+	t.Run("empty", func(t *testing.T) {
+		chunk := parse.MustParseChunkSource(parse.InMemorySource{
+			NameString: "test",
+			CodeString: `<div class="A" {}></div>`,
+		})
+
+		shorthand := parse.FindFirstNode(chunk.Node, (*parse.HyperscriptAttributeShorthand)(nil))
+
+		errors, warnings, err := Analyze(Parameters{
+			LocationKind: locationKind,
+			Component: &Component{
+				Name: "A",
+			},
+			Chunk:               chunk,
+			CodeStartIndex:      shorthand.Span.Start + 1,
+			ProgramOrExpression: shorthand.HyperscriptParsingResult.NodeData,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.Empty(t, warnings)
+		assert.Empty(t, errors)
+	})
+
+	t.Run("empty init feature", func(t *testing.T) {
+		chunk := parse.MustParseChunkSource(parse.InMemorySource{
+			NameString: "test",
+			CodeString: `<div class="A" {init}></div>`,
+		})
+
+		shorthand := parse.FindFirstNode(chunk.Node, (*parse.HyperscriptAttributeShorthand)(nil))
+
+		errors, warnings, err := Analyze(Parameters{
+			LocationKind: locationKind,
+			Component: &Component{
+				Name: "A",
+			},
+			Chunk:               chunk,
+			CodeStartIndex:      shorthand.Span.Start + 1,
+			ProgramOrExpression: shorthand.HyperscriptParsingResult.NodeData,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.Empty(t, warnings)
+		assert.Empty(t, errors)
+	})
+
+	t.Run("tell command containing an element-scoped variable", func(t *testing.T) {
+		chunk := parse.MustParseChunkSource(parse.InMemorySource{
+			NameString: "test",
+			CodeString: `<div class="A" {on click tell closest .A log :count}> </div> `,
+		})
+
+		shorthand := parse.FindFirstNode(chunk.Node, (*parse.HyperscriptAttributeShorthand)(nil))
+
+		errors, warnings, err := Analyze(Parameters{
+			LocationKind: locationKind,
+			Component: &Component{
+				Name: "A",
+			},
+			Chunk:               chunk,
+			CodeStartIndex:      shorthand.Span.Start + 1,
+			ProgramOrExpression: shorthand.HyperscriptParsingResult.NodeData,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.Empty(t, warnings)
+		assert.Equal(t, []Error{
+			MakeError(text.VAR_NOT_IN_ELEM_SCOPE_OF_ELEM_REF_BY_TELL_CMD, chunk.GetSourcePosition(parse.NodeSpan{Start: 45, End: 51})),
+		}, errors)
+	})
+}
+
+func TestAnalyzeHyperscriptAttributeOfNonComponent(t *testing.T) {
+
+	locationKind := UnderscoreAttribute
+
+	parse.RegisterParseHypercript(hsparse.ParseHyperScriptProgram)
+
+	t.Run("empty", func(t *testing.T) {
+		chunk := parse.MustParseChunkSource(parse.InMemorySource{
+			NameString: "test",
+			CodeString: `
+				<div class="A">
+					<div {}></div>
+				</div>
+			`,
+		})
+
+		shorthand := parse.FindFirstNode(chunk.Node, (*parse.HyperscriptAttributeShorthand)(nil))
+
+		errors, warnings, err := Analyze(Parameters{
+			LocationKind: locationKind,
+			Component: &Component{
+				Name: "A",
+			},
+			Chunk:               chunk,
+			CodeStartIndex:      shorthand.Span.Start + 1,
+			ProgramOrExpression: shorthand.HyperscriptParsingResult.NodeData,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.Empty(t, warnings)
+		assert.Empty(t, errors)
+	})
+
+	t.Run("empty init feature", func(t *testing.T) {
+		chunk := parse.MustParseChunkSource(parse.InMemorySource{
+			NameString: "test",
+			CodeString: `
+				<div class="A">
+					<div {}></div>
+				</div>
+			`,
+		})
+
+		shorthand := parse.FindFirstNode(chunk.Node, (*parse.HyperscriptAttributeShorthand)(nil))
+
+		errors, warnings, err := Analyze(Parameters{
+			LocationKind: locationKind,
+			Component: &Component{
+				Name: "A",
+			},
+			Chunk:               chunk,
+			CodeStartIndex:      shorthand.Span.Start + 1,
+			ProgramOrExpression: shorthand.HyperscriptParsingResult.NodeData,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.Empty(t, warnings)
+		assert.Empty(t, errors)
+	})
+
+	t.Run("tell command containing an element-scoped variable", func(t *testing.T) {
+		chunk := parse.MustParseChunkSource(parse.InMemorySource{
+			NameString: "test",
+			CodeString: `<div class="A">  <div {on click tell closest .A log :count}></div> </div> `,
+		})
+
+		shorthand := parse.FindFirstNode(chunk.Node, (*parse.HyperscriptAttributeShorthand)(nil))
+
+		errors, warnings, err := Analyze(Parameters{
+			LocationKind: locationKind,
+			Component: &Component{
+				Name: "A",
+			},
+			Chunk:               chunk,
+			CodeStartIndex:      shorthand.Span.Start + 1,
+			ProgramOrExpression: shorthand.HyperscriptParsingResult.NodeData,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.Empty(t, warnings)
+		assert.Equal(t, []Error{
+			MakeError(text.VAR_NOT_IN_ELEM_SCOPE_OF_ELEM_REF_BY_TELL_CMD, chunk.GetSourcePosition(parse.NodeSpan{Start: 52, End: 58})),
+		}, errors)
+	})
+}
+
+func TestAnalyzeClientSideAttributeInterpolation(t *testing.T) {
+
+	locationKind := ClientSideAttributeInterpolation
+
+	parse.RegisterParseHypercript(hsparse.ParseHyperScriptProgram)
+
+	t.Run("probably not-defined element-scoped variable", func(t *testing.T) {
+		chunk := parse.MustParseChunkSource(parse.InMemorySource{
+			NameString: "test",
+			CodeString: `<div class="A" x="((:a))">  </div> `,
+		})
+
+		strLit := parse.FindNodes(chunk.Node, (*parse.DoubleQuotedStringLiteral)(nil), nil)[1]
+		hyperscriptExpr := utils.Ret0OutOf3(hsparse.ParseHyperScriptExpression(context.Background(), ":a")).NodeData
+
+		errors, warnings, err := Analyze(Parameters{
+			LocationKind: locationKind,
+			Component: &Component{
+				Name: "A",
+			},
+			Chunk:               chunk,
+			CodeStartIndex:      strLit.Span.Start + 3,
+			ProgramOrExpression: hyperscriptExpr,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.Empty(t, warnings)
+		assert.Equal(t, []Error{
+			MakeError(text.FmtElementScopeVarMayNotBeDefined(":a", true), chunk.GetSourcePosition(parse.NodeSpan{Start: 20, End: 22})),
+		}, errors)
+	})
+}
