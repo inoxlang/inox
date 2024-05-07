@@ -30779,18 +30779,18 @@ func testParse(
 		})
 
 		t.Run("HTML5 predefined entity", func(t *testing.T) {
-			n := mustparseChunk(t, "h<div>&infin;</div>")
+			n := mustparseChunk(t, "h<div>&iinfin;</div>")
 			assert.EqualValues(t, &Chunk{
-				NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
+				NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
 				Statements: []Node{
 					&MarkupExpression{
-						NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
+						NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
 						Namespace: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
 							Name:     "h",
 						},
 						Element: &MarkupElement{
-							NodeBase: NodeBase{NodeSpan{1, 19}, nil, false},
+							NodeBase: NodeBase{NodeSpan{1, 20}, nil, false},
 							Opening: &MarkupOpeningTag{
 								NodeBase: NodeBase{Span: NodeSpan{1, 6}},
 								Name: &IdentifierLiteral{
@@ -30801,14 +30801,14 @@ func testParse(
 							Children: []Node{
 								&MarkupText{
 									NodeBase: NodeBase{NodeSpan{6, 13}, nil, false},
-									Raw:      "&infin;",
-									Value:    "∞",
+									Raw:      "&iinfin;",
+									Value:    "⧜",
 								},
 							},
 							Closing: &MarkupClosingTag{
-								NodeBase: NodeBase{Span: NodeSpan{13, 19}},
+								NodeBase: NodeBase{Span: NodeSpan{14, 20}},
 								Name: &IdentifierLiteral{
-									NodeBase: NodeBase{NodeSpan{15, 18}, nil, false},
+									NodeBase: NodeBase{NodeSpan{16, 19}, nil, false},
 									Name:     "div",
 								},
 							},
