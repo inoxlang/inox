@@ -5,7 +5,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/inoxlang/inox/internal/codebase/analysis/text"
+	"github.com/inoxlang/inox/internal/hyperscript/hsanalysis/text"
 	"github.com/inoxlang/inox/internal/hyperscript/hscode"
 )
 
@@ -80,12 +80,32 @@ func (c *analyzer) preVisitHyperscriptNode(
 			case ClientSideAttributeInterpolation, ClientSideTextInterpolation:
 				if component == nil {
 					c.addError(node, text.ELEMENT_SCOPE_VARS_NOT_ALLOWED_HERE_BECAUSE_NO_COMPONENT)
-				} else if !slices.Contains(component.InitialElementScopeVarNames, name) && !hscode.IsTarget(node, parent) {
+					return
+				}
+				if !slices.Contains(component.InitialElementScopeVarNames, name) && !hscode.IsTarget(node, parent) {
 					c.addError(node, text.FmtElementScopeVarMayNotBeDefined(name, inComponentContext))
 				}
 			default:
 			}
+		}
+	case hscode.AttributeRef:
+		attrName := hscode.GetAttributeRefName(node)
+		if c.inTellCommand {
+			c.addError(node, text.ATTR_NOT_REF_TO_ATTR_OF_ELEM_REF_BY_TELL_CMD)
+			return
+		}
 
+		switch locationKind {
+		case ClientSideAttributeInterpolation, ClientSideTextInterpolation:
+			if component == nil {
+				c.addError(node, text.ATTR_REFS_NOT_ALLOWED_HERE_BECAUSE_NO_COMPONENT)
+				return
+			}
+
+			if !slices.Contains(component.InitializedDataAttributeNames, attrName) && !hscode.IsTarget(node, parent) {
+				c.addError(node, text.FmtAttributeMayNotBeInitialized(attrName, inComponentContext))
+			}
+		default:
 		}
 	}
 

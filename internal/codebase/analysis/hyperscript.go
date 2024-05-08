@@ -1,6 +1,8 @@
 package analysis
 
 import (
+	"slices"
+	"sort"
 	"strings"
 
 	"github.com/inoxlang/inox/internal/codebase/analysis/text"
@@ -62,6 +64,31 @@ func (a *analyzer) analyzeHyperscriptComponent(component *hsanalysis.Component) 
 	if componentRootNode == nil {
 		return
 	}
+
+	// Add to $component.InitializedDataAttributeNames data-* attributes that do not contain interpolations.
+	for _, attr := range componentRootNode.RequiredAttributes() {
+		switch attrName := attr.Name(); attrName {
+		case inoxconsts.HYPERSCRIPT_ATTRIBUTE_NAME:
+			continue
+		default:
+			if !strings.HasPrefix(attrName, "data-") {
+				continue
+			}
+
+			symbolicAttrValue := attr.Value()
+			if !symbolicAttrValue.HasValue() {
+				//Impossible to determine if the value does not depend on other attributes or variables (interpolations).
+				continue
+			}
+
+			value := symbolicAttrValue.Value()
+			if !strings.Contains(value, inoxjs.INTERPOLATION_OPENING_DELIMITER) && !slices.Contains(component.InitializedDataAttributeNames, attrName) {
+				component.InitializedDataAttributeNames = append(component.InitializedDataAttributeNames, attrName)
+
+			}
+		}
+	}
+	sort.Strings(component.InitializedDataAttributeNames)
 
 	//Analyze the Hyperscript attribute shorthands of elements and client-side interpolations inside the component.
 

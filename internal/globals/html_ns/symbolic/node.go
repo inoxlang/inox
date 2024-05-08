@@ -91,6 +91,11 @@ func (n *HTMLNode) FindNode(nodeSpan parse.NodeSpan, chunkName string) (*HTMLNod
 	return nil, false
 }
 
+// The result should not be modified.
+func (n *HTMLNode) RequiredAttributes() []HTMLAttribute {
+	return n.requiredAttributes[0:len(n.requiredAttributes):len(n.requiredAttributes)]
+}
+
 func (n *HTMLNode) HyperscriptAttributeValue() (string, bool) {
 	for _, attr := range n.requiredAttributes {
 		if attr.name == inoxconsts.HYPERSCRIPT_ATTRIBUTE_NAME {
@@ -149,4 +154,12 @@ func NewHTMLAttribute(name string, value *symbolic.String) HTMLAttribute {
 		name:        name,
 		stringValue: value,
 	}
+}
+
+func (a HTMLAttribute) Name() string {
+	return a.name
+}
+
+func (a HTMLAttribute) Value() *symbolic.String {
+	return a.stringValue
 }

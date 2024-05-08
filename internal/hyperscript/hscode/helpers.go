@@ -108,6 +108,11 @@ func GetSymbolName(arg any) string {
 	return arg.(JSONMap)["name"].(string)
 }
 
+func GetAttributeRefName(arg any) string {
+	AssertIsNodeOfType(arg, AttributeRef)
+	return arg.(JSONMap)["name"].(string)
+}
+
 func IsTarget(target, arg JSONMap) bool {
 	if !LooksLikeNode(arg) {
 		return false

@@ -7,16 +7,18 @@ import (
 	"github.com/inoxlang/inox/internal/hyperscript/hscode"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
+	"golang.org/x/exp/slices"
 )
 
 type Component struct {
-	Name                        string
-	Element                     *parse.MarkupElement
-	ClosestMarkupExpr           *parse.MarkupExpression
-	AttributeShorthand          *parse.HyperscriptAttributeShorthand
-	ChunkSource                 *parse.ParsedChunkSource
-	HandledEvents               []DOMEvent
-	InitialElementScopeVarNames []string // example: {":a", ":b"}
+	Name                          string
+	Element                       *parse.MarkupElement
+	ClosestMarkupExpr             *parse.MarkupExpression
+	AttributeShorthand            *parse.HyperscriptAttributeShorthand
+	ChunkSource                   *parse.ParsedChunkSource
+	HandledEvents                 []DOMEvent
+	InitialElementScopeVarNames   []string // example: {":a", ":b"}
+	InitializedDataAttributeNames []string // data-xxx attributes that are properly initialized, example: {"data-count", "data-x"}
 }
 
 type DOMEvent struct {
@@ -82,6 +84,8 @@ func PreanalyzeHyperscriptComponent(
 		return
 	}
 
+	//Pre-analyze Hyperscript attribute shorthand.
+
 	program := attribute.HyperscriptParsingResult.NodeData
 	features, ok := hscode.GetProgramFeatures(program)
 	if !ok {
@@ -92,10 +96,20 @@ func PreanalyzeHyperscriptComponent(
 		hscode.Walk(node, func(node hscode.JSONMap, nodeType hscode.NodeType, _ hscode.JSONMap, _ hscode.NodeType, _ []hscode.JSONMap, _ bool) (hscode.AstTraversalAction, error) {
 			switch nodeType {
 			case hscode.SetCommand:
-				name, _ := hscode.GetSetCommandTargetName(node)
-				if inInit && strings.HasPrefix(name, ":") {
-					component.InitialElementScopeVarNames = append(component.InitialElementScopeVarNames, name)
+				target, _ := hscode.GetSetCommandTarget(node)
+				switch hscode.GetTypeIfNode(target) {
+				case hscode.Symbol:
+					name := hscode.GetSymbolName(target)
+					if inInit && strings.HasPrefix(name, ":") && !slices.Contains(component.InitialElementScopeVarNames, name) {
+						component.InitialElementScopeVarNames = append(component.InitialElementScopeVarNames, name)
+					}
+				case hscode.AttributeRef:
+					name := hscode.GetAttributeRefName(target)
+					if inInit && strings.HasPrefix(name, "data-") && !slices.Contains(component.InitializedDataAttributeNames, name) {
+						component.InitializedDataAttributeNames = append(component.InitializedDataAttributeNames, name)
+					}
 				}
+
 			}
 			return hscode.ContinueAstTraversal, nil
 		}, nil)

@@ -4,11 +4,11 @@ import (
 	"testing"
 
 	"github.com/go-git/go-billy/v5/util"
-	"github.com/inoxlang/inox/internal/codebase/analysis/text"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/hyperscript/hsanalysis"
+	"github.com/inoxlang/inox/internal/hyperscript/hsanalysis/text"
 	"github.com/inoxlang/inox/internal/hyperscript/hsgen"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
@@ -204,6 +204,49 @@ func TestAnalyzeHyperscript(t *testing.T) {
 						Type: "decr",
 					},
 				},
+			}
+
+			assert.Equal(t, expectedComponent, components[0])
+		})
+
+		t.Run("component with some data-* attributes that are initialized and others that depend on interpolations", func(t *testing.T) {
+			ctx := setup()
+			defer ctx.CancelGracefully()
+
+			util.WriteFile(ctx.GetFileSystem(), "/routes/index.ix", []byte(`
+					manifest{}
+					return html<div class="Counter" data-x="a" data-y="((@data-x))" data-z="b" {}>
+					</div>
+				`), 0600)
+
+			result, err := AnalyzeCodebase(ctx, Configuration{
+				TopDirectories: []string{"/"},
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			mod := result.LocalModules["/routes/index.ix"]
+			markupExpr := parse.FindFirstNode(mod.Module.MainChunk.Node, (*parse.MarkupExpression)(nil))
+
+			if !assert.Len(t, result.HyperscriptComponents, 1) {
+				return
+			}
+
+			components := result.HyperscriptComponents["Counter"]
+
+			if !assert.Len(t, components, 1) {
+				return
+			}
+
+			expectedComponent := &hsanalysis.Component{
+				Name:                          "Counter",
+				Element:                       markupExpr.Element,
+				ClosestMarkupExpr:             markupExpr,
+				AttributeShorthand:            markupExpr.Element.Opening.Attributes[4].(*parse.HyperscriptAttributeShorthand),
+				ChunkSource:                   mod.Module.MainChunk,
+				InitializedDataAttributeNames: []string{"data-x", "data-z"},
 			}
 
 			assert.Equal(t, expectedComponent, components[0])
@@ -414,7 +457,7 @@ func TestAnalyzeHyperscriptContainingErrors(t *testing.T) {
 		}
 
 		hyperscriptError := result.HyperscriptErrors[0]
-		assert.Equal(t, text.VAR_NOT_IN_ELEM_SCOPE_OF_ELEM_REF_BY_TELL_CMD, hyperscriptError.Message)
+		assert.Equal(t, text.FmtElementScopeVarMayNotBeDefined(":non_existing", true), hyperscriptError.Message)
 	})
 
 	t.Run("parsing error in client-side interpolation in text of root element of component", func(t *testing.T) {
@@ -521,7 +564,7 @@ func TestAnalyzeHyperscriptContainingErrors(t *testing.T) {
 		}
 
 		hyperscriptError := result.HyperscriptErrors[0]
-		assert.Equal(t, text.VAR_NOT_IN_ELEM_SCOPE_OF_ELEM_REF_BY_TELL_CMD, hyperscriptError.Message)
+		assert.Equal(t, text.FmtElementScopeVarMayNotBeDefined(":non_existing", true), hyperscriptError.Message)
 	})
 
 }
