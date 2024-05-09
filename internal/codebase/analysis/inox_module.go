@@ -4,15 +4,17 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 )
 
-// InoxModule contains information about an Inox module.
+// InoxModuleInfo contains information about an Inox module.
 // All fields may be nil.
-type InoxModule struct {
+type InoxModuleInfo struct {
 	PreparationError error
 	Module           *core.Module
 
 	StaticCheckData *core.StaticCheckData
 	SymbolicData    *core.SymbolicData
 	Manifest        *core.Manifest
+
+	state *core.GlobalState //temporary, removed when the result is returned.
 }
 
 func (a *analyzer) analyzeInoxModuleAndIncludedFiles() {

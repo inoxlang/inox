@@ -38,10 +38,14 @@ func TestScan(t *testing.T) {
 		err := ScanCodebase(ctx, fls, Configuration{
 			TopDirectories: []string{"/routes"},
 			MaxFileSize:    1_000,
-			InoxFileHandlers: []InoxFileHandler{
-				func(path string, _ string, _ *parse.ParsedChunkSource) error {
-					seenFiles = append(seenFiles, path)
-					return nil
+			Phases: []Phase{
+				{
+					InoxFileHandlers: []InoxFileHandler{
+						func(path string, _ string, _ *parse.ParsedChunkSource, _ string) error {
+							seenFiles = append(seenFiles, path)
+							return nil
+						},
+					},
 				},
 			},
 		})
@@ -86,9 +90,13 @@ func TestScan(t *testing.T) {
 			TopDirectories: []string{"/"},
 			MaxFileSize:    1_000,
 			ChunkCache:     cache,
-			InoxFileHandlers: []InoxFileHandler{
-				func(_ string, _ string, _ *parse.ParsedChunkSource) error {
-					return nil
+			Phases: []Phase{
+				{
+					InoxFileHandlers: []InoxFileHandler{
+						func(_ string, _ string, _ *parse.ParsedChunkSource, _ string) error {
+							return nil
+						},
+					},
 				},
 			},
 		})
@@ -125,9 +133,13 @@ func TestScan(t *testing.T) {
 			TopDirectories: []string{"/"},
 			MaxFileSize:    1_000,
 			ChunkCache:     cache,
-			InoxFileHandlers: []InoxFileHandler{
-				func(_ string, _ string, _ *parse.ParsedChunkSource) error {
-					return nil
+			Phases: []Phase{
+				{
+					InoxFileHandlers: []InoxFileHandler{
+						func(_ string, _ string, _ *parse.ParsedChunkSource, _ string) error {
+							return nil
+						},
+					},
 				},
 			},
 		})

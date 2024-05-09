@@ -9,7 +9,7 @@ import (
 
 // tryGetStaticAndDynamicDirs tryies to determine the static and dynamic directories specified in the http.Server's configuration.
 // Both results may be empty.
-func (a *analyzer) tryGetStaticAndDynamicDirs(app InoxModule) (static, dynamic string) {
+func (a *analyzer) tryGetStaticAndDynamicDirs(app InoxModuleInfo) (static, dynamic string) {
 
 	defer func() {
 		//Discard directories that are not absolute.

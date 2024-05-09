@@ -544,12 +544,8 @@ func TestAnalyzeHyperscriptContainingErrors(t *testing.T) {
 		ctx := setup()
 		defer ctx.CancelGracefully()
 
-		util.WriteFile(ctx.GetFileSystem(), "/routes/index.ix", []byte(`
-			manifest{}; 
-			return html<div class="Counter" {}> 
-				<div>(( :non_existing ))</div>
-			</div>
-		`), 0600)
+		util.WriteFile(ctx.GetFileSystem(), "/routes/index.ix",
+			[]byte(`manifest{}; return html<div class="Counter" {}>  <div>(( :non_existing ))</div> </div>`), 0600)
 
 		result, err := AnalyzeCodebase(ctx, Configuration{
 			TopDirectories: []string{"/"},
@@ -565,6 +561,62 @@ func TestAnalyzeHyperscriptContainingErrors(t *testing.T) {
 
 		hyperscriptError := result.HyperscriptErrors[0]
 		assert.Equal(t, text.FmtElementScopeVarMayNotBeDefined(":non_existing", true), hyperscriptError.Message)
+		assert.Equal(t, parse.NodeSpan{Start: 57, End: 70}, hyperscriptError.Location.Span)
 	})
 
+	t.Run("text interpolation error in component located in an includable file imported by a module", func(t *testing.T) {
+		ctx := setup()
+		defer ctx.CancelGracefully()
+
+		util.WriteFile(ctx.GetFileSystem(), "/counter.ix",
+			[]byte(`includable-file; fn Counter() => html<div class="Counter" {}> (( :non_existing )) </div>`), 0600)
+
+		util.WriteFile(ctx.GetFileSystem(), "/routes/index.ix", []byte(`
+			manifest{}
+			import /counter.ix
+		`), 0600)
+
+		result, err := AnalyzeCodebase(ctx, Configuration{
+			TopDirectories: []string{"/"},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		if !assert.Len(t, result.HyperscriptErrors, 1) {
+			return
+		}
+
+		hyperscriptError := result.HyperscriptErrors[0]
+		assert.Equal(t, parse.NodeSpan{Start: 65, End: 78}, hyperscriptError.Location.Span)
+	})
+
+	t.Run("attribute interpolation error in component located in an includable file imported by a module", func(t *testing.T) {
+		ctx := setup()
+		defer ctx.CancelGracefully()
+
+		util.WriteFile(ctx.GetFileSystem(), "/counter.ix",
+			[]byte(`includable-file; fn Counter() => html<div class="Counter" x="(( :non_existing ))" {}></div>`), 0600)
+
+		util.WriteFile(ctx.GetFileSystem(), "/routes/index.ix", []byte(`
+			manifest{}
+			import /counter.ix
+		`), 0600)
+
+		result, err := AnalyzeCodebase(ctx, Configuration{
+			TopDirectories: []string{"/"},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		if !assert.Len(t, result.HyperscriptErrors, 1) {
+			return
+		}
+
+		hyperscriptError := result.HyperscriptErrors[0]
+		assert.Equal(t, parse.NodeSpan{Start: 64, End: 77}, hyperscriptError.Location.Span)
+	})
 }

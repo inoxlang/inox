@@ -26,18 +26,24 @@ const (
 )
 
 type Configuration struct {
-	TopDirectories       []string             //note that if TopDirectories == {"/"} '/.dev' will be excluded.
-	MaxFileSize          int64                //defaults to DEFAULT_MAX_SCANNED_INOX_FILE_SIZE
-	Fast                 bool                 //if true the scan will be faster but will use more CPU and memory.
-	InoxFileHandlers     []InoxFileHandler    //File handlers are called for each inox file. They should not modify the chunk node.
-	CSSFileHandlers      []CSSFileHandler     //File handlers are called for each inox file. They should not modify the node.
+	TopDirectories []string //note that if TopDirectories == {"/"} '/.dev' will be excluded.
+	MaxFileSize    int64    //defaults to DEFAULT_MAX_SCANNED_INOX_FILE_SIZE
+	Fast           bool     //if true the scan will be faster but will use more CPU and memory.
+	Phases         []Phase
+
 	ChunkCache           *parse.ChunkCache    //optional
 	StylesheetParseCache *css.StylesheetCache //optional
 	FileParsingTimeout   time.Duration        //maximum duration for parsing a single file. defaults to parse.DEFAULT_TIMEOUT
 }
 
-type InoxFileHandler func(path string, fileContent string, n *parse.ParsedChunkSource) error
-type CSSFileHandler func(path string, fileContent string, n css.Node) error
+type Phase struct {
+	Name             string
+	InoxFileHandlers []InoxFileHandler //File handlers are called for each inox file. They should not modify the chunk node.
+	CSSFileHandlers  []CSSFileHandler  //File handlers are called for each CSS file. They should not modify the node.
+}
+
+type InoxFileHandler func(path string, fileContent string, n *parse.ParsedChunkSource, phaseName string) error
+type CSSFileHandler func(path string, fileContent string, n css.Node, phaseName string) error
 
 func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) error {
 
@@ -62,11 +68,17 @@ func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) e
 		return err
 	}
 
+	if len(config.Phases) == 0 {
+		return fmt.Errorf("no phases")
+	}
+
 	//Track the encountered files in order to remove deleted ASTs from the cache.
 	seenInoxFiles := []string{}
 	seenCssFiles := []string{}
 	chunkCache := config.ChunkCache
 	stylesheetCache := config.StylesheetParseCache
+
+	currentPhase := config.Phases[0]
 
 	handleFile := func(path string, d fs.DirEntry, err error) error {
 		if ctx.IsDoneSlowCheck() {
@@ -149,8 +161,8 @@ func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) e
 
 			seenInoxFiles = append(seenInoxFiles, path)
 
-			for _, handler := range config.InoxFileHandlers {
-				err := handler(path, contentS, result)
+			for _, handler := range currentPhase.InoxFileHandlers {
+				err := handler(path, contentS, result, currentPhase.Name)
 
 				if err != nil {
 					return fmt.Errorf("an iNox file handler returned an error for %s", path)
@@ -188,8 +200,8 @@ func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) e
 			}
 			seenCssFiles = append(seenCssFiles, path)
 
-			for _, handler := range config.CSSFileHandlers {
-				err := handler(path, contentS, *stylesheet)
+			for _, handler := range currentPhase.CSSFileHandlers {
+				err := handler(path, contentS, *stylesheet, currentPhase.Name)
 
 				if err != nil {
 					return fmt.Errorf("a CSS file handler returned an error for %s", path)
@@ -204,11 +216,14 @@ func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) e
 		return nil
 	}
 
-	for _, topDir := range topDirs {
-		err := core.WalkDirLow(fls, topDir, handleFile)
+	for _, phase := range config.Phases {
+		currentPhase = phase
+		for _, topDir := range topDirs {
+			err := core.WalkDirLow(fls, topDir, handleFile)
 
-		if err != nil {
-			return err
+			if err != nil {
+				return err
+			}
 		}
 	}
 

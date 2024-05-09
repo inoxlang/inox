@@ -11,6 +11,7 @@ import (
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/project/layout"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 const FILE_PARSING_TIMEOUT = 50 * time.Millisecond
@@ -66,13 +67,24 @@ func (a *analyzer) analyzeCodebase(ctx *core.Context) (result *Result, finalErr 
 		FileParsingTimeout:   a.fileParsingTimeout,
 		MaxFileSize:          config.MaxFileSize,
 
-		InoxFileHandlers: []scan.InoxFileHandler{
-			a.preAnalyzeInoxFile,
-		},
-		CSSFileHandlers: []scan.CSSFileHandler{
-			func(path, fileContent string, n css.Node) error {
-				a.addCssVariables(n)
-				return nil
+		Phases: []scan.Phase{
+			{
+				Name: "0",
+				InoxFileHandlers: []scan.InoxFileHandler{
+					a.prepareIfDatabaseProvidingModule,
+				},
+			},
+			{
+				Name: "1",
+				InoxFileHandlers: []scan.InoxFileHandler{
+					a.preAnalyzeInoxFile,
+				},
+				CSSFileHandlers: []scan.CSSFileHandler{
+					func(path, fileContent string, n css.Node, _ string) error {
+						a.addCssVariables(n)
+						return nil
+					},
+				},
 			},
 		},
 	})
@@ -82,6 +94,26 @@ func (a *analyzer) analyzeCodebase(ctx *core.Context) (result *Result, finalErr 
 	}
 
 	result = a.result
+
+	defer func() {
+		// Remove .state from info on local modules and cancel contexts.
+
+		var contexts []*core.Context
+
+		for path, modInfo := range result.LocalModules {
+			contexts = append(contexts, modInfo.state.Ctx)
+			modInfo.state = nil
+			result.LocalModules[path] = modInfo
+		}
+
+		go func() {
+			defer utils.Recover()
+
+			for _, ctx := range contexts {
+				ctx.CancelGracefully()
+			}
+		}()
+	}()
 
 	//------------------- True analysis  -------------------
 

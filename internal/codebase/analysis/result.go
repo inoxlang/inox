@@ -1,6 +1,7 @@
 package analysis
 
 import (
+	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/css"
 	"github.com/inoxlang/inox/internal/css/tailwind"
 	"github.com/inoxlang/inox/internal/css/varclasses"
@@ -9,6 +10,7 @@ import (
 	"github.com/inoxlang/inox/internal/hyperscript/hsgen"
 	"github.com/inoxlang/inox/internal/inoxjs"
 	"github.com/inoxlang/inox/internal/memds"
+	"github.com/inoxlang/inox/internal/parse"
 )
 
 type Result struct {
@@ -16,7 +18,8 @@ type Result struct {
 
 	//Backend
 
-	LocalModules       map[ /*absolute path*/ string]InoxModule
+	LocalModules       map[ /*absolute path*/ string]InoxModuleInfo
+	IncludableFiles    map[ /*absolute path */ string]InoxIncludableFileInfo
 	ServerAPI          *spec.API //may be nil
 	ServerStaticDir    string    //may be empty
 	ServerDynamicDir   string    //may be empty
@@ -49,7 +52,8 @@ func NewEmptyResult() *Result {
 
 		//Backend
 
-		LocalModules: make(map[string]InoxModule),
+		LocalModules:    make(map[string]InoxModuleInfo),
+		IncludableFiles: make(map[string]InoxIncludableFileInfo),
 
 		//Frontend
 
@@ -93,4 +97,25 @@ func (r *Result) IsPreactSignalsLibUsed() bool {
 func (r *Result) IsInoxComponentLibUsed() bool {
 	_, ok := r.UsedInoxJsLibs[inoxjs.INOX_COMPONENT_LIB_NAME]
 	return ok
+}
+
+func (r *Result) GetSymbolicDataForFile(chunk *parse.ParsedChunkSource) (*core.SymbolicData, bool) {
+	for _, info := range r.LocalModules {
+		if info.Module.MainChunk == chunk {
+			return info.state.SymbolicData, true
+		}
+		for _, includedFileChunk := range info.Module.InclusionStatementMap {
+			if includedFileChunk.ParsedChunkSource == chunk {
+				return info.state.SymbolicData, true
+			}
+		}
+	}
+
+	for _, includableFile := range r.IncludableFiles {
+		if includableFile.IncludedChunk.ParsedChunkSource == chunk {
+			return includableFile.SymbolicData, true
+		}
+	}
+
+	return nil, false
 }
