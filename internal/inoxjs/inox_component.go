@@ -29,13 +29,13 @@ func ContainsClientSideInterpolation(s string) bool {
 }
 
 type ClientSideInterpolation struct {
-	Expression         string
-	ParsingResult      *hscode.ParsingResult
-	ParsingError       *hscode.ParsingError
-	StartRuneIndex     int32 //index of the opening delimiter in the encoded string.
-	EndRuneIndex       int32
-	CodeStartRuneIndex int32
-	CodeEndRuneIndex   int32
+	Expression          string //includes leading and trailing space
+	ParsingResult       *hscode.ParsingResult
+	ParsingError        *hscode.ParsingError
+	StartRuneIndex      int32 //index of the opening delimiter in the encoded string.
+	EndRuneIndex        int32
+	InnerStartRuneIndex int32
+	InnerEndRuneIndex   int32
 }
 
 // ParseClientSideInterpolations parses the client side interpolations in a string, the second parameter is used to determine the
@@ -56,7 +56,7 @@ func ParseClientSideInterpolations(ctx context.Context, str, encoded string) (in
 
 	i := int32(1)
 	inInterpolation := false
-	exprStart := int32(-1)
+	innerStart := int32(-1)
 
 	//Find interpolations in the encoded string.
 	var encodedStrInterpolationSpans [][2]int32
@@ -65,12 +65,12 @@ func ParseClientSideInterpolations(ctx context.Context, str, encoded string) (in
 		if !inInterpolation && encodedStrRunes[i] == '(' && encodedStrRunes[i-1] == '(' {
 			i++
 			inInterpolation = true
-			exprStart = i
+			innerStart = i
 			continue
 		}
 		if inInterpolation && encodedStrRunes[i] == ')' && encodedStrRunes[i-1] == ')' {
-			encodedStrInterpolationSpans = append(encodedStrInterpolationSpans, [2]int32{exprStart - 2, i + 1})
-			exprStart = -1
+			encodedStrInterpolationSpans = append(encodedStrInterpolationSpans, [2]int32{innerStart - 2, i + 1})
+			innerStart = -1
 			inInterpolation = false
 
 			i++
@@ -82,7 +82,7 @@ func ParseClientSideInterpolations(ctx context.Context, str, encoded string) (in
 
 	i = 1
 	inInterpolation = false
-	exprStart = -1
+	innerStart = -1
 
 	runes := []rune(str)
 	runeCount := intconv.MustIToI32(len(runes))
@@ -93,7 +93,7 @@ func ParseClientSideInterpolations(ctx context.Context, str, encoded string) (in
 		if !inInterpolation && runes[i] == '(' && runes[i-1] == '(' {
 			i++
 			inInterpolation = true
-			exprStart = i
+			innerStart = i
 			continue
 		}
 		if inInterpolation && runes[i] == ')' && runes[i-1] == ')' {
@@ -104,18 +104,18 @@ func ParseClientSideInterpolations(ctx context.Context, str, encoded string) (in
 				return
 			}
 
-			openinDelimIndex := encodedStrInterpolationSpans[interpIndex][0]
-			closingDelimEndIndex := encodedStrInterpolationSpans[interpIndex][1]
+			openinDelimIndex := encodedStrInterpolationSpans[interpIndex][0]     //index in encoded
+			closingDelimEndIndex := encodedStrInterpolationSpans[interpIndex][1] //index in encoded
 
 			interpolations = append(interpolations, ClientSideInterpolation{
-				Expression:     string(runes[exprStart : i-1]),
+				Expression:     string(runes[innerStart : i-1]),
 				StartRuneIndex: openinDelimIndex,
 				EndRuneIndex:   closingDelimEndIndex,
 
-				CodeStartRuneIndex: openinDelimIndex + int32(len(INTERPOLATION_OPENING_DELIMITER)),
-				CodeEndRuneIndex:   closingDelimEndIndex - int32(len(INTERPOLATION_CLOSING_DELIMITER)),
+				InnerStartRuneIndex: openinDelimIndex + int32(len(INTERPOLATION_OPENING_DELIMITER)),
+				InnerEndRuneIndex:   closingDelimEndIndex - int32(len(INTERPOLATION_CLOSING_DELIMITER)),
 			})
-			exprStart = -1
+			innerStart = -1
 			inInterpolation = false
 
 			i++
