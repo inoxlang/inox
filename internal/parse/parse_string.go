@@ -21,9 +21,12 @@ func (p *parser) parseQuotedStringLiteral() *DoubleQuotedStringLiteral {
 		p.i++
 	}
 
+	isUnterminated := false
+
 	if p.i >= p.len || (p.i < p.len && p.s[p.i] != '"') {
 		raw = string(p.s[start:p.i])
 		parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_QUOTED_STRING_LIT}
+		isUnterminated = true
 	} else {
 		p.i++
 
@@ -42,11 +45,11 @@ func (p *parser) parseQuotedStringLiteral() *DoubleQuotedStringLiteral {
 			Span: NodeSpan{start, p.i},
 			Err:  parsingErr,
 		},
-		Raw:   raw,
-		Value: value,
+		Raw:            raw,
+		Value:          value,
+		IsUnterminated: isUnterminated,
 	}
 }
-
 
 func (p *parser) parseUnquotedStringLiteral(start int32) Node {
 	p.panicIfContextDone()

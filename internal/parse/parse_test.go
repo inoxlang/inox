@@ -5187,15 +5187,7 @@ func testParse(
 							Name:     "a",
 						},
 						Keys: &KeyListExpression{
-							NodeBase: NodeBase{
-								NodeSpan{1, 8},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_KEYLIST_BRACKET, Span: NodeSpan{1, 3}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{7, 8}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{1, 8}},
 							Keys: []Node{
 								&IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{3, 7}, nil, false},
@@ -5229,15 +5221,7 @@ func testParse(
 							},
 						},
 						Keys: &KeyListExpression{
-							NodeBase: NodeBase{
-								NodeSpan{3, 10},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_KEYLIST_BRACKET, Span: NodeSpan{3, 5}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{9, 10}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{3, 10}},
 							Keys: []Node{
 								&IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{5, 9}, nil, false},
@@ -5268,25 +5252,13 @@ func testParse(
 									NodeSpan{3, 6},
 									nil,
 									true,
-									/*[]Token{
-										{Type: OPENING_PARENTHESIS, Span: NodeSpan{2, 3}},
-										{Type: CLOSING_PARENTHESIS, Span: NodeSpan{6, 7}},
-									},*/
 								},
 								Raw:   `"b"`,
 								Value: "b",
 							},
 						},
 						Keys: &KeyListExpression{
-							NodeBase: NodeBase{
-								NodeSpan{7, 14},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_KEYLIST_BRACKET, Span: NodeSpan{7, 9}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{13, 14}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{7, 14}},
 							Keys: []Node{
 								&IdentifierLiteral{
 									NodeBase: NodeBase{NodeSpan{9, 13}, nil, false},
@@ -8675,8 +8647,9 @@ func testParse(
 						&ParsingError{UnspecifiedParsingError, UNTERMINATED_QUOTED_STRING_LIT},
 						false,
 					},
-					Raw:   `"ab`,
-					Value: ``,
+					Raw:            `"ab`,
+					Value:          ``,
+					IsUnterminated: true,
 				},
 				error: true,
 			},
@@ -8694,8 +8667,9 @@ func testParse(
 								&ParsingError{UnspecifiedParsingError, UNTERMINATED_QUOTED_STRING_LIT},
 								false,
 							},
-							Raw:   `"ab`,
-							Value: ``,
+							Raw:            `"ab`,
+							Value:          ``,
+							IsUnterminated: true,
 						},
 						&IntLiteral{
 							NodeBase: NodeBase{NodeSpan{4, 5}, nil, false},
@@ -8734,15 +8708,7 @@ func testParse(
 
 			`[--]`: {
 				result: &ListLiteral{
-					NodeBase: NodeBase{
-						NodeSpan{0, 4},
-						nil,
-						false,
-						/*[]Token{
-							{Type: OPENING_BRACKET, Span: NodeSpan{0, 1}},
-							{Type: CLOSING_BRACKET, Span: NodeSpan{3, 4}},
-						},*/
-					},
+					NodeBase: NodeBase{Span: NodeSpan{0, 4}},
 					Elements: []Node{
 						&UnquotedStringLiteral{
 							NodeBase: NodeBase{NodeSpan{1, 3}, nil, false},

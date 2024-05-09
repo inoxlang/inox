@@ -509,9 +509,10 @@ func (RuneLiteral) Kind() NodeKind {
 }
 
 type DoubleQuotedStringLiteral struct {
-	NodeBase `json:"base:double-quoted-str-lit"`
-	Raw      string
-	Value    string
+	NodeBase       `json:"base:double-quoted-str-lit"`
+	Raw            string //literal before decoding, includes quotes.
+	Value          string
+	IsUnterminated bool
 }
 
 func (l DoubleQuotedStringLiteral) ValueString() string {
@@ -520,6 +521,17 @@ func (l DoubleQuotedStringLiteral) ValueString() string {
 
 func (DoubleQuotedStringLiteral) Kind() NodeKind {
 	return Expr
+}
+
+func (l DoubleQuotedStringLiteral) RawWithoutQuotes() string {
+	raw := l.Raw[1:]
+
+	isTerminated := !l.IsUnterminated
+	if isTerminated {
+		raw = raw[:len(raw)-1]
+	}
+
+	return raw
 }
 
 type UnquotedStringLiteral struct {
@@ -538,7 +550,7 @@ func (UnquotedStringLiteral) Kind() NodeKind {
 
 type MultilineStringLiteral struct {
 	NodeBase
-	Raw            string
+	Raw            string //literal before decoding, includes quotes.
 	Value          string
 	IsUnterminated bool
 }
