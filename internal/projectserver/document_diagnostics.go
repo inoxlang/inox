@@ -26,6 +26,11 @@ const (
 	MIN_DURATION_BEFORE_LOW_PRIORITY_DOC_DIAG_RECOMPUTATION = time.Second
 )
 
+var (
+	errSeverity     = defines.DiagnosticSeverityError
+	warningSeverity = defines.DiagnosticSeverityWarning
+)
+
 // This handler does not return any diagnostics. Instead it spawns a goroutine that will compute, and push them using textDocument/publisDiagnostics.
 // This is a bit of a hack, but unexpected bugs and issues arose when mixing the two diagnostic retrieval models (push and pull) was tried.
 // Diagnostics may not be computed if a computation has happened very recently.
@@ -186,9 +191,6 @@ func computeDocumentDiagnostics(params diagnosticNotificationParams) (result *do
 			projSession.documentDiagnostics[fpath] = result
 		}
 	}()
-
-	errSeverity := defines.DiagnosticSeverityError
-	warningSeverity := defines.DiagnosticSeverityWarning
 
 	preparationResult, ok := prepareSourceFileInExtractionMode(handlingCtx, filePreparationParams{
 		fpath:         fpath,

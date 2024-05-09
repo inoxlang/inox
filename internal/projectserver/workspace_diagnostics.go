@@ -27,11 +27,34 @@ func publishWorkspaceDiagnostics(projSession *Session, lastAnalysis *analysis.Re
 				return
 			}
 
-			// diagnostics.items = append(diagnostics.items, defines.Diagnostic{
-			// 	Range:   defines.Range{Start: defines.Position{1, 2}, End: defines.Position{1, 2}},
-			// 	Message: "LOL",
-			// })
 			diagnostics.containsWorkspaceDiagnostics = true
+
+			//Add Hyperscript diagnostics.
+
+			for _, err := range lastAnalysis.HyperscriptErrors {
+				if err.Location.SourceName != absPath { //ignore errors concerning other documents.
+					continue
+				}
+
+				diagnostics.items = append(diagnostics.items, defines.Diagnostic{
+					Range:    rangeToLspRange(err.Location),
+					Severity: &errSeverity,
+					Message:  err.Message,
+				})
+			}
+
+			for _, warning := range lastAnalysis.HyperscriptWarnings {
+				if warning.Location.SourceName != absPath { //ignore errors concerning other documents.
+					continue
+				}
+
+				diagnostics.items = append(diagnostics.items, defines.Diagnostic{
+					Range:    rangeToLspRange(warning.Location),
+					Severity: &warningSeverity,
+					Message:  warning.Message,
+				})
+			}
+
 			sendDocumentDiagnostics(projSession.rpcSession, uri, diagnostics.items)
 		}(uri, diagnostics)
 

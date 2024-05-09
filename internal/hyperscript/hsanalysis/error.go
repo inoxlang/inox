@@ -29,7 +29,7 @@ func (e Error) Error() string {
 type Warning struct {
 	Message string
 
-	Location       parse.SourcePositionStack
+	Location       parse.SourcePositionRange
 	LocatedMessage string
 }
 
