@@ -2,8 +2,10 @@ package analysis
 
 import (
 	"regexp"
+	"slices"
 	"strings"
 
+	"github.com/inoxlang/inox/internal/hyperscript/hsanalysis"
 	"github.com/inoxlang/inox/internal/inoxjs"
 	"github.com/inoxlang/inox/internal/parse"
 )
@@ -50,25 +52,74 @@ func (a *analyzer) preAnalyzeMarkupAttribute(markupAddr *parse.MarkupAttribute) 
 
 }
 
-func (a *analyzer) preAnalyzeMarkupElement(node *parse.MarkupElement) {
+func (a *analyzer) preAnalyzeMarkupElement(markupElement *parse.MarkupElement, ancestorChain []parse.Node, sourcedChunk *parse.ParsedChunkSource) error {
 	result := a.result
 
-	switch node.EstimatedRawElementType {
+	switch markupElement.EstimatedRawElementType {
 	case parse.HyperscriptScript:
-		a.addUsedHyperscriptFeaturesAndCommands(node)
+		a.addUsedHyperscriptFeaturesAndCommands(markupElement)
+		return nil
 	case parse.JsScript:
-		if SURREAL_DETECTION_PATTERN.MatchString(node.RawElementContent) {
+		if SURREAL_DETECTION_PATTERN.MatchString(markupElement.RawElementContent) {
 			result.UsedInoxJsLibs[inoxjs.SURREAL_LIB_NAME] = struct{}{}
 		}
-		if PREACT_SIGNALS_DETECTION_PATTERN.MatchString(node.RawElementContent) {
+		if PREACT_SIGNALS_DETECTION_PATTERN.MatchString(markupElement.RawElementContent) {
 			result.UsedInoxJsLibs[inoxjs.PREACT_SIGNALS_LIB_NAME] = struct{}{}
 		}
-		if strings.Contains(node.RawElementContent, inoxjs.INIT_COMPONENT_FN_NAME+"(") {
+		if strings.Contains(markupElement.RawElementContent, inoxjs.INIT_COMPONENT_FN_NAME+"(") {
 			result.UsedInoxJsLibs[inoxjs.INOX_COMPONENT_LIB_NAME] = struct{}{}
 		}
+		return nil
 	case parse.CssStyleElem:
-		if CSS_SCOPE_INLINE_DETECTION_PATTERN.MatchString(node.RawElementContent) {
+		if CSS_SCOPE_INLINE_DETECTION_PATTERN.MatchString(markupElement.RawElementContent) {
 			result.UsedInoxJsLibs[inoxjs.CSS_INLINE_SCOPE_LIB_NAME] = struct{}{}
 		}
+		return nil
 	}
+
+	attrShorthand, _ := markupElement.HyperscriptAttributeShorthand()
+
+	if attrShorthand != nil {
+		a.addUsedHyperscriptFeaturesAndCommands(attrShorthand)
+	}
+
+	isComponentBecauseOfAttributes, introducedElemScopedVarNames, inoxjsErrors, err := inoxjs.AnalyzeInoxJsAttributes(a.ctx, markupElement, sourcedChunk)
+	if err != nil {
+		return err
+	}
+
+	if attrShorthand != nil || isComponentBecauseOfAttributes {
+
+		a.addUsedHyperscriptFeaturesAndCommands(markupElement)
+
+		closestMarkupExpr, _, ok := parse.FindClosest(ancestorChain, (*parse.MarkupExpression)(nil))
+		if !ok {
+			return nil
+		}
+
+		componentName, hasComponentName := hsanalysis.GetHyperscriptComponentName(markupElement)
+		if !hasComponentName {
+			return nil
+		}
+
+		component := hsanalysis.PreanalyzeHyperscriptComponent(componentName, markupElement, closestMarkupExpr, attrShorthand, sourcedChunk)
+		a.result.HyperscriptComponents[componentName] = append(a.result.HyperscriptComponents[componentName], component)
+
+		for _, varname := range introducedElemScopedVarNames {
+			if !slices.Contains(component.InitialElementScopeVarNames, varname) {
+				component.InitialElementScopeVarNames = append(component.InitialElementScopeVarNames, varname)
+			}
+		}
+
+		for _, err := range inoxjsErrors {
+			if err.IsHyperscriptParsingError {
+				hyperscriptError := hsanalysis.MakeError(err.Message, err.Location)
+				a.result.HyperscriptErrors = append(a.result.HyperscriptErrors, hyperscriptError)
+			} else {
+				a.result.InoxJsErrors = append(a.result.InoxJsErrors, err)
+			}
+		}
+	}
+
+	return nil
 }

@@ -251,6 +251,47 @@ func TestAnalyzeHyperscript(t *testing.T) {
 
 			assert.Equal(t, expectedComponent, components[0])
 		})
+
+		t.Run("with x-for attribute and without hyperscript attribute shorthand", func(t *testing.T) {
+			ctx := setup()
+			defer ctx.CancelGracefully()
+
+			util.WriteFile(ctx.GetFileSystem(), "/routes/index.ix", []byte(`
+				manifest{}
+				return html<div class="Counter" x-for=":e in list"></div>
+			`), 0600)
+
+			result, err := AnalyzeCodebase(ctx, Configuration{
+				TopDirectories: []string{"/"},
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			mod := result.LocalModules["/routes/index.ix"]
+			markupExpr := parse.FindFirstNode(mod.Module.MainChunk.Node, (*parse.MarkupExpression)(nil))
+
+			if !assert.Len(t, result.HyperscriptComponents, 1) {
+				return
+			}
+
+			components := result.HyperscriptComponents["Counter"]
+
+			if !assert.Len(t, components, 1) {
+				return
+			}
+
+			expectedComponent := &hsanalysis.Component{
+				Name:                        "Counter",
+				Element:                     markupExpr.Element,
+				ClosestMarkupExpr:           markupExpr,
+				ChunkSource:                 mod.Module.MainChunk,
+				InitialElementScopeVarNames: []string{":e"},
+			}
+
+			assert.Equal(t, expectedComponent, components[0])
+		})
 	})
 
 }

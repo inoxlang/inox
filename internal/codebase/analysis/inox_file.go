@@ -8,7 +8,6 @@ import (
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/inoxmod"
-	"github.com/inoxlang/inox/internal/hyperscript/hsanalysis"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/inoxjs"
 	"github.com/inoxlang/inox/internal/parse"
@@ -90,24 +89,11 @@ func (a *analyzer) preAnalyzeInoxFile(path string, fileContent string, sourcedCh
 		//markup
 		case *parse.MarkupAttribute:
 			a.preAnalyzeMarkupAttribute(node)
-		case *parse.HyperscriptAttributeShorthand:
-			a.addUsedHyperscriptFeaturesAndCommands(node)
-
-			closestMarkupExpr, _, ok := parse.FindClosest(ancestorChain, (*parse.MarkupExpression)(nil))
-			if !ok {
-				break
-			}
-
-			markupElement, _, ok := parse.FindClosest(ancestorChain, (*parse.MarkupElement)(nil))
-			if ok {
-				componentName, isComponent := hsanalysis.GetHyperscriptComponentName(markupElement)
-				if isComponent {
-					component := hsanalysis.PreanalyzeHyperscriptComponent(componentName, markupElement, closestMarkupExpr, node, sourcedChunk)
-					a.result.HyperscriptComponents[componentName] = append(a.result.HyperscriptComponents[componentName], component)
-				}
-			}
 		case *parse.MarkupElement:
-			a.preAnalyzeMarkupElement(node)
+			err := a.preAnalyzeMarkupElement(node, ancestorChain, sourcedChunk)
+			if err != nil {
+				return parse.StopTraversal, err
+			}
 		case *parse.MarkupText:
 			if inoxjs.ContainsClientSideInterpolation(node.Value) {
 				a.result.UsedInoxJsLibs[inoxjs.INOX_COMPONENT_LIB_NAME] = struct{}{}

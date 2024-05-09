@@ -33,6 +33,7 @@ type Result struct {
 	UsedHyperscriptFeatures       map[string]hsgen.Definition
 	HyperscriptComponents         map[ /*name*/ string][]*hsanalysis.Component
 	HyperscriptErrors             []hsanalysis.Error
+	InoxJsErrors                  []inoxjs.Error
 	HyperscriptWarnings           []hsanalysis.Warning
 	ClientSideInterpolationsFound bool
 

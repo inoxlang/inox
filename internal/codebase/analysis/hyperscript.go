@@ -120,7 +120,7 @@ func (a *analyzer) analyzeHyperscriptComponent(component *hsanalysis.Component) 
 
 			visitedMarkupElements[markupElem] = struct{}{}
 
-			if markupElem != component.Element && hsanalysis.IsHyperscriptComponent(markupElem) { //do no enter the sub-tree of descendant components.
+			if markupElem != component.Element && hsanalysis.LooksLikeHyperscriptComponent(markupElem) { //do no enter the sub-tree of descendant components.
 				action = parse.Prune
 				return
 			}

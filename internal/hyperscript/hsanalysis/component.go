@@ -25,41 +25,30 @@ type DOMEvent struct {
 	Type string
 }
 
-func GetHyperscriptComponentName(markupElement *parse.MarkupElement) (name string, isComponent bool) {
+func GetHyperscriptComponentName(markupElement *parse.MarkupElement) (name string, hasComponentName bool) {
 
 	componentClassName := ""
-	hasHyperscriptAttributeShorthand := false
 
 	//Determine if the element is the root of a hyperscript component.
 	for _, attr := range markupElement.Opening.Attributes {
 
-		if componentClassName == "" {
-			if attr, ok := attr.(*parse.MarkupAttribute); ok {
-				if attr.IsNameEqual("class") && css.DoesClassListStartWithUppercaseLetter(attr.ValueIfStringLiteral()) {
-					componentClassName = utils.MustGet(css.GetFirstClassNameInList(attr.ValueIfStringLiteral()))
-				}
+		if attr, ok := attr.(*parse.MarkupAttribute); ok {
+			if attr.IsNameEqual("class") && css.DoesClassListStartWithUppercaseLetter(attr.ValueIfStringLiteral()) {
+				componentClassName = utils.MustGet(css.GetFirstClassNameInList(attr.ValueIfStringLiteral()))
+				break
 			}
 		}
 
-		if !hasHyperscriptAttributeShorthand {
-			if _, ok := attr.(*parse.HyperscriptAttributeShorthand); ok {
-				hasHyperscriptAttributeShorthand = true
-			}
-		}
-
-		if componentClassName != "" && hasHyperscriptAttributeShorthand {
-			break
-		}
 	}
 
-	isComponent = componentClassName != "" && hasHyperscriptAttributeShorthand
-	if isComponent {
+	hasComponentName = componentClassName != ""
+	if hasComponentName {
 		name = componentClassName
 	}
 	return
 }
 
-func IsHyperscriptComponent(markupElement *parse.MarkupElement) bool {
+func LooksLikeHyperscriptComponent(markupElement *parse.MarkupElement) bool {
 	_, ok := GetHyperscriptComponentName(markupElement)
 	return ok
 }
@@ -80,7 +69,7 @@ func PreanalyzeHyperscriptComponent(
 		ChunkSource:        chunkSource,
 	}
 
-	if attribute.HyperscriptParsingResult == nil {
+	if attribute == nil || attribute.HyperscriptParsingResult == nil {
 		return
 	}
 
