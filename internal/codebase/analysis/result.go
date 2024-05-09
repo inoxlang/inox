@@ -11,6 +11,7 @@ import (
 	"github.com/inoxlang/inox/internal/inoxjs"
 	"github.com/inoxlang/inox/internal/memds"
 	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/utils"
 )
 
 type Result struct {
@@ -119,4 +120,33 @@ func (r *Result) GetSymbolicDataForFile(chunk *parse.ParsedChunkSource) (*core.S
 	}
 
 	return nil, false
+}
+
+func (r *Result) addHyperscriptErrors(errs ...hsanalysis.Error) {
+	for _, err := range errs {
+		if utils.Some(r.HyperscriptErrors, func(e hsanalysis.Error) bool { return e.Location == err.Location && e.Message == err.Message }) {
+			continue
+		}
+		r.HyperscriptErrors = append(r.HyperscriptErrors, err)
+	}
+}
+
+func (r *Result) addHyperscriptWarnings(warnings ...hsanalysis.Warning) {
+	for _, warning := range warnings {
+		if utils.Some(r.HyperscriptWarnings, func(e hsanalysis.Warning) bool { return e.Location == warning.Location && e.Message == warning.Message }) {
+			continue
+		}
+		r.HyperscriptWarnings = append(r.HyperscriptWarnings, warning)
+	}
+}
+
+func (r *Result) addInoxJsError(errs ...inoxjs.Error) {
+
+	for _, err := range errs {
+		if utils.Some(r.InoxJsErrors, func(e inoxjs.Error) bool { return e.Location == err.Location && e.Message == err.Message }) {
+			continue
+		}
+		r.InoxJsErrors = append(r.InoxJsErrors, err)
+	}
+
 }

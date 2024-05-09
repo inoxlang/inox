@@ -88,6 +88,15 @@ func (a *analyzer) preAnalyzeMarkupElement(markupElement *parse.MarkupElement, a
 		return err
 	}
 
+	for _, err := range inoxjsErrors {
+		if err.IsHyperscriptParsingError {
+			hyperscriptError := hsanalysis.MakeError(err.Message, err.Location)
+			a.result.addHyperscriptErrors(hyperscriptError)
+		} else {
+			a.result.addInoxJsError(err)
+		}
+	}
+
 	if attrShorthand != nil || isComponentBecauseOfAttributes {
 
 		a.addUsedHyperscriptFeaturesAndCommands(markupElement)
@@ -111,14 +120,6 @@ func (a *analyzer) preAnalyzeMarkupElement(markupElement *parse.MarkupElement, a
 			}
 		}
 
-		for _, err := range inoxjsErrors {
-			if err.IsHyperscriptParsingError {
-				hyperscriptError := hsanalysis.MakeError(err.Message, err.Location)
-				a.result.HyperscriptErrors = append(a.result.HyperscriptErrors, hyperscriptError)
-			} else {
-				a.result.InoxJsErrors = append(a.result.InoxJsErrors, err)
-			}
-		}
 	}
 
 	return nil

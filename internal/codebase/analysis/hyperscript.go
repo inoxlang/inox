@@ -169,8 +169,8 @@ func (a *analyzer) analyzeHyperscriptInMarkupElement(component *hsanalysis.Compo
 			return
 		}
 
-		a.result.HyperscriptErrors = append(a.result.HyperscriptErrors, errors...)
-		a.result.HyperscriptWarnings = append(a.result.HyperscriptWarnings, warnings...)
+		a.result.addHyperscriptErrors(errors...)
+		a.result.addHyperscriptWarnings(warnings...)
 	}
 
 	analyzeInterpolationsInString := func(str string, encoded string, nodeSpan parse.NodeSpan, attribute bool) (criticalErr error) {
@@ -182,7 +182,7 @@ func (a *analyzer) analyzeHyperscriptInMarkupElement(component *hsanalysis.Compo
 				sourceNode.Chunk.GetSourcePosition(nodeSpan),
 			)
 
-			a.result.HyperscriptErrors = append(a.result.HyperscriptErrors, analysisError)
+			a.result.addHyperscriptErrors(analysisError)
 
 			return
 		}
@@ -218,7 +218,7 @@ func (a *analyzer) analyzeHyperscriptInMarkupElement(component *hsanalysis.Compo
 					}),
 				)
 
-				a.result.HyperscriptErrors = append(a.result.HyperscriptErrors, analysisError)
+				a.result.addHyperscriptErrors(analysisError)
 			} else {
 				expr := interp.ParsingResult.NodeData
 
@@ -240,8 +240,8 @@ func (a *analyzer) analyzeHyperscriptInMarkupElement(component *hsanalysis.Compo
 					return
 				}
 
-				a.result.HyperscriptErrors = append(a.result.HyperscriptErrors, errors...)
-				a.result.HyperscriptWarnings = append(a.result.HyperscriptWarnings, warnings...)
+				a.result.addHyperscriptErrors(errors...)
+				a.result.addHyperscriptWarnings(warnings...)
 			}
 		}
 		return

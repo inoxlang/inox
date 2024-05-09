@@ -10,6 +10,7 @@ import (
 	"github.com/inoxlang/inox/internal/hyperscript/hsanalysis"
 	"github.com/inoxlang/inox/internal/hyperscript/hsanalysis/text"
 	"github.com/inoxlang/inox/internal/hyperscript/hsgen"
+	"github.com/inoxlang/inox/internal/inoxjs"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
@@ -291,6 +292,50 @@ func TestAnalyzeHyperscript(t *testing.T) {
 			}
 
 			assert.Equal(t, expectedComponent, components[0])
+		})
+
+		t.Run("with invalid x-for attribute and without hyperscript attribute shorthand", func(t *testing.T) {
+			ctx := setup()
+			defer ctx.CancelGracefully()
+
+			util.WriteFile(ctx.GetFileSystem(), "/routes/index.ix",
+				[]byte(`manifest{}; return html<div class="Counter" x-for=":e"></div>`), 0600)
+
+			result, err := AnalyzeCodebase(ctx, Configuration{
+				TopDirectories: []string{"/"},
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			mod := result.LocalModules["/routes/index.ix"]
+			markupExpr := parse.FindFirstNode(mod.Module.MainChunk.Node, (*parse.MarkupExpression)(nil))
+
+			if !assert.Len(t, result.HyperscriptComponents, 1) {
+				return
+			}
+
+			components := result.HyperscriptComponents["Counter"]
+
+			if !assert.Len(t, components, 1) {
+				return
+			}
+
+			expectedComponent := &hsanalysis.Component{
+				Name:              "Counter",
+				Element:           markupExpr.Element,
+				ClosestMarkupExpr: markupExpr,
+				ChunkSource:       mod.Module.MainChunk,
+			}
+
+			assert.Equal(t, expectedComponent, components[0])
+
+			errLocation := mod.Module.MainChunk.GetSourcePosition(parse.NodeSpan{Start: 50, End: 54})
+
+			assert.Equal(t, []inoxjs.Error{
+				inoxjs.MakeError(inoxjs.INVALID_VALUE_FOR_FOR_LOOP_ATTR, errLocation),
+			}, result.InoxJsErrors)
 		})
 	})
 
