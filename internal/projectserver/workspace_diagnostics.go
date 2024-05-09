@@ -29,6 +29,20 @@ func publishWorkspaceDiagnostics(projSession *Session, lastAnalysis *analysis.Re
 
 			diagnostics.containsWorkspaceDiagnostics = true
 
+			//Add InoxJS diagnostics.
+
+			for _, err := range lastAnalysis.InoxJsErrors {
+				if err.Location.SourceName != absPath { //ignore errors concerning other documents.
+					continue
+				}
+
+				diagnostics.items = append(diagnostics.items, defines.Diagnostic{
+					Range:    rangeToLspRange(err.Location),
+					Severity: &errSeverity,
+					Message:  err.Message,
+				})
+			}
+
 			//Add Hyperscript diagnostics.
 
 			for _, err := range lastAnalysis.HyperscriptErrors {
