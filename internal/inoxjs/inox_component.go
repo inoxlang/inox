@@ -29,10 +29,13 @@ func ContainsClientSideInterpolation(s string) bool {
 }
 
 type ClientSideInterpolation struct {
-	Expression                   string
-	ParsingResult                *hscode.ParsingResult
-	ParsingError                 *hscode.ParsingError
-	StartRuneIndex, EndRuneIndex int32 //indexes in the encoded string.
+	Expression         string
+	ParsingResult      *hscode.ParsingResult
+	ParsingError       *hscode.ParsingError
+	StartRuneIndex     int32 //index of the opening delimiter in the encoded string.
+	EndRuneIndex       int32
+	CodeStartRuneIndex int32
+	CodeEndRuneIndex   int32
 }
 
 // ParseClientSideInterpolations parses the client side interpolations in a string, the second parameter is used to determine the
@@ -101,10 +104,16 @@ func ParseClientSideInterpolations(ctx context.Context, str, encoded string) (in
 				return
 			}
 
+			openinDelimIndex := encodedStrInterpolationSpans[interpIndex][0]
+			closingDelimEndIndex := encodedStrInterpolationSpans[interpIndex][1]
+
 			interpolations = append(interpolations, ClientSideInterpolation{
 				Expression:     string(runes[exprStart : i-1]),
-				StartRuneIndex: encodedStrInterpolationSpans[interpIndex][0],
-				EndRuneIndex:   encodedStrInterpolationSpans[interpIndex][1],
+				StartRuneIndex: openinDelimIndex,
+				EndRuneIndex:   closingDelimEndIndex,
+
+				CodeStartRuneIndex: openinDelimIndex + int32(len(INTERPOLATION_OPENING_DELIMITER)),
+				CodeEndRuneIndex:   closingDelimEndIndex - int32(len(INTERPOLATION_CLOSING_DELIMITER)),
 			})
 			exprStart = -1
 			inInterpolation = false
