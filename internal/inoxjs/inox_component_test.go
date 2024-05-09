@@ -201,4 +201,59 @@ func TestParseClientSideInterpolations(t *testing.T) {
 		assert.EqualValues(t, 2, interp.InnerStartRuneIndex)
 		assert.EqualValues(t, 13, interp.InnerEndRuneIndex)
 	})
+
+	t.Run("leading space inside interpolation", func(t *testing.T) {
+		interpolations, err := ParseClientSideInterpolations(context.Background(), "(( :count))", "(( :count))")
+		if !assert.NoError(t, err) {
+			return
+		}
+		if !assert.Len(t, interpolations, 1) {
+			return
+		}
+		interp := interpolations[0]
+
+		assert.Equal(t, " :count", interp.Expression)
+		if !assert.Nil(t, interp.ParsingError) {
+			return
+		}
+		if !assert.NotNil(t, interp.ParsingResult) {
+			return
+		}
+		if !assert.True(t, hscode.IsSymbolWithName(interp.ParsingResult.NodeData, ":count")) {
+			return
+		}
+
+		start, end := hscode.GetNodeSpan(interp.ParsingResult.NodeData)
+		assert.EqualValues(t, 1, start)
+		assert.EqualValues(t, 7, end)
+
+		assert.EqualValues(t, 0, interp.StartRuneIndex)
+		assert.EqualValues(t, 11, interp.EndRuneIndex)
+		assert.EqualValues(t, 2, interp.InnerStartRuneIndex)
+		assert.EqualValues(t, 9, interp.InnerEndRuneIndex)
+	})
+
+	t.Run("trailing space inside interpolation", func(t *testing.T) {
+		interpolations, err := ParseClientSideInterpolations(context.Background(), "((:count ))", "((:count ))")
+		if !assert.NoError(t, err) {
+			return
+		}
+		if !assert.Len(t, interpolations, 1) {
+			return
+		}
+		interp := interpolations[0]
+
+		assert.Equal(t, ":count ", interp.Expression)
+		if !assert.Nil(t, interp.ParsingError) {
+			return
+		}
+		if !assert.NotNil(t, interp.ParsingResult) {
+			return
+		}
+		assert.True(t, hscode.IsSymbolWithName(interp.ParsingResult.NodeData, ":count"))
+		assert.EqualValues(t, 0, interp.StartRuneIndex)
+		assert.EqualValues(t, 11, interp.EndRuneIndex)
+		assert.EqualValues(t, 2, interp.InnerStartRuneIndex)
+		assert.EqualValues(t, 9, interp.InnerEndRuneIndex)
+	})
 }
