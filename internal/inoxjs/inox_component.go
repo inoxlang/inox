@@ -14,10 +14,10 @@ import (
 const (
 	INTERPOLATION_OPENING_DELIMITER = "(("
 	INTERPOLATION_CLOSING_DELIMITER = "))"
-	CONDITIONAL_DISPLAY_ATTR_NAME   = "x-if"
-	FOR_LOOP_ATTR_NAME              = "x-for"
 	INIT_COMPONENT_FN_NAME          = "initComponent"
 )
+
+
 
 func ContainsClientSideInterpolation(s string) bool {
 	openingDelimIndex := strings.Index(s, INTERPOLATION_OPENING_DELIMITER)

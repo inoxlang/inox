@@ -12,7 +12,7 @@
 	const INTERPOLATION_PATTERN = new RegExp('[(]{2}' + '((?:[^)]|\\)[^)])+)' + '[)]{2}', 'g')
 	const LOOSE_HS_ELEM_VAR_NAME_PATTERN = /(:[a-zA-Z_][_a-zA-Z0-9]*)/g
 	const LOOSE_HS_ATTR_NAME_PATTERN = /(@[a-zA-Z_][_a-zA-Z0-9-]*)/g
-	const FOR_LOOP_ATTR_NAME_PATTERN =
+	const FOR_LOOP_ATTR_VALUE_PATTERN =
 		/^(?<elemVarName>:[a-zA-Z_][_a-zA-Z0-9]*)\s+in\s+(?<arraySignalName>[$:@]?[a-zA-Z_][-_a-zA-Z0-9]*?)(?:\s*|\s+index\s+(?<indexVarName>:[a-zA-Z_][_a-zA-Z0-9]*))$/;
 
 	const SIGNAL_SETTLING_TIMEOUT_MILLIS = 100
@@ -372,7 +372,7 @@
 
 			const attributeValue = /** @type {string} */ (node.getAttribute(FOR_LOOP_ATTR_NAME))
 
-			const execArray = FOR_LOOP_ATTR_NAME_PATTERN.exec(attributeValue)
+			const execArray = FOR_LOOP_ATTR_VALUE_PATTERN.exec(attributeValue)
 			if (execArray === null || execArray.groups === undefined) {
 				console.error(
 					`invalid value for ${FOR_LOOP_ATTR_NAME} attribute: \`${attributeValue}\`` +
