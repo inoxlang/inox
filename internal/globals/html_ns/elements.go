@@ -212,7 +212,7 @@ func NewNodeFromGoDescription(desc NodeDescription) *HTMLNode {
 		},
 	}
 
-	// set parent & siblings of all children
+	// Set parent & siblings of all children.
 	for i, child := range desc.Children {
 		child.node.Parent = node.node
 		if i != len(desc.Children)-1 {
@@ -221,6 +221,8 @@ func NewNodeFromGoDescription(desc NodeDescription) *HTMLNode {
 			child.node.NextSibling = nextSibliging.node
 		}
 	}
+
+	//Add attributes of parent.
 
 	if desc.Class != "" {
 		node.node.Attr = append(node.node.Attr, html.Attribute{Key: "class", Val: desc.Class})
@@ -236,6 +238,10 @@ func NewNodeFromGoDescription(desc NodeDescription) *HTMLNode {
 		node.node.FirstChild = desc.Children[0].node
 		node.node.LastChild = desc.Children[len(desc.Children)-1].node
 	}
+
+	//Remove all untrusted Hyperscript attributes from the tree.
+
+	StripUntrustedHyperscriptAttributes(node.node)
 
 	return node
 }

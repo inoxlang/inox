@@ -70,6 +70,12 @@ func SamePointer(a, b interface{}) bool {
 	return reflect.ValueOf(a).Pointer() == reflect.ValueOf(b).Pointer()
 }
 
+func SameIdentityStrings(a, b string) bool {
+	header1 := (*reflect.StringHeader)(unsafe.Pointer(&a))
+	header2 := (*reflect.StringHeader)(unsafe.Pointer(&b))
+	return *header1 == *header2
+}
+
 func GetByteSize[T any]() uintptr {
 	var v T
 	return unsafe.Sizeof(v)

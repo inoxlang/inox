@@ -3,14 +3,31 @@ package html_ns
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/htmldata"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/inoxjs"
 	"github.com/inoxlang/inox/internal/mimeconsts"
+	"github.com/inoxlang/inox/internal/utils"
 	"golang.org/x/net/html"
 )
+
+var (
+	trustedTyperscriptAttrName string
+)
+
+func init() {
+	b := strings.Builder{}
+	b.WriteString(inoxconsts.HYPERSCRIPT_ATTRIBUTE_NAME)
+	trustedTyperscriptAttrName = b.String()
+
+	if utils.SameIdentityStrings(trustedTyperscriptAttrName, inoxconsts.HYPERSCRIPT_ATTRIBUTE_NAME) {
+		//Guard against any future optimization.
+		panic("")
+	}
+}
 
 func CreateHTMLNodeFromMarkupElement(ctx *core.Context, arg *core.NonInterpretedMarkupElement) *HTMLNode {
 	children := arg.Children()
@@ -26,7 +43,25 @@ func CreateHTMLNodeFromMarkupElement(ctx *core.Context, arg *core.NonInterpreted
 	}
 
 	tagName := arg.Name()
-	attributes := make([]html.Attribute, 0, len(arg.Attributes()))
+	attributes := getAttributes(arg)
+
+	node := NewNodeFromGoDescription(NodeDescription{
+		Tag:        tagName,
+		Children:   childNodes,
+		Attributes: attributes,
+	})
+
+	if tagName == "html" {
+		return NewHTML5DocumentNodeFromGoDescription(HTML5DocumentDescription{
+			HtmlTagNode: node,
+		})
+	}
+	return node
+}
+
+func getAttributes(arg *core.NonInterpretedMarkupElement) (attributes []html.Attribute) {
+	attributes = make([]html.Attribute, 0, len(arg.Attributes()))
+	tagName := arg.Name()
 
 	for _, attr := range arg.Attributes() {
 		attrName := attr.Name()
@@ -44,11 +79,18 @@ func CreateHTMLNodeFromMarkupElement(ctx *core.Context, arg *core.NonInterpreted
 		}
 
 		switch attrName {
+		case inoxconsts.HYPERSCRIPT_ATTRIBUTE_NAME:
+			if attr.CreatedFromHyperscriptAttributeShorthand() {
+				attrName = trustedTyperscriptAttrName
+			} else {
+				//Do not add untrusted '_' attributes.
+				continue
+			}
 		case inoxjs.FOR_LOOP_ATTR_NAME:
 			//Disable Hyperscript scripting for template elements.
 			//https://hyperscript.org/docs/#security
 			attributes = append(attributes, html.Attribute{
-				Key: "data-disable-scripting",
+				Key: inoxconsts.HYPERSCRIPT_DISABLED_SCRIPTING_ATTR_NAME,
 				Val: "",
 			})
 		}
@@ -76,18 +118,7 @@ func CreateHTMLNodeFromMarkupElement(ctx *core.Context, arg *core.NonInterpreted
 		}
 	}
 
-	node := NewNodeFromGoDescription(NodeDescription{
-		Tag:        tagName,
-		Children:   childNodes,
-		Attributes: attributes,
-	})
-
-	if tagName == "html" {
-		return NewHTML5DocumentNodeFromGoDescription(HTML5DocumentDescription{
-			HtmlTagNode: node,
-		})
-	}
-	return node
+	return
 }
 
 func createChildNodesFromValue(ctx *core.Context, child core.Value, childNodes *[]*HTMLNode) {

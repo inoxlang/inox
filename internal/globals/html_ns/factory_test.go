@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/stretchr/testify/assert"
 )
@@ -36,6 +37,50 @@ func TestCreateHTMLNodeFromMarkupElement(t *testing.T) {
 		s := string(bytes.UnderlyingBytes())
 
 		assert.Equal(t, `<div a="https://localhost"></div>`, s)
+	})
+
+	t.Run("hyperscript attribute created from shorthand", func(t *testing.T) {
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		attrs := []core.NonInterpretedMarkupAttribute{core.NewMarkupAttributeCreatedFromHyperscriptAttributeShorthand(core.String("init"))}
+		element := CreateHTMLNodeFromMarkupElement(ctx, core.NewNonInterpretedMarkupElement("div", attrs, nil))
+
+		bytes := Render(ctx, element)
+		s := string(bytes.UnderlyingBytes())
+
+		assert.Equal(t, `<div _="init"></div>`, s)
+	})
+
+	t.Run("untrusted hyperscript attribute", func(t *testing.T) {
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		attrs := []core.NonInterpretedMarkupAttribute{
+			core.NewMarkupAttribute(inoxconsts.HYPERSCRIPT_ATTRIBUTE_NAME, core.String("init")),
+		}
+		element := CreateHTMLNodeFromMarkupElement(ctx, core.NewNonInterpretedMarkupElement("div", attrs, nil))
+
+		bytes := Render(ctx, element)
+		s := string(bytes.UnderlyingBytes())
+
+		assert.Equal(t, `<div></div>`, s)
+	})
+
+	t.Run("untrusted hyperscript attribute in child", func(t *testing.T) {
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		attrs := []core.NonInterpretedMarkupAttribute{
+			core.NewMarkupAttribute(inoxconsts.HYPERSCRIPT_ATTRIBUTE_NAME, core.String("init")),
+		}
+		child := CreateHTMLNodeFromMarkupElement(ctx, core.NewNonInterpretedMarkupElement("div", attrs, nil))
+		element := CreateHTMLNodeFromMarkupElement(ctx, core.NewNonInterpretedMarkupElement("div", nil, []core.Value{child}))
+
+		bytes := Render(ctx, element)
+		s := string(bytes.UnderlyingBytes())
+
+		assert.Equal(t, `<div><div></div></div>`, s)
 	})
 
 	t.Run("script tag", func(t *testing.T) {
