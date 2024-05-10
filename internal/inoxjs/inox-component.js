@@ -1,5 +1,5 @@
 /// <reference types="./preact-signals.d.ts" />
-
+/// <reference types="../hyperscript/hsgen/hyperscript.0.9.12" />
 
 (function () {
 	const CONDITIONAL_DISPLAY_ATTR_NAME = "x-if"
@@ -828,10 +828,8 @@
 	function evaluateHyperscript(expr, element) {
 
 		const owner = element
-		//@ts-ignore
 		const ctx = _hyperscript.internals.runtime.makeContext(owner, {}, element, undefined)
-
-		//@ts-ignore
+		
 		return _hyperscript.evaluate(expr, ctx)
 	}
 
@@ -891,7 +889,6 @@
 		 * @param {unknown} value 
 		 */
 		function initInstance(instance, index, value) {
-			//@ts-ignore
 			_hyperscript.internals.runtime.initElement(instance)
 
 			initComponent({
@@ -939,7 +936,6 @@
 	 * @returns {Record<string, unknown>}
 	 */
 	function getElementScope(element) {
-		//@ts-ignore
 		const internalData = _hyperscript.internals.runtime.getInternalData(element)
 		if(internalData.elementScope === undefined){
 			internalData.elementScope = {}
