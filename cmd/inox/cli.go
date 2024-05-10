@@ -25,13 +25,14 @@ const (
 	INSTALL_COMPLETIONS_SUBCMD   = "install-completions"
 	UNINSTALL_COMPLETIONS_SUBCMD = "uninstall-completions"
 	HELP_SUBCMD                  = "help"
+	PRINT_BUILD_INFO_SUBCMD      = "print-build-info"
 )
 
 var (
 	CLI_SUBCOMMANDS = []string{
 		ADD_SERVICE_SUBCMD, REMOVE_SERVICE_SUBCMD, UPGRADE_INOX_SUBCMD, //root
 		RUN_SUBCMD, CHECK_SUBCMD, SHELL_SUBCMD, EVAL_SUBCMD, EVAL_ALIAS_SUBCMD /*"lsp",*/, PROJECT_SERVER_SUBCMD, HELP_SUBCMD,
-		INSTALL_COMPLETIONS_SUBCMD, UNINSTALL_COMPLETIONS_SUBCMD,
+		INSTALL_COMPLETIONS_SUBCMD, UNINSTALL_COMPLETIONS_SUBCMD, PRINT_BUILD_INFO_SUBCMD,
 	}
 	SUBCOMMANDS = append(slices.Clone(CLI_SUBCOMMANDS), inoxd.DAEMON_SUBCMD, inoxprocess.CONTROLLED_SUBCMD, cloudproxy.CLOUD_PROXY_SUBCMD_NAME)
 
@@ -53,6 +54,7 @@ var (
 		{INSTALL_COMPLETIONS_SUBCMD, "install CLI completions by addding the completion command to the detected rc file (supported shells are bash, zsh and fish)"},
 		{UNINSTALL_COMPLETIONS_SUBCMD, "uninstall CLI completions by removing the completion command from the detected rc file"},
 		{HELP_SUBCMD, "show the general help or command-specific help"},
+		{PRINT_BUILD_INFO_SUBCMD, "show build information"},
 	}
 
 	CLI_SUBCOMMAND_DESCRIPTION_MAP = map[string]string{}

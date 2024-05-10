@@ -28,8 +28,9 @@ var (
 						"c": predict.Files("*.ix"),
 					},
 				},
-				CHECK_SUBCMD: {},
-				HELP_SUBCMD:  {},
+				CHECK_SUBCMD:            {},
+				HELP_SUBCMD:             {},
+				PRINT_BUILD_INFO_SUBCMD: {},
 				RUN_SUBCMD: {
 					Flags: map[string]complete.Predictor{
 						"test":                     complete.PredictFunc(c.predictFileOrDirAfterSwitch),

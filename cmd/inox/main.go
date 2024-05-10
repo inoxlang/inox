@@ -150,6 +150,15 @@ func _main(args []string, outW io.Writer, errW io.Writer) (statusCode int) {
 			fmt.Fprintln(errW, err)
 			return ERROR_STATUS_CODE
 		}
+	case PRINT_BUILD_INFO_SUBCMD:
+		info, ok := debug.ReadBuildInfo()
+		if !ok {
+			fmt.Fprintln(outW, "Failed to get build info.")
+			return
+		}
+		for _, kv := range info.Settings {
+			fmt.Fprintln(outW, kv.Key+":\t"+kv.Value)
+		}
 	default:
 		fmt.Fprintf(errW, "unknown command '%s'\n", mainSubCommand)
 		return ERROR_STATUS_CODE
