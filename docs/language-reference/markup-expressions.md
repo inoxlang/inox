@@ -42,8 +42,8 @@ In `<script>` and `<style>` elements, anything inside single brackets is treated
 
 ## Hyperscript Attribute Shorthand
 
-Hyperscript code is written using a special shorthand syntax that creates a '_' attribute.
-⚠️ **'_' attributes not created using this shorthand syntax are always removed for security reasons.**
+Hyperscript code is written using a special shorthand syntax that creates a '\_' attribute.
+⚠️ **'\_' attributes not created using this shorthand syntax are always removed for security reasons.**
 
 
 ```html
