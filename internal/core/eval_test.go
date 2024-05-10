@@ -12295,6 +12295,27 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				core.String(""),
 			}), val)
 		})
+
+		t.Run("hyperscript attribute shorthand", func(t *testing.T) {
+			code := "idt<div {init}></div>"
+			state := core.NewGlobalState(NewDefaultTestContext(), map[string]core.Value{
+				"idt": createNamespaceWithFactory(),
+			})
+			defer state.Ctx.CancelGracefully()
+
+			val, err := Eval(code, state, false)
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			expectedAttr := core.NewMarkupAttributeCreatedFromHyperscriptAttributeShorthand(core.String("init"))
+
+			expectedElem := core.NewNonInterpretedMarkupElement("div",
+				[]core.NonInterpretedMarkupAttribute{expectedAttr},
+				[]core.Value{core.String("")},
+			)
+			assert.Equal(t, expectedElem, val)
+		})
 	})
 
 	t.Run("markup pattern expression", func(t *testing.T) {

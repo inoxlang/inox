@@ -2622,8 +2622,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 				}
 			} else {
 				shorthand := attrNode.(*parse.HyperscriptAttributeShorthand)
-				attr.name = inoxconsts.HYPERSCRIPT_ATTRIBUTE_NAME
-				attr.value = String(shorthand.Value)
+				attr = NewMarkupAttributeCreatedFromHyperscriptAttributeShorthand(String(shorthand.Value))
 			}
 
 			attrs = append(attrs, attr)

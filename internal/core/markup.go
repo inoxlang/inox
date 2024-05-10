@@ -1,6 +1,10 @@
 package core
 
-import "sync"
+import (
+	"sync"
+
+	"github.com/inoxlang/inox/internal/inoxconsts"
+)
 
 const DEFAULT_MARKUP_ATTR_VALUE = String("")
 
@@ -31,8 +35,9 @@ func (e *NonInterpretedMarkupElement) Attributes() []NonInterpretedMarkupAttribu
 }
 
 type NonInterpretedMarkupAttribute struct {
-	name  string
-	value Value
+	name                                     string
+	value                                    Value
+	createdFromHyperscriptAttributeShorthand bool
 }
 
 func NewMarkupAttribute(name string, value Value) NonInterpretedMarkupAttribute {
@@ -42,12 +47,24 @@ func NewMarkupAttribute(name string, value Value) NonInterpretedMarkupAttribute 
 	}
 }
 
+func NewMarkupAttributeCreatedFromHyperscriptAttributeShorthand(value Value) NonInterpretedMarkupAttribute {
+	return NonInterpretedMarkupAttribute{
+		name:                                     inoxconsts.HYPERSCRIPT_ATTRIBUTE_NAME,
+		value:                                    value,
+		createdFromHyperscriptAttributeShorthand: true,
+	}
+}
+
 func (a NonInterpretedMarkupAttribute) Name() string {
 	return a.name
 }
 
 func (a NonInterpretedMarkupAttribute) Value() Value {
 	return a.value
+}
+
+func (a NonInterpretedMarkupAttribute) CreatedFromHyperscriptAttributeShorthand() bool {
+	return a.createdFromHyperscriptAttributeShorthand
 }
 
 func NewNonInterpretedMarkupElement(name string, attributes []NonInterpretedMarkupAttribute, children []Value) *NonInterpretedMarkupElement {
