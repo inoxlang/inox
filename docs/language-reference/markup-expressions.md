@@ -42,7 +42,9 @@ In `<script>` and `<style>` elements, anything inside single brackets is treated
 
 ## Hyperscript Attribute Shorthand
 
-In opening tags Hyperscript code can be written between curly braces instead of with a regular attribute (`_="..."`).
+Hyperscript code is written using a special shorthand syntax.
+⚠️ **`_` attributes not created using this shorthand syntax are always removed.**
+
 
 ```html
 <div {on click toggle .red on me}></div>
@@ -52,6 +54,7 @@ interpreted as
       v
 <div _="on click toggle .red on me"></div>
 ```
+
 
 Hyperscript attribute shorthands can span several lines:
 
