@@ -21,6 +21,7 @@ import (
 	"github.com/inoxlang/inox/internal/projectserver/devtools"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/projectserver/lsp"
+	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -361,7 +362,9 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 
 		err := devtoolsInstance.StartWebApp()
 		if err != nil {
-			rpcSession.LoggerPrintln(rpcSession.Client(), "failed to start dev tools server:", err)
+			msg := "failed to start dev tools server:"
+			rpcSession.LoggerPrintln(rpcSession.Client(), msg, err)
+			rpcSession.Notify(NewShowMessage(defines.MessageTypeError, msg+err.Error()))
 		} else {
 			rpcSession.LoggerPrintln(rpcSession.Client(), "dev tools server started")
 		}

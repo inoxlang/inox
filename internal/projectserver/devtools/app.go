@@ -71,6 +71,8 @@ func (inst *Instance) StartWebApp() error {
 		}
 	}
 
+	//Check that the entry point file is present.
+
 	entryPoint := layout.DEV_TOOLS_SERVER_ENTRY_POINT
 	stat, err := inst.developerWorkingFS.Stat(entryPoint)
 	if err != nil {
@@ -83,6 +85,8 @@ func (inst *Instance) StartWebApp() error {
 	if stat.IsDir() {
 		return ErrInexistingOrInvalidDevToolsEntryPoint
 	}
+
+	//Launch the program.
 
 	earlyErrChan := make(chan error, 1)
 	go func() {
