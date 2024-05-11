@@ -26,7 +26,7 @@ func (n AstNode) Prop(ctx *Context, name string) Value {
 	switch name {
 	case "position":
 		pos := n.Chunk_.GetSourcePosition(n.Node.Base().Span)
-		return createRecordFromSourcePosition(pos)
+		return CreateRecordFromSourcePosition(pos)
 	case "token-at-position":
 		return WrapGoClosure(func(ctx *Context, pos Int) Value {
 			token, ok := parse.GetTokenAtPosition(int(pos), n.Node, n.Chunk_.Node)

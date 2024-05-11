@@ -53,5 +53,7 @@ func analyzeCodebaseAndRegen(initial bool, session *Session) {
 		session.jsGenerator.RegenAll(handlingCtx, analysisResult)
 	}
 
+	session.devtools.SetCodebaseAnalysis(analysisResult)
+
 	publishWorkspaceDiagnostics(session, analysisResult)
 }

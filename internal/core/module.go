@@ -151,7 +151,7 @@ func (*Module) PropertyNames(ctx *Context) []string {
 	return symbolic.MODULE_PROP_NAMES
 }
 
-func createRecordFromSourcePosition(pos parse.SourcePositionRange) *Record {
+func CreateRecordFromSourcePosition(pos parse.SourcePositionRange) *Record {
 	rec := NewRecordFromKeyValLists(
 		SOURCE_POS_RECORD_PROPNAMES,
 		[]Serializable{String(pos.SourceName), Int(pos.StartLine), Int(pos.StartColumn), Int(pos.Span.Start), Int(pos.Span.End)},
@@ -163,7 +163,7 @@ func createRecordFromSourcePositionStack(posStack parse.SourcePositionStack) *Re
 	positionRecords := make([]Serializable, len(posStack))
 
 	for i, pos := range posStack {
-		positionRecords[i] = createRecordFromSourcePosition(pos)
+		positionRecords[i] = CreateRecordFromSourcePosition(pos)
 	}
 
 	return NewRecordFromKeyValLists([]string{"position-stack"}, []Serializable{NewTuple(positionRecords)})

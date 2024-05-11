@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/afs"
+	"github.com/inoxlang/inox/internal/codebase/analysis"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
 	"github.com/inoxlang/inox/internal/inoxconsts"
@@ -42,6 +43,7 @@ type Instance struct {
 
 	developerWorkingFS afs.Filesystem
 	project            *project.Project
+	lastAnalysis       *analysis.Result //initially nil
 
 	//Main program and databases
 
@@ -108,4 +110,11 @@ func (inst *Instance) InitWithPreparedMainModule(state *core.GlobalState) error 
 		}
 	}
 	return nil
+}
+
+func (inst *Instance) SetCodebaseAnalysis(analysis *analysis.Result) {
+	inst.lock.Lock()
+	defer inst.lock.Unlock()
+
+	inst.lastAnalysis = analysis
 }

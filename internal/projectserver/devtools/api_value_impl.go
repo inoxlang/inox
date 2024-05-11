@@ -16,6 +16,8 @@ func (a *API) GetGoMethod(name string) (*core.GoFunction, bool) {
 		return core.WrapGoMethod(a.getDB), true
 	case "get_db_names":
 		return core.WrapGoMethod(a.getDatabaseNames), true
+	case "get_components":
+		return core.WrapGoMethod(a.getComponents), true
 	}
 	return nil, false
 }

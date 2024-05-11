@@ -1,0 +1,9 @@
+manifest {
+
+}
+
+return (
+    <div>
+        COMPONENTS
+    </div>
+)

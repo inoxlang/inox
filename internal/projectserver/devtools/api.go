@@ -67,6 +67,31 @@ func (a *API) getDatabaseNames(_ *core.Context) *core.List {
 	slices.SortFunc(nameSlice, func(a, b core.StringLike) int {
 		return strings.Compare(a.GetOrBuildString(), b.GetOrBuildString())
 	})
-
+// 
 	return core.NewStringLikeFrom(nameSlice)
+}
+
+func (a *API) getComponents(_ *core.Context) *core.List {
+
+	a.instance.lock.Lock()
+	lastAnalysis := a.instance.lastAnalysis
+	a.instance.lock.Unlock()
+
+	list := make([]core.Serializable, 0, len(lastAnalysis.HyperscriptComponents))
+
+	for name, components := range lastAnalysis.HyperscriptComponents {
+
+		for _, component := range components {
+			rootElementPosition := component.ChunkSource.GetSourcePosition(component.Element.Span)
+
+			componentMap := core.ValMap{
+				"name":     core.String(name),
+				"position": core.CreateRecordFromSourcePosition(rootElementPosition),
+			}
+
+			list = append(list, core.NewObjectFromMapNoInit(componentMap))
+		}
+	}
+
+	return core.NewWrappedValueListFrom(list)
 }
