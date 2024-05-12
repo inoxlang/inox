@@ -54,6 +54,8 @@ const (
 
 var (
 	NewDefaultTestContext = core.NewDefaultTestContext
+
+	symbolicRegistrationLock sync.RWMutex
 )
 
 func init() {
@@ -3473,10 +3475,72 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				`,
 				before: func(tempDir string, tempDirPath core.Path) {
 					subdir1Path := filepath.Join(tempDir, subdir1Name)
+					subdir1FilePath := filepath.Join(subdir1Path, "file.txt")
 					subdir2Path := filepath.Join(tempDir, subdir2Name)
+					subdir2FilePath := filepath.Join(subdir2Path, "file.txt")
 
 					os.Mkdir(subdir1Path, 0x500)
+					os.WriteFile(subdir1FilePath, nil, 0500)
+
 					os.Mkdir(subdir2Path, 0x500)
+					os.WriteFile(subdir2FilePath, nil, 0500)
+				},
+				result: func(tempDir string, tempDirPath core.Path) core.Value {
+					subdir1Path := filepath.Join(tempDir, subdir1Name)
+					subdir2Path := filepath.Join(tempDir, subdir2Name)
+
+					return core.NewWrappedValueList(
+						core.NewObjectFromMapNoInit(core.ValMap{
+							"name":          core.String(filepath.Base(tempDir)),
+							"path":          core.Path(tempDir + "/"),
+							"is-dir":        core.True,
+							"is-regular":    core.Bool(false),
+							"is-walk-start": core.True,
+						}),
+						core.NewObjectFromMapNoInit(core.ValMap{
+							"name":          core.String(subdir1Name),
+							"path":          core.Path(subdir1Path + "/"),
+							"is-dir":        core.True,
+							"is-regular":    core.Bool(false),
+							"is-walk-start": core.Bool(false),
+						}),
+						core.NewObjectFromMapNoInit(core.ValMap{
+							"name":          core.String(subdir2Name),
+							"path":          core.Path(subdir2Path + "/"),
+							"is-dir":        core.True,
+							"is-regular":    core.Bool(false),
+							"is-walk-start": core.Bool(false),
+						}),
+					)
+				},
+			},
+			{
+				name: "dir with to subdirectories : prune twice when one of the dir is encountered",
+				input: `
+					entries = []
+					walk dir entry {
+						$entries.append($entry)
+						if $entry.is-walk-start {
+							continue
+						}
+						if $entry.is-dir {
+							prune
+							prune
+						}
+					}
+					return $entries
+				`,
+				before: func(tempDir string, tempDirPath core.Path) {
+					subdir1Path := filepath.Join(tempDir, subdir1Name)
+					subdir1FilePath := filepath.Join(subdir1Path, "file.txt")
+					subdir2Path := filepath.Join(tempDir, subdir2Name)
+					subdir2FilePath := filepath.Join(subdir2Path, "file.txt")
+
+					os.Mkdir(subdir1Path, 0x500)
+					os.WriteFile(subdir1FilePath, nil, 0500)
+
+					os.Mkdir(subdir2Path, 0x500)
+					os.WriteFile(subdir2FilePath, nil, 0500)
 				},
 				result: func(tempDir string, tempDirPath core.Path) core.Value {
 					subdir1Path := filepath.Join(tempDir, subdir1Name)
@@ -3768,6 +3832,63 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 					os.Mkdir(subdir1Path, 0x500)
 					os.Mkdir(subdir2Path, 0x500)
+				},
+				result: func(tempDir string, tempDirPath core.Path) core.Value {
+					subdir1Path := filepath.Join(tempDir, subdir1Name)
+					subdir2Path := filepath.Join(tempDir, subdir2Name)
+
+					return core.NewWrappedValueList(
+						core.NewObjectFromMapNoInit(core.ValMap{
+							"name":          core.String(filepath.Base(tempDir)),
+							"path":          core.Path(tempDir + "/"),
+							"is-dir":        core.True,
+							"is-regular":    core.Bool(false),
+							"is-walk-start": core.True,
+						}),
+						core.NewObjectFromMapNoInit(core.ValMap{
+							"name":          core.String(subdir1Name),
+							"path":          core.Path(subdir1Path + "/"),
+							"is-dir":        core.True,
+							"is-regular":    core.Bool(false),
+							"is-walk-start": core.Bool(false),
+						}),
+						core.NewObjectFromMapNoInit(core.ValMap{
+							"name":          core.String(subdir2Name),
+							"path":          core.Path(subdir2Path + "/"),
+							"is-dir":        core.True,
+							"is-regular":    core.Bool(false),
+							"is-walk-start": core.Bool(false),
+						}),
+					)
+				},
+			},
+			{
+				name: "dir with to subdirectories : prune twice when one of the dir is encountered",
+				input: `
+					entries = []
+					(walk dir entry {
+						$entries.append($entry)
+						if $entry.is-walk-start {
+							continue
+						}
+						if $entry.is-dir {
+							prune
+							prune
+						}
+					})
+					return $entries
+				`,
+				before: func(tempDir string, tempDirPath core.Path) {
+					subdir1Path := filepath.Join(tempDir, subdir1Name)
+					subdir1FilePath := filepath.Join(subdir1Path, "file.txt")
+					subdir2Path := filepath.Join(tempDir, subdir2Name)
+					subdir2FilePath := filepath.Join(subdir2Path, "file.txt")
+
+					os.Mkdir(subdir1Path, 0x500)
+					os.WriteFile(subdir1FilePath, nil, 0500)
+
+					os.Mkdir(subdir2Path, 0x500)
+					os.WriteFile(subdir2FilePath, nil, 0500)
 				},
 				result: func(tempDir string, tempDirPath core.Path) core.Value {
 					subdir1Path := filepath.Join(tempDir, subdir1Name)
@@ -5442,8 +5563,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 	t.Run("Go function call", func(t *testing.T) {
 		testconfig.AllowParallelization(t)
-
-		var symbolicRegistrationLock sync.Mutex
 
 		testCases := []struct {
 			name            string
@@ -13649,12 +13768,21 @@ func _makeTreeWalkEvalFunc(t *testing.T, recycle bool) func(c any, s *core.Globa
 				return nil, err
 			}
 
-			symbData, err := symbolic.EvalCheck(symbolic.EvalCheckInput{
-				Node:    mod.MainChunk.Node,
-				Module:  mod.ToSymbolic(),
-				Globals: globals,
-				Context: symbCtx,
-			})
+			var symbData *symbolic.Data
+
+			func() {
+				symbolicMod := mod.ToSymbolic()
+
+				symbolicRegistrationLock.RLock()
+				defer symbolicRegistrationLock.RUnlock()
+
+				symbData, err = symbolic.EvalCheck(symbolic.EvalCheckInput{
+					Node:    mod.MainChunk.Node,
+					Module:  symbolicMod,
+					Globals: globals,
+					Context: symbCtx,
+				})
+			}()
 
 			if !assert.NoError(t, err) {
 				return nil, err
