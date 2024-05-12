@@ -529,8 +529,8 @@ func _symbolicEval(node parse.Node, state *State, options evalOptions) (result V
 		return evalIfExpression(n, state, options)
 	case *parse.ForStatement, *parse.ForExpression:
 		return evalForStatementAndExpr(n, state)
-	case *parse.WalkStatement:
-		return evalWalkStatement(n, state)
+	case *parse.WalkStatement, *parse.WalkExpression:
+		return evalWalkStatementAndExpr(n, state)
 	case *parse.SwitchStatement:
 		return evalSwitchStatement(n, state)
 	case *parse.SwitchExpression:
@@ -2707,8 +2707,43 @@ func evalForStatementAndExpr(n parse.Node, state *State) (_ Value, finalErr erro
 	return nil, nil
 }
 
-func evalWalkStatement(n *parse.WalkStatement, state *State) (_ Value, finalErr error) {
-	walkedValue, err := symbolicEval(n.Walked, state)
+func evalWalkStatementAndExpr(n parse.Node, state *State) (_ Value, finalErr error) {
+
+	var (
+		walkedValueNode, body parse.Node
+		metaIdent, entryIdent *parse.IdentifierLiteral
+		isWalkExpr            bool
+	)
+
+	var walkExprListElement Value
+
+	if stmt, ok := n.(*parse.WalkStatement); ok {
+		walkedValueNode = stmt.Walked
+		metaIdent = stmt.MetaIdent
+		entryIdent = stmt.EntryIdent
+		if stmt.Body != nil {
+			body = stmt.Body
+		}
+
+		if walkedValueNode == nil {
+			return
+		}
+	} else {
+		expr := n.(*parse.WalkExpression)
+		walkedValueNode = expr.Walked
+		metaIdent = expr.MetaIdent
+		entryIdent = expr.EntryIdent
+		if expr.Body != nil {
+			body = expr.Body
+		}
+		isWalkExpr = true
+
+		if walkedValueNode == nil {
+			return ANY, nil
+		}
+	}
+
+	walkedValue, err := symbolicEval(walkedValueNode, state)
 	if err != nil {
 		return nil, err
 	}
@@ -2721,37 +2756,69 @@ func evalWalkStatement(n *parse.WalkStatement, state *State) (_ Value, finalErr 
 		entry = walkable.WalkerElement()
 		nodeMeta = walkable.WalkerNodeMeta()
 	} else {
-		state.addError(MakeSymbolicEvalError(n.Walked, state, fmtXisNotWalkable(walkedValue)))
+		state.addError(MakeSymbolicEvalError(walkedValueNode, state, fmtXisNotWalkable(walkedValue)))
 		entry = ANY
 		nodeMeta = ANY
 	}
 
-	if n.Body != nil {
+	if body != nil {
 		stateFork := state.fork()
 
-		stateFork.setLocal(n.EntryIdent.Name, entry, nil, n.EntryIdent)
-		stateFork.symbolicData.SetMostSpecificNodeValue(n.EntryIdent, entry)
+		stateFork.setLocal(entryIdent.Name, entry, nil, entryIdent)
+		stateFork.symbolicData.SetMostSpecificNodeValue(entryIdent, entry)
 
-		if n.MetaIdent != nil {
-			stateFork.setLocal(n.MetaIdent.Name, nodeMeta, nil, n.MetaIdent)
-			stateFork.symbolicData.SetMostSpecificNodeValue(n.MetaIdent, nodeMeta)
+		if metaIdent != nil {
+			stateFork.setLocal(metaIdent.Name, nodeMeta, nil, metaIdent)
+			stateFork.symbolicData.SetMostSpecificNodeValue(metaIdent, nodeMeta)
 		}
 
-		stateFork.symbolicData.SetLocalScopeData(n.Body, stateFork.currentLocalScopeData())
+		stateFork.symbolicData.SetLocalScopeData(body, stateFork.currentLocalScopeData())
 
-		_, blkErr := symbolicEval(n.Body, stateFork)
+		res, blkErr := symbolicEval(body, stateFork)
 		if blkErr != nil {
 			return nil, blkErr
 		}
 
-		areAllOutcomesCovered := false //The iterated value can be empty.
+		if isWalkExpr {
+			var stepResult Value
+			if _, isBlockBody := body.(*parse.Block); isBlockBody {
+
+				if stateFork.yieldedValue != nil {
+					stepResult = stateFork.yieldedValue
+				}
+
+			} else {
+				stepResult = res
+			}
+
+			stateFork.yieldedValue = nil
+			stateFork.conditionalYield = false
+
+			if stepResult != nil {
+				elem, ok := AsSerializable(stepResult).(Serializable)
+				if !ok {
+					state.addError(MakeSymbolicEvalError(body, state, ELEMENTS_PRODUCED_BY_A_WALK_EXPR_SHOULD_BE_SERIALIZABLE))
+					elem = ANY_SERIALIZABLE
+				}
+				walkExprListElement = elem
+			}
+		}
+
+		areAllOutcomesCovered := false //The walked value can be empty.
 
 		state.join(areAllOutcomesCovered, stateFork)
-		//we set the local scope data at the for statement, not the body
+		//we set the local scope data at the walk statement or expression, not the body
 		state.SetLocalScopeData(n, state.currentLocalScopeData())
 	}
 
-	state.iterationChange = NoIterationChange
+	if isWalkExpr {
+		if walkExprListElement == nil {
+			return EMPTY_LIST, nil
+		}
+		elem := AsSerializableChecked(walkExprListElement)
+		return NewListOf(elem), nil
+	}
+
 	return nil, nil
 }
 

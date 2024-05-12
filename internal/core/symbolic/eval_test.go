@@ -9887,9 +9887,7 @@ func TestSymbolicEval(t *testing.T) {
 		t.Run("walked value is not walkable", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				path = int
-				walk $path entry {
-	
-				}
+				walk $path entry {}
 			`)
 
 			walkStmt := n.Statements[1].(*parse.WalkStatement)
@@ -9902,7 +9900,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, Nil, res)
 		})
 
-		t.Run("entries have right value", func(t *testing.T) {
+		t.Run("entries have the right value", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				walk ./ entry {
 					return entry
@@ -9913,7 +9911,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
 
-			assert.Equal(t, NewMultivalue(WALK_ELEM, Nil), res)
+			assert.Equal(t, NewMultivalue(DIR_WALK_ENTRY, Nil), res)
 		})
 
 		t.Run("meta", func(t *testing.T) {
@@ -9928,7 +9926,7 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
 
-			expectedResultFromWalkStmt := NewArray(ANY, WALK_ELEM)
+			expectedResultFromWalkStmt := NewArray(ANY, DIR_WALK_ENTRY)
 			assert.Equal(t, NewMultivalue(expectedResultFromWalkStmt, Nil), res)
 		})
 
@@ -9984,6 +9982,202 @@ func TestSymbolicEval(t *testing.T) {
 		t.Run("no body", func(t *testing.T) {
 			n, state, _ := _makeStateAndChunk(`
 				walk ./ e
+			`)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+		})
+	})
+
+	t.Run("walk expression", func(t *testing.T) {
+		t.Run("walked value is not walkable", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				path = int
+				return walk $path entry {}
+			`)
+
+			walkExpr := n.Statements[1].(*parse.ReturnStatement).Expr.(*parse.WalkExpression)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Equal(t, []EvaluationError{
+				MakeSymbolicEvalError(walkExpr.Walked, state, fmtXisNotWalkable(ANY_INT)),
+			}, state.errors())
+			assert.Equal(t, EMPTY_LIST, res)
+		})
+
+		t.Run("entries have the right value", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				var e any = nil
+				(walk ./ entry {
+					e = entry
+				})
+				return e
+			`)
+			state.ctx.AddNamedPattern("any", &TypePattern{val: ANY}, false)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+
+			assert.Equal(t, NewMultivalue(Nil, DIR_WALK_ENTRY), res)
+		})
+
+		t.Run("meta", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				var (
+					m any = nil
+					e any = nil
+				)
+				(walk ./ meta, entry {
+					m = meta
+					e = entry
+				})
+				return Array(m, e)
+			`)
+			state.setGlobal("Array", WrapGoFunction(NewArray), GlobalConst)
+			state.ctx.AddNamedPattern("any", &TypePattern{val: ANY}, false)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+
+			assert.Equal(t, NewArray(ANY, NewMultivalue(Nil, DIR_WALK_ENTRY)), res)
+		})
+
+		t.Run("body: direct yielding of a value", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`(walk / entry { yield entry })`)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewListOf(DIR_WALK_ENTRY), res)
+		})
+
+		t.Run("body: single yield: conditional", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				(walk / entry { 
+					if entry.name != "a" { yield entry } 
+				})
+			`)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewListOf(DIR_WALK_ENTRY), res)
+		})
+
+		t.Run("body: two yields value", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`(
+				(walk / entry { 
+					if entry.name != "a" { 
+						yield entry }
+					 
+					yield 1 
+				})
+			`)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewListOf(AsSerializableChecked(NewMultivalue(DIR_WALK_ENTRY, INT_1))), res)
+		})
+
+		t.Run("yield inside a walk expression in the body of another for expression without a yield statement", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`(
+				for r in 'a'..'z' { 
+					# The inner walk expression should have no effect on the outer expression.
+					(walk / entry { 
+						yield 1
+					})
+				}
+			)`)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Empty(t, state.errors())
+			assert.Equal(t, EMPTY_LIST, res)
+		})
+
+		t.Run("yield inside a walk expression in the body of another for expression with a yield statement", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`(
+				for r in 'a'..'z' { 
+					# The inner walk expression should have no effect on the outer expression.
+					(walk / entry { 
+						yield 1
+					})
+					yield 2
+				}
+			)`)
+
+			res, err := symbolicEval(n, state)
+			if !assert.NoError(t, err) {
+				return
+			}
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewListOf(AsSerializableChecked(INT_2)), res)
+		})
+
+		t.Run("error in head + missing body", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				path = int
+				return walk $path entry
+			`, nil)
+
+			walkExpr := n.Statements[1].(*parse.ReturnStatement).Expr.(*parse.WalkExpression)
+			res, err := symbolicEval(n, state)
+
+			assert.NoError(t, err)
+			assert.Equal(t, []EvaluationError{
+				MakeSymbolicEvalError(walkExpr.Walked, state, fmtXisNotWalkable(ANY_INT)),
+			}, state.errors())
+			assert.Equal(t, EMPTY_LIST, res)
+		})
+
+		t.Run("state should be forked", func(t *testing.T) {
+			n, state := MakeTestStateAndChunk(`
+				a = #a
+				(walk ./ entry {
+					a = #b
+				})
+				return a
+			`)
+
+			res, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+			assert.Empty(t, state.errors())
+			assert.Equal(t, NewMultivalue(&Identifier{name: "a"}, &Identifier{name: "b"}), res)
+		})
+
+		t.Run("no walked value", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				(walk)
+			`)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+		})
+
+		t.Run("no entry variable", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				(walk ./)
+			`)
+
+			_, err := symbolicEval(n, state)
+			assert.NoError(t, err)
+		})
+
+		t.Run("no body", func(t *testing.T) {
+			n, state, _ := _makeStateAndChunk(`
+				(walk ./ e)
 			`)
 
 			_, err := symbolicEval(n, state)

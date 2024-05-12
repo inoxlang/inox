@@ -43,6 +43,9 @@ const (
 	//for expression
 	ELEMENTS_PRODUCED_BY_A_FOR_EXPR_SHOULD_BE_SERIALIZABLE = "the elements produced by a for expression should be serializable"
 
+	//walk expression
+	ELEMENTS_PRODUCED_BY_A_WALK_EXPR_SHOULD_BE_SERIALIZABLE = "the elements produced by a walk expression should be serializable"
+
 	//spread
 	CANNOT_SPREAD_OBJ_PATTERN_THAT_MATCHES_ANY_OBJECT = "cannot spread an object pattern that matches any object"
 	CANNOT_SPREAD_REC_PATTERN_THAT_MATCHES_ANY_RECORD = "cannot spread an record pattern that matches any record"

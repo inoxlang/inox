@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	WALK_ELEM = NewInexactObject(map[string]Serializable{
+	DIR_WALK_ENTRY = NewInexactObject(map[string]Serializable{
 		"name":          &String{},
 		"path":          &Path{},
 		"is-dir":        ANY_BOOL,
@@ -236,7 +236,7 @@ func (p *Path) UnderlyingString() *String {
 }
 
 func (p *Path) WalkerElement() Value {
-	return WALK_ELEM
+	return DIR_WALK_ENTRY
 }
 
 func (p *Path) WalkerNodeMeta() Value {
