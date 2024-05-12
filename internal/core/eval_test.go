@@ -3604,6 +3604,334 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 	})
 
+	t.Run("walk expression", func(t *testing.T) {
+		testconfig.AllowParallelization(t)
+
+		GET_ENTRIES_CODE := `
+			(walk $dir entry {
+				yield entry
+			})
+		`
+
+		regularFilename := "file.txt"
+		subdirName := "subdir"
+		subdir1Name := "subdir1"
+		subdir2Name := "subdir2"
+
+		testCases := []struct {
+			name   string
+			input  string
+			result func(tempDir string, tempDirPath core.Path) core.Value
+			before func(tempDir string, tempDirPath core.Path)
+		}{
+			{
+				//empty dir
+				input: GET_ENTRIES_CODE,
+				result: func(tempDir string, tempDirPath core.Path) core.Value {
+					return core.NewWrappedValueList(
+						core.NewObjectFromMapNoInit(core.ValMap{
+							"name":          core.String(filepath.Base(tempDir)),
+							"path":          tempDirPath,
+							"is-dir":        core.True,
+							"is-regular":    core.False,
+							"is-walk-start": core.True,
+						}),
+					)
+				},
+			},
+			{
+				name:  "dir with single regular file",
+				input: GET_ENTRIES_CODE,
+				before: func(tempDir string, tempDirPath core.Path) {
+					regularFilePath := filepath.Join(tempDir, regularFilename)
+					os.WriteFile(regularFilePath, nil, 0o400)
+				},
+				result: func(tempDir string, tempDirPath core.Path) core.Value {
+					regularFilePath := filepath.Join(tempDir, regularFilename)
+
+					return core.NewWrappedValueList(
+						core.NewObjectFromMapNoInit(core.ValMap{
+							"name":          core.String(filepath.Base(tempDir)),
+							"path":          tempDirPath,
+							"is-dir":        core.True,
+							"is-regular":    core.Bool(false),
+							"is-walk-start": core.True,
+						}),
+						core.NewObjectFromMapNoInit(core.ValMap{
+							"name":          core.String(regularFilename),
+							"path":          core.Path(regularFilePath),
+							"is-dir":        core.Bool(false),
+							"is-regular":    core.True,
+							"is-walk-start": core.Bool(false),
+						}),
+					)
+				},
+			},
+			{
+
+				name:  "dir with a regular file and an empty subdirectory",
+				input: GET_ENTRIES_CODE,
+				before: func(tempDir string, tempDirPath core.Path) {
+					regularFilePath := filepath.Join(tempDir, regularFilename)
+					subdirPath := filepath.Join(tempDir, subdirName)
+					os.WriteFile(regularFilePath, nil, 0o400)
+					os.Mkdir(subdirPath, 0x500)
+				},
+				result: func(tempDir string, tempDirPath core.Path) core.Value {
+					regularFilePath := filepath.Join(tempDir, regularFilename)
+					subdirPath := filepath.Join(tempDir, subdirName)
+
+					return core.NewWrappedValueList(
+						core.NewObjectFromMapNoInit(core.ValMap{
+							"name":          core.String(filepath.Base(tempDir)),
+							"path":          core.Path(tempDir + "/"),
+							"is-dir":        core.True,
+							"is-regular":    core.Bool(false),
+							"is-walk-start": core.True,
+						}),
+						core.NewObjectFromMapNoInit(core.ValMap{
+							"name":          core.String(regularFilename),
+							"path":          core.Path(regularFilePath),
+							"is-dir":        core.Bool(false),
+							"is-regular":    core.True,
+							"is-walk-start": core.Bool(false),
+						}),
+						core.NewObjectFromMapNoInit(core.ValMap{
+							"name":          core.String(subdirName),
+							"path":          core.Path(subdirPath + "/"),
+							"is-dir":        core.True,
+							"is-regular":    core.Bool(false),
+							"is-walk-start": core.Bool(false),
+						}),
+					)
+				},
+			},
+			{
+				name: "dir with a regular file and an empty subdirectory : prune when regular file is encountered",
+				input: `
+					entries = []
+					(walk dir entry {
+						$entries.append($entry)
+						if $entry.is-regular {
+							prune
+						}
+					})
+					return $entries
+				`,
+				before: func(tempDir string, tempDirPath core.Path) {
+					regularFilePath := filepath.Join(tempDir, regularFilename)
+					subdirPath := filepath.Join(tempDir, subdirName)
+					os.WriteFile(regularFilePath, nil, 0o400)
+					os.Mkdir(subdirPath, 0x500)
+				},
+				result: func(tempDir string, tempDirPath core.Path) core.Value {
+					regularFilePath := filepath.Join(tempDir, regularFilename)
+
+					return core.NewWrappedValueList(
+						core.NewObjectFromMapNoInit(core.ValMap{
+							"name":          core.String(filepath.Base(tempDir)),
+							"path":          core.Path(tempDir + "/"),
+							"is-dir":        core.True,
+							"is-regular":    core.Bool(false),
+							"is-walk-start": core.True,
+						}),
+						core.NewObjectFromMapNoInit(core.ValMap{
+							"name":          core.String(regularFilename),
+							"path":          core.Path(regularFilePath),
+							"is-dir":        core.Bool(false),
+							"is-regular":    core.True,
+							"is-walk-start": core.Bool(false),
+						}),
+					)
+				},
+			},
+			{
+				name: "dir with to subdirectories : prune when one of the dir is encountered",
+				input: `
+					entries = []
+					(walk dir entry {
+						$entries.append($entry)
+						if $entry.is-walk-start {
+							continue
+						}
+						if $entry.is-dir {
+							prune
+						}
+					})
+					return $entries
+				`,
+				before: func(tempDir string, tempDirPath core.Path) {
+					subdir1Path := filepath.Join(tempDir, subdir1Name)
+					subdir2Path := filepath.Join(tempDir, subdir2Name)
+
+					os.Mkdir(subdir1Path, 0x500)
+					os.Mkdir(subdir2Path, 0x500)
+				},
+				result: func(tempDir string, tempDirPath core.Path) core.Value {
+					subdir1Path := filepath.Join(tempDir, subdir1Name)
+					subdir2Path := filepath.Join(tempDir, subdir2Name)
+
+					return core.NewWrappedValueList(
+						core.NewObjectFromMapNoInit(core.ValMap{
+							"name":          core.String(filepath.Base(tempDir)),
+							"path":          core.Path(tempDir + "/"),
+							"is-dir":        core.True,
+							"is-regular":    core.Bool(false),
+							"is-walk-start": core.True,
+						}),
+						core.NewObjectFromMapNoInit(core.ValMap{
+							"name":          core.String(subdir1Name),
+							"path":          core.Path(subdir1Path + "/"),
+							"is-dir":        core.True,
+							"is-regular":    core.Bool(false),
+							"is-walk-start": core.Bool(false),
+						}),
+						core.NewObjectFromMapNoInit(core.ValMap{
+							"name":          core.String(subdir2Name),
+							"path":          core.Path(subdir2Path + "/"),
+							"is-dir":        core.True,
+							"is-regular":    core.Bool(false),
+							"is-walk-start": core.Bool(false),
+						}),
+					)
+				},
+			},
+			{
+				name: "dir with to subdirectories : break when one of the dir is encountered",
+				input: `
+					entries = []
+					(walk dir entry {
+						$entries.append($entry)
+						if $entry.is-walk-start {
+							continue
+						}
+						if $entry.is-dir {
+							break
+						}
+					})
+					return $entries
+				`,
+				before: func(tempDir string, tempDirPath core.Path) {
+					subdir1Path := filepath.Join(tempDir, subdir1Name)
+					subdir2Path := filepath.Join(tempDir, subdir2Name)
+
+					os.Mkdir(subdir1Path, 0x500)
+					os.Mkdir(subdir2Path, 0x500)
+				},
+				result: func(tempDir string, tempDirPath core.Path) core.Value {
+					subdir1Path := filepath.Join(tempDir, subdir1Name)
+
+					return core.NewWrappedValueList(
+						core.NewObjectFromMapNoInit(core.ValMap{
+							"name":          core.String(filepath.Base(tempDir)),
+							"path":          core.Path(tempDir + "/"),
+							"is-dir":        core.True,
+							"is-regular":    core.Bool(false),
+							"is-walk-start": core.True,
+						}),
+						core.NewObjectFromMapNoInit(core.ValMap{
+							"name":          core.String(subdir1Name),
+							"path":          core.Path(subdir1Path + "/"),
+							"is-dir":        core.True,
+							"is-regular":    core.Bool(false),
+							"is-walk-start": core.Bool(false),
+						}),
+					)
+				},
+			},
+			{
+				name: "for statement in body",
+				input: `
+					a = 0
+					(walk dir entry {
+						for i in 1..10 {
+							a = (a + 1)
+							break
+						}
+						a = (a + 2)
+						break
+					})
+					return a
+				`,
+				before: func(tempDir string, tempDirPath core.Path) {},
+				result: func(tempDir string, tempDirPath core.Path) core.Value {
+					return core.Int(3)
+				},
+			},
+			{
+				name: "statements after yield should not be executed",
+				input: `
+					a = 0
+					list = (walk dir entry {
+						yield entry
+						a += 1
+					})
+					return [a, list]
+				`,
+				before: func(tempDir string, tempDirPath core.Path) {
+					regularFilePath := filepath.Join(tempDir, regularFilename)
+					os.WriteFile(regularFilePath, nil, 0o400)
+				},
+				result: func(tempDir string, tempDirPath core.Path) core.Value {
+					regularFilePath := filepath.Join(tempDir, regularFilename)
+
+					return core.NewWrappedValueList(
+						core.Int(0),
+						core.NewWrappedValueList(
+							core.NewObjectFromMapNoInit(core.ValMap{
+								"name":          core.String(filepath.Base(tempDir)),
+								"path":          tempDirPath,
+								"is-dir":        core.True,
+								"is-regular":    core.Bool(false),
+								"is-walk-start": core.True,
+							}),
+							core.NewObjectFromMapNoInit(core.ValMap{
+								"name":          core.String(regularFilename),
+								"path":          core.Path(regularFilePath),
+								"is-dir":        core.Bool(false),
+								"is-regular":    core.True,
+								"is-walk-start": core.Bool(false),
+							}),
+						),
+					)
+				},
+			},
+		}
+
+		for _, testCase := range testCases {
+			t.Run(testCase.name, func(t *testing.T) {
+				tempDir := t.TempDir()
+				tempDirPath := core.Path(tempDir + "/")
+
+				if testCase.before != nil {
+					testCase.before(tempDir, tempDirPath)
+				}
+
+				ctx := core.NewContext(core.ContextConfig{
+					Permissions: []core.Permission{
+						core.GlobalVarPermission{permbase.Read, "*"},
+						core.GlobalVarPermission{permbase.Update, "*"},
+						core.GlobalVarPermission{permbase.Create, "*"},
+						core.GlobalVarPermission{permbase.Use, "*"},
+						core.FilesystemPermission{permbase.Read, core.PathPattern(tempDirPath + "...")},
+					},
+					Filesystem: newOsFilesystem(),
+				})
+				defer ctx.CancelGracefully()
+
+				state := core.NewGlobalState(ctx, map[string]core.Value{
+					"dir": tempDirPath,
+				})
+				res, err := Eval(testCase.input, state, true)
+				assert.NoError(t, err)
+
+				expectedResult := testCase.result(tempDir, tempDirPath)
+				assert.Equal(t, expectedResult, res)
+			})
+		}
+
+	})
+
 	t.Run("switch statement", func(t *testing.T) {
 		testconfig.AllowParallelization(t)
 

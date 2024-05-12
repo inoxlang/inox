@@ -1621,6 +1621,8 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 	case *parse.WalkStatement:
 		err := evalWalkStatement(n, state)
 		return nil, err
+	case *parse.WalkExpression:
+		return evalWalkExpression(n, state)
 	case *parse.SwitchStatement:
 		err := evalSwitchStatement(n, state)
 		return nil, err
@@ -3432,9 +3434,17 @@ walk_loop:
 		entry := walker.Value(state.Global.Ctx)
 		scope[entryName] = entry
 
+		//Evaluate body.
+
 		_, blkErr := TreeWalkEval(n.Body, state)
 		if blkErr != nil {
 			return blkErr
+		}
+
+		//Handle return/break/continue/yield/prune.
+
+		if state.returnValue != nil {
+			return nil
 		}
 
 		switch state.iterationChange {
@@ -3454,6 +3464,63 @@ walk_loop:
 	state.iterationChange = NoIterationChange
 
 	return err
+}
+
+func evalWalkExpression(n *parse.WalkExpression, state *TreeWalkState) (Value, error) {
+	walkable, err := TreeWalkEval(n.Walked, state)
+	if err != nil {
+		return nil, err
+	}
+	scope := state.CurrentLocalScope()
+	entryName := n.EntryIdent.Name
+	defer func() {
+		delete(scope, entryName)
+	}()
+
+	var elements []Serializable
+
+	walker, err := walkable.(Walkable).Walker(state.Global.Ctx)
+	if err != nil {
+		return nil, err
+	}
+
+walk_loop:
+	for {
+		if !walker.HasNext(state.Global.Ctx) {
+			break
+		}
+		walker.Next(state.Global.Ctx)
+		entry := walker.Value(state.Global.Ctx)
+		scope[entryName] = entry
+
+		//Evaluate body.
+
+		_, blkErr := TreeWalkEval(n.Body, state)
+		if blkErr != nil {
+			return nil, blkErr
+		}
+
+		//Handle break/continue/yield/prune. Return statements are not allowed in the body.
+
+		switch state.iterationChange {
+		case BreakIteration:
+			state.iterationChange = NoIterationChange
+			break walk_loop
+		case PruneWalk:
+			state.iterationChange = NoIterationChange
+			walker.Prune(state.Global.Ctx)
+		case ContinueIteration:
+			state.iterationChange = NoIterationChange
+		case YieldItem:
+			state.iterationChange = NoIterationChange
+			elements = append(elements, state.yieldedValue.(Serializable))
+			state.yieldedValue = nil
+		}
+	}
+
+	state.iterationChange = NoIterationChange
+
+	return NewWrappedValueList(elements...), nil
 }
 
 func evalSwitchStatement(n *parse.SwitchStatement, state *TreeWalkState) error {
