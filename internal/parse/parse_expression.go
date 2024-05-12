@@ -5,7 +5,7 @@ type exprParsingConfig struct {
 	statement                                  bool
 	disallowUnparenthesizedBinForPipelineExprs bool
 	disallowParsingSeveralPatternUnionCases    bool
-	forceAllowForExpr                          bool
+	forceAllowForWalkExpr                      bool
 }
 
 // parseExpression parses any expression, if $expr is a *MissingExpression $isMissingExpr will be true.
@@ -16,14 +16,15 @@ func (p *parser) parseExpression(config ...exprParsingConfig) (expr Node, isMiss
 	var precedingOpeningParenIndex int32 = -1
 	precededByOpeningParen := false
 	isStmt := false
-	allowForExpr := true
+	forceAllowForWalkExpr := true
+
 	if len(config) > 0 {
 		if config[0].precedingOpeningParenIndexPlusOne > 0 {
 			precedingOpeningParenIndex = config[0].precedingOpeningParenIndexPlusOne - 1
 			precededByOpeningParen = true
 		}
 		isStmt = config[0].statement
-		allowForExpr = !isStmt && (!config[0].disallowUnparenthesizedBinForPipelineExprs || config[0].forceAllowForExpr)
+		forceAllowForWalkExpr = !isStmt && (!config[0].disallowUnparenthesizedBinForPipelineExprs || config[0].forceAllowForWalkExpr)
 	}
 
 	defer func() {
@@ -138,7 +139,7 @@ func (p *parser) parseExpression(config ...exprParsingConfig) (expr Node, isMiss
 	//TODO: refactor ?
 	case '_', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
 		'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z':
-		e, returnNow := p.parseUnderscoreAlphaStartingExpression(precedingOpeningParenIndex, isStmt, allowForExpr)
+		e, returnNow := p.parseUnderscoreAlphaStartingExpression(precedingOpeningParenIndex, isStmt, forceAllowForWalkExpr)
 		if returnNow {
 			return e, false
 		}
@@ -456,6 +457,11 @@ func (p *parser) parseUnderscoreAlphaStartingExpression(precedingOpeningParen in
 		case FOR_KEYWORD_STRING:
 			if !stmt && forceAllowForExpr {
 				node = p.parseForExpression(int32(precedingOpeningParen), v.Span.Start)
+				return
+			}
+		case WALK_KEYWORD_STRING:
+			if !stmt && forceAllowForExpr {
+				node = p.parseWalkExpression(int32(precedingOpeningParen), v.Span.Start)
 				return
 			}
 		default:

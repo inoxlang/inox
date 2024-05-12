@@ -27,6 +27,8 @@ const (
 	UnterminatedMatchExpr
 
 	UnterminatedWalkStmt
+	UnterminatedWalkExpr
+
 
 	UnterminatedForExpr
 
@@ -436,10 +438,17 @@ const (
 	UNTERMINATED_FOR_EXPR_MISSING_ARROW_ITEM_OR_BODY        = "unterminated for expression: missing '=> item' or body"
 	UNTERMINATED_FOR_EXPR_MISSING_CLOSIN_PAREN              = "unterminated for expression: missing closing parenthesis"
 
+	//Walk statement
 	UNTERMINATED_WALK_STMT_MISSING_WALKED_VALUE        = "unterminated walk statement: missing walked value"
 	UNTERMINATED_WALK_STMT_MISSING_ENTRY_VARIABLE_NAME = "unterminated walk statement: missing entry variable's name"
 	INVALID_WALK_STMT_MISSING_ENTRY_IDENTIFIER         = "invalid walk statement: missing entry identifier"
 	UNTERMINATED_WALK_STMT_MISSING_BODY                = "unterminated walk statement: missing body (block)"
+
+	//Walk expression
+	UNTERMINATED_WALK_EXPR_MISSING_WALKED_VALUE        = "unterminated walk expression: missing walked value"
+	UNTERMINATED_WALK_EXPR_MISSING_ENTRY_VARIABLE_NAME = "unterminated walk expression: missing entry variable's name"
+	UNTERMINATED_WALK_EXPR_MISSING_BODY                = "unterminated walk expression: missing body (block)"
+	UNTERMINATED_WALK_EXPR_MISSING_CLOSIN_PAREN        = "unterminated walk expression: missing closing parenthesis"
 
 	UNTERMINATED_MULTI_ASSIGN_MISSING_EQL_SIGN           = "unterminated multi assign statement: missing '=' sign"
 	ASSIGN_KEYWORD_SHOULD_BE_FOLLOWED_BY_IDENTS          = "assign keyword should be followed by identifiers (assign a b = <value>)"

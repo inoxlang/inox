@@ -22,6 +22,7 @@ const (
 	ASSERT_KEYWORD_STRING          = "assert"
 	IF_KEYWORD_STRING              = "if"
 	FOR_KEYWORD_STRING             = "for"
+	WALK_KEYWORD_STRING            = "walk"
 	SWITCH_KEYWORD_STRING          = "switch"
 	MATCH_KEYWORD_STRING           = "match"
 	STRUCT_KEYWORD_STRING          = "struct"
@@ -354,7 +355,7 @@ var tokenStrings = [...]string{
 	VAR_KEYWORD:                       "var",
 	GLOBALVAR_KEYWORD:                 "globalvar",
 	FOR_KEYWORD:                       FOR_KEYWORD_STRING,
-	WALK_KEYWORD:                      "walk",
+	WALK_KEYWORD:                      WALK_KEYWORD_STRING,
 	IN_KEYWORD:                        "in",
 	GO_KEYWORD:                        "go",
 	IMPORT_KEYWORD:                    "import",

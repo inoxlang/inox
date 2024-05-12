@@ -47,7 +47,7 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(
 		left, isMissingExpr = p.parseExpression(exprParsingConfig{
 			precedingOpeningParenIndexPlusOne:          openingParenIndex + 1,
 			disallowUnparenthesizedBinForPipelineExprs: true,
-			forceAllowForExpr:                          !hasPreviousOperator,
+			forceAllowForWalkExpr:                      !hasPreviousOperator,
 		})
 	}
 
@@ -57,8 +57,10 @@ func (p *parser) parseUnaryBinaryAndParenthesizedExpression(
 			return p.parseIfExpression(openingParenIndex, ident.Span.Start)
 		}
 	}
-	if forExpr, ok := left.(*ForExpression); ok {
-		return forExpr
+
+	switch left.(type) {
+	case *ForExpression, *WalkExpression:
+		return left
 	}
 
 	p.eatSpaceNewlineComment()

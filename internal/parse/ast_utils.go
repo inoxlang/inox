@@ -464,6 +464,11 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 		walk(n.MetaIdent, node, ancestorChain, fn, afterFn)
 		walk(n.EntryIdent, node, ancestorChain, fn, afterFn)
 		walk(n.Body, node, ancestorChain, fn, afterFn)
+	case *WalkExpression:
+		walk(n.Walked, node, ancestorChain, fn, afterFn)
+		walk(n.MetaIdent, node, ancestorChain, fn, afterFn)
+		walk(n.EntryIdent, node, ancestorChain, fn, afterFn)
+		walk(n.Body, node, ancestorChain, fn, afterFn)
 	case *ReturnStatement:
 		walk(n.Expr, node, ancestorChain, fn, afterFn)
 	case *CoyieldStatement:

@@ -17343,6 +17343,151 @@ func testParse(
 		})
 	})
 
+	t.Run("walk expression", func(t *testing.T) {
+
+		t.Run("empty", func(t *testing.T) {
+			n := mustparseChunk(t, "(walk ./ entry { })")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
+				Statements: []Node{
+					&WalkExpression{
+						NodeBase: NodeBase{Span: NodeSpan{0, 19},
+							IsParenthesized: true,
+						},
+						Walked: &RelativePathLiteral{
+							NodeBase: NodeBase{NodeSpan{6, 8}, nil, false},
+							Raw:      "./",
+							Value:    "./",
+						},
+						EntryIdent: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{9, 14}, nil, false},
+							Name:     "entry",
+						},
+						Body: &Block{
+							NodeBase:   NodeBase{Span: NodeSpan{15, 18}},
+							Statements: nil,
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("meta & entry variable identifiers", func(t *testing.T) {
+			n := mustparseChunk(t, "(walk ./ meta, entry { })")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 25}, nil, false},
+				Statements: []Node{
+					&WalkExpression{
+						NodeBase: NodeBase{Span: NodeSpan{0, 25}, IsParenthesized: true},
+						Walked: &RelativePathLiteral{
+							NodeBase: NodeBase{NodeSpan{6, 8}, nil, false},
+							Raw:      "./",
+							Value:    "./",
+						},
+						MetaIdent: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{9, 13}, nil, false},
+							Name:     "meta",
+						},
+						EntryIdent: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{15, 20}, nil, false},
+							Name:     "entry",
+						},
+						Body: &Block{
+							NodeBase:   NodeBase{Span: NodeSpan{21, 24}},
+							Statements: nil,
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("no walked value: EOF", func(t *testing.T) {
+			n, err := parseChunk(t, "(walk", "")
+			assert.Error(t, err)
+
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 5}, nil, false},
+				Statements: []Node{
+					&WalkExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 5},
+							&ParsingError{UnterminatedWalkExpr, UNTERMINATED_WALK_EXPR_MISSING_WALKED_VALUE},
+							true,
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("no walked value: space", func(t *testing.T) {
+			n, err := parseChunk(t, "(walk )", "")
+			assert.Error(t, err)
+
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 7}, nil, false},
+				Statements: []Node{
+					&WalkExpression{
+						NodeBase: NodeBase{
+							Span:            NodeSpan{0, 7},
+							Err:             &ParsingError{UnterminatedWalkExpr, UNTERMINATED_WALK_EXPR_MISSING_WALKED_VALUE},
+							IsParenthesized: true,
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("missing entry variable", func(t *testing.T) {
+			n, err := parseChunk(t, "(walk ./)", "")
+			assert.Error(t, err)
+
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 9}, nil, false},
+				Statements: []Node{
+					&WalkExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 9},
+							&ParsingError{UnterminatedWalkExpr, UNTERMINATED_WALK_EXPR_MISSING_ENTRY_VARIABLE_NAME},
+							true,
+						},
+						Walked: &RelativePathLiteral{
+							NodeBase: NodeBase{NodeSpan{6, 8}, nil, false},
+							Raw:      "./",
+							Value:    "./",
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("missing body", func(t *testing.T) {
+			n, err := parseChunk(t, "(walk ./ entry)", "")
+			assert.Error(t, err)
+
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 15}, nil, false},
+				Statements: []Node{
+					&WalkExpression{
+						NodeBase: NodeBase{
+							NodeSpan{0, 15},
+							&ParsingError{UnterminatedWalkExpr, UNTERMINATED_WALK_EXPR_MISSING_BODY},
+							true,
+						},
+						Walked: &RelativePathLiteral{
+							NodeBase: NodeBase{NodeSpan{6, 8}, nil, false},
+							Raw:      "./",
+							Value:    "./",
+						},
+						EntryIdent: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{9, 14}, nil, false},
+							Name:     "entry",
+						},
+					},
+				},
+			}, n)
+		})
+	})
+
 	t.Run("unary expression", func(t *testing.T) {
 
 		t.Run("unary expression : boolean negate", func(t *testing.T) {
@@ -17351,14 +17496,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 5}, nil, false},
 				Statements: []Node{
 					&UnaryExpression{
-						NodeBase: NodeBase{
-							NodeSpan{0, 5},
-							nil,
-							false,
-							/*[]Token{
-								{Type: EXCLAMATION_MARK, Span: NodeSpan{0, 1}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 5}},
 						Operator: BoolNegate,
 						Operand: &BooleanLiteral{
 							NodeBase: NodeBase{NodeSpan{1, 5}, nil, false},

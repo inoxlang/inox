@@ -340,6 +340,20 @@ func TestPrint(t *testing.T) {
 		"(for u in users {)",
 		//unparenthesized for expressions
 		"a = for u in users => u",
+		//walk statements
+		"walk",
+		"walk ",
+		"walk []",
+		"walk [] entry",
+		"walk [] meta, entry",
+		"walk [] meta, entry {}",
+		//walk expressions
+		"(walk)",
+		"(walk )",
+		"(walk [])",
+		"(walk [] entry)",
+		"(walk [] meta, entry)",
+		"(walk [] meta, entry {})",
 		//concatenations
 		"concat",
 		"concat \"a\"",

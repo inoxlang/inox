@@ -5115,7 +5115,7 @@ func (p *parser) parseForExpression(openingParenIndex int32 /*-1 if no unparenth
 	var firstPattern Node
 	var first Node
 	chunked := false
-	p.tokens = append(p.tokens, Token{Type: FOR_KEYWORD, Span: NodeSpan{forKeywordStart, forKeywordStart + 3}})
+	p.tokens = append(p.tokens, Token{Type: FOR_KEYWORD, Span: NodeSpan{forKeywordStart, forKeywordStart + int32(len(FOR_KEYWORD_STRING))}})
 
 	if p.i < p.len && p.s[p.i] == '%' {
 		firstPattern = p.parsePercentPrefixedPattern(false)
@@ -5334,6 +5334,8 @@ func (p *parser) parseForExpression(openingParenIndex int32 /*-1 if no unparenth
 func (p *parser) parseWalkStatement(walkIdent *IdentifierLiteral) *WalkStatement {
 	p.panicIfContextDone()
 
+	p.tokens = append(p.tokens, Token{Type: WALK_KEYWORD, Span: walkIdent.Span})
+
 	if p.i >= p.len {
 		return &WalkStatement{
 			NodeBase: NodeBase{
@@ -5348,7 +5350,6 @@ func (p *parser) parseWalkStatement(walkIdent *IdentifierLiteral) *WalkStatement
 	p.eatSpace()
 
 	walked, isMissingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForPipelineExprs: true})
-	p.tokens = append(p.tokens, Token{Type: WALK_KEYWORD, Span: walkIdent.Span})
 
 	if isMissingExpr {
 		return &WalkStatement{
@@ -5360,13 +5361,18 @@ func (p *parser) parseWalkStatement(walkIdent *IdentifierLiteral) *WalkStatement
 	}
 
 	p.eatSpace()
-	e, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForPipelineExprs: true})
+	e, isMissingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForPipelineExprs: true})
 
 	var ok bool
 	if entryIdent, ok = e.(*IdentifierLiteral); !ok {
+		parsingErr = &ParsingError{UnterminatedWalkExpr, UNTERMINATED_WALK_EXPR_MISSING_ENTRY_VARIABLE_NAME}
+		if isMissingExpr {
+			e = nil
+		}
+
 		return &WalkStatement{
 			NodeBase: NodeBase{
-				Span: NodeSpan{walkIdent.Span.Start, e.Base().Span.End},
+				Span: NodeSpan{walkIdent.Span.Start, p.i},
 				Err:  &ParsingError{UnterminatedWalkStmt, UNTERMINATED_WALK_STMT_MISSING_ENTRY_VARIABLE_NAME},
 			},
 			Walked: walked,
@@ -5389,9 +5395,14 @@ func (p *parser) parseWalkStatement(walkIdent *IdentifierLiteral) *WalkStatement
 		} else {
 			e, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForPipelineExprs: true})
 			if entryIdent, ok = e.(*IdentifierLiteral); !ok {
+				parsingErr = &ParsingError{UnterminatedWalkExpr, UNTERMINATED_WALK_EXPR_MISSING_ENTRY_VARIABLE_NAME}
+				if isMissingExpr {
+					e = nil
+				}
+
 				return &WalkStatement{
 					NodeBase: NodeBase{
-						Span: NodeSpan{walkIdent.Span.Start, e.Base().Span.End},
+						Span: NodeSpan{walkIdent.Span.Start, p.i},
 						Err:  &ParsingError{UnspecifiedParsingError, UNTERMINATED_WALK_STMT_MISSING_ENTRY_VARIABLE_NAME},
 					},
 					MetaIdent: metaIdent,
@@ -5417,6 +5428,162 @@ func (p *parser) parseWalkStatement(walkIdent *IdentifierLiteral) *WalkStatement
 		NodeBase: NodeBase{
 			Span: NodeSpan{walkIdent.Span.Start, end},
 			Err:  parsingErr,
+		},
+		Walked:     walked,
+		MetaIdent:  metaIdent,
+		EntryIdent: entryIdent,
+		Body:       blk,
+	}
+}
+
+func (p *parser) parseWalkExpression(openingParenIndex int32 /*-1 if no unparenthesized*/, walkKeywordStart int32) *WalkExpression {
+	p.panicIfContextDone()
+
+	walkExprStart := openingParenIndex
+	if walkExprStart < 0 {
+		walkExprStart = walkKeywordStart
+	}
+	shouldHaveClosingParen := openingParenIndex >= 0
+
+	p.tokens = append(p.tokens, Token{
+		Type: WALK_KEYWORD,
+		Span: NodeSpan{
+			Start: walkKeywordStart,
+			End:   walkKeywordStart + int32(len(WALK_KEYWORD_STRING)),
+		},
+	})
+
+	p.eatSpace()
+
+	eatClosingParen := func() {
+		if shouldHaveClosingParen && p.i < p.len && p.s[p.i] == ')' {
+			p.tokens = append(p.tokens, Token{Type: CLOSING_PARENTHESIS, Span: NodeSpan{p.i, p.i + 1}})
+			p.i++
+		}
+	}
+
+	if p.i >= p.len || isClosingDelim(p.s[p.i]) {
+		eatClosingParen()
+
+		return &WalkExpression{
+			NodeBase: NodeBase{
+				Span:            NodeSpan{walkExprStart, p.i},
+				Err:             &ParsingError{UnterminatedWalkExpr, UNTERMINATED_WALK_EXPR_MISSING_WALKED_VALUE},
+				IsParenthesized: shouldHaveClosingParen,
+			},
+		}
+	}
+
+	var parsingErr *ParsingError
+	var metaIdent, entryIdent Node
+	p.eatSpace()
+
+	walked, isMissingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForPipelineExprs: true})
+
+	if isMissingExpr {
+		eatClosingParen()
+
+		return &WalkExpression{
+			NodeBase: NodeBase{
+				Span:            NodeSpan{walkExprStart, p.i},
+				IsParenthesized: shouldHaveClosingParen,
+			},
+			Walked: walked,
+		}
+	}
+
+	p.eatSpace()
+
+	e, isMissingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForPipelineExprs: true})
+
+	var ok bool
+	if entryIdent, ok = e.(*IdentifierLiteral); !ok {
+		eatClosingParen()
+
+		parsingErr = &ParsingError{UnterminatedWalkExpr, UNTERMINATED_WALK_EXPR_MISSING_ENTRY_VARIABLE_NAME}
+		if isMissingExpr {
+			e = nil
+		}
+
+		return &WalkExpression{
+			NodeBase: NodeBase{
+				Span:            NodeSpan{walkExprStart, p.i},
+				Err:             parsingErr,
+				IsParenthesized: shouldHaveClosingParen,
+			},
+			Walked:     walked,
+			EntryIdent: e,
+		}
+	}
+
+	p.eatSpace()
+
+	// if the parsed identifier is instead the meta variable identifier we try to parse the entry variable identifier
+	if p.i < p.len && p.s[p.i] == ',' {
+		p.tokens = append(p.tokens, Token{Type: COMMA, Span: NodeSpan{p.i, p.i + 1}})
+		p.i++
+		metaIdent = entryIdent
+		entryIdent = nil
+		p.eatSpace()
+
+		// missing entry identifier
+		if p.i >= p.len || p.s[p.i] == '{' {
+			parsingErr = &ParsingError{UnspecifiedParsingError, UNTERMINATED_WALK_EXPR_MISSING_ENTRY_VARIABLE_NAME}
+		} else {
+			e, isMissingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForPipelineExprs: true})
+			if entryIdent, ok = e.(*IdentifierLiteral); !ok {
+				eatClosingParen()
+
+				parsingErr = &ParsingError{UnterminatedWalkExpr, UNTERMINATED_WALK_EXPR_MISSING_ENTRY_VARIABLE_NAME}
+				if isMissingExpr {
+					e = nil
+				}
+
+				return &WalkExpression{
+					NodeBase: NodeBase{
+						Span:            NodeSpan{walkExprStart, p.i},
+						Err:             parsingErr,
+						IsParenthesized: shouldHaveClosingParen,
+					},
+					MetaIdent:  metaIdent,
+					EntryIdent: e,
+					Walked:     walked,
+				}
+			}
+			p.eatSpace()
+		}
+	}
+
+	var blk *Block
+	var end int32
+
+	if p.i >= p.len || p.s[p.i] != '{' {
+		end = p.i
+		parsingErr = &ParsingError{UnterminatedWalkExpr, UNTERMINATED_WALK_EXPR_MISSING_BODY}
+	} else {
+		blk = p.parseBlock()
+		end = blk.Span.End
+	}
+
+	p.eatSpaceNewlineComment()
+
+	if shouldHaveClosingParen {
+		if p.i < p.len && p.s[p.i] == ')' {
+			p.tokens = append(p.tokens, Token{Type: CLOSING_PARENTHESIS, Span: NodeSpan{p.i, p.i + 1}})
+			p.i++
+			end = p.i
+		} else {
+			parsingErr = &ParsingError{UnterminatedForExpr, UNTERMINATED_WALK_EXPR_MISSING_CLOSIN_PAREN}
+		}
+	} else {
+		end = p.i
+	}
+
+	return &WalkExpression{
+		NodeBase: NodeBase{
+			Span:            NodeSpan{walkExprStart, end},
+			Err:             parsingErr,
+			IsParenthesized: shouldHaveClosingParen,
 		},
 		Walked:     walked,
 		MetaIdent:  metaIdent,

@@ -106,7 +106,7 @@ func (p *parser) parseStatement() Node {
 			return p.parseIfStatement(ev)
 		case FOR_KEYWORD_STRING:
 			return p.parseForStatement(ev)
-		case tokenStrings[WALK_KEYWORD]:
+		case WALK_KEYWORD_STRING:
 			return p.parseWalkStatement(ev)
 		case SWITCH_KEYWORD_STRING, MATCH_KEYWORD_STRING:
 			return p.parseSwitchMatchStatement(ev)

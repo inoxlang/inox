@@ -1538,6 +1538,18 @@ func (WalkStatement) Kind() NodeKind {
 	return Stmt
 }
 
+type WalkExpression struct {
+	NodeBase
+	Walked     Node
+	MetaIdent  Node
+	EntryIdent Node
+	Body       *Block
+}
+
+func (WalkExpression) Kind() NodeKind {
+	return Expr
+}
+
 type PruneStatement struct {
 	NodeBase
 }
