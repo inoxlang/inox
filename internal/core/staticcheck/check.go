@@ -592,6 +592,8 @@ func (c *checker) checkSingleNode(n, parent, scopeNode parse.Node, ancestorChain
 		return c.checkForExpression(node, scopeNode, closestModule)
 	case *parse.WalkStatement:
 		return c.checkWalkStmt(node, scopeNode, closestModule)
+	case *parse.WalkExpression:
+		return c.checkWalkExpr(node, scopeNode, closestModule)
 	case *parse.ReadonlyPatternExpression:
 		return c.checkReadonlyPatternExpr(node, parent)
 	case *parse.CallExpression:
@@ -1867,12 +1869,60 @@ func (c *checker) checkWalkStmt(node *parse.WalkStatement, scopeNode, closestMod
 
 	c.store[node] = variablesBeforeStmt
 
-	if node.EntryIdent != nil {
-		name := node.EntryIdent.Name
+	metaIdent := node.MetaIdent
+	entryIdent := node.EntryIdent
+
+	if metaIdent != nil {
+		name := metaIdent.Name
 		if _, alreadyDefined := localVars[name]; alreadyDefined && !c.shellLocalVars[name] {
-			c.addError(node.EntryIdent, text.FmtCannotShadowLocalVariable(name))
+			c.addError(metaIdent, text.FmtCannotShadowLocalVariable(name))
 		} else if _, alreadyDefined := globalVars[name]; alreadyDefined {
-			c.addError(node.EntryIdent, text.FmtCannotShadowGlobalVariable(name))
+			c.addError(metaIdent, text.FmtCannotShadowGlobalVariable(name))
+		} else {
+			localVars[name] = localVarInfo{}
+		}
+	}
+
+	if entryIdent != nil {
+		name := entryIdent.Name
+		if _, alreadyDefined := localVars[name]; alreadyDefined && !c.shellLocalVars[name] {
+			c.addError(entryIdent, text.FmtCannotShadowLocalVariable(name))
+		} else if _, alreadyDefined := globalVars[name]; alreadyDefined {
+			c.addError(entryIdent, text.FmtCannotShadowGlobalVariable(name))
+		} else {
+			localVars[name] = localVarInfo{}
+		}
+	}
+	return parse.ContinueTraversal
+}
+
+func (c *checker) checkWalkExpr(node *parse.WalkExpression, scopeNode, closestModule parse.Node) parse.TraversalAction {
+	variablesBeforeStmt := c.getScopeLocalVarsCopy(scopeNode)
+	localVars := c.getLocalVarsInScope(scopeNode)
+	globalVars := c.getModGlobalVars(closestModule)
+
+	c.store[node] = variablesBeforeStmt
+
+	metaIdent := node.MetaIdent
+	entryIdent := node.EntryIdent
+
+	if metaIdent != nil {
+		name := metaIdent.Name
+		if _, alreadyDefined := localVars[name]; alreadyDefined && !c.shellLocalVars[name] {
+			c.addError(metaIdent, text.FmtCannotShadowLocalVariable(name))
+		} else if _, alreadyDefined := globalVars[name]; alreadyDefined {
+			c.addError(metaIdent, text.FmtCannotShadowGlobalVariable(name))
+		} else {
+			localVars[name] = localVarInfo{}
+		}
+	}
+
+	if entryIdent != nil {
+		name := entryIdent.Name
+		if _, alreadyDefined := localVars[name]; alreadyDefined && !c.shellLocalVars[name] {
+			c.addError(entryIdent, text.FmtCannotShadowLocalVariable(name))
+		} else if _, alreadyDefined := globalVars[name]; alreadyDefined {
+			c.addError(entryIdent, text.FmtCannotShadowGlobalVariable(name))
 		} else {
 			localVars[name] = localVarInfo{}
 		}
@@ -2127,8 +2177,7 @@ loop0:
 	for i := len(ancestorChain) - 1; i >= 0; i-- {
 		switch ancestorChain[i].(type) {
 		case *parse.SwitchStatement, *parse.MatchStatement,
-			*parse.ForStatement, *parse.WalkStatement, *parse.ForExpression:
-
+			*parse.ForStatement, *parse.ForExpression, *parse.WalkStatement, *parse.WalkExpression:
 			stmtIndex = i
 			break loop0
 		}
@@ -2160,7 +2209,7 @@ loop0:
 	for i := len(ancestorChain) - 1; i >= 0; i-- {
 		switch ancestorChain[i].(type) {
 		case *parse.ForStatement, *parse.WalkStatement,
-			*parse.ForExpression:
+			*parse.ForExpression, *parse.WalkExpression:
 			iterativeStmtIndex = i
 			break loop0
 		}
@@ -2187,18 +2236,18 @@ loop0:
 func (c *checker) checkYieldStmt(node parse.Node, ancestorChain []parse.Node) parse.TraversalAction {
 	iterativeStmtIndex := -1
 
-	//we search for the last iterative statement or expression in the ancestor chain
+	//we search for the last for or walk expressions in the ancestor chain
 loop0:
 	for i := len(ancestorChain) - 1; i >= 0; i-- {
 		switch ancestorChain[i].(type) {
-		case *parse.ForExpression:
+		case *parse.ForExpression, *parse.WalkExpression:
 			iterativeStmtIndex = i
 			break loop0
 		}
 	}
 
 	if iterativeStmtIndex < 0 {
-		c.addError(node, text.YIELD_STMTS_ONLY_ALLOWED_IN_BODY_FOR_EXPR)
+		c.addError(node, text.YIELD_STMTS_ONLY_ALLOWED_IN_BODY_FOR_WALK_EXPR)
 		return parse.ContinueTraversal
 	}
 
@@ -2208,7 +2257,7 @@ loop0:
 			*parse.MatchStatementCase, *parse.MatchStatement, *parse.Block,
 			*parse.ForStatement, *parse.WalkStatement:
 		default:
-			c.addError(node, text.YIELD_STMTS_ONLY_ALLOWED_IN_BODY_FOR_EXPR)
+			c.addError(node, text.YIELD_STMTS_ONLY_ALLOWED_IN_BODY_FOR_WALK_EXPR)
 			return parse.ContinueTraversal
 		}
 
@@ -2218,18 +2267,18 @@ loop0:
 
 func (c *checker) checkPruneStmt(node *parse.PruneStatement, ancestorChain []parse.Node) parse.TraversalAction {
 	walkStmtIndex := -1
-	//we search for the last walk statement in the ancestor chain
+	//we search for the last walk statement or expression in the ancestor chain
 loop1:
 	for i := len(ancestorChain) - 1; i >= 0; i-- {
 		switch ancestorChain[i].(type) {
-		case *parse.WalkStatement:
+		case *parse.WalkStatement, *parse.WalkExpression:
 			walkStmtIndex = i
 			break loop1
 		}
 	}
 
 	if walkStmtIndex < 0 {
-		c.addError(node, text.PRUNE_STMTS_ARE_ONLY_ALLOWED_IN_WALK_STMT)
+		c.addError(node, text.PRUNE_STMTS_ARE_ONLY_ALLOWED_IN_WALK_STMTS_AND_EXPRS)
 		return parse.ContinueTraversal
 	}
 
@@ -2237,7 +2286,7 @@ loop1:
 		switch ancestorChain[i].(type) {
 		case *parse.IfStatement, *parse.SwitchStatement, *parse.MatchStatement, *parse.Block, *parse.ForStatement:
 		default:
-			c.addError(node, text.PRUNE_STMTS_ARE_ONLY_ALLOWED_IN_WALK_STMT)
+			c.addError(node, text.PRUNE_STMTS_ARE_ONLY_ALLOWED_IN_WALK_STMTS_AND_EXPRS)
 			return parse.ContinueTraversal
 		}
 	}
@@ -2481,7 +2530,7 @@ func (c *checker) checkIdentifier(ident *parse.IdentifierLiteral, parent, scopeN
 			return parse.ContinueTraversal
 
 		}
-	case *parse.ForStatement, *parse.ForExpression, *parse.WalkStatement,
+	case *parse.ForStatement, *parse.ForExpression, *parse.WalkStatement, *parse.WalkExpression,
 		*parse.ObjectLiteral, *parse.MemberExpression, *parse.QuantityLiteral, *parse.RateLiteral,
 
 		*parse.KeyListExpression:
@@ -3135,7 +3184,7 @@ func (c *checker) postCheckSingleNode(node, parent, scopeNode parse.Node, ancest
 				})
 			} //else: the manifest of regular modules is already checked during the pre-init phase
 		}
-	case *parse.ForStatement, *parse.ForExpression, *parse.WalkStatement:
+	case *parse.ForStatement, *parse.ForExpression, *parse.WalkStatement, *parse.WalkExpression:
 		varsBefore := c.store[node].(map[string]localVarInfo)
 		c.setScopeLocalVars(scopeNode, varsBefore)
 	case *parse.SwitchStatement, *parse.MatchStatement:

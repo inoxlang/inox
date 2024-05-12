@@ -3881,6 +3881,24 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
+		t.Run("direct child of a walk statement", func(t *testing.T) {
+			n, src := mustParseCode(`
+				walk / entry {
+					continue
+				}
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("direct child of a walk expression", func(t *testing.T) {
+			n, src := mustParseCode(`
+				(walk / entry {
+					continue
+				})
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
 		t.Run("in an if statement in a for statement", func(t *testing.T) {
 			n, src := mustParseCode(`
 				for i, e in [] {
@@ -4051,6 +4069,87 @@ func TestCheck(t *testing.T) {
 
 	})
 
+	t.Run("prune statement", func(t *testing.T) {
+		t.Run("direct child of a walk statement", func(t *testing.T) {
+			n, src := mustParseCode(`
+				walk / entry {
+					prune
+				}
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("direct child of a walk expression", func(t *testing.T) {
+			n, src := mustParseCode(`
+				(walk / entry {
+					prune
+				})
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("in a for statement in a walk statement", func(t *testing.T) {
+			n, src := mustParseCode(`
+				walk / entry {
+					for [] {
+						prune
+					}
+				}
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("direct child of a walk expression", func(t *testing.T) {
+			n, src := mustParseCode(`
+				(walk / entry {
+					prune
+				})
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("in a for statement in a walk expression", func(t *testing.T) {
+			n, src := mustParseCode(`
+				(walk / entry {
+					for [] {
+						prune
+					}
+				})
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("direct child of a for statement", func(t *testing.T) {
+			n, src := mustParseCode(`
+				for i, e in [] {
+					prune
+				}
+			`)
+
+			yieldStmt := parse.FindNode(n, (*parse.PruneStatement)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(yieldStmt, src, text.PRUNE_STMTS_ARE_ONLY_ALLOWED_IN_WALK_STMTS_AND_EXPRS),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("direct child of a for expression", func(t *testing.T) {
+			n, src := mustParseCode(`
+				(for i, e in [] {
+					prune
+				})
+			`)
+
+			yieldStmt := parse.FindNode(n, (*parse.PruneStatement)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(yieldStmt, src, text.PRUNE_STMTS_ARE_ONLY_ALLOWED_IN_WALK_STMTS_AND_EXPRS),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+	})
+
 	t.Run("yield statement", func(t *testing.T) {
 		t.Run("direct child of a for expression", func(t *testing.T) {
 			n, src := mustParseCode(`
@@ -4061,9 +4160,30 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
+		t.Run("direct child of a walk expression", func(t *testing.T) {
+			n, src := mustParseCode(`
+				(walk / entry {
+					yield
+				})
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
 		t.Run("direct child of a for statement inside a for expression", func(t *testing.T) {
 			n, src := mustParseCode(`
 				(for i, e in [] {
+					for j, el in [] {
+						yield
+					}
+				})
+			`)
+
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("direct child of a for statement inside a walk expression", func(t *testing.T) {
+			n, src := mustParseCode(`
+				(walk / entry {
 					for j, el in [] {
 						yield
 					}
@@ -4084,7 +4204,18 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
-		t.Run("in an switch statement in a for statement", func(t *testing.T) {
+		t.Run("in an if statement in a walk expression", func(t *testing.T) {
+			n, src := mustParseCode(`
+				(walk / entry {
+					if true {
+						yield
+					}
+				})
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("in an switch statement in a for expression", func(t *testing.T) {
 			n, src := mustParseCode(`
 				(for i, e in [] {
 					switch i {
@@ -4097,10 +4228,36 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
-		t.Run("in an match statement in a for statement", func(t *testing.T) {
+		t.Run("in an switch statement in a walk expression", func(t *testing.T) {
+			n, src := mustParseCode(`
+				(walk / entry {
+					switch entry {
+						1 {
+							yield
+						}
+					}
+				})
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("in an match statement in a for expression", func(t *testing.T) {
 			n, src := mustParseCode(`
 				(for i, e in [] {
 					match i {
+						1 {
+							yield
+						}
+					}
+				})
+			`)
+			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
+		})
+
+		t.Run("in an match statement in a walk expression", func(t *testing.T) {
+			n, src := mustParseCode(`
+				(walk / entry {
+					match entry {
 						1 {
 							yield
 						}
@@ -4120,7 +4277,22 @@ func TestCheck(t *testing.T) {
 			yieldStmt := parse.FindNode(n, (*parse.YieldStatement)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(yieldStmt, src, text.YIELD_STMTS_ONLY_ALLOWED_IN_BODY_FOR_EXPR),
+				makeError(yieldStmt, src, text.YIELD_STMTS_ONLY_ALLOWED_IN_BODY_FOR_WALK_EXPR),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("direct child of a walk statement", func(t *testing.T) {
+			n, src := mustParseCode(`
+				walk / entry {
+					yield
+				}
+			`)
+
+			yieldStmt := parse.FindNode(n, (*parse.YieldStatement)(nil), nil)
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(yieldStmt, src, text.YIELD_STMTS_ONLY_ALLOWED_IN_BODY_FOR_WALK_EXPR),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4132,7 +4304,7 @@ func TestCheck(t *testing.T) {
 			yieldStmt := parse.FindNode(n, (*parse.YieldStatement)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(yieldStmt, src, text.YIELD_STMTS_ONLY_ALLOWED_IN_BODY_FOR_EXPR),
+				makeError(yieldStmt, src, text.YIELD_STMTS_ONLY_ALLOWED_IN_BODY_FOR_WALK_EXPR),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4146,7 +4318,7 @@ func TestCheck(t *testing.T) {
 			yieldStmt := parse.FindNode(n, (*parse.YieldStatement)(nil), nil)
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
-				makeError(yieldStmt, src, text.YIELD_STMTS_ONLY_ALLOWED_IN_BODY_FOR_EXPR),
+				makeError(yieldStmt, src, text.YIELD_STMTS_ONLY_ALLOWED_IN_BODY_FOR_WALK_EXPR),
 			)
 			assert.Equal(t, expectedErr, err)
 		})
@@ -4475,6 +4647,96 @@ func TestCheck(t *testing.T) {
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
 				makeError(entryIdent, src, text.FmtCannotShadowLocalVariable("e")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("meta var should not shadow local variables", func(t *testing.T) {
+			n, src := mustParseCode(`
+				meta = 1
+				walk ./ meta, e {}
+			`)
+			entryIdent := n.Statements[1].(*parse.WalkStatement).MetaIdent
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(entryIdent, src, text.FmtCannotShadowLocalVariable("meta")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+	})
+
+	t.Run("walk expression", func(t *testing.T) {
+		t.Run("variables defined in walk expression's head are not accessible after the expression", func(t *testing.T) {
+			n, src := mustParseCode(`
+				(walk ./ entry {
+					
+				})
+				return entry
+			`)
+			varNode := parse.FindNodes(n, (*parse.IdentifierLiteral)(nil), nil)[1]
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(varNode, src, text.FmtVarIsNotDeclared("entry")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("variables defined in walk expression's body are not accessible after the expression", func(t *testing.T) {
+			n, src := mustParseCode(`
+				(walk ./ entry {
+					x = 3
+				})
+				return x
+			`)
+
+			varNode := parse.FindNodes(n, (*parse.IdentifierLiteral)(nil), nil)[2]
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(varNode, src, text.FmtVarIsNotDeclared("x")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("entry var should not shadow local variables", func(t *testing.T) {
+			n, src := mustParseCode(`
+				e = 1
+				(walk ./ e {})
+			`)
+			entryIdent := n.Statements[1].(*parse.WalkExpression).EntryIdent
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(entryIdent, src, text.FmtCannotShadowLocalVariable("e")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("entry var should not shadow local variables", func(t *testing.T) {
+			n, src := mustParseCode(`
+				var e = 1
+				(walk ./ e {})
+			`)
+			entryIdent := n.Statements[1].(*parse.WalkExpression).EntryIdent
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(entryIdent, src, text.FmtCannotShadowLocalVariable("e")),
+			)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("meta var should not shadow local variables", func(t *testing.T) {
+			n, src := mustParseCode(`
+				meta = 1
+				(walk ./ meta, e {})
+			`)
+			entryIdent := n.Statements[1].(*parse.WalkExpression).MetaIdent
+
+			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
+			expectedErr := utils.CombineErrors(
+				makeError(entryIdent, src, text.FmtCannotShadowLocalVariable("meta")),
 			)
 			assert.Equal(t, expectedErr, err)
 		})

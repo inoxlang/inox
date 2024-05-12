@@ -110,8 +110,8 @@ const (
 	CONTINUE_STMTS_ONLY_ALLOWED_IN_BODY_FOR_OR_WALK_STMT = "continue statements are only allowed in the body of a 'for' or 'walk' statement"
 	BREAK_STMTS_ONLY_ALLOWED_LOCATION                    = "break statements are only allowed in the body of a switch or match statement, or of a 'for' or 'walk' statement"
 
-	YIELD_STMTS_ONLY_ALLOWED_IN_BODY_FOR_EXPR = "yield statements are only allowed in the body of a 'for' expression"
-	PRUNE_STMTS_ARE_ONLY_ALLOWED_IN_WALK_STMT = "prune statement are only allowed in 'walk' statements"
+	YIELD_STMTS_ONLY_ALLOWED_IN_BODY_FOR_WALK_EXPR       = "yield statements are only allowed in the body of a 'for' or 'walk' expression"
+	PRUNE_STMTS_ARE_ONLY_ALLOWED_IN_WALK_STMTS_AND_EXPRS = "prune statement are only allowed in 'walk' statements and expressions"
 
 	SELF_ACCESSIBILITY_EXPLANATION = "'self' is only accessible within " +
 		"extension methods, struct methods, metaproperty initialization blocks"
