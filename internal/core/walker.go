@@ -259,7 +259,7 @@ func (it *DirWalker) NodeMeta(*Context) WalkableNodeMeta {
 
 func (p Path) Walker(ctx *Context) (Walker, error) {
 	if !p.IsDirPath() {
-		return nil, fmt.Errorf("walks requires a directory path")
+		return nil, fmt.Errorf("walking requires a directory path")
 	}
 
 	absPath, err := p.ToAbs(ctx.GetFileSystem())
