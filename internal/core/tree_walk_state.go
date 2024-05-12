@@ -21,9 +21,10 @@ type TreeWalkState struct {
 	postHandle   func(node parse.Node, val Value, err error) (Value, error)
 
 	debug           *Debugger
-	returnValue     Value           //return value from a function or module
-	yieldedValue    Value           //step result of 'for' expressions
-	iterationChange IterationChange //break, continue, prune
+	returnValue     Value //return value from a function or module
+	yieldedValue    Value //step result of 'for' expressions
+	prune           bool
+	iterationChange IterationChange //break, continue
 	self            Value           //value of self in methods
 	entryComputeFn  func(v Value) (Value, error)
 
@@ -90,6 +91,7 @@ func (state *TreeWalkState) Reset(global *GlobalState) {
 
 	state.returnValue = nil
 	state.yieldedValue = nil
+	state.prune = false
 	state.self = nil
 	state.comptimeTypes = nil
 	state.entryComputeFn = nil
@@ -256,7 +258,6 @@ const (
 	BreakIteration
 	ContinueIteration
 	YieldItem
-	PruneWalk
 )
 
 type GlobalConstness = int

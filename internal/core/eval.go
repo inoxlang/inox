@@ -32,8 +32,6 @@ func (change IterationChange) String() string {
 		return "BreakIteration"
 	case ContinueIteration:
 		return "ContinueIteration"
-	case PruneWalk:
-		return "PruneWalk"
 	default:
 		return "InvalidIterationChange"
 	}

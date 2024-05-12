@@ -3421,10 +3421,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				input: `
 					entries = []
 					walk dir entry {
-						$entries.append($entry)
 						if $entry.is-regular {
 							prune
+							# instructions after the prune statement should be executed.
 						}
+						$entries.append($entry)
 					}
 					return $entries
 				`,
@@ -3711,10 +3712,11 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				input: `
 					entries = []
 					(walk dir entry {
-						$entries.append($entry)
 						if $entry.is-regular {
 							prune
+							# instructions after the prune statement should be executed.
 						}
+						$entries.append($entry)
 					})
 					return $entries
 				`,

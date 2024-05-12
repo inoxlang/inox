@@ -307,7 +307,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		return nil, nil
 	case *parse.PruneStatement:
-		state.iterationChange = PruneWalk
+		state.prune = true
 		return nil, nil
 	case *parse.CallExpression:
 
@@ -891,9 +891,13 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 
 		state.returnValue = nil
 		state.yieldedValue = nil
+		state.prune = false
 
 		defer func() {
 			state.returnValue = nil
+			state.yieldedValue = nil
+			state.prune = false
+
 			state.iterationChange = NoIterationChange
 			if manageLocalScope {
 				state.PopScope()
@@ -1005,7 +1009,7 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 			}
 
 			switch state.iterationChange {
-			case BreakIteration, ContinueIteration, YieldItem, PruneWalk:
+			case BreakIteration, ContinueIteration, YieldItem:
 				break loop
 			}
 		}
@@ -3147,8 +3151,6 @@ func evalForStatement(n *parse.ForStatement, state *TreeWalkState) error {
 				continue iterable_iteration
 			case YieldItem:
 				return nil
-			case PruneWalk:
-				return nil
 			}
 			index++
 		}
@@ -3204,8 +3206,6 @@ func evalForStatement(n *parse.ForStatement, state *TreeWalkState) error {
 					state.iterationChange = NoIterationChange
 					continue stream_iteration
 				case YieldItem:
-					return nil
-				case PruneWalk:
 					return nil
 				}
 			}
@@ -3447,10 +3447,13 @@ walk_loop:
 			return nil
 		}
 
-		switch state.iterationChange {
-		case PruneWalk:
+		if state.prune {
+			state.prune = false
 			state.iterationChange = NoIterationChange
 			walker.Prune(state.Global.Ctx)
+		}
+
+		switch state.iterationChange {
 		case BreakIteration:
 			break walk_loop
 		case ContinueIteration:
@@ -3502,13 +3505,16 @@ walk_loop:
 
 		//Handle break/continue/yield/prune. Return statements are not allowed in the body.
 
+		if state.prune {
+			state.prune = false
+			state.iterationChange = NoIterationChange
+			walker.Prune(state.Global.Ctx)
+		}
+
 		switch state.iterationChange {
 		case BreakIteration:
 			state.iterationChange = NoIterationChange
 			break walk_loop
-		case PruneWalk:
-			state.iterationChange = NoIterationChange
-			walker.Prune(state.Global.Ctx)
 		case ContinueIteration:
 			state.iterationChange = NoIterationChange
 		case YieldItem:
