@@ -16322,16 +16322,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 22}, nil, false},
 				Statements: []Node{
 					&ForStatement{
-						NodeBase: NodeBase{
-							NodeSpan{0, 22},
-							nil,
-							false,
-							/*[]Token{
-								{Type: FOR_KEYWORD, Span: NodeSpan{0, 3}},
-								{Type: COMMA, Span: NodeSpan{5, 6}},
-								{Type: IN_KEYWORD, Span: NodeSpan{9, 11}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 22}},
 						KeyIndexIdent: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{4, 5}, nil, false},
 							Name:     "i",
@@ -16345,15 +16336,7 @@ func testParse(
 							Name:     "users",
 						},
 						Body: &Block{
-							NodeBase: NodeBase{
-								NodeSpan{19, 22},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{19, 20}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{21, 22}},
-								},*/
-							},
+							NodeBase:   NodeBase{Span: NodeSpan{19, 22}},
 							Statements: nil,
 						},
 					},
@@ -16367,16 +16350,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 28}, nil, false},
 				Statements: []Node{
 					&ForStatement{
-						NodeBase: NodeBase{
-							NodeSpan{0, 28},
-							nil,
-							false,
-							/*[]Token{
-								{Type: FOR_KEYWORD, Span: NodeSpan{0, 3}},
-								{Type: COMMA, Span: NodeSpan{11, 12}},
-								{Type: IN_KEYWORD, Span: NodeSpan{15, 17}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 28}},
 						KeyPattern: &PatternIdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{4, 9}, nil, false},
 							Name:     "even",
@@ -16394,15 +16368,7 @@ func testParse(
 							Name:     "users",
 						},
 						Body: &Block{
-							NodeBase: NodeBase{
-								NodeSpan{25, 28},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{25, 26}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{27, 28}},
-								},*/
-							},
+							NodeBase:   NodeBase{Span: NodeSpan{25, 28}},
 							Statements: nil,
 						},
 					},
@@ -16416,16 +16382,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 31}, nil, false},
 				Statements: []Node{
 					&ForStatement{
-						NodeBase: NodeBase{
-							NodeSpan{0, 31},
-							nil,
-							false,
-							/*[]Token{
-								{Type: FOR_KEYWORD, Span: NodeSpan{0, 3}},
-								{Type: COMMA, Span: NodeSpan{11, 12}},
-								{Type: IN_KEYWORD, Span: NodeSpan{18, 20}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 31}},
 						KeyPattern: &PatternIdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{4, 9}, nil, false},
 							Name:     "even",
@@ -16447,15 +16404,7 @@ func testParse(
 							Name:     "users",
 						},
 						Body: &Block{
-							NodeBase: NodeBase{
-								NodeSpan{28, 31},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{28, 29}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{30, 31}},
-								},*/
-							},
+							NodeBase:   NodeBase{Span: NodeSpan{28, 31}},
 							Statements: nil,
 						},
 					},
@@ -16469,16 +16418,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 25}, nil, false},
 				Statements: []Node{
 					&ForStatement{
-						NodeBase: NodeBase{
-							NodeSpan{0, 25},
-							nil,
-							false,
-							/*[]Token{
-								{Type: FOR_KEYWORD, Span: NodeSpan{0, 3}},
-								{Type: COMMA, Span: NodeSpan{5, 6}},
-								{Type: IN_KEYWORD, Span: NodeSpan{12, 14}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 25}},
 						KeyIndexIdent: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{4, 5}, nil, false},
 							Name:     "i",
@@ -16496,15 +16436,7 @@ func testParse(
 							Name:     "users",
 						},
 						Body: &Block{
-							NodeBase: NodeBase{
-								NodeSpan{22, 25},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{22, 23}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{24, 25}},
-								},*/
-							},
+							NodeBase:   NodeBase{Span: NodeSpan{22, 25}},
 							Statements: nil,
 						},
 					},
@@ -16531,15 +16463,7 @@ func testParse(
 							Name:     "users",
 						},
 						Body: &Block{
-							NodeBase: NodeBase{
-								NodeSpan{16, 19},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{16, 17}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{18, 19}},
-								},*/
-							},
+							NodeBase:   NodeBase{Span: NodeSpan{16, 19}},
 							Statements: nil,
 						},
 					},
@@ -16553,16 +16477,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 27}, nil, false},
 				Statements: []Node{
 					&ForStatement{
-						NodeBase: NodeBase{
-							NodeSpan{0, 27},
-							nil,
-							false,
-							/*[]Token{
-								{Type: FOR_KEYWORD, Span: NodeSpan{0, 3}},
-								{Type: CHUNKED_KEYWORD, Span: NodeSpan{4, 11}},
-								{Type: IN_KEYWORD, Span: NodeSpan{14, 16}},
-							},*/
-						},
+						NodeBase:      NodeBase{Span: NodeSpan{0, 27}},
 						KeyIndexIdent: nil,
 						ValueElemIdent: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{12, 13}, nil, false},
@@ -16574,15 +16489,7 @@ func testParse(
 							Name:     "users",
 						},
 						Body: &Block{
-							NodeBase: NodeBase{
-								NodeSpan{24, 27},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{24, 25}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{26, 27}},
-								},*/
-							},
+							NodeBase:   NodeBase{Span: NodeSpan{24, 27}},
 							Statements: nil,
 						},
 					},
@@ -16596,16 +16503,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 28}, nil, false},
 				Statements: []Node{
 					&ForStatement{
-						NodeBase: NodeBase{
-							NodeSpan{0, 28},
-							nil,
-							false,
-							/*[]Token{
-								{Type: FOR_KEYWORD, Span: NodeSpan{0, 3}},
-								{Type: COMMA, Span: NodeSpan{5, 6}},
-								{Type: IN_KEYWORD, Span: NodeSpan{9, 11}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 28}},
 						KeyIndexIdent: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{4, 5}, nil, false},
 							Name:     "i",
@@ -16619,15 +16517,7 @@ func testParse(
 							Name:     "users",
 						},
 						Body: &Block{
-							NodeBase: NodeBase{
-								NodeSpan{19, 28},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{19, 20}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{27, 28}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{19, 28}},
 							Statements: []Node{
 								&BreakStatement{
 									NodeBase: NodeBase{
@@ -16650,16 +16540,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 31}, nil, false},
 				Statements: []Node{
 					&ForStatement{
-						NodeBase: NodeBase{
-							NodeSpan{0, 31},
-							nil,
-							false,
-							/*[]Token{
-								{Type: FOR_KEYWORD, Span: NodeSpan{0, 3}},
-								{Type: COMMA, Span: NodeSpan{5, 6}},
-								{Type: IN_KEYWORD, Span: NodeSpan{9, 11}},
-							},*/
-						},
+						NodeBase: NodeBase{Span: NodeSpan{0, 31}},
 						KeyIndexIdent: &IdentifierLiteral{
 							NodeBase: NodeBase{NodeSpan{4, 5}, nil, false},
 							Name:     "i",
@@ -16673,15 +16554,7 @@ func testParse(
 							Name:     "users",
 						},
 						Body: &Block{
-							NodeBase: NodeBase{
-								NodeSpan{19, 31},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{19, 20}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{30, 31}},
-								},*/
-							},
+							NodeBase: NodeBase{Span: NodeSpan{19, 31}},
 							Statements: []Node{
 								&ContinueStatement{
 									NodeBase: NodeBase{
@@ -16704,14 +16577,7 @@ func testParse(
 				NodeBase: NodeBase{NodeSpan{0, 14}, nil, false},
 				Statements: []Node{
 					&ForStatement{
-						NodeBase: NodeBase{
-							NodeSpan{0, 14},
-							nil,
-							false,
-							/*[]Token{
-								{Type: FOR_KEYWORD, Span: NodeSpan{0, 3}},
-							},*/
-						},
+						NodeBase:       NodeBase{Span: NodeSpan{0, 14}},
 						KeyIndexIdent:  nil,
 						ValueElemIdent: nil,
 						IteratedValue: &Variable{
@@ -16719,15 +16585,7 @@ func testParse(
 							Name:     "array",
 						},
 						Body: &Block{
-							NodeBase: NodeBase{
-								NodeSpan{11, 14},
-								nil,
-								false,
-								/*[]Token{
-									{Type: OPENING_CURLY_BRACKET, Span: NodeSpan{11, 12}},
-									{Type: CLOSING_CURLY_BRACKET, Span: NodeSpan{13, 14}},
-								},*/
-							},
+							NodeBase:   NodeBase{Span: NodeSpan{11, 14}},
 							Statements: nil,
 						},
 					},
@@ -17031,6 +16889,41 @@ func testParse(
 			n := mustparseChunk(t, "a = for i, u in $users => i")
 			assert.EqualValues(t, &Chunk{
 				NodeBase: NodeBase{NodeSpan{0, 27}, nil, false},
+				Statements: []Node{
+					&Assignment{
+						NodeBase: NodeBase{NodeSpan{0, 27}, nil, false},
+						Left: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "a",
+						},
+						Right: &ForExpression{
+							NodeBase: NodeBase{Span: NodeSpan{4, 27}},
+							KeyIndexIdent: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{8, 9}, nil, false},
+								Name:     "i",
+							},
+							ValueElemIdent: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{11, 12}, nil, false},
+								Name:     "u",
+							},
+							IteratedValue: &Variable{
+								NodeBase: NodeBase{NodeSpan{16, 22}, nil, false},
+								Name:     "users",
+							},
+							Body: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{26, 27}, nil, false},
+								Name:     "i",
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("unparenthesized: as LHS of assignment + followed by newline", func(t *testing.T) {
+			n := mustparseChunk(t, "a = for i, u in $users => i\n")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 28}, nil, false},
 				Statements: []Node{
 					&Assignment{
 						NodeBase: NodeBase{NodeSpan{0, 27}, nil, false},
@@ -17395,6 +17288,70 @@ func testParse(
 						Body: &Block{
 							NodeBase:   NodeBase{Span: NodeSpan{21, 24}},
 							Statements: nil,
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("unparenthesized", func(t *testing.T) {
+			n := mustparseChunk(t, "a = walk / entry {}")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
+				Statements: []Node{
+					&Assignment{
+						NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
+						Left: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "a",
+						},
+						Right: &WalkExpression{
+							NodeBase: NodeBase{Span: NodeSpan{4, 19}},
+							Walked: &AbsolutePathLiteral{
+								NodeBase: NodeBase{NodeSpan{9, 10}, nil, false},
+								Raw:      "/",
+								Value:    "/",
+							},
+							EntryIdent: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{11, 16}, nil, false},
+								Name:     "entry",
+							},
+							Body: &Block{
+								NodeBase:   NodeBase{Span: NodeSpan{17, 19}},
+								Statements: nil,
+							},
+						},
+					},
+				},
+			}, n)
+		})
+
+		t.Run("unparenthesized: as LHS of assignment + followed by newline", func(t *testing.T) {
+			n := mustparseChunk(t, "a = walk / entry {}\n")
+			assert.EqualValues(t, &Chunk{
+				NodeBase: NodeBase{NodeSpan{0, 20}, nil, false},
+				Statements: []Node{
+					&Assignment{
+						NodeBase: NodeBase{NodeSpan{0, 19}, nil, false},
+						Left: &IdentifierLiteral{
+							NodeBase: NodeBase{NodeSpan{0, 1}, nil, false},
+							Name:     "a",
+						},
+						Right: &WalkExpression{
+							NodeBase: NodeBase{Span: NodeSpan{4, 19}},
+							Walked: &AbsolutePathLiteral{
+								NodeBase: NodeBase{NodeSpan{9, 10}, nil, false},
+								Raw:      "/",
+								Value:    "/",
+							},
+							EntryIdent: &IdentifierLiteral{
+								NodeBase: NodeBase{NodeSpan{11, 16}, nil, false},
+								Name:     "entry",
+							},
+							Body: &Block{
+								NodeBase:   NodeBase{Span: NodeSpan{17, 19}},
+								Statements: nil,
+							},
 						},
 					},
 				},
@@ -33919,7 +33876,7 @@ func testParse(
 								&MarkupInterpolation{
 									NodeBase: NodeBase{Span: NodeSpan{7, 24}},
 									Expr: &ForExpression{
-										NodeBase: NodeBase{Span: NodeSpan{7, 24}},
+										NodeBase: NodeBase{Span: NodeSpan{7, 23}},
 										ValueElemIdent: &IdentifierLiteral{
 											NodeBase: NodeBase{NodeSpan{11, 12}, nil, false},
 											Name:     "i",

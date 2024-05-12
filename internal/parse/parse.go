@@ -5328,9 +5328,9 @@ func (p *parser) parseForExpression(openingParenIndex int32 /*-1 if no unparenth
 			parsingErr = &ParsingError{UnterminatedForExpr, UNTERMINATED_FOR_EXPR_MISSING_ARROW_ITEM_OR_BODY}
 		}
 
-		p.eatSpaceNewlineComment()
-
 		if shouldHaveClosingParen {
+			p.eatSpaceNewlineComment()
+
 			if p.i < p.len && p.s[p.i] == ')' {
 				p.tokens = append(p.tokens, Token{Type: CLOSING_PARENTHESIS, Span: NodeSpan{p.i, p.i + 1}})
 				p.i++
@@ -5608,9 +5608,9 @@ func (p *parser) parseWalkExpression(openingParenIndex int32 /*-1 if no unparent
 		end = blk.Span.End
 	}
 
-	p.eatSpaceNewlineComment()
-
 	if shouldHaveClosingParen {
+		p.eatSpaceNewlineComment()
+
 		if p.i < p.len && p.s[p.i] == ')' {
 			p.tokens = append(p.tokens, Token{Type: CLOSING_PARENTHESIS, Span: NodeSpan{p.i, p.i + 1}})
 			p.i++
