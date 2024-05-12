@@ -13,6 +13,7 @@
 - [For statement](#for-statement)
 - [For expression](#for-expression)
 - [Walk statement](#walk-statement)
+- [Walk expression](#walk-expression)
 - [Pipe statement](#pipe-statement)
 
 ## If Statement
@@ -396,9 +397,11 @@ output:
 ./tempdir/a.txt
 ./tempdir/b/
 ./tempdir/b/c.txt
+```
 
+The `prune` statement prevents the iteration of the current node's children.
 
-# the prune statement prevents the iteration of the current directory's children
+```
 walk ./tempdir/ entry {
     if (entry.name == "b") {
         prune
@@ -431,6 +434,54 @@ output:
 "child 1"
 "grandchild"
 "child 2"
+```
+
+
+## Walk Expression
+
+**walk expressions** iterate over a **walkable** value. Like in **for
+expressions** you can use the **break**, **continue** and **yield** keywords.
+
+```
+fs.mkdir ./tempdir/ :{
+    ./a.txt: ""
+    ./b/: :{
+        ./c.txt: ""
+    }
+}
+
+list = walk ./tempdir/ entry {
+    yield entry.path
+}
+print(list)
+
+output:
+[
+    ./tempdir/
+    ./tempdir/a.txt
+    ./tempdir/b/
+    ./tempdir/b/c.txt
+]
+```
+
+The `yield` statement **yields** an item, and ends the current step (like `continue`).\
+The `prune` statement prevents the iteration of the current node's children.
+
+```
+list = walk ./tempdir/ entry {
+    if (entry.name == "b") {
+        prune
+    }
+    yield entry.path
+}
+print(list)
+
+output:
+[
+    ./tempdir/
+    ./tempdir/a.txt
+    ./tempdir/b/
+]
 ```
 
 ## Pipe Statement
