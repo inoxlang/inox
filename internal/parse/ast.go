@@ -1493,11 +1493,12 @@ func (IfExpression) Kind() NodeKind {
 type ForStatement struct {
 	NodeBase
 
-	KeyIndexIdent *IdentifierLiteral //can be nil
 	KeyPattern    Node               //can be nil
+	KeyIndexIdent *IdentifierLiteral //can be nil
 
-	ValueElemIdent *IdentifierLiteral //can be nil
-	ValuePattern   Node               //can be nil
+	ValuePattern      Node               //can be nil
+	ValueElemIdent    *IdentifierLiteral //can be nil
+	BadValueElemIdent Node               //can be nil
 
 	Body          *Block
 	Chunked       bool
@@ -1511,11 +1512,12 @@ func (ForStatement) Kind() NodeKind {
 type ForExpression struct {
 	NodeBase
 
-	KeyIndexIdent *IdentifierLiteral //can be nil
 	KeyPattern    Node               //can be nil
+	KeyIndexIdent *IdentifierLiteral //can be nil
 
-	ValueElemIdent *IdentifierLiteral //can be nil
-	ValuePattern   Node               //can be nil
+	ValuePattern      Node               //can be nil
+	ValueElemIdent    *IdentifierLiteral //can be nil
+	BadValueElemIdent Node               //can be nil
 
 	Body          Node //*Block or expression
 	Chunked       bool
@@ -1528,10 +1530,14 @@ func (ForExpression) Kind() NodeKind {
 
 type WalkStatement struct {
 	NodeBase
-	Walked     Node
-	MetaIdent  *IdentifierLiteral
-	EntryIdent *IdentifierLiteral
-	Body       *Block
+	Walked Node
+
+	MetaIdent *IdentifierLiteral
+
+	EntryIdent    *IdentifierLiteral
+	BadEntryIdent Node
+
+	Body *Block
 }
 
 func (WalkStatement) Kind() NodeKind {
@@ -1540,10 +1546,14 @@ func (WalkStatement) Kind() NodeKind {
 
 type WalkExpression struct {
 	NodeBase
-	Walked     Node
-	MetaIdent  Node
-	EntryIdent Node
-	Body       *Block
+	Walked Node
+
+	MetaIdent *IdentifierLiteral
+
+	EntryIdent    *IdentifierLiteral
+	BadEntryIdent Node
+
+	Body *Block
 }
 
 func (WalkExpression) Kind() NodeKind {

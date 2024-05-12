@@ -4898,36 +4898,24 @@ func (p *parser) parseForStatement(forIdent *IdentifierLiteral) *ForStatement {
 	chunked := false
 	p.tokens = append(p.tokens, Token{Type: FOR_KEYWORD, Span: forIdent.Span})
 
-	parseVariableLessForStatement := func(iteratedValue Node) *ForStatement {
-		var blk *Block
-		end := int32(0)
-
-		if p.i >= p.len || p.s[p.i] != '{' {
-			parsingErr = &ParsingError{MissingBlock, UNTERMINATED_FOR_STMT_MISSING_BLOCK}
-			end = p.i
-		} else {
-			blk = p.parseBlock()
-			end = p.i
-		}
-
-		return &ForStatement{
-			NodeBase: NodeBase{
-				Span: NodeSpan{forIdent.Span.Start, end},
-				Err:  parsingErr,
-			},
-			KeyIndexIdent:  nil,
-			ValueElemIdent: nil,
-			Body:           blk,
-			IteratedValue:  iteratedValue,
-		}
-	}
-
 	if p.i < p.len && p.s[p.i] == '%' {
 		firstPattern = p.parsePercentPrefixedPattern(false)
 		p.eatSpace()
 
 		if p.i < p.len && p.s[p.i] == '{' {
-			return parseVariableLessForStatement(firstPattern)
+			blk := p.parseBlock()
+			end := p.i
+
+			return &ForStatement{
+				NodeBase: NodeBase{
+					Span: NodeSpan{forIdent.Span.Start, end},
+					Err:  parsingErr,
+				},
+				KeyIndexIdent:  nil,
+				ValueElemIdent: nil,
+				Body:           blk,
+				IteratedValue:  firstPattern,
+			}
 		}
 		e, _ := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForPipelineExprs: true})
 		first = e
@@ -4945,6 +4933,8 @@ func (p *parser) parseForStatement(forIdent *IdentifierLiteral) *ForStatement {
 	switch v := first.(type) {
 	case *IdentifierLiteral: //for ... in ...
 		p.eatSpace()
+
+		var badValueElemIdent Node
 
 		if p.i >= p.len {
 			return &ForStatement{
@@ -4978,9 +4968,10 @@ func (p *parser) parseForStatement(forIdent *IdentifierLiteral) *ForStatement {
 						Span: NodeSpan{forIdent.Span.Start, p.i},
 						Err:  &ParsingError{UnspecifiedParsingError, UNTERMINATED_FOR_STMT},
 					},
-					Chunked:       chunked,
-					KeyPattern:    firstPattern,
-					KeyIndexIdent: v,
+					Chunked:           chunked,
+					KeyPattern:        firstPattern,
+					KeyIndexIdent:     v,
+					BadValueElemIdent: badValueElemIdent,
 				}
 			}
 
@@ -4993,6 +4984,7 @@ func (p *parser) parseForStatement(forIdent *IdentifierLiteral) *ForStatement {
 
 			if ident, isVar := e.(*IdentifierLiteral); !isVar {
 				parsingErr = &ParsingError{UnspecifiedParsingError, fmtInvalidForStmtKeyIndexVarShouldBeFollowedByVarNot(keyIndexIdent)}
+				badValueElemIdent = e
 			} else {
 				valueElemIdent = ident
 			}
@@ -5005,10 +4997,11 @@ func (p *parser) parseForStatement(forIdent *IdentifierLiteral) *ForStatement {
 						Span: NodeSpan{forIdent.Span.Start, p.i},
 						Err:  &ParsingError{UnspecifiedParsingError, UNTERMINATED_FOR_STMT},
 					},
-					KeyPattern:    firstPattern,
-					KeyIndexIdent: v,
-					ValuePattern:  valuePattern,
-					Chunked:       chunked,
+					KeyPattern:        firstPattern,
+					KeyIndexIdent:     v,
+					ValuePattern:      valuePattern,
+					BadValueElemIdent: badValueElemIdent,
+					Chunked:           chunked,
 				}
 			}
 
@@ -5018,11 +5011,12 @@ func (p *parser) parseForStatement(forIdent *IdentifierLiteral) *ForStatement {
 						Span: NodeSpan{forIdent.Span.Start, p.i},
 						Err:  &ParsingError{UnspecifiedParsingError, INVALID_FOR_STMT_MISSING_IN_KEYWORD},
 					},
-					KeyPattern:     keyPattern,
-					KeyIndexIdent:  keyIndexIdent,
-					ValuePattern:   valuePattern,
-					ValueElemIdent: valueElemIdent,
-					Chunked:        chunked,
+					KeyPattern:        keyPattern,
+					KeyIndexIdent:     keyIndexIdent,
+					ValuePattern:      valuePattern,
+					ValueElemIdent:    valueElemIdent,
+					BadValueElemIdent: badValueElemIdent,
+					Chunked:           chunked,
 				}
 			}
 
@@ -5041,11 +5035,12 @@ func (p *parser) parseForStatement(forIdent *IdentifierLiteral) *ForStatement {
 					Span: NodeSpan{forIdent.Span.Start, p.i},
 					Err:  &ParsingError{UnspecifiedParsingError, INVALID_FOR_STMT_IN_KEYWORD_SHOULD_BE_FOLLOWED_BY_SPACE},
 				},
-				KeyPattern:     keyPattern,
-				KeyIndexIdent:  keyIndexIdent,
-				ValuePattern:   valuePattern,
-				ValueElemIdent: valueElemIdent,
-				Chunked:        chunked,
+				KeyPattern:        keyPattern,
+				KeyIndexIdent:     keyIndexIdent,
+				ValuePattern:      valuePattern,
+				ValueElemIdent:    valueElemIdent,
+				BadValueElemIdent: badValueElemIdent,
+				Chunked:           chunked,
 			}
 		}
 		p.eatSpace()
@@ -5056,11 +5051,12 @@ func (p *parser) parseForStatement(forIdent *IdentifierLiteral) *ForStatement {
 					Span: NodeSpan{forIdent.Span.Start, p.i},
 					Err:  &ParsingError{UnspecifiedParsingError, INVALID_FOR_STMT_MISSING_VALUE_AFTER_IN},
 				},
-				KeyPattern:     firstPattern,
-				KeyIndexIdent:  keyIndexIdent,
-				ValuePattern:   valuePattern,
-				ValueElemIdent: valueElemIdent,
-				Chunked:        chunked,
+				KeyPattern:        keyPattern,
+				KeyIndexIdent:     keyIndexIdent,
+				ValuePattern:      valuePattern,
+				ValueElemIdent:    valueElemIdent,
+				BadValueElemIdent: badValueElemIdent,
+				Chunked:           chunked,
 			}
 		}
 
@@ -5082,17 +5078,51 @@ func (p *parser) parseForStatement(forIdent *IdentifierLiteral) *ForStatement {
 				Span: NodeSpan{forIdent.Span.Start, end},
 				Err:  parsingErr,
 			},
-			KeyPattern:     keyPattern,
-			KeyIndexIdent:  keyIndexIdent,
-			ValueElemIdent: valueElemIdent,
-			ValuePattern:   valuePattern,
-			Body:           blk,
-			Chunked:        chunked,
-			IteratedValue:  iteratedValue,
+			KeyPattern:        keyPattern,
+			KeyIndexIdent:     keyIndexIdent,
+			ValueElemIdent:    valueElemIdent,
+			ValuePattern:      valuePattern,
+			BadValueElemIdent: badValueElemIdent,
+			Body:              blk,
+			Chunked:           chunked,
+			IteratedValue:     iteratedValue,
 		}
 	default:
+		if firstPattern != nil {
+			return &ForStatement{
+				NodeBase: NodeBase{
+					Span: NodeSpan{forIdent.Span.Start, p.i},
+					Err:  &ParsingError{UnspecifiedParsingError, INVALID_FOR_STMT},
+				},
+				Chunked:           chunked,
+				ValuePattern:      firstPattern,
+				BadValueElemIdent: first,
+			}
+		}
+
 		p.eatSpace()
-		return parseVariableLessForStatement(first)
+
+		var blk *Block
+		end := int32(0)
+
+		if p.i >= p.len || p.s[p.i] != '{' {
+			parsingErr = &ParsingError{MissingBlock, UNTERMINATED_FOR_STMT_MISSING_BLOCK}
+			end = p.i
+		} else {
+			blk = p.parseBlock()
+			end = p.i
+		}
+
+		return &ForStatement{
+			NodeBase: NodeBase{
+				Span: NodeSpan{forIdent.Span.Start, end},
+				Err:  parsingErr,
+			},
+			KeyIndexIdent:  nil,
+			ValueElemIdent: nil,
+			Body:           blk,
+			IteratedValue:  first,
+		}
 	}
 }
 
@@ -5138,6 +5168,8 @@ func (p *parser) parseForExpression(openingParenIndex int32 /*-1 if no unparenth
 	case *IdentifierLiteral: //for ... in ...
 		p.eatSpace()
 
+		var badValueElemIdent Node
+
 		if p.i >= p.len {
 			return &ForExpression{
 				NodeBase: NodeBase{
@@ -5172,9 +5204,10 @@ func (p *parser) parseForExpression(openingParenIndex int32 /*-1 if no unparenth
 						Err:             &ParsingError{UnterminatedForExpr, UNTERMINATED_FOR_EXPR},
 						IsParenthesized: shouldHaveClosingParen,
 					},
-					Chunked:       chunked,
-					KeyPattern:    firstPattern,
-					KeyIndexIdent: v,
+					Chunked:           chunked,
+					KeyPattern:        firstPattern,
+					KeyIndexIdent:     v,
+					BadValueElemIdent: badValueElemIdent,
 				}
 			}
 
@@ -5187,6 +5220,7 @@ func (p *parser) parseForExpression(openingParenIndex int32 /*-1 if no unparenth
 
 			if ident, isVar := e.(*IdentifierLiteral); !isVar {
 				parsingErr = &ParsingError{UnspecifiedParsingError, fmtInvalidForExprKeyIndexVarShouldBeFollowedByVarNot(keyIndexIdent)}
+				badValueElemIdent = e
 			} else {
 				valueElemIdent = ident
 			}
@@ -5200,10 +5234,11 @@ func (p *parser) parseForExpression(openingParenIndex int32 /*-1 if no unparenth
 						Err:             &ParsingError{UnterminatedForExpr, UNTERMINATED_FOR_EXPR},
 						IsParenthesized: shouldHaveClosingParen,
 					},
-					KeyPattern:    firstPattern,
-					KeyIndexIdent: v,
-					ValuePattern:  valuePattern,
-					Chunked:       chunked,
+					KeyPattern:        firstPattern,
+					KeyIndexIdent:     v,
+					ValuePattern:      valuePattern,
+					BadValueElemIdent: badValueElemIdent,
+					Chunked:           chunked,
 				}
 			}
 
@@ -5214,11 +5249,12 @@ func (p *parser) parseForExpression(openingParenIndex int32 /*-1 if no unparenth
 						Err:             &ParsingError{UnterminatedForExpr, UNTERMINATED_FOR_EXPR_MISSING_IN_KEYWORD},
 						IsParenthesized: shouldHaveClosingParen,
 					},
-					KeyPattern:     keyPattern,
-					KeyIndexIdent:  keyIndexIdent,
-					ValuePattern:   valuePattern,
-					ValueElemIdent: valueElemIdent,
-					Chunked:        chunked,
+					KeyPattern:        keyPattern,
+					KeyIndexIdent:     keyIndexIdent,
+					ValuePattern:      valuePattern,
+					ValueElemIdent:    valueElemIdent,
+					BadValueElemIdent: badValueElemIdent,
+					Chunked:           chunked,
 				}
 			}
 
@@ -5238,11 +5274,12 @@ func (p *parser) parseForExpression(openingParenIndex int32 /*-1 if no unparenth
 					Err:             &ParsingError{UnterminatedForExpr, INVALID_FOR_EXPR_IN_KEYWORD_SHOULD_BE_FOLLOWED_BY_SPACE},
 					IsParenthesized: shouldHaveClosingParen,
 				},
-				KeyPattern:     keyPattern,
-				KeyIndexIdent:  keyIndexIdent,
-				ValuePattern:   valuePattern,
-				ValueElemIdent: valueElemIdent,
-				Chunked:        chunked,
+				KeyPattern:        keyPattern,
+				KeyIndexIdent:     keyIndexIdent,
+				ValuePattern:      valuePattern,
+				ValueElemIdent:    valueElemIdent,
+				BadValueElemIdent: badValueElemIdent,
+				Chunked:           chunked,
 			}
 		}
 		p.eatSpace()
@@ -5254,11 +5291,12 @@ func (p *parser) parseForExpression(openingParenIndex int32 /*-1 if no unparenth
 					Err:             &ParsingError{UnspecifiedParsingError, INVALID_FOR_STMT_MISSING_VALUE_AFTER_IN},
 					IsParenthesized: shouldHaveClosingParen,
 				},
-				KeyPattern:     firstPattern,
-				KeyIndexIdent:  keyIndexIdent,
-				ValuePattern:   valuePattern,
-				ValueElemIdent: valueElemIdent,
-				Chunked:        chunked,
+				KeyPattern:        firstPattern,
+				KeyIndexIdent:     keyIndexIdent,
+				ValuePattern:      valuePattern,
+				ValueElemIdent:    valueElemIdent,
+				BadValueElemIdent: badValueElemIdent,
+				Chunked:           chunked,
 			}
 		}
 
@@ -5310,13 +5348,14 @@ func (p *parser) parseForExpression(openingParenIndex int32 /*-1 if no unparenth
 				Err:             parsingErr,
 				IsParenthesized: shouldHaveClosingParen,
 			},
-			KeyPattern:     keyPattern,
-			KeyIndexIdent:  keyIndexIdent,
-			ValueElemIdent: valueElemIdent,
-			ValuePattern:   valuePattern,
-			Body:           body,
-			Chunked:        chunked,
-			IteratedValue:  iteratedValue,
+			KeyPattern:        keyPattern,
+			KeyIndexIdent:     keyIndexIdent,
+			ValueElemIdent:    valueElemIdent,
+			ValuePattern:      valuePattern,
+			BadValueElemIdent: badValueElemIdent,
+			Body:              body,
+			Chunked:           chunked,
+			IteratedValue:     iteratedValue,
 		}
 	default:
 		return &ForExpression{
@@ -5325,8 +5364,9 @@ func (p *parser) parseForExpression(openingParenIndex int32 /*-1 if no unparenth
 				Err:             &ParsingError{UnspecifiedParsingError, INVALID_FOR_EXPR},
 				IsParenthesized: shouldHaveClosingParen,
 			},
-			Chunked:    chunked,
-			KeyPattern: firstPattern,
+			Chunked:           chunked,
+			ValuePattern:      firstPattern,
+			BadValueElemIdent: first,
 		}
 	}
 }
@@ -5375,7 +5415,8 @@ func (p *parser) parseWalkStatement(walkIdent *IdentifierLiteral) *WalkStatement
 				Span: NodeSpan{walkIdent.Span.Start, p.i},
 				Err:  &ParsingError{UnterminatedWalkStmt, UNTERMINATED_WALK_STMT_MISSING_ENTRY_VARIABLE_NAME},
 			},
-			Walked: walked,
+			Walked:        walked,
+			BadEntryIdent: e,
 		}
 	}
 
@@ -5405,8 +5446,9 @@ func (p *parser) parseWalkStatement(walkIdent *IdentifierLiteral) *WalkStatement
 						Span: NodeSpan{walkIdent.Span.Start, p.i},
 						Err:  &ParsingError{UnspecifiedParsingError, UNTERMINATED_WALK_STMT_MISSING_ENTRY_VARIABLE_NAME},
 					},
-					MetaIdent: metaIdent,
-					Walked:    walked,
+					MetaIdent:     metaIdent,
+					BadEntryIdent: e,
+					Walked:        walked,
 				}
 			}
 			p.eatSpace()
@@ -5475,7 +5517,8 @@ func (p *parser) parseWalkExpression(openingParenIndex int32 /*-1 if no unparent
 	}
 
 	var parsingErr *ParsingError
-	var metaIdent, entryIdent Node
+	var metaIdent, entryIdent *IdentifierLiteral
+
 	p.eatSpace()
 
 	walked, isMissingExpr := p.parseExpression(exprParsingConfig{disallowUnparenthesizedBinForPipelineExprs: true})
@@ -5511,8 +5554,8 @@ func (p *parser) parseWalkExpression(openingParenIndex int32 /*-1 if no unparent
 				Err:             parsingErr,
 				IsParenthesized: shouldHaveClosingParen,
 			},
-			Walked:     walked,
-			EntryIdent: e,
+			Walked:        walked,
+			BadEntryIdent: e,
 		}
 	}
 
@@ -5545,9 +5588,9 @@ func (p *parser) parseWalkExpression(openingParenIndex int32 /*-1 if no unparent
 						Err:             parsingErr,
 						IsParenthesized: shouldHaveClosingParen,
 					},
-					MetaIdent:  metaIdent,
-					EntryIdent: e,
-					Walked:     walked,
+					MetaIdent:     metaIdent,
+					BadEntryIdent: e,
+					Walked:        walked,
 				}
 			}
 			p.eatSpace()

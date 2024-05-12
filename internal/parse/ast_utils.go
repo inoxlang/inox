@@ -450,6 +450,7 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 		walk(n.KeyIndexIdent, node, ancestorChain, fn, afterFn)
 		walk(n.ValuePattern, node, ancestorChain, fn, afterFn)
 		walk(n.ValueElemIdent, node, ancestorChain, fn, afterFn)
+		walk(n.BadValueElemIdent, node, ancestorChain, fn, afterFn)
 		walk(n.IteratedValue, node, ancestorChain, fn, afterFn)
 		walk(n.Body, node, ancestorChain, fn, afterFn)
 	case *ForExpression:
@@ -457,17 +458,20 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 		walk(n.KeyIndexIdent, node, ancestorChain, fn, afterFn)
 		walk(n.ValuePattern, node, ancestorChain, fn, afterFn)
 		walk(n.ValueElemIdent, node, ancestorChain, fn, afterFn)
+		walk(n.BadValueElemIdent, node, ancestorChain, fn, afterFn)
 		walk(n.IteratedValue, node, ancestorChain, fn, afterFn)
 		walk(n.Body, node, ancestorChain, fn, afterFn)
 	case *WalkStatement:
 		walk(n.Walked, node, ancestorChain, fn, afterFn)
 		walk(n.MetaIdent, node, ancestorChain, fn, afterFn)
 		walk(n.EntryIdent, node, ancestorChain, fn, afterFn)
+		walk(n.BadEntryIdent, node, ancestorChain, fn, afterFn)
 		walk(n.Body, node, ancestorChain, fn, afterFn)
 	case *WalkExpression:
 		walk(n.Walked, node, ancestorChain, fn, afterFn)
 		walk(n.MetaIdent, node, ancestorChain, fn, afterFn)
 		walk(n.EntryIdent, node, ancestorChain, fn, afterFn)
+		walk(n.BadEntryIdent, node, ancestorChain, fn, afterFn)
 		walk(n.Body, node, ancestorChain, fn, afterFn)
 	case *ReturnStatement:
 		walk(n.Expr, node, ancestorChain, fn, afterFn)

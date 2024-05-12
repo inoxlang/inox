@@ -333,11 +333,38 @@ func TestPrint(t *testing.T) {
 		"{a: 1 >= 2 b: 2}",
 		"{a: a is b: 2}",
 		"{a: a is b b: 2}",
+		//for statements
+		"for %int 'i'",
+		"for %int 'i' in",
+		"for %int 'i' in []",
+		"for %int 'i' in [] {}",
+		"for i, 'v' in [] {}",
+		"for i, 'v' in []",
+		"for i, 'v' in",
+		"for i, 'v'",
+		"for %int i, 'v'",
+		"for %int i, %rune 'v'",
+		"for []",
+		"for [] {}",
+		"for %int [] {}",
 		//for expressions
 		"(for u in users => u)",
 		"(for u in users => )",
 		"(for u in users {})",
 		"(for u in users {)",
+		"(for %int 'i')",
+		"(for %int 'i' in)",
+		"(for %int 'i' in [])",
+		"(for %int 'i' in [] {})",
+		"(for i, 'v' in [] {})",
+		"(for i, 'v' in [])",
+		"(for i, 'v' in)",
+		"(for i, 'v')",
+		"(for %int i, 'v')",
+		"(for %int i, %rune 'v')",
+		"(for [])",
+		"(for [] {})",
+		"(for %int [] {})",
 		//unparenthesized for expressions
 		"a = for u in users => u",
 		//walk statements
@@ -879,7 +906,9 @@ func TestPrint(t *testing.T) {
 			n, err := ParseChunk(testCase, "")
 			_ = err
 			s := SPrint(n, n, PrintConfig{KeepLeadingSpace: true, KeepTrailingSpace: true})
-			assert.Equal(t, testCase, s)
+			if !assert.Equal(t, testCase, s) {
+				ParseChunk(testCase, "")
+			}
 		})
 	}
 
