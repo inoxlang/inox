@@ -16,6 +16,8 @@ import (
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/css"
+	"github.com/inoxlang/inox/internal/hyperscript/hscode"
+	"github.com/inoxlang/inox/internal/hyperscript/hsparse"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/utils"
@@ -31,19 +33,22 @@ type Configuration struct {
 	Fast           bool     //if true the scan will be faster but will use more CPU and memory.
 	Phases         []Phase
 
-	ChunkCache           *parse.ChunkCache    //optional
-	StylesheetParseCache *css.StylesheetCache //optional
-	FileParsingTimeout   time.Duration        //maximum duration for parsing a single file. defaults to parse.DEFAULT_TIMEOUT
+	ChunkCache            *parse.ChunkCache      //optional
+	StylesheetParseCache  *css.StylesheetCache   //optional
+	HyperscriptParseCache *hscode.FileParseCache //optional
+	FileParsingTimeout    time.Duration          //maximum duration for parsing a single file. defaults to parse.DEFAULT_TIMEOUT
 }
 
 type Phase struct {
-	Name             string
-	InoxFileHandlers []InoxFileHandler //File handlers are called for each inox file. They should not modify the chunk node.
-	CSSFileHandlers  []CSSFileHandler  //File handlers are called for each CSS file. They should not modify the node.
+	Name                    string
+	InoxFileHandlers        []InoxFileHandler //File handlers are called for each inox file. They should not modify the chunk node.
+	CSSFileHandlers         []CSSFileHandler  //File handlers are called for each CSS file. They should not modify the node.
+	HyperscriptFileHandlers []HyperscriptFileHandler
 }
 
 type InoxFileHandler func(path string, fileContent string, n *parse.ParsedChunkSource, phaseName string) error
 type CSSFileHandler func(path string, fileContent string, n css.Node, phaseName string) error
+type HyperscriptFileHandler func(path string, fileContent string, parsingResult *hscode.ParsingResult, phaseName string) error
 
 func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) error {
 
@@ -75,8 +80,10 @@ func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) e
 	//Track the encountered files in order to remove deleted ASTs from the cache.
 	seenInoxFiles := []string{}
 	seenCssFiles := []string{}
+	seenHyperscriptFiles := []string{}
 	chunkCache := config.ChunkCache
 	stylesheetCache := config.StylesheetParseCache
+	hyperscriptParseCache := config.HyperscriptParseCache
 
 	currentPhase := config.Phases[0]
 
@@ -109,7 +116,7 @@ func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) e
 		}
 
 		switch filepath.Ext(path) {
-		case inoxconsts.INOXLANG_FILE_EXTENSION, ".css":
+		case inoxconsts.INOXLANG_FILE_EXTENSION, "._hs", ".css":
 		default:
 			return nil
 		}
@@ -166,6 +173,44 @@ func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) e
 
 				if err != nil {
 					return fmt.Errorf("an iNox file handler returned an error for %s", path)
+				}
+			}
+		//Hyperscript file ----------------------------------------------------------------------------
+		case "._hs":
+			var (
+				parsingResult *hscode.ParsingResult
+				cacheHit      bool
+			)
+
+			contentS := string(content)
+
+			//Check the cache.
+			if hyperscriptParseCache != nil {
+				parsingResult, cacheHit = hyperscriptParseCache.GetResult(contentS)
+			}
+
+			if !cacheHit {
+				//Parse the file.
+
+				result, _, _ := hsparse.ParseHyperScriptProgram(ctx, contentS)
+				if result == nil {
+					return nil //parsing error
+				}
+
+				parsingResult = result
+
+				//Update the cache.
+				if hyperscriptParseCache != nil {
+					hyperscriptParseCache.Put(path, contentS, parsingResult, err)
+				}
+			}
+			seenHyperscriptFiles = append(seenHyperscriptFiles, path)
+
+			for _, handler := range currentPhase.HyperscriptFileHandlers {
+				err := handler(path, contentS, parsingResult, currentPhase.Name)
+
+				if err != nil {
+					return fmt.Errorf("an Hyperscript file handler returned an error for %s", path)
 				}
 			}
 		//CSS file ----------------------------------------------------------------------------
@@ -233,6 +278,9 @@ func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) e
 	}
 	if stylesheetCache != nil {
 		stylesheetCache.KeepEntriesByPath(seenCssFiles...)
+	}
+	if hyperscriptParseCache != nil {
+		hyperscriptParseCache.KeepEntriesByPath(seenHyperscriptFiles...)
 	}
 
 	return nil
