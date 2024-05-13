@@ -114,6 +114,29 @@
 	})();
 
 
+	(function(){
+		_hyperscript.internals.parser.addLeafExpression("componentRef", function (parser, runtime, tokens) {
+            if (tokens.matchToken("component")) {
+                return {
+                    type: "componentRef",
+					//@ts-ignore
+                    op: function (ctx) {
+						const component = getClosestComponentRootElement(ctx.me)
+						if(component === undefined){
+                            throw new Error('No component found.');
+						}
+						return component
+                    },
+					//@ts-ignore
+                    evaluate: function (ctx) {
+                        return runtime.unifiedEval(this, ctx);
+                    },
+                };
+            }
+        });
+
+	})();
+
 	/**
 	 * initComponent initializes an Inox component: it registers its signals, text interpolations and 
 	 * conditionally displayed elements. Subtrees of descendant components are ignored.
@@ -771,6 +794,22 @@
 			return false
 		}
 		return (/[A-Z]/).test(firstClassName[0])
+	}
+
+	/**
+	 * @param {HTMLElement|undefined} element 
+	 */
+	function getClosestComponentRootElement(element){
+		if(element === undefined){
+			return undefined
+		}
+		let current = element.parentElement
+		while(current != null){
+			if(isComponentRootElement(current)){
+				return current
+			}
+			current = current.parentElement
+		}
 	}
 
 	/**
