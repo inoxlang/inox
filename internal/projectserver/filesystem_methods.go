@@ -398,6 +398,9 @@ func updateFile(fpath string, parts [][]byte, create, overwrite bool, fls *Files
 	}
 
 	if create {
+		_, err := fls.Stat(fpath)
+		alreadyExists := err == nil //The file can still be deleted before the next call but that should be fine.
+
 		f, err := fls.OpenFile(fpath, os.O_CREATE|os.O_WRONLY, fs_ns.DEFAULT_FILE_FMODE)
 
 		defer func() {
@@ -410,13 +413,12 @@ func updateFile(fpath string, parts [][]byte, create, overwrite bool, fls *Files
 			return "", fmtInternalError("failed to create file %s: %s", fpath, err)
 		}
 
-		alreadyExists := err == nil
 		if alreadyExists {
 			if !overwrite {
 				return "", fmtInternalError("failed to create file %s: already exists and overwrite option is false", fpath)
 			}
 
-			if err := f.Truncate(int64(len(parts))); err != nil {
+			if err := f.Truncate(0); err != nil {
 				return "", fmtInternalError("failed to truncate file before write %s: %s", fpath, err)
 			}
 		}
