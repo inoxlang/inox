@@ -15,21 +15,36 @@ import (
 )
 
 var (
-	trustedTyperscriptAttrName string
+	trustedHyperscriptAttrName  string
+	trustedScriptElementTagName string
 )
 
 func init() {
 	b := strings.Builder{}
 	b.WriteString(inoxconsts.HYPERSCRIPT_ATTRIBUTE_NAME)
-	trustedTyperscriptAttrName = b.String()
+	trustedHyperscriptAttrName = b.String()
 
-	if utils.SameIdentityStrings(trustedTyperscriptAttrName, inoxconsts.HYPERSCRIPT_ATTRIBUTE_NAME) {
+	b.Reset()
+	b.WriteString("script")
+	trustedScriptElementTagName = b.String()
+
+	if utils.SameIdentityStrings(trustedHyperscriptAttrName, inoxconsts.HYPERSCRIPT_ATTRIBUTE_NAME) {
+		//Guard against any future optimization.
+		panic("")
+	}
+
+	if utils.SameIdentityStrings(trustedScriptElementTagName, "script") {
 		//Guard against any future optimization.
 		panic("")
 	}
 }
 
 func CreateHTMLNodeFromMarkupElement(ctx *core.Context, arg *core.NonInterpretedMarkupElement) *HTMLNode {
+	transformUntrusted := true
+	return createHTMLNodeFromMarkupElement(ctx, arg, transformUntrusted)
+}
+
+func createHTMLNodeFromMarkupElement(ctx *core.Context, arg *core.NonInterpretedMarkupElement, transformUntrusted bool) *HTMLNode {
 	children := arg.Children()
 	childNodes := make([]*HTMLNode, 0, len(children))
 
@@ -43,12 +58,18 @@ func CreateHTMLNodeFromMarkupElement(ctx *core.Context, arg *core.NonInterpreted
 	}
 
 	tagName := arg.Name()
+	if tagName == "script" {
+		//The script element is trusted because it is created from Inox markup.
+		tagName = trustedScriptElementTagName
+	}
+
 	attributes := getAttributes(arg)
 
 	node := NewNodeFromGoDescription(NodeDescription{
-		Tag:        tagName,
-		Children:   childNodes,
-		Attributes: attributes,
+		Tag:                    tagName,
+		Children:               childNodes,
+		Attributes:             attributes,
+		DoNoTransformUntrusted: !transformUntrusted,
 	})
 
 	if tagName == "html" {
@@ -81,7 +102,7 @@ func getAttributes(arg *core.NonInterpretedMarkupElement) (attributes []html.Att
 		switch attrName {
 		case inoxconsts.HYPERSCRIPT_ATTRIBUTE_NAME:
 			if attr.CreatedFromHyperscriptAttributeShorthand() {
-				attrName = trustedTyperscriptAttrName
+				attrName = trustedHyperscriptAttrName
 			} else {
 				//Do not add untrusted '_' attributes.
 				continue
@@ -124,7 +145,8 @@ func getAttributes(arg *core.NonInterpretedMarkupElement) (attributes []html.Att
 func createChildNodesFromValue(ctx *core.Context, child core.Value, childNodes *[]*HTMLNode) {
 	switch c := child.(type) {
 	case *core.NonInterpretedMarkupElement:
-		*childNodes = append(*childNodes, CreateHTMLNodeFromMarkupElement(ctx, c))
+		transformUntrusted := false
+		*childNodes = append(*childNodes, createHTMLNodeFromMarkupElement(ctx, c, transformUntrusted))
 	case *HTMLNode:
 		if c.HasParent() {
 			panic(core.ErrUnreachable)

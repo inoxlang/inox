@@ -188,11 +188,12 @@ func NewNode(ctx *core.Context, tag core.String, desc *core.Object) (finalNode *
 }
 
 type NodeDescription struct {
-	Tag        string
-	Children   []*HTMLNode
-	Class      string
-	Id         string
-	Attributes []html.Attribute
+	Tag                    string
+	Children               []*HTMLNode
+	Class                  string
+	Id                     string
+	Attributes             []html.Attribute
+	DoNoTransformUntrusted bool
 }
 
 func NewNodeFromGoDescription(desc NodeDescription) *HTMLNode {
@@ -208,8 +209,15 @@ func NewNodeFromGoDescription(desc NodeDescription) *HTMLNode {
 		node: &html.Node{
 			Type:     html.ElementNode,
 			DataAtom: dataAtom,
-			Data:     dataAtom.String(),
 		},
+	}
+
+	//Do not keep a reference to the tag string.
+
+	if utils.SameIdentityStrings(desc.Tag, trustedScriptElementTagName) {
+		node.node.Data = trustedScriptElementTagName
+	} else {
+		node.node.Data = dataAtom.String()
 	}
 
 	// Set parent & siblings of all children.
@@ -239,9 +247,11 @@ func NewNodeFromGoDescription(desc NodeDescription) *HTMLNode {
 		node.node.LastChild = desc.Children[len(desc.Children)-1].node
 	}
 
-	//Remove all untrusted Hyperscript attributes from the tree.
+	//Handle untrusted elements and attributes.
 
-	StripUntrustedHyperscriptAttributes(node.node)
+	if !desc.DoNoTransformUntrusted {
+		TransformUntrustedScriptsAndHyperscriptAttributes(node.node)
+	}
 
 	return node
 }

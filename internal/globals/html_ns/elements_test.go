@@ -237,3 +237,19 @@ func TestElementFunction(t *testing.T) {
 	}
 
 }
+
+func TestNewNodeFromGoDescription(t *testing.T) {
+
+	t.Run("untrusted script elements should be transformed into a div", func(t *testing.T) {
+		result := NewNodeFromGoDescription(NodeDescription{
+			Tag: "script",
+		})
+
+		assert.Equal(t, &html.Node{
+			Type:     html.ElementNode,
+			DataAtom: atom.Div,
+			Data:     "div",
+		}, result.node)
+	})
+
+}

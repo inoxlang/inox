@@ -108,6 +108,19 @@ func TestCreateHTMLNodeFromMarkupElement(t *testing.T) {
 		assert.Equal(t, "<script type=\"text/hyperscript\"><a></script>", s)
 	})
 
+	t.Run("script tag as child", func(t *testing.T) {
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
+		defer ctx.CancelGracefully()
+
+		child := core.NewNonInterpretedRawTextMarkupElement("script", nil, "<a>")
+		element := CreateHTMLNodeFromMarkupElement(ctx, core.NewNonInterpretedMarkupElement("div", nil, []core.Value{child}))
+
+		bytes := Render(ctx, element)
+		s := string(bytes.UnderlyingBytes())
+
+		assert.Equal(t, "<div><script><a></script></div>", s)
+	})
+
 	t.Run("pseudo htmx attributes", func(t *testing.T) {
 		ctx := core.NewContextWithEmptyState(core.ContextConfig{}, nil)
 		defer ctx.CancelGracefully()
