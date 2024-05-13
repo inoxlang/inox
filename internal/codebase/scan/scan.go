@@ -48,7 +48,7 @@ type Phase struct {
 
 type InoxFileHandler func(path string, fileContent string, n *parse.ParsedChunkSource, phaseName string) error
 type CSSFileHandler func(path string, fileContent string, n css.Node, phaseName string) error
-type HyperscriptFileHandler func(path string, fileContent string, parsingResult *hscode.ParsingResult, phaseName string) error
+type HyperscriptFileHandler func(path string, fileContent string, parsingResult *hscode.ParsingResult, parsingError *hscode.ParsingError, phaseName string) error
 
 func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) error {
 
@@ -179,6 +179,7 @@ func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) e
 		case "._hs":
 			var (
 				parsingResult *hscode.ParsingResult
+				parsingError  *hscode.ParsingError
 				cacheHit      bool
 			)
 
@@ -192,22 +193,17 @@ func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) e
 			if !cacheHit {
 				//Parse the file.
 
-				result, _, _ := hsparse.ParseHyperScriptProgram(ctx, contentS)
-				if result == nil {
-					return nil //parsing error
-				}
-
-				parsingResult = result
+				parsingResult, parsingError, _ = hsparse.ParseHyperScriptProgram(ctx, contentS)
 
 				//Update the cache.
 				if hyperscriptParseCache != nil {
-					hyperscriptParseCache.Put(path, contentS, parsingResult, err)
+					hyperscriptParseCache.Put(path, contentS, parsingResult, parsingError)
 				}
 			}
 			seenHyperscriptFiles = append(seenHyperscriptFiles, path)
 
 			for _, handler := range currentPhase.HyperscriptFileHandlers {
-				err := handler(path, contentS, parsingResult, currentPhase.Name)
+				err := handler(path, contentS, parsingResult, parsingError, currentPhase.Name)
 
 				if err != nil {
 					return fmt.Errorf("an Hyperscript file handler returned an error for %s", path)

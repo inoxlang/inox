@@ -355,8 +355,9 @@ func TestScanHyperscriptFiles(t *testing.T) {
 			Phases: []Phase{
 				{
 					HyperscriptFileHandlers: []HyperscriptFileHandler{
-						func(path, fileContent string, parsingResult *hscode.ParsingResult, phaseName string) error {
+						func(path, fileContent string, parsingResult *hscode.ParsingResult, parsingErr *hscode.ParsingError, phaseName string) error {
 							seenFiles = append(seenFiles, path)
+							assert.NotNil(t, parsingResult)
 							return nil
 						},
 					},
@@ -369,6 +370,44 @@ func TestScanHyperscriptFiles(t *testing.T) {
 		}
 
 		assert.ElementsMatch(t, []string{"/hs/a._hs"}, seenFiles)
+	})
+
+	t.Run("file with error", func(t *testing.T) {
+		fls := fs_ns.NewMemFilesystem(10_000_000)
+
+		util.WriteFile(fls, "/a._hs", []byte("?"), 0600)
+
+		ctx := core.NewContextWithEmptyState(core.ContextConfig{
+			Permissions: []core.Permission{
+				core.FilesystemPermission{Kind_: permbase.Read, Entity: core.PathPattern("/...")},
+			},
+		}, nil)
+		defer ctx.CancelGracefully()
+
+		var seenFiles []string
+
+		err := ScanCodebase(ctx, fls, Configuration{
+			TopDirectories: []string{"/"},
+			MaxFileSize:    1_000,
+			Phases: []Phase{
+				{
+					HyperscriptFileHandlers: []HyperscriptFileHandler{
+						func(path, fileContent string, parsingResult *hscode.ParsingResult, parsingErr *hscode.ParsingError, phaseName string) error {
+							seenFiles = append(seenFiles, path)
+							assert.Nil(t, parsingResult)
+							assert.NotNil(t, parsingErr)
+							return nil
+						},
+					},
+				},
+			},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.ElementsMatch(t, []string{"/a._hs"}, seenFiles)
 	})
 
 	t.Run("with cache", func(t *testing.T) {
@@ -407,7 +446,8 @@ func TestScanHyperscriptFiles(t *testing.T) {
 			Phases: []Phase{
 				{
 					HyperscriptFileHandlers: []HyperscriptFileHandler{
-						func(path, fileContent string, parsingResult *hscode.ParsingResult, phaseName string) error {
+						func(path, fileContent string, parsingResult *hscode.ParsingResult, parsingErr *hscode.ParsingError, phaseName string) error {
+							assert.NotNil(t, parsingResult)
 							return nil
 						},
 					},
@@ -450,7 +490,8 @@ func TestScanHyperscriptFiles(t *testing.T) {
 			Phases: []Phase{
 				{
 					HyperscriptFileHandlers: []HyperscriptFileHandler{
-						func(path, fileContent string, parsingResult *hscode.ParsingResult, phaseName string) error {
+						func(path, fileContent string, parsingResult *hscode.ParsingResult, parsingErr *hscode.ParsingError, phaseName string) error {
+							assert.NotNil(t, parsingResult)
 							return nil
 						},
 					},
