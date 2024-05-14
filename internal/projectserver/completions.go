@@ -8,6 +8,7 @@ import (
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/codecompletion"
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
@@ -28,6 +29,10 @@ func handleCompletion(ctx context.Context, req *defines.CompletionParams) (resul
 	fpath, err := getSupportedFilePath(uri, projectMode)
 	if err != nil {
 		return nil, err
+	}
+	if fpath != inoxconsts.INOXLANG_FILE_EXTENSION {
+		//Not supported yet.
+		return &[]defines.CompletionItem{}, nil
 	}
 
 	if memberAuthToken == "" {

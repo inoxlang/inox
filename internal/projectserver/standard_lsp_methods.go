@@ -15,6 +15,7 @@ import (
 	"github.com/rs/zerolog"
 
 	"github.com/inoxlang/inox/internal/core"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/projectserver/lsp"
 
@@ -187,6 +188,11 @@ func handleHover(callCtx context.Context, req *defines.HoverParams) (result *def
 		session.lock.Unlock()
 		return nil, err
 	}
+	if fpath != inoxconsts.INOXLANG_FILE_EXTENSION {
+		session.lock.Unlock()
+		//Not supported yet.
+		return &defines.Hover{}, nil
+	}
 
 	project := session.project
 	fls := session.filesystem
@@ -253,6 +259,12 @@ func handleSignatureHelp(callCtx context.Context, req *defines.SignatureHelpPara
 	if err != nil {
 		return nil, err
 	}
+
+	if fpath != inoxconsts.INOXLANG_FILE_EXTENSION {
+		//Not supported yet.
+		return &defines.SignatureHelp{}, nil
+	}
+
 	line, column := getLineColumn(req.Position)
 
 	handlingCtx := rpcSessionCtx.BoundChildWithOptions(core.BoundChildContextOptions{
@@ -333,6 +345,10 @@ func handleDefinition(callCtx context.Context, req *defines.DefinitionParams) (r
 	fpath, err := getSupportedFilePath(uri, projectMode)
 	if err != nil {
 		return nil, err
+	}
+	if fpath != inoxconsts.INOXLANG_FILE_EXTENSION {
+		//Not supported yet.
+		return &[]defines.LocationLink{}, nil
 	}
 	line, column := getLineColumn(req.Position)
 
@@ -476,6 +492,10 @@ func handleFormatDocument(callCtx context.Context, req *defines.DocumentFormatti
 	fpath, err := getSupportedFilePath(uri, projectMode)
 	if err != nil {
 		return nil, err
+	}
+	if fpath != inoxconsts.INOXLANG_FILE_EXTENSION {
+		//Not supported yet.
+		return &[]defines.TextEdit{}, nil
 	}
 
 	chunk, err := core.ParseFileChunk(fpath, fls, parse.ParserOptions{
