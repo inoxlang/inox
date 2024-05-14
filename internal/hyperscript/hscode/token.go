@@ -1,6 +1,8 @@
 package hscode
 
-import "reflect"
+import (
+	"reflect"
+)
 
 type Token struct {
 	Type  TokenType `json:"type"` //can be empty
@@ -22,6 +24,32 @@ func (t Token) IsZero() bool {
 
 func (t Token) IsNotZero() bool {
 	return !reflect.ValueOf(t).IsZero()
+}
+
+func TokenFrom(m JSONMap) Token {
+	var token Token
+	token.Type, _ = m["type"].(TokenType)
+	token.Value, _ = m["value"].(string)
+
+	start, ok := m["start"].(float64)
+	if ok {
+		token.Start = int32(start)
+	}
+	end, ok := m["end"].(float64)
+	if ok {
+		token.End = int32(end)
+	}
+	line, ok := m["line"].(float64)
+	if ok {
+		token.Line = int32(line)
+	}
+	col, ok := m["column"].(float64)
+	if ok {
+		token.Column = int32(col)
+	}
+	token.Op, _ = m["op"].(bool)
+	token.Template, _ = m["template"].(bool)
+	return token
 }
 
 type TokenType string

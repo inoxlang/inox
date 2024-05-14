@@ -2891,7 +2891,15 @@ function hyperscriptCoreGrammar(parser) {
             feature.behavior = path;
         }
 
-        return {};
+        return {
+            //all the following properties are not present in the result returned by the original parser.
+            name: name,
+            ... nameSpace ? {
+                nameSpace: nameSpace,
+            } : {},
+            fullName: path,
+            features: hs.features,
+        };
     });
 
     parser.addFeature("install", function (parser, runtime, tokens) {

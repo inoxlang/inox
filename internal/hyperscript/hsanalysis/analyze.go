@@ -23,11 +23,20 @@ type analyzer struct {
 	inTellCommand bool
 
 	//result
-	errors   []Error
-	warnings []Warning
+	errors              []Error
+	warnings            []Warning
+	behaviors           []Behavior
+	functionDefinitions []FunctionDefinition
 }
 
-func Analyze(params Parameters) ([]Error, []Warning, error) {
+type Result struct {
+	Errors              []Error
+	Warnings            []Warning
+	Behaviors           []Behavior
+	FunctionDefinitions []FunctionDefinition
+}
+
+func Analyze(params Parameters) (*Result, error) {
 	a := analyzerPool.Get().(*analyzer)
 	a.parameters = params
 
@@ -38,13 +47,18 @@ func Analyze(params Parameters) ([]Error, []Warning, error) {
 
 	criticalErr := hscode.Walk(params.ProgramOrExpression, a.preVisitHyperscriptNode, a.postVisitHyperscriptNode)
 	if criticalErr != nil {
-		return nil, nil, criticalErr
+		return nil, criticalErr
 	}
 
-	return a.errors, a.warnings, nil
+	return &Result{
+		Warnings:            a.warnings,
+		Errors:              a.errors,
+		Behaviors:           a.behaviors,
+		FunctionDefinitions: a.functionDefinitions,
+	}, nil
 }
 
-func (c *analyzer) preVisitHyperscriptNode(
+func (a *analyzer) preVisitHyperscriptNode(
 	node hscode.JSONMap,
 	nodeType hscode.NodeType,
 
@@ -56,21 +70,21 @@ func (c *analyzer) preVisitHyperscriptNode(
 ) (action hscode.AstTraversalAction, err error) {
 
 	action = hscode.ContinueAstTraversal
-	component := c.parameters.Component
-	locationKind := c.parameters.LocationKind
+	component := a.parameters.Component
+	locationKind := a.parameters.LocationKind
 	isInClientSideInterpolation := (locationKind == ClientSideAttributeInterpolation || locationKind == ClientSideTextInterpolation)
 	inComponentContext := component != nil && isInClientSideInterpolation
 
 	switch nodeType {
 	case hscode.SetCommand:
 	case hscode.TellCommand:
-		if c.inTellCommand {
+		if a.inTellCommand {
 			return hscode.PruneAstTraversal, nil
 		}
-		c.inTellCommand = true
+		a.inTellCommand = true
 	case hscode.Symbol:
-		if c.inTellCommand {
-			c.addError(node, text.VAR_NOT_IN_ELEM_SCOPE_OF_ELEM_REF_BY_TELL_CMD)
+		if a.inTellCommand {
+			a.addError(node, text.VAR_NOT_IN_ELEM_SCOPE_OF_ELEM_REF_BY_TELL_CMD)
 			return
 		}
 		name := hscode.GetSymbolName(node)
@@ -79,34 +93,38 @@ func (c *analyzer) preVisitHyperscriptNode(
 			switch locationKind {
 			case ClientSideAttributeInterpolation, ClientSideTextInterpolation:
 				if component == nil {
-					c.addError(node, text.ELEMENT_SCOPE_VARS_NOT_ALLOWED_HERE_BECAUSE_NO_COMPONENT)
+					a.addError(node, text.ELEMENT_SCOPE_VARS_NOT_ALLOWED_HERE_BECAUSE_NO_COMPONENT)
 					return
 				}
 				if !slices.Contains(component.InitialElementScopeVarNames, name) && !hscode.IsTarget(node, parent) {
-					c.addError(node, text.FmtElementScopeVarMayNotBeDefined(name, inComponentContext))
+					a.addError(node, text.FmtElementScopeVarMayNotBeDefined(name, inComponentContext))
 				}
 			default:
 			}
 		}
 	case hscode.AttributeRef:
 		attrName := hscode.GetAttributeRefName(node)
-		if c.inTellCommand {
-			c.addError(node, text.ATTR_NOT_REF_TO_ATTR_OF_ELEM_REF_BY_TELL_CMD)
+		if a.inTellCommand {
+			a.addError(node, text.ATTR_NOT_REF_TO_ATTR_OF_ELEM_REF_BY_TELL_CMD)
 			return
 		}
 
 		switch locationKind {
 		case ClientSideAttributeInterpolation, ClientSideTextInterpolation:
 			if component == nil {
-				c.addError(node, text.ATTR_REFS_NOT_ALLOWED_HERE_BECAUSE_NO_COMPONENT)
+				a.addError(node, text.ATTR_REFS_NOT_ALLOWED_HERE_BECAUSE_NO_COMPONENT)
 				return
 			}
 
 			if !slices.Contains(component.InitializedDataAttributeNames, attrName) && !hscode.IsTarget(node, parent) {
-				c.addError(node, text.FmtAttributeMayNotBeInitialized(attrName, inComponentContext))
+				a.addError(node, text.FmtAttributeMayNotBeInitialized(attrName, inComponentContext))
 			}
 		default:
 		}
+	case hscode.DefFeature:
+		a.functionDefinitions = append(a.functionDefinitions, MakeFunctionDefinitionFromDefFeature(node))
+	case hscode.BehaviorFeature:
+		a.behaviors = append(a.behaviors, MakeBehaviorFromBehaviorFeature(node))
 	}
 
 	return hscode.ContinueAstTraversal, nil

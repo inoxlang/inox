@@ -156,7 +156,7 @@ func (a *analyzer) analyzeHyperscriptInMarkupElement(component *hsanalysis.Compo
 			locationKind = hsanalysis.ComponentUnderscoreAttribute
 		}
 
-		errors, warnings, err := hsanalysis.Analyze(hsanalysis.Parameters{
+		result, err := hsanalysis.Analyze(hsanalysis.Parameters{
 			ProgramOrExpression: attribute.HyperscriptParsingResult.NodeData,
 			LocationKind:        locationKind,
 			Component:           component,
@@ -169,8 +169,8 @@ func (a *analyzer) analyzeHyperscriptInMarkupElement(component *hsanalysis.Compo
 			return
 		}
 
-		a.result.addHyperscriptErrors(errors...)
-		a.result.addHyperscriptWarnings(warnings...)
+		a.result.addHyperscriptErrors(result.Errors...)
+		a.result.addHyperscriptWarnings(result.Warnings...)
 	}
 
 	analyzeInterpolationsInString := func(str string, encoded string, nodeSpan parse.NodeSpan, attribute bool) (criticalErr error) {
@@ -227,7 +227,7 @@ func (a *analyzer) analyzeHyperscriptInMarkupElement(component *hsanalysis.Compo
 					locationKind = hsanalysis.ClientSideAttributeInterpolation
 				}
 
-				errors, warnings, err := hsanalysis.Analyze(hsanalysis.Parameters{
+				result, err := hsanalysis.Analyze(hsanalysis.Parameters{
 					ProgramOrExpression: expr,
 					LocationKind:        locationKind,
 					Component:           component,
@@ -240,8 +240,8 @@ func (a *analyzer) analyzeHyperscriptInMarkupElement(component *hsanalysis.Compo
 					return
 				}
 
-				a.result.addHyperscriptErrors(errors...)
-				a.result.addHyperscriptWarnings(warnings...)
+				a.result.addHyperscriptErrors(result.Errors...)
+				a.result.addHyperscriptWarnings(result.Warnings...)
 			}
 		}
 		return

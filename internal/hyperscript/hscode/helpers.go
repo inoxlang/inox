@@ -3,6 +3,7 @@ package hscode
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/inoxlang/inox/internal/utils"
 )
@@ -172,6 +173,13 @@ func GetCommandList(node any) (commandList []any, success bool) {
 		}
 		success = true
 		commandList = flattenCommandList(start)
+		return
+	case EmptyCommandListCommand:
+		return nil, true
+	}
+	if strings.HasSuffix(string(nodeType), "Command") {
+		success = true
+		commandList = []any{node}
 		return
 	}
 	return

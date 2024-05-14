@@ -63,9 +63,10 @@ const (
 	Initial_literal              NodeType = "initial_literal"
 	ClosestExpr                  NodeType = "closestExpr"
 
-	OnFeature   NodeType = "onFeature"
-	InitFeature NodeType = "initFeature"
-	DefFeature  NodeType = "defFeature"
+	OnFeature       NodeType = "onFeature"
+	InitFeature     NodeType = "initFeature"
+	DefFeature      NodeType = "defFeature"
+	BehaviorFeature NodeType = "behaviorFeature"
 
 	SettleCmd NodeType = "settleCmd"
 	AddCmd    NodeType = "addCmd"

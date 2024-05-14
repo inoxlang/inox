@@ -490,7 +490,7 @@ func computeHyperscriptFileDiagnostics(params diagnosticNotificationParams, fpat
 	//Analysis
 
 	if parsedFile.Result != nil {
-		analysisErrors, warnings, criticalErr := hsanalysis.Analyze(hsanalysis.Parameters{
+		analysisResult, criticalErr := hsanalysis.Analyze(hsanalysis.Parameters{
 			ProgramOrExpression: parsedFile.Result.NodeData,
 			LocationKind:        hsanalysis.HyperscriptScriptFile,
 			CodeStartIndex:      0,
@@ -500,10 +500,10 @@ func computeHyperscriptFileDiagnostics(params diagnosticNotificationParams, fpat
 			return
 		}
 
-		for _, analysisErr := range analysisErrors {
+		for _, analysisErr := range analysisResult.Errors {
 			result.items = append(result.items, makeDiagnosticFromLocatedError(analysisErr))
 		}
-		for _, warning := range warnings {
+		for _, warning := range analysisResult.Warnings {
 			result.items = append(result.items, defines.Diagnostic{
 				Range:    rangeToLspRange(warning.Location),
 				Severity: &warningSeverity,
