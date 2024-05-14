@@ -220,7 +220,7 @@ var (
 	ErrNotImplementedYet = errors.New("not implemented yet")
 	ErrUnreachable       = errors.New("unreachable")
 
-	_ parse.LocatedError = EvaluationError{}
+	_ parse.StackLocatedError = EvaluationError{}
 )
 
 type EvaluationError struct {

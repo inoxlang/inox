@@ -28,7 +28,7 @@ var (
 	ErrForbiddenNodeinPreinit = errors.New("forbidden node type in preinit block")
 	ErrUnreachable            = errors.New("unreachable")
 
-	_ parse.LocatedError = &Error{}
+	_ parse.StackLocatedError = &Error{}
 )
 
 type Input struct {

@@ -26,6 +26,14 @@ func (e Error) Error() string {
 	return e.LocatedMessage
 }
 
+func (e Error) LocationRange() parse.SourcePositionRange {
+	return e.Location
+}
+
+func (e Error) MessageWithoutLocation() string {
+	return e.Message
+}
+
 type Warning struct {
 	Message string
 

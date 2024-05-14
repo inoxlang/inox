@@ -29,9 +29,16 @@ func (stack SourcePositionStack) String() string {
 	return buff.String()
 }
 
-type LocatedError interface {
+type StackLocatedError interface {
+	error
 	MessageWithoutLocation() string
 	LocationStack() SourcePositionStack
+}
+
+type LocatedError interface {
+	error
+	MessageWithoutLocation() string
+	LocationRange() SourcePositionRange
 }
 
 type ChunkStackItem struct {
