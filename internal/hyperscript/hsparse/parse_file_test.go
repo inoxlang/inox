@@ -154,6 +154,10 @@ func TestParseHyperscriptFile(t *testing.T) {
 			return
 		}
 
+		if !assert.NotSame(t, file.Result, cachedResult) {
+			return
+		}
+
 		assert.Greater(t, len(_file.Result.Tokens), 6)
 		assert.Len(t, _file.Result.TokensNoWhitespace, 6)
 

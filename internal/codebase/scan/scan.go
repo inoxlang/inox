@@ -33,10 +33,10 @@ type Configuration struct {
 	Fast           bool     //if true the scan will be faster but will use more CPU and memory.
 	Phases         []Phase
 
-	ChunkCache            *parse.ChunkCache      //optional
-	StylesheetParseCache  *css.StylesheetCache   //optional
-	HyperscriptParseCache *hscode.FileParseCache //optional
-	FileParsingTimeout    time.Duration          //maximum duration for parsing a single file. defaults to parse.DEFAULT_TIMEOUT
+	ChunkCache            *parse.ChunkCache    //optional
+	StylesheetParseCache  *css.StylesheetCache //optional
+	HyperscriptParseCache *hscode.ParseCache   //optional
+	FileParsingTimeout    time.Duration        //maximum duration for parsing a single file. defaults to parse.DEFAULT_TIMEOUT
 }
 
 type Phase struct {
@@ -193,7 +193,10 @@ func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) e
 			if !cacheHit {
 				//Parse the file.
 
-				parsingResult, parsingError, _ = hsparse.ParseHyperScriptProgram(ctx, contentS)
+				parsingResult, parsingError, err = hsparse.ParseHyperScriptProgram(ctx, contentS)
+				if err != nil {
+					return nil
+				}
 
 				//Update the cache.
 				if hyperscriptParseCache != nil {
