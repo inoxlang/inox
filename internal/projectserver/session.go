@@ -83,7 +83,7 @@ type Session struct {
 	fsEventSource        *fs_ns.FilesystemEventSource
 	inoxChunkCache       *parse.ChunkCache
 	stylesheetCache      *css.StylesheetCache
-	hyperscriptFileCache *hscode.FileParseCache
+	hyperscriptFileCache *hscode.ParseCache
 
 	//Analysis and diagnostics
 

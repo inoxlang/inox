@@ -12,12 +12,14 @@ import (
 	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/hyperscript/hsanalysis"
 	"github.com/inoxlang/inox/internal/hyperscript/hscode"
 	"github.com/inoxlang/inox/internal/hyperscript/hsparse"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
+	"github.com/inoxlang/inox/internal/sourcecode"
 	"github.com/oklog/ulid/v2"
 
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
@@ -116,11 +118,11 @@ type diagnosticNotificationParams struct {
 	usingInoxFS     bool
 	triggeredByPull bool
 
-	fls                  *Filesystem
-	project              *project.Project
-	memberAuthToken      string
-	inoxChunkCache       *parse.ChunkCache
-	hyperscriptFileCache *hscode.FileParseCache
+	fls                   *Filesystem
+	project               *project.Project
+	memberAuthToken       string
+	inoxChunkCache        *parse.ChunkCache
+	hyperscriptParseCache *hscode.ParseCache
 }
 
 // computeNotifyDocumentDiagnostics diagnostics a document and notifies the LSP client (textDocument/publishDiagnostics).
@@ -443,12 +445,14 @@ func computeInoxFileDiagnostics(params diagnosticNotificationParams, fpath strin
 
 func computeHyperscriptFileDiagnostics(params diagnosticNotificationParams, fpath string) (result *singleDocumentDiagnostics, _ error) {
 	session, _, fls, hyperscriptFileCache :=
-		params.rpcSession, params.docURI, params.fls, params.hyperscriptFileCache
+		params.rpcSession, params.docURI, params.fls, params.hyperscriptParseCache
 
 	sessionCtx := session.Context()
 
-	//we need the diagnostics list to be present in the notification so diagnostics should not be nil
-	diagnostics := make([]defines.Diagnostic, 0)
+	result = &singleDocumentDiagnostics{
+		//we need the items list to be present in the notification so items should not be nil
+		items: make([]defines.Diagnostic, 0),
+	}
 
 	//Parsing
 
@@ -456,42 +460,59 @@ func computeHyperscriptFileDiagnostics(params diagnosticNotificationParams, fpat
 	{
 		content, err := util.ReadFile(fls, fpath)
 		if err != nil {
-			return &singleDocumentDiagnostics{
-				items: diagnostics,
-			}, nil
+			return
 		}
 		sourceCode = utils.BytesAsString(content) //after this line $content should not be used
 	}
 
-	parsingResult, storedErr, cacheHit := hyperscriptFileCache.GetResultAndDataByPathSourcePair(fpath, sourceCode)
-	parsingError, _ := storedErr.(*hscode.ParsingError)
+	sourceFile := sourcecode.File{
+		NameString:             fpath,
+		UserFriendlyNameString: fpath,
+		Resource:               fpath,
+		ResourceDir:            filepath.Dir(fpath),
+		CodeString:             sourceCode,
+	}
+	parsedFile, criticalErr := hsparse.ParseFile(sessionCtx, sourceFile, hyperscriptFileCache)
 
-	if !cacheHit {
-		var criticalErr error
-		parsingResult, parsingError, criticalErr = hsparse.ParseHyperScriptProgram(sessionCtx, sourceCode)
-		if criticalErr != nil {
-			storedErr = criticalErr
-			hyperscriptFileCache.Put(fpath, sourceCode, nil, criticalErr)
-		} else {
-			storedErr = parsingError
-			hyperscriptFileCache.Put(fpath, sourceCode, parsingResult, parsingError)
-		}
+	if criticalErr != nil {
+		return
 	}
 
-	_ = parsingResult
-
-	if parsingError != nil {
-		location := hscode.MakePositionFromParsingError(parsingError, fpath)
-		diagnostics = append(diagnostics, defines.Diagnostic{
+	if parsedFile.Error != nil {
+		location := hscode.MakePositionFromParsingError(parsedFile.Error, fpath)
+		result.items = append(result.items, defines.Diagnostic{
 			Range:    rangeToLspRange(location),
 			Severity: &errSeverity,
-			Message:  parsingError.Message,
+			Message:  parsedFile.Error.Message,
 		})
 	}
 
-	return &singleDocumentDiagnostics{
-		items: diagnostics,
-	}, nil
+	//Analysis
+
+	if parsedFile.Result != nil {
+		analysisErrors, warnings, criticalErr := hsanalysis.Analyze(hsanalysis.Parameters{
+			ProgramOrExpression: parsedFile.Result.NodeData,
+			LocationKind:        hsanalysis.HyperscriptScriptFile,
+			CodeStartIndex:      0,
+			Chunk:               parsedFile,
+		})
+		if criticalErr != nil {
+			return
+		}
+
+		for _, analysisErr := range analysisErrors {
+			result.items = append(result.items, makeDiagnosticFromLocatedError(analysisErr))
+		}
+		for _, warning := range warnings {
+			result.items = append(result.items, defines.Diagnostic{
+				Range:    rangeToLspRange(warning.Location),
+				Severity: &warningSeverity,
+				Message:  warning.Message,
+			})
+		}
+	}
+
+	return
 }
 
 func sendDocumentDiagnostics(rpcSession *jsonrpc.Session, docURI defines.DocumentUri, diagnostics []defines.Diagnostic) error {

@@ -597,11 +597,11 @@ func handleDidOpenDocument(callCtx context.Context, req *defines.DidOpenTextDocu
 		docURI:      uri,
 		usingInoxFS: projectMode,
 
-		project:              project,
-		fls:                  fls,
-		inoxChunkCache:       chunkCache,
-		hyperscriptFileCache: hyperscriptFileCache,
-		memberAuthToken:      memberAuthToken,
+		project:               project,
+		fls:                   fls,
+		inoxChunkCache:        chunkCache,
+		hyperscriptParseCache: hyperscriptFileCache,
+		memberAuthToken:       memberAuthToken,
 	})
 }
 
@@ -700,11 +700,11 @@ func handleDidSaveDocument(callCtx context.Context, req *defines.DidSaveTextDocu
 		docURI:      uri,
 		usingInoxFS: projectMode,
 
-		project:              project,
-		inoxChunkCache:       chunkCache,
-		hyperscriptFileCache: hyperscriptFileCache,
-		fls:                  fls,
-		memberAuthToken:      memberAuthToken,
+		project:               project,
+		inoxChunkCache:        chunkCache,
+		hyperscriptParseCache: hyperscriptFileCache,
+		fls:                   fls,
+		memberAuthToken:       memberAuthToken,
 	})
 }
 
@@ -759,11 +759,11 @@ func handleDidChangeDocument(callCtx context.Context, req *defines.DidChangeText
 			docURI:      uri,
 			usingInoxFS: projectMode,
 
-			project:              project,
-			fls:                  fls,
-			inoxChunkCache:       chunkCache,
-			hyperscriptFileCache: hyperscriptFileCache,
-			memberAuthToken:      memberAuthToken,
+			project:               project,
+			fls:                   fls,
+			inoxChunkCache:        chunkCache,
+			hyperscriptParseCache: hyperscriptFileCache,
+			memberAuthToken:       memberAuthToken,
 		})
 	})
 

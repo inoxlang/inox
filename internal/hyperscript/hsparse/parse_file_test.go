@@ -154,7 +154,7 @@ func TestParseHyperscriptFile(t *testing.T) {
 			return
 		}
 
-		if !assert.NotSame(t, file.Result, cachedResult) {
+		if !assert.NotSame(t, _file.Result, cachedResult) {
 			return
 		}
 
