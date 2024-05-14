@@ -2,14 +2,14 @@ package hsanalysis
 
 import (
 	"github.com/inoxlang/inox/internal/hyperscript/hscode"
-	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/sourcecode"
 )
 
 type Parameters struct {
 	ProgramOrExpression hscode.JSONMap
 	LocationKind        hyperscriptCodeLocationKind
 	Component           *Component //may be nil
-	Chunk               *parse.ParsedChunkSource
+	Chunk               sourcecode.ParsedChunkSource
 	CodeStartIndex      int32
 }
 

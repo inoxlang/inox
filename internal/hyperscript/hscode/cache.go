@@ -4,8 +4,8 @@ import (
 	"github.com/inoxlang/inox/internal/cache/parsecache"
 )
 
-type FileParseCache = parsecache.Cache[ParsingResult, error /* *ParsingError or critical error */]
+type ParseCache = parsecache.Cache[ParsingResult, error /* *ParsingError or critical error */]
 
-func NewParseCache() *FileParseCache {
+func NewParseCache() *ParseCache {
 	return parsecache.New[ParsingResult, error]()
 }

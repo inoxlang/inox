@@ -9,13 +9,21 @@ import (
 // ParsedChunkSource contains an AST and the ChunkSource that was parsed to obtain it.
 // ParsedChunkSource provides helper methods to find nodes in the AST and to get positions.
 type ParsedChunkSource interface {
-	Source() ChunkSource
+	ChunkSource() ChunkSource
 
 	// unique name | URL | path
 	Name() string
 
 	// result should not be modified.
 	Runes() []rune
+
+	GetSpanLineColumn(span NodeSpan) (int32, int32)
+
+	GetSourcePosition(span NodeSpan) PositionRange
+
+	FormatNodeSpanLocation(w io.Writer, nodeSpan NodeSpan) (int, error)
+
+	GetLineCut(cutIndex int32) (beforeSpan string, afterSpan string)
 }
 
 type ParsedChunkSourceBase struct {
@@ -29,6 +37,10 @@ func MakeParsedChunkSourceBaseWithRunes(source ChunkSource, runes []rune) Parsed
 		Source: source,
 		runes:  runes,
 	}
+}
+
+func (c *ParsedChunkSourceBase) ChunkSource() ChunkSource {
+	return c.Source
 }
 
 // unique name | URL | path
@@ -177,6 +189,7 @@ func (chunk *ParsedChunkSourceBase) GetSourcePosition(span NodeSpan) PositionRan
 		Span:        span,
 	}
 }
+
 func len32[E any](s []E) int32 {
 	return int32(len(s))
 }
