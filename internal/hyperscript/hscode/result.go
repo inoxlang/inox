@@ -1,6 +1,6 @@
 package hscode
 
-import "github.com/inoxlang/inox/internal/parse/position"
+import "github.com/inoxlang/inox/internal/sourcecode"
 
 const (
 	FILE_EXTENSION = "._hs"
@@ -25,14 +25,14 @@ func (e ParsingError) Error() string {
 	return e.Message
 }
 
-func MakePositionFromParsingError(err *ParsingError, path string) position.SourcePositionRange {
+func MakePositionFromParsingError(err *ParsingError, path string) sourcecode.PositionRange {
 	token := err.Token
-	return position.SourcePositionRange{
+	return sourcecode.PositionRange{
 		SourceName:  path,
 		StartLine:   token.Line,
 		EndLine:     token.Line,
 		StartColumn: token.Column,
 		EndColumn:   token.Column + token.End - token.Start,
-		Span:        position.NodeSpan{Start: token.Start, End: token.End},
+		Span:        sourcecode.NodeSpan{Start: token.Start, End: token.End},
 	}
 }

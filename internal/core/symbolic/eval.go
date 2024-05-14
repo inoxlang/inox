@@ -17,6 +17,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/sourcecode"
 	"github.com/inoxlang/inox/internal/utils"
 	"golang.org/x/exp/maps"
 )
@@ -4284,8 +4285,10 @@ func evalSpawnExpression(node *parse.SpawnExpression, state *State) (_ Value, fi
 	//TODO: check the allow section to know the permissions
 	modCtx := NewSymbolicContext(state.ctx.startingConcreteContext, concreteCtx, state.ctx)
 	modState := newSymbolicState(modCtx, &parse.ParsedChunkSource{
-		Node:   embeddedModule,
-		Source: state.currentChunk().Source,
+		Node: embeddedModule,
+		ParsedChunkSourceBase: sourcecode.ParsedChunkSourceBase{
+			Source: state.currentChunk().Source,
+		},
 	})
 	modState.Module = state.Module
 	modState.symbolicData = state.symbolicData
@@ -5822,8 +5825,10 @@ func evalTestsuiteExpression(n *parse.TestSuiteExpression, state *State, options
 	state.ctx.CopyPatternNamespacesIn(modCtx)
 
 	modState := newSymbolicState(modCtx, &parse.ParsedChunkSource{
-		Node:   embeddedModule,
-		Source: state.currentChunk().Source,
+		Node: embeddedModule,
+		ParsedChunkSourceBase: sourcecode.ParsedChunkSourceBase{
+			Source: state.currentChunk().Source,
+		},
 	})
 	modState.Module = state.Module
 	modState.symbolicData = state.symbolicData
@@ -5879,8 +5884,10 @@ func evalTestcaseExpression(n *parse.TestCaseExpression, state *State, options e
 	state.ctx.CopyPatternNamespacesIn(modCtx)
 
 	modState := newSymbolicState(modCtx, &parse.ParsedChunkSource{
-		Node:   embeddedModule,
-		Source: state.currentChunk().Source,
+		Node: embeddedModule,
+		ParsedChunkSourceBase: sourcecode.ParsedChunkSourceBase{
+			Source: state.currentChunk().Source,
+		},
 	})
 	modState.Module = state.Module
 	modState.symbolicData = state.symbolicData

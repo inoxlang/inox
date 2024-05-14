@@ -18,6 +18,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/sourcecode"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -1275,8 +1276,10 @@ func TreeWalkEval(node parse.Node, state *TreeWalkState) (result Value, err erro
 		}
 
 		parsedChunk := &parse.ParsedChunkSource{
-			Node:   chunk,
-			Source: state.currentChunk().Source,
+			Node: chunk,
+			ParsedChunkSourceBase: sourcecode.ParsedChunkSourceBase{
+				Source: state.currentChunk().Source,
+			},
 		}
 
 		routineMod := WrapLowerModule(&inoxmod.Module{

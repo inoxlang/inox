@@ -1,4 +1,4 @@
-package parse
+package sourcecode
 
 type ChunkSource interface {
 	Name() string             //unique name | URL | path
@@ -6,9 +6,9 @@ type ChunkSource interface {
 	Code() string
 }
 
-// SourceFile is a ChunkSource implementation that represents a source file,
+// File is a ChunkSource implementation that represents a source file,
 // the file is not necessarily local.
-type SourceFile struct {
+type File struct {
 	NameString             string
 	UserFriendlyNameString string
 	Resource               string //path or url
@@ -17,18 +17,18 @@ type SourceFile struct {
 	CodeString             string
 }
 
-func (f SourceFile) Name() string {
+func (f File) Name() string {
 	return f.NameString
 }
 
-func (f SourceFile) UserFriendlyName() string {
+func (f File) UserFriendlyName() string {
 	if f.UserFriendlyNameString == "" {
 		return f.NameString
 	}
 	return f.UserFriendlyNameString
 }
 
-func (f SourceFile) Code() string {
+func (f File) Code() string {
 	return f.CodeString
 }
 

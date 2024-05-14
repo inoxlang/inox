@@ -1,4 +1,4 @@
-package position
+package sourcecode
 
 import (
 	"bytes"
@@ -18,7 +18,7 @@ func (s NodeSpan) Len() int32 {
 	return s.End - s.Start
 }
 
-type SourcePositionRange struct {
+type PositionRange struct {
 	SourceName  string   `json:"sourceName"`
 	StartLine   int32    `json:"line"`      //1-indexed
 	StartColumn int32    `json:"column"`    //1-indexed
@@ -27,11 +27,11 @@ type SourcePositionRange struct {
 	Span        NodeSpan `json:"span"`
 }
 
-func (pos SourcePositionRange) String() string {
+func (pos PositionRange) String() string {
 	return fmt.Sprintf("%s:%d:%d:", pos.SourceName, pos.StartLine, pos.StartColumn)
 }
 
-type SourcePositionStack []SourcePositionRange
+type SourcePositionStack []PositionRange
 
 func (stack SourcePositionStack) String() string {
 	buff := bytes.NewBuffer(nil)
@@ -51,5 +51,5 @@ type StackLocatedError interface {
 type LocatedError interface {
 	error
 	MessageWithoutLocation() string
-	LocationRange() SourcePositionRange
+	LocationRange() PositionRange
 }

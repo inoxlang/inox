@@ -3,14 +3,17 @@ package parse
 import (
 	"bytes"
 
-	"github.com/inoxlang/inox/internal/parse/position"
+	"github.com/inoxlang/inox/internal/sourcecode"
 )
 
-type NodeSpan = position.NodeSpan
-type StackLocatedError = position.StackLocatedError
-type LocatedError = position.LocatedError
-type SourcePositionRange = position.SourcePositionRange
-type SourcePositionStack = position.SourcePositionStack
+type NodeSpan = sourcecode.NodeSpan
+type StackLocatedError = sourcecode.StackLocatedError
+type LocatedError = sourcecode.LocatedError
+type SourcePositionRange = sourcecode.PositionRange
+type SourcePositionStack = sourcecode.SourcePositionStack
+type InMemorySource = sourcecode.InMemorySource
+type SourceFile = sourcecode.File
+type ChunkSource = sourcecode.ChunkSource
 
 type ChunkStackItem struct {
 	Chunk           *ParsedChunkSource

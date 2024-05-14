@@ -20,6 +20,7 @@ import (
 	"github.com/inoxlang/inox/internal/globals/globalnames"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/sourcecode"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
@@ -91,8 +92,10 @@ func NewTestSuite(input TestSuiteCreationInput) (*TestSuite, error) {
 	parentState := input.ParentState
 
 	parsedChunk := &parse.ParsedChunkSource{
-		Node:   embeddedModChunk,
-		Source: parentChunk.Source,
+		Node: embeddedModChunk,
+		ParsedChunkSourceBase: sourcecode.ParsedChunkSourceBase{
+			Source: parentChunk.Source,
+		},
 	}
 
 	parsedChunk.GetFormattedNodeLocation(embeddedModChunk)
@@ -332,8 +335,10 @@ func NewTestCase(input TestCaseCreationInput) (*TestCase, error) {
 	formattedPosition := input.FormattedLocation
 
 	parsedChunk := &parse.ParsedChunkSource{
-		Node:   modChunk,
-		Source: parentChunk.Source,
+		Node: modChunk,
+		ParsedChunkSourceBase: sourcecode.ParsedChunkSourceBase{
+			Source: parentChunk.Source,
+		},
 	}
 
 	// manifest, err := evaluateTestingManifest(parsedChunk, parentState)

@@ -5,18 +5,16 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"sync"
 
+	"github.com/inoxlang/inox/internal/sourcecode"
 	"github.com/inoxlang/inox/internal/utils"
 )
 
 // ParsedChunkSource contains an AST and the ChunkSource that was parsed to obtain it.
 // ParsedChunkSource provides helper methods to find nodes in the AST and to get positions.
 type ParsedChunkSource struct {
-	Node      *Chunk
-	Source    ChunkSource
-	runes     []rune
-	runesLock sync.Mutex
+	Node *Chunk
+	sourcecode.ParsedChunkSourceBase
 }
 
 func MustParseChunkSource(src ChunkSource, options ...ParserOptions) *ParsedChunkSource {
@@ -55,9 +53,8 @@ func ParseChunkSource(src ChunkSource, options ...ParserOptions) (parsed *Parsed
 
 	if chunk != nil { //No critical error.
 		parsed = &ParsedChunkSource{
-			Node:   chunk,
-			Source: src,
-			runes:  runes,
+			Node:                  chunk,
+			ParsedChunkSourceBase: sourcecode.MakeParsedChunkSourceBaseWithRunes(src, runes),
 		}
 	}
 
@@ -71,26 +68,11 @@ func ParseChunkSource(src ChunkSource, options ...ParserOptions) (parsed *Parsed
 
 func NewParsedChunkSource(node *Chunk, src ChunkSource) *ParsedChunkSource {
 	return &ParsedChunkSource{
-		Node:   node,
-		Source: src,
+		Node: node,
+		ParsedChunkSourceBase: sourcecode.ParsedChunkSourceBase{
+			Source: src,
+		},
 	}
-}
-
-// unique name | URL | path
-func (c *ParsedChunkSource) Name() string {
-	return c.Source.Name()
-}
-
-// result should not be modified.
-func (c *ParsedChunkSource) Runes() []rune {
-	c.runesLock.Lock()
-	defer c.runesLock.Unlock()
-
-	runes := c.runes
-	if c.Source.Code() != "" && len(runes) == 0 {
-		c.runes = []rune(c.Source.Code())
-	}
-	return c.runes
 }
 
 func (chunk *ParsedChunkSource) GetLineColumn(node Node) (int32, int32) {
