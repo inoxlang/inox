@@ -12,6 +12,7 @@ import (
 	"github.com/inoxlang/inox/internal/css"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
+	"github.com/inoxlang/inox/internal/hyperscript/hscode"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/inoxd/node"
 	"github.com/inoxlang/inox/internal/parse"
@@ -405,6 +406,7 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 
 	session.inoxChunkCache = parse.NewChunkCache()
 	session.stylesheetCache = css.NewParseCache()
+	session.hyperscriptFileCache = hscode.NewParseCache()
 
 	//Initial generation.
 	go analyzeCodebaseAndRegen(true, session)
@@ -415,7 +417,10 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 		IsIgnoredEvent: func(e *core.Event) (ignore bool) {
 			fsEvent := e.SourceValue().(fs_ns.Event)
 
-			ignore = !fsEvent.IsStructureOrContentChange() || fsEvent.Path().Extension() != inoxconsts.INOXLANG_FILE_EXTENSION
+			extension := fsEvent.Path().Extension()
+			isInoxOrHyperscriptFileChange := extension == inoxconsts.INOXLANG_FILE_EXTENSION || extension == hscode.FILE_EXTENSION
+
+			ignore = !fsEvent.IsStructureOrContentChange() || !isInoxOrHyperscriptFileChange
 			return
 		},
 		Microtask: func() {

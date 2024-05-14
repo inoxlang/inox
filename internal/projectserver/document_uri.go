@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/inoxlang/inox/internal/hyperscript/hscode"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
 )
@@ -25,26 +26,6 @@ func normalizeURI[S ~string](uri S) S {
 	return S(scheme + ":///" + afterColonSlash)
 }
 
-func getFilePath(uri defines.DocumentUri, usingInoxFs bool) (string, error) {
-	u, err := url.Parse(string(uri))
-
-	if err != nil {
-		return "", fmt.Errorf("invalid URI: %s: %w", uri, err)
-	}
-	if usingInoxFs && u.Scheme != INOX_FS_SCHEME {
-		return "", fmt.Errorf("%w, URI is: %s", ErrInoxURIExpected, string(uri))
-	}
-	if !usingInoxFs && u.Scheme != "file" {
-		return "", fmt.Errorf("%w, URI is: %s", ErrFileURIExpected, string(uri))
-	}
-
-	clean := filepath.Clean(u.Path)
-	if !strings.HasSuffix(clean, inoxconsts.INOXLANG_FILE_EXTENSION) {
-		return "", fmt.Errorf("unexpected file extension: '%s'", filepath.Ext(clean))
-	}
-	return clean, nil
-}
-
 func getFileURI(path string, usingInoxFs bool) (defines.DocumentUri, error) {
 	if path == "" {
 		return "", errors.New("failed to get document URI: empty path")
@@ -58,6 +39,7 @@ func getFileURI(path string, usingInoxFs bool) (defines.DocumentUri, error) {
 	return defines.DocumentUri("file://" + path), nil
 }
 
+// getPath returns a clean path from a URI.
 func getPath(uri defines.URI, usingInoxFS bool) (string, error) {
 	u, err := url.Parse(string(uri))
 	if err != nil {
@@ -70,4 +52,25 @@ func getPath(uri defines.URI, usingInoxFS bool) (string, error) {
 		return "", fmt.Errorf("%w, actual is: %s", ErrFileURIExpected, string(uri))
 	}
 	return filepath.Clean(u.Path), nil
+}
+
+// getPath returns a clean path from a URI, it also checks that the file extension is `.ix` or `._hs`.
+func getSupportedFilePath(uri defines.DocumentUri, usingInoxFs bool) (string, error) {
+	u, err := url.Parse(string(uri))
+
+	if err != nil {
+		return "", fmt.Errorf("invalid URI: %s: %w", uri, err)
+	}
+	if usingInoxFs && u.Scheme != INOX_FS_SCHEME {
+		return "", fmt.Errorf("%w, URI is: %s", ErrInoxURIExpected, string(uri))
+	}
+	if !usingInoxFs && u.Scheme != "file" {
+		return "", fmt.Errorf("%w, URI is: %s", ErrFileURIExpected, string(uri))
+	}
+
+	clean := filepath.Clean(u.Path)
+	if !strings.HasSuffix(clean, inoxconsts.INOXLANG_FILE_EXTENSION) && !strings.HasSuffix(clean, hscode.FILE_EXTENSION) {
+		return "", fmt.Errorf("unexpected file extension: '%s'", filepath.Ext(clean))
+	}
+	return clean, nil
 }

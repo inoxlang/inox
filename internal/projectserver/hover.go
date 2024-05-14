@@ -23,8 +23,8 @@ type hoverContentParams struct {
 	docURI               defines.DocumentUri
 	line, column         int32
 	rpcSession           *jsonrpc.Session
-	lastCodebaseAnalysis *analysis.Result     //optional
-	diagnostics          *documentDiagnostics //may be nil
+	lastCodebaseAnalysis *analysis.Result           //optional
+	diagnostics          *singleDocumentDiagnostics //may be nil
 
 	memberAuthToken string
 	fls             *Filesystem

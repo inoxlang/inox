@@ -2,44 +2,15 @@ package parse
 
 import (
 	"bytes"
-	"fmt"
+
+	"github.com/inoxlang/inox/internal/parse/position"
 )
 
-type SourcePositionRange struct {
-	SourceName  string   `json:"sourceName"`
-	StartLine   int32    `json:"line"`      //1-indexed
-	StartColumn int32    `json:"column"`    //1-indexed
-	EndLine     int32    `json:"endLine"`   //1-indexed
-	EndColumn   int32    `json:"endColumn"` //1-indexed
-	Span        NodeSpan `json:"span"`
-}
-
-func (pos SourcePositionRange) String() string {
-	return fmt.Sprintf("%s:%d:%d:", pos.SourceName, pos.StartLine, pos.StartColumn)
-}
-
-type SourcePositionStack []SourcePositionRange
-
-func (stack SourcePositionStack) String() string {
-	buff := bytes.NewBuffer(nil)
-	for _, pos := range stack {
-		buff.WriteString(pos.String())
-		buff.WriteRune(' ')
-	}
-	return buff.String()
-}
-
-type StackLocatedError interface {
-	error
-	MessageWithoutLocation() string
-	LocationStack() SourcePositionStack
-}
-
-type LocatedError interface {
-	error
-	MessageWithoutLocation() string
-	LocationRange() SourcePositionRange
-}
+type NodeSpan = position.NodeSpan
+type StackLocatedError = position.StackLocatedError
+type LocatedError = position.LocatedError
+type SourcePositionRange = position.SourcePositionRange
+type SourcePositionStack = position.SourcePositionStack
 
 type ChunkStackItem struct {
 	Chunk           *ParsedChunkSource

@@ -25,19 +25,6 @@ type Node interface {
 	Kind() NodeKind
 }
 
-type NodeSpan struct {
-	Start int32 `json:"start"` //0-indexed
-	End   int32 `json:"end"`   //exclusive end, 0-indexed
-}
-
-func (s NodeSpan) HasPositionEndIncluded(i int32) bool {
-	return i >= s.Start && i <= s.End
-}
-
-func (s NodeSpan) Len() int32 {
-	return s.End - s.Start
-}
-
 // NodeBase implements Node interface
 type NodeBase struct {
 	Span            NodeSpan      `json:"span"`

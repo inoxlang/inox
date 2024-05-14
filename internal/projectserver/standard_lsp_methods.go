@@ -182,7 +182,7 @@ func handleHover(callCtx context.Context, req *defines.HoverParams) (result *def
 	session := getCreateLockedProjectSession(rpcSession)
 	projectMode := session.inProjectMode
 	uri := normalizeURI(req.TextDocument.Uri)
-	fpath, err := getFilePath(uri, projectMode)
+	fpath, err := getSupportedFilePath(uri, projectMode)
 	if err != nil {
 		session.lock.Unlock()
 		return nil, err
@@ -249,7 +249,7 @@ func handleSignatureHelp(callCtx context.Context, req *defines.SignatureHelpPara
 	}
 
 	uri := normalizeURI(req.TextDocument.Uri)
-	fpath, err := getFilePath(uri, projectMode)
+	fpath, err := getSupportedFilePath(uri, projectMode)
 	if err != nil {
 		return nil, err
 	}
@@ -288,7 +288,7 @@ func handleCodeActionWithSliceCodeAction(callCtx context.Context, req *defines.C
 	}
 
 	uri := normalizeURI(req.TextDocument.Uri)
-	fpath, err := getFilePath(uri, projectMode)
+	fpath, err := getSupportedFilePath(uri, projectMode)
 	if err != nil {
 		return nil, err
 	}
@@ -330,7 +330,7 @@ func handleDefinition(callCtx context.Context, req *defines.DefinitionParams) (r
 	}
 
 	uri := normalizeURI(req.TextDocument.Uri)
-	fpath, err := getFilePath(uri, projectMode)
+	fpath, err := getSupportedFilePath(uri, projectMode)
 	if err != nil {
 		return nil, err
 	}
@@ -473,7 +473,7 @@ func handleFormatDocument(callCtx context.Context, req *defines.DocumentFormatti
 	}
 
 	uri := normalizeURI(req.TextDocument.Uri)
-	fpath, err := getFilePath(uri, projectMode)
+	fpath, err := getSupportedFilePath(uri, projectMode)
 	if err != nil {
 		return nil, err
 	}
@@ -510,6 +510,7 @@ func handleDidOpenDocument(callCtx context.Context, req *defines.DidOpenTextDocu
 	project := session.project
 	fls := session.filesystem
 	chunkCache := session.inoxChunkCache
+	hyperscriptFileCache := session.hyperscriptFileCache
 	memberAuthToken := session.memberAuthToken
 	session.lock.Unlock()
 	//----------------------------------------
@@ -519,7 +520,7 @@ func handleDidOpenDocument(callCtx context.Context, req *defines.DidOpenTextDocu
 	}
 
 	uri := normalizeURI(req.TextDocument.Uri)
-	fpath, err := getFilePath(uri, projectMode)
+	fpath, err := getSupportedFilePath(uri, projectMode)
 	if err != nil {
 		return err
 	}
@@ -576,10 +577,11 @@ func handleDidOpenDocument(callCtx context.Context, req *defines.DidOpenTextDocu
 		docURI:      uri,
 		usingInoxFS: projectMode,
 
-		project:         project,
-		fls:             fls,
-		inoxChunkCache:  chunkCache,
-		memberAuthToken: memberAuthToken,
+		project:              project,
+		fls:                  fls,
+		inoxChunkCache:       chunkCache,
+		hyperscriptFileCache: hyperscriptFileCache,
+		memberAuthToken:      memberAuthToken,
 	})
 }
 
@@ -592,10 +594,11 @@ func handleDidSaveDocument(callCtx context.Context, req *defines.DidSaveTextDocu
 	project := session.project
 	fls := session.filesystem
 	chunkCache := session.inoxChunkCache
+	hyperscriptFileCache := session.hyperscriptFileCache
 	memberAuthToken := session.memberAuthToken
 
 	uri := normalizeURI(req.TextDocument.Uri)
-	fpath, err := getFilePath(uri, projectMode)
+	fpath, err := getSupportedFilePath(uri, projectMode)
 	if err != nil {
 		session.lock.Unlock()
 		return err
@@ -677,10 +680,11 @@ func handleDidSaveDocument(callCtx context.Context, req *defines.DidSaveTextDocu
 		docURI:      uri,
 		usingInoxFS: projectMode,
 
-		project:         project,
-		inoxChunkCache:  chunkCache,
-		fls:             fls,
-		memberAuthToken: memberAuthToken,
+		project:              project,
+		inoxChunkCache:       chunkCache,
+		hyperscriptFileCache: hyperscriptFileCache,
+		fls:                  fls,
+		memberAuthToken:      memberAuthToken,
 	})
 }
 
@@ -693,12 +697,13 @@ func handleDidChangeDocument(callCtx context.Context, req *defines.DidChangeText
 	project := session.project
 	fls := session.filesystem
 	chunkCache := session.inoxChunkCache
+	hyperscriptFileCache := session.hyperscriptFileCache
 	memberAuthToken := session.memberAuthToken
 
 	uri := normalizeURI(req.TextDocument.Uri)
 	session.diagPullDisablingWindowStartTimes[uri] = time.Now()
 
-	fpath, err := getFilePath(uri, projectMode)
+	fpath, err := getSupportedFilePath(uri, projectMode)
 	if err != nil {
 		session.lock.Unlock()
 		return err
@@ -734,10 +739,11 @@ func handleDidChangeDocument(callCtx context.Context, req *defines.DidChangeText
 			docURI:      uri,
 			usingInoxFS: projectMode,
 
-			project:         project,
-			fls:             fls,
-			inoxChunkCache:  chunkCache,
-			memberAuthToken: memberAuthToken,
+			project:              project,
+			fls:                  fls,
+			inoxChunkCache:       chunkCache,
+			hyperscriptFileCache: hyperscriptFileCache,
+			memberAuthToken:      memberAuthToken,
 		})
 	})
 
@@ -852,7 +858,7 @@ func handleDidCloseDocument(ctx context.Context, req *defines.DidCloseTextDocume
 	}
 
 	uri := normalizeURI(req.TextDocument.Uri)
-	fpath, err := getFilePath(uri, projectMode)
+	fpath, err := getSupportedFilePath(uri, projectMode)
 	if err != nil {
 		session.lock.Unlock()
 		return err

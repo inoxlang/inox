@@ -25,7 +25,7 @@ func handleCompletion(ctx context.Context, req *defines.CompletionParams) (resul
 	//--------------------------------------------------------
 
 	uri := normalizeURI(req.TextDocument.Uri)
-	fpath, err := getFilePath(uri, projectMode)
+	fpath, err := getSupportedFilePath(uri, projectMode)
 	if err != nil {
 		return nil, err
 	}

@@ -12,6 +12,7 @@ import (
 	"github.com/inoxlang/inox/internal/css"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/http_ns"
+	"github.com/inoxlang/inox/internal/hyperscript/hscode"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/projectserver/devtools"
@@ -38,7 +39,7 @@ func getCreateProjectSession(rpcSession *jsonrpc.Session) *Session {
 			didSaveCapabilityRegistrationIds:  make(map[defines.DocumentUri]uuid.UUID, 0),
 			unsavedDocumentSyncData:           make(map[string]*unsavedDocumentSyncData, 0),
 			testRuns:                          make(map[TestRunId]*TestRun, 0),
-			documentDiagnostics:               make(map[string]*documentDiagnostics),
+			documentDiagnostics:               make(map[string]*singleDocumentDiagnostics),
 			diagPullDisablingWindowStartTimes: make(map[defines.DocumentUri]time.Time),
 		}
 		sessions[rpcSession] = session
@@ -78,17 +79,18 @@ type Session struct {
 
 	//Working copy
 
-	filesystem      *Filesystem
-	fsEventSource   *fs_ns.FilesystemEventSource
-	inoxChunkCache  *parse.ChunkCache
-	stylesheetCache *css.StylesheetCache
+	filesystem           *Filesystem
+	fsEventSource        *fs_ns.FilesystemEventSource
+	inoxChunkCache       *parse.ChunkCache
+	stylesheetCache      *css.StylesheetCache
+	hyperscriptFileCache *hscode.FileParseCache
 
 	//Analysis and diagnostics
 
 	preparedSourceFilesCache          *preparedFileCache
 	lastCodebaseAnalysis              *analysis.Result
 	postEditDiagnosticDebounce        func(f func()) //Used to debounce the computation of diagnostics after the user stops making edits.
-	documentDiagnostics               map[ /*absolute path */ string]*documentDiagnostics
+	documentDiagnostics               map[ /*absolute path */ string]*singleDocumentDiagnostics
 	diagPullDisablingWindowStartTimes map[defines.DocumentUri]time.Time //used to ignore some diagnostic pulls, protected by .lock
 
 	//Automated code generation

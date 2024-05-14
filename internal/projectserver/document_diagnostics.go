@@ -4,12 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/go-git/go-billy/v5/util"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
+	"github.com/inoxlang/inox/internal/hyperscript/hscode"
+	"github.com/inoxlang/inox/internal/hyperscript/hsparse"
+	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/project"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
@@ -55,7 +60,7 @@ func handleDocumentDiagnostic(ctx context.Context, req *defines.DocumentDiagnost
 	}
 
 	uri := normalizeURI(req.TextDocument.Uri)
-	_, err := getFilePath(uri, projectMode)
+	_, err := getSupportedFilePath(uri, projectMode)
 	if err != nil {
 		return nil, err
 	}
@@ -111,10 +116,11 @@ type diagnosticNotificationParams struct {
 	usingInoxFS     bool
 	triggeredByPull bool
 
-	fls             *Filesystem
-	project         *project.Project
-	memberAuthToken string
-	inoxChunkCache  *parse.ChunkCache
+	fls                  *Filesystem
+	project              *project.Project
+	memberAuthToken      string
+	inoxChunkCache       *parse.ChunkCache
+	hyperscriptFileCache *hscode.FileParseCache
 }
 
 // computeNotifyDocumentDiagnostics diagnostics a document and notifies the LSP client (textDocument/publishDiagnostics).
@@ -154,17 +160,33 @@ func computeNotifyDocumentDiagnostics(params diagnosticNotificationParams) error
 
 // computes prepares a source file, constructs a list of defines.Diagnostic from errors at different phases
 // (parsing, static check, and symbolic evaluation). The list is saved in the session before being returned.
-func computeDocumentDiagnostics(params diagnosticNotificationParams) (result *documentDiagnostics, _ error) {
+func computeDocumentDiagnostics(params diagnosticNotificationParams) (result *singleDocumentDiagnostics, _ error) {
 
-	session, docURI, usingInoxFS, fls, project, memberAuthToken :=
-		params.rpcSession, params.docURI, params.usingInoxFS, params.fls, params.project, params.memberAuthToken
+	docURI, usingInoxFS := params.docURI, params.usingInoxFS
 
-	fpath, err := getFilePath(docURI, usingInoxFS)
+	fpath, err := getSupportedFilePath(docURI, usingInoxFS)
 	if err != nil {
 		return nil, err
 	}
 
+	fileExtension := filepath.Ext(fpath)
+
+	switch fileExtension {
+	case inoxconsts.INOXLANG_FILE_EXTENSION:
+		return computeInoxFileDiagnostics(params, fpath)
+	case hscode.FILE_EXTENSION:
+		return computeHyperscriptFileDiagnostics(params, fpath)
+	default:
+		return nil, errors.New("diagnostics can only be computed for Inox & Hyperscript files")
+	}
+}
+
+func computeInoxFileDiagnostics(params diagnosticNotificationParams, fpath string) (result *singleDocumentDiagnostics, _ error) {
+	session, _, usingInoxFS, fls, project, memberAuthToken :=
+		params.rpcSession, params.docURI, params.usingInoxFS, params.fls, params.project, params.memberAuthToken
+
 	sessionCtx := session.Context()
+
 	handlingCtx := sessionCtx.BoundChildWithOptions(core.BoundChildContextOptions{
 		Filesystem: fls,
 	})
@@ -227,7 +249,7 @@ func computeDocumentDiagnostics(params diagnosticNotificationParams) (result *do
 	symbolicErrors := make(map[defines.DocumentUri][]symbolic.EvaluationError, 0)
 
 	if !ok {
-		return &documentDiagnostics{items: diagnostics}, nil
+		return &singleDocumentDiagnostics{items: diagnostics}, nil
 	}
 
 	i := -1
@@ -263,7 +285,7 @@ func computeDocumentDiagnostics(params diagnosticNotificationParams) (result *do
 	}
 
 	if state == nil {
-		return &documentDiagnostics{items: diagnostics}, nil
+		return &singleDocumentDiagnostics{items: diagnostics}, nil
 	}
 
 	//Add preinit static check errors.
@@ -412,10 +434,63 @@ func computeDocumentDiagnostics(params diagnosticNotificationParams) (result *do
 		}
 	}
 
-	return &documentDiagnostics{
+	return &singleDocumentDiagnostics{
 		items:                    diagnostics,
 		otherDocumentDiagnostics: otherDocumentDiagnostics,
 		symbolicErrors:           symbolicErrors,
+	}, nil
+}
+
+func computeHyperscriptFileDiagnostics(params diagnosticNotificationParams, fpath string) (result *singleDocumentDiagnostics, _ error) {
+	session, _, fls, hyperscriptFileCache :=
+		params.rpcSession, params.docURI, params.fls, params.hyperscriptFileCache
+
+	sessionCtx := session.Context()
+
+	//we need the diagnostics list to be present in the notification so diagnostics should not be nil
+	diagnostics := make([]defines.Diagnostic, 0)
+
+	//Parsing
+
+	var sourceCode string
+	{
+		content, err := util.ReadFile(fls, fpath)
+		if err != nil {
+			return &singleDocumentDiagnostics{
+				items: diagnostics,
+			}, nil
+		}
+		sourceCode = utils.BytesAsString(content) //after this line $content should not be used
+	}
+
+	parsingResult, storedErr, cacheHit := hyperscriptFileCache.GetResultAndDataByPathSourcePair(fpath, sourceCode)
+	parsingError, _ := storedErr.(*hscode.ParsingError)
+
+	if !cacheHit {
+		var criticalErr error
+		parsingResult, parsingError, criticalErr = hsparse.ParseHyperScriptProgram(sessionCtx, sourceCode)
+		if criticalErr != nil {
+			storedErr = criticalErr
+			hyperscriptFileCache.Put(fpath, sourceCode, nil, criticalErr)
+		} else {
+			storedErr = parsingError
+			hyperscriptFileCache.Put(fpath, sourceCode, parsingResult, parsingError)
+		}
+	}
+
+	_ = parsingResult
+
+	if parsingError != nil {
+		location := hscode.MakePositionFromParsingError(parsingError, fpath)
+		diagnostics = append(diagnostics, defines.Diagnostic{
+			Range:    rangeToLspRange(location),
+			Severity: &errSeverity,
+			Message:  parsingError.Message,
+		})
+	}
+
+	return &singleDocumentDiagnostics{
+		items: diagnostics,
 	}, nil
 }
 
@@ -447,11 +522,15 @@ func MakeDocDiagnosticId(absPath string) DocDiagnosticId {
 	return DocDiagnosticId(ulid.Make().String() + "-" + absPath)
 }
 
-type documentDiagnostics struct {
+// A singleDocumentDiagnostics contains the diagnostics of a single Inox or Hyperscript document.
+type singleDocumentDiagnostics struct {
 	id                           DocDiagnosticId
 	items                        []defines.Diagnostic
-	otherDocumentDiagnostics     map[defines.DocumentUri][]defines.Diagnostic
-	symbolicErrors               map[defines.DocumentUri][]symbolic.EvaluationError
 	containsWorkspaceDiagnostics bool
 	lock                         sync.Mutex
+
+	//Inox-specific fields
+
+	otherDocumentDiagnostics map[defines.DocumentUri][]defines.Diagnostic
+	symbolicErrors           map[defines.DocumentUri][]symbolic.EvaluationError
 }
