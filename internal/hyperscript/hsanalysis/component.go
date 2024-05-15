@@ -96,3 +96,7 @@ func PreanalyzeHyperscriptComponent(
 
 	return
 }
+
+func (c *Component) ApplyResolvedInstalls() []Error {
+	return applyResolvedInstalls(c.Installs, &c.AppliedInstalls, &c.InitialElementScopeVarNames, &c.InitializedDataAttributeNames, &c.HandledEvents)
+}

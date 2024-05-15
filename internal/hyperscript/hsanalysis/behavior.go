@@ -42,3 +42,7 @@ func MakeBehaviorFromNode(node hscode.JSONMap, location sourcecode.PositionRange
 
 	return &behavior
 }
+
+func (b *Behavior) ApplyResolvedInstalls() []Error {
+	return applyResolvedInstalls(b.Installs, &b.AppliedInstalls, &b.InitialElementScopeVarNames, &b.InitializedDataAttributeNames, &b.HandledEvents)
+}

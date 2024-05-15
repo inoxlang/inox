@@ -36,6 +36,7 @@ type Result struct {
 	Warnings            []Warning
 	Behaviors           []*Behavior
 	FunctionDefinitions []FunctionDefinition
+	Installs            []InstallFeature
 }
 
 func Analyze(params Parameters) (*Result, error) {
