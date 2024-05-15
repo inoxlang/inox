@@ -33,10 +33,11 @@ type Configuration struct {
 	Fast           bool     //if true the scan will be faster but will use more CPU and memory.
 	Phases         []Phase
 
-	ChunkCache            *parse.ChunkCache    //optional
-	StylesheetParseCache  *css.StylesheetCache //optional
-	HyperscriptParseCache *hscode.ParseCache   //optional
-	FileParsingTimeout    time.Duration        //maximum duration for parsing a single file. defaults to parse.DEFAULT_TIMEOUT
+	ChunkCache                 *parse.ChunkCache       //optional
+	StylesheetParseCache       *css.StylesheetCache    //optional
+	HyperscriptParseCache      *hscode.ParseCache      //optional
+	HyperscriptParsedFileCache *hscode.ParsedFileCache //optional
+	FileParsingTimeout         time.Duration           //maximum duration for parsing a single file. defaults to parse.DEFAULT_TIMEOUT
 }
 
 type Phase struct {
@@ -48,7 +49,7 @@ type Phase struct {
 
 type InoxFileHandler func(path string, fileContent string, n *parse.ParsedChunkSource, phaseName string) error
 type CSSFileHandler func(path string, fileContent string, n css.Node, phaseName string) error
-type HyperscriptFileHandler func(path string, fileContent string, parsingResult *hscode.ParsingResult, parsingError *hscode.ParsingError, phaseName string) error
+type HyperscriptFileHandler func(path string, fileContent string, file *hscode.ParsedFile, phaseName string) error
 
 func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) error {
 
@@ -84,6 +85,7 @@ func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) e
 	chunkCache := config.ChunkCache
 	stylesheetCache := config.StylesheetParseCache
 	hyperscriptParseCache := config.HyperscriptParseCache
+	hyperscriptFileCache := config.HyperscriptParsedFileCache
 
 	currentPhase := config.Phases[0]
 
@@ -177,36 +179,27 @@ func ScanCodebase(ctx *core.Context, fls afs.Filesystem, config Configuration) e
 			}
 		//Hyperscript file ----------------------------------------------------------------------------
 		case "._hs":
-			var (
-				parsingResult *hscode.ParsingResult
-				parsingError  *hscode.ParsingError
-				cacheHit      bool
-			)
-
 			contentS := string(content)
 
-			//Check the cache.
-			if hyperscriptParseCache != nil {
-				parsingResult, cacheHit = hyperscriptParseCache.GetResult(contentS)
+			sourceFile := parse.SourceFile{
+				NameString:             path,
+				UserFriendlyNameString: path,
+				Resource:               path,
+				ResourceDir:            filepath.Dir(path),
+				IsResourceURL:          false,
+				CodeString:             contentS,
 			}
 
-			if !cacheHit {
-				//Parse the file.
+			file, criticalErr := hsparse.ParseFile(ctx, sourceFile, hyperscriptParseCache, hyperscriptFileCache)
 
-				parsingResult, parsingError, err = hsparse.ParseHyperScriptProgram(ctx, contentS)
-				if err != nil {
-					return nil
-				}
-
-				//Update the cache.
-				if hyperscriptParseCache != nil {
-					hyperscriptParseCache.Put(path, contentS, parsingResult, parsingError)
-				}
+			if criticalErr != nil {
+				return nil
 			}
+
 			seenHyperscriptFiles = append(seenHyperscriptFiles, path)
 
 			for _, handler := range currentPhase.HyperscriptFileHandlers {
-				err := handler(path, contentS, parsingResult, parsingError, currentPhase.Name)
+				err := handler(path, contentS, file, currentPhase.Name)
 
 				if err != nil {
 					return fmt.Errorf("an Hyperscript file handler returned an error for %s", path)

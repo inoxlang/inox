@@ -355,9 +355,10 @@ func TestScanHyperscriptFiles(t *testing.T) {
 			Phases: []Phase{
 				{
 					HyperscriptFileHandlers: []HyperscriptFileHandler{
-						func(path, fileContent string, parsingResult *hscode.ParsingResult, parsingErr *hscode.ParsingError, phaseName string) error {
+						func(path, fileContent string, file *hscode.ParsedFile, phaseName string) error {
 							seenFiles = append(seenFiles, path)
-							assert.NotNil(t, parsingResult)
+							assert.NotNil(t, file)
+							assert.NotNil(t, file.Result)
 							return nil
 						},
 					},
@@ -392,10 +393,11 @@ func TestScanHyperscriptFiles(t *testing.T) {
 			Phases: []Phase{
 				{
 					HyperscriptFileHandlers: []HyperscriptFileHandler{
-						func(path, fileContent string, parsingResult *hscode.ParsingResult, parsingErr *hscode.ParsingError, phaseName string) error {
+						func(path, fileContent string, file *hscode.ParsedFile, phaseName string) error {
 							seenFiles = append(seenFiles, path)
-							assert.Nil(t, parsingResult)
-							assert.NotNil(t, parsingErr)
+							assert.NotNil(t, file)
+							assert.Nil(t, file.Result)
+							assert.NotNil(t, file.Error)
 							return nil
 						},
 					},
@@ -446,8 +448,10 @@ func TestScanHyperscriptFiles(t *testing.T) {
 			Phases: []Phase{
 				{
 					HyperscriptFileHandlers: []HyperscriptFileHandler{
-						func(path, fileContent string, parsingResult *hscode.ParsingResult, parsingErr *hscode.ParsingError, phaseName string) error {
-							assert.NotNil(t, parsingResult)
+						func(path, fileContent string, file *hscode.ParsedFile, phaseName string) error {
+							assert.NotNil(t, file)
+							assert.NotNil(t, file.Result)
+							assert.Nil(t, file.Error)
 							return nil
 						},
 					},
@@ -490,8 +494,10 @@ func TestScanHyperscriptFiles(t *testing.T) {
 			Phases: []Phase{
 				{
 					HyperscriptFileHandlers: []HyperscriptFileHandler{
-						func(path, fileContent string, parsingResult *hscode.ParsingResult, parsingErr *hscode.ParsingError, phaseName string) error {
-							assert.NotNil(t, parsingResult)
+						func(path, fileContent string, file *hscode.ParsedFile, phaseName string) error {
+							assert.NotNil(t, file)
+							assert.NotNil(t, file.Result)
+							assert.Nil(t, file.Error)
 							return nil
 						},
 					},
