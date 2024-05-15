@@ -480,7 +480,7 @@ func TestAnalyzeHyperscripFile(t *testing.T) {
 				Resource:    "/a._hs",
 				ResourceDir: "/",
 				CodeString:  "behavior A end",
-			}, nil))
+			}, nil, nil))
 
 			result, err := Analyze(Parameters{
 				LocationKind:        locationKind,
@@ -521,7 +521,7 @@ func TestAnalyzeHyperscripFile(t *testing.T) {
 				Resource:    "/a._hs",
 				ResourceDir: "/",
 				CodeString:  "behavior A.B end",
-			}, nil))
+			}, nil, nil))
 
 			result, err := Analyze(Parameters{
 				LocationKind:        locationKind,
@@ -553,7 +553,7 @@ func TestAnalyzeHyperscripFile(t *testing.T) {
 				Resource:    "/a._hs",
 				ResourceDir: "/",
 				CodeString:  "behavior A init end",
-			}, nil))
+			}, nil, nil))
 
 			result, err := Analyze(Parameters{
 				LocationKind:        locationKind,
@@ -589,7 +589,7 @@ func TestAnalyzeHyperscripFile(t *testing.T) {
 				Resource:    "/a._hs",
 				ResourceDir: "/",
 				CodeString:  "behavior A\ninit\n init\n end",
-			}, nil))
+			}, nil, nil))
 
 			result, err := Analyze(Parameters{
 				LocationKind:        locationKind,
@@ -634,7 +634,7 @@ func TestAnalyzeHyperscripFile(t *testing.T) {
 							set @data-x to 0
 					end
 				`,
-			}, nil))
+			}, nil, nil))
 
 			result, err := Analyze(Parameters{
 				LocationKind:        locationKind,
@@ -667,7 +667,7 @@ func TestAnalyzeHyperscripFile(t *testing.T) {
 						on click
 					end
 				`,
-			}, nil))
+			}, nil, nil))
 
 			result, err := Analyze(Parameters{
 				LocationKind:        locationKind,
@@ -699,7 +699,7 @@ func TestAnalyzeHyperscripFile(t *testing.T) {
 						on click end
 					end
 				`,
-			}, nil))
+			}, nil, nil))
 
 			result, err := Analyze(Parameters{
 				LocationKind:        locationKind,
@@ -727,7 +727,7 @@ func TestAnalyzeHyperscripFile(t *testing.T) {
 				Resource:    "/a._hs",
 				ResourceDir: "/",
 				CodeString:  "behavior A\ninstall B(x: 1) end",
-			}, nil))
+			}, nil, nil))
 
 			result, err := Analyze(Parameters{
 				LocationKind:        locationKind,
@@ -779,7 +779,7 @@ func TestAnalyzeHyperscripFile(t *testing.T) {
 				Resource:    "/a._hs",
 				ResourceDir: "/",
 				CodeString:  "def f() end",
-			}, nil))
+			}, nil, nil))
 
 			result, err := Analyze(Parameters{
 				LocationKind:        locationKind,
@@ -810,7 +810,7 @@ func TestAnalyzeHyperscripFile(t *testing.T) {
 				Resource:    "/a._hs",
 				ResourceDir: "/",
 				CodeString:  "def f(arg) end",
-			}, nil))
+			}, nil, nil))
 
 			result, err := Analyze(Parameters{
 				LocationKind:        locationKind,
@@ -841,7 +841,7 @@ func TestAnalyzeHyperscripFile(t *testing.T) {
 				Resource:    "/a._hs",
 				ResourceDir: "/",
 				CodeString:  "def f() log 1 end",
-			}, nil))
+			}, nil, nil))
 
 			result, err := Analyze(Parameters{
 				LocationKind:        locationKind,

@@ -472,7 +472,7 @@ func computeHyperscriptFileDiagnostics(params diagnosticNotificationParams, fpat
 		ResourceDir:            filepath.Dir(fpath),
 		CodeString:             sourceCode,
 	}
-	parsedFile, criticalErr := hsparse.ParseFile(sessionCtx, sourceFile, hyperscriptFileCache)
+	parsedFile, criticalErr := hsparse.ParseFile(sessionCtx, sourceFile, hyperscriptFileCache, nil)
 
 	if criticalErr != nil {
 		return

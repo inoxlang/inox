@@ -9,3 +9,9 @@ type ParseCache = parsecache.Cache[ParsingResult, error /* *ParsingError or crit
 func NewParseCache() *ParseCache {
 	return parsecache.New[ParsingResult, error]()
 }
+
+type ParsedFileCache = parsecache.Cache[ParsedFile, error /* critical error */]
+
+func NewParsedFileCache() *ParsedFileCache {
+	return parsecache.New[ParsedFile, error]()
+}
