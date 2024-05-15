@@ -21,18 +21,19 @@ type analyzer struct {
 	//state
 
 	inTellCommand bool
+	behaviorStack []*Behavior
 
 	//result
 	errors              []Error
 	warnings            []Warning
-	behaviors           []Behavior
+	behaviors           []*Behavior
 	functionDefinitions []FunctionDefinition
 }
 
 type Result struct {
 	Errors              []Error
 	Warnings            []Warning
-	Behaviors           []Behavior
+	Behaviors           []*Behavior
 	FunctionDefinitions []FunctionDefinition
 }
 
@@ -76,7 +77,6 @@ func (a *analyzer) preVisitHyperscriptNode(
 	inComponentContext := component != nil && isInClientSideInterpolation
 
 	switch nodeType {
-	case hscode.SetCommand:
 	case hscode.TellCommand:
 		if a.inTellCommand {
 			return hscode.PruneAstTraversal, nil
@@ -122,15 +122,25 @@ func (a *analyzer) preVisitHyperscriptNode(
 		default:
 		}
 	case hscode.DefFeature:
-		a.functionDefinitions = append(a.functionDefinitions, MakeFunctionDefinitionFromDefFeature(node))
+		a.functionDefinitions = append(a.functionDefinitions, MakeFunctionDefinitionFromNode(node))
 	case hscode.BehaviorFeature:
-		a.behaviors = append(a.behaviors, MakeBehaviorFromBehaviorFeature(node))
+		behavior := MakeBehaviorFromNode(node)
+		a.behaviors = append(a.behaviors, behavior)
+		a.behaviorStack = append(a.behaviorStack, behavior)
+
+		preAnalyzeFeaturesOfBehaviorOrComponent(
+			&behavior.InitialElementScopeVarNames,
+			&behavior.InitializedDataAttributeNames,
+			&behavior.HandledEvents,
+			&behavior.Installs,
+			behavior.Features,
+		)
 	}
 
 	return hscode.ContinueAstTraversal, nil
 }
 
-func (c *analyzer) postVisitHyperscriptNode(
+func (a *analyzer) postVisitHyperscriptNode(
 	node hscode.JSONMap,
 	nodeType hscode.NodeType,
 
@@ -143,8 +153,61 @@ func (c *analyzer) postVisitHyperscriptNode(
 
 	switch nodeType {
 	case hscode.TellCommand:
-		c.inTellCommand = false
+		a.inTellCommand = false
+	case hscode.BehaviorFeature:
+		a.behaviorStack = a.behaviorStack[:len(a.behaviorStack)-1]
 	}
 
 	return hscode.ContinueAstTraversal, nil
+}
+
+func preAnalyzeFeaturesOfBehaviorOrComponent(
+	initialElementScopeVarNames *[]string,
+	initializedDataAttributeNames *[]string,
+	handledEvents *[]DOMEvent,
+	installs *[]*InstallFeature,
+	features []any,
+) {
+	walk := func(node hscode.JSONMap, inInit bool) {
+		hscode.Walk(node, func(node hscode.JSONMap, nodeType hscode.NodeType, _ hscode.JSONMap, _ hscode.NodeType, _ []hscode.JSONMap, _ bool) (hscode.AstTraversalAction, error) {
+			switch nodeType {
+			case hscode.SetCommand:
+				target, _ := hscode.GetSetCommandTarget(node)
+				switch hscode.GetTypeIfNode(target) {
+				case hscode.Symbol:
+					name := hscode.GetSymbolName(target)
+					if inInit && strings.HasPrefix(name, ":") && !slices.Contains(*initialElementScopeVarNames, name) {
+						*initialElementScopeVarNames = append(*initialElementScopeVarNames, name)
+					}
+				case hscode.AttributeRef:
+					name := hscode.GetAttributeRefName(target)
+					if inInit && strings.HasPrefix(name, "data-") && !slices.Contains(*initializedDataAttributeNames, name) {
+						*initializedDataAttributeNames = append(*initializedDataAttributeNames, name)
+					}
+				}
+
+			}
+			return hscode.ContinueAstTraversal, nil
+		}, nil)
+	}
+
+	for _, feature := range features {
+		feature := feature.(hscode.JSONMap)
+		switch hscode.GetTypeIfNode(feature) {
+		case hscode.InitFeature: //init
+			walk(feature, true)
+		case hscode.OnFeature: //on
+			onFeature := feature
+			events, _ := hscode.GetOnFeatureEvents(onFeature)
+			for _, event := range events {
+				*handledEvents = append(*handledEvents, DOMEvent{
+					Type: event.Name,
+				})
+			}
+			walk(feature, false)
+		case hscode.InstallFeature:
+			installfeature := MakeInstallFeatureFromNode(feature)
+			*installs = append(*installs, installfeature)
+		}
+	}
 }

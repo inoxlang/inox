@@ -10,7 +10,7 @@ type FunctionDefinition struct {
 	CommandList []any
 }
 
-func MakeFunctionDefinitionFromDefFeature(node hscode.JSONMap) FunctionDefinition {
+func MakeFunctionDefinitionFromNode(node hscode.JSONMap) FunctionDefinition {
 	hscode.AssertIsNodeOfType(node, hscode.DefFeature)
 
 	var def FunctionDefinition

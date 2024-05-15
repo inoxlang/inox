@@ -2908,8 +2908,11 @@ function hyperscriptCoreGrammar(parser) {
         var behaviorNamespace = behaviorPath.split(".");
         var args = parser.parseElement("namedArgumentList", tokens);
 
-        var installFeature;
-        return (installFeature = {});
+        return {
+            //all the following properties are not present in the result returned by the original parser.
+            fullName: behaviorPath,
+            fields: args.fields,
+        }
     });
 
     parser.addGrammarElement("jsBody", function (parser, runtime, tokens) {

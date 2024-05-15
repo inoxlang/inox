@@ -611,6 +611,150 @@ func TestAnalyzeHyperscripFile(t *testing.T) {
 			feature1 := behavior.Features[1]
 			assert.True(t, hscode.IsNodeOfType(feature1, hscode.InitFeature))
 		})
+
+		t.Run("initialization of an element scoped variable and an attribute", func(t *testing.T) {
+
+			file := utils.Must(hsparse.ParseFile(context.Background(), sourcecode.File{
+				NameString:  "/a._hs",
+				Resource:    "/a._hs",
+				ResourceDir: "/",
+				CodeString: `
+					behavior A
+						init 
+							set :a to 0
+							set @data-x to 0
+					end
+				`,
+			}, nil))
+
+			result, err := Analyze(Parameters{
+				LocationKind:        locationKind,
+				Chunk:               file,
+				CodeStartIndex:      0,
+				ProgramOrExpression: file.Result.NodeData,
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			if !assert.Len(t, result.Behaviors, 1) {
+				return
+			}
+
+			behavior := result.Behaviors[0]
+			assert.Equal(t, []string{":a"}, behavior.InitialElementScopeVarNames)
+			assert.Equal(t, []string{"data-x"}, behavior.InitializedDataAttributeNames)
+		})
+
+		t.Run("event handler", func(t *testing.T) {
+
+			file := utils.Must(hsparse.ParseFile(context.Background(), sourcecode.File{
+				NameString:  "/a._hs",
+				Resource:    "/a._hs",
+				ResourceDir: "/",
+				CodeString: `
+					behavior A
+						on click
+					end
+				`,
+			}, nil))
+
+			result, err := Analyze(Parameters{
+				LocationKind:        locationKind,
+				Chunk:               file,
+				CodeStartIndex:      0,
+				ProgramOrExpression: file.Result.NodeData,
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			if !assert.Len(t, result.Behaviors, 1) {
+				return
+			}
+
+			behavior := result.Behaviors[0]
+			assert.Equal(t, []DOMEvent{{Type: "click"}}, behavior.HandledEvents)
+		})
+
+		t.Run("event handler", func(t *testing.T) {
+
+			file := utils.Must(hsparse.ParseFile(context.Background(), sourcecode.File{
+				NameString:  "/a._hs",
+				Resource:    "/a._hs",
+				ResourceDir: "/",
+				CodeString: `
+					behavior A
+						on click end
+					end
+				`,
+			}, nil))
+
+			result, err := Analyze(Parameters{
+				LocationKind:        locationKind,
+				Chunk:               file,
+				CodeStartIndex:      0,
+				ProgramOrExpression: file.Result.NodeData,
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			if !assert.Len(t, result.Behaviors, 1) {
+				return
+			}
+
+			behavior := result.Behaviors[0]
+			assert.Equal(t, []DOMEvent{{Type: "click"}}, behavior.HandledEvents)
+		})
+
+		t.Run("behavior install", func(t *testing.T) {
+
+			file := utils.Must(hsparse.ParseFile(context.Background(), sourcecode.File{
+				NameString:  "/a._hs",
+				Resource:    "/a._hs",
+				ResourceDir: "/",
+				CodeString: `
+					behavior A
+						install B(x: 1)
+					end
+				`,
+			}, nil))
+
+			result, err := Analyze(Parameters{
+				LocationKind:        locationKind,
+				Chunk:               file,
+				CodeStartIndex:      0,
+				ProgramOrExpression: file.Result.NodeData,
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			if !assert.Len(t, result.Behaviors, 1) {
+				return
+			}
+
+			behavior := result.Behaviors[0]
+			if !assert.Len(t, behavior.Installs, 1) {
+				return
+			}
+
+			install := behavior.Installs[0]
+
+			assert.Equal(t, "B", install.BehaviorFullName)
+			if !assert.Len(t, install.Fields, 1) {
+				return
+			}
+			field := install.Fields[0]
+
+			assert.Equal(t, "x", field.Name)
+			assert.True(t, hscode.IsNodeOfType(field.Value, hscode.NumberLiteral))
+		})
 	})
 
 	t.Run("function definition", func(t *testing.T) {

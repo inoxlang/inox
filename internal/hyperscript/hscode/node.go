@@ -67,6 +67,7 @@ const (
 	InitFeature     NodeType = "initFeature"
 	DefFeature      NodeType = "defFeature"
 	BehaviorFeature NodeType = "behaviorFeature"
+	InstallFeature  NodeType = "installFeature"
 
 	SettleCmd NodeType = "settleCmd"
 	AddCmd    NodeType = "addCmd"

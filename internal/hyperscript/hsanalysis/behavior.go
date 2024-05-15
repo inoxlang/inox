@@ -7,9 +7,17 @@ type Behavior struct {
 	FullName  string
 	Namespace []string
 	Features  []any
+
+	HandledEvents                 []DOMEvent
+	InitialElementScopeVarNames   []string // example: {":a", ":b"}
+	InitializedDataAttributeNames []string // data-xxx attributes that are properly initialized, example: {"data-count", "data-x"}
+	Installs                      []*InstallFeature
+	AppliedInstalls               []*InstallFeature
+
+	//Note: applying an install updates InitialElementScopeVarNames and InitializedDataAttributeNames.
 }
 
-func MakeBehaviorFromBehaviorFeature(node hscode.JSONMap) Behavior {
+func MakeBehaviorFromNode(node hscode.JSONMap) *Behavior {
 	hscode.AssertIsNodeOfType(node, hscode.BehaviorFeature)
 
 	var behavior Behavior
@@ -26,5 +34,5 @@ func MakeBehaviorFromBehaviorFeature(node hscode.JSONMap) Behavior {
 
 	behavior.Features, _ = node["features"].([]any)
 
-	return behavior
+	return &behavior
 }
