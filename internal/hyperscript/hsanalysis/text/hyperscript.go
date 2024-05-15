@@ -8,6 +8,10 @@ const (
 
 	ELEMENT_SCOPE_VARS_NOT_ALLOWED_HERE_BECAUSE_NO_COMPONENT = "element scope variables are not allowed here because there is no component"
 	ATTR_REFS_NOT_ALLOWED_HERE_BECAUSE_NO_COMPONENT          = "attribute references are not allowed here because there is no component"
+
+	BEHAVIOR_CAN_ONLY_BE_INSTALLED_FROM_HS_ATTR_OR_BEHAVIOR = "behaviors can only be installed from an Hyperscript attribute or behavior"
+
+	BEHAVIORS_SHOULD_BE_DEFINED_IN_HS_FILES = "behaviors should be defined in Hyperscript files or <script> elements"
 )
 
 func FmtElementScopeVarMayNotBeDefined(name string, inComponentCtx bool) string {

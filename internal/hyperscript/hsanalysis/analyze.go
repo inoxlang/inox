@@ -77,6 +77,7 @@ func (a *analyzer) preVisitHyperscriptNode(
 	locationKind := a.parameters.LocationKind
 	isInClientSideInterpolation := (locationKind == ClientSideAttributeInterpolation || locationKind == ClientSideTextInterpolation)
 	inComponentContext := component != nil && isInClientSideInterpolation
+	inBehavior := len(a.behaviorStack) > 0
 
 	switch nodeType {
 	case hscode.TellCommand:
@@ -126,6 +127,11 @@ func (a *analyzer) preVisitHyperscriptNode(
 	case hscode.DefFeature:
 		a.functionDefinitions = append(a.functionDefinitions, MakeFunctionDefinitionFromNode(node))
 	case hscode.BehaviorFeature:
+
+		if locationKind != HyperscriptScriptFile && locationKind != HyperscriptScriptElement {
+			a.addWarning(node, text.BEHAVIORS_SHOULD_BE_DEFINED_IN_HS_FILES)
+		}
+
 		behavior := MakeBehaviorFromNode(node, a.getNodeLocation(node))
 		a.behaviors = append(a.behaviors, behavior)
 		a.behaviorStack = append(a.behaviorStack, behavior)
@@ -139,6 +145,14 @@ func (a *analyzer) preVisitHyperscriptNode(
 			a.parameters.CodeStartIndex,
 			a.parameters.Chunk,
 		)
+	case hscode.InstallFeature:
+		switch locationKind {
+		case ComponentUnderscoreAttribute, UnderscoreAttribute:
+		default:
+			if !inBehavior {
+				a.addError(node, text.BEHAVIOR_CAN_ONLY_BE_INSTALLED_FROM_HS_ATTR_OR_BEHAVIOR)
+			}
+		}
 	}
 
 	return hscode.ContinueAstTraversal, nil

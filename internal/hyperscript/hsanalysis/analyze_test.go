@@ -99,6 +99,34 @@ func TestAnalyzeHyperscriptAttributeOfComponent(t *testing.T) {
 			MakeError(text.VAR_NOT_IN_ELEM_SCOPE_OF_ELEM_REF_BY_TELL_CMD, chunk.GetSourcePosition(parse.NodeSpan{Start: 45, End: 51})),
 		}, result.Errors)
 	})
+
+	t.Run("behaviors should not be defined in an Hyperscript attribute", func(t *testing.T) {
+		chunk := parse.MustParseChunkSource(parse.InMemorySource{
+			NameString: "test",
+			CodeString: `<div class="A" {behavior X end}> </div> `,
+		})
+
+		shorthand := parse.FindFirstNode(chunk.Node, (*parse.HyperscriptAttributeShorthand)(nil))
+
+		result, err := Analyze(Parameters{
+			LocationKind: locationKind,
+			Component: &Component{
+				Name: "A",
+			},
+			Chunk:               chunk,
+			CodeStartIndex:      shorthand.Span.Start + 1,
+			ProgramOrExpression: shorthand.HyperscriptParsingResult.NodeData,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.Empty(t, result.Errors)
+		assert.Equal(t, []Warning{
+			MakeWarning(text.BEHAVIORS_SHOULD_BE_DEFINED_IN_HS_FILES, chunk.GetSourcePosition(parse.NodeSpan{Start: 16, End: 26})),
+		}, result.Warnings)
+	})
 }
 
 func TestAnalyzeHyperscriptAttributeOfNonComponent(t *testing.T) {
@@ -170,7 +198,7 @@ func TestAnalyzeHyperscriptAttributeOfNonComponent(t *testing.T) {
 	t.Run("tell command containing an element-scoped variable", func(t *testing.T) {
 		chunk := parse.MustParseChunkSource(parse.InMemorySource{
 			NameString: "test",
-			CodeString: `<div class="A">  <div {on click tell closest .A log :count}></div> </div> `,
+			CodeString: `<div class="A">  <div {on click tell closest .A log :count}></div> </div>`,
 		})
 
 		shorthand := parse.FindFirstNode(chunk.Node, (*parse.HyperscriptAttributeShorthand)(nil))
@@ -198,7 +226,7 @@ func TestAnalyzeHyperscriptAttributeOfNonComponent(t *testing.T) {
 	t.Run("tell command containing an attribute reference", func(t *testing.T) {
 		chunk := parse.MustParseChunkSource(parse.InMemorySource{
 			NameString: "test",
-			CodeString: `<div class="A">  <div {on click tell closest .A log @name}></div> </div> `,
+			CodeString: `<div class="A">  <div {on click tell closest .A log @name}></div> </div>`,
 		})
 
 		shorthand := parse.FindFirstNode(chunk.Node, (*parse.HyperscriptAttributeShorthand)(nil))
@@ -221,6 +249,34 @@ func TestAnalyzeHyperscriptAttributeOfNonComponent(t *testing.T) {
 		assert.Equal(t, []Error{
 			MakeError(text.ATTR_NOT_REF_TO_ATTR_OF_ELEM_REF_BY_TELL_CMD, chunk.GetSourcePosition(parse.NodeSpan{Start: 52, End: 57})),
 		}, result.Errors)
+	})
+
+	t.Run("behaviors should not be defined in an Hyperscript attribute", func(t *testing.T) {
+		chunk := parse.MustParseChunkSource(parse.InMemorySource{
+			NameString: "test",
+			CodeString: `<div class="A">  <div {behavior X end}> </div> </div> `,
+		})
+
+		shorthand := parse.FindFirstNode(chunk.Node, (*parse.HyperscriptAttributeShorthand)(nil))
+
+		result, err := Analyze(Parameters{
+			LocationKind: locationKind,
+			Component: &Component{
+				Name: "A",
+			},
+			Chunk:               chunk,
+			CodeStartIndex:      shorthand.Span.Start + 1,
+			ProgramOrExpression: shorthand.HyperscriptParsingResult.NodeData,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.Empty(t, result.Errors)
+		assert.Equal(t, []Warning{
+			MakeWarning(text.BEHAVIORS_SHOULD_BE_DEFINED_IN_HS_FILES, chunk.GetSourcePosition(parse.NodeSpan{Start: 23, End: 33})),
+		}, result.Warnings)
 	})
 }
 
@@ -869,4 +925,29 @@ func TestAnalyzeHyperscripFile(t *testing.T) {
 		})
 	})
 
+	t.Run("unexpected top-level install", func(t *testing.T) {
+
+		file := utils.Must(hsparse.ParseFile(context.Background(), sourcecode.File{
+			NameString:  "/a._hs",
+			Resource:    "/a._hs",
+			ResourceDir: "/",
+			CodeString:  "install X",
+		}, nil, nil))
+
+		result, err := Analyze(Parameters{
+			LocationKind:        locationKind,
+			Chunk:               file,
+			CodeStartIndex:      0,
+			ProgramOrExpression: file.Result.NodeData,
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		assert.Empty(t, result.Warnings)
+		assert.Equal(t, []Error{
+			MakeError(text.BEHAVIOR_CAN_ONLY_BE_INSTALLED_FROM_HS_ATTR_OR_BEHAVIOR, file.GetSourcePosition(parse.NodeSpan{Start: 0, End: 9})),
+		}, result.Errors)
+	})
 }

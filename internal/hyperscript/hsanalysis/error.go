@@ -42,6 +42,14 @@ type Warning struct {
 	LocatedMessage string
 }
 
+func MakeWarning(msg string, location parse.SourcePositionRange) Warning {
+	return Warning{
+		Message:        msg,
+		Location:       location,
+		LocatedMessage: fmt.Sprintf("%s: %s", location, msg),
+	}
+}
+
 func (a *analyzer) getNodeLocation(node hscode.JSONMap) sourcecode.PositionRange {
 	return getNodeLocation(node, a.parameters.CodeStartIndex, a.parameters.Chunk)
 }
@@ -49,6 +57,11 @@ func (a *analyzer) getNodeLocation(node hscode.JSONMap) sourcecode.PositionRange
 func (a *analyzer) addError(node hscode.JSONMap, msg string) {
 	location := a.getNodeLocation(node)
 	a.errors = append(a.errors, MakeError(msg, location))
+}
+
+func (a *analyzer) addWarning(node hscode.JSONMap, msg string) {
+	location := a.getNodeLocation(node)
+	a.warnings = append(a.warnings, MakeWarning(msg, location))
 }
 
 func getNodeLocation(node hscode.JSONMap, codeStartIndex int32, chunk sourcecode.ParsedChunkSource) sourcecode.PositionRange {
