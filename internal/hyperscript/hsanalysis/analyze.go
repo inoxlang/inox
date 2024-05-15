@@ -7,6 +7,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/hyperscript/hsanalysis/text"
 	"github.com/inoxlang/inox/internal/hyperscript/hscode"
+	"github.com/inoxlang/inox/internal/sourcecode"
 )
 
 var analyzerPool = sync.Pool{
@@ -124,7 +125,7 @@ func (a *analyzer) preVisitHyperscriptNode(
 	case hscode.DefFeature:
 		a.functionDefinitions = append(a.functionDefinitions, MakeFunctionDefinitionFromNode(node))
 	case hscode.BehaviorFeature:
-		behavior := MakeBehaviorFromNode(node)
+		behavior := MakeBehaviorFromNode(node, a.getNodeLocation(node))
 		a.behaviors = append(a.behaviors, behavior)
 		a.behaviorStack = append(a.behaviorStack, behavior)
 
@@ -134,6 +135,8 @@ func (a *analyzer) preVisitHyperscriptNode(
 			&behavior.HandledEvents,
 			&behavior.Installs,
 			behavior.Features,
+			a.parameters.CodeStartIndex,
+			a.parameters.Chunk,
 		)
 	}
 
@@ -167,6 +170,8 @@ func preAnalyzeFeaturesOfBehaviorOrComponent(
 	handledEvents *[]DOMEvent,
 	installs *[]*InstallFeature,
 	features []any,
+	codeStartIndex int32,
+	chunk sourcecode.ParsedChunkSource,
 ) {
 	walk := func(node hscode.JSONMap, inInit bool) {
 		hscode.Walk(node, func(node hscode.JSONMap, nodeType hscode.NodeType, _ hscode.JSONMap, _ hscode.NodeType, _ []hscode.JSONMap, _ bool) (hscode.AstTraversalAction, error) {
@@ -206,7 +211,8 @@ func preAnalyzeFeaturesOfBehaviorOrComponent(
 			}
 			walk(feature, false)
 		case hscode.InstallFeature:
-			installfeature := MakeInstallFeatureFromNode(feature)
+			location := getNodeLocation(feature, codeStartIndex, chunk)
+			installfeature := MakeInstallFeatureFromNode(feature, location)
 			*installs = append(*installs, installfeature)
 		}
 	}

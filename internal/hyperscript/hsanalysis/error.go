@@ -5,6 +5,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/hyperscript/hscode"
 	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/sourcecode"
 )
 
 type Error struct {
@@ -41,14 +42,19 @@ type Warning struct {
 	LocatedMessage string
 }
 
-func (c *analyzer) addError(node hscode.JSONMap, msg string) {
-	relativeNodeStart, relativeNodeEnd := hscode.GetNodeSpan(node)
-	codeStartIndex := c.parameters.CodeStartIndex
+func (a *analyzer) getNodeLocation(node hscode.JSONMap) sourcecode.PositionRange {
+	return getNodeLocation(node, a.parameters.CodeStartIndex, a.parameters.Chunk)
+}
 
+func (a *analyzer) addError(node hscode.JSONMap, msg string) {
+	location := a.getNodeLocation(node)
+	a.errors = append(a.errors, MakeError(msg, location))
+}
+
+func getNodeLocation(node hscode.JSONMap, codeStartIndex int32, chunk sourcecode.ParsedChunkSource) sourcecode.PositionRange {
+	relativeNodeStart, relativeNodeEnd := hscode.GetNodeSpan(node)
 	absoluteNodeStart := codeStartIndex + relativeNodeStart
 	absoluteNodeEnd := codeStartIndex + relativeNodeEnd
 
-	location := c.parameters.Chunk.GetSourcePosition(parse.NodeSpan{Start: absoluteNodeStart, End: absoluteNodeEnd})
-
-	c.errors = append(c.errors, MakeError(msg, location))
+	return chunk.GetSourcePosition(parse.NodeSpan{Start: absoluteNodeStart, End: absoluteNodeEnd})
 }

@@ -82,12 +82,16 @@ func PreanalyzeHyperscriptComponent(
 		return
 	}
 
+	codeStartIndex := attribute.Span.Start + 1
+
 	preAnalyzeFeaturesOfBehaviorOrComponent(
 		&component.InitialElementScopeVarNames,
 		&component.InitializedDataAttributeNames,
 		&component.HandledEvents,
 		&component.Installs,
 		features,
+		codeStartIndex,
+		chunkSource,
 	)
 
 	return

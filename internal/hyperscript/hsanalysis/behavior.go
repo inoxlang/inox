@@ -1,12 +1,17 @@
 package hsanalysis
 
-import "github.com/inoxlang/inox/internal/hyperscript/hscode"
+import (
+	"github.com/inoxlang/inox/internal/hyperscript/hscode"
+	"github.com/inoxlang/inox/internal/sourcecode"
+)
 
 type Behavior struct {
 	Name      string
 	FullName  string
 	Namespace []string
-	Features  []any
+	Location  sourcecode.PositionRange
+
+	Features []any
 
 	HandledEvents                 []DOMEvent
 	InitialElementScopeVarNames   []string // example: {":a", ":b"}
@@ -17,13 +22,14 @@ type Behavior struct {
 	//Note: applying an install updates InitialElementScopeVarNames and InitializedDataAttributeNames.
 }
 
-func MakeBehaviorFromNode(node hscode.JSONMap) *Behavior {
+func MakeBehaviorFromNode(node hscode.JSONMap, location sourcecode.PositionRange) *Behavior {
 	hscode.AssertIsNodeOfType(node, hscode.BehaviorFeature)
 
-	var behavior Behavior
-
-	behavior.Name = node["name"].(string)
-	behavior.FullName = node["fullName"].(string)
+	behavior := Behavior{
+		Name:     node["name"].(string),
+		FullName: node["fullName"].(string),
+		Location: location,
+	}
 
 	namespace, ok := node["nameSpace"].([]any)
 	if ok {

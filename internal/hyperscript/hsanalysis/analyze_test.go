@@ -503,6 +503,15 @@ func TestAnalyzeHyperscripFile(t *testing.T) {
 			assert.Equal(t, "A", behavior.FullName)
 			assert.Empty(t, behavior.Namespace)
 			assert.Empty(t, behavior.Features)
+
+			assert.Equal(t, sourcecode.PositionRange{
+				SourceName:  "/a._hs",
+				StartLine:   1,
+				StartColumn: 1,
+				EndLine:     1,
+				EndColumn:   11,
+				Span:        sourcecode.NodeSpan{Start: 0, End: 10},
+			}, behavior.Location)
 		})
 
 		t.Run("namespaced named", func(t *testing.T) {
@@ -717,11 +726,7 @@ func TestAnalyzeHyperscripFile(t *testing.T) {
 				NameString:  "/a._hs",
 				Resource:    "/a._hs",
 				ResourceDir: "/",
-				CodeString: `
-					behavior A
-						install B(x: 1)
-					end
-				`,
+				CodeString:  "behavior A\ninstall B(x: 1) end",
 			}, nil))
 
 			result, err := Analyze(Parameters{
@@ -754,6 +759,15 @@ func TestAnalyzeHyperscripFile(t *testing.T) {
 
 			assert.Equal(t, "x", field.Name)
 			assert.True(t, hscode.IsNodeOfType(field.Value, hscode.NumberLiteral))
+
+			assert.Equal(t, sourcecode.PositionRange{
+				SourceName:  "/a._hs",
+				StartLine:   2,
+				StartColumn: 1,
+				EndLine:     2,
+				EndColumn:   16,
+				Span:        sourcecode.NodeSpan{Start: 11, End: 26},
+			}, install.Location)
 		})
 	})
 

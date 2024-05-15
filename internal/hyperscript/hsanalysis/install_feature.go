@@ -1,18 +1,24 @@
 package hsanalysis
 
-import "github.com/inoxlang/inox/internal/hyperscript/hscode"
+import (
+	"github.com/inoxlang/inox/internal/hyperscript/hscode"
+	"github.com/inoxlang/inox/internal/sourcecode"
+)
 
 type InstallFeature struct {
 	BehaviorFullName string
 	Fields           []ArgListField
+
+	Location sourcecode.PositionRange
 }
 
-func MakeInstallFeatureFromNode(node hscode.JSONMap) *InstallFeature {
+func MakeInstallFeatureFromNode(node hscode.JSONMap, location sourcecode.PositionRange) *InstallFeature {
 	hscode.AssertIsNodeOfType(node, hscode.InstallFeature)
 
-	var feature InstallFeature
-
-	feature.BehaviorFullName = node["fullName"].(string)
+	feature := InstallFeature{
+		BehaviorFullName: node["fullName"].(string),
+		Location:         location,
+	}
 
 	for _, field := range node["fields"].([]any) {
 		fieldMap := field.(hscode.JSONMap)
