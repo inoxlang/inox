@@ -2911,7 +2911,7 @@ function hyperscriptCoreGrammar(parser) {
         return {
             //all the following properties are not present in the result returned by the original parser.
             fullName: behaviorPath,
-            fields: args.fields,
+            fields: args?.fields ?? [],
         }
     });
 
