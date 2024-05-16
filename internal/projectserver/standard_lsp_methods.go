@@ -190,7 +190,7 @@ func handleHover(callCtx context.Context, req *defines.HoverParams) (result *def
 		session.lock.Unlock()
 		return nil, err
 	}
-	if fpath != inoxconsts.INOXLANG_FILE_EXTENSION {
+	if filepath.Ext(string(fpath)) != inoxconsts.INOXLANG_FILE_EXTENSION {
 		session.lock.Unlock()
 		//Not supported yet.
 		return &defines.Hover{}, nil
@@ -262,7 +262,7 @@ func handleSignatureHelp(callCtx context.Context, req *defines.SignatureHelpPara
 		return nil, err
 	}
 
-	if fpath != inoxconsts.INOXLANG_FILE_EXTENSION {
+	if filepath.Ext(string(fpath)) != inoxconsts.INOXLANG_FILE_EXTENSION {
 		//Not supported yet.
 		return &defines.SignatureHelp{}, nil
 	}
@@ -348,7 +348,7 @@ func handleDefinition(callCtx context.Context, req *defines.DefinitionParams) (r
 	if err != nil {
 		return nil, err
 	}
-	if fpath != inoxconsts.INOXLANG_FILE_EXTENSION {
+	if filepath.Ext(string(fpath)) != inoxconsts.INOXLANG_FILE_EXTENSION {
 		//Not supported yet.
 		return &[]defines.LocationLink{}, nil
 	}
@@ -495,7 +495,7 @@ func handleFormatDocument(callCtx context.Context, req *defines.DocumentFormatti
 	if err != nil {
 		return nil, err
 	}
-	if fpath != inoxconsts.INOXLANG_FILE_EXTENSION {
+	if filepath.Ext(string(fpath)) != inoxconsts.INOXLANG_FILE_EXTENSION {
 		//Not supported yet.
 		return &[]defines.TextEdit{}, nil
 	}

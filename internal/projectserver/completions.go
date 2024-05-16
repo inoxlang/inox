@@ -3,6 +3,7 @@ package projectserver
 import (
 	"context"
 	"io/fs"
+	"path/filepath"
 	"strings"
 
 	"github.com/inoxlang/inox/internal/afs"
@@ -30,7 +31,7 @@ func handleCompletion(ctx context.Context, req *defines.CompletionParams) (resul
 	if err != nil {
 		return nil, err
 	}
-	if fpath != inoxconsts.INOXLANG_FILE_EXTENSION {
+	if filepath.Ext(string(fpath)) != inoxconsts.INOXLANG_FILE_EXTENSION {
 		//Not supported yet.
 		return &[]defines.CompletionItem{}, nil
 	}
