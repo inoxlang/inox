@@ -24,7 +24,7 @@ const (
 )
 
 type filePreparationParams struct {
-	fpath      string
+	fpath      absoluteFilePath
 	rpcSession *jsonrpc.Session
 
 	//If true and the state preparation failed then ok is false and results are nil.
@@ -139,7 +139,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 		return
 	}
 
-	chunk, err := core.ParseFileChunk(fpath, lspFilesystem, parse.ParserOptions{
+	chunk, err := core.ParseFileChunk(string(fpath), lspFilesystem, parse.ParserOptions{
 		Timeout: singleFileParsingTimeout,
 	})
 
@@ -153,7 +153,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 
 	if chunk.Node.IncludableChunkDesc != nil { //prepare includable file
 		state, mod, includedChunk, err := core.PrepareExtractionModeIncludableFile(core.IncludableFilePreparationArgs{
-			Fpath:                    fpath,
+			Fpath:                    string(fpath),
 			ParsingContext:           ctx,
 			SingleFileParsingTimeout: singleFileParsingTimeout,
 			InoxChunkCache:           params.inoxChunkCache,
@@ -208,7 +208,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 
 				if pathLiteral, ok := node.(*parse.AbsolutePathLiteral); ok {
 					preparationResult, ok := prepareSourceFileInExtractionMode(ctx, filePreparationParams{
-						fpath:                    pathLiteral.Value,
+						fpath:                    absoluteFilePath(pathLiteral.Value),
 						requiresState:            true,
 						notifyUserAboutDbError:   true,
 						_depth:                   params._depth + 1,
@@ -230,7 +230,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 		}
 
 		args := core.ModulePreparationArgs{
-			Fpath:                     fpath,
+			Fpath:                     string(fpath),
 			ParsingCompilationContext: ctx,
 			SingleFileParsingTimeout:  singleFileParsingTimeout,
 			InoxChunkCache:            params.inoxChunkCache,
@@ -251,7 +251,7 @@ func prepareSourceFileInExtractionMode(ctx *core.Context, params filePreparation
 			MemberAuthToken: params.memberAuthToken,
 		}
 
-		if strings.HasSuffix(fpath, inoxconsts.INOXLANG_SPEC_FILE_SUFFIX) {
+		if strings.HasSuffix(string(fpath), inoxconsts.INOXLANG_SPEC_FILE_SUFFIX) {
 			args.EnableTesting = true
 		}
 

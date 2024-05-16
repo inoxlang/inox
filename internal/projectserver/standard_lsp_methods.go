@@ -120,6 +120,8 @@ func handleInitialize(
 				DiagnosticOptions: defines.DiagnosticOptions{
 					InterFileDependencies: true,
 				},
+				// Diagnostics are pulled for both Inox and Hyperscript.
+				// Thereforce the following configuration is not necessary.
 				// TextDocumentRegistrationOptions: defines.TextDocumentRegistrationOptions{
 				// 	DocumentSelector: []defines.DocumentFilter{
 				// 		{
@@ -498,7 +500,7 @@ func handleFormatDocument(callCtx context.Context, req *defines.DocumentFormatti
 		return &[]defines.TextEdit{}, nil
 	}
 
-	chunk, err := core.ParseFileChunk(fpath, fls, parse.ParserOptions{
+	chunk, err := core.ParseFileChunk(string(fpath), fls, parse.ParserOptions{
 		Timeout:       SINGLE_FILE_PARSING_TIMEOUT,
 		ParentContext: callCtx,
 	})
@@ -544,12 +546,13 @@ func handleDidOpenDocument(callCtx context.Context, req *defines.DidOpenTextDocu
 	if err != nil {
 		return err
 	}
+	fpathS := string(fpath)
 
 	fullDocumentText := req.TextDocument.Text
 
-	fsErr := fsutil.WriteFile(fls.unsavedDocumentsFS(), fpath, []byte(fullDocumentText), 0700)
+	fsErr := fsutil.WriteFile(fls.unsavedDocumentsFS(), fpathS, []byte(fullDocumentText), 0700)
 	if fsErr != nil {
-		rpcSession.LoggerPrintln("failed to update state of document", fpath+":", fsErr)
+		rpcSession.LoggerPrintln("failed to update state of document", fpathS+":", fsErr)
 	}
 
 	registrationId := uuid.New()
@@ -642,7 +645,7 @@ func handleDidSaveDocument(callCtx context.Context, req *defines.DidSaveTextDocu
 	// to get the initial content for a newly created file as no textDocument/didChange request
 	// is sent for the first modification.
 	if req.Text != nil {
-		fsErr := fsutil.WriteFile(fls.unsavedDocumentsFS(), fpath, []byte(*req.Text), 0700)
+		fsErr := fsutil.WriteFile(fls.unsavedDocumentsFS(), string(fpath), []byte(*req.Text), 0700)
 		if fsErr != nil {
 			rpcSession.LoggerPrintln("failed to update state of document", fpath+":", fsErr)
 		}
@@ -728,6 +731,7 @@ func handleDidChangeDocument(callCtx context.Context, req *defines.DidChangeText
 		session.lock.Unlock()
 		return err
 	}
+	fpathS := string(fpath)
 
 	syncData, hasSyncData := session.unsavedDocumentSyncData[fpath]
 
@@ -772,7 +776,7 @@ func handleDidChangeDocument(callCtx context.Context, req *defines.DidChangeText
 	if syncFull {
 		fullDocumentText = req.ContentChanges[0].Text.(string)
 	} else {
-		beforeEditContent, err := fsutil.ReadFile(fls.unsavedDocumentsFS(), fpath)
+		beforeEditContent, err := fsutil.ReadFile(fls.unsavedDocumentsFS(), fpathS)
 		if err != nil {
 			return jsonrpc.ResponseError{
 				Code:    jsonrpc.InternalError.Code,
@@ -852,7 +856,7 @@ func handleDidChangeDocument(callCtx context.Context, req *defines.DidChangeText
 		}
 	}
 
-	fsErr := fsutil.WriteFile(fls.unsavedDocumentsFS(), fpath, []byte(fullDocumentText), 0700)
+	fsErr := fsutil.WriteFile(fls.unsavedDocumentsFS(), fpathS, []byte(fullDocumentText), 0700)
 
 	if fsErr != nil {
 		return jsonrpc.ResponseError{
@@ -892,7 +896,7 @@ func handleDidCloseDocument(ctx context.Context, req *defines.DidCloseTextDocume
 
 	docsFs := fls.unsavedDocumentsFS()
 	if docsFs != fls {
-		docsFs.Remove(fpath)
+		docsFs.Remove(string(fpath))
 	}
 	return nil
 }

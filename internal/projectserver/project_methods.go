@@ -411,7 +411,7 @@ func handleOpenProject(ctx context.Context, req interface{}, projectRegistry *pr
 	//Initial generation.
 	go analyzeCodebaseAndRegen(true, session)
 
-	//Each time an Inox file changes we analyze the codebase and regenerate static CSS & JS.
+	//Each time an Inox or Hyperscript file changes we analyze the codebase and regenerate static CSS & JS.
 	evs.OnIDLE(core.IdleEventSourceHandler{
 		MinimumLastEventAge: 2 * fs_ns.OLD_EVENT_MIN_AGE,
 		IsIgnoredEvent: func(e *core.Event) (ignore bool) {

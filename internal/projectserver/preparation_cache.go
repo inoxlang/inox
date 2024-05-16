@@ -33,7 +33,7 @@ func init() {
 // of a program that will be executed.
 type preparedFileCache struct {
 	lock    sync.RWMutex
-	entries map[ /* fpath */ string]*preparedFileCacheEntry
+	entries map[absoluteFilePath]*preparedFileCacheEntry
 	logger  zerolog.Logger
 }
 
@@ -41,7 +41,7 @@ type preparedFileCache struct {
 // global preparedFileCaches map.
 func newPreparedFileCache(logger zerolog.Logger) *preparedFileCache {
 	cache := &preparedFileCache{
-		entries: map[string]*preparedFileCacheEntry{},
+		entries: map[absoluteFilePath]*preparedFileCacheEntry{},
 		logger:  logger,
 	}
 
@@ -54,7 +54,7 @@ func newPreparedFileCache(logger zerolog.Logger) *preparedFileCache {
 }
 
 // getOrCreate retrieves or creates an entry for a given file.
-func (c *preparedFileCache) getOrCreate(fpath string) (_ *preparedFileCacheEntry, new bool) {
+func (c *preparedFileCache) getOrCreate(fpath absoluteFilePath) (_ *preparedFileCacheEntry, new bool) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -67,7 +67,7 @@ func (c *preparedFileCache) getOrCreate(fpath string) (_ *preparedFileCacheEntry
 	return entry, ok
 }
 
-func (c *preparedFileCache) acknowledgeSourceFileChange(fpath string) {
+func (c *preparedFileCache) acknowledgeSourceFileChange(fpath absoluteFilePath) {
 	if c == nil {
 		return
 	}
@@ -97,7 +97,7 @@ func (c *preparedFileCache) acknowledgeSessionEnd() {
 // a preparedFileCacheEntry holds the data about a single prepared source file.
 type preparedFileCacheEntry struct {
 	lock                     sync.Mutex
-	fpath                    string
+	fpath                    absoluteFilePath
 	state                    *core.GlobalState
 	module                   *core.Module
 	chunk                    *parse.ParsedChunkSource
@@ -109,7 +109,7 @@ type preparedFileCacheEntry struct {
 	logger zerolog.Logger
 }
 
-func newPreparedFileCacheEntry(fpath string, logger zerolog.Logger) *preparedFileCacheEntry {
+func newPreparedFileCacheEntry(fpath absoluteFilePath, logger zerolog.Logger) *preparedFileCacheEntry {
 	cache := &preparedFileCacheEntry{
 		fpath:  fpath,
 		logger: logger,

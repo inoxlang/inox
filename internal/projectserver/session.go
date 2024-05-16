@@ -37,9 +37,9 @@ func getCreateProjectSession(rpcSession *jsonrpc.Session) *Session {
 		session = &Session{
 			rpcSession:                        rpcSession,
 			didSaveCapabilityRegistrationIds:  make(map[defines.DocumentUri]uuid.UUID, 0),
-			unsavedDocumentSyncData:           make(map[string]*unsavedDocumentSyncData, 0),
+			unsavedDocumentSyncData:           make(map[absoluteFilePath]*unsavedDocumentSyncData, 0),
 			testRuns:                          make(map[TestRunId]*TestRun, 0),
-			documentDiagnostics:               make(map[string]*singleDocumentDiagnostics),
+			documentDiagnostics:               make(map[absoluteFilePath]*singleDocumentDiagnostics),
 			diagPullDisablingWindowStartTimes: make(map[defines.DocumentUri]time.Time),
 		}
 		sessions[rpcSession] = session
@@ -70,7 +70,7 @@ type Session struct {
 	clientCapabilities               defines.ClientCapabilities
 	serverCapabilities               defines.ServerCapabilities
 	didSaveCapabilityRegistrationIds map[defines.DocumentUri]uuid.UUID
-	unsavedDocumentSyncData          map[string] /* fpath */ *unsavedDocumentSyncData
+	unsavedDocumentSyncData          map[absoluteFilePath]*unsavedDocumentSyncData
 
 	//Project
 
@@ -90,7 +90,7 @@ type Session struct {
 	preparedSourceFilesCache          *preparedFileCache
 	lastCodebaseAnalysis              *analysis.Result
 	postEditDiagnosticDebounce        func(f func()) //Used to debounce the computation of diagnostics after the user stops making edits.
-	documentDiagnostics               map[ /*absolute path */ string]*singleDocumentDiagnostics
+	documentDiagnostics               map[absoluteFilePath]*singleDocumentDiagnostics
 	diagPullDisablingWindowStartTimes map[defines.DocumentUri]time.Time //used to ignore some diagnostic pulls, protected by .lock
 
 	//Automated code generation

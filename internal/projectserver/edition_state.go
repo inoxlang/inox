@@ -29,7 +29,7 @@ var (
 type projectEditionState struct {
 	lock sync.Mutex
 
-	files map[string]*projectFileState
+	files map[absoluteFilePath]*projectFileState
 }
 
 func getCreateProjectEditionState(id core.ProjectID) *projectEditionState {
@@ -42,13 +42,13 @@ func getCreateProjectEditionState(id core.ProjectID) *projectEditionState {
 	}
 
 	state = &projectEditionState{
-		files: map[string]*projectFileState{},
+		files: map[absoluteFilePath]*projectFileState{},
 	}
 	projectEditionStates[id] = state
 	return state
 }
 
-func (s *projectEditionState) startFileUpload(fpath string, firstPart []byte, info uploadInfo, rpcSession *jsonrpc.Session) (uploadId, error) {
+func (s *projectEditionState) startFileUpload(fpath absoluteFilePath, firstPart []byte, info uploadInfo, rpcSession *jsonrpc.Session) (uploadId, error) {
 	s.lock.Lock()
 	s.cleanupInactiveFilesNoLock("")
 	file, ok := s.files[fpath]
@@ -61,7 +61,7 @@ func (s *projectEditionState) startFileUpload(fpath string, firstPart []byte, in
 	return file.startFileUpload(rpcSession, firstPart, info)
 }
 
-func (s *projectEditionState) continueFileUpload(fpath string, part []byte, id uploadId, rpcSession *jsonrpc.Session) (uploadInfo, error) {
+func (s *projectEditionState) continueFileUpload(fpath absoluteFilePath, part []byte, id uploadId, rpcSession *jsonrpc.Session) (uploadInfo, error) {
 	s.lock.Lock()
 	s.cleanupInactiveFilesNoLock(fpath)
 	file, ok := s.files[fpath]
@@ -74,7 +74,7 @@ func (s *projectEditionState) continueFileUpload(fpath string, part []byte, id u
 	return file.continueFileUpload(rpcSession, part, id)
 }
 
-func (s *projectEditionState) finishFileUpload(fpath string, lastPart []byte, id uploadId, rpcSession *jsonrpc.Session) ([][]byte, uploadInfo, error) {
+func (s *projectEditionState) finishFileUpload(fpath absoluteFilePath, lastPart []byte, id uploadId, rpcSession *jsonrpc.Session) ([][]byte, uploadInfo, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -95,7 +95,7 @@ func (s *projectEditionState) finishFileUpload(fpath string, lastPart []byte, id
 	return nil, uploadInfo{}, err
 }
 
-func (s *projectEditionState) cleanupInactiveFilesNoLock(ignoredPath string) {
+func (s *projectEditionState) cleanupInactiveFilesNoLock(ignoredPath absoluteFilePath) {
 	for path, file := range s.files {
 		if (path == "" || path != ignoredPath) && time.Since(file.LastActivity()) >= PROJECT_FILE_STATE_CLEANUP_TIMEOUT {
 			delete(s.files, path)

@@ -293,7 +293,7 @@ func getLspFilesystem(rpcSession *jsonrpc.Session) (*Filesystem, bool) {
 type unsavedDocumentSyncData struct {
 	lock sync.Mutex
 
-	path          string
+	path          absoluteFilePath
 	prevContent   []byte
 	reversed      bool
 	lastFileWrite time.Time
@@ -318,7 +318,7 @@ func (d *unsavedDocumentSyncData) reactToDidChange(fls *Filesystem, logger zerol
 		d.reversed = true
 		logger.Println("reverse 'unsaved' doc synchronization")
 
-		f, err := unsavedDocFS.Open(d.path)
+		f, err := unsavedDocFS.Open(string(d.path))
 		if err != nil {
 			return
 		}
@@ -329,8 +329,9 @@ func (d *unsavedDocumentSyncData) reactToDidChange(fls *Filesystem, logger zerol
 	}
 }
 
-func updateFile(fpath string, parts [][]byte, create, overwrite bool, fls *Filesystem, rpcSession *jsonrpc.Session) (FsNonCriticalError, error) {
+func updateFile(fpath absoluteFilePath, parts [][]byte, create, overwrite bool, fls *Filesystem, rpcSession *jsonrpc.Session) (FsNonCriticalError, error) {
 	unsavedDocumentsFS := fls.unsavedDocumentsFS()
+	fpathS := string(fpath)
 
 	// attempt to synchronize the unsaved document with the new content,
 	// we only do that if the unsaved document filesystem is a separate filesystem.
@@ -362,7 +363,7 @@ func updateFile(fpath string, parts [][]byte, create, overwrite bool, fls *Files
 			}
 
 			// read the file & save the previous content
-			doc, err := unsavedDocumentsFS.OpenFile(fpath, os.O_RDWR, 0)
+			doc, err := unsavedDocumentsFS.OpenFile(fpathS, os.O_RDWR, 0)
 			if err != nil {
 				return
 			}
@@ -398,10 +399,10 @@ func updateFile(fpath string, parts [][]byte, create, overwrite bool, fls *Files
 	}
 
 	if create {
-		_, err := fls.Stat(fpath)
+		_, err := fls.Stat(fpathS)
 		alreadyExists := err == nil //The file can still be deleted before the next call but that should be fine.
 
-		f, err := fls.OpenFile(fpath, os.O_CREATE|os.O_WRONLY, fs_ns.DEFAULT_FILE_FMODE)
+		f, err := fls.OpenFile(fpathS, os.O_CREATE|os.O_WRONLY, fs_ns.DEFAULT_FILE_FMODE)
 
 		defer func() {
 			if f != nil {
@@ -431,7 +432,7 @@ func updateFile(fpath string, parts [][]byte, create, overwrite bool, fls *Files
 			return "", fmt.Errorf("failed to create file %s: failed to write: %w", fpath, err)
 		}
 	} else {
-		f, err := fls.OpenFile(fpath, os.O_WRONLY, 0)
+		f, err := fls.OpenFile(fpathS, os.O_WRONLY, 0)
 
 		defer func() {
 			if f != nil {
@@ -540,7 +541,7 @@ func handleFileStat(ctx context.Context, req interface{}) (interface{}, error) {
 		return nil, err
 	}
 
-	stat, err := fls.Stat(fpath)
+	stat, err := fls.Stat(string(fpath))
 	if err != nil {
 		if os.IsNotExist(err) {
 			return FsFileNotFound, nil
@@ -574,7 +575,7 @@ func handleReadFile(ctx context.Context, req interface{}) (interface{}, error) {
 		return nil, err
 	}
 
-	content, err := fsutil.ReadFile(fls, fpath)
+	content, err := fsutil.ReadFile(fls, string(fpath))
 	if err != nil {
 		if os.IsNotExist(err) {
 			return FsFileNotFound, nil
@@ -763,16 +764,19 @@ func handleRenameFile(ctx context.Context, req interface{}) (interface{}, error)
 		return nil, err
 	}
 
-	_, err = fls.Stat(path)
+	pathS := string(path)
+	newPathS := string(newPath)
+
+	_, err = fls.Stat(pathS)
 	if os.IsNotExist(err) {
 		return FsFileNotFound, nil
 	}
 
-	newPathStat, err := fls.Stat(newPath)
+	newPathStat, err := fls.Stat(newPathS)
 
 	if os.IsNotExist(err) {
 		//there is no file at the desination path so we can rename it.
-		err := fls.Rename(path, newPath)
+		err := fls.Rename(pathS, newPathS)
 		if err != nil {
 			return nil, fmtInternalError(err.Error())
 		}
@@ -780,13 +784,13 @@ func handleRenameFile(ctx context.Context, req interface{}) (interface{}, error)
 	} else { //exists
 		if params.Overwrite {
 			if err == nil && newPathStat.IsDir() {
-				if err := fls.Remove(newPath); err != nil {
+				if err := fls.Remove(newPathS); err != nil {
 					return nil, fmtInternalError("failed to rename %s to %s: deletion of found dir failed: %s", path, newPath, err)
 				}
 			}
 
 			//TODO: return is-dir error if there is a directory.
-			return nil, fls.Rename(path, newPath)
+			return nil, fls.Rename(pathS, newPathS)
 		}
 		return nil, fmtInternalError("failed to rename %s to %s: file or dir found at new path and overwrite option is false ", path, newPath)
 	}
@@ -807,7 +811,7 @@ func handleDeleteFile(ctx context.Context, req interface{}) (interface{}, error)
 
 	if params.Recursive {
 		//TODO: add implementation of the { RemoveAll(string) error } interface to MetaFilesystem & MemoryFilesystem.
-		err = fsutil.RemoveAll(fls, path)
+		err = fsutil.RemoveAll(fls, string(path))
 
 		if os.IsNotExist(err) {
 			return FsFileNotFound, nil
@@ -815,7 +819,7 @@ func handleDeleteFile(ctx context.Context, req interface{}) (interface{}, error)
 			return nil, fmtInternalError("failed to recursively delete %s: %s", path, err)
 		}
 	} else {
-		err = fls.Remove(path)
+		err = fls.Remove(string(path))
 
 		if os.IsNotExist(err) {
 			return FsFileNotFound, nil
@@ -840,7 +844,7 @@ func handleReadDir(ctx context.Context, req interface{}) (interface{}, error) {
 		return nil, err
 	}
 
-	entries, err := fls.ReadDir(dpath)
+	entries, err := fls.ReadDir(string(dpath))
 	if err != nil {
 		if os.IsNotExist(err) {
 			return FsFileNotFound, nil
@@ -873,7 +877,7 @@ func handleCreateDir(ctx context.Context, req interface{}) (interface{}, error) 
 		return nil, err
 	}
 
-	err = fls.MkdirAll(path, fs_ns.DEFAULT_DIR_FMODE)
+	err = fls.MkdirAll(string(path), fs_ns.DEFAULT_DIR_FMODE)
 	if err != nil {
 		return nil, fmtInternalError("failed to create dir %s: %s", path, err)
 	}

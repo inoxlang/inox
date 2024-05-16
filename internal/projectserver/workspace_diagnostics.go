@@ -9,6 +9,9 @@ import (
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
 )
 
+// publishWorkspaceDiagnostics adds diagnostics to files, these diagnostics are created from errors and warnings reported
+// by the last codebase analysis. Diagnostics are pushed using "textDocument/publishDiagnostics", the standard LSP method
+// "workspace/diagnostic" is not handled.
 func publishWorkspaceDiagnostics(projSession *Session, lastAnalysis *analysis.Result) {
 
 	projSession.lock.Lock()
@@ -17,14 +20,14 @@ func publishWorkspaceDiagnostics(projSession *Session, lastAnalysis *analysis.Re
 
 	//Find documents that are not in the docDiagnostics map but that contain errors that need to be reported.
 
-	trackedDocs := map[string]struct{}{}
-	nonTrackedDocs := map[string]struct{}{}
+	trackedDocs := map[absoluteFilePath]struct{}{}
+	nonTrackedDocs := map[absoluteFilePath]struct{}{}
 
 	for absPath := range docDiagnostics {
 		trackedDocs[absPath] = struct{}{}
 	}
 
-	addNonTrackedDoc := func(path string) {
+	addNonTrackedDoc := func(path absoluteFilePath) {
 		if _, ok := trackedDocs[path]; ok {
 			return
 		}
@@ -32,53 +35,24 @@ func publishWorkspaceDiagnostics(projSession *Session, lastAnalysis *analysis.Re
 	}
 
 	for _, err := range lastAnalysis.InoxJsErrors {
-		addNonTrackedDoc(err.Location.SourceName)
+		path, ok := absoluteFilePathFrom(err.Location.SourceName)
+		if ok {
+			addNonTrackedDoc(path)
+		}
 	}
 
 	for _, err := range lastAnalysis.HyperscriptErrors {
-		addNonTrackedDoc(err.Location.SourceName)
+		path, ok := absoluteFilePathFrom(err.Location.SourceName)
+		if ok {
+			addNonTrackedDoc(path)
+		}
 	}
 
 	for _, warning := range lastAnalysis.HyperscriptWarnings {
-		addNonTrackedDoc(warning.Location.SourceName)
-	}
-
-	publisSingleDocWorkspaceDiagnostics := func(absPath string, uri defines.DocumentUri, items []defines.Diagnostic) {
-		//Add InoxJS diagnostics.
-
-		for _, err := range lastAnalysis.InoxJsErrors {
-
-			if err.Location.SourceName != absPath { //ignore errors concerning other documents.
-				continue
-			}
-
-			items = append(items, makeDiagnosticFromLocatedError(err))
+		path, ok := absoluteFilePathFrom(warning.Location.SourceName)
+		if ok {
+			addNonTrackedDoc(path)
 		}
-
-		//Add Hyperscript diagnostics.
-
-		for _, err := range lastAnalysis.HyperscriptErrors {
-
-			if err.Location.SourceName != absPath { //ignore errors concerning other documents.
-				continue
-			}
-
-			items = append(items, makeDiagnosticFromLocatedError(err))
-		}
-
-		for _, warning := range lastAnalysis.HyperscriptWarnings {
-			if warning.Location.SourceName != absPath { //ignore warnings concerning other documents.
-				continue
-			}
-
-			items = append(items, defines.Diagnostic{
-				Range:    rangeToLspRange(warning.Location),
-				Severity: &warningSeverity,
-				Message:  warning.Message,
-			})
-		}
-
-		sendDocumentDiagnostics(projSession.rpcSession, uri, items)
 	}
 
 	for absPath, diagnostics := range docDiagnostics {
@@ -99,20 +73,23 @@ func publishWorkspaceDiagnostics(projSession *Session, lastAnalysis *analysis.Re
 			diagnostics.lock.Unlock()
 		}
 
-		initialItems := slices.Clone(diagnostics.items)
+		items := slices.Clone(diagnostics.items)
 
-		go func(absPath string, uri defines.DocumentUri, diagnostics *singleDocumentDiagnostics) {
-			publisSingleDocWorkspaceDiagnostics(absPath, uri, initialItems)
-		}(absPath, uri, diagnostics)
+		go func(absPath absoluteFilePath, uri defines.DocumentUri, items *[]defines.Diagnostic) {
+			addErrorsAndWarningsAboutFileFromCodebaseAnalysis(lastAnalysis, absPath, items)
+			sendDocumentDiagnostics(projSession.rpcSession, uri, *items)
+		}(absPath, uri, &items)
 	}
 
-	for nonTrackedDocPath := range nonTrackedDocs {
-		uri, err := getFileURI(nonTrackedDocPath, projSession.inProjectMode)
+	for nonTrackedDocName := range nonTrackedDocs {
+		uri, err := getFileURI(nonTrackedDocName, projSession.inProjectMode)
 		if err != nil {
 			continue
 		}
 
-		publisSingleDocWorkspaceDiagnostics(nonTrackedDocPath, uri, nil)
+		items := &[]defines.Diagnostic{}
+		addErrorsAndWarningsAboutFileFromCodebaseAnalysis(lastAnalysis, nonTrackedDocName, items)
+		sendDocumentDiagnostics(projSession.rpcSession, uri, *items)
 	}
 
 }
@@ -122,5 +99,41 @@ func makeDiagnosticFromLocatedError(e parse.LocatedError) defines.Diagnostic {
 		Range:    rangeToLspRange(e.LocationRange()),
 		Severity: &errSeverity,
 		Message:  e.MessageWithoutLocation(),
+	}
+}
+
+func addErrorsAndWarningsAboutFileFromCodebaseAnalysis(lastAnalysis *analysis.Result, absPath absoluteFilePath, items *[]defines.Diagnostic) {
+	//Add InoxJS diagnostics.
+
+	for _, err := range lastAnalysis.InoxJsErrors {
+
+		if err.Location.SourceName != string(absPath) { //ignore errors concerning other documents.
+			continue
+		}
+
+		*items = append(*items, makeDiagnosticFromLocatedError(err))
+	}
+
+	//Add Hyperscript diagnostics.
+
+	for _, err := range lastAnalysis.HyperscriptErrors {
+
+		if err.Location.SourceName != string(absPath) { //ignore errors concerning other documents.
+			continue
+		}
+
+		*items = append(*items, makeDiagnosticFromLocatedError(err))
+	}
+
+	for _, warning := range lastAnalysis.HyperscriptWarnings {
+		if warning.Location.SourceName != string(absPath) { //ignore warnings concerning other documents.
+			continue
+		}
+
+		*items = append(*items, defines.Diagnostic{
+			Range:    rangeToLspRange(warning.Location),
+			Severity: &warningSeverity,
+			Message:  warning.Message,
+		})
 	}
 }

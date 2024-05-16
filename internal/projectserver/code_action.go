@@ -18,7 +18,7 @@ type codeActionsParam struct {
 	diagnostics []defines.Diagnostic
 	codeRange   defines.Range
 	doc         defines.TextDocumentIdentifier
-	fpath       string
+	fpath       absoluteFilePath
 
 	rpcSession *jsonrpc.Session
 	fls        *Filesystem
@@ -27,7 +27,7 @@ type codeActionsParam struct {
 
 func getCodeActions(params codeActionsParam) (*[]defines.CodeAction, error) {
 
-	chunk, err := core.ParseFileChunk(params.fpath, params.fls, parse.ParserOptions{
+	chunk, err := core.ParseFileChunk(string(params.fpath), params.fls, parse.ParserOptions{
 		Timeout: SINGLE_FILE_PARSING_TIMEOUT,
 	})
 

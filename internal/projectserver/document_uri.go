@@ -26,7 +26,7 @@ func normalizeURI[S ~string](uri S) S {
 	return S(scheme + ":///" + afterColonSlash)
 }
 
-func getFileURI(path string, usingInoxFs bool) (defines.DocumentUri, error) {
+func getFileURI[P ~string](path P, usingInoxFs bool) (defines.DocumentUri, error) {
 	if path == "" {
 		return "", errors.New("failed to get document URI: empty path")
 	}
@@ -39,8 +39,8 @@ func getFileURI(path string, usingInoxFs bool) (defines.DocumentUri, error) {
 	return defines.DocumentUri("file://" + path), nil
 }
 
-// getPath returns a clean path from a URI.
-func getPath(uri defines.URI, usingInoxFS bool) (string, error) {
+// getPath returns a clean absolute path from a URI.
+func getPath(uri defines.URI, usingInoxFS bool) (absoluteFilePath, error) {
 	u, err := url.Parse(string(uri))
 	if err != nil {
 		return "", fmt.Errorf("invalid URI: %s: %w", uri, err)
@@ -51,11 +51,11 @@ func getPath(uri defines.URI, usingInoxFS bool) (string, error) {
 	if !usingInoxFS && u.Scheme != "file" {
 		return "", fmt.Errorf("%w, actual is: %s", ErrFileURIExpected, string(uri))
 	}
-	return filepath.Clean(u.Path), nil
+	return absoluteFilePath(filepath.Clean(u.Path)), nil
 }
 
-// getPath returns a clean path from a URI, it also checks that the file extension is `.ix` or `._hs`.
-func getSupportedFilePath(uri defines.DocumentUri, usingInoxFs bool) (string, error) {
+// getPath returns a clean path from a document URI, it also checks that the file extension is `.ix` or `._hs`.
+func getSupportedFilePath(uri defines.DocumentUri, usingInoxFs bool) (absoluteFilePath, error) {
 	u, err := url.Parse(string(uri))
 
 	if err != nil {
@@ -72,5 +72,14 @@ func getSupportedFilePath(uri defines.DocumentUri, usingInoxFs bool) (string, er
 	if !strings.HasSuffix(clean, inoxconsts.INOXLANG_FILE_EXTENSION) && !strings.HasSuffix(clean, hscode.FILE_EXTENSION) {
 		return "", fmt.Errorf("unexpected file extension: '%s'", filepath.Ext(clean))
 	}
-	return clean, nil
+	return absoluteFilePath(clean), nil
+}
+
+type absoluteFilePath string
+
+func absoluteFilePathFrom(s string) (absoluteFilePath, bool) {
+	if s == "" || s[0] != '/' {
+		return "", false
+	}
+	return absoluteFilePath(s), true
 }

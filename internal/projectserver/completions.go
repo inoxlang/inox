@@ -104,7 +104,7 @@ func handleCompletion(ctx context.Context, req *defines.CompletionParams) (resul
 }
 
 // getCompletions gets the completions for a specific position in an Inox code file.
-func getCompletions(fpath string, line, column int32, rpcSession *jsonrpc.Session, memberAuthToken string) ([]codecompletion.Completion, *parse.ParsedChunkSource, bool) {
+func getCompletions(fpath absoluteFilePath, line, column int32, rpcSession *jsonrpc.Session, memberAuthToken string) ([]codecompletion.Completion, *parse.ParsedChunkSource, bool) {
 	//----------------------------------------------------
 	session := getCreateLockedProjectSession(rpcSession)
 

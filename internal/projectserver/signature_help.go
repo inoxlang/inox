@@ -13,7 +13,7 @@ import (
 )
 
 type signatureHelpParams struct {
-	fpath        string
+	fpath        absoluteFilePath
 	line, column int32
 	session      *jsonrpc.Session
 

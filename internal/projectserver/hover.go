@@ -19,7 +19,7 @@ import (
 )
 
 type hoverContentParams struct {
-	fpath                string
+	fpath                absoluteFilePath
 	docURI               defines.DocumentUri
 	line, column         int32
 	rpcSession           *jsonrpc.Session

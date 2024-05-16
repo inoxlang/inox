@@ -171,7 +171,7 @@ func computeDocumentDiagnostics(params diagnosticNotificationParams) (result *si
 		return nil, err
 	}
 
-	fileExtension := filepath.Ext(fpath)
+	fileExtension := filepath.Ext(string(fpath))
 
 	switch fileExtension {
 	case inoxconsts.INOXLANG_FILE_EXTENSION:
@@ -183,7 +183,10 @@ func computeDocumentDiagnostics(params diagnosticNotificationParams) (result *si
 	}
 }
 
-func computeInoxFileDiagnostics(params diagnosticNotificationParams, fpath string) (result *singleDocumentDiagnostics, _ error) {
+func computeInoxFileDiagnostics(params diagnosticNotificationParams, fpath absoluteFilePath) (result *singleDocumentDiagnostics, _ error) {
+	startTime := time.Now()
+	fpathS := string(fpath)
+
 	session, _, usingInoxFS, fls, project, memberAuthToken :=
 		params.rpcSession, params.docURI, params.usingInoxFS, params.fls, params.project, params.memberAuthToken
 
@@ -194,26 +197,14 @@ func computeInoxFileDiagnostics(params diagnosticNotificationParams, fpath strin
 	})
 
 	defer func() {
+		if result != nil {
+			result.finalize(fpath, startTime, params.rpcSession)
+		}
+
 		go func() {
 			defer utils.Recover()
 			handlingCtx.CancelGracefully()
 		}()
-	}()
-
-	defer func() {
-		if result != nil {
-			//Finalize the result.
-			result.id = MakeDocDiagnosticId(fpath)
-			if result.items == nil {
-				//Make sure the items are serialized as an empty array, not 'null'.
-				result.items = []defines.Diagnostic{}
-			}
-
-			// Save the result in the session.
-			projSession := getCreateLockedProjectSession(params.rpcSession)
-			defer projSession.lock.Unlock()
-			projSession.documentDiagnostics[fpath] = result
-		}
 	}()
 
 	preparationResult, ok := prepareSourceFileInExtractionMode(handlingCtx, filePreparationParams{
@@ -279,7 +270,7 @@ func computeInoxFileDiagnostics(params diagnosticNotificationParams, fpath strin
 			Range:    rangeToLspRange(pos),
 		}
 
-		if pos.SourceName == fpath {
+		if pos.SourceName == fpathS {
 			diagnostics = append(diagnostics, diagnostic)
 		} else if uriErr == nil {
 			otherDocumentDiagnostics[docURI] = append(otherDocumentDiagnostics[docURI], diagnostic)
@@ -295,7 +286,7 @@ func computeInoxFileDiagnostics(params diagnosticNotificationParams, fpath strin
 	if state.PrenitStaticCheckErrors != nil {
 		for _, err := range state.PrenitStaticCheckErrors {
 
-			pos := getPositionInPositionStackOrFirst(err.Location, fpath)
+			pos := getPositionInPositionStackOrFirst(err.Location, fpathS)
 			docURI, uriErr := getFileURI(pos.SourceName, usingInoxFS)
 
 			diagnostic := defines.Diagnostic{
@@ -304,7 +295,7 @@ func computeInoxFileDiagnostics(params diagnosticNotificationParams, fpath strin
 				Range:    rangeToLspRange(pos),
 			}
 
-			if pos.SourceName == fpath {
+			if pos.SourceName == fpathS {
 				diagnostics = append(diagnostics, diagnostic)
 			} else if uriErr == nil {
 				otherDocumentDiagnostics[docURI] = append(otherDocumentDiagnostics[docURI], diagnostic)
@@ -322,13 +313,13 @@ func computeInoxFileDiagnostics(params diagnosticNotificationParams, fpath strin
 
 		if errors.As(state.MainPreinitError, &locatedEvalError) {
 			msg = locatedEvalError.Message
-			pos = getPositionInPositionStackOrFirst(locatedEvalError.Location, fpath)
+			pos = getPositionInPositionStackOrFirst(locatedEvalError.Location, fpathS)
 			_range = rangeToLspRange(pos)
 		} else {
 			_range = firstCharsLspRange(5)
 			msg = state.MainPreinitError.Error()
 			pos = parse.SourcePositionRange{
-				SourceName:  fpath,
+				SourceName:  fpathS,
 				StartLine:   1,
 				StartColumn: 1,
 				EndLine:     1,
@@ -344,7 +335,7 @@ func computeInoxFileDiagnostics(params diagnosticNotificationParams, fpath strin
 			Range:    _range,
 		}
 
-		if pos.SourceName == fpath {
+		if pos.SourceName == fpathS {
 			diagnostics = append(diagnostics, diagnostic)
 		} else if uriErr == nil {
 			otherDocumentDiagnostics[docURI] = append(otherDocumentDiagnostics[docURI], diagnostic)
@@ -360,7 +351,7 @@ func computeInoxFileDiagnostics(params diagnosticNotificationParams, fpath strin
 		//Add static check errors.
 
 		for _, err := range state.StaticCheckData.Errors() {
-			pos := getPositionInPositionStackOrFirst(err.Location, fpath)
+			pos := getPositionInPositionStackOrFirst(err.Location, fpathS)
 			docURI, uriErr := getFileURI(pos.SourceName, usingInoxFS)
 
 			diagnostic := defines.Diagnostic{
@@ -369,7 +360,7 @@ func computeInoxFileDiagnostics(params diagnosticNotificationParams, fpath strin
 				Range:    rangeToLspRange(pos),
 			}
 
-			if pos.SourceName == fpath {
+			if pos.SourceName == fpathS {
 				diagnostics = append(diagnostics, diagnostic)
 			} else if uriErr == nil {
 				otherDocumentDiagnostics[docURI] = append(otherDocumentDiagnostics[docURI], diagnostic)
@@ -378,7 +369,7 @@ func computeInoxFileDiagnostics(params diagnosticNotificationParams, fpath strin
 
 		//Add static check warnings.
 		for _, warning := range state.StaticCheckData.Warnings() {
-			pos := getPositionInPositionStackOrFirst(warning.Location, fpath)
+			pos := getPositionInPositionStackOrFirst(warning.Location, fpathS)
 			docURI, uriErr := getFileURI(pos.SourceName, usingInoxFS)
 
 			diagnostic := defines.Diagnostic{
@@ -387,7 +378,7 @@ func computeInoxFileDiagnostics(params diagnosticNotificationParams, fpath strin
 				Range:    rangeToLspRange(pos),
 			}
 
-			if pos.SourceName == fpath {
+			if pos.SourceName == fpathS {
 				diagnostics = append(diagnostics, diagnostic)
 			} else if uriErr == nil {
 				otherDocumentDiagnostics[docURI] = append(otherDocumentDiagnostics[docURI], diagnostic)
@@ -397,7 +388,7 @@ func computeInoxFileDiagnostics(params diagnosticNotificationParams, fpath strin
 		//Add symbolic check errors.
 
 		for _, err := range state.SymbolicData.Errors() {
-			pos := getPositionInPositionStackOrFirst(err.Location, fpath)
+			pos := getPositionInPositionStackOrFirst(err.Location, fpathS)
 			docURI, uriErr := getFileURI(pos.SourceName, usingInoxFS)
 
 			if uriErr == nil {
@@ -410,7 +401,7 @@ func computeInoxFileDiagnostics(params diagnosticNotificationParams, fpath strin
 				Range:    rangeToLspRange(pos),
 			}
 
-			if pos.SourceName == fpath {
+			if pos.SourceName == fpathS {
 				diagnostics = append(diagnostics, diagnostic)
 			} else if uriErr == nil {
 				otherDocumentDiagnostics[docURI] = append(otherDocumentDiagnostics[docURI], diagnostic)
@@ -419,7 +410,7 @@ func computeInoxFileDiagnostics(params diagnosticNotificationParams, fpath strin
 
 		//Add symbolic check warnings.
 		for _, warning := range state.SymbolicData.Warnings() {
-			pos := getPositionInPositionStackOrFirst(warning.Location, fpath)
+			pos := getPositionInPositionStackOrFirst(warning.Location, fpathS)
 			docURI, uriErr := getFileURI(pos.SourceName, usingInoxFS)
 
 			diagnostic := defines.Diagnostic{
@@ -428,7 +419,7 @@ func computeInoxFileDiagnostics(params diagnosticNotificationParams, fpath strin
 				Range:    rangeToLspRange(pos),
 			}
 
-			if pos.SourceName == fpath {
+			if pos.SourceName == fpathS {
 				diagnostics = append(diagnostics, diagnostic)
 			} else if uriErr == nil {
 				otherDocumentDiagnostics[docURI] = append(otherDocumentDiagnostics[docURI], diagnostic)
@@ -443,7 +434,16 @@ func computeInoxFileDiagnostics(params diagnosticNotificationParams, fpath strin
 	}, nil
 }
 
-func computeHyperscriptFileDiagnostics(params diagnosticNotificationParams, fpath string) (result *singleDocumentDiagnostics, _ error) {
+func computeHyperscriptFileDiagnostics(params diagnosticNotificationParams, fpath absoluteFilePath) (result *singleDocumentDiagnostics, _ error) {
+	startTime := time.Now()
+	fpathS := string(fpath)
+
+	defer func() {
+		if result != nil {
+			result.finalize(fpath, startTime, params.rpcSession)
+		}
+	}()
+
 	session, _, fls, hyperscriptFileCache :=
 		params.rpcSession, params.docURI, params.fls, params.hyperscriptParseCache
 
@@ -458,7 +458,7 @@ func computeHyperscriptFileDiagnostics(params diagnosticNotificationParams, fpat
 
 	var sourceCode string
 	{
-		content, err := util.ReadFile(fls, fpath)
+		content, err := util.ReadFile(fls, fpathS)
 		if err != nil {
 			return
 		}
@@ -466,10 +466,10 @@ func computeHyperscriptFileDiagnostics(params diagnosticNotificationParams, fpat
 	}
 
 	sourceFile := sourcecode.File{
-		NameString:             fpath,
-		UserFriendlyNameString: fpath,
-		Resource:               fpath,
-		ResourceDir:            filepath.Dir(fpath),
+		NameString:             fpathS,
+		UserFriendlyNameString: fpathS,
+		Resource:               fpathS,
+		ResourceDir:            filepath.Dir(fpathS),
 		CodeString:             sourceCode,
 	}
 	parsedFile, criticalErr := hsparse.ParseFile(sessionCtx, sourceFile, hyperscriptFileCache, nil)
@@ -479,7 +479,7 @@ func computeHyperscriptFileDiagnostics(params diagnosticNotificationParams, fpat
 	}
 
 	if parsedFile.Error != nil {
-		location := hscode.MakePositionFromParsingError(parsedFile.Error, fpath)
+		location := hscode.MakePositionFromParsingError(parsedFile.Error, fpathS)
 		result.items = append(result.items, defines.Diagnostic{
 			Range:    rangeToLspRange(location),
 			Severity: &errSeverity,
@@ -539,19 +539,35 @@ type DocDiagnosticId string
 
 // MakeDocDiagnosticId returns a DocDiagnosticId for the document at $absPath.
 // The time of the ULID part is the current time.
-func MakeDocDiagnosticId(absPath string) DocDiagnosticId {
-	return DocDiagnosticId(ulid.Make().String() + "-" + absPath)
+func MakeDocDiagnosticId(absPath absoluteFilePath) DocDiagnosticId {
+	return DocDiagnosticId(ulid.Make().String() + "-" + string(absPath))
 }
 
 // A singleDocumentDiagnostics contains the diagnostics of a single Inox or Hyperscript document.
 type singleDocumentDiagnostics struct {
 	id                           DocDiagnosticId
+	startTime                    time.Time
 	items                        []defines.Diagnostic
 	containsWorkspaceDiagnostics bool
 	lock                         sync.Mutex
 
-	//Inox-specific fields
+	//Fields specific to Inox files.
 
 	otherDocumentDiagnostics map[defines.DocumentUri][]defines.Diagnostic
 	symbolicErrors           map[defines.DocumentUri][]symbolic.EvaluationError
+}
+
+func (d *singleDocumentDiagnostics) finalize(fpath absoluteFilePath, computeStart time.Time, rpcSession *jsonrpc.Session) {
+	d.id = MakeDocDiagnosticId(fpath)
+	d.startTime = computeStart
+
+	if d.items == nil {
+		//Make sure the items are serialized as an empty array, not 'null'.
+		d.items = []defines.Diagnostic{}
+	}
+
+	// Save $d in the session.
+	projSession := getCreateLockedProjectSession(rpcSession)
+	defer projSession.lock.Unlock()
+	projSession.documentDiagnostics[fpath] = d
 }
