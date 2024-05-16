@@ -1,6 +1,7 @@
 package analysis
 
 import (
+	"fmt"
 	"slices"
 	"sort"
 	"strings"
@@ -14,6 +15,36 @@ import (
 	"github.com/inoxlang/inox/internal/inoxjs"
 	"github.com/inoxlang/inox/internal/parse"
 )
+
+func (a *analyzer) analyzeHyperscriptFile(path, fileContent string, file *hscode.ParsedFile, phaseName string) error {
+	if file.Error != nil {
+		location := hscode.MakePositionFromParsingError(file.Error, path)
+		err := makeHyperscriptParsingError(file.Error.Message, location)
+		a.result.HyperscriptFileParsingErrors = append(a.result.HyperscriptFileParsingErrors, err)
+		return nil
+	}
+
+	result, err := hsanalysis.Analyze(hsanalysis.Parameters{
+		ProgramOrExpression: file.Result.NodeData,
+		LocationKind:        hsanalysis.HyperscriptScriptFile,
+		Chunk:               file,
+		CodeStartIndex:      0,
+	})
+
+	if err != nil {
+		return nil
+	}
+
+	for _, behavior := range result.Behaviors {
+		a.result.HyperscriptBehaviors[behavior.FullName] = append(a.result.HyperscriptBehaviors[behavior.FullName], behavior)
+	}
+
+	for _, def := range result.FunctionDefinitions {
+		a.result.HyperscriptFunctionDefinitions[def.FullName] = append(a.result.HyperscriptFunctionDefinitions[def.FullName], def)
+	}
+
+	return nil
+}
 
 func (a *analyzer) addUsedHyperscriptFeaturesAndCommands(node parse.Node) {
 	//Get tokens
@@ -145,6 +176,18 @@ func (a *analyzer) analyzeHyperscriptComponent(component *hsanalysis.Component) 
 }
 
 func (a *analyzer) analyzeHyperscriptInMarkupElement(component *hsanalysis.Component, sourceNode *symbolic.MarkupSourceNode) (criticalErr error) {
+
+	//Resolved installs.
+
+	for _, install := range component.Installs {
+		sameNameBehaviors := a.result.HyperscriptBehaviors[install.BehaviorFullName]
+		//TODO: determine correct behaviors
+		if !install.Resolve(sameNameBehaviors) {
+			a.result.addHyperscriptErrors(hsanalysis.MakeError(text.BEHAVIOR_NOT_DEFINED_ANYWHERE_IN_CODEBASE, install.Location))
+		}
+	}
+
+	component.ApplyResolvedInstalls()
 
 	//Analyze attribute shorthand.
 
@@ -296,4 +339,44 @@ func (a *analyzer) analyzeHyperscriptInMarkupElement(component *hsanalysis.Compo
 	}
 
 	return
+}
+
+func (a *analyzer) analyzeHyperscriptBehavior(behavior *hsanalysis.Behavior) (criticalError error) {
+	for _, install := range behavior.Installs {
+		sameNameBehaviors := a.result.HyperscriptBehaviors[install.BehaviorFullName]
+		//TODO: determine correct behaviors
+		if !install.Resolve(sameNameBehaviors) {
+			a.result.addHyperscriptErrors(hsanalysis.MakeError(text.BEHAVIOR_NOT_DEFINED_ANYWHERE_IN_CODEBASE, install.Location))
+		}
+	}
+
+	behavior.ApplyResolvedInstalls()
+	return nil
+}
+
+type HyperscriptFileParsingError struct {
+	Message string
+
+	Location       parse.SourcePositionRange
+	LocatedMessage string
+}
+
+func makeHyperscriptParsingError(msg string, location parse.SourcePositionRange) HyperscriptFileParsingError {
+	return HyperscriptFileParsingError{
+		Message:        msg,
+		Location:       location,
+		LocatedMessage: fmt.Sprintf("%s: %s", location, msg),
+	}
+}
+
+func (e HyperscriptFileParsingError) Error() string {
+	return e.LocatedMessage
+}
+
+func (e HyperscriptFileParsingError) LocationRange() parse.SourcePositionRange {
+	return e.Location
+}
+
+func (e HyperscriptFileParsingError) MessageWithoutLocation() string {
+	return e.Message
 }

@@ -30,13 +30,16 @@ type Result struct {
 
 	UsedHtmxExtensions map[string]struct{}
 
-	UsedHyperscriptCommands       map[string]hsgen.Definition
-	UsedHyperscriptFeatures       map[string]hsgen.Definition
-	HyperscriptComponents         map[ /*name*/ string][]*hsanalysis.Component
-	HyperscriptErrors             []hsanalysis.Error
-	InoxJsErrors                  []inoxjs.Error
-	HyperscriptWarnings           []hsanalysis.Warning
-	ClientSideInterpolationsFound bool
+	UsedHyperscriptCommands        map[string]hsgen.Definition
+	UsedHyperscriptFeatures        map[string]hsgen.Definition
+	HyperscriptComponents          map[ /*name*/ string][]*hsanalysis.Component
+	HyperscriptBehaviors           map[ /*full name*/ string][]*hsanalysis.Behavior
+	HyperscriptFunctionDefinitions map[ /*name*/ string][]hsanalysis.FunctionDefinition
+	HyperscriptErrors              []hsanalysis.Error
+	HyperscriptFileParsingErrors   []HyperscriptFileParsingError
+	InoxJsErrors                   []inoxjs.Error
+	HyperscriptWarnings            []hsanalysis.Warning
+	ClientSideInterpolationsFound  bool
 
 	UsedTailwindRules    map[ /* name with modifiers */ string]tailwind.Ruleset
 	CssVariables         map[css.VarName]varclasses.Variable
@@ -59,12 +62,14 @@ func NewEmptyResult() *Result {
 
 		//Frontend
 
-		UsedHtmxExtensions:      make(map[string]struct{}),
-		UsedHyperscriptCommands: make(map[string]hsgen.Definition),
-		UsedHyperscriptFeatures: make(map[string]hsgen.Definition),
-		HyperscriptComponents:   make(map[string][]*hsanalysis.Component),
-		UsedTailwindRules:       make(map[string]tailwind.Ruleset),
-		UsedInoxJsLibs:          make(map[string]struct{}),
+		UsedHtmxExtensions:             make(map[string]struct{}),
+		UsedHyperscriptCommands:        make(map[string]hsgen.Definition),
+		UsedHyperscriptFeatures:        make(map[string]hsgen.Definition),
+		HyperscriptComponents:          make(map[string][]*hsanalysis.Component),
+		HyperscriptBehaviors:           make(map[string][]*hsanalysis.Behavior),
+		HyperscriptFunctionDefinitions: make(map[string][]hsanalysis.FunctionDefinition),
+		UsedTailwindRules:              make(map[string]tailwind.Ruleset),
+		UsedInoxJsLibs:                 make(map[string]struct{}),
 
 		CssVariables:         make(map[css.VarName]varclasses.Variable),
 		UsedVarBasedCssRules: make(map[css.VarName]varclasses.Variable),

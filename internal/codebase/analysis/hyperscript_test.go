@@ -12,6 +12,7 @@ import (
 	"github.com/inoxlang/inox/internal/hyperscript/hsgen"
 	"github.com/inoxlang/inox/internal/inoxjs"
 	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/sourcecode"
 	"github.com/inoxlang/inox/internal/utils"
 	"github.com/stretchr/testify/assert"
 
@@ -293,13 +294,16 @@ func TestAnalyzeHyperscript(t *testing.T) {
 
 			assert.Equal(t, expectedComponent, components[0])
 		})
+	})
 
-		t.Run("with invalid x-for attribute and without hyperscript attribute shorthand", func(t *testing.T) {
+	t.Run("install", func(t *testing.T) {
+		t.Run("in Hyperscript attribute of component", func(t *testing.T) {
 			ctx := setup()
 			defer ctx.CancelGracefully()
 
-			util.WriteFile(ctx.GetFileSystem(), "/routes/index.ix",
-				[]byte(`manifest{}; return html<div class="Counter" x-for=":e"></div>`), 0600)
+			util.WriteFile(ctx.GetFileSystem(), "/routes/index.ix", []byte(`manifest{} return html<div class="Counter" {install X}></div>`), 0600)
+
+			util.WriteFile(ctx.GetFileSystem(), "/hs/behaviors._hs", []byte(`behavior X end`), 0600)
 
 			result, err := AnalyzeCodebase(ctx, Configuration{
 				TopDirectories: []string{"/"},
@@ -322,20 +326,168 @@ func TestAnalyzeHyperscript(t *testing.T) {
 				return
 			}
 
+			expectedResolvedBehavior := &hsanalysis.Behavior{
+				Name:     "X",
+				FullName: "X",
+				Location: sourcecode.PositionRange{
+					SourceName:  "/hs/behaviors._hs",
+					StartLine:   1,
+					StartColumn: 1,
+					EndLine:     1,
+					EndColumn:   11,
+					Span:        sourcecode.NodeSpan{Start: 0, End: 10},
+				},
+				Features: []any{},
+			}
+
+			expectedInstall := &hsanalysis.InstallFeature{
+				BehaviorFullName: "X",
+				Location: sourcecode.PositionRange{
+					SourceName:  "/routes/index.ix",
+					StartLine:   1,
+					StartColumn: 45,
+					EndLine:     1,
+					EndColumn:   54,
+					Span:        sourcecode.NodeSpan{Start: 44, End: 53},
+				},
+				ResolvedBehavior: expectedResolvedBehavior,
+			}
+
 			expectedComponent := &hsanalysis.Component{
-				Name:              "Counter",
-				Element:           markupExpr.Element,
-				ClosestMarkupExpr: markupExpr,
-				ChunkSource:       mod.Module.MainChunk,
+				Name:               "Counter",
+				Element:            markupExpr.Element,
+				ClosestMarkupExpr:  markupExpr,
+				ChunkSource:        mod.Module.MainChunk,
+				Installs:           []*hsanalysis.InstallFeature{expectedInstall},
+				AppliedInstalls:    []*hsanalysis.InstallFeature{expectedInstall},
+				AttributeShorthand: utils.MustGet(markupExpr.Element.HyperscriptAttributeShorthand()),
 			}
 
 			assert.Equal(t, expectedComponent, components[0])
+		})
 
-			errLocation := mod.Module.MainChunk.GetSourcePosition(parse.NodeSpan{Start: 50, End: 54})
+		t.Run("in behavior in script file", func(t *testing.T) {
+			ctx := setup()
+			defer ctx.CancelGracefully()
 
-			assert.Equal(t, []inoxjs.Error{
-				inoxjs.MakeError(inoxjs.INVALID_VALUE_FOR_FOR_LOOP_ATTR, errLocation),
-			}, result.InoxJsErrors)
+			util.WriteFile(ctx.GetFileSystem(), "/hs/index._hs", []byte("behavior A\ninstall X\nend"), 0600)
+
+			util.WriteFile(ctx.GetFileSystem(), "/hs/behaviors._hs", []byte(`behavior X end`), 0600)
+
+			result, err := AnalyzeCodebase(ctx, Configuration{
+				TopDirectories: []string{"/"},
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			behaviors := result.HyperscriptBehaviors["A"]
+
+			if !assert.Len(t, behaviors, 1) {
+				return
+			}
+
+			expectedResolvedBehavior := &hsanalysis.Behavior{
+				Name:     "X",
+				FullName: "X",
+				Location: sourcecode.PositionRange{
+					SourceName:  "/hs/behaviors._hs",
+					StartLine:   1,
+					StartColumn: 1,
+					EndLine:     1,
+					EndColumn:   11,
+					Span:        sourcecode.NodeSpan{Start: 0, End: 10},
+				},
+				Features: []any{},
+			}
+
+			expectedInstall := &hsanalysis.InstallFeature{
+				BehaviorFullName: "X",
+				Location: sourcecode.PositionRange{
+					SourceName:  "/hs/index._hs",
+					StartLine:   2,
+					StartColumn: 1,
+					EndLine:     2,
+					EndColumn:   10,
+					Span:        sourcecode.NodeSpan{Start: 11, End: 20},
+				},
+				ResolvedBehavior: expectedResolvedBehavior,
+			}
+
+			expectedBehavior := &hsanalysis.Behavior{
+				Name:     "A",
+				FullName: "A",
+				Location: sourcecode.PositionRange{
+					SourceName:  "/hs/index._hs",
+					StartLine:   1,
+					StartColumn: 1,
+					EndLine:     3,
+					EndColumn:   4,
+					Span:        sourcecode.NodeSpan{Start: 0, End: 24},
+				},
+				Installs:        []*hsanalysis.InstallFeature{expectedInstall},
+				AppliedInstalls: []*hsanalysis.InstallFeature{expectedInstall},
+			}
+
+			actualBehavior := behaviors[0]
+			assert.Len(t, actualBehavior.Features, 1)
+			actualBehavior.Features = nil //This field is not checked.
+
+			assert.Equal(t, expectedBehavior, actualBehavior)
+		})
+
+		t.Run("unresolved install", func(t *testing.T) {
+			ctx := setup()
+			defer ctx.CancelGracefully()
+
+			util.WriteFile(ctx.GetFileSystem(), "/hs/index._hs", []byte("behavior A\ninstall X\nend"), 0600)
+
+			result, err := AnalyzeCodebase(ctx, Configuration{
+				TopDirectories: []string{"/"},
+			})
+
+			if !assert.NoError(t, err) {
+				return
+			}
+
+			behaviors := result.HyperscriptBehaviors["A"]
+
+			if !assert.Len(t, behaviors, 1) {
+				return
+			}
+
+			expectedInstall := &hsanalysis.InstallFeature{
+				BehaviorFullName: "X",
+				Location: sourcecode.PositionRange{
+					SourceName:  "/hs/index._hs",
+					StartLine:   2,
+					StartColumn: 1,
+					EndLine:     2,
+					EndColumn:   10,
+					Span:        sourcecode.NodeSpan{Start: 11, End: 20},
+				},
+			}
+
+			expectedBehavior := &hsanalysis.Behavior{
+				Name:     "A",
+				FullName: "A",
+				Location: sourcecode.PositionRange{
+					SourceName:  "/hs/index._hs",
+					StartLine:   1,
+					StartColumn: 1,
+					EndLine:     3,
+					EndColumn:   4,
+					Span:        sourcecode.NodeSpan{Start: 0, End: 24},
+				},
+				Installs: []*hsanalysis.InstallFeature{expectedInstall},
+			}
+
+			actualBehavior := behaviors[0]
+			assert.Len(t, actualBehavior.Features, 1)
+			actualBehavior.Features = nil //This field is not checked.
+
+			assert.Equal(t, expectedBehavior, actualBehavior)
 		})
 	})
 
@@ -704,5 +856,49 @@ func TestAnalyzeHyperscriptContainingErrors(t *testing.T) {
 
 		hyperscriptError := result.HyperscriptErrors[0]
 		assert.Equal(t, parse.NodeSpan{Start: 64, End: 77}, hyperscriptError.Location.Span)
+	})
+
+	t.Run("component with invalid x-for attribute and without hyperscript attribute shorthand", func(t *testing.T) {
+		ctx := setup()
+		defer ctx.CancelGracefully()
+
+		util.WriteFile(ctx.GetFileSystem(), "/routes/index.ix",
+			[]byte(`manifest{}; return html<div class="Counter" x-for=":e"></div>`), 0600)
+
+		result, err := AnalyzeCodebase(ctx, Configuration{
+			TopDirectories: []string{"/"},
+		})
+
+		if !assert.NoError(t, err) {
+			return
+		}
+
+		mod := result.LocalModules["/routes/index.ix"]
+		markupExpr := parse.FindFirstNode(mod.Module.MainChunk.Node, (*parse.MarkupExpression)(nil))
+
+		if !assert.Len(t, result.HyperscriptComponents, 1) {
+			return
+		}
+
+		components := result.HyperscriptComponents["Counter"]
+
+		if !assert.Len(t, components, 1) {
+			return
+		}
+
+		expectedComponent := &hsanalysis.Component{
+			Name:              "Counter",
+			Element:           markupExpr.Element,
+			ClosestMarkupExpr: markupExpr,
+			ChunkSource:       mod.Module.MainChunk,
+		}
+
+		assert.Equal(t, expectedComponent, components[0])
+
+		errLocation := mod.Module.MainChunk.GetSourcePosition(parse.NodeSpan{Start: 50, End: 54})
+
+		assert.Equal(t, []inoxjs.Error{
+			inoxjs.MakeError(inoxjs.INVALID_VALUE_FOR_FOR_LOOP_ATTR, errLocation),
+		}, result.InoxJsErrors)
 	})
 }

@@ -73,6 +73,9 @@ func (a *analyzer) analyzeCodebase(ctx *core.Context) (result *Result, finalErr 
 				InoxFileHandlers: []scan.InoxFileHandler{
 					a.prepareIfDatabaseProvidingModule,
 				},
+				HyperscriptFileHandlers: []scan.HyperscriptFileHandler{
+					a.analyzeHyperscriptFile,
+				},
 			},
 			{
 				Name: "1",
@@ -146,6 +149,15 @@ func (a *analyzer) analyzeCodebase(ctx *core.Context) (result *Result, finalErr 
 	}
 
 	//Analyze Hyperscript code.
+
+	for _, sameNameBehaviors := range result.HyperscriptBehaviors {
+		for _, behavior := range sameNameBehaviors {
+			err := a.analyzeHyperscriptBehavior(behavior)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
 
 	for _, sameNameComponents := range result.HyperscriptComponents {
 		for _, component := range sameNameComponents {
