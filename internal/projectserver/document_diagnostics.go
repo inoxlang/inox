@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"path/filepath"
+	"slices"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/go-git/go-billy/v5/util"
+	"github.com/inoxlang/inox/internal/codebase/analysis"
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/hyperscript/hsanalysis"
@@ -51,6 +52,7 @@ func handleDocumentDiagnostic(ctx context.Context, req *defines.DocumentDiagnost
 	project := session.project
 	fls := session.filesystem
 	memberAuthToken := session.memberAuthToken
+	lastCodebaseAnalysis := session.lastCodebaseAnalysis
 	session.lock.Unlock()
 	//----------------------------------------------------------
 
@@ -74,10 +76,11 @@ func handleDocumentDiagnostic(ctx context.Context, req *defines.DocumentDiagnost
 			docURI:          uri,
 			usingInoxFS:     projectMode,
 
-			rpcSession:      rpcSession,
-			fls:             fls,
-			project:         project,
-			memberAuthToken: memberAuthToken,
+			rpcSession:           rpcSession,
+			fls:                  fls,
+			project:              project,
+			memberAuthToken:      memberAuthToken,
+			lastCodebaseAnalysis: lastCodebaseAnalysis,
 		})
 	}()
 
@@ -123,6 +126,7 @@ type diagnosticNotificationParams struct {
 	memberAuthToken       string
 	inoxChunkCache        *parse.ChunkCache
 	hyperscriptParseCache *hscode.ParseCache
+	lastCodebaseAnalysis  *analysis.Result //may be nil
 }
 
 // computeNotifyDocumentDiagnostics diagnostics a document and notifies the LSP client (textDocument/publishDiagnostics).
@@ -150,14 +154,23 @@ func computeNotifyDocumentDiagnostics(params diagnosticNotificationParams) error
 		return err
 	}
 
+	otherDocumentDiagnostics := diagnostics.otherDocumentDiagnostics
+	//Note: the locking of $diagnostics is not necessary because otherDocumentDiagnostics are never updated.
+
 	go func() {
 		defer utils.Recover()
-		for otherDocURI, otherDocDiagnostics := range diagnostics.otherDocumentDiagnostics {
+		for otherDocURI, otherDocDiagnostics := range otherDocumentDiagnostics {
 			sendDocumentDiagnostics(params.rpcSession, otherDocURI, otherDocDiagnostics)
 		}
 	}()
 
-	return sendDocumentDiagnostics(params.rpcSession, params.docURI, diagnostics.items)
+	items := slices.Clone(diagnostics.items)
+
+	if params.lastCodebaseAnalysis != nil {
+		addErrorsAndWarningsAboutFileFromCodebaseAnalysis(params.lastCodebaseAnalysis, diagnostics.filePath, &items)
+	}
+
+	return sendDocumentDiagnostics(params.rpcSession, params.docURI, items)
 }
 
 // computes prepares a source file, constructs a list of defines.Diagnostic from errors at different phases
@@ -543,13 +556,13 @@ func MakeDocDiagnosticId(absPath absoluteFilePath) DocDiagnosticId {
 	return DocDiagnosticId(ulid.Make().String() + "-" + string(absPath))
 }
 
-// A singleDocumentDiagnostics contains the diagnostics of a single Inox or Hyperscript document.
+// A singleDocumentDiagnostics contains the diagnostics of a single Inox or Hyperscript document,
+// it does not contain workspace diagnostics. This struct is never modified.
 type singleDocumentDiagnostics struct {
-	id                           DocDiagnosticId
-	startTime                    time.Time
-	items                        []defines.Diagnostic
-	containsWorkspaceDiagnostics bool
-	lock                         sync.Mutex
+	id        DocDiagnosticId
+	filePath  absoluteFilePath
+	startTime time.Time
+	items     []defines.Diagnostic
 
 	//Fields specific to Inox files.
 
@@ -559,6 +572,7 @@ type singleDocumentDiagnostics struct {
 
 func (d *singleDocumentDiagnostics) finalize(fpath absoluteFilePath, computeStart time.Time, rpcSession *jsonrpc.Session) {
 	d.id = MakeDocDiagnosticId(fpath)
+	d.filePath = fpath
 	d.startTime = computeStart
 
 	if d.items == nil {

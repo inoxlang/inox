@@ -61,18 +61,6 @@ func publishWorkspaceDiagnostics(projSession *Session, lastAnalysis *analysis.Re
 			continue
 		}
 
-		{
-			diagnostics.lock.Lock()
-			containsWorkspaceDiagnostics := diagnostics.containsWorkspaceDiagnostics
-
-			if containsWorkspaceDiagnostics {
-				diagnostics.lock.Unlock()
-				continue
-			}
-			diagnostics.containsWorkspaceDiagnostics = true
-			diagnostics.lock.Unlock()
-		}
-
 		items := slices.Clone(diagnostics.items)
 
 		go func(absPath absoluteFilePath, uri defines.DocumentUri, items *[]defines.Diagnostic) {

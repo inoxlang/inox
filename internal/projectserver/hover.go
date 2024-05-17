@@ -3,7 +3,6 @@ package projectserver
 import (
 	"bytes"
 	"fmt"
-	"slices"
 	"strings"
 
 	"github.com/inoxlang/inox/internal/codebase/analysis"
@@ -310,9 +309,7 @@ func writeReformattedSymbolicErrors(w *strings.Builder, cursorIndex int32, param
 		return false, nil
 	}
 
-	diagnostics.lock.Lock()
-	checkErrors := slices.Clone(diagnostics.symbolicErrors[params.docURI])
-	diagnostics.lock.Unlock()
+	checkErrors := diagnostics.symbolicErrors[params.docURI]
 
 	isHeaderPrinted := false
 

@@ -534,6 +534,7 @@ func handleDidOpenDocument(callCtx context.Context, req *defines.DidOpenTextDocu
 	chunkCache := session.inoxChunkCache
 	hyperscriptFileCache := session.hyperscriptFileCache
 	memberAuthToken := session.memberAuthToken
+	lastCodeBaseAnalysis := session.lastCodebaseAnalysis
 	session.lock.Unlock()
 	//----------------------------------------
 
@@ -605,6 +606,7 @@ func handleDidOpenDocument(callCtx context.Context, req *defines.DidOpenTextDocu
 		inoxChunkCache:        chunkCache,
 		hyperscriptParseCache: hyperscriptFileCache,
 		memberAuthToken:       memberAuthToken,
+		lastCodebaseAnalysis:  lastCodeBaseAnalysis,
 	})
 }
 
@@ -619,6 +621,7 @@ func handleDidSaveDocument(callCtx context.Context, req *defines.DidSaveTextDocu
 	chunkCache := session.inoxChunkCache
 	hyperscriptFileCache := session.hyperscriptFileCache
 	memberAuthToken := session.memberAuthToken
+	lastCodeBaseAnalysis := session.lastCodebaseAnalysis
 
 	uri := normalizeURI(req.TextDocument.Uri)
 	fpath, err := getSupportedFilePath(uri, projectMode)
@@ -708,6 +711,7 @@ func handleDidSaveDocument(callCtx context.Context, req *defines.DidSaveTextDocu
 		hyperscriptParseCache: hyperscriptFileCache,
 		fls:                   fls,
 		memberAuthToken:       memberAuthToken,
+		lastCodebaseAnalysis:  lastCodeBaseAnalysis,
 	})
 }
 
@@ -768,6 +772,8 @@ func handleDidChangeDocument(callCtx context.Context, req *defines.DidChangeText
 			inoxChunkCache:        chunkCache,
 			hyperscriptParseCache: hyperscriptFileCache,
 			memberAuthToken:       memberAuthToken,
+			//The last codebase analysis is not passed because a new analysis will likely be
+			//performed.
 		})
 	})
 

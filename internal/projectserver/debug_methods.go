@@ -658,15 +658,20 @@ func handleDebugLaunch(callCtx context.Context, req interface{}) (interface{}, e
 			}
 		}()
 
+		session.lock.Lock()
+		lastCodeBaseAnalysis := session.lastCodebaseAnalysis
+		session.lock.Unlock()
+
 		defer computeNotifyDocumentDiagnostics(diagnosticNotificationParams{
 			rpcSession:  rpcSession,
 			docURI:      debugSession.programURI,
 			usingInoxFS: debugSession.inProjectMode,
 
-			fls:             fls,
-			project:         project,
-			memberAuthToken: memberAuthToken,
-			inoxChunkCache:  chunkCache,
+			fls:                  fls,
+			project:              project,
+			memberAuthToken:      memberAuthToken,
+			inoxChunkCache:       chunkCache,
+			lastCodebaseAnalysis: lastCodeBaseAnalysis,
 		})
 		defer removeDebugSession(debugSession, rpcSession)
 
