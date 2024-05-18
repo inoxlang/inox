@@ -28,34 +28,36 @@ var (
 
 func (server *HttpsServer) getSession(ctx *core.Context, req *Request) (*core.Object, error) {
 
-	if server.sessions == nil {
-		return nil, ErrSessionNotFound
-	}
+	return nil, ErrSessionNotFound
 
-	for _, cookie := range req.Cookies {
-		if cookie.Name == DEFAULT_SESSION_ID_COOKIE_NAME {
-			if len(cookie.Value) > MAX_SESSION_ID_LEN {
-				return nil, ErrSessionIdTooLong
-			}
-			if len(cookie.Value) < MIN_SESSION_ID_LEN {
-				return nil, ErrSessionIdTooShort
-			}
+	// if server.sessions == nil {
+	// 	return nil, ErrSessionNotFound
+	// }
 
-			var array [MAX_SESSION_ID_BYTE_COUNT + 2]byte
-			key := array[:0]
-			key = append(key, '"')
-			key = append(key, cookie.Value...)
-			key = append(key, '"')
+	// for _, cookie := range req.Cookies {
+	// 	if cookie.Name == DEFAULT_SESSION_ID_COOKIE_NAME {
+	// 		if len(cookie.Value) > MAX_SESSION_ID_LEN {
+	// 			return nil, ErrSessionIdTooLong
+	// 		}
+	// 		if len(cookie.Value) < MIN_SESSION_ID_LEN {
+	// 			return nil, ErrSessionIdTooShort
+	// 		}
 
-			session, ok := server.sessions.Get(ctx, core.String(utils.BytesAsString(key[:])))
-			if ok {
-				return session.(*core.Object), nil
-			}
-			//_ = session
-			//_ = ok
-			return nil, ErrSessionNotFound
-		}
-	}
+	// 		var array [MAX_SESSION_ID_BYTE_COUNT + 2]byte
+	// 		key := array[:0]
+	// 		key = append(key, '"')
+	// 		key = append(key, cookie.Value...)
+	// 		key = append(key, '"')
+
+	// 		session, ok := server.sessions.Get(ctx, core.String(utils.BytesAsString(key[:])))
+	// 		if ok {
+	// 			return session.(*core.Object), nil
+	// 		}
+	// 		//_ = session
+	// 		//_ = ok
+	// 		return nil, ErrSessionNotFound
+	// 	}
+	// }
 
 	return nil, ErrSessionNotFound
 }

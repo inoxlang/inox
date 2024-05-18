@@ -117,12 +117,12 @@ func TestObject(t *testing.T) {
 			obj := NewObjectFromMap(ValMap{"a": Int(1)}, ctx1)
 			obj.Share(ctx1.MustGetClosestState())
 
-			// since context has no associated transaction a panic is expected
-			if !assert.Panics(t, func() {
-				obj.PropNotStored(ctx1, "a")
-			}) {
-				return
-			}
+			// // since context has no associated transaction a panic is expected
+			// if !assert.Panics(t, func() {
+			// 	obj.PropNotStored(ctx1, "a")
+			// }) {
+			// 	return
+			// }
 
 			ctx2 := NewContextWithEmptyState(ContextConfig{
 				Permissions: GetDefaultGlobalVarPermissions(),

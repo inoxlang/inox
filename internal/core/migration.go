@@ -343,10 +343,6 @@ func (o *Object) Migrate(ctx *Context, key Path, migration *FreeEntityMigrationA
 		panic(ErrUnreachable)
 	}
 
-	if o.txIsolator.currentWriteTx != nil {
-		panic(ErrUnreachable)
-	}
-
 	if ctx.GetTx() != nil {
 		panic(ErrUnreachable)
 	}

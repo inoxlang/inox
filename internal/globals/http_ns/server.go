@@ -22,10 +22,6 @@ import (
 	"github.com/rs/zerolog"
 	"golang.org/x/exp/maps"
 
-	"github.com/inoxlang/inox/internal/globals/containers/common"
-	"github.com/inoxlang/inox/internal/globals/containers/setcoll"
-	symb_containers "github.com/inoxlang/inox/internal/globals/containers/symbolic"
-
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	http_ns_symb "github.com/inoxlang/inox/internal/globals/http_ns/symbolic"
 
@@ -78,7 +74,8 @@ var (
 	}, nil)
 
 	SESSIONS_CONFIG_SYMB_OBJ = symbolic.NewInexactObject2(map[string]symbolic.Serializable{
-		SESSIONS_DESC_COLLECTION_PROPNAME: symb_containers.NewSetWithPattern(symbolic.ANY_PATTERN, common.NewPropertyValueUniqueness(SESSION_ID_PROPNAME)),
+		SESSIONS_DESC_COLLECTION_PROPNAME: symbolic.ANY_SERIALIZABLE,
+		//SESSIONS_DESC_COLLECTION_PROPNAME: symb_containers.NewSetWithPattern(symbolic.ANY_PATTERN, common.NewPropertyValueUniqueness(SESSION_ID_PROPNAME)),
 	})
 
 	SYMBOLIC_HANDLING_DESC = symbolic.NewInexactObject(map[string]symbolic.Serializable{
@@ -136,7 +133,7 @@ type HttpsServer struct {
 	api     *API //An API is immutable but this field can be re-assigned.
 	apiLock sync.Mutex
 
-	sessions *setcoll.Set //can be nil
+	//sessions *setcoll.Set //can be nil
 
 	//preparedModules *preparedModule //mostly used during invocation of handler modules
 
@@ -167,10 +164,10 @@ func NewHttpsServer(ctx *core.Context, host core.Host, args ...core.Value) (*Htt
 	server.maxLimits = params.maxLimits
 	server.defaultLimits = params.defaultLimits
 	server.listeningAddr = params.effectiveListeningAddrHost
-	server.sessions = params.sessions
-	if server.sessions != nil {
-		server.sessions.Share(server.state)
-	}
+	// server.sessions = params.sessions
+	// if server.sessions != nil {
+	// 	server.sessions.Share(server.state)
+	// }
 	server.isVirtual = inoxconsts.IsDevPort(params.port) && server.state.InProjectMode()
 	if server.isVirtual {
 		devServer, ok := GetDevServer(params.port)

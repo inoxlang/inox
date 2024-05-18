@@ -196,20 +196,26 @@ func respondWithMappingResult(h handlingArguments) {
 
 		//Add the session and session cookie.
 		if httpResult.session != nil {
-			session := httpResult.session
-			if server.sessions == nil {
-				rw.writeHeaders(http.StatusInternalServerError)
-				logger.Warn().Msg("returned http Result has a session but the server has no collection to store sessions")
-				return
-			}
-			sessionIDValue := session.Prop(state.Ctx, SESSION_ID_PROPNAME)
-			sessionID := sessionIDValue.(core.StringLike).GetOrBuildString()
-			logger.Print("add cookie")
 
-			addSessionIdCookie(rw, sessionID)
-			defer func() {
-				server.sessions.Add(state.Ctx, session)
-			}()
+			logger.Warn().Msg("returned http Result has a session but the server has no collection to store sessions")
+			rw.writeHeaders(http.StatusInternalServerError)
+			return
+
+			//session := httpResult.session
+			//
+			// if server.sessions == nil {
+			// 	rw.writeHeaders(http.StatusInternalServerError)
+			// 	logger.Warn().Msg("returned http Result has a session but the server has no collection to store sessions")
+			// 	return
+			// }
+			// sessionIDValue := session.Prop(state.Ctx, SESSION_ID_PROPNAME)
+			// sessionID := sessionIDValue.(core.StringLike).GetOrBuildString()
+			// logger.Print("add cookie")
+
+			// addSessionIdCookie(rw, sessionID)
+			// defer func() {
+			// 	server.sessions.Add(state.Ctx, session)
+			// }()
 		}
 
 		//Use the value inside the result

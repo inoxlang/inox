@@ -17,7 +17,6 @@ import (
 	"golang.org/x/exp/maps"
 
 	"github.com/inoxlang/inox/internal/globals/chrome_ns"
-	"github.com/inoxlang/inox/internal/globals/containers"
 	"github.com/inoxlang/inox/internal/globals/env_ns"
 	"github.com/inoxlang/inox/internal/globals/fs_ns"
 	"github.com/inoxlang/inox/internal/globals/html_ns"
@@ -339,9 +338,9 @@ func NewDefaultGlobalState(ctx *core.Context, conf core.DefaultGlobalStateConfig
 		globalnames.HELP_FN: core.ValOf(help.Help),
 	}
 
-	for k, v := range containers.NewContainersNamespace() {
-		constants[k] = v
-	}
+	// for k, v := range containers.NewContainersNamespace() {
+	// 	constants[k] = v
+	// }
 
 	for k, v := range transientcontainers.NewTransientContainersNamespace() {
 		constants[k] = v

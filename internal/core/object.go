@@ -39,8 +39,6 @@ type additionalObjectFields struct {
 	//pendingChanges []pendingObjectEntryChange //only visible by the current read-write tx
 	//TODO: make sure the .IsEmpty and .Contains methods use them.
 
-	txIsolator StrongTransactionIsolator //TODO: replace with LiteTransactionIsolator
-
 	//Watching related fields
 
 	watchers              *ValueWatchers
@@ -235,17 +233,6 @@ func (obj *Object) SmartUnlock(state *GlobalState) {
 	obj.lock.Unlock(state, obj, true)
 }
 
-func (obj *Object) waitForOtherTxsToTerminate(ctx *Context, requiredRunningTx bool) (currentTx *Transaction) {
-	if !obj.hasAdditionalFields() {
-		return
-	}
-	tx, err := obj.txIsolator.WaitForOtherTxsToTerminate(ctx, requiredRunningTx)
-	if err != nil {
-		panic(err)
-	}
-	return tx
-}
-
 func (obj *Object) Prop(ctx *Context, name string) Value {
 	return obj.prop(ctx, name, true)
 }
@@ -255,7 +242,6 @@ func (obj *Object) PropNotStored(ctx *Context, name string) Value {
 }
 
 func (obj *Object) prop(ctx *Context, name string, stored bool) (returnedValue Value) {
-	obj.waitForOtherTxsToTerminate(ctx, !stored)
 
 	closestState := ctx.MustGetClosestState()
 	obj._lock(closestState)
@@ -318,8 +304,6 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 		return fmt.Errorf("value is not serializable")
 	}
 
-	tx := obj.waitForOtherTxsToTerminate(ctx, false)
-
 	closestState := ctx.MustGetClosestState()
 
 	if obj.IsShared() {
@@ -353,6 +337,8 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 			return err
 		}
 	}
+
+	tx := ctx.GetTx()
 
 	//If the object is an entity and we are in a transaction we update the pending changes instead of directly mutating the entries.
 	//If there is already a change for the entry we update it, else we add a new change.
@@ -491,7 +477,6 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 }
 
 func (obj *Object) PropertyNames(ctx *Context) []string {
-	obj.waitForOtherTxsToTerminate(ctx, false)
 
 	closestState := ctx.MustGetClosestState()
 	obj._lock(closestState)
@@ -500,7 +485,6 @@ func (obj *Object) PropertyNames(ctx *Context) []string {
 }
 
 func (obj *Object) HasProp(ctx *Context, name string) bool {
-	obj.waitForOtherTxsToTerminate(ctx, false)
 
 	closestState := ctx.MustGetClosestState()
 	obj._lock(closestState)
@@ -514,7 +498,6 @@ func (obj *Object) HasProp(ctx *Context, name string) bool {
 }
 
 func (obj *Object) HasPropValue(ctx *Context, value Value) bool {
-	obj.waitForOtherTxsToTerminate(ctx, false)
 
 	closestState := ctx.MustGetClosestState()
 	obj._lock(closestState)
@@ -533,7 +516,6 @@ func (obj *Object) EntryMap(ctx *Context) map[string]Serializable {
 	}
 
 	if ctx != nil {
-		obj.waitForOtherTxsToTerminate(ctx, false)
 
 		closestState := ctx.MustGetClosestState()
 		obj._lock(closestState)
@@ -560,7 +542,6 @@ func (obj *Object) ValueEntryMap(ctx *Context) map[string]Value {
 	}
 
 	if ctx != nil {
-		obj.waitForOtherTxsToTerminate(ctx, false)
 
 		closestState := ctx.MustGetClosestState()
 		obj._lock(closestState)
@@ -652,7 +633,6 @@ func (obj *Object) SetURLOnce(ctx *Context, u URL) error {
 }
 
 func (obj *Object) Keys(ctx *Context) []string {
-	obj.waitForOtherTxsToTerminate(ctx, false)
 
 	closestState := ctx.MustGetClosestState()
 	obj._lock(closestState)

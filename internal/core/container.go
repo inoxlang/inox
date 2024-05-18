@@ -85,8 +85,6 @@ func (t *Tuple) IsEmpty(ctx *Context) bool {
 }
 
 func (obj *Object) Contains(ctx *Context, value Serializable) bool {
-	obj.waitForOtherTxsToTerminate(ctx, false)
-
 	closestState := ctx.MustGetClosestState()
 	obj._lock(closestState)
 	defer obj._unlock(closestState)
@@ -116,7 +114,6 @@ func (obj *Object) Contains(ctx *Context, value Serializable) bool {
 }
 
 func (obj *Object) IsEmpty(ctx *Context) bool {
-	obj.waitForOtherTxsToTerminate(ctx, false)
 
 	closestState := ctx.MustGetClosestState()
 	obj._lock(closestState)
