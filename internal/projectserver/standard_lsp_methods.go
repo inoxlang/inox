@@ -15,7 +15,6 @@ import (
 	"github.com/rs/zerolog"
 
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/projectserver/lsp"
 
@@ -190,7 +189,7 @@ func handleHover(callCtx context.Context, req *defines.HoverParams) (result *def
 		session.lock.Unlock()
 		return nil, err
 	}
-	if filepath.Ext(string(fpath)) != inoxconsts.INOXLANG_FILE_EXTENSION {
+	if !fpath.hasIxExtension() {
 		session.lock.Unlock()
 		//Not supported yet.
 		return &defines.Hover{}, nil
@@ -262,7 +261,7 @@ func handleSignatureHelp(callCtx context.Context, req *defines.SignatureHelpPara
 		return nil, err
 	}
 
-	if filepath.Ext(string(fpath)) != inoxconsts.INOXLANG_FILE_EXTENSION {
+	if !fpath.hasIxExtension() {
 		//Not supported yet.
 		return &defines.SignatureHelp{}, nil
 	}
@@ -348,7 +347,7 @@ func handleDefinition(callCtx context.Context, req *defines.DefinitionParams) (r
 	if err != nil {
 		return nil, err
 	}
-	if filepath.Ext(string(fpath)) != inoxconsts.INOXLANG_FILE_EXTENSION {
+	if !fpath.hasIxExtension() {
 		//Not supported yet.
 		return &[]defines.LocationLink{}, nil
 	}
@@ -495,7 +494,7 @@ func handleFormatDocument(callCtx context.Context, req *defines.DocumentFormatti
 	if err != nil {
 		return nil, err
 	}
-	if filepath.Ext(string(fpath)) != inoxconsts.INOXLANG_FILE_EXTENSION {
+	if !fpath.hasIxExtension() {
 		//Not supported yet.
 		return &[]defines.TextEdit{}, nil
 	}

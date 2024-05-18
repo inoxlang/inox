@@ -83,3 +83,7 @@ func absoluteFilePathFrom(s string) (absoluteFilePath, bool) {
 	}
 	return absoluteFilePath(s), true
 }
+
+func (p absoluteFilePath) hasIxExtension() bool {
+	return filepath.Ext(string(p)) == inoxconsts.INOXLANG_FILE_EXTENSION
+}

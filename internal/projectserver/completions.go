@@ -3,13 +3,11 @@ package projectserver
 import (
 	"context"
 	"io/fs"
-	"path/filepath"
 	"strings"
 
 	"github.com/inoxlang/inox/internal/afs"
 	"github.com/inoxlang/inox/internal/codecompletion"
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/projectserver/jsonrpc"
 	"github.com/inoxlang/inox/internal/projectserver/lsp/defines"
@@ -31,7 +29,7 @@ func handleCompletion(ctx context.Context, req *defines.CompletionParams) (resul
 	if err != nil {
 		return nil, err
 	}
-	if filepath.Ext(string(fpath)) != inoxconsts.INOXLANG_FILE_EXTENSION {
+	if !fpath.hasIxExtension() {
 		//Not supported yet.
 		return &[]defines.CompletionItem{}, nil
 	}
