@@ -1,5 +1,5 @@
 //https://github.com/tidwall/wal by Josh Baker, MIT licensed.
-//This file includes https://github.com/tidwall/wal/pull/22 and https://github.com/tidwall/wal/pull/22.
+//This file includes https://github.com/tidwall/wal/pull/22 and https://github.com/tidwall/wal/pull/25.
 
 package wal
 
