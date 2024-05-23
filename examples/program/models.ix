@@ -1,3 +1,0 @@
-includable-file
-
-pattern log-level = | "warn" | "info" | "debug"

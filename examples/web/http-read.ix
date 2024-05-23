@@ -1,8 +1,0 @@
-manifest {
-    permissions: {
-        read: https://jsonplaceholder.typicode.com/posts/1
-    }
-}
-
-body = http.read!(https://jsonplaceholder.typicode.com/posts/1)
-print(body)

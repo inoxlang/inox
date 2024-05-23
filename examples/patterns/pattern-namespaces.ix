@@ -1,9 +1,0 @@
-manifest {}
-
-pnamespace mynamespace. = {
-    user: %{name: str}  
-    post: %{title: str}  
-}
-
-print(%mynamespace.user)
-print(%mynamespace.post)

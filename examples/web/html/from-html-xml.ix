@@ -1,7 +1,0 @@
-manifest {}
-
-node = html<div>
-    <span>Hello</span>
-</div>
-
-print(html.str_render(node))

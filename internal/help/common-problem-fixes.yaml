@@ -1,4 +1,0 @@
-- error: '%string-concatenation is not assignable to a variable of type %string'
-  fixes:
-  - text: 'Add a %str type annotation to the variable'
-    code: 'var myvar %str = ...'

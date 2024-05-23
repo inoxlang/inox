@@ -1,4 +1,0 @@
-manifest {}
-
-s = "a b a"
-print replace!("a", "c", s) # c b c

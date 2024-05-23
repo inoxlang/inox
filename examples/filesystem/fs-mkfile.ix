@@ -1,8 +1,0 @@
-manifest {
-    permissions: {
-        create: IWD_PREFIX
-    }
-}
-
-
-fs.mkfile ./hello.txt "hello !"

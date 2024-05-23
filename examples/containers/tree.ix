@@ -1,8 +1,0 @@
-manifest {}
-
-
-tree = Tree(treedata 1 { 2 {3} 4 5})
-
-for node in tree {
-    print node.data
-}

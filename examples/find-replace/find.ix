@@ -1,9 +1,0 @@
-manifest {}
-
-s = "abc"
-pattern two-letters = str(
-    first_letter:'a'..'z' 
-    'a'..'z'
-)
-
-print find!(%two-letters, s)

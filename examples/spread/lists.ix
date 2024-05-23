@@ -1,5 +1,0 @@
-manifest {}
-
-list = [2, 3]
-
-print [1, ...list]

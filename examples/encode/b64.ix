@@ -1,9 +1,0 @@
-manifest {}
-
-hash = sha256"hello"
-print("hash: ", hash)
-
-s = b64(hash)
-print("encoded: ", s)
-
-print("decoded: ", db64!(s))

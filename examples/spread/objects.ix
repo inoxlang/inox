@@ -1,6 +1,0 @@
-manifest {}
-
-object1 = {a: 1, b: 2}
-
-print {c: 3, ...object1.{a}}
-# print {c: 3, ...object1} # not allowed for now, an extraction expression is required

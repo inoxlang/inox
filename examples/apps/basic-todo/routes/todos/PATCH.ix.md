@@ -1,1 +1,0 @@
-![image](https://github.com/inoxlang/inox/assets/113632189/b704c9f8-5722-4576-b217-e93b2452a375)

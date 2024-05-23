@@ -1,5 +1,0 @@
-manifest {}
-
-import ./shared-patterns.ix
-
-print(%user)
