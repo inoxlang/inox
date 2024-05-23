@@ -1,0 +1,16 @@
+.debug.txt
+__debug*
+*.out
+*.pprof
+
+*.pem
+*.cert
+*.key
+
+.vscode/
+
+internal/project/scaffolding/common/inox.d.ts
+
+node_modules/
+*.wasm
+/*.ix
