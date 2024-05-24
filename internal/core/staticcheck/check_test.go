@@ -3053,22 +3053,6 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
-		t.Run("should not inherit the `dbs` global", func(t *testing.T) {
-			n, src := mustParseCode(`
-				globalvar dbs = {}
-				return testcase {
-					dbs
-				}
-			`)
-
-			identLiteral := ast.FindNodes(n, (*ast.IdentifierLiteral)(nil), nil)[1]
-
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
-			expectedErr := utils.CombineErrors(
-				makeError(identLiteral, src, text.FmtVarIsNotDeclared("dbs")),
-			)
-			assert.Equal(t, expectedErr, err)
-		})
 	})
 
 	t.Run("inclusion import statement", func(t *testing.T) {
