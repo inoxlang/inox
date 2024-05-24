@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -305,9 +306,16 @@ func ParseLocalModule(fpath string, config ModuleParsingConfig) (*Module, error)
 		return nil, err
 	}
 
-	info, err := file.Stat()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get information for file %s: %w", fpath, err)
+	var info fs.FileInfo
+
+	if err == nil {
+		defer file.Close()
+
+		var err error
+		info, err = file.Stat()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get information for file %s: %w", fpath, err)
+		}
 	}
 
 	if info.IsDir() {

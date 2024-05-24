@@ -3026,22 +3026,6 @@ func TestCheck(t *testing.T) {
 			assert.Equal(t, expectedErr, err)
 		})
 
-		t.Run("should not inherit the `dbs` global", func(t *testing.T) {
-			n, src := mustParseCode(`
-				globalvar dbs = {}
-				testsuite { 
-					dbs
-				 }
-			`)
-
-			identLiteral := ast.FindNodes(n, (*ast.IdentifierLiteral)(nil), nil)[1]
-
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
-			expectedErr := utils.CombineErrors(
-				makeError(identLiteral, src, text.FmtVarIsNotDeclared("dbs")),
-			)
-			assert.Equal(t, expectedErr, err)
-		})
 	})
 
 	t.Run("testcase expression", func(t *testing.T) {

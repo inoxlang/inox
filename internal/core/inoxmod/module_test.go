@@ -14,6 +14,7 @@ import (
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/sourcecode"
 	"github.com/inoxlang/inox/internal/testconfig"
+	utils "github.com/inoxlang/inox/internal/utils/common"
 	"github.com/inoxlang/inox/internal/utils/fsutils"
 	"github.com/stretchr/testify/assert"
 )
@@ -95,10 +96,11 @@ func TestParseLocalModule(t *testing.T) {
 	t.Run("relative path", func(t *testing.T) {
 		modpath := filepath.Join(t.TempDir(), "/main.ix")
 		os.WriteFile(modpath, []byte(`manifest {}`), 0o400)
-		relpath := "./main.ix"
+		wd := utils.Must(os.Getwd())
+		relpath := utils.Must(filepath.Rel(wd, modpath))
 
 		parsingCtx := NewContextWithEmptyState(ContextConfig{
-			Permissions: []Permission{CreateFsReadPerm(Path(modpath))},
+			Permissions: []Permission{CreateFsReadPerm(PathPattern("/..."))},
 		}, nil)
 		defer parsingCtx.CancelGracefully()
 
@@ -601,7 +603,7 @@ func TestParseLocalModule(t *testing.T) {
 
 			os.WriteFile(modpath, []byte(`
 				manifest {}
-				import /mod.ix
+				import `+modpath+`
 			`), 0o400)
 
 			parsingCtx := NewContextWithEmptyState(ContextConfig{
@@ -610,7 +612,10 @@ func TestParseLocalModule(t *testing.T) {
 			defer parsingCtx.CancelGracefully()
 
 			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: parsingCtx})
-			assert.Error(t, err)
+			if !assert.Error(t, err) {
+				return
+			}
+			assert.NotNil(t, mod)
 
 			assert.Len(t, mod.Errors, 1)
 
@@ -1075,7 +1080,7 @@ func TestParseLocalModule(t *testing.T) {
 			}, nil)
 			defer ctx.CancelGracefully()
 
-			mod, err := ParseLocalModule("/mod.ix", ModuleParsingConfig{Context: ctx})
+			mod, err := ParseLocalModule(modpath, ModuleParsingConfig{Context: ctx})
 
 			if !assert.ErrorIs(t, err, ErrImportCycleDetected) {
 				return
@@ -1328,12 +1333,10 @@ func TestParseLocalModuleWithCache(t *testing.T) {
 		`), 0o400)
 		os.WriteFile(depPath, []byte(`includable-file`), 0o400)
 
-		includedFilePath := filepath.Join(filepath.Dir(modpath), depPath)
-
 		parsingCtx := NewContextWithEmptyState(ContextConfig{
 			Permissions: []Permission{
 				CreateFsReadPerm(Path(modpath)),
-				CreateFsReadPerm(Path(includedFilePath)),
+				CreateFsReadPerm(Path(depPath)),
 			},
 		}, nil)
 		defer parsingCtx.CancelGracefully()

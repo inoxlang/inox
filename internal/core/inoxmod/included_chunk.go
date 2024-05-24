@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
@@ -75,9 +76,16 @@ func ParseIncludedChunk(config LocalSecondaryChunkParsingConfig) (_ *IncludedChu
 
 	file, err := os.OpenFile(fpath, os.O_RDONLY, 0)
 
-	info, err := file.Stat()
-	if err != nil {
-		return nil, "", fmt.Errorf("failed to get information for file to include %s: %w", fpath, err)
+	var info fs.FileInfo
+
+	if err == nil {
+		defer file.Close()
+
+		var err error
+		info, err = file.Stat()
+		if err != nil {
+			return nil, "", fmt.Errorf("failed to get information for file to include %s: %w", fpath, err)
+		}
 	}
 
 	if os.IsNotExist(err) {
