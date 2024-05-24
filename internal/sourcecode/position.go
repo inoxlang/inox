@@ -31,9 +31,9 @@ func (pos PositionRange) String() string {
 	return fmt.Sprintf("%s:%d:%d:", pos.SourceName, pos.StartLine, pos.StartColumn)
 }
 
-type SourcePositionStack []PositionRange
+type PositionStack []PositionRange
 
-func (stack SourcePositionStack) String() string {
+func (stack PositionStack) String() string {
 	buff := bytes.NewBuffer(nil)
 	for _, pos := range stack {
 		buff.WriteString(pos.String())
@@ -45,7 +45,7 @@ func (stack SourcePositionStack) String() string {
 type StackLocatedError interface {
 	error
 	MessageWithoutLocation() string
-	LocationStack() SourcePositionStack
+	LocationStack() PositionStack
 }
 
 type LocatedError interface {

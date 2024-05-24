@@ -7,7 +7,7 @@ import (
 	"github.com/inoxlang/inox/internal/core/inoxmod"
 	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/core/symbolic"
-	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/sourcecode"
 )
 
 const (
@@ -152,7 +152,7 @@ func (*Module) PropertyNames(ctx *Context) []string {
 	return symbolic.MODULE_PROP_NAMES
 }
 
-func CreateRecordFromSourcePosition(pos parse.SourcePositionRange) *Record {
+func CreateRecordFromSourcePosition(pos sourcecode.PositionRange) *Record {
 	rec := NewRecordFromKeyValLists(
 		SOURCE_POS_RECORD_PROPNAMES,
 		[]Serializable{String(pos.SourceName), Int(pos.StartLine), Int(pos.StartColumn), Int(pos.Span.Start), Int(pos.Span.End)},
@@ -160,7 +160,7 @@ func CreateRecordFromSourcePosition(pos parse.SourcePositionRange) *Record {
 	return rec
 }
 
-func createRecordFromSourcePositionStack(posStack parse.SourcePositionStack) *Record {
+func createRecordFromSourcePositionStack(posStack sourcecode.PositionStack) *Record {
 	positionRecords := make([]Serializable, len(posStack))
 
 	for i, pos := range posStack {

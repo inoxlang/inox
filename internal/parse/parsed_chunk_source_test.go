@@ -4,13 +4,14 @@ import (
 	"testing"
 
 	"github.com/inoxlang/inox/internal/ast"
+	"github.com/inoxlang/inox/internal/sourcecode"
 	utils "github.com/inoxlang/inox/internal/utils/common"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestParseChunkSource(t *testing.T) {
 
-	srcV1 := SourceFile{
+	srcV1 := sourcecode.File{
 		NameString:             "/file.ix",
 		UserFriendlyNameString: "/file.ix",
 		Resource:               "/file.ix",
@@ -76,7 +77,7 @@ func TestGetNodeAtSpan(t *testing.T) {
 
 	t.Run("shallow", func(t *testing.T) {
 		t.Run("", func(t *testing.T) {
-			chunk := utils.Must(ParseChunkSource(InMemorySource{
+			chunk := utils.Must(ParseChunkSource(sourcecode.InMemorySource{
 				NameString: "test",
 				CodeString: "a = 1\na\nfn f(){}",
 			}))
@@ -99,7 +100,7 @@ func TestGetNodeAtSpan(t *testing.T) {
 		})
 
 		t.Run("empty span within an identifier", func(t *testing.T) {
-			chunk := utils.Must(ParseChunkSource(InMemorySource{
+			chunk := utils.Must(ParseChunkSource(sourcecode.InMemorySource{
 				NameString: "test",
 				CodeString: "aaa",
 			}))
@@ -112,7 +113,7 @@ func TestGetNodeAtSpan(t *testing.T) {
 		})
 
 		t.Run("span starting at exclusive end of node", func(t *testing.T) {
-			chunk := utils.Must(ParseChunkSource(InMemorySource{
+			chunk := utils.Must(ParseChunkSource(sourcecode.InMemorySource{
 				NameString: "test",
 				CodeString: "aaa ",
 			}))
@@ -127,7 +128,7 @@ func TestGetNodeAtSpan(t *testing.T) {
 
 	t.Run("deep", func(t *testing.T) {
 		t.Run("", func(t *testing.T) {
-			chunk := utils.Must(ParseChunkSource(InMemorySource{
+			chunk := utils.Must(ParseChunkSource(sourcecode.InMemorySource{
 				NameString: "test",
 				CodeString: "fn f(arg %int){}",
 			}))
@@ -148,7 +149,7 @@ func TestGetNodeAtSpan(t *testing.T) {
 		})
 
 		t.Run("span starting at exclusive end of node", func(t *testing.T) {
-			chunk := utils.Must(ParseChunkSource(InMemorySource{
+			chunk := utils.Must(ParseChunkSource(sourcecode.InMemorySource{
 				NameString: "test",
 				CodeString: "html<div></div>",
 			}))
@@ -164,7 +165,7 @@ func TestGetNodeAtSpan(t *testing.T) {
 		})
 
 		t.Run("empty span within an identifier", func(t *testing.T) {
-			chunk := utils.Must(ParseChunkSource(InMemorySource{
+			chunk := utils.Must(ParseChunkSource(sourcecode.InMemorySource{
 				NameString: "test",
 				CodeString: "html<div></div>",
 			}))
@@ -181,7 +182,7 @@ func TestGetNodeAtSpan(t *testing.T) {
 		})
 
 		t.Run("empty span at a node with an empty span", func(t *testing.T) {
-			chunk := utils.Must(ParseChunkSource(InMemorySource{
+			chunk := utils.Must(ParseChunkSource(sourcecode.InMemorySource{
 				NameString: "test",
 				CodeString: "html<div></div>",
 			}))
@@ -199,7 +200,7 @@ func TestGetNodeAtSpan(t *testing.T) {
 func TestGetLineColumnPosition(t *testing.T) {
 
 	t.Run("shallow", func(t *testing.T) {
-		chunk := utils.Must(ParseChunkSource(InMemorySource{
+		chunk := utils.Must(ParseChunkSource(sourcecode.InMemorySource{
 			NameString: "test",
 			CodeString: "a = 1\na\nfn f(){}\n \n ",
 		}))
@@ -238,7 +239,7 @@ func TestGetLineColumnPosition(t *testing.T) {
 
 func TestFindFirstStatementAndChainOnLine(t *testing.T) {
 	t.Run("empty chunk", func(t *testing.T) {
-		chunk := utils.Must(ParseChunkSource(InMemorySource{
+		chunk := utils.Must(ParseChunkSource(sourcecode.InMemorySource{
 			NameString: "test",
 			CodeString: "",
 		}))
@@ -254,7 +255,7 @@ func TestFindFirstStatementAndChainOnLine(t *testing.T) {
 
 	t.Run("single line chunk", func(t *testing.T) {
 		t.Run("space", func(t *testing.T) {
-			chunk := utils.Must(ParseChunkSource(InMemorySource{
+			chunk := utils.Must(ParseChunkSource(sourcecode.InMemorySource{
 				NameString: "test",
 				CodeString: " ",
 			}))
@@ -268,7 +269,7 @@ func TestFindFirstStatementAndChainOnLine(t *testing.T) {
 			assert.Nil(t, ancestors)
 		})
 		t.Run("comment", func(t *testing.T) {
-			chunk := utils.Must(ParseChunkSource(InMemorySource{
+			chunk := utils.Must(ParseChunkSource(sourcecode.InMemorySource{
 				NameString: "test",
 				CodeString: "# comment",
 			}))
@@ -283,7 +284,7 @@ func TestFindFirstStatementAndChainOnLine(t *testing.T) {
 		})
 
 		t.Run("single statement", func(t *testing.T) {
-			chunk := utils.Must(ParseChunkSource(InMemorySource{
+			chunk := utils.Must(ParseChunkSource(sourcecode.InMemorySource{
 				NameString: "test",
 				CodeString: "1",
 			}))
@@ -300,7 +301,7 @@ func TestFindFirstStatementAndChainOnLine(t *testing.T) {
 		})
 
 		t.Run("single statement preceded by a simple space", func(t *testing.T) {
-			chunk := utils.Must(ParseChunkSource(InMemorySource{
+			chunk := utils.Must(ParseChunkSource(sourcecode.InMemorySource{
 				NameString: "test",
 				CodeString: " 1",
 			}))
@@ -317,7 +318,7 @@ func TestFindFirstStatementAndChainOnLine(t *testing.T) {
 		})
 
 		t.Run("single multi-node statement", func(t *testing.T) {
-			chunk := utils.Must(ParseChunkSource(InMemorySource{
+			chunk := utils.Must(ParseChunkSource(sourcecode.InMemorySource{
 				NameString: "test",
 				CodeString: "f()",
 			}))
@@ -334,7 +335,7 @@ func TestFindFirstStatementAndChainOnLine(t *testing.T) {
 		})
 
 		t.Run("two statements", func(t *testing.T) {
-			chunk := utils.Must(ParseChunkSource(InMemorySource{
+			chunk := utils.Must(ParseChunkSource(sourcecode.InMemorySource{
 				NameString: "test",
 				CodeString: "1; 2",
 			}))
@@ -353,7 +354,7 @@ func TestFindFirstStatementAndChainOnLine(t *testing.T) {
 
 	t.Run("two-line chunk: first one is empty", func(t *testing.T) {
 		t.Run("second line is empty: nothing should be found in first line", func(t *testing.T) {
-			chunk := utils.Must(ParseChunkSource(InMemorySource{
+			chunk := utils.Must(ParseChunkSource(sourcecode.InMemorySource{
 				NameString: "test",
 				CodeString: "\n",
 			}))
@@ -368,7 +369,7 @@ func TestFindFirstStatementAndChainOnLine(t *testing.T) {
 		})
 
 		t.Run("second line is empty: nothing should be found in second line", func(t *testing.T) {
-			chunk := utils.Must(ParseChunkSource(InMemorySource{
+			chunk := utils.Must(ParseChunkSource(sourcecode.InMemorySource{
 				NameString: "test",
 				CodeString: "\n",
 			}))
@@ -383,7 +384,7 @@ func TestFindFirstStatementAndChainOnLine(t *testing.T) {
 		})
 
 		t.Run("second line is a space: nothing should be found in first line", func(t *testing.T) {
-			chunk := utils.Must(ParseChunkSource(InMemorySource{
+			chunk := utils.Must(ParseChunkSource(sourcecode.InMemorySource{
 				NameString: "test",
 				CodeString: "\n ",
 			}))
@@ -398,7 +399,7 @@ func TestFindFirstStatementAndChainOnLine(t *testing.T) {
 		})
 
 		t.Run("second line is a space: nothing should be found in second line", func(t *testing.T) {
-			chunk := utils.Must(ParseChunkSource(InMemorySource{
+			chunk := utils.Must(ParseChunkSource(sourcecode.InMemorySource{
 				NameString: "test",
 				CodeString: "\n ",
 			}))
@@ -413,7 +414,7 @@ func TestFindFirstStatementAndChainOnLine(t *testing.T) {
 		})
 
 		t.Run("second line is a comment: nothing should be found in first line", func(t *testing.T) {
-			chunk := utils.Must(ParseChunkSource(InMemorySource{
+			chunk := utils.Must(ParseChunkSource(sourcecode.InMemorySource{
 				NameString: "test",
 				CodeString: "\n# comment",
 			}))
@@ -428,7 +429,7 @@ func TestFindFirstStatementAndChainOnLine(t *testing.T) {
 		})
 
 		t.Run("second line is a comment: nothing should be found in second line", func(t *testing.T) {
-			chunk := utils.Must(ParseChunkSource(InMemorySource{
+			chunk := utils.Must(ParseChunkSource(sourcecode.InMemorySource{
 				NameString: "test",
 				CodeString: "\n# comment",
 			}))
@@ -443,7 +444,7 @@ func TestFindFirstStatementAndChainOnLine(t *testing.T) {
 		})
 
 		t.Run("second line has a single statement: nothing should be found in first line", func(t *testing.T) {
-			chunk := utils.Must(ParseChunkSource(InMemorySource{
+			chunk := utils.Must(ParseChunkSource(sourcecode.InMemorySource{
 				NameString: "test",
 				CodeString: "\n1",
 			}))
@@ -459,7 +460,7 @@ func TestFindFirstStatementAndChainOnLine(t *testing.T) {
 		})
 
 		t.Run("second line has a single statement: node should be found in second line", func(t *testing.T) {
-			chunk := utils.Must(ParseChunkSource(InMemorySource{
+			chunk := utils.Must(ParseChunkSource(sourcecode.InMemorySource{
 				NameString: "test",
 				CodeString: "\n1",
 			}))
@@ -476,7 +477,7 @@ func TestFindFirstStatementAndChainOnLine(t *testing.T) {
 		})
 
 		t.Run("second line has a single statement preceded by a space: node should be found in second line", func(t *testing.T) {
-			chunk := utils.Must(ParseChunkSource(InMemorySource{
+			chunk := utils.Must(ParseChunkSource(sourcecode.InMemorySource{
 				NameString: "test",
 				CodeString: "\n 1",
 			}))
@@ -493,7 +494,7 @@ func TestFindFirstStatementAndChainOnLine(t *testing.T) {
 		})
 
 		t.Run("second line has two statements: node should be found in second line", func(t *testing.T) {
-			chunk := utils.Must(ParseChunkSource(InMemorySource{
+			chunk := utils.Must(ParseChunkSource(sourcecode.InMemorySource{
 				NameString: "test",
 				CodeString: "\n1; 2",
 			}))
@@ -512,7 +513,7 @@ func TestFindFirstStatementAndChainOnLine(t *testing.T) {
 
 	t.Run("block", func(t *testing.T) {
 		t.Run("empty", func(t *testing.T) {
-			chunk := utils.Must(ParseChunkSource(InMemorySource{
+			chunk := utils.Must(ParseChunkSource(sourcecode.InMemorySource{
 				NameString: "test",
 				CodeString: "if true {\n}",
 			}))
@@ -527,7 +528,7 @@ func TestFindFirstStatementAndChainOnLine(t *testing.T) {
 		})
 
 		t.Run("single statement", func(t *testing.T) {
-			chunk := utils.Must(ParseChunkSource(InMemorySource{
+			chunk := utils.Must(ParseChunkSource(sourcecode.InMemorySource{
 				NameString: "test",
 				CodeString: "if true {\n1}",
 			}))
@@ -544,7 +545,7 @@ func TestFindFirstStatementAndChainOnLine(t *testing.T) {
 		})
 
 		t.Run("single statement preceded by a space", func(t *testing.T) {
-			chunk := utils.Must(ParseChunkSource(InMemorySource{
+			chunk := utils.Must(ParseChunkSource(sourcecode.InMemorySource{
 				NameString: "test",
 				CodeString: "if true {\n 1}",
 			}))
@@ -561,7 +562,7 @@ func TestFindFirstStatementAndChainOnLine(t *testing.T) {
 		})
 
 		t.Run("two statements", func(t *testing.T) {
-			chunk := utils.Must(ParseChunkSource(InMemorySource{
+			chunk := utils.Must(ParseChunkSource(sourcecode.InMemorySource{
 				NameString: "test",
 				CodeString: "if true {\n1; 2}",
 			}))

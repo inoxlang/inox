@@ -4,12 +4,13 @@ import (
 	"testing"
 
 	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/sourcecode"
 	utils "github.com/inoxlang/inox/internal/utils/common"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSymbolicState(t *testing.T) {
-	emptyChunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
+	emptyChunk := utils.Must(parse.ParseChunkSource(sourcecode.InMemorySource{
 		NameString: "",
 		CodeString: "",
 	}))

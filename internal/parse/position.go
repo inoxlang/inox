@@ -7,13 +7,6 @@ import (
 )
 
 type NodeSpan = sourcecode.NodeSpan
-type StackLocatedError = sourcecode.StackLocatedError
-type LocatedError = sourcecode.LocatedError
-type SourcePositionRange = sourcecode.PositionRange
-type SourcePositionStack = sourcecode.SourcePositionStack
-type InMemorySource = sourcecode.InMemorySource
-type SourceFile = sourcecode.File
-type ChunkSource = sourcecode.ChunkSource
 
 type ChunkStackItem struct {
 	Chunk           *ParsedChunkSource
@@ -33,9 +26,9 @@ type StackItem interface {
 	GetCurrentNodeSpan() (NodeSpan, bool)
 }
 
-func GetSourcePositionStack[Item StackItem](nodeSpan NodeSpan, chunkStack []Item) (SourcePositionStack, string) {
+func GetSourcePositionStack[Item StackItem](nodeSpan NodeSpan, chunkStack []Item) (sourcecode.PositionStack, string) {
 	locationPartBuff := bytes.NewBuffer(nil)
-	var positionStack SourcePositionStack
+	var positionStack sourcecode.PositionStack
 
 	//TODO: get whole position stack
 	for i, item := range chunkStack {

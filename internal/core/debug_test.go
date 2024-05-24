@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/ast"
+	"github.com/inoxlang/inox/internal/sourcecode"
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/inoxmod"
@@ -25,7 +26,7 @@ func TestTreeWalkDebug(t *testing.T) {
 		state := core.NewGlobalState(NewDefaultTestContext())
 		treeWalkState := core.NewTreeWalkStateWithGlobal(state)
 
-		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
+		chunk := utils.Must(parse.ParseChunkSource(sourcecode.InMemorySource{
 			NameString: "core-test",
 			CodeString: code,
 		}))
@@ -414,7 +415,7 @@ func testDebugModeEval(
 
 			defer ctx.CancelGracefully()
 
-			equalChunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
+			equalChunk := utils.Must(parse.ParseChunkSource(sourcecode.InMemorySource{
 				NameString: "core-test",
 				CodeString: chunk.Source.Code(),
 			}))

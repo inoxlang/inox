@@ -20,7 +20,7 @@ type State struct {
 	ctx        *Context
 	chunkStack []*parse.ParsedChunkSource
 	//positions of module/chunk import statements
-	importPositions []parse.SourcePositionRange
+	importPositions []sourcecode.PositionRange
 
 	// first scope is the global scope, forks start with a global scope copy & a copy of the deepest local scope
 	scopeStack            []*scopeInfo
@@ -143,11 +143,11 @@ func newSymbolicState(ctx *Context, chunk *parse.ParsedChunkSource) *State {
 	return state
 }
 
-func (state *State) getErrorMesssageLocation(node ast.Node) parse.SourcePositionStack {
+func (state *State) getErrorMesssageLocation(node ast.Node) sourcecode.PositionStack {
 	return state.getErrorMesssageLocationOfSpan(node.Base().Span)
 }
 
-func (state *State) getErrorMesssageLocationOfSpan(span sourcecode.NodeSpan) parse.SourcePositionStack {
+func (state *State) getErrorMesssageLocationOfSpan(span sourcecode.NodeSpan) sourcecode.PositionStack {
 	sourcePositionStack := slices.Clone(state.importPositions)
 	sourcePositionStack = append(sourcePositionStack, state.currentChunk().GetSourcePosition(span))
 	return sourcePositionStack
@@ -206,7 +206,7 @@ func (state *State) setGlobal(name string, value Value, constness GlobalConstnes
 		info = info_
 		info.value = value
 	} else {
-		var definitionPosition parse.SourcePositionRange
+		var definitionPosition sourcecode.PositionRange
 		if len(optDefinitionNode) != 0 {
 			definitionPosition = state.getCurrentChunkNodePositionOrZero(optDefinitionNode[0])
 		}
@@ -249,7 +249,7 @@ func (state *State) setLocal(name string, value Value, static Pattern, optDefini
 		static = getStatic(value)
 	}
 
-	var definitionPosition parse.SourcePositionRange
+	var definitionPosition sourcecode.PositionRange
 	if len(optDefinitionNode) != 0 {
 		definitionPosition = state.getCurrentChunkNodePositionOrZero(optDefinitionNode[0])
 	}
@@ -261,7 +261,7 @@ func (state *State) setLocal(name string, value Value, static Pattern, optDefini
 	}
 }
 
-func (state *State) getCurrentChunkNodePositionOrZero(node ast.Node) parse.SourcePositionRange {
+func (state *State) getCurrentChunkNodePositionOrZero(node ast.Node) sourcecode.PositionRange {
 	return state.currentChunk().GetSourcePosition(node.Base().Span)
 }
 
@@ -916,7 +916,7 @@ type varSymbolicInfo struct {
 	value              Value
 	static             Pattern
 	isConstant         bool
-	definitionPosition parse.SourcePositionRange
+	definitionPosition sourcecode.PositionRange
 }
 
 func (info varSymbolicInfo) constness() GlobalConstness {

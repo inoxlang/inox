@@ -32,8 +32,8 @@ type LocalSecondaryChunkParsingConfig struct {
 	ChunkFilepath            string
 
 	Module                              *Module
-	TopLevelImportPosition              parse.SourcePositionRange
-	ImportPosition                      parse.SourcePositionRange
+	TopLevelImportPosition              sourcecode.PositionRange
+	ImportPosition                      sourcecode.PositionRange
 	RecoverFromNonExistingIncludedFiles bool
 }
 
@@ -63,7 +63,7 @@ func ParseIncludedChunk(config LocalSecondaryChunkParsingConfig) (_ *IncludedChu
 		}
 	}
 
-	src := parse.SourceFile{
+	src := sourcecode.File{
 		NameString:             absPath,
 		UserFriendlyNameString: fpath, //fpath is probably equal to absPath since config.ChunkFilepath is absolute (?).
 		Resource:               absPath,

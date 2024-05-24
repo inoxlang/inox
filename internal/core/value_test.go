@@ -7,6 +7,7 @@ import (
 	"github.com/inoxlang/inox/internal/ast"
 	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/sourcecode"
 	utils "github.com/inoxlang/inox/internal/utils/common"
 	"github.com/stretchr/testify/assert"
 )
@@ -588,7 +589,7 @@ func TestUnionStringPatternRandom(t *testing.T) {
 // parseEval is a utility function that parses the input string and then evalutes the parsed module.
 func parseEval(t *testing.T, s string) Value {
 
-	chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
+	chunk := utils.Must(parse.ParseChunkSource(sourcecode.InMemorySource{
 		NameString: "test",
 		CodeString: s,
 	}))

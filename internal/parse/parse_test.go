@@ -54,7 +54,7 @@ func testParse(
 
 			aggregation := err.(*sourcecode.ParsingErrorAggregation)
 			assert.Equal(t, []*sourcecode.ParsingError{{UnspecifiedParsingError, UNTERMINATED_IDENTIFIER_LIT}}, aggregation.Errors)
-			assert.Equal(t, []SourcePositionRange{
+			assert.Equal(t, []sourcecode.PositionRange{
 				{StartLine: 1, StartColumn: 1, EndLine: 1, EndColumn: 2, Span: NodeSpan{0, 1}},
 			}, aggregation.ErrorPositions)
 		})

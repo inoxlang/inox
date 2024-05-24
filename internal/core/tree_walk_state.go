@@ -241,7 +241,7 @@ func (state *TreeWalkState) updateStackTrace(currentStmt ast.Node) {
 	state.frameInfo[len(state.frameInfo)-1] = currentFrame
 }
 
-func (state *TreeWalkState) formatLocation(node ast.Node) (parse.SourcePositionStack, string) {
+func (state *TreeWalkState) formatLocation(node ast.Node) (sourcecode.PositionStack, string) {
 	return parse.GetSourcePositionStack(node.Base().Span, state.fullChunkStack)
 }
 

@@ -12,6 +12,7 @@ import (
 	"github.com/inoxlang/inox/internal/core/inoxmod"
 	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/sourcecode"
 	"github.com/inoxlang/inox/internal/testconfig"
 	"github.com/inoxlang/inox/internal/utils/fsutils"
 	"github.com/stretchr/testify/assert"
@@ -51,7 +52,7 @@ func TestParseModuleFromSource(t *testing.T) {
 		}, nil)
 		defer ctx.CancelGracefully()
 
-		mod, err := ParseModuleFromSource(parse.SourceFile{
+		mod, err := ParseModuleFromSource(sourcecode.File{
 			NameString:  modpath,
 			Resource:    modpath,
 			ResourceDir: "/",
@@ -110,7 +111,7 @@ func TestParseLocalModule(t *testing.T) {
 		assert.Empty(t, mod.IncludedChunkForest)
 		assert.NotNil(t, mod.ManifestTemplate)
 
-		assert.Equal(t, parse.SourceFile{
+		assert.Equal(t, sourcecode.File{
 			NameString:             modpath,
 			UserFriendlyNameString: relpath,
 			Resource:               modpath,
@@ -319,7 +320,7 @@ func TestParseLocalModule(t *testing.T) {
 
 			assert.Equal(t, []*IncludedChunk{includedChunk1}, mod.FlattenedIncludedChunkList)
 
-			assert.Equal(t, parse.SourceFile{
+			assert.Equal(t, sourcecode.File{
 				NameString:             importedModPath,
 				UserFriendlyNameString: importedModPath,
 				Resource:               importedModPath,
@@ -423,7 +424,7 @@ func TestParseLocalModule(t *testing.T) {
 
 			assert.Equal(t, []*IncludedChunk{includedChunk1}, mod.FlattenedIncludedChunkList)
 
-			assert.Equal(t, parse.SourceFile{
+			assert.Equal(t, sourcecode.File{
 				NameString:             importedModPath,
 				UserFriendlyNameString: importedModPath,
 				Resource:               importedModPath,

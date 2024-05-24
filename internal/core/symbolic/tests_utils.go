@@ -6,10 +6,11 @@ import (
 
 	"github.com/inoxlang/inox/internal/ast"
 	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/sourcecode"
 )
 
 func _makeStateAndChunk(code string, globals ...map[string]Value) (*ast.Chunk, *State, error) {
-	chunk, err := parse.ParseChunkSource(parse.InMemorySource{
+	chunk, err := parse.ParseChunkSource(sourcecode.InMemorySource{
 		NameString: "",
 		CodeString: code,
 	})
@@ -87,7 +88,7 @@ func MakeTestStateAndChunks(code string, includedFiles map[string]string, global
 			panic(fmt.Errorf("import statement with source %s not found", file))
 		}
 
-		includedChunk, err := parse.ParseChunkSource(parse.InMemorySource{
+		includedChunk, err := parse.ParseChunkSource(sourcecode.InMemorySource{
 			NameString: file,
 			CodeString: content,
 		})
@@ -113,7 +114,7 @@ func MakeTestStateAndImportedModules(code string, files map[string]string, globa
 	for file, content := range files {
 		importStmt := ast.FindNode(state.Module.mainChunk.Node, (*ast.ImportStatement)(nil), nil)
 
-		importedModuleChunk, err := parse.ParseChunkSource(parse.InMemorySource{
+		importedModuleChunk, err := parse.ParseChunkSource(sourcecode.InMemorySource{
 			NameString: file,
 			CodeString: content,
 		})

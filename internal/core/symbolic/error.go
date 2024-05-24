@@ -12,8 +12,8 @@ import (
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/globalnames"
 	"github.com/inoxlang/inox/internal/inoxconsts"
-	"github.com/inoxlang/inox/internal/parse"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
+	"github.com/inoxlang/inox/internal/sourcecode"
 	utils "github.com/inoxlang/inox/internal/utils/common"
 	"golang.org/x/exp/slices"
 )
@@ -220,14 +220,14 @@ var (
 	ErrNotImplementedYet = errors.New("not implemented yet")
 	ErrUnreachable       = errors.New("unreachable")
 
-	_ parse.StackLocatedError = EvaluationError{}
+	_ sourcecode.StackLocatedError = EvaluationError{}
 )
 
 type EvaluationError struct {
 	Message        string
 	MessageRegions []commonfmt.RegionInfo
 
-	Location              parse.SourcePositionStack
+	Location              sourcecode.PositionStack
 	LocatedMessage        string
 	LocatedMessageRegions []commonfmt.RegionInfo
 }
@@ -240,7 +240,7 @@ func (err EvaluationError) MessageWithoutLocation() string {
 	return err.Message
 }
 
-func (err EvaluationError) LocationStack() parse.SourcePositionStack {
+func (err EvaluationError) LocationStack() sourcecode.PositionStack {
 	return err.Location
 }
 

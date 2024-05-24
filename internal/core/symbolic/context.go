@@ -6,7 +6,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/ast"
 	"github.com/inoxlang/inox/internal/core/permbase"
-	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/sourcecode"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 )
@@ -24,9 +24,9 @@ type Context struct {
 
 	hostAliases                         map[string]Value
 	namedPatterns                       map[string]Pattern
-	namedPatternPositionDefinitions     map[string]parse.SourcePositionRange
+	namedPatternPositionDefinitions     map[string]sourcecode.PositionRange
 	patternNamespaces                   map[string]*PatternNamespace
-	patternNamespacePositionDefinitions map[string]parse.SourcePositionRange
+	patternNamespacePositionDefinitions map[string]sourcecode.PositionRange
 	typeExtensions                      []*TypeExtension
 }
 
@@ -43,9 +43,9 @@ func NewSymbolicContext(startingConcreteContext, concreteContext ConcreteContext
 
 		hostAliases:                         make(map[string]Value, 0),
 		namedPatterns:                       make(map[string]Pattern, 0),
-		namedPatternPositionDefinitions:     make(map[string]parse.SourcePositionRange, 0),
+		namedPatternPositionDefinitions:     make(map[string]sourcecode.PositionRange, 0),
 		patternNamespaces:                   make(map[string]*PatternNamespace, 0),
-		patternNamespacePositionDefinitions: make(map[string]parse.SourcePositionRange, 0),
+		patternNamespacePositionDefinitions: make(map[string]sourcecode.PositionRange, 0),
 	}
 }
 
@@ -69,7 +69,7 @@ func (ctx *Context) AllNamedPatternNames() []string {
 	return maps.Keys(ctx.namedPatterns)
 }
 
-func (ctx *Context) AddNamedPattern(name string, pattern Pattern, ignoreError bool, optDefinitionPosition ...parse.SourcePositionRange) {
+func (ctx *Context) AddNamedPattern(name string, pattern Pattern, ignoreError bool, optDefinitionPosition ...sourcecode.PositionRange) {
 	_, ok := ctx.namedPatterns[name]
 	if ok && !ignoreError {
 		panic(fmt.Errorf("cannot register a pattern more than once: %s", name))
@@ -82,7 +82,7 @@ func (ctx *Context) AddNamedPattern(name string, pattern Pattern, ignoreError bo
 	}
 }
 
-func (ctx *Context) ForEachPattern(fn func(name string, pattern Pattern, knowPosition bool, position parse.SourcePositionRange)) {
+func (ctx *Context) ForEachPattern(fn func(name string, pattern Pattern, knowPosition bool, position sourcecode.PositionRange)) {
 	if ctx.forkingParent != nil {
 		ctx.forkingParent.ForEachPattern(fn)
 	}
@@ -97,7 +97,7 @@ func (ctx *Context) CopyNamedPatternsIn(destCtx *Context) {
 		ctx.forkingParent.CopyNamedPatternsIn(destCtx)
 	}
 
-	ctx.ForEachPattern(func(name string, pattern Pattern, knowPosition bool, position parse.SourcePositionRange) {
+	ctx.ForEachPattern(func(name string, pattern Pattern, knowPosition bool, position sourcecode.PositionRange) {
 		if knowPosition {
 			destCtx.AddNamedPattern(name, pattern, false, position)
 		} else {
@@ -118,7 +118,7 @@ func (ctx *Context) ResolvePatternNamespace(name string) *PatternNamespace {
 	return namespace
 }
 
-func (ctx *Context) AddPatternNamespace(name string, namespace *PatternNamespace, ignoreError bool, optDefinitionPosition ...parse.SourcePositionRange) {
+func (ctx *Context) AddPatternNamespace(name string, namespace *PatternNamespace, ignoreError bool, optDefinitionPosition ...sourcecode.PositionRange) {
 	_, ok := ctx.patternNamespaces[name]
 	if ok && !ignoreError {
 		panic(fmt.Errorf("cannot register a pattern namespace more than once: %s", name))
@@ -131,7 +131,7 @@ func (ctx *Context) AddPatternNamespace(name string, namespace *PatternNamespace
 	}
 }
 
-func (ctx *Context) ForEachPatternNamespace(fn func(name string, namespace *PatternNamespace, knowPosition bool, position parse.SourcePositionRange)) {
+func (ctx *Context) ForEachPatternNamespace(fn func(name string, namespace *PatternNamespace, knowPosition bool, position sourcecode.PositionRange)) {
 	if ctx.forkingParent != nil {
 		ctx.forkingParent.ForEachPatternNamespace(fn)
 	}
@@ -145,7 +145,7 @@ func (ctx *Context) CopyPatternNamespacesIn(destCtx *Context) {
 	if ctx.forkingParent != nil {
 		ctx.forkingParent.CopyPatternNamespacesIn(destCtx)
 	}
-	ctx.ForEachPatternNamespace(func(name string, namespace *PatternNamespace, knowPosition bool, position parse.SourcePositionRange) {
+	ctx.ForEachPatternNamespace(func(name string, namespace *PatternNamespace, knowPosition bool, position sourcecode.PositionRange) {
 		if knowPosition {
 			destCtx.AddPatternNamespace(name, namespace, false, position)
 		} else {

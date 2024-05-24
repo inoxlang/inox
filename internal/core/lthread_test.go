@@ -8,6 +8,7 @@ import (
 	"github.com/inoxlang/inox/internal/core/limitbase"
 	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/sourcecode"
 	"github.com/inoxlang/inox/internal/testconfig"
 	utils "github.com/inoxlang/inox/internal/utils/common"
 	"github.com/stretchr/testify/assert"
@@ -29,7 +30,7 @@ func TestSpawnLThread(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		state := NewGlobalState(ctx)
-		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
+		chunk := utils.Must(parse.ParseChunkSource(sourcecode.InMemorySource{
 			NameString: "lthread-test",
 			CodeString: "",
 		}))
@@ -59,7 +60,7 @@ func TestSpawnLThread(t *testing.T) {
 		}))
 		defer state.Ctx.CancelGracefully()
 
-		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
+		chunk := utils.Must(parse.ParseChunkSource(sourcecode.InMemorySource{
 			NameString: "lthread-test",
 			CodeString: "return $x",
 		}))
@@ -94,7 +95,7 @@ func TestSpawnLThread(t *testing.T) {
 		}))
 		defer state.Ctx.CancelGracefully()
 
-		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
+		chunk := utils.Must(parse.ParseChunkSource(sourcecode.InMemorySource{
 			NameString: "lthread-test",
 			CodeString: "return {a: 1}",
 		}))
@@ -133,7 +134,7 @@ func TestSpawnLThread(t *testing.T) {
 		defer ctx.CancelGracefully()
 
 		state := NewGlobalState(ctx)
-		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
+		chunk := utils.Must(parse.ParseChunkSource(sourcecode.InMemorySource{
 			NameString: "lthread-test",
 			CodeString: "",
 		}))
@@ -172,7 +173,7 @@ func TestSpawnLThread(t *testing.T) {
 		}))
 		defer state.Ctx.CancelGracefully()
 
-		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
+		chunk := utils.Must(parse.ParseChunkSource(sourcecode.InMemorySource{
 			NameString: "lthread-test",
 			CodeString: "coyield 0; return {a: 1}",
 		}))

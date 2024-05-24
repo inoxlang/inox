@@ -13362,7 +13362,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, sourcecode.SourcePositionStack{
+			assert.Equal(t, sourcecode.PositionStack{
 				{
 					SourceName:  mod.MainChunk.Source.Name(),
 					StartLine:   2,
@@ -13418,7 +13418,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, sourcecode.SourcePositionStack{
+			assert.Equal(t, sourcecode.PositionStack{
 				{
 					//import
 					SourceName:  mod.MainChunk.Source.Name(),
@@ -13484,7 +13484,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, sourcecode.SourcePositionStack{
+			assert.Equal(t, sourcecode.PositionStack{
 				{
 					//call
 					SourceName:  mod.MainChunk.Source.Name(),
@@ -13556,7 +13556,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				return
 			}
 
-			assert.Equal(t, sourcecode.SourcePositionStack{
+			assert.Equal(t, sourcecode.PositionStack{
 				{
 					//call
 					SourceName:  mod.MainChunk.Source.Name(),

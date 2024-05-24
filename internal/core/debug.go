@@ -665,7 +665,7 @@ func ParseFileChunk(absoluteSourcePath string, opts ...parse.ParserOptions) (*pa
 		return nil, fmt.Errorf("failed to read %s: %w", absoluteSourcePath, err)
 	}
 
-	src := parse.SourceFile{
+	src := sourcecode.File{
 		NameString:    absoluteSourcePath,
 		Resource:      absoluteSourcePath,
 		ResourceDir:   filepath.Dir(absoluteSourcePath),

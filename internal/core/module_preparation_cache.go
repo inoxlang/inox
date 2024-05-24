@@ -11,6 +11,7 @@ import (
 	"github.com/inoxlang/inox/internal/ast"
 	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/sourcecode"
 	utils "github.com/inoxlang/inox/internal/utils/common"
 )
 
@@ -194,7 +195,7 @@ func (c *PreparationCacheEntry) CheckValidity() bool {
 }
 
 func (c *PreparationCacheEntry) haveChunkChanged(chunk *parse.ParsedChunkSource) bool {
-	srcFile, ok := chunk.Source.(*parse.SourceFile)
+	srcFile, ok := chunk.Source.(*sourcecode.File)
 	if !ok {
 		return false
 	}

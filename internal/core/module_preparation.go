@@ -23,6 +23,7 @@ import (
 	"github.com/inoxlang/inox/internal/globalnames"
 	"github.com/inoxlang/inox/internal/inoxconsts"
 	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/sourcecode"
 	utils "github.com/inoxlang/inox/internal/utils/common"
 	"github.com/rs/zerolog"
 )
@@ -641,7 +642,7 @@ func PrepareExtractionModeIncludableFile(args IncludableFilePreparationArgs) (st
 
 	fakeModPath := filepath.Join(includedChunkDir, strconv.FormatInt(rand.Int63(), 16)+"-mod"+inoxconsts.INOXLANG_FILE_EXTENSION)
 
-	modSource := parse.SourceFile{
+	modSource := sourcecode.File{
 		NameString:  fakeModPath,
 		CodeString:  `import ./` + includedChunkBaseName,
 		Resource:    fakeModPath,

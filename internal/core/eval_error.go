@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/sourcecode"
 )
 
 const (
@@ -104,7 +104,7 @@ func FormatIndexableShouldHaveLen(length int) string {
 type LocatedEvalError struct {
 	error
 	Message  string
-	Location parse.SourcePositionStack
+	Location sourcecode.PositionStack
 }
 
 func (e LocatedEvalError) Unwrap() error {
@@ -115,6 +115,6 @@ func (err LocatedEvalError) MessageWithoutLocation() string {
 	return err.Message
 }
 
-func (err LocatedEvalError) LocationStack() parse.SourcePositionStack {
+func (err LocatedEvalError) LocationStack() sourcecode.PositionStack {
 	return err.Location
 }

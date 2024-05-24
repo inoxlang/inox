@@ -18,7 +18,7 @@ type ParsedChunkSource struct {
 	sourcecode.ParsedChunkSourceBase
 }
 
-func MustParseChunkSource(src ChunkSource, options ...ParserOptions) *ParsedChunkSource {
+func MustParseChunkSource(src sourcecode.ChunkSource, options ...ParserOptions) *ParsedChunkSource {
 	return utils.Must(ParseChunkSource(src, options...))
 }
 
@@ -28,7 +28,7 @@ func MustParseChunkSource(src ChunkSource, options ...ParserOptions) *ParsedChun
 // === Caching ===
 // Contrary to ParseChunk, ParseChunkSource uses the cache provided  in the options. The cache is only used for
 // *SourceFile sources. SourceFile.Location is used as the 'path' for the cache entry.
-func ParseChunkSource(src ChunkSource, options ...ParserOptions) (parsed *ParsedChunkSource, resultErr error) {
+func ParseChunkSource(src sourcecode.ChunkSource, options ...ParserOptions) (parsed *ParsedChunkSource, resultErr error) {
 
 	sourceCode := src.Code()
 	sourceName := src.Name()
@@ -38,7 +38,7 @@ func ParseChunkSource(src ChunkSource, options ...ParserOptions) (parsed *Parsed
 		cache            *ChunkCache
 		resourceLocation string
 	)
-	if srcFile, ok := src.(SourceFile); ok && len(options) > 0 && options[0].ParsedFileCache != nil {
+	if srcFile, ok := src.(sourcecode.File); ok && len(options) > 0 && options[0].ParsedFileCache != nil {
 		cache = options[0].ParsedFileCache
 		resourceLocation = srcFile.Resource
 		parsedChunk, err, ok := cache.GetResultAndDataByPathSourcePair(resourceLocation, sourceCode)
@@ -67,7 +67,7 @@ func ParseChunkSource(src ChunkSource, options ...ParserOptions) (parsed *Parsed
 	return
 }
 
-func NewParsedChunkSource(node *ast.Chunk, src ChunkSource) *ParsedChunkSource {
+func NewParsedChunkSource(node *ast.Chunk, src sourcecode.ChunkSource) *ParsedChunkSource {
 	return &ParsedChunkSource{
 		Node: node,
 		ParsedChunkSourceBase: sourcecode.ParsedChunkSourceBase{
@@ -209,11 +209,11 @@ func (chunk *ParsedChunkSource) GetLineColumnPosition(line, column int32) int32 
 	return pos
 }
 
-func (chunk *ParsedChunkSource) GetSourcePosition(span NodeSpan) SourcePositionRange {
+func (chunk *ParsedChunkSource) GetSourcePosition(span NodeSpan) sourcecode.PositionRange {
 	line, col := chunk.GetSpanLineColumn(span)
 	endLine, endCol := chunk.GetEndSpanLineColumn(span)
 
-	return SourcePositionRange{
+	return sourcecode.PositionRange{
 		SourceName:  chunk.Name(),
 		StartLine:   line,
 		StartColumn: col,

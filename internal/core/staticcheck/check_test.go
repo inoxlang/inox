@@ -52,7 +52,7 @@ func TestCheck(t *testing.T) {
 	}
 
 	makeError := func(node ast.Node, chunk *parse.ParsedChunkSource, s string) *StaticCheckError {
-		return NewStaticCheckError(s, sourcecode.SourcePositionStack{chunk.GetSourcePosition(node.Base().Span)})
+		return NewStaticCheckError(s, sourcecode.PositionStack{chunk.GetSourcePosition(node.Base().Span)})
 	}
 
 	staticCheckNoData := func(input StaticCheckInput) error {
@@ -3183,7 +3183,7 @@ func TestCheck(t *testing.T) {
 			})
 
 			expectedErr := utils.CombineErrors(
-				NewStaticCheckError(text.FmtVarIsNotDeclared("b"), sourcecode.SourcePositionStack{
+				NewStaticCheckError(text.FmtVarIsNotDeclared("b"), sourcecode.PositionStack{
 					sourcecode.PositionRange{
 						SourceName:  mod.MainChunk.Name(),
 						StartLine:   3,
@@ -3217,7 +3217,7 @@ func TestCheck(t *testing.T) {
 			})
 
 			expectedErr := utils.CombineErrors(
-				NewStaticCheckError(text.FmtCannotShadowGlobalVariable("a"), sourcecode.SourcePositionStack{
+				NewStaticCheckError(text.FmtCannotShadowGlobalVariable("a"), sourcecode.PositionStack{
 					sourcecode.PositionRange{
 						SourceName:  mod.MainChunk.Name(),
 						StartLine:   4,
@@ -3276,7 +3276,7 @@ func TestCheck(t *testing.T) {
 				Chunk:  mod.MainChunk,
 			})
 			expectedErr := utils.CombineErrors(
-				NewStaticCheckError(text.AN_INCLUDABLE_FILE_CAN_ONLY_CONTAIN_DEFINITIONS, sourcecode.SourcePositionStack{
+				NewStaticCheckError(text.AN_INCLUDABLE_FILE_CAN_ONLY_CONTAIN_DEFINITIONS, sourcecode.PositionStack{
 					sourcecode.PositionRange{
 						SourceName:  mod.MainChunk.Name(),
 						StartLine:   3,
@@ -3288,7 +3288,7 @@ func TestCheck(t *testing.T) {
 						StartColumn: 6,
 					},
 				}),
-				NewStaticCheckError(text.MODULE_IMPORTS_NOT_ALLOWED_IN_INCLUDABLE_FILES, sourcecode.SourcePositionStack{
+				NewStaticCheckError(text.MODULE_IMPORTS_NOT_ALLOWED_IN_INCLUDABLE_FILES, sourcecode.PositionStack{
 					sourcecode.PositionRange{
 						SourceName:  mod.MainChunk.Name(),
 						StartLine:   3,
@@ -3543,7 +3543,7 @@ func TestCheck(t *testing.T) {
 			})
 
 			expectedErr := utils.CombineErrors(
-				NewStaticCheckError(text.FmtVarIsNotDeclared("b"), sourcecode.SourcePositionStack{
+				NewStaticCheckError(text.FmtVarIsNotDeclared("b"), sourcecode.PositionStack{
 					sourcecode.PositionRange{
 						SourceName:  mod.MainChunk.Name(),
 						StartLine:   3,
@@ -3645,7 +3645,7 @@ func TestCheck(t *testing.T) {
 			})
 
 			expectedErr := utils.CombineErrors(
-				NewStaticCheckError(text.FmtVarIsNotDeclared("b"), sourcecode.SourcePositionStack{
+				NewStaticCheckError(text.FmtVarIsNotDeclared("b"), sourcecode.PositionStack{
 					sourcecode.PositionRange{
 						SourceName:  modpath,
 						StartLine:   3,

@@ -214,8 +214,8 @@ func (checker *checker) makeCheckingWarning(node ast.Node, s string) *StaticChec
 	return NewStaticCheckWarning(s, location)
 }
 
-func (checker *checker) getSourcePositionStack(node ast.Node) sourcecode.SourcePositionStack {
-	var sourcePositionStack sourcecode.SourcePositionStack
+func (checker *checker) getSourcePositionStack(node ast.Node) sourcecode.PositionStack {
+	var sourcePositionStack sourcecode.PositionStack
 
 	if checker.parentChecker != nil {
 		var importStmt ast.Node
@@ -3355,10 +3355,10 @@ func CombineStaticCheckErrors(errs ...*Error) error {
 type Error struct {
 	Message        string
 	LocatedMessage string
-	Location       sourcecode.SourcePositionStack
+	Location       sourcecode.PositionStack
 }
 
-func NewError(s string, location sourcecode.SourcePositionStack) *Error {
+func NewError(s string, location sourcecode.PositionStack) *Error {
 	return &Error{
 		Message:        CHECK_ERR_PREFIX + s,
 		LocatedMessage: CHECK_ERR_PREFIX + location.String() + s,
@@ -3374,17 +3374,17 @@ func (err Error) MessageWithoutLocation() string {
 	return err.Message
 }
 
-func (err Error) LocationStack() sourcecode.SourcePositionStack {
+func (err Error) LocationStack() sourcecode.PositionStack {
 	return err.Location
 }
 
 type StaticCheckWarning struct {
 	Message        string
 	LocatedMessage string
-	Location       sourcecode.SourcePositionStack
+	Location       sourcecode.PositionStack
 }
 
-func NewStaticCheckWarning(s string, location sourcecode.SourcePositionStack) *StaticCheckWarning {
+func NewStaticCheckWarning(s string, location sourcecode.PositionStack) *StaticCheckWarning {
 	return &StaticCheckWarning{
 		Message:        CHECK_ERR_PREFIX + s,
 		LocatedMessage: CHECK_ERR_PREFIX + location.String() + s,
@@ -3396,7 +3396,7 @@ func (err StaticCheckWarning) MessageWithoutLocation() string {
 	return err.Message
 }
 
-func (err StaticCheckWarning) LocationStack() sourcecode.SourcePositionStack {
+func (err StaticCheckWarning) LocationStack() sourcecode.PositionStack {
 	return err.Location
 }
 

@@ -9,13 +9,13 @@ import (
 	"slices"
 
 	"github.com/inoxlang/inox/internal/ast"
+	"github.com/inoxlang/inox/internal/sourcecode"
 
 	"github.com/inoxlang/inox/internal/core/inoxmod"
 	"github.com/inoxlang/inox/internal/core/permbase"
 	"github.com/inoxlang/inox/internal/core/staticcheck"
 	"github.com/inoxlang/inox/internal/globalnames"
 	"github.com/inoxlang/inox/internal/inoxconsts"
-	"github.com/inoxlang/inox/internal/parse"
 	utils "github.com/inoxlang/inox/internal/utils/common"
 )
 
@@ -65,7 +65,7 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 			preinitErr = LocatedEvalError{
 				error:    preinitErr,
 				Message:  preinitErr.Error(),
-				Location: parse.SourcePositionStack{m.MainChunk.GetSourcePosition(m.ManifestTemplate.Span)},
+				Location: sourcecode.PositionStack{m.MainChunk.GetSourcePosition(m.ManifestTemplate.Span)},
 			}
 		}
 	}()
@@ -105,7 +105,7 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 
 			onError: func(n ast.Node, msg string) {
 				location := m.MainChunk.GetSourcePosition(n.Base().Span)
-				checkErr := staticcheck.NewError(msg, parse.SourcePositionStack{location})
+				checkErr := staticcheck.NewError(msg, sourcecode.PositionStack{location})
 				checkErrs = append(checkErrs, checkErr)
 			},
 		})
@@ -123,7 +123,7 @@ func (m *Module) PreInit(preinitArgs PreinitArgs) (_ *Manifest, usedRunningState
 			ModuleKind:            m.Kind,
 			OnError: func(n ast.Node, msg string) {
 				location := m.MainChunk.GetSourcePosition(n.Base().Span)
-				checkErr := staticcheck.NewError(msg, parse.SourcePositionStack{location})
+				checkErr := staticcheck.NewError(msg, sourcecode.PositionStack{location})
 				checkErrs = append(checkErrs, checkErr)
 			},
 		})

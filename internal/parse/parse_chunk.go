@@ -90,7 +90,7 @@ func ParseChunk2(str string, sourceName string, opts ...ParserOptions) (runes []
 				startLine, endLine, startCol, endCol := getLineColumns(p.s, nodeBase.Span.Start, nodeBase.Span.End)
 
 				aggregation.Errors = append(aggregation.Errors, parsingErr)
-				aggregation.ErrorPositions = append(aggregation.ErrorPositions, SourcePositionRange{
+				aggregation.ErrorPositions = append(aggregation.ErrorPositions, sourcecode.PositionRange{
 					SourceName:  sourceName,
 					StartLine:   startLine,
 					StartColumn: startCol,

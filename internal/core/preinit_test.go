@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/ast"
+	"github.com/inoxlang/inox/internal/sourcecode"
 
 	"github.com/inoxlang/inox/internal/core/inoxmod"
 	"github.com/inoxlang/inox/internal/core/limitbase"
@@ -1219,7 +1220,7 @@ func TestPreInit(t *testing.T) {
 			if testCase.parentModule != "" {
 				chunk := parse.MustParseChunk(testCase.parentModule)
 
-				srcFile := parse.SourceFile{
+				srcFile := sourcecode.File{
 					NameString:  testCase.parentModuleAbsPath,
 					Resource:    testCase.parentModuleAbsPath,
 					ResourceDir: filepath.Dir(testCase.parentModuleAbsPath),
@@ -1268,7 +1269,7 @@ func TestPreInit(t *testing.T) {
 
 			mod := WrapLowerModule(&inoxmod.Module{
 				MainChunk: parse.NewParsedChunkSource(chunk,
-					parse.SourceFile{
+					sourcecode.File{
 						NameString:             mainModulePath,
 						UserFriendlyNameString: mainModulePath,
 						Resource:               mainModulePath,

@@ -19,7 +19,7 @@ func TestSymbolicEvalCheck(t *testing.T) {
 	t.Run("predefined global variables do not cause an error", func(t *testing.T) {
 
 		code := `return ($var + 1)`
-		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
+		chunk := utils.Must(parse.ParseChunkSource(sourcecode.InMemorySource{
 			NameString: "symbolic-core-test",
 			CodeString: code,
 		}))
@@ -40,7 +40,7 @@ func TestSymbolicEvalCheck(t *testing.T) {
 
 	t.Run("", func(t *testing.T) {
 		code := `return ($var + 1)`
-		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
+		chunk := utils.Must(parse.ParseChunkSource(sourcecode.InMemorySource{
 			NameString: "symbolic-core-test",
 			CodeString: code,
 		}))
@@ -61,7 +61,7 @@ func TestSymbolicEvalCheck(t *testing.T) {
 
 	t.Run("spawn expression (permission ok)", func(t *testing.T) {
 		code := `go {globals: {global2: 2}} do { return (global1 + global2)}`
-		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
+		chunk := utils.Must(parse.ParseChunkSource(sourcecode.InMemorySource{
 			NameString: "symbolic-core-test",
 			CodeString: code,
 		}))
@@ -89,7 +89,7 @@ func TestSymbolicEvalCheck(t *testing.T) {
 
 	t.Run("spawn expression (missing permission)", func(t *testing.T) {
 		code := `go {globals: {global2: 2}} do { return (global1 + global2)}`
-		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
+		chunk := utils.Must(parse.ParseChunkSource(sourcecode.InMemorySource{
 			NameString: "symbolic-core-test",
 			CodeString: code,
 		}))
@@ -117,7 +117,7 @@ func TestSymbolicEvalCheck(t *testing.T) {
 	t.Run("spawn expression within embedded module (missing permission)", func(t *testing.T) {
 		code := `go {allow: {}} do {   go do {}  }`
 
-		chunk := utils.Must(parse.ParseChunkSource(parse.InMemorySource{
+		chunk := utils.Must(parse.ParseChunkSource(sourcecode.InMemorySource{
 			NameString: "symbolic-core-test",
 			CodeString: code,
 		}))
@@ -143,7 +143,7 @@ func TestSymbolicEvalCheck(t *testing.T) {
 		}
 		warning := data.Warnings()[0]
 		assert.Contains(t, symbolic.POSSIBLE_MISSING_PERM_TO_CREATE_A_LTHREAD, warning.Message)
-		assert.Equal(t, parse.SourcePositionRange{
+		assert.Equal(t, sourcecode.PositionRange{
 			SourceName:  chunk.Source.Name(),
 			StartLine:   1,
 			StartColumn: 23,

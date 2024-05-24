@@ -3,13 +3,13 @@ package inoxmod
 import (
 	"fmt"
 
-	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/sourcecode"
 	utils "github.com/inoxlang/inox/internal/utils/common"
 )
 
 type Error struct {
 	BaseError      error
-	Position       parse.SourcePositionRange
+	Position       sourcecode.PositionRange
 	AdditionalInfo string
 }
 
