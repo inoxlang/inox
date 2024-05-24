@@ -6869,28 +6869,8 @@ func IsMetadataKey(key string) bool {
 	return len(key) >= 3 && key[0] == '_' && key[1] != '_' && key[len(key)-2] != '_' && key[len(key)-1] == '_'
 }
 
-func IsAnyVariableIdentifier(node ast.Node) bool {
-	switch node.(type) {
-	case *ast.Variable, *ast.IdentifierLiteral:
-		return true
-	default:
-		return false
-	}
-}
-
 func IsSupportedSchemeName(s string) bool {
 	return slices.Contains(SCHEMES, s)
-}
-
-func GetVariableName(node ast.Node) string {
-	switch n := node.(type) {
-	case *ast.Variable:
-		return n.Name
-	case *ast.IdentifierLiteral:
-		return n.Name
-	default:
-		panic(fmt.Errorf("cannot get variable name from node of type %T", node))
-	}
 }
 
 func GetNameIfVariable(node ast.Node) (string, bool) {

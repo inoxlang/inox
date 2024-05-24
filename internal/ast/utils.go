@@ -3,6 +3,7 @@ package ast
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"reflect"
 	"slices"
 
@@ -468,5 +469,25 @@ func DetermineActiveParameterIndex(
 		return activeParamIndex
 	} else {
 		return 0
+	}
+}
+
+func IsAnyVariableIdentifier(node Node) bool {
+	switch node.(type) {
+	case *Variable, *IdentifierLiteral:
+		return true
+	default:
+		return false
+	}
+}
+
+func GetVariableName(node Node) string {
+	switch n := node.(type) {
+	case *Variable:
+		return n.Name
+	case *IdentifierLiteral:
+		return n.Name
+	default:
+		panic(fmt.Errorf("cannot get variable name from node of type %T", node))
 	}
 }
