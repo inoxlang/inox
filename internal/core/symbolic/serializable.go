@@ -31,9 +31,7 @@ var (
 
 		Pattern(nil),
 
-		(*InoxFunction)(nil), (*SynchronousMessageHandler)(nil),
-
-		(*SystemGraph)(nil), (*SystemGraphEvent)(nil), (*SystemGraphEdge)(nil),
+		(*InoxFunction)(nil),
 
 		(*Mapping)(nil),
 

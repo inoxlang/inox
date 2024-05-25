@@ -575,44 +575,8 @@ func (*GlobalState) IsMutable() bool {
 	return true
 }
 
-func (Message) IsMutable() bool {
-	return false
-}
-
-func (Publication) IsMutable() bool {
-	return false
-}
-
-func (*Subscription) IsMutable() bool {
-	return true
-}
-
 func (*ValueHistory) IsMutable() bool {
 	return true
-}
-
-func (*SynchronousMessageHandler) IsMutable() bool {
-	return true
-}
-
-func (*SystemGraph) IsMutable() bool {
-	return true
-}
-
-func (*SystemGraphNodes) IsMutable() bool {
-	return true
-}
-
-func (*SystemGraphNode) IsMutable() bool {
-	return true
-}
-
-func (SystemGraphEvent) IsMutable() bool {
-	return false
-}
-
-func (SystemGraphEdge) IsMutable() bool {
-	return false
 }
 
 func (*Secret) IsMutable() bool {

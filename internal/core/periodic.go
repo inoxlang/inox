@@ -176,10 +176,3 @@ func spawnPeriodicWatcherGoroutine() {
 		}
 	}()
 }
-
-func WatchReceivedMessages(ctx *Context, v Watchable) Watcher {
-	return v.Watcher(ctx, WatcherConfiguration{
-		Filter: MSG_PATTERN,
-		Depth:  ShallowWatching,
-	})
-}

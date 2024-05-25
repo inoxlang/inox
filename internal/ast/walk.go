@@ -597,12 +597,6 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 	case *TestCaseExpression:
 		walk(n.Meta, node, ancestorChain, fn, afterFn)
 		walk(n.Module, node, ancestorChain, fn, afterFn)
-	case *ReceptionHandlerExpression:
-		walk(n.Pattern, node, ancestorChain, fn, afterFn)
-		walk(n.Handler, node, ancestorChain, fn, afterFn)
-	case *SendValueExpression:
-		walk(n.Value, node, ancestorChain, fn, afterFn)
-		walk(n.Receiver, node, ancestorChain, fn, afterFn)
 	case *CssSelectorExpression:
 		for _, el := range n.Elements {
 			walk(el, node, ancestorChain, fn, afterFn)

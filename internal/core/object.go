@@ -28,8 +28,6 @@ type Object struct {
 type additionalObjectFields struct {
 	url URL //can be empty
 
-	sysgraph SystemGraphPointer
-
 	constraintId ConstraintId
 	visibilityId VisibilityId
 
@@ -43,7 +41,6 @@ type additionalObjectFields struct {
 
 	watchers              *ValueWatchers
 	mutationCallbacks     *MutationCallbacks
-	messageHandlers       *SynchronousMessageHandlers
 	watchingDepth         WatchingDepth
 	propMutationCallbacks []CallbackHandle
 }
@@ -56,7 +53,6 @@ func NewObject() *Object {
 // helper function to create an object, message handlers are added.
 func NewObjectFromMap(valMap ValMap, ctx *Context) *Object {
 	obj := objFrom(valMap)
-	obj.addMessageHandlers(ctx) // add handlers before because jobs can mutate the object
 	return obj
 }
 
@@ -145,35 +141,6 @@ func (obj *Object) indexOfKey(k string) int {
 		}
 	}
 	panic(fmt.Errorf("unknown key %s", k))
-}
-
-// this function is called during object creation
-func (obj *Object) addMessageHandlers(ctx *Context) error {
-	var handlers []*SynchronousMessageHandler
-
-	for keyIndex, key := range obj.keys {
-		if key != inoxconsts.IMPLICIT_PROP_NAME {
-			continue
-		}
-
-		list, ok := obj.values[keyIndex].(*List)
-		if !ok {
-			return nil
-		}
-
-		for elemIndex := 0; elemIndex < list.Len(); elemIndex++ {
-			if handler, ok := list.At(ctx, elemIndex).(*SynchronousMessageHandler); ok {
-				handlers = append(handlers, handler)
-			}
-		}
-	}
-
-	if len(handlers) != 0 {
-		obj.ensureAdditionalFields()
-		obj.messageHandlers = NewSynchronousMessageHandlers(handlers...)
-	}
-
-	return nil
 }
 
 func (obj *Object) IsSharable(originState *GlobalState) (bool, string) {
@@ -401,8 +368,6 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 				return nil
 			}
 
-			obj.sysgraph.AddEvent(ctx, "prop updated: "+name, obj)
-
 			if obj.hasPropMutationCallbacks() {
 				//Remove the mutation callback of the previous value and a mutation callback
 				//for the new value.
@@ -456,12 +421,9 @@ func (obj *Object) SetProp(ctx *Context, name string, value Value) error {
 		}
 	}
 
-	obj.sysgraph.AddEvent(ctx, "new prop: "+name, obj)
-
 	if obj.hasWatchersOrMutationCallbacks() {
 		//Inform watchers & microtasks about the update.
 		mutation := NewAddPropMutation(ctx, name, serializableVal, ShallowWatching, Path("/"+name))
-		obj.sysgraph.AddEvent(ctx, "new prop: "+name, obj)
 
 		obj.watchers.InformAboutAsync(ctx, mutation, mutation.Depth, true)
 

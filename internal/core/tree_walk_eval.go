@@ -1425,10 +1425,6 @@ func TreeWalkEval(node ast.Node, state *TreeWalkState) (result Value, err error)
 		}
 
 		finalObj.sortProps()
-		// add handlers before because jobs can mutate the object
-		if err := finalObj.addMessageHandlers(state.Global.Ctx); err != nil {
-			return nil, err
-		}
 
 		initializeMetaproperties(finalObj, n.MetaProperties)
 		return finalObj, nil
@@ -2490,38 +2486,6 @@ func TreeWalkEval(node ast.Node, state *TreeWalkState) (result Value, err error)
 	// 	} else {
 	// 		return testCase, nil
 	// 	}
-	case *ast.ReceptionHandlerExpression:
-		pattern, err := TreeWalkEval(n.Pattern, state)
-		if err != nil {
-			return nil, err
-		}
-		handler, err := TreeWalkEval(n.Handler, state)
-		if err != nil {
-			return nil, err
-		}
-		return NewSynchronousMessageHandler(state.Global.Ctx, handler.(*InoxFunction), pattern.(Pattern)), nil
-	case *ast.SendValueExpression:
-		if state.self == nil {
-			panic(ErrSelfNotDefined)
-		}
-
-		value, err := TreeWalkEval(n.Value, state)
-		if err != nil {
-			return nil, err
-		}
-
-		v, err := TreeWalkEval(n.Receiver, state)
-		if err != nil {
-			return nil, err
-		}
-
-		if receiver, ok := v.(MessageReceiver); ok {
-			if err := SendVal(state.Global.Ctx, value, receiver, state.self); err != nil {
-				return nil, err
-			}
-		}
-
-		return Nil, nil
 	case *ast.StringTemplateLiteral:
 		var sliceValues []Value
 

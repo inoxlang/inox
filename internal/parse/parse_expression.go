@@ -450,12 +450,6 @@ func (p *parser) parseUnderscoreAlphaStartingExpression(precedingOpeningParen in
 		case ast.TOKEN_STRINGS[ast.TESTCASE_KEYWORD]:
 			node = p.parseTestCaseExpression(v)
 			return
-		case ast.TOKEN_STRINGS[ast.ON_KEYWORD]:
-			node = p.parseReceptionHandlerExpression(v)
-			return
-		case ast.TOKEN_STRINGS[ast.SENDVAL_KEYWORD]:
-			node = p.parseSendValueExpression(v)
-			return
 		case ast.NEW_KEYWORD_STRING:
 			node = p.parseNewExpression(v)
 			return

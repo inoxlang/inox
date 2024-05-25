@@ -125,55 +125,6 @@ func TestObjectWatcher(t *testing.T) {
 		})
 	})
 
-	t.Run("received messages", func(t *testing.T) {
-		t.Run("watcher should return a message after a message has been received", func(t *testing.T) {
-			ctx := NewContext(ContextConfig{})
-			NewGlobalState(ctx)
-			defer ctx.CancelGracefully()
-
-			obj := NewObject()
-			w := obj.Watcher(ctx, WatcherConfiguration{Filter: MSG_PATTERN}).(*GenericWatcher)
-			defer w.Stop()
-
-			go func() {
-				obj.ReceiveMessage(ctx, NewMessage(Int(1), nil))
-			}()
-
-			msg, err := w.WaitNext(ctx, nil, time.Second)
-			if !assert.NoError(t, err) {
-				return
-			}
-
-			assert.IsType(t, Message{}, msg)
-			assert.Equal(t, Int(1), msg.(Message).data)
-			w.Stop()
-
-			_, err = w.WaitNext(ctx, nil, time.Second)
-			assert.ErrorIs(t, err, ErrStoppedWatcher)
-		})
-
-		t.Run("watcher should not return anything after the object has changed", func(t *testing.T) {
-			ctx := NewContext(ContextConfig{})
-			NewGlobalState(ctx)
-			defer ctx.CancelGracefully()
-
-			obj := NewObject()
-			w := obj.Watcher(ctx, WatcherConfiguration{Filter: MSG_PATTERN}).(*GenericWatcher)
-			defer w.Stop()
-
-			go func() {
-				obj.SetProp(ctx, "a", Int(1))
-			}()
-
-			msg, err := w.WaitNext(ctx, nil, time.Second)
-			if !assert.ErrorIs(t, err, ErrWatchTimeout) {
-				return
-			}
-
-			assert.Nil(t, msg)
-		})
-	})
-
 }
 
 func TestDictionaryWatcher(t *testing.T) {

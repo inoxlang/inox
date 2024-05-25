@@ -1615,44 +1615,8 @@ func (f *DateFormat) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbo
 	return symbolic.ANY_FORMAT, nil
 }
 
-func (m Message) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return symbolic.ANY_MSG, nil
-}
-
-func (s *Subscription) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return symbolic.NewSubscription(), nil
-}
-
-func (p *Publication) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return symbolic.NewPublication(), nil
-}
-
 func (h *ValueHistory) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.NewValueHistory(), nil
-}
-
-func (h *SynchronousMessageHandler) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return symbolic.NewMessageHandler(), nil
-}
-
-func (g *SystemGraph) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return symbolic.ANY_SYSTEM_GRAPH, nil
-}
-
-func (n *SystemGraphNodes) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return symbolic.ANY_SYSTEM_GRAPH_NODES, nil
-}
-
-func (n *SystemGraphNode) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return symbolic.ANY_SYSTEM_GRAPH_NODE, nil
-}
-
-func (e SystemGraphEvent) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return symbolic.ANY_SYSTEM_GRAPH_EVENT, nil
-}
-
-func (e SystemGraphEdge) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return symbolic.ANY_SYSTEM_GRAPH_EDGE, nil
 }
 
 func (s *Secret) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {

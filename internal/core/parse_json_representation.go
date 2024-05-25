@@ -570,11 +570,6 @@ func ParseObjectJSONrepresentation(ctx *Context, it *jsoniter.Iterator, pattern 
 		}
 	}
 
-	// add handlers before because jobs can mutate the object
-	if err := obj.addMessageHandlers(ctx); err != nil {
-		return nil, err
-	}
-
 	return obj, nil
 }
 

@@ -1998,63 +1998,10 @@ func (s *GlobalState) Equal(ctx *Context, other Value, alreadyCompared map[uintp
 	return ok && s == otherState
 }
 
-func (msg Message) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherMessage, ok := other.(Message)
-	return ok && msg == otherMessage
-}
-
-func (s *Subscription) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherSub, ok := other.(*Subscription)
-
-	return ok && s == otherSub
-}
-
-func (p *Publication) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherPublication, ok := other.(*Publication)
-
-	return ok && p == otherPublication
-}
-
 func (h *ValueHistory) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
 	otherHistory, ok := other.(*ValueHistory)
 
 	return ok && h == otherHistory
-}
-
-func (h *SynchronousMessageHandler) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherHandler, ok := other.(*SynchronousMessageHandler)
-
-	return ok && h == otherHandler
-}
-
-func (g *SystemGraph) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	other, ok := other.(*SystemGraph)
-
-	return ok && g == other
-}
-
-func (n *SystemGraphNodes) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherNodes, ok := other.(*SystemGraphNodes)
-
-	return ok && n == otherNodes
-}
-
-func (g *SystemGraphNode) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherGraph, ok := other.(*SystemGraphNode)
-
-	return ok && g == otherGraph
-}
-
-func (e SystemGraphEvent) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherEvent, ok := other.(SystemGraphEvent)
-
-	return ok && e == otherEvent
-}
-
-func (e SystemGraphEdge) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {
-	otherEdge, ok := other.(SystemGraphEdge)
-
-	return ok && e == otherEdge
 }
 
 func (s *Secret) Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool {

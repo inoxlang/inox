@@ -16,7 +16,6 @@ var (
 	ITERABLE_INTERFACE_TYPE              = reflect.TypeOf((*Iterable)(nil)).Elem()
 	SERIALIZABLE_ITERABLE_INTERFACE_TYPE = reflect.TypeOf((*SerializableIterable)(nil)).Elem()
 	INDEXABLE_INTERFACE_TYPE             = reflect.TypeOf((*Indexable)(nil)).Elem()
-	VALUE_RECEIVER_INTERFACE_TYPE        = reflect.TypeOf((*MessageReceiver)(nil)).Elem()
 	EVENT_SOURCE_INTERFACE_TYPE          = reflect.TypeOf((*EventSource)(nil)).Elem()
 
 	NIL_TYPE                   = reflect.TypeOf(Nil)
@@ -68,15 +67,11 @@ var (
 
 	EVENT_TYPE                      = reflect.TypeOf((*Event)(nil))
 	MUTATION_TYPE                   = reflect.TypeOf(Mutation{})
-	MSG_TYPE                        = reflect.TypeOf(Message{})
 	ERROR_TYPE                      = reflect.TypeOf(Error{})
 	INT_RANGE_TYPE                  = reflect.TypeOf(IntRange{})
 	FLOAT_RANGE_TYPE                = reflect.TypeOf(FloatRange{})
 	RUNE_RANGE_TYPE                 = reflect.TypeOf(RuneRange{})
 	VALUE_HISTORY_TYPE              = reflect.TypeOf((*ValueHistory)(nil))
-	SYSGRAPH_TYPE                   = reflect.TypeOf((*SystemGraph)(nil))
-	SYSGRAPH_NODE_TYPE              = reflect.TypeOf((*SystemGraphNode)(nil))
-	SYSGRAPH_EDGE_TYPE              = reflect.TypeOf(SystemGraphEdge{})
 	SECRET_TYPE                     = reflect.TypeOf((*Secret)(nil))
 	READER_INTERFACE_TYPE           = reflect.TypeOf((*Reader)(nil))
 	OBJECT_PATTERN_TYPE             = reflect.TypeOf((*ObjectPattern)(nil))

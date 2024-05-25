@@ -10,7 +10,7 @@ var (
 
 	_ = []Watchable{
 		(*Object)(nil), (*Dictionary)(nil), (*List)(nil), (*RuneSlice)(nil), (*ByteSlice)(nil),
-		(*InoxFunction)(nil), (*SynchronousMessageHandler)(nil),
+		(*InoxFunction)(nil),
 
 		(*watchableMultivalue)(nil),
 	}

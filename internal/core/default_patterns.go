@@ -638,11 +638,6 @@ var (
 		Name:          patternnames.INDEXABLE,
 		SymbolicValue: symbolic.ANY_INDEXABLE,
 	}
-	VALUE_RECEIVER_PATTERN = &TypePattern{
-		Type:          VALUE_RECEIVER_INTERFACE_TYPE,
-		Name:          patternnames.VALUE_RECEIVER,
-		SymbolicValue: symbolic.ANY_MSG_RECEIVER,
-	}
 
 	EVENT_PATTERN = &TypePattern{
 		Type: EVENT_TYPE,
@@ -770,11 +765,6 @@ var (
 			return symbolic.NewMutationPattern(&symbolic.Int{}, data0Pattern), nil
 		},
 	}
-	MSG_PATTERN = &TypePattern{
-		Type:          MSG_TYPE,
-		Name:          patternnames.MSG,
-		SymbolicValue: symbolic.ANY_MSG,
-	}
 	ERROR_PATTERN = &TypePattern{
 		Type:          ERROR_TYPE,
 		Name:          patternnames.ERROR,
@@ -831,16 +821,6 @@ var (
 		Type:          VALUE_HISTORY_TYPE,
 		Name:          patternnames.VALUE_HISTORY,
 		SymbolicValue: symbolic.ANY_VALUE_HISTORY,
-	}
-	SYSGRAPH_PATTERN = &TypePattern{
-		Type:          SYSGRAPH_TYPE,
-		Name:          patternnames.SYSGRAPH,
-		SymbolicValue: symbolic.ANY_SYSTEM_GRAPH,
-	}
-	SYSGRAPH_NODE_PATTERN = &TypePattern{
-		Type:          SYSGRAPH_NODE_TYPE,
-		Name:          patternnames.SYSGRAPH_NODE,
-		SymbolicValue: symbolic.ANY_SYSTEM_GRAPH_NODE,
 	}
 	SECRET_PATTERN = &TypePattern{
 		Type: SECRET_TYPE,
@@ -1033,7 +1013,6 @@ var (
 		ITERABLE_PATTERN.Name:              ITERABLE_PATTERN,
 		SERIALIZABLE_ITERABLE_PATTERN.Name: SERIALIZABLE_ITERABLE_PATTERN,
 		INDEXABLE_PATTERN.Name:             INDEXABLE_PATTERN,
-		VALUE_RECEIVER_PATTERN.Name:        VALUE_RECEIVER_PATTERN,
 		HOSTPATTERN_PATTERN.Name:           HOSTPATTERN_PATTERN,
 		PATHPATTERN_PATTERN.Name:           PATHPATTERN_PATTERN,
 		URLPATTERN_PATTERN.Name:            URLPATTERN_PATTERN,
@@ -1048,12 +1027,10 @@ var (
 		}),
 		EVENT_PATTERN.Name:         EVENT_PATTERN,
 		MUTATION_PATTERN.Name:      MUTATION_PATTERN,
-		MSG_PATTERN.Name:           MSG_PATTERN,
 		ERROR_PATTERN.Name:         ERROR_PATTERN,
 		INT_RANGE_PATTERN.Name:     INT_RANGE_PATTERN,
 		FLOAT_RANGE_PATTERN.Name:   FLOAT_RANGE_PATTERN,
 		VALUE_HISTORY_PATTERN.Name: VALUE_HISTORY_PATTERN,
-		SYSGRAPH_PATTERN.Name:      SYSGRAPH_PATTERN,
 		VAL_PATTERN.Name:           VAL_PATTERN,
 		ULID_PATTERN.Name:          ULID_PATTERN,
 		UUIDv4_PATTERN.Name:        UUIDv4_PATTERN,
@@ -1089,11 +1066,6 @@ var (
 				"rfc822":    NewDateFormat(time.RFC822, "rfc822"),
 				"date-only": NewDateFormat(time.DateOnly, "date-only"),
 				"time-only": NewDateFormat(time.TimeOnly, "time-only"),
-			},
-		},
-		patternnames.SYSGRAPH_NS: {
-			Patterns: map[string]Pattern{
-				"node": SYSGRAPH_NODE_PATTERN,
 			},
 		},
 	}

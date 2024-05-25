@@ -56,7 +56,6 @@ type GlobalState struct {
 	Globals      GlobalVariables //global variables
 	LThread      *LThread        //not nil if running in a dedicated LThread
 	Heap         *mem.ModuleHeap
-	SystemGraph  *SystemGraph
 	lockedValues []PotentiallySharable
 
 	//Re-usable buffers for Go function calls made by reflect.Call.
@@ -174,19 +173,6 @@ func (g *GlobalState) ComputePriority() ModulePriority {
 		return READ_TX_PRIORITY
 	}
 	return READ_WRITE_TX_PRIORITY
-}
-
-func (g *GlobalState) InitSystemGraph() {
-	if g.SystemGraph != nil {
-		return
-	}
-	g.SystemGraph = NewSystemGraph()
-}
-
-func (g *GlobalState) ProposeSystemGraph(v SystemGraphNodeValue, optionalName string) {
-	if g.SystemGraph != nil {
-		v.ProposeSystemGraph(g.Ctx, g.SystemGraph, optionalName, nil)
-	}
 }
 
 func (g *GlobalState) GetGoMethod(name string) (*GoFunction, bool) {

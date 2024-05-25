@@ -5,8 +5,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-
-	"github.com/inoxlang/inox/internal/core/symbolic"
 )
 
 const (
@@ -16,7 +14,7 @@ const (
 var (
 	_ = []Watchable{
 		(*Object)(nil), (*Dictionary)(nil), (*List)(nil), (*RuneSlice)(nil), (*ByteSlice)(nil),
-		(*InoxFunction)(nil), (*SynchronousMessageHandler)(nil),
+		(*InoxFunction)(nil),
 	}
 	_                               = []Watcher{stoppedWatcher{}, (*GenericWatcher)(nil), (*joinedWatchers)(nil), (*PeriodicWatcher)(nil)}
 	periodicWatcherGoroutineStarted = atomic.Bool{}
@@ -35,10 +33,7 @@ var (
 )
 
 func init() {
-	RegisterSymbolicGoFunction(WatchReceivedMessages, func(ctx *symbolic.Context, watchable symbolic.Watchable) *symbolic.Watcher {
-		pattern, _ := MSG_PATTERN.ToSymbolicValue(nil, nil)
-		return symbolic.NewWatcher(pattern.(symbolic.Pattern))
-	})
+
 }
 
 // A Watchable value is a value that can be watched thanks to a Watcher.
@@ -471,14 +466,6 @@ func (s *ByteSlice) Watcher(ctx *Context, config WatcherConfiguration) Watcher {
 	return watcher
 }
 
-func (*SystemGraph) Watcher(ctx *Context, config WatcherConfiguration) Watcher {
-	if config.Depth == UnspecifiedWatchingDepth {
-		config.Depth = ShallowWatching
-	}
-
-	panic(ErrNotImplementedYet)
-}
-
 func (f *InoxFunction) Watcher(ctx *Context, config WatcherConfiguration) Watcher {
 	if config.Depth == UnspecifiedWatchingDepth {
 		config.Depth = ShallowWatching
@@ -494,25 +481,6 @@ func (f *InoxFunction) Watcher(ctx *Context, config WatcherConfiguration) Watche
 	}
 
 	f.watchers.Add(watcher)
-
-	return watcher
-}
-
-func (h *SynchronousMessageHandler) Watcher(ctx *Context, config WatcherConfiguration) Watcher {
-	if config.Depth == UnspecifiedWatchingDepth {
-		config.Depth = ShallowWatching
-	}
-
-	watcher := NewGenericWatcher(config)
-
-	h.mutationFieldsLock.Lock()
-	defer h.mutationFieldsLock.Unlock()
-
-	if h.watchers == nil {
-		h.watchers = NewValueWatchers()
-	}
-
-	h.watchers.Add(watcher)
 
 	return watcher
 }

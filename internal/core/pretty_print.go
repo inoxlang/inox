@@ -143,7 +143,7 @@ func GetNodeColorizations(chunk *ast.Chunk, lightMode bool) []ColorizationInfo {
 			ast.DEFAULTCASE_KEYWORD, ast.SWITCH_KEYWORD, ast.MATCH_KEYWORD, ast.ASSERT_KEYWORD,
 			ast.GO_KEYWORD, ast.DO_KEYWORD, ast.TESTSUITE_KEYWORD, ast.TESTCASE_KEYWORD, ast.COMP_KEYWORD,
 			ast.FOR_KEYWORD, ast.IN_KEYWORD, ast.IF_KEYWORD, ast.ELSE_KEYWORD,
-			ast.PREINIT_KEYWORD, ast.ON_KEYWORD, ast.WALK_KEYWORD,
+			ast.PREINIT_KEYWORD, ast.WALK_KEYWORD,
 			ast.DROP_PERMS_KEYWORD, ast.IMPORT_KEYWORD:
 			colorizations = append(colorizations, ColorizationInfo{
 				Span:          token.Span,
@@ -152,7 +152,7 @@ func GetNodeColorizations(chunk *ast.Chunk, lightMode bool) []ColorizationInfo {
 		//other keywords
 		case ast.AS_KEYWORD, ast.IS_KEYWORD, ast.AND_KEYWORD, ast.OR_KEYWORD, ast.MAPPING_KEYWORD, ast.TREEDATA_KEYWORD,
 			ast.FN_KEYWORD, ast.CONST_KEYWORD, ast.VAR_KEYWORD, ast.GLOBALVAR_KEYWORD, ast.ASSIGN_KEYWORD, ast.CONCAT_KEYWORD,
-			ast.SENDVAL_KEYWORD, ast.SYNCHRONIZED_KEYWORD, ast.EXTEND_KEYWORD, ast.PATTERN_KEYWORD,
+			ast.SYNCHRONIZED_KEYWORD, ast.EXTEND_KEYWORD, ast.PATTERN_KEYWORD,
 			ast.PNAMESPACE_KEYWORD, ast.STRUCT_KEYWORD, ast.NEW_KEYWORD, ast.SELF_KEYWORD, ast.URLOF_KEYWORD,
 			ast.KEYOF_KEYWORD, ast.NOT_IN_KEYWORD, ast.NOT_MATCH_KEYWORD, ast.READONLY_KEYWORD, ast.TO_KEYWORD,
 			ast.OTHERPROPS_KEYWORD, ast.INCLUDABLE_FILE_KEYWORD, ast.MANIFEST_KEYWORD:
@@ -2141,44 +2141,8 @@ func (s *GlobalState) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, de
 	PrintType(w, s)
 }
 
-func (m Message) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
-	PrintType(w, m)
-}
-
-func (s *Subscription) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
-	PrintType(w, s)
-}
-
-func (p *Publication) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
-	PrintType(w, p)
-}
-
 func (h *ValueHistory) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	PrintType(w, h)
-}
-
-func (h *SynchronousMessageHandler) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
-	PrintType(w, h)
-}
-
-func (g *SystemGraph) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
-	PrintType(w, g)
-}
-
-func (n *SystemGraphNodes) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
-	PrintType(w, n)
-}
-
-func (n *SystemGraphNode) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
-	PrintType(w, n)
-}
-
-func (e SystemGraphEvent) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
-	PrintType(w, e)
-}
-
-func (e SystemGraphEdge) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
-	PrintType(w, e)
 }
 
 func (s *Secret) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {

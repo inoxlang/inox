@@ -13803,29 +13803,6 @@ func TestSymbolicEval(t *testing.T) {
 		})
 	})
 
-	t.Run("reception handler expression", func(t *testing.T) {
-		n, state := MakeTestStateAndChunk(`
-			{
-				on received %{} {}
-			}
-		`)
-
-		res, err := symbolicEval(n, state)
-		assert.NoError(t, err)
-		assert.Empty(t, state.errors())
-
-		static := map[string]Pattern{"": NewListPatternOf(getStatic(ANY_SYNC_MSG_HANDLER))}
-		expectedObject := NewInexactObject(map[string]Serializable{
-			"": NewList(ANY_SYNC_MSG_HANDLER),
-		}, nil, static)
-		assert.Equal(t, expectedObject, res)
-
-	})
-
-	t.Run("sendvalue expression", func(t *testing.T) {
-
-	})
-
 	t.Run("mapping expression", func(t *testing.T) {
 
 		t.Run("ok", func(t *testing.T) {

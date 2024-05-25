@@ -3,7 +3,6 @@ package core
 import (
 	"errors"
 	"fmt"
-	"slices"
 	"time"
 
 	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
@@ -13,7 +12,7 @@ var (
 	ErrFailedToSnapshot           = errors.New("failed to snapshot value")
 	ErrAttemptToMutateFrozenValue = errors.New("attempt to mutate a frozen value")
 
-	_ = []InMemorySnapshotable{(*RuneSlice)(nil), (*SystemGraph)(nil)}
+	_ = []InMemorySnapshotable{(*RuneSlice)(nil)}
 )
 
 // Snapshot holds either the serialized representation of a Value or a in-memory FROZEN value.
@@ -152,68 +151,5 @@ func (r *RuneSlice) IsFrozen() bool {
 
 func (r *RuneSlice) Unfreeze(ctx *Context) error {
 	r.frozen = false
-	return nil
-}
-
-func (g *SystemGraph) takeSnapshot(ctx *Context) *SystemGraph {
-	g.eventLogLock.Lock()
-	defer g.eventLogLock.Unlock()
-
-	g.nodes.lock.Lock()
-	defer g.nodes.lock.Unlock()
-
-	newNodes := &SystemGraphNodes{
-		list: slices.Clone(g.nodes.list),
-	}
-
-	origToCopy := make(map[*SystemGraphNode]*SystemGraphNode, len(newNodes.list))
-	for i, origNode := range g.nodes.list {
-		nodeCopy := *origNode
-		if nodeCopy.edgesFrom != nil {
-			nodeCopy.edgesFrom = slices.Clone(nodeCopy.edgesFrom)
-		}
-		newNodes.list[i] = &nodeCopy
-		origToCopy[origNode] = &nodeCopy
-	}
-
-	newNodes.availableNodes = make([]*SystemGraphNode, len(g.nodes.availableNodes))
-	for i, availableNode := range newNodes.availableNodes {
-		newNodes.availableNodes[i] = origToCopy[availableNode]
-	}
-
-	newNodes.ptrToNode = make(map[uintptr]*SystemGraphNode, len(g.nodes.ptrToNode))
-	for k, v := range g.nodes.ptrToNode {
-		newNodes.ptrToNode[k] = origToCopy[v]
-	}
-
-	newGraph := &SystemGraph{
-		isFrozen: true,
-		nodes:    newNodes,
-		eventLog: slices.Clone(g.eventLog),
-	}
-	newGraph.nodes.graph = newGraph
-
-	g.lastSnapshot = newGraph
-
-	return newGraph
-}
-
-func (g *SystemGraph) TakeInMemorySnapshot(ctx *Context) (*Snapshot, error) {
-	return &Snapshot{
-		inMemory: g.takeSnapshot(ctx),
-		date:     DateTime(time.Now()),
-	}, nil
-}
-
-func (g *SystemGraph) IsFrozen() bool {
-	g.nodes.lock.Lock()
-	defer g.nodes.lock.Unlock()
-	return g.isFrozen
-}
-
-func (g *SystemGraph) Unfreeze(ctx *Context) error {
-	g.nodes.lock.Lock()
-	defer g.nodes.lock.Unlock()
-	g.isFrozen = false
 	return nil
 }

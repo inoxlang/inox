@@ -755,7 +755,7 @@ func TestThreadSimultaneousInstancesLimitIntegration(t *testing.T) {
 		}, nil)
 		defer ctx.CancelGracefully()
 
-		mod, err := core.ParseLocalModule("/main.ix", core.ModuleParsingConfig{
+		mod, err := core.ParseLocalModule(mainModPath, core.ModuleParsingConfig{
 			Context: ctx,
 		})
 

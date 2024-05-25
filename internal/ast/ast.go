@@ -1178,16 +1178,6 @@ func (SelfExpression) Kind() NodeKind {
 	return Expr
 }
 
-type SendValueExpression struct {
-	NodeBase
-	Value    Node
-	Receiver Node
-}
-
-func (SendValueExpression) Kind() NodeKind {
-	return Expr
-}
-
 type PatternIdentifierLiteral struct {
 	NodeBase
 	Unprefixed bool
@@ -2416,16 +2406,6 @@ func (e TestCaseExpression) Kind() NodeKind {
 	if e.IsStatement {
 		return Stmt
 	}
-	return Expr
-}
-
-type ReceptionHandlerExpression struct {
-	NodeBase
-	Pattern Node
-	Handler Node
-}
-
-func (ReceptionHandlerExpression) Kind() NodeKind {
 	return Expr
 }
 

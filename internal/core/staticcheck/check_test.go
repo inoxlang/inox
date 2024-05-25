@@ -644,17 +644,6 @@ func TestCheck(t *testing.T) {
 			assert.Equal(t, expectedErr, err)
 		})
 
-		t.Run("is defined in reception handlers", func(t *testing.T) {
-			n, src := mustParseCode(`
-				{
-					on received %{} fn(event){
-						self
-					}
-				}
-			`)
-			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
-		})
-
 		t.Run("is not defined at the top level of an embedded module", func(t *testing.T) {
 			n, src := mustParseCode(`go do { self }`)
 
@@ -679,89 +668,6 @@ func TestCheck(t *testing.T) {
 			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
 		})
 
-	})
-
-	t.Run("sendval expression", func(t *testing.T) {
-		t.Run("is not allowed at the top level", func(t *testing.T) {
-			n, src := mustParseCode(`sendval 1 to {}`)
-
-			sendValExpr := ast.FindNode(n, (*ast.SendValueExpression)(nil), nil)
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
-			expectedErr := utils.CombineErrors(
-				makeError(sendValExpr, src, text.MISPLACED_SENDVAL_EXPR),
-			)
-			assert.Equal(t, expectedErr, err)
-		})
-
-		t.Run("is not allowed inside the initial value expression of an object property", func(t *testing.T) {
-			n, src := mustParseCode(`{a: sendval 1 to {}}`)
-
-			sendValExpr := ast.FindNode(n, (*ast.SendValueExpression)(nil), nil)
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
-			expectedErr := utils.CombineErrors(
-				makeError(sendValExpr, src, text.MISPLACED_SENDVAL_EXPR),
-			)
-			assert.Equal(t, expectedErr, err)
-		})
-
-		t.Run("is not allowed in a function", func(t *testing.T) {
-			n, src := mustParseCode(`fn() => sendval 1 to {}`)
-
-			sendValExpr := ast.FindNode(n, (*ast.SendValueExpression)(nil), nil)
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
-			expectedErr := utils.CombineErrors(
-				makeError(sendValExpr, src, text.MISPLACED_SENDVAL_EXPR),
-			)
-			assert.Equal(t, expectedErr, err)
-		})
-
-		t.Run("is not allowed in a function that is the value of an object property", func(t *testing.T) {
-			n, src := mustParseCode(`{f: fn() => sendval 1 to {}}`)
-
-			sendValExpr := ast.FindNode(n, (*ast.SendValueExpression)(nil), nil)
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
-			expectedErr := utils.CombineErrors(
-				makeError(sendValExpr, src, text.MISPLACED_SENDVAL_EXPR),
-			)
-			assert.Equal(t, expectedErr, err)
-		})
-
-		t.Run("is allowed in an extension method", func(t *testing.T) {
-			n, src := mustParseCode(`
-				pattern user = {}
-				extend user { 
-					send: fn(){ sendval 1 to { } } 
-				}
-			`)
-			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
-		})
-
-		t.Run("is allowed in a metaproperty's initialization block", func(t *testing.T) {
-			n, src := mustParseCode(`{ _url_ { sendval 1 to {} } }`)
-			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
-		})
-
-		t.Run("is not allowed in a function that is a property value of an object pattern", func(t *testing.T) {
-			n, src := mustParseCode(`%{f: %(fn() => sendval 1 to {})}`)
-
-			sendValExpr := ast.FindNode(n, (*ast.SendValueExpression)(nil), nil)
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
-			expectedErr := utils.CombineErrors(
-				makeError(sendValExpr, src, text.MISPLACED_SENDVAL_EXPR),
-			)
-			assert.Equal(t, expectedErr, err)
-		})
-
-		t.Run("is not allowed at at the top level of an embedded module", func(t *testing.T) {
-			n, src := mustParseCode(`go do { sendval 1 to {} }`)
-
-			sendValExpr := ast.FindNode(n, (*ast.SendValueExpression)(nil), nil)
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
-			expectedErr := utils.CombineErrors(
-				makeError(sendValExpr, src, text.MISPLACED_SENDVAL_EXPR),
-			)
-			assert.Equal(t, expectedErr, err)
-		})
 	})
 
 	t.Run("member expression", func(t *testing.T) {
@@ -4751,32 +4657,6 @@ func TestCheck(t *testing.T) {
 		})
 	})
 
-	t.Run("reception handler expression", func(t *testing.T) {
-
-		t.Run("misplaced", func(t *testing.T) {
-			n, src := mustParseCode(`
-				on received %{} fn(){}
-			`)
-
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
-			expectedErr := utils.CombineErrors(
-				makeError(n.Statements[0], src, text.MISPLACED_RECEPTION_HANDLER_EXPRESSION),
-			)
-			assert.Equal(t, expectedErr, err)
-		})
-
-		t.Run("element of an object literal", func(t *testing.T) {
-			n, src := mustParseCode(`
-				{
-					on received %{} fn(){}
-				}
-			`)
-
-			assert.NoError(t, staticCheckNoData(StaticCheckInput{Node: n, Chunk: src}))
-		})
-
-	})
-
 	t.Run("pattern definition", func(t *testing.T) {
 		t.Run("redeclaration", func(t *testing.T) {
 			n, src := mustParseCode(`
@@ -5629,25 +5509,6 @@ func TestCheck(t *testing.T) {
 			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
 			expectedErr := utils.CombineErrors(
 				makeError(selfExpr, src, text.SELF_ACCESSIBILITY_EXPLANATION),
-			)
-			assert.Equal(t, expectedErr, err)
-		})
-
-		t.Run("should not have sendval expressions in methods", func(t *testing.T) {
-			n, src := mustParseCode(`
-				struct MyStruct {
-					fn f(){
-						sendval 1 to {}
-					}
-				}
-			`)
-
-			def := ast.FindNode(n, (*ast.StructDefinition)(nil), nil)
-			sendValExpr := ast.FindNode(def, (*ast.SendValueExpression)(nil), nil)
-
-			err := staticCheckNoData(StaticCheckInput{Node: n, Chunk: src})
-			expectedErr := utils.CombineErrors(
-				makeError(sendValExpr, src, text.MISPLACED_SENDVAL_EXPR),
 			)
 			assert.Equal(t, expectedErr, err)
 		})

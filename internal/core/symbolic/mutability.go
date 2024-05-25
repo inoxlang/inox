@@ -76,10 +76,6 @@ func (any AnyResourceName) IsMutable() bool {
 	return false
 }
 
-func (any AnyMessageReceiver) IsMutable() bool {
-	return true
-}
-
 func (any AnyStreamSource) IsMutable() bool {
 	return true
 }
@@ -549,22 +545,6 @@ func (f *AnyFormat) IsMutable() bool {
 	return false
 }
 
-func (*Message) IsMutable() bool {
-	return false
-}
-
-func (*AnySubscriber) IsMutable() bool {
-	return true
-}
-
-func (*Subscription) IsMutable() bool {
-	return true
-}
-
-func (*Publication) IsMutable() bool {
-	return false
-}
-
 func (*ValueHistory) IsMutable() bool {
 	return true
 }
@@ -575,30 +555,6 @@ func (*Snapshot) IsMutable() bool {
 
 func (*AnyInMemorySnapshotable) IsMutable() bool {
 	return true
-}
-
-func (*SynchronousMessageHandler) IsMutable() bool {
-	return true
-}
-
-func (*SystemGraph) IsMutable() bool {
-	return true
-}
-
-func (*SystemGraphNodes) IsMutable() bool {
-	return true
-}
-
-func (*SystemGraphNode) IsMutable() bool {
-	return true
-}
-
-func (*SystemGraphEvent) IsMutable() bool {
-	return false
-}
-
-func (*SystemGraphEdge) IsMutable() bool {
-	return false
 }
 
 func (*Secret) IsMutable() bool {

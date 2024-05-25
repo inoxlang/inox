@@ -168,10 +168,6 @@ func (state *TreeWalkState) SetGlobal(name string, value Value, constness Global
 		state.constantVars[name] = true
 	}
 
-	if watchable, ok := value.(SystemGraphNodeValue); ok {
-		state.Global.ProposeSystemGraph(watchable, name)
-	}
-
 	return true
 }
 

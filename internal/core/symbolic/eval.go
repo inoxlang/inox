@@ -914,24 +914,6 @@ func _symbolicEval(node ast.Node, state *State, options evalOptions) (result Val
 	// 	return evalTestsuiteExpression(n, state, options)
 	// case *ast.TestCaseExpression:
 	// 	return evalTestcaseExpression(n, state, options)
-	case *ast.ReceptionHandlerExpression:
-		_, err := symbolicEval(n.Handler, state)
-		if err != nil {
-			return nil, err
-		}
-		return ANY_SYNC_MSG_HANDLER, nil
-	case *ast.SendValueExpression:
-		_, err := symbolicEval(n.Value, state)
-		if err != nil {
-			return nil, err
-		}
-
-		_, err = symbolicEval(n.Receiver, state)
-		if err != nil {
-			return nil, err
-		}
-
-		return Nil, nil
 	case *ast.StringTemplateLiteral:
 		return evalStringTemplateLiteral(n, state, options)
 	case *ast.CssSelectorExpression:
@@ -7129,8 +7111,6 @@ func converTypeToSymbolicValue(t reflect.Type, allowOptionalParam bool) (result 
 		result = ANY_PATTERN
 	case PROTOCOL_CLIENT_INTERFACE_TYPE:
 		result = &AnyProtocolClient{}
-	case VALUE_RECEIVER_INTERFACE_TYPE:
-		result = ANY_MSG_RECEIVER
 	case STREAMABLE_INTERFACE_TYPE:
 		result = ANY_STREAM_SOURCE
 	case WATCHABLE_INTERFACE_TYPE:

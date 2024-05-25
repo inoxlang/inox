@@ -823,7 +823,7 @@ func mayBeAnArray(v Value) bool {
 
 	switch v.(type) {
 	case *Any, *AnyIndexable, *AnyIterable, *AnySequenceOf,
-		*AnySerializable, *AnyContainer, *AnyWatchable, *AnyWalkable, *AnyMessageReceiver: //future-proofing
+		*AnySerializable, *AnyContainer, *AnyWatchable, *AnyWalkable: //future-proofing
 		return true
 	}
 

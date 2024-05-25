@@ -1749,39 +1749,7 @@ func (c *BytesConcatenation) WriteJSONRepresentation(ctx *Context, w *jsoniter.S
 	return ErrNotImplementedYet
 }
 
-func (g *SystemGraph) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
-	if depth > MAX_JSON_REPR_WRITING_DEPTH {
-		return ErrMaximumJSONReprWritingDepthReached
-	}
-
-	return ErrNotImplementedYet
-}
-
-func (e SystemGraphEvent) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
-	if depth > MAX_JSON_REPR_WRITING_DEPTH {
-		return ErrMaximumJSONReprWritingDepthReached
-	}
-
-	return ErrNotImplementedYet
-}
-
-func (e SystemGraphEdge) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
-	if depth > MAX_JSON_REPR_WRITING_DEPTH {
-		return ErrMaximumJSONReprWritingDepthReached
-	}
-
-	return ErrNotImplementedYet
-}
-
 func (v Error) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
-	if depth > MAX_JSON_REPR_WRITING_DEPTH {
-		return ErrMaximumJSONReprWritingDepthReached
-	}
-
-	return ErrNotImplementedYet
-}
-
-func (h *SynchronousMessageHandler) WriteJSONRepresentation(ctx *Context, w *jsoniter.Stream, config JSONSerializationConfig, depth int) error {
 	if depth > MAX_JSON_REPR_WRITING_DEPTH {
 		return ErrMaximumJSONReprWritingDepthReached
 	}

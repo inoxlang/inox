@@ -1733,15 +1733,6 @@ func (patt *ModuleParamsPattern) Iterator(ctx *Context, config IteratorConfigura
 	return NewEmptyPatternIterator()
 }
 
-func (n *SystemGraphNodes) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
-	graph := n.graph.takeSnapshot(ctx)
-
-	return config.CreateIterator(&immutableSliceIterator[*SystemGraphNode]{
-		i:        -1,
-		elements: graph.nodes.list,
-	})
-}
-
 func (p *OrderedPair) Iterator(ctx *Context, config IteratorConfiguration) Iterator {
 	return config.CreateIterator(&immutableSliceIterator[Serializable]{
 		i:        -1,

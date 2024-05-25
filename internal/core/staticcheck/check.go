@@ -563,11 +563,6 @@ func (c *checker) checkSingleNode(n, parent, scopeNode ast.Node, ancestorChain [
 		return c.checkDictionaryLiteral(node)
 	case *ast.SpawnExpression:
 		return c.checkSpawnExpr(node, closestModule)
-	case *ast.ReceptionHandlerExpression:
-		if prop, ok := parent.(*ast.ObjectProperty); !ok || !prop.HasNoKey() {
-			c.addError(node, text.MISPLACED_RECEPTION_HANDLER_EXPRESSION)
-		}
-
 	case *ast.MappingExpression:
 		//
 	case *ast.StaticMappingEntry:
@@ -628,7 +623,7 @@ func (c *checker) checkSingleNode(n, parent, scopeNode ast.Node, ancestorChain [
 		return c.checkVariable(node, scopeNode, ancestorChain, closestModule)
 	case *ast.IdentifierLiteral:
 		return c.checkIdentifier(node, parent, scopeNode, closestModule, ancestorChain)
-	case *ast.SelfExpression, *ast.SendValueExpression:
+	case *ast.SelfExpression:
 		return c.checkSelfExprAndSendValExpr(n, parent, ancestorChain)
 	case *ast.PatternDefinition:
 		return c.checkPatternDef(node, parent, closestModule, inPreinitBlock)
@@ -2641,12 +2636,6 @@ func (c *checker) checkSelfExprAndSendValExpr(node, parent ast.Node, ancestorCha
 	inReceptionHandler := false
 	isSelfInStructMethod := false
 
-	switch node.(type) {
-	case *ast.SendValueExpression:
-		isSelfExpr = false
-		misplacementErr = text.MISPLACED_SENDVAL_EXPR
-	}
-
 loop:
 	for i := len(ancestorChain) - 1; i >= 0; i-- {
 		if !ast.IsScopeContainerNode(ancestorChain[i]) {
@@ -2682,13 +2671,6 @@ loop:
 				break loop
 			}
 
-			maybeInReceptionHandler := false
-
-			if _, ok := ancestorChain[j].(*ast.ReceptionHandlerExpression); ok {
-				j--
-				maybeInReceptionHandler = true
-			}
-
 			switch ancestorChain[j].(type) {
 			case *ast.ObjectProperty:
 				if j == 0 {
@@ -2699,11 +2681,6 @@ loop:
 
 				objLit, ok := ancestorChain[j].(*ast.ObjectLiteral)
 				if ok && j-1 >= 0 {
-
-					if maybeInReceptionHandler {
-						inReceptionHandler = true
-						objectLiteral = objLit
-					}
 
 					isInExtensionMethod =
 						utils.Implements[*ast.ExtendStatement](ancestorChain[j-1]) &&
