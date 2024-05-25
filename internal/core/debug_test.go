@@ -9,11 +9,11 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/ast"
+	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/sourcecode"
 
 	"github.com/inoxlang/inox/internal/core"
 	"github.com/inoxlang/inox/internal/core/inoxmod"
-	"github.com/inoxlang/inox/internal/parse"
 	utils "github.com/inoxlang/inox/internal/utils/common"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
@@ -1262,8 +1262,8 @@ func testDebugModeEval(
 
 			defer ctx.CancelGracefully()
 
-			assignments := parse.FindNodes(chunk.Node, (*parse.Assignment)(nil), nil)
-			returnStmts := parse.FindNodes(chunk.Node, (*parse.ReturnStatement)(nil), nil)
+			assignments := ast.FindNodes(chunk.Node, (*ast.Assignment)(nil), nil)
+			returnStmts := ast.FindNodes(chunk.Node, (*ast.ReturnStatement)(nil), nil)
 
 			controlChan <- core.DebugCommandSetBreakpoints{
 				Chunk: chunk,
@@ -1405,7 +1405,7 @@ func testDebugModeEval(
 
 			defer ctx.CancelGracefully()
 
-			returnStmts := parse.FindNodes(chunk.Node, (*parse.ReturnStatement)(nil), nil)
+			returnStmts := ast.FindNodes(chunk.Node, (*ast.ReturnStatement)(nil), nil)
 
 			controlChan <- core.DebugCommandSetBreakpoints{
 				Chunk: chunk,
@@ -1558,7 +1558,7 @@ func testDebugModeEval(
 
 			assert.Equal(t, []map[string]core.Value{{"a": core.Int(2)}}, localScopes)
 
-			assignments := parse.FindNodes(chunk.Node, (*parse.Assignment)(nil), nil)
+			assignments := ast.FindNodes(chunk.Node, (*ast.Assignment)(nil), nil)
 
 			assert.Equal(t, [][]core.StackFrameInfo{
 				{
@@ -1601,7 +1601,7 @@ func testDebugModeEval(
 
 			defer ctx.CancelGracefully()
 
-			returnStmts := parse.FindNodes(chunk.Node, (*parse.ReturnStatement)(nil), nil)
+			returnStmts := ast.FindNodes(chunk.Node, (*ast.ReturnStatement)(nil), nil)
 
 			controlChan <- core.DebugCommandSetBreakpoints{
 				Chunk: chunk,
@@ -1690,7 +1690,7 @@ func testDebugModeEval(
 				{"result": core.Int(3)},
 			}, localScopes)
 
-			assignments := parse.FindNodes(chunk.Node, (*parse.Assignment)(nil), nil)
+			assignments := ast.FindNodes(chunk.Node, (*ast.Assignment)(nil), nil)
 
 			assert.Equal(t, [][]core.StackFrameInfo{
 				{
@@ -1752,7 +1752,7 @@ func testDebugModeEval(
 
 			defer ctx.CancelGracefully()
 
-			assignments := parse.FindNodes(chunk.Node, (*parse.Assignment)(nil), nil)
+			assignments := ast.FindNodes(chunk.Node, (*ast.Assignment)(nil), nil)
 
 			controlChan <- core.DebugCommandSetBreakpoints{
 				Chunk: chunk,
@@ -1871,8 +1871,8 @@ func testDebugModeEval(
 
 			defer ctx.CancelGracefully()
 
-			assignments := parse.FindNodes(chunk.Node, (*parse.Assignment)(nil), nil)
-			returnStmts := parse.FindNodes(chunk.Node, (*parse.ReturnStatement)(nil), nil)
+			assignments := ast.FindNodes(chunk.Node, (*ast.Assignment)(nil), nil)
+			returnStmts := ast.FindNodes(chunk.Node, (*ast.ReturnStatement)(nil), nil)
 
 			controlChan <- core.DebugCommandSetBreakpoints{
 				Chunk: chunk,
@@ -2038,8 +2038,8 @@ func testDebugModeEval(
 
 			defer ctx.CancelGracefully()
 
-			assignments := parse.FindNodes(chunk.Node, (*parse.Assignment)(nil), nil)
-			returnStatements := parse.FindNodes(chunk.Node, (*parse.ReturnStatement)(nil), nil)
+			assignments := ast.FindNodes(chunk.Node, (*ast.Assignment)(nil), nil)
+			returnStatements := ast.FindNodes(chunk.Node, (*ast.ReturnStatement)(nil), nil)
 
 			controlChan <- core.DebugCommandSetBreakpoints{
 				Chunk: chunk,
@@ -2201,7 +2201,7 @@ func testDebugModeEval(
 
 			defer ctx.CancelGracefully()
 
-			assignments := parse.FindNodes(chunk.Node, (*parse.Assignment)(nil), nil)
+			assignments := ast.FindNodes(chunk.Node, (*ast.Assignment)(nil), nil)
 			var routineChunk atomic.Value
 			var routineDebugger_ atomic.Value
 
@@ -2353,7 +2353,7 @@ func testDebugModeEval(
 
 			defer ctx.CancelGracefully()
 
-			returnStmts := parse.FindNodes(chunk.Node, (*parse.ReturnStatement)(nil), nil)
+			returnStmts := ast.FindNodes(chunk.Node, (*ast.ReturnStatement)(nil), nil)
 			var routineChunk atomic.Value
 			var routineDebugger_ atomic.Value
 
@@ -2494,7 +2494,7 @@ func testDebugModeEval(
 
 			defer ctx.CancelGracefully()
 
-			assignments := parse.FindNodes(chunk.Node, (*parse.Assignment)(nil), nil)
+			assignments := ast.FindNodes(chunk.Node, (*ast.Assignment)(nil), nil)
 			var routineChunk atomic.Value
 			var routineDebugger_ atomic.Value
 			var threads atomic.Value
@@ -2707,7 +2707,7 @@ func testDebugModeEval(
 			defer ctx.CancelGracefully()
 
 			var (
-				assignments     = parse.FindNodes(chunk.Node, (*parse.Assignment)(nil), nil)
+				assignments     = ast.FindNodes(chunk.Node, (*ast.Assignment)(nil), nil)
 				routineChunk    atomic.Value
 				parentThreadId_ atomic.Value
 				threadId_       atomic.Value
@@ -2866,7 +2866,7 @@ func testDebugModeEval(
 			defer ctx.CancelGracefully()
 
 			var (
-				assignments     = parse.FindNodes(chunk.Node, (*parse.Assignment)(nil), nil)
+				assignments     = ast.FindNodes(chunk.Node, (*ast.Assignment)(nil), nil)
 				routineChunk    atomic.Value
 				parentThreadId_ atomic.Value
 				threadId_       atomic.Value

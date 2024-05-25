@@ -6,7 +6,7 @@ import (
 
 	"github.com/inoxlang/inox/internal/ast"
 	"github.com/inoxlang/inox/internal/core"
-	"github.com/inoxlang/inox/internal/globals/html_ns"
+	html_ns "github.com/inoxlang/inox/internal/html"
 	"github.com/inoxlang/inox/internal/parse"
 	utils "github.com/inoxlang/inox/internal/utils/common"
 	"github.com/stretchr/testify/assert"
