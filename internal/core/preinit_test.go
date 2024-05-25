@@ -69,6 +69,26 @@ func TestPreInit(t *testing.T) {
 		})
 	}
 
+	//files used in several tests
+	preinitFile1Path := filepath.Join(t.TempDir(), "file1.txt")
+	preinitFile2Path := filepath.Join(t.TempDir(), "file2.txt")
+	nonExistingFilePath := filepath.Join(t.TempDir(), "non_existing.txt")
+
+	modelsFilePath := filepath.Join(t.TempDir(), "models.ix")
+	invalidIncludabileFilePath := filepath.Join(t.TempDir(), "invalid.ix")
+
+	os.WriteFile(preinitFile1Path, []byte{'1'}, 0600)
+	os.WriteFile(preinitFile2Path, []byte{'2'}, 0600)
+
+	os.WriteFile(modelsFilePath, []byte(`
+		includable-file
+
+		pattern username = str
+	
+	`), 0600)
+
+	os.WriteFile(invalidIncludabileFilePath, []byte(`go do {}`), 0600)
+
 	type testCase struct {
 		//input
 		name                string
@@ -77,7 +97,6 @@ func TestPreInit(t *testing.T) {
 		additionalGlobals   map[string]Value
 		setup               func() error
 		teardown            func()
-		setupFilesystem     func(tempDir string) //called after setup
 		parentModule        string
 		parentModuleAbsPath string
 
@@ -280,10 +299,10 @@ func TestPreInit(t *testing.T) {
 				manifest {
 					permissions: { read: PATH }
 				}`,
-			expectedPermissions: []Permission{FilesystemPermission{Kind_: permbase.Read, Entity: Path("/file.txt")}},
+			expectedPermissions: []Permission{FilesystemPermission{Kind_: permbase.Read, Entity: Path(preinitFile1Path)}},
 			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
 			expectedResolutions: nil,
-			additionalGlobals:   map[string]Value{"PATH": Path("/file.txt")},
+			additionalGlobals:   map[string]Value{"PATH": Path(preinitFile1Path)},
 		},
 		{
 			name: "additional globals are accessible from within the preinit statement",
@@ -304,12 +323,12 @@ func TestPreInit(t *testing.T) {
 			module: `
 				manifest {
 					host-definitions: :{
-						ldb://main : /mydb
+						s3://main : /bucket
 					}
 				}`,
 			expectedPermissions: []Permission{},
 			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
-			expectedResolutions: map[Host]Value{"ldb://main": Path("/mydb")},
+			expectedResolutions: map[Host]Value{"s3://main": Path("/bucket")},
 			error:               false,
 		},
 		{
@@ -493,23 +512,6 @@ func TestPreInit(t *testing.T) {
 				}`,
 			error: true,
 		},
-		{
-			name: "read_users_from_database_main",
-			module: `manifest {
-					permissions: {
-						read: {
-							%ldb://main/users
-						}
-					}
-				}`,
-			expectedPermissions: []Permission{
-				DatabasePermission{
-					permbase.Read,
-					URLPattern("ldb://main/users"),
-				},
-			},
-			expectedLimits: []Limit{minLimitA, minLimitB, threadLimit},
-		},
 		// {
 		// 	name: "see email addresses",
 		// 	inputModule: `manifest {
@@ -666,7 +668,7 @@ func TestPreInit(t *testing.T) {
 			name: "inclusion import: pattern definition",
 			module: `
 				preinit {
-					import /models.ix
+					import ` + modelsFilePath + `
 				}
 
 				manifest {
@@ -674,13 +676,6 @@ func TestPreInit(t *testing.T) {
 						name: %username
 					}
 				}`,
-			setupFilesystem: func(tempDir string) {
-				os.WriteFile(filepath.Join(tempDir, "/models.ix"), []byte(`
-					includable-file
-
-					pattern username = str
-				`), 0600)
-			},
 			expectedLimits: []Limit{minLimitA, minLimitB, threadLimit},
 			expectedParameters: []ModuleParameter{
 				{
@@ -695,19 +690,10 @@ func TestPreInit(t *testing.T) {
 			name: "inclusion import: forbidden node in chunk",
 			module: `
 				preinit {
-					import /models.ix
+					import ` + invalidIncludabileFilePath + `
 				}
 
-				manifest {
-					parameters: {
-						name: %username
-					}
-				}`,
-			setupFilesystem: func(tempDir string) {
-				os.WriteFile(filepath.Join(tempDir, "/models.ix"), []byte(`
-						go do {}
-					`), 0600)
-			},
+				manifest {}`,
 			error:         true,
 			errorContains: text.FORBIDDEN_NODE_TYPE_IN_INCLUDABLE_CHUNK_IMPORTED_BY_PREINIT,
 		},
@@ -739,22 +725,19 @@ func TestPreInit(t *testing.T) {
 			module: `manifest {
 					preinit-files: {
 						F: {
-							path: /file.txt
+							path: ` + preinitFile1Path + `
 							pattern: %str
 						}
 					}
 				}`,
-			setupFilesystem: func(tempDir string) {
-				os.WriteFile(filepath.Join(tempDir, "/file.txt"), nil, 0600)
-			},
 			expectedPermissions: []Permission{},
 			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
 			expectedPreinitFileConfigs: PreinitFiles{
 				{
 					Name:               "F",
-					Path:               "/file.txt",
+					Path:               Path(preinitFile1Path),
 					Pattern:            STR_PATTERN,
-					RequiredPermission: CreateFsReadPerm(Path("/file.txt")),
+					RequiredPermission: CreateFsReadPerm(Path(preinitFile1Path)),
 				},
 			},
 			expectedResolutions: nil,
@@ -765,23 +748,20 @@ func TestPreInit(t *testing.T) {
 			module: `manifest {
 					preinit-files: {
 						F: {
-							path: /file.txt
+							path: ` + preinitFile1Path + `
 							pattern: %str
 						}
 					}
 				}`,
-			setupFilesystem: func(tempDir string) {
-				os.WriteFile(filepath.Join(tempDir, "/file.txt"), []byte("a"), 0600)
-			},
 			expectedPermissions: []Permission{},
 			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
 			expectedPreinitFileConfigs: PreinitFiles{
 				{
 					Name:               "F",
-					Path:               "/file.txt",
+					Path:               Path(preinitFile1Path),
 					Parsed:             String("a"),
 					Pattern:            STR_PATTERN,
-					RequiredPermission: CreateFsReadPerm(Path("/file.txt")),
+					RequiredPermission: CreateFsReadPerm(Path(preinitFile1Path)),
 				},
 			},
 			expectedResolutions: nil,
@@ -792,7 +772,7 @@ func TestPreInit(t *testing.T) {
 			module: `manifest {
 					preinit-files: {
 						F: {
-							path: /file.txt
+							path: ` + nonExistingFilePath + `
 							pattern: %str
 						}
 					}
@@ -802,9 +782,9 @@ func TestPreInit(t *testing.T) {
 			expectedPreinitFileConfigs: PreinitFiles{
 				{
 					Name:               "F",
-					Path:               "/file.txt",
+					Path:               Path(nonExistingFilePath),
 					Pattern:            STR_PATTERN,
-					RequiredPermission: CreateFsReadPerm(Path("/file.txt")),
+					RequiredPermission: CreateFsReadPerm(Path(nonExistingFilePath)),
 				},
 			},
 			expectedResolutions:       nil,
@@ -815,28 +795,25 @@ func TestPreInit(t *testing.T) {
 			name: "correct_preinit_file_but_content_not_matching_pattern",
 			module: `
 				preinit {
-					pattern p = str("a"+)
+					pattern p = str("1"+)
 				}
 				manifest {
 					preinit-files: {
 						F: {
-							path: /file.txt
+							path: ` + preinitFile2Path + `
 							pattern: %p
 						}
 					}
 				}
 			`,
-			setupFilesystem: func(tempDir string) {
-				os.WriteFile(filepath.Join(tempDir, "/file.txt"), nil, 0600)
-			},
 			expectedPermissions: []Permission{},
 			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
 			expectedPreinitFileConfigs: PreinitFiles{
 				{
 					Name:               "F",
-					Path:               "/file.txt",
+					Path:               Path(preinitFile1Path),
 					Pattern:            STR_PATTERN,
-					RequiredPermission: CreateFsReadPerm(Path("/file.txt")),
+					RequiredPermission: CreateFsReadPerm(Path(preinitFile2Path)),
 				},
 			},
 			expectedResolutions:       nil,
@@ -848,33 +825,29 @@ func TestPreInit(t *testing.T) {
 			module: `manifest {
 					preinit-files: {
 						F1: {
-							path: /file1.txt
+							path: ` + preinitFile1Path + `
 							pattern: %str
 						}
 						F2: {
-							path: /file2.txt
+							path: ` + preinitFile2Path + `
 							pattern: %str
 						}
 					}
 				}`,
-			setupFilesystem: func(tempDir string) {
-				os.WriteFile(filepath.Join(tempDir, "/file1.txt"), nil, 0600)
-				os.WriteFile(filepath.Join(tempDir, "/file2.txt"), nil, 0600)
-			},
 			expectedPermissions: []Permission{},
 			expectedLimits:      []Limit{minLimitA, minLimitB, threadLimit},
 			expectedPreinitFileConfigs: PreinitFiles{
 				{
 					Name:               "F1",
-					Path:               "/file1.txt",
+					Path:               Path(preinitFile1Path),
 					Pattern:            STR_PATTERN,
-					RequiredPermission: CreateFsReadPerm(Path("/file1.txt")),
+					RequiredPermission: CreateFsReadPerm(Path(preinitFile1Path)),
 				},
 				{
 					Name:               "F2",
-					Path:               "/file2.txt",
+					Path:               Path(preinitFile2Path),
 					Pattern:            STR_PATTERN,
-					RequiredPermission: CreateFsReadPerm(Path("/file2.txt")),
+					RequiredPermission: CreateFsReadPerm(Path(preinitFile2Path)),
 				},
 			},
 			expectedResolutions: nil,
@@ -1210,10 +1183,6 @@ func TestPreInit(t *testing.T) {
 
 			tempDir := t.TempDir()
 			mainModulePath := filepath.Join(tempDir, MAIN_MODULE_NAME)
-
-			if testCase.setupFilesystem != nil {
-				testCase.setupFilesystem(tempDir)
-			}
 
 			var parentState *GlobalState
 
