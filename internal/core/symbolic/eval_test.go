@@ -1847,38 +1847,6 @@ func TestSymbolicEval(t *testing.T) {
 			}, res)
 		})
 
-		t.Run("+= assignment, field LHS (ident member expression) has incompatible type", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				struct MyStruct {
-					a bool
-				}
-				ptr = new MyStruct
-				ptr.a += int
-			`)
-			_, err := symbolicEval(n, state)
-			assignement := n.Statements[2]
-			assert.NoError(t, err)
-			assert.Equal(t, []EvaluationError{
-				MakeSymbolicEvalError(assignement, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT),
-			}, state.errors())
-		})
-
-		t.Run("+= assignment, field LHS (member expression) has incompatible type", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				struct MyStruct {
-					a bool
-				}
-				ptr = new MyStruct
-				$ptr.a += int
-			`)
-			_, err := symbolicEval(n, state)
-			assignement := n.Statements[2]
-			assert.NoError(t, err)
-			assert.Equal(t, []EvaluationError{
-				MakeSymbolicEvalError(assignement, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT),
-			}, state.errors())
-		})
-
 		t.Run("+= assignment, RHS has incompatible type", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				obj = {count: int}
@@ -2494,21 +2462,6 @@ func TestSymbolicEval(t *testing.T) {
 			assert.Equal(t, NewString("foo"), res)
 		})
 
-		t.Run("struct field", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				struct MyStruct {
-					a int
-				}
-
-				ptr = new MyStruct
-				return $ptr.a
-			`)
-			res, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Empty(t, state.errors())
-			assert.Equal(t, ANY_INT, res)
-		})
-
 		t.Run("inexisting property", func(t *testing.T) {
 			n, state := MakeTestStateAndChunk(`
 				v = {}
@@ -2533,25 +2486,6 @@ func TestSymbolicEval(t *testing.T) {
 			res, err := symbolicEval(n, state)
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
-			assert.Equal(t, ANY, res)
-		})
-
-		t.Run("optional member expression are not allowed on struct field", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				struct MyStruct {
-					a int
-				}
-
-				ptr = new MyStruct
-				return $ptr.?a
-			`)
-			memberExpr := n.Statements[2].(*ast.ReturnStatement).Expr
-
-			res, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Equal(t, []EvaluationError{
-				MakeSymbolicEvalError(memberExpr, state, OPTIONAL_MEMBER_EXPRS_NOT_ALLOWED_FOR_STRUCT_FIELDS),
-			}, state.errors())
 			assert.Equal(t, ANY, res)
 		})
 
@@ -2684,21 +2618,6 @@ func TestSymbolicEval(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Empty(t, state.errors())
 			assert.Equal(t, NewString("foo"), res)
-		})
-
-		t.Run("struct field", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				struct MyStruct {
-					a int
-				}
-
-				ptr = new MyStruct
-				return ptr.a
-			`)
-			res, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Empty(t, state.errors())
-			assert.Equal(t, ANY_INT, res)
 		})
 
 		t.Run("unterminated (0 property names)", func(t *testing.T) {
@@ -8320,59 +8239,6 @@ func TestSymbolicEval(t *testing.T) {
 				}, state.errors())
 			})
 
-			t.Run("value not assignable to type of struct field", func(t *testing.T) {
-				n, state := MakeTestStateAndChunk(`
-					struct MyStruct {
-						a int
-					}
-
-					ptr = new MyStruct
-					$ptr.a = true
-				`)
-				_, err := symbolicEval(n, state)
-				assert.NoError(t, err)
-
-				assignment := ast.FindNode(n, (*ast.Assignment)(nil), nil)
-
-				errMsg, regions := fmtNotAssignableToFieldOfType(state.fmtHelper, ANY_BOOL, BUILTIN_COMPTIME_TYPES["int"], nil)
-
-				assert.Equal(t, []EvaluationError{
-					MakeSymbolicEvalError(assignment, state, errMsg, regions...),
-				}, state.errors())
-			})
-
-			t.Run("struct field with builtin type", func(t *testing.T) {
-				n, state := MakeTestStateAndChunk(`
-					struct MyStruct {
-						a int
-					}
-
-					ptr = new MyStruct
-					$ptr.a = 1
-				`)
-				_, err := symbolicEval(n, state)
-				assert.NoError(t, err)
-				assert.Empty(t, state.errors())
-			})
-
-			t.Run("struct field with struct pointer type", func(t *testing.T) {
-				n, state := MakeTestStateAndChunk(`
-					struct Inner {
-						a int
-					}
-
-					struct MyStruct {
-						inner *Inner
-					}
-
-					ptr = new MyStruct
-					$ptr.inner = new Inner
-				`)
-				_, err := symbolicEval(n, state)
-				assert.NoError(t, err)
-				assert.Empty(t, state.errors())
-			})
-
 			t.Run("property of shared object", func(t *testing.T) {
 				n, state := MakeTestStateAndChunk(`
 					shared.a = 1
@@ -8434,41 +8300,6 @@ func TestSymbolicEval(t *testing.T) {
 				assert.Equal(t, []EvaluationError{
 					MakeSymbolicEvalError(objectProp.Value, state, errMsg, regions...),
 				}, state.errors())
-			})
-
-			t.Run("value not assignable to type of struct field", func(t *testing.T) {
-				n, state := MakeTestStateAndChunk(`
-					struct MyStruct {
-						a int
-					}
-
-					ptr = new MyStruct
-					ptr.a = true
-				`)
-				_, err := symbolicEval(n, state)
-				assert.NoError(t, err)
-
-				assignment := ast.FindNode(n, (*ast.Assignment)(nil), nil)
-
-				errMsg, regions := fmtNotAssignableToFieldOfType(state.fmtHelper, ANY_BOOL, BUILTIN_COMPTIME_TYPES["int"], nil)
-
-				assert.Equal(t, []EvaluationError{
-					MakeSymbolicEvalError(assignment, state, errMsg, regions...),
-				}, state.errors())
-			})
-
-			t.Run("struct field", func(t *testing.T) {
-				n, state := MakeTestStateAndChunk(`
-					struct MyStruct {
-						a int
-					}
-
-					ptr = new MyStruct
-					ptr.a = 1
-				`)
-				_, err := symbolicEval(n, state)
-				assert.NoError(t, err)
-				assert.Empty(t, state.errors())
 			})
 
 			t.Run("property of shared object", func(t *testing.T) {
@@ -14821,8 +14652,8 @@ func TestSymbolicEval(t *testing.T) {
 				return
 			}
 
-			structVal := res.(*ModuleArgs)
-			structType := structVal.typ
+			modArgs := res.(*ModuleArgs)
+			structType := modArgs.typ
 
 			assert.Equal(t, NewModuleParamsPattern([]ModuleParameter{
 				{
@@ -14833,7 +14664,7 @@ func TestSymbolicEval(t *testing.T) {
 
 			assert.Equal(t, NewModuleArgs(structType, map[string]Value{
 				"a": ANY_STR_LIKE,
-			}), structVal)
+			}), modArgs)
 		})
 
 		t.Run("one positional, two non-positional", func(t *testing.T) {
@@ -16643,260 +16474,6 @@ func TestSymbolicEval(t *testing.T) {
 		// 		})
 		// 	})
 
-	})
-
-	t.Run("struct definition", func(t *testing.T) {
-
-		t.Run("empty", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				struct MyStruct {}
-			`, nil)
-
-			_, err := symbolicEval(n, state)
-			if !assert.NoError(t, err) {
-				return
-			}
-			assert.Empty(t, state.errors())
-
-			types, ok := state.symbolicData.GetComptimeTypes(n)
-			if !assert.True(t, ok) {
-				return
-			}
-			typ, ok := types.GetType("MyStruct")
-			if !assert.True(t, ok) {
-				return
-			}
-			_ = typ.(*StructType)
-		})
-
-		t.Run("field with builtin type", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				struct MyStruct {
-					a int
-				}
-			`, nil)
-
-			_, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Empty(t, state.errors())
-
-			types, ok := state.symbolicData.GetComptimeTypes(n)
-			if !assert.True(t, ok) {
-				return
-			}
-			typ, ok := types.GetType("MyStruct")
-			if !assert.True(t, ok) {
-				return
-			}
-			structType := typ.(*StructType)
-			if !assert.Equal(t, 1, structType.FieldCount()) {
-				return
-			}
-			assert.Equal(t, StructField{Name: "a", Type: BUILTIN_COMPTIME_TYPES["int"]}, structType.Field(0))
-		})
-
-		t.Run("field with builtin pointer type", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				struct MyStruct {
-					a *int
-				}
-			`, nil)
-
-			_, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Empty(t, state.errors())
-
-			types, ok := state.symbolicData.GetComptimeTypes(n)
-			if !assert.True(t, ok) {
-				return
-			}
-			typ, ok := types.GetType("MyStruct")
-			if !assert.True(t, ok) {
-				return
-			}
-			structType := typ.(*StructType)
-			if !assert.Equal(t, 1, structType.FieldCount()) {
-				return
-			}
-			expectedStructField := StructField{Name: "a", Type: newPointerType(BUILTIN_COMPTIME_TYPES["int"])}
-			assert.Equal(t, expectedStructField, structType.Field(0))
-		})
-
-		t.Run("field with struct type", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				struct MyStruct {
-					a Int
-				}
-				struct Int {
-					val int
-				}
-			`, nil)
-
-			_, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Empty(t, state.errors())
-
-			types, ok := state.symbolicData.GetComptimeTypes(n)
-			if !assert.True(t, ok) {
-				return
-			}
-			typ, ok := types.GetType("MyStruct")
-			if !assert.True(t, ok) {
-				return
-			}
-			MyStructType := typ.(*StructType)
-			if !assert.Equal(t, 1, MyStructType.FieldCount()) {
-				return
-			}
-
-			IntStructType, ok := types.GetType("Int")
-			if !assert.True(t, ok) {
-				return
-			}
-
-			expectedFieldType := StructField{Name: "a", Type: IntStructType}
-			assert.Equal(t, expectedFieldType, MyStructType.Field(0))
-		})
-
-		t.Run("field with struct type defined in included chunk", func(t *testing.T) {
-			n, state := MakeTestStateAndChunks(`
-				manifest {}
-				import ./dep.ix
-
-				struct MyStruct {
-					a Int
-				}
-			`, map[string]string{
-				"./dep.ix": `
-					includable-file
-					struct Int {
-						val int
-					}
-				`,
-			})
-
-			_, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Empty(t, state.errors())
-
-			types, ok := state.symbolicData.GetComptimeTypes(n)
-			if !assert.True(t, ok) {
-				return
-			}
-			typ, ok := types.GetType("MyStruct")
-			if !assert.True(t, ok) {
-				return
-			}
-			MyStructType := typ.(*StructType)
-			if !assert.Equal(t, 1, MyStructType.FieldCount()) {
-				return
-			}
-
-			IntStructType, ok := types.GetType("Int")
-			if !assert.True(t, ok) {
-				return
-			}
-
-			expectedFieldType := StructField{Name: "a", Type: IntStructType}
-			assert.Equal(t, expectedFieldType, MyStructType.Field(0))
-		})
-
-		t.Run("field with struct pointer type", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				struct MyStruct {
-					a *Int
-				}
-				struct Int {
-					val int
-				}
-			`, nil)
-
-			_, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Empty(t, state.errors())
-
-			types, ok := state.symbolicData.GetComptimeTypes(n)
-			if !assert.True(t, ok) {
-				return
-			}
-			typ, ok := types.GetType("MyStruct")
-			if !assert.True(t, ok) {
-				return
-			}
-			MyStructType := typ.(*StructType)
-			if !assert.Equal(t, 1, MyStructType.FieldCount()) {
-				return
-			}
-
-			IntStructType, ok := types.GetPointerType("Int")
-			if !assert.True(t, ok) {
-				return
-			}
-
-			expectedFieldType := StructField{Name: "a", Type: IntStructType}
-			assert.Equal(t, expectedFieldType, MyStructType.Field(0))
-		})
-	})
-
-	t.Run("new expression", func(t *testing.T) {
-
-		var (
-			INT_TYPE     = BUILTIN_COMPTIME_TYPES["int"]
-			INT_PTR_TYPE = newPointerType(INT_TYPE)
-		)
-
-		t.Run("builtin type", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`new int`, nil)
-
-			res, err := symbolicEval(n, state)
-			if !assert.NoError(t, err) {
-				return
-			}
-			assert.Empty(t, state.errors())
-			assert.Equal(t, INT_PTR_TYPE.SymbolicValue(), res)
-		})
-
-		t.Run("struct type", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				struct MyStruct {}
-				return new MyStruct
-			`, nil)
-
-			res, err := symbolicEval(n, state)
-			if !assert.NoError(t, err) {
-				return
-			}
-			assert.Empty(t, state.errors())
-
-			types, ok := state.symbolicData.GetComptimeTypes(n)
-			if !assert.True(t, ok) {
-				return
-			}
-
-			MyStructType, ok := types.GetType("MyStruct")
-			if !assert.True(t, ok) {
-				return
-			}
-
-			ptrType := newPointerType(MyStructType)
-
-			assert.Equal(t, ptrType.SymbolicValue(), res)
-		})
-
-		t.Run("pattern name", func(t *testing.T) {
-			n, state := MakeTestStateAndChunk(`
-				pattern o = {a: 1}
-				return new o
-			`, nil)
-			newExpr := ast.FindNode(n, (*ast.NewExpression)(nil), nil)
-
-			res, err := symbolicEval(n, state)
-			assert.NoError(t, err)
-			assert.Equal(t, []EvaluationError{
-				MakeSymbolicEvalError(newExpr.Type, state, ONLY_COMPILE_TIME_TYPES_CAN_BE_USED_IN_NEW_EXPRS),
-			}, state.errors())
-			assert.Equal(t, ANY, res)
-		})
 	})
 
 	t.Run("the evaluation should stop if the context context is done AND there is no remaining no-check fuel", func(t *testing.T) {

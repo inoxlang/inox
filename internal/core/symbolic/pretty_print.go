@@ -42,25 +42,6 @@ func Stringify(v Value) string {
 	return buff.String()
 }
 
-// Stringify calls PrettyPrint on the passed value
-func StringifyComptimeType(t CompileTimeType) string {
-	buff := &bytes.Buffer{}
-
-	_, err := PrettyPrint(PrettyPrintArgs{
-		Value:             t,
-		Writer:            buff,
-		Config:            STRINGIFY_PRETTY_PRINT_CONFIG,
-		Depth:             0,
-		ParentIndentCount: 0,
-	})
-
-	if err != nil {
-		panic(err)
-	}
-
-	return buff.String()
-}
-
 func StringifyGetRegions(v Value) (string, pprint.Regions) {
 	buff := &bytes.Buffer{}
 	w := bufio.NewWriterSize(buff, PRETTY_PRINT_BUFF_WRITER_SIZE)
@@ -101,27 +82,6 @@ func fmtValue(h *commonfmt.Helper, v Value) {
 		Format:          writeValueToBuffer,
 	})
 }
-
-func writeComptimeTypeToBuffer(w *bytes.Buffer, comptimeType any) error {
-	t := comptimeType.(CompileTimeType)
-	_, err := PrettyPrint(PrettyPrintArgs{
-		Value:             t,
-		Writer:            w,
-		Config:            STRINGIFY_PRETTY_PRINT_CONFIG,
-		Depth:             0,
-		ParentIndentCount: 0,
-	})
-	return err
-}
-
-func fmtComptimeType(h *commonfmt.Helper, t CompileTimeType) {
-	h.AppendRegion(commonfmt.RegionParams{
-		Kind:            INOX_VALUE_REGION_KIND,
-		AssociatedValue: t,
-		Format:          writeComptimeTypeToBuffer,
-	})
-}
-
 
 type PrettyPrintArgs struct {
 	Value interface {

@@ -167,8 +167,6 @@ func (p *parser) parseStatement() ast.Node {
 			return p.parsePatternNamespaceDefinition(ev)
 		case ast.TOKEN_STRINGS[ast.EXTEND_KEYWORD]:
 			return p.parseExtendStatement(ev)
-		case ast.STRUCT_KEYWORD_STRING:
-			return p.parseStructDefinition(ev)
 		}
 
 	}

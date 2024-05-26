@@ -1349,7 +1349,7 @@ func TestInoxFunctionOnMutation(t *testing.T) {
 		fn := &InoxFunction{
 			Node:                   parse.MustParseExpression("fn[a](){}"),
 			treeWalkCapturedLocals: map[string]Value{"a": obj},
-			//compiledFunction: &CompiledFunction{}, //set to non-nil so that the function is considered compiled.
+			compiledFunction:       &CompiledFunction{}, //set to non-nil so that the function is considered compiled.
 		}
 		called := atomic.Bool{}
 

@@ -51,12 +51,12 @@ type GlobalState struct {
 
 	Ctx             *Context
 	Manifest        *Manifest
-	MemberAuthToken string //Can be empty. Most of the time this field is only set for the main state.. //TODO: replace with a JWT.
-	//Bytecode        *Bytecode              //can be nil
-	Globals      GlobalVariables //global variables
-	LThread      *LThread        //not nil if running in a dedicated LThread
-	Heap         *mem.ModuleHeap
-	lockedValues []PotentiallySharable
+	MemberAuthToken string          //Can be empty. Most of the time this field is only set for the main state.. //TODO: replace with a JWT.
+	Bytecode        *Bytecode       //can be nil
+	Globals         GlobalVariables //global variables
+	LThread         *LThread        //not nil if running in a dedicated LThread
+	Heap            *mem.ModuleHeap
+	lockedValues    []PotentiallySharable
 
 	//Re-usable buffers for Go function calls made by reflect.Call.
 

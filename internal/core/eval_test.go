@@ -75,7 +75,7 @@ func TestTreeWalkEval(t *testing.T) {
 }
 
 func TestOptimizedBytecodeEval(t *testing.T) {
-	//bytecodeTest(t, true)
+	bytecodeTest(t, true)
 }
 
 func TestEvalWithRecycledTreeWalkEvalState(t *testing.T) {
@@ -126,7 +126,7 @@ func bytecodeTest(t *testing.T, optimize bool) {
 			t.Fatalf("%#v is not a valid code argument", c)
 		}
 
-		//tracer := bytes.Buffer{}
+		tracer := bytes.Buffer{}
 
 		if doCheck { // TODO: enable checks by default ?
 			staticCheckData, err := core.StaticCheck(core.StaticCheckInput{
@@ -173,20 +173,18 @@ func bytecodeTest(t *testing.T, optimize bool) {
 
 		core.NewGlobalState(compilationCtx)
 
-		panic(errors.New("evaluating using transpiled Inox code is not supported yet"))
+		res, err := core.EvalVM(mod, s, core.BytecodeEvaluationConfig{
+			Tracer:             &tracer,
+			OptimizeBytecode:   optimize,
+			CompilationContext: compilationCtx,
+		})
 
-		// res, err := EvalVM(mod, s, BytecodeEvaluationConfig{
-		// 	Tracer:             &tracer,
-		// 	OptimizeBytecode:   optimize,
-		// 	CompilationContext: compilationCtx,
-		// })
+		if err != nil {
+			//t.Log(tracer.String())
+			return nil, err
+		}
 
-		// if err != nil {
-		// 	//t.Log(tracer.String())
-		// 	return nil, err
-		// }
-
-		// return res, nil
+		return res, nil
 	})
 }
 
@@ -1807,68 +1805,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 					$a.count = 1
 				`,
 				error: true,
-			},
-			{
-				input: `
-					struct MyStruct {
-						count int
-					}
-					s = new MyStruct
-					s.count = 2
-					s.count += 1
-					return s.count
-				`,
-				result:         core.Int(3),
-				doSymbolicEval: true,
-			},
-			{
-				input: `
-					struct MyStruct {
-						inner *Inner
-					}
-					struct Inner {
-						count int
-					}
-					s = new MyStruct
-					s.inner = new Inner
-
-					s.inner.count = 2
-					s.inner.count += 1
-					return s.inner.count
-				`,
-				result:         core.Int(3),
-				doSymbolicEval: true,
-			},
-			{
-				input: `
-					struct MyStruct {
-						count int
-					}
-					s = new MyStruct
-					$s.count = 2
-					$s.count += 1
-					return $s.count
-				`,
-				result:         core.Int(3),
-				doSymbolicEval: true,
-			},
-			{
-				input: `
-					struct MyStruct {
-						inner *Inner
-					}
-					struct Inner {
-						count int
-					}
-					$s = new MyStruct
-					$s.inner = new Inner
-
-					$s.inner.count = 2
-					$s.inner.count += 1
-					return $s.inner.count
-				`,
-				result:         core.Int(3),
-				doSymbolicEval: true,
 			},
 			{
 				input: `
@@ -5362,7 +5298,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 				input: strings.ReplaceAll(`
 					fn f(){}
 					many_calls
-				`, "many_calls", strings.Repeat("f()\n", 100)),
+				`, "many_calls", strings.Repeat("f()\n", 10+core.VM_STACK_SIZE)),
 				result: core.Nil,
 			},
 			{
@@ -5429,7 +5365,7 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 
 					f = lthread.wait_result!()
 					many_calls			
-				`, "many_calls", strings.Repeat("f()\n", 100)),
+				`, "many_calls", strings.Repeat("f()\n", 10+core.VM_STACK_SIZE)),
 				result: core.Nil,
 			},
 			// TODO
@@ -7597,7 +7533,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			state := core.NewGlobalState(NewDefaultTestContext())
 			defer state.Ctx.CancelGracefully()
 			res, err := Eval(code, state, false)
-			assert.NoError(t, err)
+			if !assert.NoError(t, err) {
+				return
+			}
 			assert.Equal(t, core.NewWrappedValueList(
 				core.Nil,
 				core.NewWrappedValueList(core.Int(0), core.Int(1)),
@@ -7626,7 +7564,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(code, state, false)
-			assert.NoError(t, err)
+			if !assert.NoError(t, err) {
+				return
+			}
 			assert.Equal(t, core.NewWrappedValueList(
 				core.Nil,
 				core.NewWrappedValueList(core.Int(0), core.Int(1), core.Int(2)),
@@ -7652,7 +7592,9 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			defer state.Ctx.CancelGracefully()
 
 			res, err := Eval(code, state, false)
-			assert.NoError(t, err)
+			if !assert.NoError(t, err) {
+				return
+			}
 			assert.Equal(t, core.NewWrappedValueList(
 				core.String("final result"),
 				core.NewWrappedValueList(core.Int(0)),
@@ -13258,85 +13200,6 @@ func testEval(t *testing.T, bytecodeEval bool, Eval evalFn) {
 			))
 
 			assert.Equal(t, expectedPattern, pattern)
-		})
-	})
-
-	t.Run("new expression", func(t *testing.T) {
-		t.Run("without init", func(t *testing.T) {
-			code := `
-				struct MyStruct {
-					a int
-				}
-
-				return new MyStruct
-			`
-			state := core.NewGlobalState(NewDefaultTestContext())
-			defer state.Ctx.CancelGracefully()
-
-			state.Ctx.AddNamedPattern("int", core.INT_PATTERN)
-
-			res, err := Eval(code, state, true)
-			assert.NoError(t, err)
-			assert.IsType(t, (*core.Struct)(nil), res)
-		})
-
-		t.Run("with init of single-field struct", func(t *testing.T) {
-			code := `
-				struct MyStruct {
-					a int
-				}
-
-				ptr = new MyStruct {a: 3}
-				return ptr.a
-			`
-			state := core.NewGlobalState(NewDefaultTestContext())
-			defer state.Ctx.CancelGracefully()
-
-			state.Ctx.AddNamedPattern("int", core.INT_PATTERN)
-
-			res, err := Eval(code, state, true)
-			assert.NoError(t, err)
-			assert.Equal(t, core.Int(3), res)
-		})
-
-		t.Run("with init of two-field struct", func(t *testing.T) {
-			code := `
-				struct MyStruct {
-					a int
-					b int
-				}
-
-				ptr = new MyStruct {a: 3, b: 4}
-				return [ptr.a, ptr.b]
-			`
-			state := core.NewGlobalState(NewDefaultTestContext())
-			defer state.Ctx.CancelGracefully()
-
-			state.Ctx.AddNamedPattern("int", core.INT_PATTERN)
-
-			res, err := Eval(code, state, true)
-			assert.NoError(t, err)
-			assert.Equal(t, core.NewWrappedValueList(core.Int(3), core.Int(4)), res)
-		})
-
-		t.Run("with init of two-field struct: alternate order", func(t *testing.T) {
-			code := `
-				struct MyStruct {
-					a int
-					b int
-				}
-
-				ptr = new MyStruct {b: 4, a: 3}
-				return [ptr.a, ptr.b]
-			`
-			state := core.NewGlobalState(NewDefaultTestContext())
-			defer state.Ctx.CancelGracefully()
-
-			state.Ctx.AddNamedPattern("int", core.INT_PATTERN)
-
-			res, err := Eval(code, state, true)
-			assert.NoError(t, err)
-			assert.Equal(t, core.NewWrappedValueList(core.Int(3), core.Int(4)), res)
 		})
 	})
 

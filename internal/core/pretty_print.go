@@ -1894,6 +1894,10 @@ func (it *TupleIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig,
 	InspectPrint(w, it)
 }
 
+func (b *Bytecode) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+	InspectPrint(w, b)
+}
+
 func (t Type) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	pkg := t.PkgPath()
 	if pkg != "" {
@@ -2240,10 +2244,6 @@ func (id ULID) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int
 
 func (id UUIDv4) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.WriteString(id.libValue().String()))
-}
-
-func (Struct) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
-	w.Write(utils.StringAsBytes("struct-pointer"))
 }
 
 func InspectPrint[T any](w *bufio.Writer, v T) {

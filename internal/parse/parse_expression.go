@@ -253,24 +253,6 @@ func (p *parser) parseExpression(config ...exprParsingConfig) (expr ast.Node, is
 				return p.parseUnquotedRegion(), false
 			}
 		}
-	case '*':
-		start := p.i
-		p.tokens = append(p.tokens, ast.Token{Type: ast.ASTERISK, Span: NodeSpan{p.i, p.i + 1}})
-		p.i++
-
-		if p.inPattern {
-			typ, _ := p.parseExpression()
-			return &ast.PointerType{
-				NodeBase:  ast.NodeBase{Span: NodeSpan{start, typ.Base().Span.End}},
-				ValueType: typ,
-			}, false
-		} else {
-			pointer, _ := p.parseExpression()
-			return &ast.DereferenceExpression{
-				NodeBase: ast.NodeBase{Span: NodeSpan{start, pointer.Base().Span.End}},
-				Pointer:  pointer,
-			}, false
-		}
 	case '%':
 		patt := p.parsePercentPrefixedPattern(precededByOpeningParen)
 
@@ -449,9 +431,6 @@ func (p *parser) parseUnderscoreAlphaStartingExpression(precedingOpeningParen in
 			return
 		case ast.TOKEN_STRINGS[ast.TESTCASE_KEYWORD]:
 			node = p.parseTestCaseExpression(v)
-			return
-		case ast.NEW_KEYWORD_STRING:
-			node = p.parseNewExpression(v)
 			return
 		case ast.FOR_KEYWORD_STRING:
 			if !stmt && forceAllowForExpr {

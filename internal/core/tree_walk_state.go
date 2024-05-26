@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/inoxlang/inox/internal/ast"
-	"github.com/inoxlang/inox/internal/core/symbolic"
 	"github.com/inoxlang/inox/internal/parse"
 	"github.com/inoxlang/inox/internal/sourcecode"
 )
@@ -31,8 +30,6 @@ type TreeWalkState struct {
 	entryComputeFn  func(v Value) (Value, error)
 
 	forceDisableTesting bool //used to disable testing in included chunks
-
-	comptimeTypes *ModuleComptimeTypes
 
 	//Fields added in the future should be reset in Reset().
 }
@@ -95,7 +92,6 @@ func (state *TreeWalkState) Reset(global *GlobalState) {
 	state.yieldedValue = nil
 	state.prune = false
 	state.self = nil
-	state.comptimeTypes = nil
 	state.entryComputeFn = nil
 
 	state.forceDisableTesting = false
@@ -239,14 +235,6 @@ func (state *TreeWalkState) updateStackTrace(currentStmt ast.Node) {
 
 func (state *TreeWalkState) formatLocation(node ast.Node) (sourcecode.PositionStack, string) {
 	return parse.GetSourcePositionStack(node.Base().Span, state.fullChunkStack)
-}
-
-func (state *TreeWalkState) getConcreteType(symbolic symbolic.CompileTimeType) CompileTimeType {
-	if state.comptimeTypes == nil {
-		types, _ := state.Global.SymbolicData.GetComptimeTypes(state.Global.Module.MainChunk.Node)
-		state.comptimeTypes = NewModuleComptimeTypes(types /*ok even if nil*/)
-	}
-	return state.comptimeTypes.getConcreteType(symbolic)
 }
 
 type IterationChange int

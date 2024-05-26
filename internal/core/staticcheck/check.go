@@ -99,7 +99,6 @@ func Check(input Input) (*Data, error) {
 	checker := &checker{
 		checkInput:        input,
 		fnDecls:           make(map[ast.Node]map[string]*fnDeclInfo),
-		structDefs:        make(map[ast.Node]map[string]int),
 		globalVars:        globals,
 		localVars:         localVars,
 		shellLocalVars:    shellLocalVars,
@@ -120,10 +119,7 @@ func Check(input Input) (*Data, error) {
 	if module != nil {
 
 		if chunk, ok := module.(*ast.Chunk); ok {
-			checker.defineStructs(module, chunk.Statements)
 			checker.precheckTopLevelStatements(chunk)
-		} else {
-			checker.defineStructs(module, module.(*ast.EmbeddedModule).Statements)
 		}
 	}
 
@@ -150,9 +146,6 @@ type checker struct {
 
 	//key: *ast.Chunk|*ast.EmbeddedModule
 	fnDecls map[ast.Node]map[string]*fnDeclInfo
-
-	//key: *ast.Chunk|*ast.EmbeddedModule
-	structDefs map[ast.Node]map[string]int
 
 	//key: *ast.Chunk|*ast.EmbeddedModule
 	globalVars map[ast.Node]map[string]GlobalVarInfo
@@ -237,74 +230,6 @@ func (checker *checker) addError(node ast.Node, s string) {
 
 func (checker *checker) addWarning(node ast.Node, s string) {
 	checker.data.warnings = append(checker.data.warnings, checker.makeCheckingWarning(node, s))
-}
-
-func (c *checker) defineStructs(closestModule ast.Node, statements []ast.Node) {
-
-	//Define structs from included chunks.
-	for _, stmt := range statements {
-		inclusionStmt, ok := stmt.(*ast.InclusionImportStatement)
-		if !ok {
-			continue
-		}
-		includedChunk := c.currentModule.InclusionStatementMap[inclusionStmt]
-		if includedChunk == nil { //File not found
-			return
-		}
-		c.defineStructs(closestModule, includedChunk.Node.Statements)
-	}
-
-	//Define other structs.
-	for _, stmt := range statements {
-		structDef, ok := stmt.(*ast.StructDefinition)
-		if !ok {
-			continue
-		}
-
-		name, ok := structDef.GetName()
-		if ok {
-			defs := c.getModStructDefs(closestModule)
-			_, alreadyDefined := defs[name]
-			if alreadyDefined {
-				c.addError(structDef.Name, text.FmtInvalidStructDefAlreadyDeclared(name))
-			} else {
-				defs[name] = 0
-			}
-		}
-
-		if structDef.Body == nil {
-			continue
-		}
-
-		//check for duplicate member definitions.
-		names := make([]string, 0, len(structDef.Body.Definitions))
-
-		for _, memberDefinition := range structDef.Body.Definitions {
-			name := ""
-			var nameNode ast.Node
-
-			switch def := memberDefinition.(type) {
-			case *ast.StructFieldDefinition:
-				name = def.Name.Name
-				nameNode = def.Name
-			case *ast.FunctionDeclaration:
-				funcName, ok := def.Name.(*ast.IdentifierLiteral)
-				if !ok {
-					continue //unquoted name
-				}
-				name = funcName.Name
-				nameNode = def.Name
-			default:
-				continue
-			}
-
-			if slices.Contains(names, name) {
-				c.addError(nameNode, text.FmtAnXFieldOrMethodIsAlreadyDefined(name))
-			} else {
-				names = append(names, name)
-			}
-		}
-	}
 }
 
 func (checker *checker) check(node ast.Node) error {
@@ -417,15 +342,6 @@ func (checker *checker) isDeclaredFunctionName(name string, mod ast.Node) bool {
 	}
 	_, ok = fns[name]
 	return ok
-}
-
-func (checker *checker) getModStructDefs(mod ast.Node) map[string]int {
-	defs, ok := checker.structDefs[mod]
-	if !ok {
-		defs = make(map[string]int)
-		checker.structDefs[mod] = defs
-	}
-	return defs
 }
 
 func (checker *checker) getModPatterns(mod ast.Node) map[string]int {
@@ -642,21 +558,6 @@ func (c *checker) checkSingleNode(n, parent, scopeNode ast.Node, ancestorChain [
 			c.addError(node, text.MISPLACED_EXTEND_STATEMENT_TOP_LEVEL_STMT)
 			return ast.ContinueTraversal
 		}
-	case *ast.StructDefinition:
-		if parent != closestModule {
-			c.addError(node, text.MISPLACED_STRUCT_DEF_TOP_LEVEL_STMT)
-			return ast.ContinueTraversal
-		}
-		//already defined.
-		return ast.ContinueTraversal
-	case *ast.NewExpression:
-		return c.checkNewExpr(node)
-	case *ast.StructInitializationLiteral:
-		return c.checkStructInitLiteral(node)
-	case *ast.PointerType:
-		return c.checkPointerType(node, parent)
-	case *ast.DereferenceExpression:
-		c.addError(node, "dereference expressions are not supported yet")
 	case *ast.TestSuiteExpression:
 		return c.checkTestSuiteExpr(node, ancestorChain)
 	case *ast.TestCaseExpression:
@@ -703,7 +604,6 @@ func (c *checker) precheckTopLevelStatements(module ast.Node) {
 		case *ast.PatternDefinition:
 		case *ast.PatternNamespaceDefinition:
 		case *ast.ExtendStatement:
-		case *ast.StructDefinition:
 		case *ast.FunctionDeclaration:
 			c.precheckTopLevelFuncDecl(stmt, module)
 		//simple literals
@@ -1138,7 +1038,6 @@ func (c *checker) checkSpawnExpr(node *ast.SpawnExpression, closestModule ast.No
 		embeddedModuleGlobals[name] = info
 	}
 
-	c.defineStructs(node.Module, node.Module.Statements)
 	c.precheckTopLevelStatements(node.Module)
 
 	return ast.ContinueTraversal
@@ -1244,7 +1143,6 @@ func (c *checker) checkInclusionImportStmt(node *ast.InclusionImportStatement, p
 		parentChecker:            c,
 		checkInput:               c.checkInput,
 		fnDecls:                  make(map[ast.Node]map[string]*fnDeclInfo),
-		structDefs:               make(map[ast.Node]map[string]int),
 		globalVars:               globals,
 		localVars:                make(map[ast.Node]map[string]localVarInfo),
 		properties:               make(map[*ast.ObjectLiteral]*propertyInfo),
@@ -1431,7 +1329,6 @@ func (c *checker) checkImportStmt(node *ast.ImportStatement, parent, closestModu
 		parentChecker:         c,
 		checkInput:            c.checkInput,
 		fnDecls:               make(map[ast.Node]map[string]*fnDeclInfo),
-		structDefs:            make(map[ast.Node]map[string]int),
 		globalVars:            globals,
 		localVars:             make(map[ast.Node]map[string]localVarInfo),
 		properties:            make(map[*ast.ObjectLiteral]*propertyInfo),
@@ -2023,8 +1920,6 @@ func (c *checker) checkFuncDecl(node *ast.FunctionDeclaration, parent, closestMo
 			globalVars[funcName.Name] = GlobalVarInfo{IsConst: true, FnExpr: node.Function}
 		}
 
-	case *ast.StructBody:
-		//struct method
 	default:
 		c.addError(node, text.INVALID_FN_DECL_SHOULD_BE_TOP_LEVEL_STMT)
 		return ast.ContinueTraversal
@@ -2368,11 +2263,6 @@ func (c *checker) checkVariable(node *ast.Variable, scopeNode ast.Node, ancestor
 			return ast.ContinueTraversal
 		}
 
-		if _, ok := scopeNode.(*ast.StructDefinition); ok {
-			c.addError(node, text.VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS)
-			return ast.ContinueTraversal
-		}
-
 		if !exists {
 			c.addError(node, text.FmtGlobalVarIsNotDeclared(node.Name))
 			return ast.ContinueTraversal
@@ -2432,11 +2322,6 @@ func (c *checker) checkVariable(node *ast.Variable, scopeNode ast.Node, ancestor
 		return ast.ContinueTraversal
 	}
 
-	if _, ok := scopeNode.(*ast.StructDefinition); ok {
-		c.addError(node, text.VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS)
-		return ast.ContinueTraversal
-	}
-
 	variables := c.getLocalVarsInScope(scopeNode)
 	_, exist := variables[node.Name]
 
@@ -2488,27 +2373,7 @@ func (c *checker) checkIdentifier(ident *ast.IdentifierLiteral, parent, scopeNod
 			return ast.ContinueTraversal
 
 		}
-	case *ast.StructDefinition:
-		if p.Name == ident {
-			return ast.ContinueTraversal
 
-		}
-
-	case *ast.StructFieldDefinition:
-		if p.Name == ident {
-			return ast.ContinueTraversal
-
-		}
-	case *ast.NewExpression:
-		if p.Type == ident {
-			return ast.ContinueTraversal
-
-		}
-	case *ast.StructFieldInitialization:
-		if p.Name == ident {
-			return ast.ContinueTraversal
-
-		}
 	case *ast.IdentifierMemberExpression:
 		if ident != p.Left {
 			return ast.ContinueTraversal
@@ -2561,11 +2426,6 @@ func (c *checker) checkIdentifier(ident *ast.IdentifierLiteral, parent, scopeNod
 
 	if _, ok := scopeNode.(*ast.ExtendStatement); ok {
 		c.addError(ident, text.VARS_NOT_ALLOWED_IN_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES)
-		return ast.ContinueTraversal
-	}
-
-	if _, ok := scopeNode.(*ast.StructDefinition); ok {
-		c.addError(ident, text.VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS)
 		return ast.ContinueTraversal
 	}
 
@@ -2691,12 +2551,12 @@ loop:
 					}
 				}
 			case *ast.FunctionDeclaration:
-				if j == 0 {
-					c.addError(node, text.CANNOT_CHECK_STRUCT_METHOD_DEF_WITHOUT_PARENT)
-					break loop
-				}
-				_, ok := ancestorChain[j-1].(*ast.StructBody)
-				isSelfInStructMethod = ok && isSelfExpr
+				// if j == 0 {
+				// 	c.addError(node, text.CANNOT_CHECK_STRUCT_METHOD_DEF_WITHOUT_PARENT)
+				// 	break loop
+				// }
+				// _, ok := ancestorChain[j-1].(*ast.StructBody)
+				// isSelfInStructMethod = ok && isSelfExpr
 			}
 
 			break loop
@@ -2814,10 +2674,6 @@ func (c *checker) checkPatternIdentifier(node *ast.PatternIdentifierLiteral, par
 		if node.Name == parse.NO_OTHERPROPS_PATTERN_NAME {
 			return ast.ContinueTraversal
 		}
-	case *ast.StructDefinition:
-		if parent.Name == node {
-			return ast.ContinueTraversal
-		}
 	case *ast.MarkupPatternOpeningTag:
 		if parent.Name == node {
 			return ast.ContinueTraversal
@@ -2826,35 +2682,6 @@ func (c *checker) checkPatternIdentifier(node *ast.PatternIdentifierLiteral, par
 		if parent.Name == node {
 			return ast.ContinueTraversal
 		}
-	}
-
-	//Check if struct type.
-	stuctDefs := c.getModStructDefs(closestModule)
-	_, ok := stuctDefs[node.Name]
-	if ok {
-		//Check that the node is not misplaced.
-		errMsg := ""
-		switch parent := parent.(type) {
-		case *ast.PointerType, *ast.StructFieldDefinition, *ast.NewExpression:
-			//ok
-		case *ast.FunctionParameter:
-			errMsg = text.STRUCT_TYPES_NOT_ALLOWED_AS_PARAMETER_TYPES
-		case *ast.FunctionExpression:
-			if node == parent.ReturnType {
-				errMsg = text.STRUCT_TYPES_NOT_ALLOWED_AS_RETURN_TYPES
-			} else {
-				errMsg = text.MISPLACED_STRUCT_TYPE_NAME
-			}
-		default:
-			errMsg = text.MISPLACED_STRUCT_TYPE_NAME
-		}
-
-		if errMsg != "" {
-			c.addError(node, errMsg)
-		}
-
-		return ast.ContinueTraversal
-
 	}
 
 	//Ignore the check if the pattern identifier refers to a pattern that is not yet defined.
@@ -2872,8 +2699,6 @@ func (c *checker) checkPatternIdentifier(node *ast.PatternIdentifierLiteral, par
 	if _, ok := patterns[name]; !ok {
 		errMsg := ""
 		switch parent.(type) {
-		case *ast.PointerType, *ast.NewExpression:
-			errMsg = text.FmtStructTypeIsNotDefined(name)
 		default:
 			errMsg = text.FmtPatternIsNotDeclared(name)
 		}
@@ -2925,69 +2750,6 @@ func (c *checker) checkRuntimeTypeCheckExpr(node *ast.RuntimeTypeCheckExpression
 		c.addError(node, text.MISPLACED_RUNTIME_TYPECHECK_EXPRESSION)
 	default:
 		c.addError(node, text.MISPLACED_RUNTIME_TYPECHECK_EXPRESSION)
-	}
-	return ast.ContinueTraversal
-}
-
-func (c *checker) checkNewExpr(node *ast.NewExpression) ast.TraversalAction {
-	typ := node.Type
-	switch typ.(type) {
-	case *ast.PatternIdentifierLiteral:
-		//ok, the identifier will be checked next
-	//TODO: support slices
-	case nil:
-		return ast.ContinueTraversal
-	default:
-		c.addError(node.Type, text.A_STRUCT_TYPE_NAME_IS_EXPECTED)
-		return ast.ContinueTraversal
-	}
-	return ast.ContinueTraversal
-}
-
-func (c *checker) checkStructInitLiteral(node *ast.StructInitializationLiteral) ast.TraversalAction {
-	// look for duplicate field names
-	fieldNames := make([]string, 0, len(node.Fields))
-
-	for _, field := range node.Fields {
-		fieldInit, ok := field.(*ast.StructFieldInitialization)
-		if ok {
-			name := fieldInit.Name.Name
-			if slices.Contains(fieldNames, name) {
-				c.addError(fieldInit.Name, text.FmtDuplicateFieldName(name))
-			} else {
-				fieldNames = append(fieldNames, name)
-			}
-		}
-	}
-	return ast.ContinueTraversal
-}
-
-func (c *checker) checkPointerType(node *ast.PointerType, parent ast.Node) ast.TraversalAction {
-	patternIdent, ok := node.ValueType.(*ast.PatternIdentifierLiteral)
-	if !ok {
-		c.addError(node.ValueType, text.A_STRUCT_TYPE_IS_EXPECTED_AFTER_THE_STAR)
-	} else {
-		//Check that the node is not misplaced.
-		switch parent := parent.(type) {
-		case *ast.StructFieldDefinition, *ast.FunctionParameter:
-			//ok
-		case *ast.FunctionExpression:
-			if node != parent.ReturnType {
-				c.addError(node, text.MISPLACED_POINTER_TYPE)
-			}
-		case *ast.LocalVariableDeclarator:
-			if node != parent.Type {
-				c.addError(node, text.MISPLACED_POINTER_TYPE)
-			}
-		default:
-			c.addError(node, text.MISPLACED_POINTER_TYPE)
-		}
-
-		if symbolic.IsNameOfBuiltinComptimeType(patternIdent.Name) {
-			//do not check the pattern identifier.
-			return ast.Prune
-		}
-
 	}
 	return ast.ContinueTraversal
 }

@@ -32,8 +32,6 @@ const (
 	WALK_KEYWORD_STRING            = "walk"
 	SWITCH_KEYWORD_STRING          = "switch"
 	MATCH_KEYWORD_STRING           = "match"
-	STRUCT_KEYWORD_STRING          = "struct"
-	NEW_KEYWORD_STRING             = "new"
 	INCLUDABLE_FILE_KEYWORD_STRING = "includable-file"
 	FN_KEYWORD_STRING              = "fn"
 	READONLY_KEYWORD_STRING        = "readonly"
@@ -390,8 +388,6 @@ var TOKEN_STRINGS = [...]string{
 	PATTERN_KEYWORD:                   "pattern",
 	PNAMESPACE_KEYWORD:                "pnamespace",
 	EXTEND_KEYWORD:                    "extend",
-	STRUCT_KEYWORD:                    STRUCT_KEYWORD_STRING,
-	NEW_KEYWORD:                       NEW_KEYWORD_STRING,
 	TO_KEYWORD:                        "to",
 	OTHERPROPS_KEYWORD:                OTHERPROPS_KEYWORD_STRING,
 	AS_KEYWORD:                        AS_KEYWORD_STRING,

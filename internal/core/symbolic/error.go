@@ -452,32 +452,6 @@ func fmtNotAssignableToPropOfType(h *commonfmt.Helper, a Value, b Value, firstMi
 	return h.Consume()
 }
 
-func fmtNotAssignableToFieldOfType(h *commonfmt.Helper, v Value, typ CompileTimeType, firstMismatchErrorMessage *bytes.Buffer) (string, []commonfmt.RegionInfo) {
-	examples := GetExamples(typ.SymbolicValue(), ExampleComputationContext{NonMatchingValue: v})
-	examplesString := ""
-	if len(examples) > 0 {
-		examplesString = fmtExpectedValueExamples(examples)
-	}
-
-	val, ok := v.(IToStatic)
-	if ok {
-		v = val.Static().SymbolicValue()
-	}
-
-	if h == nil {
-		h = commonfmt.NewHelper()
-	}
-
-	h.AppendString("a(n) ")
-	fmtValue(h, v)
-	h.AppendString(" is not assignable to a field of type ")
-	fmtComptimeType(h, typ)
-	h.AppendString(examplesString)
-	appendFirstMismatchErrorMessage(h, firstMismatchErrorMessage)
-
-	return h.Consume()
-}
-
 func fmtNotAssignableToEntryOfExpectedValue(h *commonfmt.Helper, a Value, b Value, firstMismatchErrorMessage *bytes.Buffer) (string, []commonfmt.RegionInfo) {
 
 	if h == nil {

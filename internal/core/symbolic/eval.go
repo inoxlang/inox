@@ -930,17 +930,6 @@ func _symbolicEval(node ast.Node, state *State, options evalOptions) (result Val
 		return ANY_STRING, nil
 	case *ast.ExtendStatement:
 		return evalExtendStatement(n, state, options)
-	case *ast.StructDefinition:
-		//handled in evalChunk
-		return nil, nil
-	// case *ast.PointerType:
-	// 	//only misplaced PointerType nodes are evaluated using the symbolicEval function.
-	// 	return ANY_PATTERN, nil
-	case *ast.NewExpression:
-		return evalNewExpression(n, state, options)
-	case *ast.DereferenceExpression:
-		//not supported yet
-		return ANY, nil
 	case *ast.UnknownNode:
 		return ANY, nil
 	case *ast.MissingExpression:
@@ -1032,11 +1021,6 @@ func evalChunk(n *ast.Chunk, state *State) (result Value, finalErr error) {
 
 	state.SetGlobalScopeData(n, state.currentGlobalScopeData())
 	state.symbolicData.SetContextData(n, state.ctx.currentData())
-
-	//If the chunk is the main one, recursively register all structs defined in the current module.
-	if n == state.Module.mainChunk.Node {
-		defineStructs(state.Module.mainChunk, n.Statements, state)
-	}
 
 	// Predeclare all Inox functions that don't capture locals.
 	for _, stmt := range n.Statements {
@@ -1388,11 +1372,6 @@ func evalLocalVariableDeclarations(n *ast.LocalVariableDeclarations, state *Stat
 		var staticMatching Value
 
 		if decl.Type != nil {
-			_, ok := decl.Type.(*ast.PointerType)
-			if ok {
-				state.addError(MakeSymbolicEvalError(decl.Type, state, "pointer types are not supported in variable declarations yet"))
-				return nil
-			}
 
 			type_, err := symbolicEval(decl.Type, state)
 			if err != nil {
@@ -1476,11 +1455,6 @@ func evalGlobalVariableDeclarations(n *ast.GlobalVariableDeclarations, state *St
 		var staticMatching Value
 
 		if decl.Type != nil {
-			_, ok := decl.Type.(*ast.PointerType)
-			if ok {
-				state.addError(MakeSymbolicEvalError(decl.Type, state, "pointer types are not supported in variable declarations yet"))
-				return nil
-			}
 
 			type_, err := symbolicEval(decl.Type, state)
 			if err != nil {
@@ -1739,38 +1713,6 @@ func evalAssignment(node *ast.Assignment, state *State) (_ Value, finalErr error
 			return nil, nil
 		}
 
-		//handle IProps and structs LHS separately
-
-		ptr, ok := object.(*Pointer)
-		if ok {
-			strct, ok := ptr.value.(*Struct)
-			if !ok {
-				state.addError(MakeSymbolicEvalError(node, state, POINTED_VALUE_HAS_NO_PROPERTIES))
-				return ANY, nil
-			}
-			fieldName := lhs.PropertyName.Name
-			field, ok := strct.typ.FieldByName(fieldName)
-			if !ok {
-				state.addError(MakeSymbolicEvalError(node, state, fmtStructDoesnotHaveField(fieldName)))
-				return nil, nil
-			}
-
-			rhs, _, err := getRHS(nil)
-			if err != nil {
-				return nil, err
-			}
-			rhs = MergeValuesWithSameStaticTypeInMultivalue(rhs)
-
-			if node.Operator.Int() && !utils.Implements[*IntType](field.Type) {
-				state.addError(MakeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
-			} else if !field.Type.TestValue(rhs, RecTestCallState{evalState: state.resetTestCallMsgBuffers()}) {
-				msg, regions := fmtNotAssignableToFieldOfType(state.fmtHelper, rhs, field.Type, state.testCallMessageBuffer)
-				state.addError(MakeSymbolicEvalError(node, state, msg, regions...))
-			}
-
-			return nil, nil
-		}
-
 		var iprops IProps
 		isAnySerializable := false
 		{
@@ -1897,35 +1839,6 @@ func evalAssignment(node *ast.Assignment, state *State) (_ Value, finalErr error
 
 		lastPropNameNode := lhs.PropertyNames[len(lhs.PropertyNames)-1]
 		lastPropName := lastPropNameNode.Name
-
-		ptr, ok := v.(*Pointer)
-		if ok {
-			strct, ok := ptr.value.(*Struct)
-			if !ok {
-				state.addError(MakeSymbolicEvalError(node, state, POINTED_VALUE_HAS_NO_PROPERTIES))
-				return ANY, nil
-			}
-			fieldName := lastPropName
-			field, ok := strct.typ.FieldByName(fieldName)
-			if !ok {
-				state.addError(MakeSymbolicEvalError(node, state, fmtStructDoesnotHaveField(fieldName)))
-				return nil, nil
-			}
-
-			rhs, _, err := getRHS(nil)
-			if err != nil {
-				return nil, err
-			}
-			rhs = MergeValuesWithSameStaticTypeInMultivalue(rhs)
-
-			if node.Operator.Int() && !utils.Implements[*IntType](field.Type) {
-				state.addError(MakeSymbolicEvalError(node, state, INVALID_ASSIGN_INT_OPER_ASSIGN_LHS_NOT_INT))
-			} else if !field.Type.TestValue(rhs, RecTestCallState{evalState: state.resetTestCallMsgBuffers()}) {
-				msg, regions := fmtNotAssignableToFieldOfType(state.fmtHelper, rhs, field.Type, state.testCallMessageBuffer)
-				state.addError(MakeSymbolicEvalError(node, state, msg, regions...))
-			}
-			return nil, nil
-		}
 
 		var iprops IProps
 		isAnySerializable := true
@@ -6849,33 +6762,6 @@ func evalExtendStatement(n *ast.ExtendStatement, state *State, options evalOptio
 	return nil, nil
 }
 
-func evalNewExpression(n *ast.NewExpression, state *State, options evalOptions) (Value, error) {
-	comptimeTypes := state.symbolicData.getModuleComptimeTypes(state.Module.mainChunk.Node, false)
-
-	switch typeNode := n.Type.(type) {
-	case *ast.PatternIdentifierLiteral:
-		typeName := typeNode.Name
-		patt := state.ctx.ResolveNamedPattern(typeName)
-		if patt != nil && !IsNameOfBuiltinComptimeType(typeName) {
-			state.addError(MakeSymbolicEvalError(typeNode, state, ONLY_COMPILE_TIME_TYPES_CAN_BE_USED_IN_NEW_EXPRS))
-			return ANY, nil
-		}
-
-		comptimeType, ok := comptimeTypes.GetPointerType(typeName)
-		if !ok {
-			state.addError(MakeSymbolicEvalError(typeNode, state, fmtCompileTimeTypeIsNotDefined(typeName)))
-			return ANY, nil
-		}
-
-		return comptimeType.SymbolicValue(), nil
-	case *ast.PointerType:
-		state.addError(MakeSymbolicEvalError(typeNode, state, POINTER_TYPES_CANNOT_BE_USED_IN_NEW_EXPRS_YET))
-	default:
-		state.addError(MakeSymbolicEvalError(typeNode, state, ONLY_COMPILE_TIME_TYPES_CAN_BE_USED_AS_STRUCT_FIELD_TYPES))
-	}
-	return ANY, nil
-}
-
 type memberAccessKind int
 
 const (
@@ -6887,25 +6773,6 @@ const (
 
 func symbolicMemb(value Value, name string, accessKind memberAccessKind, node ast.Node, state *State) (result Value) {
 	//note: the property of a %serializable is not necessarily serializable (example: Go methods)
-
-	pointer, ok := value.(*Pointer)
-	if ok {
-		strct, ok := pointer.value.(*Struct)
-		if !ok {
-			state.addError(MakeSymbolicEvalError(node, state, POINTED_VALUE_HAS_NO_PROPERTIES))
-			return ANY
-		}
-		if accessKind == optionalMemberAccess {
-			state.addError(MakeSymbolicEvalError(node, state, OPTIONAL_MEMBER_EXPRS_NOT_ALLOWED_FOR_STRUCT_FIELDS))
-			return ANY
-		}
-		field, ok := strct.typ.FieldByName(name)
-		if ok {
-			return field.Type.SymbolicValue()
-		}
-		state.addError(MakeSymbolicEvalError(node, state, fmtStructDoesnotHaveField(name)))
-		return ANY
-	}
 
 	isOptionalAccess := accessKind == optionalMemberAccess || accessKind == optionalDestructurationMemberAccess
 

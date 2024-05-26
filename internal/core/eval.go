@@ -47,7 +47,58 @@ type IProps interface {
 type BytecodeEvaluationConfig struct {
 	Tracer               io.Writer
 	ShowCompilationTrace bool
+	OptimizeBytecode     bool
 	CompilationContext   *Context
+}
+
+// EvalVM compiles the passed module (in module source) and evaluates the bytecode with the passed global state.
+func EvalVM(mod *Module, state *GlobalState, config BytecodeEvaluationConfig) (Value, error) {
+	compilationTracer := io.Writer(nil)
+	if config.ShowCompilationTrace {
+		compilationTracer = config.Tracer
+	}
+
+	bytecode, err := Compile(CompilationInput{
+		Mod:             mod,
+		Globals:         state.Globals.permanent,
+		SymbolicData:    state.SymbolicData.Data,
+		StaticCheckData: state.StaticCheckData,
+		TraceWriter:     compilationTracer,
+		Context:         config.CompilationContext,
+		//TODO: IsTestingEnabled:       state.TestingState.IsTestingEnabled,
+		//TODO: IsImportTestingEnabled: state.TestingState.IsImportTestingEnabled,
+	})
+	if err != nil {
+		return nil, err
+	}
+	state.Bytecode = bytecode
+
+	if config.OptimizeBytecode {
+		optimizeBytecode(bytecode, compilationTracer)
+	}
+
+	config.Tracer.Write([]byte(bytecode.Format(config.CompilationContext, "")))
+
+	vm, err := NewVM(VMConfig{
+		Bytecode: bytecode,
+		State:    state,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return vm.Run()
+}
+
+func EvalBytecode(bytecode *Bytecode, state *GlobalState, self Value) (Value, error) {
+	vm, err := NewVM(VMConfig{
+		Bytecode: bytecode,
+		State:    state,
+		Self:     self,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return vm.Run()
 }
 
 func CreateDirEntry(path, walkedDirPath string, addDotSlashPrefix bool, d fs.DirEntry) *Object {

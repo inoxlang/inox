@@ -98,12 +98,11 @@ const (
 	PRUNE_STMTS_ARE_ONLY_ALLOWED_IN_WALK_STMTS_AND_EXPRS = "prune statement are only allowed in 'walk' statements and expressions"
 
 	SELF_ACCESSIBILITY_EXPLANATION = "'self' is only accessible within " +
-		"extension methods, struct methods, metaproperty initialization blocks"
-	CANNOT_CHECK_OBJECT_PROP_WITHOUT_PARENT       = "checking an ObjectProperty node requires the parent ObjectLiteral node"
-	CANNOT_CHECK_OBJECT_METAPROP_WITHOUT_PARENT   = "checking an ObjectMetaProperty node requires the parent ObjectLiteral node"
-	OBJ_REC_LIT_CANNOT_HAVE_METAPROP_KEYS         = "object-like literals cannot have metaproperty keys, metaproperty keys have a (single) starting underscore '_' and a (single) trailing underscore"
-	CANNOT_CHECK_MANIFEST_WITHOUT_PARENT          = "checking a Manifest node requires the parent node"
-	CANNOT_CHECK_STRUCT_METHOD_DEF_WITHOUT_PARENT = "checking the definition of a struct method requires the parent node"
+		"extension methods, metaproperty initialization blocks"
+	CANNOT_CHECK_OBJECT_PROP_WITHOUT_PARENT     = "checking an ObjectProperty node requires the parent ObjectLiteral node"
+	CANNOT_CHECK_OBJECT_METAPROP_WITHOUT_PARENT = "checking an ObjectMetaProperty node requires the parent ObjectLiteral node"
+	OBJ_REC_LIT_CANNOT_HAVE_METAPROP_KEYS       = "object-like literals cannot have metaproperty keys, metaproperty keys have a (single) starting underscore '_' and a (single) trailing underscore"
+	CANNOT_CHECK_MANIFEST_WITHOUT_PARENT        = "checking a Manifest node requires the parent node"
 
 	//object literal
 	ELEMENTS_NOT_ALLOWED_IF_EMPTY_PROP_NAME = "elements are not allowed if the empty property name is present"
@@ -111,7 +110,6 @@ const (
 
 	//object pattern literals
 	UNEXPECTED_OTHER_PROPS_EXPR_OTHERPROPS_NO_IS_PRESENT = "unexpected otherprops expression: no other properties are allowed since otherprops(no) is present"
-
 
 	INVALID_MAPPING_ENTRY_KEY_ONLY_SIMPL_LITS_AND_PATT_IDENTS      = "invalid mapping entry key: only simple value literals and pattern identifiers are supported"
 	ONLY_GLOBALS_ARE_ACCESSIBLE_FROM_RIGHT_SIDE_OF_MAPPING_ENTRIES = "only globals are accessible from the right side of mapping entries"
@@ -130,7 +128,6 @@ const (
 
 	MISPLACED_READONLY_PATTERN_EXPRESSION                 = "misplaced readonly pattern expression: they are only allowed as the type of function parameters"
 	MISPLACED_EXTEND_STATEMENT_TOP_LEVEL_STMT             = "misplaced extend statement: it should be located at the top level"
-	MISPLACED_STRUCT_DEF_TOP_LEVEL_STMT                   = "misplaced struct definition: it should be located at the top level"
 	MISPLACED_GLOBAL_VAR_DECLS_TOP_LEVEL_STMT             = "misplaced global variable declaration(s): declarations are only allowed at the top level"
 	MISPLACED_GLOBAL_VAR_DECLS_AFTER_FN_DECL_OR_REF_TO_FN = "misplaced global variable declaration(s): declarations are not allowed after a function declaration, or after a reference to a function that is declared further below"
 
@@ -153,24 +150,10 @@ const (
 	VARS_NOT_ALLOWED_IN_PATTERN_AND_EXTENSION_OBJECT_PROPERTIES = "variables are not allowed in the extended pattern and " +
 		"in the extension object's properties"
 
-	VARS_CANNOT_BE_USED_IN_STRUCT_FIELD_DEFS = "variables cannot be used in struct field definitions"
-
-	//struct types
-	MISPLACED_STRUCT_TYPE_NAME                  = "misplaced struct type name, note that struct types are not patterns and are not allowed inside patterns"
-	STRUCT_TYPES_NOT_ALLOWED_AS_PARAMETER_TYPES = "struct types are not allowed as parameter types, pointer types are allowed though"
-	STRUCT_TYPES_NOT_ALLOWED_AS_RETURN_TYPES    = "struct types are not allowed as return types, pointer types are allowed though"
-
-	//pointer types
-	A_STRUCT_TYPE_IS_EXPECTED_AFTER_THE_STAR = "a struct type is expected after '*'"
-	MISPLACED_POINTER_TYPE                   = "misplaced pointer type, note that pointer types are not patterns and are not allowed inside patterns"
-
 	//test suites & cases
 	TEST_CASES_NOT_ALLOWED_IF_SUBSUITES_ARE_PRESENT     = "test cases are not allowed if sub suites are presents"
 	TEST_CASE_STMTS_NOT_ALLOWED_OUTSIDE_OF_TEST_SUITES  = "test case statements are not allowed outside of test suites"
 	TEST_SUITE_STMTS_NOT_ALLOWED_INSIDE_TEST_CASE_STMTS = "test suite statements are not allowed in test case statements"
-
-	//new expressions
-	A_STRUCT_TYPE_NAME_IS_EXPECTED = "a struct type name is expected"
 
 	//return statements
 	MISPLACED_RETURN_STATEMENT = "misplaced return statement"
@@ -358,10 +341,6 @@ func FmtMisplacedFnDeclGlobVarExist(name string) string {
 	return fmt.Sprintf("misplaced function declaration: a global variable named '%s' exists", name)
 }
 
-func FmtInvalidStructDefAlreadyDeclared(name string) string {
-	return fmt.Sprintf("invalid struct definition: %s is already declared", name)
-}
-
 func FmtAnXFieldOrMethodIsAlreadyDefined(name string) string {
 	return fmt.Sprintf("a field or method named '%s' is already defined ", name)
 }
@@ -376,10 +355,6 @@ func FmtPatternNamespaceAlreadyDeclared(name string) string {
 
 func FmtPatternNamespaceDoesNotHaveMember(namespace, member string) string {
 	return fmt.Sprintf("pattern namespace %%%s. does not have a member '%s'", namespace, member)
-}
-
-func FmtStructTypeIsNotDefined(name string) string {
-	return fmt.Sprintf("struct type '%s' is not defined", name)
 }
 
 func FmtCannotPassGlobalThatIsNotDeclaredToLThread(name string) string {

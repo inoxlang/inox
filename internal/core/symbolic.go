@@ -1389,6 +1389,10 @@ func (fn *InoxFunction) ToSymbolicValue(ctx *Context, encountered map[uintptr]sy
 	return fn.symbolicValue, nil
 }
 
+func (b *Bytecode) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+	return &symbolic.Bytecode{Bytecode: b}, nil
+}
+
 func (t Type) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return &symbolic.Type{Type: t}, nil
 }
@@ -1753,8 +1757,4 @@ func (id ULID) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Va
 
 func (id UUIDv4) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.NewUUID(id.libValue()), nil
-}
-
-func (Struct) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
-	return nil, errors.New("a StructAddress don't have a corresponding symbolic value")
 }

@@ -9,7 +9,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"unsafe"
 
 	"github.com/inoxlang/inox/internal/ast"
 	"github.com/inoxlang/inox/internal/core/inoxmod"
@@ -115,25 +114,25 @@ func TreeWalkEval(node ast.Node, state *TreeWalkState) (result Value, err error)
 			}
 		}
 
-		for i, propNameIdent := range n.PropertyNames {
-			var propContainer symbolic.Value
-			if i == 0 {
-				propContainer, _ = state.Global.SymbolicData.GetMostSpecificNodeValue(n.Left)
-			} else {
-				propContainer, _ = state.Global.SymbolicData.GetMostSpecificNodeValue(n.PropertyNames[i-1])
-			}
+		for _, propNameIdent := range n.PropertyNames {
+			// var propContainer symbolic.Value
+			// if i == 0 {
+			// 	propContainer, _ = state.Global.SymbolicData.GetMostSpecificNodeValue(n.Left)
+			// } else {
+			// 	propContainer, _ = state.Global.SymbolicData.GetMostSpecificNodeValue(n.PropertyNames[i-1])
+			// }
 
-			structPtr, ok := v.(*Struct)
-			if ok {
-				symbType := propContainer.(*symbolic.Pointer).Type()
-				concreteType := state.getConcreteType(symbType).(*PointerType)
-				retrievalInfo := concreteType.StructFieldRetrieval(propNameIdent.Name)
+			// structPtr, ok := v.(*Struct)
+			// if ok {
+			// 	symbType := propContainer.(*symbolic.Pointer).Type()
+			// 	concreteType := state.getConcreteType(symbType).(*PointerType)
+			// 	retrievalInfo := concreteType.StructFieldRetrieval(propNameIdent.Name)
 
-				helper := structHelperFromPtr(structPtr, int(concreteType.ValueSize()))
-				v = helper.GetValue(retrievalInfo)
-			} else {
-				v = v.(IProps).Prop(state.Global.Ctx, propNameIdent.Name)
-			}
+			// 	helper := structHelperFromPtr(structPtr, int(concreteType.ValueSize()))
+			// 	v = helper.GetValue(retrievalInfo)
+			// } else {
+			v = v.(IProps).Prop(state.Global.Ctx, propNameIdent.Name)
+			//}
 		}
 		return v, nil
 	case *ast.OptionExpression:
@@ -667,29 +666,11 @@ func TreeWalkEval(node ast.Node, state *TreeWalkState) (result Value, err error)
 			var getLeft func() Value
 			var storeValue func(v Value) error
 
-			structPtr, ok := left.(*Struct)
-			if ok {
-				val := utils.MustGet(state.Global.SymbolicData.GetMostSpecificNodeValue(lhs.Left))
-				symbType := val.(*symbolic.Pointer).Type()
-				concreteType := state.getConcreteType(symbType).(*PointerType)
-				retrievalInfo := concreteType.StructFieldRetrieval(key)
-
-				helper := structHelperFromPtr(structPtr, int(concreteType.ValueSize()))
-
-				getLeft = func() Value {
-					return helper.GetValue(retrievalInfo)
-				}
-				storeValue = func(v Value) error {
-					helper.SetValue(retrievalInfo, v)
-					return nil
-				}
-			} else {
-				getLeft = func() Value {
-					return left.(IProps).Prop(state.Global.Ctx, key)
-				}
-				storeValue = func(v Value) error {
-					return left.(IProps).SetProp(state.Global.Ctx, key, v)
-				}
+			getLeft = func() Value {
+				return left.(IProps).Prop(state.Global.Ctx, key)
+			}
+			storeValue = func(v Value) error {
+				return left.(IProps).SetProp(state.Global.Ctx, key, v)
 			}
 
 			right, err = handleAssignmentOperation(getLeft, right)
@@ -704,25 +685,25 @@ func TreeWalkEval(node ast.Node, state *TreeWalkState) (result Value, err error)
 				return nil, err
 			}
 
-			for i, propNameIdent := range lhs.PropertyNames[:len(lhs.PropertyNames)-1] {
-				var symbPropContainer symbolic.Value
-				if i == 0 {
-					symbPropContainer, _ = state.Global.SymbolicData.GetMostSpecificNodeValue(lhs.Left)
-				} else {
-					symbPropContainer, _ = state.Global.SymbolicData.GetMostSpecificNodeValue(lhs.PropertyNames[i-1])
-				}
+			for _, propNameIdent := range lhs.PropertyNames[:len(lhs.PropertyNames)-1] {
+				// var symbPropContainer symbolic.Value
+				// if i == 0 {
+				// 	symbPropContainer, _ = state.Global.SymbolicData.GetMostSpecificNodeValue(lhs.Left)
+				// } else {
+				// 	symbPropContainer, _ = state.Global.SymbolicData.GetMostSpecificNodeValue(lhs.PropertyNames[i-1])
+				// }
 
-				structPtr, ok := left.(*Struct)
-				if ok {
-					symbType := symbPropContainer.(*symbolic.Pointer).Type()
-					concreteType := state.getConcreteType(symbType).(*PointerType)
-					retrievalInfo := concreteType.StructFieldRetrieval(propNameIdent.Name)
+				// structPtr, ok := left.(*Struct)
+				// if ok {
+				// 	symbType := symbPropContainer.(*symbolic.Pointer).Type()
+				// 	concreteType := state.getConcreteType(symbType).(*PointerType)
+				// 	retrievalInfo := concreteType.StructFieldRetrieval(propNameIdent.Name)
 
-					helper := structHelperFromPtr(structPtr, int(concreteType.ValueSize()))
-					left = helper.GetValue(retrievalInfo)
-				} else {
-					left = left.(IProps).Prop(state.Global.Ctx, propNameIdent.Name)
-				}
+				// 	helper := structHelperFromPtr(structPtr, int(concreteType.ValueSize()))
+				// 	left = helper.GetValue(retrievalInfo)
+				// } else {
+				left = left.(IProps).Prop(state.Global.Ctx, propNameIdent.Name)
+				//}
 			}
 
 			right, err := TreeWalkEval(n.Right, state)
@@ -735,34 +716,11 @@ func TreeWalkEval(node ast.Node, state *TreeWalkState) (result Value, err error)
 			var getLeft func() Value
 			var storeValue func(v Value) error
 
-			structPtr, ok := left.(*Struct)
-			if ok {
-				propContainerNode := lhs.Left
-				if len(lhs.PropertyNames) > 1 {
-					propContainerNode = lhs.PropertyNames[len(lhs.PropertyNames)-2]
-				}
-
-				symbPropContainer := utils.MustGet(state.Global.SymbolicData.GetMostSpecificNodeValue(propContainerNode))
-				symbType := symbPropContainer.(*symbolic.Pointer).Type()
-				concreteType := state.getConcreteType(symbType).(*PointerType)
-				retrievalInfo := concreteType.StructFieldRetrieval(lastPropName)
-
-				helper := structHelperFromPtr(structPtr, int(concreteType.ValueSize()))
-
-				getLeft = func() Value {
-					return helper.GetValue(retrievalInfo)
-				}
-				storeValue = func(v Value) error {
-					helper.SetValue(retrievalInfo, v)
-					return nil
-				}
-			} else {
-				getLeft = func() Value {
-					return left.(IProps).Prop(state.Global.Ctx, lastPropName)
-				}
-				storeValue = func(v Value) error {
-					return left.(IProps).SetProp(state.Global.Ctx, lastPropName, v)
-				}
+			getLeft = func() Value {
+				return left.(IProps).Prop(state.Global.Ctx, lastPropName)
+			}
+			storeValue = func(v Value) error {
+				return left.(IProps).SetProp(state.Global.Ctx, lastPropName, v)
 			}
 
 			right, err = handleAssignmentOperation(getLeft, right)
@@ -1831,17 +1789,6 @@ func TreeWalkEval(node ast.Node, state *TreeWalkState) (result Value, err error)
 			return nil, err
 		}
 
-		structPtr, ok := left.(*Struct)
-		if ok {
-			val := utils.MustGet(state.Global.SymbolicData.GetMostSpecificNodeValue(n.Left))
-			symbType := val.(*symbolic.Pointer).Type()
-			concreteType := state.getConcreteType(symbType).(*PointerType)
-			retrievalInfo := concreteType.StructFieldRetrieval(n.PropertyName.Name)
-
-			helper := structHelperFromPtr(structPtr, int(concreteType.ValueSize()))
-			return helper.GetValue(retrievalInfo), nil
-		}
-
 		iprops := left.(IProps)
 		propName := n.PropertyName.Name
 
@@ -2687,37 +2634,6 @@ func TreeWalkEval(node ast.Node, state *TreeWalkState) (result Value, err error)
 
 		state.Global.Ctx.AddTypeExtension(extension)
 		return nil, nil
-	case *ast.StructDefinition:
-		return nil, nil
-	case *ast.NewExpression:
-		val, ok := state.Global.SymbolicData.GetMostSpecificNodeValue(n)
-		if !ok {
-			return nil, fmt.Errorf("no symbolic value found")
-		}
-		symbPtrType := val.(*symbolic.Pointer).Type()
-
-		ptrType := state.getConcreteType(symbPtrType).(*PointerType)
-		ptr := ptrType.New(state.Global.Heap)
-		structPtr := (*Struct)(unsafe.Pointer(ptr))
-
-		initLiteral, ok := n.Initialization.(*ast.StructInitializationLiteral)
-		if ok {
-			//initialize
-			structType := ptrType.ValueType().(*StructType)
-			helper := structHelperFromPtr(structPtr, int(structType.GoType().Size()))
-			for _, init := range initLiteral.Fields {
-				structFieldInit := init.(*ast.StructFieldInitialization)
-				fieldName := structFieldInit.Name.Name
-				initialFieldValue, err := TreeWalkEval(structFieldInit.Value, state)
-				if err != nil {
-					return nil, err
-				}
-				fieldRetrievalInfo := structType.FieldRetrievalInfo(fieldName)
-				helper.SetValue(fieldRetrievalInfo, initialFieldValue)
-			}
-		}
-
-		return structPtr, nil
 	default:
 		return nil, fmt.Errorf("cannot evaluate %#v (%T)\n%s", node, node, debug.Stack())
 	}

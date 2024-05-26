@@ -28,7 +28,8 @@ type InoxFunction struct {
 	capturedGlobals []capturedGlobal // set when shared, should not be nil in this case
 
 	treeWalkCapturedLocals map[string]Value
-	capturedLocals         []Value //alway empty if .CompiledFunction is nil
+	compiledFunction       *CompiledFunction //can be nil
+	capturedLocals         []Value           //alway empty if .CompiledFunction is nil
 
 	symbolicValue *symbolic.InoxFunction
 	staticData    *staticcheck.FunctionData
@@ -61,31 +62,30 @@ func (fn *InoxFunction) FuncExpr() *ast.FunctionExpression {
 // Call executes the function with the provided global state, `self` value and arguments.
 // If the function is compiled the bytecode interpreter is used.
 func (fn *InoxFunction) Call(globalState *GlobalState, self Value, args []Value, disabledArgSharing []bool) (Value, error) {
-	// if fn.compiledFunction != nil {
-	// 	return
-	// 	vm, err := NewVM(VMConfig{
-	// 		Bytecode:           fn.compiledFunction.Bytecode,
-	// 		Fn:                 fn,
-	// 		State:              globalState,
-	// 		Self:               self,
-	// 		FnArgs:             args,
-	// 		DisabledArgSharing: disabledArgSharing,
-	// 	})
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// 	return vm.Run()
-	// } else {
-	newState := NewTreeWalkStateWithGlobal(globalState)
+	if fn.compiledFunction != nil {
+		vm, err := NewVM(VMConfig{
+			Bytecode:           fn.compiledFunction.Bytecode,
+			Fn:                 fn,
+			State:              globalState,
+			Self:               self,
+			FnArgs:             args,
+			DisabledArgSharing: disabledArgSharing,
+		})
+		if err != nil {
+			return nil, err
+		}
+		return vm.Run()
+	} else {
+		newState := NewTreeWalkStateWithGlobal(globalState)
 
-	return TreeWalkCallFunc(TreeWalkCall{
-		callee:             fn,
-		self:               self,
-		state:              newState,
-		arguments:          args,
-		disabledArgSharing: disabledArgSharing,
-	})
-	//}
+		return TreeWalkCallFunc(TreeWalkCall{
+			callee:             fn,
+			self:               self,
+			state:              newState,
+			arguments:          args,
+			disabledArgSharing: disabledArgSharing,
+		})
+	}
 }
 
 func (fn *InoxFunction) IsSharable(originState *GlobalState) (bool, string) {

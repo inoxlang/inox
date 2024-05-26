@@ -142,8 +142,7 @@ func IsScopeContainerNode(node Node) bool {
 	case *Chunk, *EmbeddedModule, *FunctionExpression, *FunctionPatternExpression, *QuotedExpression,
 		*InitializationBlock, *MappingExpression, *StaticMappingEntry, *DynamicMappingEntry, *TestSuiteExpression, *TestCaseExpression,
 		*ExtendStatement,     //ExtendStatement being a scope container is not 100% incorrect
-		*MetadataAnnotations, //MetadataAnnotation being a scope container is not 100% incorrect
-		*StructDefinition:    //same
+		*MetadataAnnotations: //MetadataAnnotation being a scope container is not 100% incorrect
 		return true
 	default:
 		return false
@@ -1977,58 +1976,6 @@ func (expr FunctionPatternExpression) SignatureInformation() (
 
 func (FunctionPatternExpression) Kind() NodeKind {
 	return Expr
-}
-
-type StructDefinition struct {
-	NodeBase
-	Name Node //*PatternIdentifierLiteral
-	Body *StructBody
-}
-
-func (d *StructDefinition) GetName() (string, bool) {
-	ident, ok := d.Name.(*PatternIdentifierLiteral)
-	if ok {
-		return ident.Name, true
-	}
-	return "", false
-}
-
-type StructBody struct {
-	NodeBase
-	Definitions []Node //*StructFieldDefinition and *FunctionDeclaration
-}
-
-type StructFieldDefinition struct {
-	NodeBase
-	Name *IdentifierLiteral
-	Type Node
-}
-
-type NewExpression struct {
-	NodeBase
-	Type           Node //*PatternIdentifierLiteral for structs
-	Initialization Node
-}
-
-type StructInitializationLiteral struct {
-	NodeBase
-	Fields []Node //*StructFieldInitialization
-}
-
-type StructFieldInitialization struct {
-	NodeBase
-	Name  *IdentifierLiteral
-	Value Node
-}
-
-type PointerType struct {
-	NodeBase
-	ValueType Node
-}
-
-type DereferenceExpression struct {
-	NodeBase
-	Pointer Node
 }
 
 type PatternConversionExpression struct {

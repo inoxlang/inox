@@ -55,7 +55,6 @@ type Data struct {
 	availableTypeExtensions     map[*ast.DoubleColonExpression][]*TypeExtension
 	urlReferencedEntities       map[*ast.DoubleColonExpression]Value
 	moduleResults               map[ /* *Chunk or *EmbeddModule */ ast.Node]Value
-	comptimeTypes               map[ /* *Chunk or *EmbeddModule */ ast.Node]*ModuleCompileTimeTypes
 
 	errorMessageSet map[string]bool
 	errors          []EvaluationError
@@ -79,8 +78,6 @@ func NewSymbolicData() *Data {
 		availableTypeExtensions:     make(map[*ast.DoubleColonExpression][]*TypeExtension, 0),
 		urlReferencedEntities:       make(map[*ast.DoubleColonExpression]Value, 0),
 		moduleResults:               make(map[ast.Node]Value, 0),
-
-		comptimeTypes: make(map[ast.Node]*ModuleCompileTimeTypes, 0),
 
 		errorMessageSet:   make(map[string]bool, 0),
 		warningMessageSet: make(map[string]bool, 0),
@@ -290,9 +287,9 @@ func (data *Data) AddData(newData *Data) {
 		data.SetModuleResult(k, v)
 	}
 
-	for k, v := range newData.comptimeTypes {
-		data.comptimeTypes[k] = v
-	}
+	// for k, v := range newData.comptimeTypes {
+	// 	data.comptimeTypes[k] = v
+	// }
 
 	data.errors = append(data.errors, newData.errors...)
 	data.warnings = append(data.warnings, newData.warnings...)
@@ -682,33 +679,6 @@ func (d *Data) GetContextData(n ast.Node, ancestorChain []ast.Node) (ContextData
 			return d.GetContextData(ancestorChain[lastIndex], ancestorChain[:lastIndex])
 		}
 	}
-}
-
-func (d *Data) getModuleComptimeTypes(module ast.Node, create bool) *ModuleCompileTimeTypes {
-	switch module.(type) {
-	case *ast.Chunk, *ast.EmbeddedModule:
-	default:
-		panic(errors.New("invalid node"))
-	}
-
-	types, ok := d.comptimeTypes[module]
-	if create && !ok {
-		types = NewModuleCompileTimeTypes()
-
-		d.comptimeTypes[module] = types
-	}
-
-	return types
-
-}
-
-func (d *Data) GetCreateComptimeTypes(module ast.Node) *ModuleCompileTimeTypes {
-	return d.getModuleComptimeTypes(module, true)
-}
-
-func (d *Data) GetComptimeTypes(module ast.Node) (*ModuleCompileTimeTypes, bool) {
-	types := d.getModuleComptimeTypes(module, false)
-	return types, types != nil
 }
 
 type ScopeData struct {

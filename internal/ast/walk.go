@@ -196,30 +196,6 @@ func walk(node, parent Node, ancestorChain *[]Node, fn, afterFn NodeHandler) {
 	case *FunctionParameter:
 		walk(n.Var, node, ancestorChain, fn, afterFn)
 		walk(n.Type, node, ancestorChain, fn, afterFn)
-	case *StructDefinition:
-		walk(n.Name, node, ancestorChain, fn, afterFn)
-		walk(n.Body, node, ancestorChain, fn, afterFn)
-	case *StructBody:
-		for _, def := range n.Definitions {
-			walk(def, node, ancestorChain, fn, afterFn)
-		}
-	case *StructFieldDefinition:
-		walk(n.Name, node, ancestorChain, fn, afterFn)
-		walk(n.Type, node, ancestorChain, fn, afterFn)
-	case *NewExpression:
-		walk(n.Type, node, ancestorChain, fn, afterFn)
-		walk(n.Initialization, node, ancestorChain, fn, afterFn)
-	case *StructInitializationLiteral:
-		for _, fieldInit := range n.Fields {
-			walk(fieldInit, node, ancestorChain, fn, afterFn)
-		}
-	case *StructFieldInitialization:
-		walk(n.Name, node, ancestorChain, fn, afterFn)
-		walk(n.Value, node, ancestorChain, fn, afterFn)
-	case *PointerType:
-		walk(n.ValueType, node, ancestorChain, fn, afterFn)
-	case *DereferenceExpression:
-		walk(n.Pointer, node, ancestorChain, fn, afterFn)
 	case *PatternConversionExpression:
 		walk(n.Value, node, ancestorChain, fn, afterFn)
 	case *GlobalConstantDeclarations:
