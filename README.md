@@ -1,6 +1,4 @@
-# Inox
+**I plan to rework on Inox to turn into a DevSecOps/Scripting language**.
 
-🚧 Rework in progress 🚧
+Previous version before the rework --> https://github.com/inoxlang/inox/commit/aca05ac2f7a1de41a67403fb2694a5adf56fb590
 
-Inox is a high-level programming language that transpiles to Golang and can call Go functions.
-It is web and scripting oriented. It is meant to be used inside a Golang projet.
