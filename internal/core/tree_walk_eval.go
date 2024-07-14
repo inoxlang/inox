@@ -2529,21 +2529,19 @@ func TreeWalkEval(node ast.Node, state *TreeWalkState) (result Value, err error)
 
 		var attrs []NonInterpretedMarkupAttribute
 
-		for _, attrNode := range n.Opening.Attributes {
+		for _, regularAttr := range n.Opening.Attributes {
 			var attr NonInterpretedMarkupAttribute
-			if regularAttr, ok := attrNode.(*ast.MarkupAttribute); ok {
-				attr.name = regularAttr.GetName()
-				if regularAttr.Value != nil {
-					attrValue, err := TreeWalkEval(regularAttr.Value, state)
-					if err != nil {
-						return nil, err
-					}
-					attr.value = attrValue
-				} else {
-					attr.value = DEFAULT_MARKUP_ATTR_VALUE
+			attr.name = regularAttr.GetName()
+			if regularAttr.Value != nil {
+				attrValue, err := TreeWalkEval(regularAttr.Value, state)
+				if err != nil {
+					return nil, err
 				}
-				attrs = append(attrs, attr)
+				attr.value = attrValue
+			} else {
+				attr.value = DEFAULT_MARKUP_ATTR_VALUE
 			}
+			attrs = append(attrs, attr)
 			// else {
 			// 	shorthand := attrNode.(*ast.HyperscriptAttributeShorthand)
 			// 	attr = NewMarkupAttributeCreatedFromHyperscriptAttributeShorthand(String(shorthand.Value))

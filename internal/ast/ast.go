@@ -2444,16 +2444,6 @@ func (e MarkupElement) IsFirstTagNameLetterCapitalized() bool {
 	return char >= 'A' && char <= 'Z'
 }
 
-func (e MarkupElement) HyperscriptAttributeShorthand() (*HyperscriptAttributeShorthand, bool) {
-	for _, attr := range e.Opening.Attributes {
-		switch attr := attr.(type) {
-		case *HyperscriptAttributeShorthand:
-			return attr, true
-		}
-	}
-	return nil, false
-}
-
 type RawElementType string
 
 const (
@@ -2463,9 +2453,9 @@ const (
 
 type MarkupOpeningTag struct {
 	NodeBase   `json:"base:markup-opening-elem"`
-	Name       Node   `json:"name"`
-	Attributes []Node `json:"attributes"` //*MarkupAttribute | *HyperscriptAttributeShorthand
-	SelfClosed bool   `json:"selfClosed"`
+	Name       Node               `json:"name"`
+	Attributes []*MarkupAttribute `json:"attributes"`
+	SelfClosed bool               `json:"selfClosed"`
 }
 
 func (attr MarkupOpeningTag) GetName() string {
@@ -2501,14 +2491,6 @@ func (attr MarkupAttribute) ValueIfStringLiteral() string {
 	default:
 		return ""
 	}
-}
-
-type HyperscriptAttributeShorthand struct {
-	NodeBase `json:"base:hs-attr-shorthand"`
-
-	Value string `json:"value"`
-
-	IsUnterminated bool `json:"isUnterminated"`
 }
 
 type MarkupText struct {

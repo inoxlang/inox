@@ -2398,16 +2398,14 @@ func (c *compiler) Compile(node ast.Node) error {
 	case *ast.MarkupElement:
 		name := node.Opening.GetName()
 
-		for _, attr := range node.Opening.Attributes {
+		for _, regularAttr := range node.Opening.Attributes {
 
-			if regularAttr, ok := attr.(*ast.MarkupAttribute); ok {
-				c.emit(node, OpPushConstant, c.addConstant(String(regularAttr.GetName())))
+			c.emit(node, OpPushConstant, c.addConstant(String(regularAttr.GetName())))
 
-				if regularAttr.Value == nil {
-					c.emit(node, OpPushConstant, c.addConstant(DEFAULT_MARKUP_ATTR_VALUE))
-				} else if err := c.Compile(regularAttr.Value); err != nil {
-					return err
-				}
+			if regularAttr.Value == nil {
+				c.emit(node, OpPushConstant, c.addConstant(DEFAULT_MARKUP_ATTR_VALUE))
+			} else if err := c.Compile(regularAttr.Value); err != nil {
+				return err
 			}
 			// else {
 			// 	shorthand := attr.(*ast.HyperscriptAttributeShorthand)

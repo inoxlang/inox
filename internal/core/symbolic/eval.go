@@ -5982,24 +5982,18 @@ func evalMarkupElement(n *ast.MarkupElement, state *State, options evalOptions) 
 	if len(n.Opening.Attributes) > 0 {
 		attrs = make(map[string]Value, len(n.Opening.Attributes))
 
-		for _, attr := range n.Opening.Attributes {
-			regularAttr, ok := attr.(*ast.MarkupAttribute)
-			if ok {
-				name := regularAttr.Name.(*ast.IdentifierLiteral).Name
-				if regularAttr.Value == nil { //no value
-					//See ../markup.go and the evaluation of *ast.MarkupElement in ../tree_walk_eval.go.
-					attrs[name] = EMPTY_STRING
-					continue
-				}
-				val, err := symbolicEval(regularAttr.Value, state)
-				if err != nil {
-					return nil, err
-				}
-				attrs[name] = val
+		for _, regularAttr := range n.Opening.Attributes {
+			name := regularAttr.Name.(*ast.IdentifierLiteral).Name
+			if regularAttr.Value == nil { //no value
+				//See ../markup.go and the evaluation of *ast.MarkupElement in ../tree_walk_eval.go.
+				attrs[name] = EMPTY_STRING
+				continue
 			}
-			// else if _, ok := attr.(*ast.HyperscriptAttributeShorthand); ok {
-			// 	attrs[inoxconsts.HYPERSCRIPT_ATTRIBUTE_NAME] = ANY_STRING
-			// }
+			val, err := symbolicEval(regularAttr.Value, state)
+			if err != nil {
+				return nil, err
+			}
+			attrs[name] = val
 		}
 	}
 

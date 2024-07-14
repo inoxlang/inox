@@ -270,7 +270,6 @@ const (
 	MARKUP_TEXT_SLICE
 	MARKUP_ELEMENT_QUANTIFIER
 	MARKUP_WILDCARD
-	HYPERSCRIPT_CODE_SLICE
 	OCCURRENCE_MODIFIER
 )
 
@@ -508,7 +507,6 @@ var TOKEN_STRINGS = [...]string{
 	MARKUP_TEXT_SLICE:              "<?>",
 	MARKUP_ELEMENT_QUANTIFIER:      "<?>",
 	MARKUP_WILDCARD:                "<?>",
-	HYPERSCRIPT_CODE_SLICE:         "<?>",
 	NAMED_PATH_SEGMENT:             "<?>",
 }
 
@@ -690,7 +688,6 @@ var tokenTypenames = [...]string{
 	MARKUP_TEXT_SLICE:              "MARKUP_TEXT_SLICE",
 	MARKUP_ELEMENT_QUANTIFIER:      "MARKUP_ELEMENT_QUANTIFIER",
 	MARKUP_WILDCARD:                "MARKUP_WILDCARD",
-	HYPERSCRIPT_CODE_SLICE:         "HYPERSCRIPT_CODE_SLICE",
 	OCCURRENCE_MODIFIER:            "OCCURRENCE_MODIFIER",
 }
 
@@ -1134,17 +1131,8 @@ func GetTokens(node Node, chunk *Chunk, addMeta bool) []Token {
 		case *MarkupText:
 			tokenType = MARKUP_TEXT_SLICE
 			raw = n.Raw
-		case *HyperscriptAttributeShorthand:
-			tokenType = HYPERSCRIPT_CODE_SLICE
-			raw = n.Value
-			literalSpan.Start = n.NodeBase.Span.Start + 1
-			if n.IsUnterminated {
-				literalSpan.End = n.NodeBase.Span.End
-			} else {
-				literalSpan.End = n.NodeBase.Span.End - 1
-			}
 		case *MarkupPatternWildcard:
-			tokenType = HYPERSCRIPT_CODE_SLICE
+			tokenType = MARKUP_TEXT_SLICE
 			raw = MARKUP_STAR_WILDCARD
 		}
 
