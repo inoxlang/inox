@@ -1,0 +1,161 @@
+module:
+  title: Module
+  elements:
+  - topic: manifest
+    text: Module Manifest
+    subtopics:
+    - topic: manifest/parameters-section
+      text: > 
+        Module can take parameters, for the main module they correpond to the CLI parameters. When an imported 
+        module has parameters the import should include an 'args' section. 
+      examples:
+      - code: |
+          # example parameters for a module handling HTTP requests
+          {
+             name: {
+               pattern: %str
+             }
+          }
+      - code: |
+          # example of passing arguments to an imported module
+          # main.ix
+          manifest {
+              permissions: {
+                  read: IWD_PREFIX
+              }
+          }
+
+          import result ./add.ix {
+              arguments: {1, 2}
+          } 
+
+          print(result) 
+
+          # add.ix
+          manifest {
+              parameters: {
+                  {
+                      name: #first_operand
+                      pattern: %int
+                  }
+                  {
+                      name: #second_operand
+                      pattern: %int
+                  }
+              }
+          }
+
+          return (mod-args.first_operand + mod-args.second_operand)
+      - code: |
+          # example parameters for a CLI program
+
+          {
+            # positional parameters are listed at the start
+            {
+                name: #dir
+                pattern: %path
+                rest: false
+                description: "root directory of the project"
+            }
+            # non positional parameters
+            clean-existing: {
+                pattern: %bool
+                default: false
+                description: "if true delete <dir> if it already exists"
+            } 
+          }
+    - topic: manifest/env-section
+      text: >
+        The env section is an object pattern defining expected environment variables and their type.
+      examples:
+      - code: |
+          # example env section 
+          %{
+            API_KEY: %secret-string
+          }
+          ...
+
+          # environment variables can then be accessed:
+          API_KEY = env.initial.API_KEY
+    - topic: manifest/permissions-section
+      text: >
+        The permissions section lists the permissions required by the module. 
+        Permissions represent a type of action a module is allowed (or forbidden) to do. 
+        Most IO operations (filesystem access, HTTP requests) and resource intensive operations 
+        (lthread creation) necessitate a permission. 
+        
+        To learn more about permissions see https://github.com/inoxlang/inox/blob/main/docs/language-reference/README.md#permissions.
+      examples:
+      - code: |
+          # permission section allowing the module 
+          # to create an HTTP server & read any file
+          {
+            provide: https://localhost
+            read: {
+              %/...
+            }
+          }
+
+      - code: |
+          # permission section allowing the module 
+          # to send HTTP GET & POST requests to any HTTPS server
+          {
+            read: {
+              %https://**
+            }
+            write: {
+              %https://**
+            }
+          }
+
+      - code: |
+          # permission section allowing the module 
+          # to create lightweight threads
+          manifest {
+              permissions: {
+                  create: {
+                      threads: {}
+                  }
+              }
+          }
+module-import:
+  title: Module import
+  elements:
+  - topic: module-import-config
+    text: Module Import Configuration
+    subtopics:
+    - topic: module-import-config/allow-section
+      text: >
+        The permissions granted to the imported module.
+        Make sure the importing module has the granted permissions.
+    - topic: module-import-config/arguments-section
+      text: >
+        The arguments passed to the imported module.
+    - topic: module-import-config/validation-section
+      text: >
+        A base64 encoded SHA256 hash of the imported module's code.
+concurrency:
+  title: Concurrency
+  elements:
+  - topic: lthreads
+    text: Lightweight threads
+    subtopics:
+    - topic: lthreads/allow-section
+      text: |
+        The permissions granted to the lthread's embedded module.
+        Make sure the module spawning the lthread has the granted permissions
+      examples:
+      - code: |
+          {
+            read: {%https://**}
+          }
+
+    - topic: lthreads/globals-section
+      text: |
+        globals of embedded module, base globals such as **http**, **read**, **sleep** or always passed.
+      examples:
+      - code: |
+          {
+            a: 1, 
+            shared_object: {}
+          }
