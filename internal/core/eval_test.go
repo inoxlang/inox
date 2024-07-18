@@ -26,6 +26,7 @@ import (
 	"github.com/inoxlang/inox/internal/globalnames"
 	jsoniter "github.com/inoxlang/inox/internal/jsoniter"
 	"github.com/inoxlang/inox/internal/parse"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/sourcecode"
 	"github.com/inoxlang/inox/internal/testconfig"
 	utils "github.com/inoxlang/inox/internal/utils/common"
@@ -13758,7 +13759,7 @@ func (v TestMutableGoValue) WriteJSONRepresentation(ctx *core.Context, w *jsonit
 	return err
 }
 
-func (r TestMutableGoValue) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (r TestMutableGoValue) PrettyPrint(ctx *core.Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(fmt.Fprintf(w, "%#v", r))
 }
 

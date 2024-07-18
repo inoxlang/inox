@@ -45,13 +45,12 @@ func (err AssertionError) Error() string {
 	buf := bytes.NewBufferString(err.msg)
 	w := bufio.NewWriterSize(buf, ASSERTION_BUFF_WRITER_SIZE)
 
-	err.writeExplanation(w, &PrettyPrintConfig{
-		PrettyPrintConfig: pprint.PrettyPrintConfig{
-			MaxDepth: 10,
-			Colorize: false,
-			Compact:  false,
-			Indent:   []byte{' ', ' '},
-		},
+	//TODO: get a context ?
+	err.writeExplanation(nil, w, &pprint.PrettyPrintConfig{
+		MaxDepth: 10,
+		Colorize: false,
+		Compact:  false,
+		Indent:   []byte{' ', ' '},
 	})
 
 	w.Flush()
@@ -60,7 +59,7 @@ func (err AssertionError) Error() string {
 
 // writeExplanation attempts to determine an explanation about why the assertion failed,
 // if an explanation is found it is written to w.
-func (err AssertionError) writeExplanation(w *bufio.Writer, config *PrettyPrintConfig) {
+func (err AssertionError) writeExplanation(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig) {
 	expr := err.data.assertionStatement.Expr
 
 	switch node := expr.(type) {
@@ -87,7 +86,7 @@ func (err AssertionError) writeExplanation(w *bufio.Writer, config *PrettyPrintC
 		}
 
 		if !ast.NodeIsSimpleValueLiteral(node.Left) {
-			lhs = lhs + " (" + StringifyWithConfig(leftVal, config) + ")"
+			lhs = lhs + " (" + StringifyWithConfig(leftVal, ctx, config) + ")"
 		}
 
 		w.WriteString(": expected ")
@@ -119,7 +118,7 @@ func (err AssertionError) writeExplanation(w *bufio.Writer, config *PrettyPrintC
 			w.WriteString(" to be a substring of ")
 		}
 
-		rightVal.PrettyPrint(w, config, 0, 0)
+		rightVal.PrettyPrint(ctx, w, config, 0, 0)
 	}
 }
 
@@ -153,18 +152,18 @@ func (err AssertionError) stringifyNode(node ast.Node) string {
 	return parse.SPrint(node, err.testModule.MainChunk.Node, parse.PrintConfig{})
 }
 
-func (err AssertionError) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig) {
+func (err AssertionError) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig) {
 	w.Write(utils.StringAsBytes(err.msg))
 	if err.isTestAssertion {
-		err.writeExplanation(w, config)
+		err.writeExplanation(ctx, w, config)
 	}
 }
 
-func (err AssertionError) PrettySPrint(config *PrettyPrintConfig) string {
+func (err AssertionError) PrettySPrint(ctx *Context, config *pprint.PrettyPrintConfig) string {
 	buf := bytes.NewBuffer(nil)
 	w := bufio.NewWriterSize(buf, ASSERTION_BUFF_WRITER_SIZE)
 
-	err.PrettyPrint(w, config)
+	err.PrettyPrint(ctx, w, config)
 	w.Flush()
 	return buf.String()
 }

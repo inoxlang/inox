@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/inoxlang/inox/internal/ast"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
 
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/core/symbolic"
@@ -32,7 +33,7 @@ type Value interface {
 	Equal(ctx *Context, other Value, alreadyCompared map[uintptr]uintptr, depth int) bool
 
 	//human readable representation
-	PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int)
+	PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int)
 
 	//ToSymbolicValue should return a symbolic value that represents the value.
 	ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error)

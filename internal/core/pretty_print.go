@@ -54,39 +54,25 @@ type PrettyPrintColors struct {
 	NumberLiteral, Constant, PatternIdentifier, CssTypeSelector, CssOtherSelector, InvalidNode, Index []byte
 }
 
-type PrettyPrintConfig struct {
-	pprint.PrettyPrintConfig
-	Context *Context
-}
-
-func (config *PrettyPrintConfig) WithContext(ctx *Context) *PrettyPrintConfig {
-	newConfig := *config
-	newConfig.Context = ctx
-	return &newConfig
-}
-
 func GetFullColorSequence(color termenv.Color, bg bool) []byte {
 	return pprint.GetFullColorSequence(color, bg)
 }
 
 // Stringify calls PrettyPrint on the passed value
 func Stringify(v Value, ctx *Context) string {
-	return StringifyWithConfig(v, &PrettyPrintConfig{
-		PrettyPrintConfig: pprint.PrettyPrintConfig{
-			MaxDepth: 7,
-			Colorize: false,
-			Compact:  true,
-		},
-		Context: ctx,
+	return StringifyWithConfig(v, ctx, &pprint.PrettyPrintConfig{
+		MaxDepth: 7,
+		Colorize: false,
+		Compact:  true,
 	})
 }
 
 // Stringify calls PrettyPrint on the passed value
-func StringifyWithConfig(v Value, config *PrettyPrintConfig) string {
+func StringifyWithConfig(v Value, ctx *Context, config *pprint.PrettyPrintConfig) string {
 	buff := &bytes.Buffer{}
 	w := bufio.NewWriterSize(buff, prettyprint_BUFF_WRITER_SIZE)
 
-	err := PrettyPrint(v, w, config, 0, 0)
+	err := PrettyPrint(ctx, v, w, config, 0, 0)
 
 	if err != nil {
 		panic(fmt.Errorf("failed to stringify value of type %T: %w", v, err))
@@ -96,7 +82,7 @@ func StringifyWithConfig(v Value, config *PrettyPrintConfig) string {
 	return buff.String()
 }
 
-func PrettyPrint(v Value, w io.Writer, config *PrettyPrintConfig, depth, parentIndentCount int) (err error) {
+func PrettyPrint(ctx *Context, v Value, w io.Writer, config *pprint.PrettyPrintConfig, depth, parentIndentCount int) (err error) {
 	buffered, ok := w.(*bufio.Writer)
 	if !ok {
 		buffered = bufio.NewWriterSize(w, prettyprint_BUFF_WRITER_SIZE)
@@ -113,7 +99,7 @@ func PrettyPrint(v Value, w io.Writer, config *PrettyPrintConfig, depth, parentI
 		}
 	}()
 
-	v.PrettyPrint(buffered, config, depth, parentIndentCount)
+	v.PrettyPrint(ctx, buffered, config, depth, parentIndentCount)
 	return buffered.Flush()
 }
 
@@ -355,15 +341,15 @@ func GetColorizedChunk(chunk *ast.Chunk, code []rune, lightMode bool, fgColorSeq
 	return buf.String()
 }
 
-func (n AstNode) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (n AstNode) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, n)
 }
 
-func (t Token) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (t Token) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, t)
 }
 
-func (Nil NilT) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (Nil NilT) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
 		for _, b := range [][]byte{config.Colors.Constant, {'n', 'i', 'l'}, ANSI_RESET_SEQUENCE} {
 			utils.Must(w.Write(b))
@@ -373,11 +359,11 @@ func (Nil NilT) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth in
 	}
 }
 
-func (err Error) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (err Error) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(fmt.Fprintf(w, "(%T)%s", err.goError, err.goError.Error()))
 }
 
-func (boolean Bool) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (boolean Bool) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	var b = []byte{'f', 'a', 'l', 's', 'e'}
 	if boolean {
 		b = []byte{'t', 'r', 'u', 'e'}
@@ -396,7 +382,7 @@ func (r Rune) reprBytes() []byte {
 	return []byte(commonfmt.FmtRune(rune(r)))
 }
 
-func (r Rune) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (r Rune) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
 		utils.Must(w.Write(config.Colors.StringLiteral))
 	}
@@ -408,11 +394,11 @@ func (r Rune) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int,
 	}
 }
 
-func (b Byte) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (b Byte) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, b)
 }
 
-func (i Int) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (i Int) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
 		utils.Must(w.Write(config.Colors.NumberLiteral))
 	}
@@ -425,7 +411,7 @@ func (i Int) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, 
 	}
 }
 
-func (f Float) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (f Float) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
 		utils.Must(w.Write(config.Colors.NumberLiteral))
 	}
@@ -442,7 +428,7 @@ func (f Float) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int
 	}
 }
 
-func (s String) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (s String) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if depth == 0 && config.PrintDecodedTopLevelStrings {
 		utils.Must(w.Write([]byte(utils.StripANSISequences(string(s)))))
 		return
@@ -467,7 +453,7 @@ func (s String) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth in
 	}
 }
 
-func (obj *Object) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (obj *Object) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if depth > config.MaxDepth && len(obj.keys) > 0 {
 		utils.Must(w.Write(utils.StringAsBytes("{(...)}")))
 		return
@@ -501,7 +487,7 @@ func (obj *Object) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth
 
 		//value
 		v := obj.values[i]
-		v.PrettyPrint(w, config, depth+1, indentCount)
+		v.PrettyPrint(ctx, w, config, depth+1, indentCount)
 
 		//comma & indent
 		isLastEntry := i == len(obj.keys)-1
@@ -518,7 +504,7 @@ func (obj *Object) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth
 	utils.MustWriteMany(w, bytes.Repeat(config.Indent, depth), []byte{'}'})
 }
 
-func (rec Record) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (rec Record) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if depth > config.MaxDepth && len(rec.keys) > 0 {
 		utils.Must(w.Write(utils.StringAsBytes("#{(...)}")))
 		return
@@ -553,7 +539,7 @@ func (rec Record) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth 
 
 		//value
 		v := rec.values[i]
-		v.PrettyPrint(w, config, depth+1, indentCount)
+		v.PrettyPrint(ctx, w, config, depth+1, indentCount)
 
 		//comma & indent
 		isLastEntry := i == len(rec.keys)-1
@@ -570,7 +556,7 @@ func (rec Record) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth 
 	utils.MustWriteMany(w, bytes.Repeat(config.Indent, depth), []byte{'}'})
 }
 
-func (dict *Dictionary) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (dict *Dictionary) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	//TODO: prevent modification of the dictionary while this function is running
 
 	if depth > config.MaxDepth && len(dict.entries) > 0 {
@@ -613,7 +599,7 @@ func (dict *Dictionary) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, 
 		//value
 		v := dict.entries[k]
 
-		v.PrettyPrint(w, config, depth+1, indentCount)
+		v.PrettyPrint(ctx, w, config, depth+1, indentCount)
 
 		//comma & indent
 		isLastEntry := i == len(keys)-1
@@ -632,7 +618,7 @@ func (dict *Dictionary) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, 
 	utils.PanicIfErr(w.WriteByte('}'))
 }
 
-func (list KeyList) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (list KeyList) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if depth > config.MaxDepth && len(list) > 0 {
 		utils.Must(w.Write(utils.StringAsBytes(".{(...)]}")))
 		return
@@ -654,7 +640,7 @@ func (list KeyList) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, dept
 	utils.PanicIfErr(w.WriteByte('}'))
 }
 
-func PrettyPrintList(list underlyingList, w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func PrettyPrintList(ctx *Context, list underlyingList, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	//TODO: prevent modification of the list while this function is running
 	length := list.Len()
 
@@ -670,7 +656,7 @@ func PrettyPrintList(list underlyingList, w *bufio.Writer, config *PrettyPrintCo
 	printIndices := !config.Compact && length > 10
 
 	for i := 0; i < length; i++ {
-		v := list.At(config.Context, i)
+		v := list.At(ctx, i)
 
 		if !config.Compact {
 			utils.Must(w.Write(LF_CR))
@@ -693,7 +679,7 @@ func PrettyPrintList(list underlyingList, w *bufio.Writer, config *PrettyPrintCo
 		}
 
 		//element
-		v.PrettyPrint(w, config, depth+1, indentCount)
+		v.PrettyPrint(ctx, w, config, depth+1, indentCount)
 
 		//comma & indent
 		isLastEntry := i == length-1
@@ -714,40 +700,40 @@ func PrettyPrintList(list underlyingList, w *bufio.Writer, config *PrettyPrintCo
 	utils.Must(w.Write(end))
 }
 
-func (list *List) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
-	list.underlyingList.PrettyPrint(w, config, depth, parentIndentCount)
+func (list *List) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	list.underlyingList.PrettyPrint(ctx, w, config, depth, parentIndentCount)
 }
 
-func (list *ValueList) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
-	PrettyPrintList(list, w, config, depth, parentIndentCount)
+func (list *ValueList) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	PrettyPrintList(ctx, list, w, config, depth, parentIndentCount)
 }
 
-func (list *NumberList[T]) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
-	PrettyPrintList(list, w, config, depth, parentIndentCount)
+func (list *NumberList[T]) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	PrettyPrintList(ctx, list, w, config, depth, parentIndentCount)
 }
 
-func (list *BoolList) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
-	PrettyPrintList(list, w, config, depth, parentIndentCount)
+func (list *BoolList) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	PrettyPrintList(ctx, list, w, config, depth, parentIndentCount)
 }
 
-func (list *StringList) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
-	PrettyPrintList(list, w, config, depth, parentIndentCount)
+func (list *StringList) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	PrettyPrintList(ctx, list, w, config, depth, parentIndentCount)
 }
 
-func (tuple Tuple) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (tuple Tuple) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	lst := &List{underlyingList: &ValueList{elements: tuple.elements}}
 	utils.Must(w.Write([]byte{'#'}))
 
-	lst.PrettyPrint(w, config, depth, parentIndentCount)
+	lst.PrettyPrint(ctx, w, config, depth, parentIndentCount)
 }
 
-func (p OrderedPair) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (p OrderedPair) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("ordered-pair")))
 	lst := &List{underlyingList: &ValueList{elements: p[:]}}
-	lst.PrettyPrint(w, config, depth, parentIndentCount)
+	lst.PrettyPrint(ctx, w, config, depth, parentIndentCount)
 }
 
-func (a *Array) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (a *Array) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	//TODO: prevent modification of the array while this function is running
 	length := a.Len()
 
@@ -786,7 +772,7 @@ func (a *Array) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth in
 		}
 
 		//element
-		v.PrettyPrint(w, config, depth+1, indentCount)
+		v.PrettyPrint(ctx, w, config, depth+1, indentCount)
 
 		//comma & indent
 		isLastEntry := i == length-1
@@ -807,7 +793,7 @@ func (a *Array) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth in
 	utils.Must(w.Write(end))
 }
 
-func (args *ModuleArgs) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (args *ModuleArgs) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("module-arguments{")))
 
 	indentCount := parentIndentCount + 1
@@ -840,7 +826,7 @@ func (args *ModuleArgs) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, 
 
 		//value
 		v := args.values[argName]
-		v.PrettyPrint(w, config, depth+1, indentCount)
+		v.PrettyPrint(ctx, w, config, depth+1, indentCount)
 
 		//comma & indent
 		isLastEntry := i == len(argNames)-1
@@ -857,7 +843,7 @@ func (args *ModuleArgs) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, 
 	utils.MustWriteMany(w, bytes.Repeat(config.Indent, depth), []byte{'}'})
 }
 
-func (slice *RuneSlice) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (slice *RuneSlice) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, slice)
 }
 
@@ -878,7 +864,7 @@ func (slice *ByteSlice) write(w io.Writer) (int, error) {
 	return totalN, err
 }
 
-func (slice *ByteSlice) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (slice *ByteSlice) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	var bytes []byte
 
 	if depth > config.MaxDepth && len(slice.bytes) > 2 {
@@ -904,11 +890,11 @@ func (slice *ByteSlice) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, 
 	}
 }
 
-func (v *GoFunction) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (v *GoFunction) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.WriteString(commonfmt.FormatGoFunctionSignature(v.fn)))
 }
 
-func (opt Option) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (opt Option) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
 		utils.Must(w.Write(config.Colors.StringLiteral))
 	}
@@ -933,11 +919,11 @@ func (opt Option) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth 
 	if depth > config.MaxDepth {
 		utils.Must(w.Write(utils.StringAsBytes("(...)")))
 	} else {
-		opt.Value.PrettyPrint(w, config, depth, parentIndentCount)
+		opt.Value.PrettyPrint(ctx, w, config, depth, parentIndentCount)
 	}
 }
 
-func (pth Path) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (pth Path) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
 		utils.Must(w.Write(config.Colors.PathLiteral))
 	}
@@ -949,7 +935,7 @@ func (pth Path) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth in
 	}
 }
 
-func (patt PathPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (patt PathPattern) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
 		utils.Must(w.Write(config.Colors.PatternLiteral))
 	}
@@ -961,7 +947,7 @@ func (patt PathPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, 
 	}
 }
 
-func (u URL) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (u URL) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
 		utils.Must(w.Write(config.Colors.PathLiteral))
 	}
@@ -974,7 +960,7 @@ func (u URL) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, 
 	}
 }
 
-func (scheme Scheme) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (scheme Scheme) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
 		utils.Must(w.Write(config.Colors.PathLiteral))
 	}
@@ -987,7 +973,7 @@ func (scheme Scheme) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, dep
 	}
 }
 
-func (host Host) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (host Host) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
 		utils.Must(w.Write(config.Colors.PathLiteral))
 	}
@@ -1000,7 +986,7 @@ func (host Host) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth i
 	}
 }
 
-func (patt HostPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (patt HostPattern) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
 		utils.Must(w.Write(config.Colors.PatternLiteral))
 	}
@@ -1016,7 +1002,7 @@ func (patt HostPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, 
 	}
 }
 
-func (addr EmailAddress) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (addr EmailAddress) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
 		utils.Must(w.Write(config.Colors.PathLiteral))
 	}
@@ -1057,7 +1043,7 @@ func (addr EmailAddress) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig,
 	}
 }
 
-func (patt URLPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (patt URLPattern) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
 		utils.Must(w.Write(config.Colors.PatternLiteral))
 	}
@@ -1073,7 +1059,7 @@ func (patt URLPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, d
 	}
 }
 
-func (i Identifier) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (i Identifier) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
 		utils.Must(w.Write(config.Colors.Constant))
 	}
@@ -1087,7 +1073,7 @@ func (i Identifier) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, dept
 	}
 }
 
-func (n PropertyName) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (n PropertyName) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
 		utils.Must(w.Write(config.Colors.Constant))
 	}
@@ -1100,13 +1086,13 @@ func (n PropertyName) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, de
 	}
 }
 
-func (p *LongValuePath) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (p *LongValuePath) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	for _, segment := range *p {
-		segment.PrettyPrint(w, config, depth+1, 0)
+		segment.PrettyPrint(ctx, w, config, depth+1, 0)
 	}
 }
 
-func (str CheckedString) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (str CheckedString) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
 		utils.Must(w.Write(config.Colors.PatternIdentifier))
 	}
@@ -1130,7 +1116,7 @@ func (str CheckedString) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig,
 	}
 }
 
-func (count ByteCount) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (count ByteCount) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
 		utils.Must(w.Write(config.Colors.NumberLiteral))
 	}
@@ -1142,7 +1128,7 @@ func (count ByteCount) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, d
 	}
 }
 
-func (count LineCount) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (count LineCount) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
 		utils.Must(w.Write(config.Colors.NumberLiteral))
 	}
@@ -1154,7 +1140,7 @@ func (count LineCount) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, d
 	}
 }
 
-func (count RuneCount) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (count RuneCount) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
 		utils.Must(w.Write(config.Colors.NumberLiteral))
 	}
@@ -1181,7 +1167,7 @@ func (rate ByteRate) write(w io.Writer) (int, error) {
 	return totalN, err
 }
 
-func (rate ByteRate) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (rate ByteRate) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
 		utils.Must(w.Write(config.Colors.NumberLiteral))
 	}
@@ -1246,7 +1232,7 @@ func (f Frequency) write(w io.Writer) (int, error) {
 	return fmt.Fprintf(w, format, f)
 }
 
-func (f Frequency) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (f Frequency) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
 		utils.Must(w.Write(config.Colors.NumberLiteral))
 	}
@@ -1262,7 +1248,7 @@ func (d Duration) write(w io.Writer) (int, error) {
 	return w.Write(utils.StringAsBytes(commonfmt.FmtInoxDuration(time.Duration(d))))
 }
 
-func (d Duration) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (d Duration) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
 		utils.Must(w.Write(config.Colors.NumberLiteral))
 	}
@@ -1274,19 +1260,19 @@ func (d Duration) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth 
 	}
 }
 
-func (y Year) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (y Year) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(y.write(w))
 }
 
-func (d Date) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (d Date) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(d.write(w))
 }
 
-func (d DateTime) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (d DateTime) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(d.write(w))
 }
 
-func (m FileMode) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (m FileMode) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	s := os.FileMode(m).String()
 
 	utils.Must(w.Write(utils.StringAsBytes(s)))
@@ -1302,7 +1288,7 @@ func (r RuneRange) write(w io.Writer) (int, error) {
 	return w.Write(b)
 }
 
-func (r RuneRange) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (r RuneRange) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
 		utils.Must(w.Write(config.Colors.NumberLiteral))
 	}
@@ -1314,13 +1300,13 @@ func (r RuneRange) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth
 	}
 }
 
-func (r QuantityRange) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (r QuantityRange) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
 		utils.Must(w.Write(config.Colors.NumberLiteral))
 	}
 
 	if r.start != nil {
-		r.start.PrettyPrint(w, config, depth+1, 0)
+		r.start.PrettyPrint(ctx, w, config, depth+1, 0)
 	}
 
 	_, err := w.Write(DOT_DOT)
@@ -1329,7 +1315,7 @@ func (r QuantityRange) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, d
 	}
 
 	if r.end != nil {
-		r.end.PrettyPrint(w, config, depth+1, 0)
+		r.end.PrettyPrint(ctx, w, config, depth+1, 0)
 		utils.PanicIfErr(err)
 	}
 
@@ -1350,7 +1336,7 @@ func (r IntRange) write(w io.Writer) (int, error) {
 	return w.Write(b)
 }
 
-func (r IntRange) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (r IntRange) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
 		utils.Must(w.Write(config.Colors.NumberLiteral))
 	}
@@ -1402,7 +1388,7 @@ func (r FloatRange) write(w io.Writer) (int, error) {
 	return w.Write(b)
 }
 
-func (r FloatRange) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (r FloatRange) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
 		utils.Must(w.Write(config.Colors.NumberLiteral))
 	}
@@ -1416,17 +1402,17 @@ func (r FloatRange) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, dept
 
 //patterns
 
-func (pattern ExactValuePattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (pattern ExactValuePattern) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	w.WriteString("%(")
-	pattern.value.PrettyPrint(w, config, depth, parentIndentCount)
+	pattern.value.PrettyPrint(ctx, w, config, depth, parentIndentCount)
 	w.WriteString(")")
 }
 
-func (pattern ExactStringPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (pattern ExactStringPattern) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, pattern)
 }
 
-func (pattern TypePattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (pattern TypePattern) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if config.Colorize {
 		utils.Must(w.Write(config.Colors.PatternIdentifier))
 	}
@@ -1439,67 +1425,67 @@ func (pattern TypePattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfi
 	}
 }
 
-func (pattern *DifferencePattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (pattern *DifferencePattern) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, pattern)
 }
 
-func (pattern *OptionalPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (pattern *OptionalPattern) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, pattern)
 }
 
-func (pattern *FunctionPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (pattern *FunctionPattern) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, pattern)
 }
 
-func (patt *RegexPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (patt *RegexPattern) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, patt)
 }
 
-func (patt *UnionPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (patt *UnionPattern) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, patt)
 }
 
-func (patt *IntersectionPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (patt *IntersectionPattern) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, patt)
 }
 
-func (patt *LengthCheckingStringPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (patt *LengthCheckingStringPattern) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, patt)
 }
 
-func (patt *SequenceStringPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (patt *SequenceStringPattern) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, patt)
 }
 
-func (patt *UnionStringPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (patt *UnionStringPattern) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, patt)
 }
 
-func (patt *RuneRangeStringPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (patt *RuneRangeStringPattern) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, patt)
 }
 
-func (patt *IntRangePattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (patt *IntRangePattern) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, patt)
 }
 
-func (patt *FloatRangePattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (patt *FloatRangePattern) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, patt)
 }
 
-func (patt *DynamicStringPatternElement) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (patt *DynamicStringPatternElement) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, patt)
 }
 
-func (patt *RepeatedPatternElement) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (patt *RepeatedPatternElement) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, patt)
 }
 
-func (patt *NamedSegmentPathPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (patt *NamedSegmentPathPattern) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, patt)
 }
 
-func (patt ObjectPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (patt ObjectPattern) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if depth > config.MaxDepth && len(patt.entries) > 0 {
 		utils.Must(w.Write(utils.StringAsBytes("%{(...)}")))
 		return
@@ -1531,7 +1517,7 @@ func (patt ObjectPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig
 		utils.Must(w.Write(COLON_SPACE))
 
 		//write entry pattern
-		entry.Pattern.PrettyPrint(w, config, depth+1, indentCount)
+		entry.Pattern.PrettyPrint(ctx, w, config, depth+1, indentCount)
 
 		//comma & indent
 		isLastEntry := i == len(patt.entries)-1
@@ -1560,7 +1546,7 @@ func (patt ObjectPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig
 	}
 }
 
-func (patt *RecordPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (patt *RecordPattern) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if depth > config.MaxDepth && len(patt.entries) > 0 {
 		utils.Must(w.Write(utils.StringAsBytes("record(%{(...)})")))
 		return
@@ -1592,7 +1578,7 @@ func (patt *RecordPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfi
 		utils.Must(w.Write(COLON_SPACE))
 
 		//write entry pattern
-		entry.Pattern.PrettyPrint(w, config, depth+1, indentCount)
+		entry.Pattern.PrettyPrint(ctx, w, config, depth+1, indentCount)
 
 		//comma & indent
 		isLastEntry := i == len(patt.entries)-1
@@ -1621,9 +1607,10 @@ func (patt *RecordPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfi
 }
 
 func prettyPrintListPattern(
+	ctx *Context,
 	w *bufio.Writer, tuplePattern bool,
 	generalElementPattern Pattern, elementPatterns []Pattern,
-	config *PrettyPrintConfig, depth int, parentIndentCount int,
+	config *pprint.PrettyPrintConfig, depth int, parentIndentCount int,
 
 ) {
 
@@ -1636,7 +1623,7 @@ func prettyPrintListPattern(
 
 		utils.Must(w.Write(b))
 
-		generalElementPattern.PrettyPrint(w, config, depth, parentIndentCount)
+		generalElementPattern.PrettyPrint(ctx, w, config, depth, parentIndentCount)
 
 		if tuplePattern {
 			utils.Must(w.Write(utils.StringAsBytes(")")))
@@ -1689,7 +1676,7 @@ func prettyPrintListPattern(
 		}
 
 		//element
-		v.PrettyPrint(w, config, depth+1, indentCount)
+		v.PrettyPrint(ctx, w, config, depth+1, indentCount)
 
 		//comma & indent
 		isLastEntry := i == len(elementPatterns)-1
@@ -1712,7 +1699,7 @@ func prettyPrintListPattern(
 	}
 }
 
-func (i FileInfo) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (i FileInfo) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 
 	if i.IsDir() {
 		if config.Colorize {
@@ -1750,155 +1737,155 @@ func (i FileInfo) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth 
 	}
 }
 
-func (patt ListPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
-	prettyPrintListPattern(w, false, patt.generalElementPattern, patt.elementPatterns, config, depth, parentIndentCount)
+func (patt ListPattern) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	prettyPrintListPattern(ctx, w, false, patt.generalElementPattern, patt.elementPatterns, config, depth, parentIndentCount)
 }
 
-func (patt TuplePattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
-	prettyPrintListPattern(w, true, patt.generalElementPattern, patt.elementPatterns, config, depth, parentIndentCount)
+func (patt TuplePattern) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	prettyPrintListPattern(ctx, w, true, patt.generalElementPattern, patt.elementPatterns, config, depth, parentIndentCount)
 }
 
-func (patt OptionPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (patt OptionPattern) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, patt)
 }
 
-func (patt *EventPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (patt *EventPattern) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, patt)
 }
 
-func (patt *MutationPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (patt *MutationPattern) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, patt)
 }
 
-func (patt *ParserBasedPseudoPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (patt *ParserBasedPseudoPattern) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, patt)
 }
 
-func (patt *IntRangeStringPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (patt *IntRangeStringPattern) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, patt)
 }
 
-func (patt *FloatRangeStringPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (patt *FloatRangeStringPattern) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, patt)
 }
 
-func (patt *PathStringPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (patt *PathStringPattern) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, patt)
 }
 
-func (reader *Reader) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (reader *Reader) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, reader)
 }
 
-func (writer *Writer) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (writer *Writer) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, writer)
 }
 
-func (mt Mimetype) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (mt Mimetype) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, mt)
 }
 
-func (r *LThread) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (r *LThread) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, r)
 }
 
-func (g *LThreadGroup) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (g *LThreadGroup) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, g)
 }
 
-func (g *InoxFunction) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (g *InoxFunction) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, g)
 }
 
-func (it *KeyFilteredIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (it *KeyFilteredIterator) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, it)
 }
 
-func (it *ValueFilteredIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (it *ValueFilteredIterator) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, it)
 }
 
-func (it *KeyValueFilteredIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (it *KeyValueFilteredIterator) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, it)
 }
 
-func (it *ArrayIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (it *ArrayIterator) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, it)
 }
 
-func (it *indexableIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (it *indexableIterator) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, it)
 }
 
-func (it *immutableSliceIterator[T]) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (it *immutableSliceIterator[T]) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, it)
 }
 
-func (it IntRangeIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (it IntRangeIterator) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, it)
 }
 
-func (it FloatRangeIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (it FloatRangeIterator) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, it)
 }
 
-func (it RuneRangeIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (it RuneRangeIterator) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, it)
 }
 
-func (it QuantityRangeIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (it QuantityRangeIterator) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, it)
 }
 
-func (it *PatternIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (it *PatternIterator) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, it)
 }
 
-func (it indexedEntryIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (it indexedEntryIterator) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, it)
 }
 
-func (it *IpropsIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (it *IpropsIterator) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, it)
 }
 
-func (it *EventSourceIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (it *EventSourceIterator) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, it)
 }
 
-func (it *DirWalker) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (it *DirWalker) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, it)
 }
 
-func (it *TreedataWalker) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (it *TreedataWalker) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, it)
 }
 
-func (it *ValueListIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (it *ValueListIterator) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, it)
 }
 
-func (it *NumberListIterator[T]) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (it *NumberListIterator[T]) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, it)
 }
 
-func (it *BitSetIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (it *BitSetIterator) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, it)
 }
 
-func (it *StrListIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (it *StrListIterator) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, it)
 }
 
-func (it *TupleIterator) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (it *TupleIterator) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, it)
 }
 
-func (b *Bytecode) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (b *Bytecode) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, b)
 }
 
-func (t Type) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (t Type) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	pkg := t.PkgPath()
 	if pkg != "" {
 		lastSlashIndex := strings.LastIndex(pkg, "/")
@@ -1909,19 +1896,19 @@ func (t Type) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int,
 	utils.Must(w.WriteString(t.Name()))
 }
 
-func (tx *Transaction) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (tx *Transaction) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, tx)
 }
 
-func (r *RandomnessSource) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (r *RandomnessSource) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, r)
 }
 
-func (m *Mapping) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (m *Mapping) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, m)
 }
 
-func (ns *PatternNamespace) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (ns *PatternNamespace) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, ns)
 }
 
@@ -1943,7 +1930,7 @@ func (port Port) repr(quote bool) []byte {
 	return b
 }
 
-func (port Port) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (port Port) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	repr := port.repr(false)
 	if config.Colorize {
 		for _, b := range [][]byte{config.Colors.NumberLiteral, repr, ANSI_RESET_SEQUENCE} {
@@ -1955,7 +1942,7 @@ func (port Port) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth i
 
 }
 
-func (u *Treedata) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (u *Treedata) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 
 	if config.Colorize {
 		for _, b := range [][]byte{config.Colors.OtherKeyword, utils.StringAsBytes("treedata"), ANSI_RESET_SEQUENCE} {
@@ -1976,7 +1963,7 @@ func (u *Treedata) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth
 	w.WriteByte(' ')
 
 	if u.Root != nil {
-		u.Root.PrettyPrint(w, config, depth+1, indentCount)
+		u.Root.PrettyPrint(ctx, w, config, depth+1, indentCount)
 		utils.Must(w.WriteString(" {"))
 	} else {
 		utils.PanicIfErr(w.WriteByte('{'))
@@ -1999,7 +1986,7 @@ func (u *Treedata) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth
 			utils.Must(w.Write(config.Colors.IdentifierLiteral))
 		}
 
-		entry.PrettyPrint(w, config, depth+1, indentCount)
+		entry.PrettyPrint(ctx, w, config, depth+1, indentCount)
 	}
 
 	if !config.Compact && len(u.HiearchyEntries) > 0 {
@@ -2009,11 +1996,11 @@ func (u *Treedata) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth
 	utils.PanicIfErr(w.WriteByte('}'))
 }
 
-func (e TreedataHiearchyEntry) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (e TreedataHiearchyEntry) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	indentCount := parentIndentCount + 1
 	indent := bytes.Repeat(config.Indent, indentCount)
 
-	e.Value.PrettyPrint(w, config, depth+1, indentCount)
+	e.Value.PrettyPrint(ctx, w, config, depth+1, indentCount)
 
 	if len(e.Children) > 0 {
 		utils.Must(w.Write([]byte{' ', '{'}))
@@ -2032,7 +2019,7 @@ func (e TreedataHiearchyEntry) PrettyPrint(w *bufio.Writer, config *PrettyPrintC
 				utils.Must(w.Write(config.Colors.IdentifierLiteral))
 			}
 
-			entry.PrettyPrint(w, config, depth+1, indentCount)
+			entry.PrettyPrint(ctx, w, config, depth+1, indentCount)
 		}
 
 		if !config.Compact && len(e.Children) > 0 {
@@ -2045,27 +2032,27 @@ func (e TreedataHiearchyEntry) PrettyPrint(w *bufio.Writer, config *PrettyPrintC
 
 }
 
-func (c *StringConcatenation) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (c *StringConcatenation) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	//TODO: improve implementation
 
-	String(c.GetOrBuildString()).PrettyPrint(w, config, depth, parentIndentCount)
+	String(c.GetOrBuildString()).PrettyPrint(ctx, w, config, depth, parentIndentCount)
 }
 
-func (c *BytesConcatenation) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (c *BytesConcatenation) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	//TODO: improve implementation
 
-	c.GetOrBuildBytes().PrettyPrint(w, config, depth, parentIndentCount)
+	c.GetOrBuildBytes().PrettyPrint(ctx, w, config, depth, parentIndentCount)
 }
 
-// func (s *TestSuite) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+// func (s *TestSuite) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 // 	InspectPrint(w, s)
 // }
 
-// func (c *TestCase) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+// func (c *TestCase) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 // 	InspectPrint(w, c)
 // }
 
-// func (r *TestCaseResult) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+// func (r *TestCaseResult) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 // 	if r.Success {
 // 		w.Write(utils.StringAsBytes(r.Message))
 // 	} else {
@@ -2073,103 +2060,103 @@ func (c *BytesConcatenation) PrettyPrint(w *bufio.Writer, config *PrettyPrintCon
 // 	}
 // }
 
-func (e *Event) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (e *Event) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, e)
 }
 
-func (s *ExecutedStep) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (s *ExecutedStep) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, s)
 }
 
-func (watcher *GenericWatcher) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (watcher *GenericWatcher) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, watcher)
 }
 
-func (watcher *PeriodicWatcher) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (watcher *PeriodicWatcher) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, watcher)
 }
 
-func (m Mutation) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (m Mutation) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, m)
 }
 
-func (watcher *joinedWatchers) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (watcher *joinedWatchers) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, watcher)
 }
 
-func (watcher stoppedWatcher) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (watcher stoppedWatcher) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, watcher)
 }
 
-func (s *wrappedWatcherStream) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (s *wrappedWatcherStream) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, s)
 }
 
-func (s *ElementsStream) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (s *ElementsStream) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, s)
 }
 
-func (s *ReadableByteStream) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (s *ReadableByteStream) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, s)
 }
 
-func (s *WritableByteStream) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (s *WritableByteStream) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, s)
 }
 
-func (s *ConfluenceStream) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (s *ConfluenceStream) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	InspectPrint(w, s)
 }
 
-func (r *RingBuffer) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (r *RingBuffer) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	PrintType(w, r)
 }
 
-func (c *DataChunk) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (c *DataChunk) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	PrintType(w, c)
 }
 
-func (d *StaticCheckData) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (d *StaticCheckData) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	PrintType(w, d)
 }
 
-func (d *SymbolicData) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (d *SymbolicData) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	PrintType(w, d)
 }
 
-func (m *Module) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (m *Module) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	PrintType(w, m)
 }
 
-func (s *GlobalState) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (s *GlobalState) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	PrintType(w, s)
 }
 
-func (h *ValueHistory) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (h *ValueHistory) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	PrintType(w, h)
 }
 
-func (s *Secret) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (s *Secret) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	PrintType(w, s)
 }
 
-func (s *SecretPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (s *SecretPattern) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	PrintType(w, s)
 }
 
-func (s *MarkupPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (s *MarkupPattern) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	PrintType(w, s)
 }
 
-func (s *NonInterpretedMarkupElement) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (s *NonInterpretedMarkupElement) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	PrintType(w, s)
 }
 
-func (api *ApiIL) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (api *ApiIL) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	PrintType(w, api)
 }
 
-func (ns *Namespace) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (ns *Namespace) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if depth > config.MaxDepth && len(ns.names) > 0 {
 		utils.Must(w.Write(utils.StringAsBytes("(..namespace..)")))
 		return
@@ -2204,7 +2191,7 @@ func (ns *Namespace) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, dep
 
 		//value
 		v := ns.entries[k]
-		v.PrettyPrint(w, config, depth+1, indentCount)
+		v.PrettyPrint(ctx, w, config, depth+1, indentCount)
 
 		//comma & indent
 		isLastEntry := i == len(ns.names)-1
@@ -2221,7 +2208,7 @@ func (ns *Namespace) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, dep
 	utils.MustWriteMany(w, bytes.Repeat(config.Indent, depth), []byte{'}'})
 }
 
-func (p *ModuleParamsPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (p *ModuleParamsPattern) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.Write(utils.StringAsBytes("module-parameters{")))
 
 	//TODO
@@ -2230,19 +2217,19 @@ func (p *ModuleParamsPattern) PrettyPrint(w *bufio.Writer, config *PrettyPrintCo
 	utils.PanicIfErr(w.WriteByte('}'))
 }
 
-// func (t *CurrentTest) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+// func (t *CurrentTest) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 // 	InspectPrint(w, t)
 // }
 
-// func (p *TestedProgram) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+// func (p *TestedProgram) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 // 	InspectPrint(w, p)
 // }
 
-func (id ULID) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (id ULID) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	w.WriteString(id.libValue().String())
 }
 
-func (id UUIDv4) PrettyPrint(w *bufio.Writer, config *PrettyPrintConfig, depth int, parentIndentCount int) {
+func (id UUIDv4) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.WriteString(id.libValue().String()))
 }
 

@@ -10,7 +10,8 @@ import (
 	"github.com/alecthomas/chroma/v2/lexers"
 
 	"github.com/inoxlang/inox/internal/core"
-	.  "github.com/inoxlang/inox/internal/utils/common"
+	pprint "github.com/inoxlang/inox/internal/prettyprint"
+	. "github.com/inoxlang/inox/internal/utils/common"
 )
 
 const (
@@ -18,7 +19,7 @@ const (
 	MAX_PRETTY_PRINT_LINE_COUNT = 200
 )
 
-func (n *HTMLNode) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, depth int, parentIndentCount int) {
+func (n *HTMLNode) PrettyPrint(ctx *core.Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	if depth > config.MaxDepth || computeApproximativePrintCost(n.node) > MAX_PRETTY_PRINT_COST || computeApproximateRequiredLines(n.node) > MAX_PRETTY_PRINT_LINE_COUNT {
 		Must(fmt.Fprint(w, "(...big html tree...)", n))
 	}
@@ -32,7 +33,7 @@ func (n *HTMLNode) PrettyPrint(w *bufio.Writer, config *core.PrettyPrintConfig, 
 
 	parentIndent := bytes.Repeat(config.Indent, parentIndentCount)
 
-	htmlString := string(RenderToString(config.Context, n))
+	htmlString := string(RenderToString(ctx, n))
 	iterator := Must(lexer.Tokenise(nil, htmlString))
 
 	for token := iterator(); token != chroma.EOF; token = iterator() {

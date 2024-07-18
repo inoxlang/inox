@@ -5490,7 +5490,6 @@ type ModuleParsingConfig = core.ModuleParsingConfig
 type Permission = core.Permission
 type FilesystemPermission = core.FilesystemPermission
 
-type PrettyPrintConfig = core.PrettyPrintConfig
 type ReprConfig = core.ReprConfig
 type JSONSerializationConfig = core.JSONSerializationConfig
 
