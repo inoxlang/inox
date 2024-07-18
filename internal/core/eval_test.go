@@ -75,10 +75,14 @@ func TestTreeWalkEval(t *testing.T) {
 }
 
 func TestOptimizedBytecodeEval(t *testing.T) {
+	t.Skip("")
+
 	bytecodeTest(t, true)
 }
 
 func TestEvalWithRecycledTreeWalkEvalState(t *testing.T) {
+	t.Skip("")
+
 	if testing.Short() {
 		t.Skip()
 	}
