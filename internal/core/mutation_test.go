@@ -1347,16 +1347,16 @@ func TestInoxFunctionOnMutation(t *testing.T) {
 		obj := NewObjectFromMap(ValMap{}, ctx)
 
 		fn := &InoxFunction{
-			Node:                   parse.MustParseExpression("fn[a](){}"),
-			treeWalkCapturedLocals: map[string]Value{"a": obj},
-			compiledFunction:       &CompiledFunction{}, //set to non-nil so that the function is considered compiled.
+			Node:             parse.MustParseExpression("fn[a](){}"),
+			capturedLocals:   []Value{obj},
+			compiledFunction: &CompiledFunction{}, //set to non-nil so that the function is considered compiled.
 		}
 		called := atomic.Bool{}
 
 		_, err := fn.OnMutation(ctx, func(ctx *Context, mutation Mutation) (registerAgain bool) {
 			called.Store(true)
 
-			assert.Equal(t, NewAddPropMutation(ctx, "prop", Int(1), IntermediateDepthWatching, "/a/prop"), mutation)
+			assert.Equal(t, NewAddPropMutation(ctx, "prop", Int(1), IntermediateDepthWatching, "/0/prop"), mutation)
 			return true
 		}, MutationWatchingConfiguration{Depth: DeepWatching})
 
