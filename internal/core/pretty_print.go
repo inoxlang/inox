@@ -16,6 +16,7 @@ import (
 	"github.com/inoxlang/inox/internal/commonfmt"
 	"github.com/inoxlang/inox/internal/globalnames"
 	"github.com/inoxlang/inox/internal/parse"
+	"github.com/inoxlang/inox/internal/prettyprint"
 	pprint "github.com/inoxlang/inox/internal/prettyprint"
 	"github.com/inoxlang/inox/internal/sourcecode"
 	utils "github.com/inoxlang/inox/internal/utils/common"
@@ -2231,6 +2232,10 @@ func (id ULID) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyP
 
 func (id UUIDv4) PrettyPrint(ctx *Context, w *bufio.Writer, config *pprint.PrettyPrintConfig, depth int, parentIndentCount int) {
 	utils.Must(w.WriteString(id.libValue().String()))
+}
+
+func (o *Opaque) PrettyPrint(ctx *Context, w *bufio.Writer, config *prettyprint.PrettyPrintConfig, depth int, parentIndentCount int) {
+	utils.Must(w.Write(utils.StringAsBytes("opaque")))
 }
 
 func InspectPrint[T any](w *bufio.Writer, v T) {

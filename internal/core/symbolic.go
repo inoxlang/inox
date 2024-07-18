@@ -1758,3 +1758,7 @@ func (id ULID) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Va
 func (id UUIDv4) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
 	return symbolic.NewUUID(id.libValue()), nil
 }
+
+func (o *Opaque) ToSymbolicValue(ctx *Context, encountered map[uintptr]symbolic.Value) (symbolic.Value, error) {
+	return symbolic.OPAQUE, nil
+}

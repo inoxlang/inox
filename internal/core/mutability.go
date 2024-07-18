@@ -626,3 +626,7 @@ func (ULID) IsMutable() bool {
 func (UUIDv4) IsMutable() bool {
 	return false
 }
+
+func (o *Opaque) IsMutable() bool {
+	return true //even if the underlying value is immutable
+}

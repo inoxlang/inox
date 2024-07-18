@@ -27,6 +27,7 @@ var (
 	ANY_TYPE           = &Type{}
 	ANY                = &Any{}
 	NEVER              = &Never{}
+	OPAQUE             = &Any{}
 	ANY_BOOL           = &Bool{}
 	TRUE               = NewBool(true)
 	FALSE              = NewBool(false)

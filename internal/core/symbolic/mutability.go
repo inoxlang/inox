@@ -8,6 +8,10 @@ func (Never) IsMutable() bool {
 	return true
 }
 
+func (o Opaque) IsMutable() bool {
+	return true
+}
+
 func (*AnySerializable) IsMutable() bool {
 	return true
 }
