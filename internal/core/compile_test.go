@@ -505,7 +505,7 @@ func TestCompileModule(t *testing.T) {
 	})
 
 	t.Run("variable assignment at top level", func(t *testing.T) {
-		expectBytecode(t, `$$A = 1`,
+		expectBytecode(t, `globalvar A = 1`,
 			0,
 			instrs(
 				inst(OpPushConstant, 0),
