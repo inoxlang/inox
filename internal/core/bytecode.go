@@ -215,6 +215,7 @@ const (
 	OpReturn
 	OpCallFromXMLFactory
 	OpYield
+	OpCoyield
 	OpCallPattern
 	OpDropPerms
 	OpSpawnLThread
@@ -373,6 +374,7 @@ var OpcodeNames = [...]string{
 	OpReturn:                       "RETURN",
 	OpCallFromXMLFactory:           "CALL_FXML_FACTORY",
 	OpYield:                        "YIELD",
+	OpCoyield:                      "COYIELD",
 	OpCallPattern:                  "CALL_PATT",
 	OpDropPerms:                    "DROP_PERMS",
 	OpSpawnLThread:                 "SPAWN_LTHREAD",
@@ -513,6 +515,7 @@ var OpcodeOperands = [...][]int{
 	OpCall:                         {1, 1, 1},
 	OpReturn:                       {1},
 	OpYield:                        {1},
+	OpCoyield:                      {1},
 	OpCallPattern:                  {1},
 	OpDropPerms:                    {},
 	OpSpawnLThread:                 {1, 2, 2, 2},
@@ -661,6 +664,7 @@ var OpcodeConstantIndexes = [...][]bool{
 	OpReturn:                       {false},
 	OpCallFromXMLFactory:           {},
 	OpYield:                        {false},
+	OpCoyield:                      {false},
 	OpCallPattern:                  {false},
 	OpDropPerms:                    {},
 	OpSpawnLThread:                 {false, true, true, true},

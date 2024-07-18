@@ -27,6 +27,7 @@ var (
 	ErrNegativeLowerIndex             = errors.New("negative lower index")
 	ErrUnreachable                    = errors.New("unreachable")
 	ErrLeftOperandDoesNotMatchPattern = errors.New("left operand does not match the pattern")
+	ErrNoAssociatedLThread            = errors.New("no associated lthread")
 
 	ErrCannotSetValOfIndexKeyProp = errors.New("cannot set value of index key property")
 	ErrCannotPopFromEmptyList     = errors.New("cannot pop from an empty list")

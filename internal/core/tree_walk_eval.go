@@ -281,7 +281,7 @@ func TreeWalkEval(node ast.Node, state *TreeWalkState) (result Value, err error)
 		}
 
 		if state.Global.LThread == nil {
-			panic(errors.New("failed to yield: no associated lthread"))
+			panic(ErrNoAssociatedLThread)
 		}
 		state.Global.LThread.yield(state.Global.Ctx, value)
 		return nil, nil
