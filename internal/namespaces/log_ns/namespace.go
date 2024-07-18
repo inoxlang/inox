@@ -20,7 +20,7 @@ const (
 )
 
 var (
-	LOG_NS = core.NewNamespace(NAMESPACE_NAME, map[string]core.Value{
+	NAMESPACE = core.NewNamespace(NAMESPACE_NAME, map[string]core.Value{
 		"add": core.WrapGoFunction(_add),
 	})
 
