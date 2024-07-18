@@ -36,6 +36,12 @@ var (
 	DEFAULT_DARKMODE_DISCRETE_COLOR = pprint.DEFAULT_DARKMODE_PRINT_COLORS.DiscreteColor
 	DEFAULT_LIGHMODE_DISCRETE_COLOR = pprint.DEFAULT_LIGHTMODE_PRINT_COLORS.DiscreteColor
 
+	DEFAULT_LOG_PRINT_CONFIG = &pprint.PrettyPrintConfig{
+		MaxDepth: 10,
+		Colorize: false,
+		Compact:  true,
+	}
+
 	COMMA                               = []byte{','}
 	LF_CR                               = []byte{'\n', '\r'}
 	DASH_DASH                           = []byte{'-', '-'}
